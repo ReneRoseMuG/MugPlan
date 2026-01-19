@@ -1,8 +1,8 @@
-import { CalendarDays, CalendarRange } from "lucide-react";
+import { CalendarDays, CalendarRange, Calendar } from "lucide-react";
 
 interface SidebarProps {
-  onViewChange: (view: 'week' | 'year') => void;
-  currentView?: 'week' | 'year';
+  onViewChange: (view: 'month' | 'week' | 'year') => void;
+  currentView?: 'month' | 'week' | 'year';
 }
 
 export function Sidebar({ onViewChange, currentView }: SidebarProps) {
@@ -29,6 +29,19 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
         >
           <CalendarDays className="w-5 h-5 opacity-80" />
           Wochenübersicht
+        </button>
+
+        <button
+          onClick={() => onViewChange('month')}
+          className={`
+            flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200
+            ${currentView === 'month' 
+              ? "bg-white text-primary shadow-md shadow-slate-200 border border-slate-100 translate-x-1" 
+              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"}
+          `}
+        >
+          <Calendar className="w-5 h-5 opacity-80" />
+          Monatsübersicht
         </button>
 
         <button
