@@ -1,38 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
-  /* Clean, Minimalist Palette - "Nordic White" */
-  --background: 210 20% 99%; /* Very subtle cool white */
-  --foreground: 220 15% 15%; /* Dark gunmetal for text */
+  /* High-Contrast Palette */
+  --background: 0 0% 100%; /* Pure White */
+  --foreground: 222 47% 11%; /* Very Dark Blue-Black */
   
-  --primary: 215 90% 48%; /* Crisp corporate blue */
+  --primary: 221 83% 53%; /* Strong Primary Blue */
   --primary-foreground: 210 40% 98%;
   
-  --secondary: 210 10% 96%; /* Light gray for backgrounds */
-  --secondary-foreground: 220 15% 15%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
   
-  --muted: 210 20% 96%;
-  --muted-foreground: 215 15% 45%; /* Readable gray */
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
   
-  --accent: 215 90% 48%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
   
-  --destructive: 0 84% 60%;
+  --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 220 13% 91%; /* Subtle border */
-  --input: 220 13% 91%;
-  --ring: 215 90% 48%;
+  --border: 222 47% 11%; /* High contrast border (Dark) */
+  --input: 222 47% 11%;
+  --ring: 221 83% 53%;
 
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
   
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
@@ -50,17 +48,28 @@
   }
 }
 
-/* Custom Utilities for Polish */
 @layer utilities {
-  .glass-panel {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  .calendar-grid {
+    @apply grid grid-cols-7 border-t border-l border-foreground;
   }
   
-  .subtle-shadow {
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  .calendar-cell {
+    @apply border-r border-b border-foreground p-2 min-h-[100px] transition-colors hover:bg-slate-50;
   }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/20;
+
+  .week-grid {
+    @apply grid grid-cols-7 border-t border-l border-foreground h-full;
+  }
+
+  .week-cell {
+    @apply border-r border-b border-foreground p-4 flex flex-col gap-2 min-h-[400px];
+  }
+
+  .year-grid {
+    @apply grid grid-cols-3 md:grid-cols-4 gap-6 p-6;
+  }
+
+  .mini-month {
+    @apply border-2 border-foreground rounded-lg p-3 bg-white;
   }
 }
