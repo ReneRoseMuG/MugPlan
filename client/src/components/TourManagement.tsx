@@ -136,9 +136,6 @@ export function TourManagement({ onCancel }: TourManagementProps) {
             <Route className="w-5 h-5" />
             Touren Übersicht
           </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Touren dienen zur farblichen Kennzeichnung von regional zusammenliegenden Terminen.
-          </p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="list-tours">
