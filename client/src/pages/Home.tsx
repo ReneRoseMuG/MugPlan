@@ -3,11 +3,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { CustomerDetail } from "@/components/CustomerDetail";
 import { CustomerData } from "@/components/CustomerData";
+import { TourManagement } from "@/components/TourManagement";
 import { addMonths, subMonths, format, startOfWeek, endOfWeek, eachDayOfInterval, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerData';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerData' | 'tours';
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -88,11 +89,11 @@ export default function Home() {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kunden - Stammdaten' : view === 'customerData' ? 'Kunden - Kundendaten' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kunden - Stammdaten' : view === 'customerData' ? 'Kunden - Kundendaten' : view === 'tours' ? 'Touren Übersicht' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
-          {view !== 'customer' && view !== 'customerData' && (
+          {view !== 'customer' && view !== 'customerData' && view !== 'tours' && (
             <div className="flex items-center gap-2 bg-border rounded-md p-1">
               <button
                 onClick={prev}
@@ -125,6 +126,8 @@ export default function Home() {
             <CustomerDetail onCancel={() => setView('month')} />
           ) : view === 'customerData' ? (
             <CustomerData onCancel={() => setView('month')} />
+          ) : view === 'tours' ? (
+            <TourManagement onCancel={() => setView('month')} />
           ) : view === 'week' ? renderWeekView() : 
            view === 'year' ? renderYearView() : (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">

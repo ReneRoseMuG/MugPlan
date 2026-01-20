@@ -118,7 +118,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
           <NavButton icon={Calendar} label="Monatsübersicht" isActive={currentView === 'month'} onClick={() => onViewChange('month')} />
           <NavButton icon={CalendarRange} label="Jahresübersicht" isActive={currentView === 'year'} onClick={() => onViewChange('year')} />
           <NavButton icon={BarChart3} label="Auslastungsübersicht" />
-          <NavButton icon={Route} label="Touren Übersicht" />
+          <NavButton icon={Route} label="Touren Übersicht" isActive={currentView === 'tours'} onClick={() => onViewChange('tours')} />
           <NavButton icon={Users} label="Mitarbeiter Übersicht" />
         </NavGroup>
 
