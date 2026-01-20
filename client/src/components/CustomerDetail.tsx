@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Phone, MapPin, Save, X } from "lucide-react";
 
+
 interface CustomerDetailProps {
   onCancel?: () => void;
   onSave?: () => void;
@@ -15,10 +16,17 @@ export function CustomerDetail({ onCancel, onSave }: CustomerDetailProps) {
     <div className="h-full p-8 overflow-auto">
       <Card className="max-w-4xl">
         <CardHeader className="border-b border-border">
-          <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
-            <User className="w-6 h-6" />
-            Neuer Kunde
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
+              <User className="w-6 h-6" />
+              Neuer Kunde
+            </CardTitle>
+            {onCancel && (
+              <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-customer">
+                <X className="w-6 h-6" />
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
           <form className="space-y-8">

@@ -56,10 +56,17 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
       <div className="max-w-5xl grid grid-cols-3 gap-6">
         <Card className="col-span-2">
           <CardHeader className="border-b border-border">
-            <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
-              <User className="w-6 h-6" />
-              Kundendaten
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
+                <User className="w-6 h-6" />
+                Kundendaten
+              </CardTitle>
+              {onCancel && (
+                <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-customer">
+                  <X className="w-6 h-6" />
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="pt-6">
             <form className="space-y-8">

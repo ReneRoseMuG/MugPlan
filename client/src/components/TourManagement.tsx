@@ -138,8 +138,8 @@ export function TourManagement({ onCancel }: TourManagementProps) {
               Touren Übersicht
             </CardTitle>
             {onCancel && (
-              <Button size="icon" variant="ghost" onClick={onCancel} data-testid="button-close-tours">
-                <X className="w-5 h-5" />
+              <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-tours">
+                <X className="w-6 h-6" />
               </Button>
             )}
           </div>
