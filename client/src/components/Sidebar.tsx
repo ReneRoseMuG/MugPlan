@@ -1,8 +1,9 @@
 import { CalendarDays, CalendarRange, Calendar, BarChart3, MapPin, Users, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, Route, CalendarOff, Activity, CloudUpload } from "lucide-react";
+import type { ViewType } from "@/pages/Home";
 
 interface SidebarProps {
-  onViewChange: (view: 'month' | 'week' | 'year') => void;
-  currentView?: 'month' | 'week' | 'year';
+  onViewChange: (view: ViewType) => void;
+  currentView?: ViewType;
 }
 
 function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
@@ -77,7 +78,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
 
         <NavGroup title="Projektplanung">
           <NavButton icon={FolderKanban} label="Projekte" />
-          <NavButton icon={UserCircle} label="Kunden" />
+          <NavButton icon={UserCircle} label="Kunden" isActive={currentView === 'customer'} onClick={() => onViewChange('customer')} />
           <NavButton icon={ListChecks} label="Projektstatus" />
         </NavGroup>
 
