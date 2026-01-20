@@ -7,7 +7,7 @@ interface SidebarProps {
 
 export function Sidebar({ onViewChange, currentView }: SidebarProps) {
   return (
-    <div className="w-full h-full bg-slate-50 border-r border-border flex flex-col p-6 shadow-inner">
+    <div className="w-full h-full bg-slate-50 border-r border-border flex flex-col p-6">
       <div className="mb-10">
         <h1 className="text-2xl font-bold font-display text-slate-900 tracking-tight">
           Kalender
@@ -23,8 +23,8 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
           className={`
             flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200
             ${currentView === 'week' 
-              ? "bg-white text-primary shadow-md shadow-slate-200 border border-slate-100 translate-x-1" 
-              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"}
+              ? "bg-white text-primary border border-slate-100 translate-x-1" 
+              : "text-slate-600 hover:bg-white hover:text-slate-900"}
           `}
         >
           <CalendarDays className="w-5 h-5 opacity-80" />
@@ -36,8 +36,8 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
           className={`
             flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200
             ${currentView === 'month' 
-              ? "bg-white text-primary shadow-md shadow-slate-200 border border-slate-100 translate-x-1" 
-              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"}
+              ? "bg-white text-primary border border-slate-100 translate-x-1" 
+              : "text-slate-600 hover:bg-white hover:text-slate-900"}
           `}
         >
           <Calendar className="w-5 h-5 opacity-80" />
@@ -49,8 +49,8 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
           className={`
             flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200
             ${currentView === 'year' 
-              ? "bg-white text-primary shadow-md shadow-slate-200 border border-slate-100 translate-x-1" 
-              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"}
+              ? "bg-white text-primary border border-slate-100 translate-x-1" 
+              : "text-slate-600 hover:bg-white hover:text-slate-900"}
           `}
         >
           <CalendarRange className="w-5 h-5 opacity-80" />

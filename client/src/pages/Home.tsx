@@ -32,7 +32,7 @@ export default function Home() {
     const days = eachDayOfInterval({ start, end });
 
     return (
-      <div className="week-grid h-full bg-white rounded-lg overflow-hidden shadow-md">
+      <div className="week-grid h-full bg-white rounded-lg overflow-hidden">
         {days.map((day) => (
           <div key={day.toString()} className="week-cell bg-white">
             <div className="text-sm font-bold uppercase text-slate-500 mb-2">
@@ -55,7 +55,7 @@ export default function Home() {
     return (
       <div className="year-grid h-full overflow-y-auto">
         {months.map((month) => (
-          <div key={month.toString()} className="mini-month shadow-md hover:border-primary transition-colors cursor-pointer" onClick={() => { setCurrentDate(month); setView('month'); }}>
+          <div key={month.toString()} className="mini-month rounded-lg p-3 bg-white hover:border-primary transition-colors cursor-pointer" onClick={() => { setCurrentDate(month); setView('month'); }}>
             <h4 className="font-bold text-center mb-2 uppercase text-xs tracking-widest text-primary">
               {format(month, "MMMM", { locale: de })}
             </h4>
@@ -115,7 +115,7 @@ export default function Home() {
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
           {view === 'week' ? renderWeekView() : 
            view === 'year' ? renderYearView() : (
-            <div className="h-full bg-white rounded-lg overflow-hidden shadow-2xl border-2 border-foreground">
+            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <CalendarGrid currentDate={currentDate} />
             </div>
           )}
