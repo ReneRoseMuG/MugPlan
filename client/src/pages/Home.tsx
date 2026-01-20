@@ -81,17 +81,17 @@ export default function Home() {
       <main className="w-[80%] h-full flex flex-col relative">
         
         {/* Header / Navigation Bar */}
-        <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-foreground z-20">
+        <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
-            <h2 className="text-3xl font-black font-display text-foreground tracking-tighter uppercase">
+            <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
               {view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 bg-foreground rounded-md p-1">
+          <div className="flex items-center gap-2 bg-border rounded-md p-1">
             <button
               onClick={prev}
-              className="px-4 py-2 rounded bg-white text-foreground font-black hover:bg-primary hover:text-white transition-all active:scale-95"
+              className="px-4 py-2 rounded bg-background text-primary font-black hover:bg-primary hover:text-white transition-all active:scale-95"
             >
               <div className="flex items-center gap-2">
                 <ChevronLeft className="w-5 h-5" />
@@ -101,7 +101,7 @@ export default function Home() {
             
             <button
               onClick={next}
-              className="px-4 py-2 rounded bg-white text-foreground font-black hover:bg-primary hover:text-white transition-all active:scale-95"
+              className="px-4 py-2 rounded bg-background text-primary font-black hover:bg-primary hover:text-white transition-all active:scale-95"
             >
               <div className="flex items-center gap-2">
                 <span className="text-xs uppercase tracking-tighter">Vor</span>
