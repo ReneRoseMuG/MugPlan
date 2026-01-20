@@ -19,11 +19,11 @@ const demoAppointments = [
 const demoNotes = [
   {
     id: "1",
-    text: "Kunde bevorzugt **Vormittagstermine** zwischen 9 und 12 Uhr. Parkplatz vor dem Haus verfügbar.",
+    text: "Kunde bevorzugt Vormittagstermine zwischen 9 und 12 Uhr. Parkplatz vor dem Haus verfügbar.",
   },
   {
     id: "2", 
-    text: "Rückruf am _Montag_ vereinbart. Angebot für Zusatzleistungen besprechen.",
+    text: "Rückruf am Montag vereinbart. Angebot für Zusatzleistungen besprechen.",
   },
 ];
 
@@ -34,12 +34,6 @@ function NoteCard({
   text: string; 
   onDelete: () => void;
 }) {
-  const formatText = (input: string) => {
-    let formatted = input.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    formatted = formatted.replace(/_(.*?)_/g, '<em>$1</em>');
-    return formatted;
-  };
-
   return (
     <div className="relative bg-white border border-border rounded-lg p-4 shadow-sm">
       <button
@@ -49,10 +43,9 @@ function NoteCard({
       >
         <X className="w-4 h-4" />
       </button>
-      <p 
-        className="text-sm text-slate-700 pr-6"
-        dangerouslySetInnerHTML={{ __html: formatText(text) }}
-      />
+      <p className="text-sm text-slate-700 pr-6">
+        {text}
+      </p>
     </div>
   );
 }
@@ -207,7 +200,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   <StickyNote className="w-4 h-4" />
                   Notizen
                 </CardTitle>
-                <Button size="sm" variant="ghost" className="h-7 px-2" data-testid="button-new-note">
+                <Button size="icon" variant="ghost" data-testid="button-new-note">
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
