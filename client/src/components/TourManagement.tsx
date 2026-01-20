@@ -132,10 +132,17 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     <div className="p-6 max-w-4xl mx-auto">
       <Card className="bg-card">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-            <Route className="w-5 h-5" />
-            Touren Übersicht
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+              <Route className="w-5 h-5" />
+              Touren Übersicht
+            </CardTitle>
+            {onCancel && (
+              <Button size="icon" variant="ghost" onClick={onCancel} data-testid="button-close-tours">
+                <X className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="list-tours">
