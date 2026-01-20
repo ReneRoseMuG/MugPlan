@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { CustomerDetail } from "@/components/CustomerDetail";
+import { CustomerData } from "@/components/CustomerData";
 import { addMonths, subMonths, format, startOfWeek, endOfWeek, eachDayOfInterval, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerData';
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -87,11 +88,11 @@ export default function Home() {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kunden' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kunden - Stammdaten' : view === 'customerData' ? 'Kunden - Kundendaten' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
-          {view !== 'customer' && (
+          {view !== 'customer' && view !== 'customerData' && (
             <div className="flex items-center gap-2 bg-border rounded-md p-1">
               <button
                 onClick={prev}
@@ -122,6 +123,8 @@ export default function Home() {
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
           {view === 'customer' ? (
             <CustomerDetail onCancel={() => setView('month')} />
+          ) : view === 'customerData' ? (
+            <CustomerData onCancel={() => setView('month')} />
           ) : view === 'week' ? renderWeekView() : 
            view === 'year' ? renderYearView() : (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
