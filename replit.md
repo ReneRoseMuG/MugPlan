@@ -8,6 +8,9 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
 - **Customer Management Prototype**: Added two customer views accessible via a popover menu on the "Kunden" button:
   - **Stammdaten** (`CustomerDetail.tsx`): Basic customer form with personal data, contact, address, and status
   - **Kundendaten** (`CustomerData.tsx`): Extended view with customer form + appointment list (read-only) + notes journal with delete functionality
+- **Tour Management Prototype**: Added tour management via "Touren Übersicht" button
+  - Color-coded cards with name field, color picker, and delete button
+  - Tours serve as visual identifiers for regionally grouped appointments
 
 ## User Preferences
 
