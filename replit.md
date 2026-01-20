@@ -16,6 +16,9 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
 
 Preferred communication style: Simple, everyday language.
 
+### UI-Patterns
+- Alle Formulare sollen einen X-Button (size="lg", variant="ghost") im Titelbereich zum Schließen haben
+
 ## System Architecture
 
 ### Frontend Architecture
