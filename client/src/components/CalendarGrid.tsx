@@ -339,10 +339,10 @@ function AppointmentBar({
           backgroundColor: appointment.tourColor,
           color: textColor,
           borderRadius: isFirstDay && isLastDay ? "4px" : isFirstDay ? "4px 0 0 4px" : isLastDay ? "0 4px 4px 0" : "0",
-          width: spanDays > 1 && isFirstDay ? `calc(${widthPercent}% + ${(spanDays - 1) * 2}px)` : "100%",
-          marginRight: spanDays > 1 && isFirstDay ? `-${(spanDays - 1) * 100}%` : "0",
-          position: spanDays > 1 && isFirstDay ? "relative" : "static",
-          zIndex: spanDays > 1 && isFirstDay ? 10 : 1
+          width: spanDays > 1 ? `calc(${widthPercent}% + ${(spanDays - 1) * 2}px)` : "100%",
+          marginRight: spanDays > 1 ? `-${(spanDays - 1) * 100}%` : "0",
+          position: spanDays > 1 ? "relative" : "static",
+          zIndex: spanDays > 1 ? 10 : 1
         }}
         data-testid={`appointment-bar-${appointment.id}`}
       >
@@ -437,14 +437,21 @@ export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProp
                   <div
                     key={day.toString()}
                     className={`
-                      relative border-r border-b border-border/30 p-1 min-h-[80px] overflow-hidden
+                      relative border-r border-b border-border/30 p-1 min-h-[80px]
                       transition-colors duration-200
                       ${!isCurrentMonth ? "bg-muted/10 text-muted-foreground/40" : "bg-white text-foreground hover:bg-slate-50"}
                       ${dayIdx === 6 ? "border-r-0" : ""} 
                     `}
                     data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
                   >
-                    <div className="flex justify-end mb-1">
+                    <div className="flex justify-between items-start mb-1">
+                      <button
+                        onClick={onNewAppointment}
+                        className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                        data-testid={`button-new-appointment-${format(day, 'yyyy-MM-dd')}`}
+                      >
+                        <span className="text-sm font-bold">+</span>
+                      </button>
                       <span
                         className={`
                           flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
