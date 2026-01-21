@@ -328,8 +328,8 @@ function AppointmentBar({
       >
         {(isFirstDay || spanDays === 1) && (
           <>
-            <span className="truncate flex-1">{appointment.customer.fullName.split(",")[0]}</span>
-            <span className="font-bold ml-1 flex-shrink-0">{appointment.customer.plz}</span>
+            <span className="truncate min-w-0">{appointment.customer.fullName.split(",")[0]}</span>
+            <span className="font-bold ml-2 flex-shrink-0 whitespace-nowrap">{appointment.customer.plz}</span>
           </>
         )}
       </div>
