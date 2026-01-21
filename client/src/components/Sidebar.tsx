@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Calendar, BarChart3, MapPin, Users, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, Route, CalendarOff, Activity, CloudUpload, ChevronDown } from "lucide-react";
+import { CalendarDays, CalendarRange, Calendar, BarChart3, MapPin, Users, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, Route, CalendarOff, Activity, CloudUpload, ChevronDown, Plus, List } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
@@ -68,6 +68,52 @@ function CustomerMenuButton({ isActive, onViewChange }: { isActive?: boolean; on
   );
 }
 
+function ProjectMenuButton({ isActive, onViewChange }: { isActive?: boolean; onViewChange: (view: ViewType) => void }) {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          data-testid="nav-projekte"
+          className={`
+            flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full text-left
+            ${isActive 
+              ? "bg-white text-primary border border-slate-200" 
+              : "text-slate-600 hover:bg-white hover:text-slate-900"}
+          `}
+        >
+          <div className="flex items-center gap-2">
+            <FolderKanban className="w-4 h-4 opacity-80" />
+            Projekte
+          </div>
+          <ChevronDown className="w-3 h-3 opacity-60" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2" align="start">
+        <div className="flex flex-col gap-1">
+          <button
+            onClick={() => { onViewChange('project'); setOpen(false); }}
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 w-full text-left"
+            data-testid="menu-new-project"
+          >
+            <Plus className="w-4 h-4" />
+            Neues Projekt
+          </button>
+          <button
+            onClick={() => { onViewChange('projectList'); setOpen(false); }}
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 w-full text-left"
+            data-testid="menu-project-list"
+          >
+            <List className="w-4 h-4" />
+            Projektliste
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.ElementType; label: string; isActive?: boolean; onClick?: () => void }) {
   const testId = `nav-${label.toLowerCase().replace(/\s+/g, '-')}`;
   
@@ -123,7 +169,10 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
         </NavGroup>
 
         <NavGroup title="Projektplanung">
-          <NavButton icon={FolderKanban} label="Projekte" />
+          <ProjectMenuButton 
+            isActive={currentView === 'project' || currentView === 'projectList'} 
+            onViewChange={onViewChange} 
+          />
           <CustomerMenuButton 
             isActive={currentView === 'customer' || currentView === 'customerData'} 
             onViewChange={onViewChange} 

@@ -6,11 +6,12 @@ import { CustomerData } from "@/components/CustomerData";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
 import { EmployeeManagement } from "@/components/EmployeeManagement";
+import { ProjectForm } from "@/components/ProjectForm";
 import { addMonths, subMonths, format, startOfWeek, endOfWeek, eachDayOfInterval, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerData' | 'tours' | 'teams' | 'employees';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerData' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList';
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -91,11 +92,11 @@ export default function Home() {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kunden - Stammdaten' : view === 'customerData' ? 'Kunden - Kundendaten' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Team Vorlagen' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kunden - Stammdaten' : view === 'customerData' ? 'Kunden - Kundendaten' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Team Vorlagen' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
-          {view !== 'customer' && view !== 'customerData' && view !== 'tours' && view !== 'teams' && view !== 'employees' && (
+          {view !== 'customer' && view !== 'customerData' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'project' && view !== 'projectList' && (
             <div className="flex items-center gap-2 bg-border rounded-md p-1">
               <button
                 onClick={prev}
@@ -134,6 +135,12 @@ export default function Home() {
             <TeamManagement onCancel={() => setView('month')} />
           ) : view === 'employees' ? (
             <EmployeeManagement onCancel={() => setView('month')} />
+          ) : view === 'project' ? (
+            <ProjectForm onCancel={() => setView('month')} />
+          ) : view === 'projectList' ? (
+            <div className="h-full flex items-center justify-center text-slate-400">
+              <p>Projektliste - Demo Platzhalter</p>
+            </div>
           ) : view === 'week' ? renderWeekView() : 
            view === 'year' ? renderYearView() : (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
