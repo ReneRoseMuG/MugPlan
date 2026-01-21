@@ -278,9 +278,6 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                       <p className="font-semibold text-slate-800" data-testid="text-project-name">
                         {currentProject.name}
                       </p>
-                      <p className="text-sm text-slate-500 mt-1">
-                        Projekt-ID: {currentProject.id}
-                      </p>
                     </div>
                   </div>
                 </div>
