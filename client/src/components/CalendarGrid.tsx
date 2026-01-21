@@ -16,7 +16,7 @@ import {
   differenceInDays
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { MapPin, Phone, Users, Route, FileText, Paperclip, Eye } from "lucide-react";
+import { MapPin, Phone, Users, Route, FileText, Paperclip, Eye, Calendar } from "lucide-react";
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -221,15 +221,26 @@ function AppointmentTooltip({ appointment, position }: { appointment: DemoAppoin
       </div>
 
       <div 
-        className="px-3 py-2 flex items-center gap-2"
+        className="px-3 py-2 flex items-center justify-between"
         style={{ backgroundColor: `${appointment.tourColor}20` }}
       >
-        <Route className="w-4 h-4" style={{ color: appointment.tourColor }} />
-        <div 
-          className="w-4 h-4 rounded"
-          style={{ backgroundColor: appointment.tourColor }}
-        />
-        <span className="text-sm font-medium">{appointment.tourName}</span>
+        <div className="flex items-center gap-2">
+          <Route className="w-4 h-4" style={{ color: appointment.tourColor }} />
+          <div 
+            className="w-4 h-4 rounded"
+            style={{ backgroundColor: appointment.tourColor }}
+          />
+          <span className="text-sm font-medium">{appointment.tourName}</span>
+        </div>
+        <div className="flex items-center gap-1 text-xs text-slate-600">
+          <Calendar className="w-3 h-3" />
+          <span>
+            {format(parseISO(appointment.startDate), "dd.MM.yyyy")}
+            {appointment.startDate !== appointment.endDate && (
+              <> - {format(parseISO(appointment.endDate), "dd.MM.yyyy")}</>
+            )}
+          </span>
+        </div>
       </div>
 
       <div className="p-3 border-t border-slate-100">
@@ -335,12 +346,14 @@ function AppointmentBar({
         }}
         data-testid={`appointment-bar-${appointment.id}`}
       >
-        {(isFirstDay || spanDays === 1) && (
-          <>
-            <span className="truncate min-w-0">{appointment.customer.fullName.split(",")[0]}</span>
-            <span className="font-bold ml-2 flex-shrink-0 whitespace-nowrap">{appointment.customer.plz}</span>
-          </>
-        )}
+        <>
+          <span className="truncate min-w-0">
+            {appointment.startDate !== appointment.endDate
+              ? appointment.customer.fullName 
+              : appointment.customer.fullName.split(",")[0]}
+          </span>
+          <span className="font-bold ml-2 flex-shrink-0 whitespace-nowrap">{appointment.customer.plz}</span>
+        </>
       </div>
       
       {showTooltip && isFirstDay && (
@@ -461,8 +474,10 @@ export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProp
                         const isFirst = isFirstDayOfAppointment(day, apt);
                         const isLast = isLastDayOfAppointment(day, apt);
                         const spanDays = getSpanDays(day, apt, dayIdx);
+                        const isWeekStart = dayIdx === 0;
+                        const shouldRenderBar = isFirst || isWeekStart;
                         
-                        if (!isFirst) {
+                        if (!shouldRenderBar) {
                           return (
                             <div 
                               key={tour.id} 
@@ -474,7 +489,7 @@ export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProp
                         
                         return (
                           <AppointmentBar
-                            key={apt.id}
+                            key={`${apt.id}-${weekIdx}`}
                             appointment={apt}
                             dayIndex={dayIdx}
                             totalDaysInRow={7}
