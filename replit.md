@@ -5,6 +5,16 @@
 A personal calendar application (German: "Kalender - Persönlicher Planer") built with React and Express. The app provides month, week, and year calendar views with a clean, modern UI. It uses a PostgreSQL database for event storage, though the calendar views are currently display-focused with minimal event integration.
 
 ### Recent Changes (January 2026)
+- **Project Management Prototype**: Added project form via "Projekte" button dropdown in sidebar
+  - Dropdown menu with "Neues Projekt" and "Projektliste" options
+  - Project form (`ProjectForm.tsx`) includes:
+    - Project name and status dropdown (5 status options)
+    - Customer display section (shows assigned customer with name, contact, phone)
+    - Markdown description textarea with live preview
+    - Notes journal with add/delete functionality (like customers)
+    - Appointments section (placeholder for future implementation)
+    - Documents section with preview dialog (PDF and image placeholders)
+  - Demo form only - no database integration yet
 - **Employee Management Prototype**: Added employee overview via "Mitarbeiter" button
   - Card-based layout with 80/20 split (data | assignments)
   - Shows name, phone, and Tour/Team mini-badges
