@@ -132,9 +132,9 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
         </NavGroup>
 
         <NavGroup title="Mitarbeiter Verwaltung">
-          <NavButton icon={UsersRound} label="Mitarbeiter" />
-          <NavButton icon={Layers} label="Team Vorlagen" />
-          <NavButton icon={MapPin} label="Touren" />
+          <NavButton icon={UsersRound} label="Mitarbeiter" isActive={currentView === 'employees'} onClick={() => onViewChange('employees')} />
+          <NavButton icon={Layers} label="Team Vorlagen" isActive={currentView === 'teams'} onClick={() => onViewChange('teams')} />
+          <NavButton icon={MapPin} label="Touren" isActive={currentView === 'tours'} onClick={() => onViewChange('tours')} />
           <NavButton icon={CalendarOff} label="Abwesenheiten" />
         </NavGroup>
 
