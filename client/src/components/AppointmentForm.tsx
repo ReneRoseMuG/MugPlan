@@ -30,10 +30,18 @@ const demoTours = [
   { id: "3", name: "Tour 3", color: "#7BA05B" },
 ];
 
+const demoProjectStatuses = [
+  { id: "s1", name: "Neu", color: "#3B82F6" },
+  { id: "s2", name: "In Bearbeitung", color: "#F59E0B" },
+  { id: "s3", name: "Wartend", color: "#8B5CF6" },
+  { id: "s4", name: "Abgeschlossen", color: "#10B981" },
+  { id: "s5", name: "Storniert", color: "#EF4444" },
+];
+
 const demoProjects = [
-  { id: "1", name: "Renovierung Bürogebäude", customerId: "1" },
-  { id: "2", name: "Neugestaltung Empfangsbereich", customerId: "1" },
-  { id: "3", name: "Gartenanlage Villa", customerId: "2" },
+  { id: "1", name: "Renovierung Bürogebäude", customerId: "1", statusId: "s2" },
+  { id: "2", name: "Neugestaltung Empfangsbereich", customerId: "1", statusId: "s1" },
+  { id: "3", name: "Gartenanlage Villa", customerId: "2", statusId: "s3" },
 ];
 
 const demoCustomers = [
@@ -105,6 +113,7 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
   const currentTour = demoTours.find(t => t.id === selectedTour);
   const currentProject = selectedProject ? demoProjects.find(p => p.id === selectedProject) : null;
   const currentCustomer = demoCustomers.find(c => c.id === currentProject?.customerId);
+  const currentProjectStatus = currentProject ? demoProjectStatuses.find(s => s.id === currentProject.statusId) : null;
 
   const handleRemoveEmployee = (empId: string) => {
     setAssignedEmployees(assignedEmployees.filter(id => id !== empId));
@@ -281,6 +290,27 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
               ) : (
                 <div className="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center text-sm text-muted-foreground">
                   Kein Projekt ausgewählt
+                </div>
+              )}
+
+              {currentProjectStatus && (
+                <div 
+                  className="p-3 rounded-lg border"
+                  style={{ 
+                    backgroundColor: `${currentProjectStatus.color}15`,
+                    borderColor: `${currentProjectStatus.color}40`
+                  }}
+                  data-testid="project-status-info"
+                >
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: currentProjectStatus.color }}
+                    />
+                    <span className="text-sm font-medium" style={{ color: currentProjectStatus.color }}>
+                      Status: {currentProjectStatus.name}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
