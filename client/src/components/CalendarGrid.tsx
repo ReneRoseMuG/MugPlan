@@ -163,13 +163,22 @@ const demoAppointments: DemoAppointment[] = [
   }
 ];
 
-function AppointmentTooltip({ appointment, position }: { appointment: DemoAppointment; position: { x: number; y: number } }) {
+const TOUR_SLOTS = [
+  { id: "1", name: "Tour 1", color: "#4A90A4" },
+  { id: "2", name: "Tour 2", color: "#E8B86D" },
+  { id: "3", name: "Tour 3", color: "#7BA05B" },
+];
+
+function AppointmentTooltip({ appointment, position }: { appointment: DemoAppointment; position: { x: number; y: number; flipUp?: boolean } }) {
+  const tooltipHeight = 280;
+  const flipUp = position.flipUp || (position.y + tooltipHeight + 20 > window.innerHeight);
+  
   return createPortal(
     <div 
       className="fixed z-[9999] w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-0 overflow-hidden pointer-events-none"
       style={{ 
-        top: position.y + 10,
-        left: Math.min(position.x, window.innerWidth - 340),
+        top: flipUp ? position.y - tooltipHeight - 10 : position.y + 10,
+        left: Math.min(Math.max(10, position.x), window.innerWidth - 340),
       }}
     >
       <div className="flex">
@@ -359,12 +368,13 @@ export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProp
     weeks.push(days.slice(i, i + 7));
   }
 
-  const getAppointmentsForDay = (day: Date) => {
-    return demoAppointments.filter(apt => {
+  const getAppointmentForDayAndTour = (day: Date, tourId: string): DemoAppointment | null => {
+    return demoAppointments.find(apt => {
+      if (apt.tourId !== tourId) return false;
       const start = parseISO(apt.startDate);
       const end = parseISO(apt.endDate);
       return isWithinInterval(day, { start, end }) || isSameDay(day, start) || isSameDay(day, end);
-    }).sort((a, b) => a.tourName.localeCompare(b.tourName));
+    }) || null;
   };
 
   const isFirstDayOfAppointment = (day: Date, appointment: DemoAppointment) => {
@@ -409,7 +419,6 @@ export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProp
               {week.map((day, dayIdx) => {
                 const isCurrentMonth = isSameMonth(day, monthStart);
                 const isTodayDate = isToday(day);
-                const dayAppointments = getAppointmentsForDay(day);
 
                 return (
                   <div
@@ -436,13 +445,31 @@ export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProp
                     </div>
                     
                     <div className="space-y-0.5">
-                      {dayAppointments.map(apt => {
+                      {TOUR_SLOTS.map(tour => {
+                        const apt = getAppointmentForDayAndTour(day, tour.id);
+                        
+                        if (!apt) {
+                          return (
+                            <div 
+                              key={tour.id} 
+                              className="h-6"
+                              data-testid={`slot-empty-${tour.id}-${format(day, 'yyyy-MM-dd')}`}
+                            />
+                          );
+                        }
+                        
                         const isFirst = isFirstDayOfAppointment(day, apt);
                         const isLast = isLastDayOfAppointment(day, apt);
                         const spanDays = getSpanDays(day, apt, dayIdx);
                         
-                        if (!isFirst && spanDays > 1) {
-                          return null;
+                        if (!isFirst) {
+                          return (
+                            <div 
+                              key={tour.id} 
+                              className="h-6"
+                              data-testid={`slot-continued-${tour.id}-${format(day, 'yyyy-MM-dd')}`}
+                            />
+                          );
                         }
                         
                         return (
