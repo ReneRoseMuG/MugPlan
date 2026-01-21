@@ -509,7 +509,7 @@ export function WeekGrid({ currentDate, onNewAppointment, onAppointmentDoubleCli
           return (
             <div
               key={day.toString()}
-              className="flex flex-col min-h-0"
+              className="flex flex-col min-h-0 overflow-visible"
               onDragOver={(e) => handleDragOver(e, day)}
               onDrop={(e) => handleDrop(e, day)}
               data-testid={`week-day-${format(day, 'yyyy-MM-dd')}`}
@@ -531,7 +531,7 @@ export function WeekGrid({ currentDate, onNewAppointment, onAppointmentDoubleCli
                 </div>
               </div>
               
-              <div className="flex-1 p-2 space-y-1.5 overflow-y-auto">
+              <div className="flex-1 p-2 space-y-1.5 overflow-visible">
                 <div className="flex justify-end mb-2">
                   <button
                     onClick={onNewAppointment}
