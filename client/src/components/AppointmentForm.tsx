@@ -41,8 +41,9 @@ const demoCustomers = [
 ];
 
 const demoTeams = [
-  { id: "1", name: "Team Alpha", members: ["e1", "e2"] },
-  { id: "2", name: "Team Beta", members: ["e3", "e4"] },
+  { id: "1", name: "Team 1", members: ["e1", "e2"], color: "#A8D5BA" },
+  { id: "2", name: "Team 2", members: ["e3", "e4"], color: "#B8C9E8" },
+  { id: "3", name: "Team 3", members: ["e5", "e6"], color: "#F5D6BA" },
 ];
 
 const demoEmployees = [
@@ -206,51 +207,34 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                   ))}
                 </SelectContent>
               </Select>
-              {currentTour && (
-                <div 
-                  className="p-3 rounded-lg border-2"
-                  style={{ 
-                    backgroundColor: `${currentTour.color}15`,
-                    borderColor: currentTour.color 
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-6 h-6 rounded"
-                      style={{ backgroundColor: currentTour.color }}
-                    />
-                    <span className="font-semibold">{currentTour.name}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Termine erscheinen in dieser Farbe im Kalender
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-              <FolderKanban className="w-4 h-4" />
-              Projekt & Kunde
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Projekt</Label>
-                <Select value={selectedProject} onValueChange={setSelectedProject}>
-                  <SelectTrigger data-testid="select-project">
-                    <SelectValue placeholder="Projekt wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {demoProjects.map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <FolderKanban className="w-4 h-4" />
+                Projekt
+              </h3>
+              <Select value={selectedProject} onValueChange={setSelectedProject}>
+                <SelectTrigger data-testid="select-project">
+                  <SelectValue placeholder="Projekt wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {demoProjects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <UserCircle className="w-4 h-4" />
+                Kunde
+              </h3>
               {currentCustomer && (
                 <div 
                   className="p-4 bg-slate-50 rounded-lg border border-border"
@@ -291,20 +275,26 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
               Mitarbeiter zuweisen
             </h3>
             
-            <div className="flex flex-wrap gap-2 items-center">
-              <Label className="text-xs text-muted-foreground mr-2">Team-Vorlage:</Label>
-              {demoTeams.map(team => (
-                <Button 
-                  key={team.id}
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleAssignTeam(team.id)}
-                  data-testid={`button-assign-team-${team.id}`}
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  {team.name}
-                </Button>
-              ))}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Team-Vorlagen:</Label>
+              <div className="flex flex-wrap gap-2">
+                {demoTeams.map(team => (
+                  <Button 
+                    key={team.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAssignTeam(team.id)}
+                    style={{ 
+                      backgroundColor: team.color,
+                      borderColor: team.color
+                    }}
+                    data-testid={`button-assign-team-${team.id}`}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {team.name}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-lg border border-border min-h-[80px]">
