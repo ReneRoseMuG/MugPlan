@@ -170,16 +170,22 @@ const TOUR_SLOTS = [
   { id: "3", name: "Tour 3", color: "#7BA05B" },
 ];
 
-function AppointmentTooltip({ appointment, position }: { appointment: DemoAppointment; position: { x: number; y: number; flipUp?: boolean } }) {
+function AppointmentTooltip({ appointment, position }: { appointment: DemoAppointment; position: { x: number; y: number } }) {
+  const tooltipWidth = 320;
   const tooltipHeight = 280;
-  const flipUp = position.flipUp || (position.y + tooltipHeight + 20 > window.innerHeight);
+  
+  const fitsRight = position.x + tooltipWidth < window.innerWidth - 10;
+  const fitsBottom = position.y + tooltipHeight < window.innerHeight - 10;
+  
+  const left = fitsRight ? position.x : Math.max(10, position.x - tooltipWidth - 20);
+  const top = fitsBottom ? position.y : Math.max(10, position.y - tooltipHeight);
   
   return createPortal(
     <div 
       className="fixed z-[9999] w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-0 overflow-hidden pointer-events-none"
       style={{ 
-        top: flipUp ? position.y - tooltipHeight - 10 : position.y + 10,
-        left: Math.min(Math.max(10, position.x), window.innerWidth - 340),
+        top,
+        left,
       }}
     >
       <div className="flex">
@@ -305,16 +311,27 @@ function AppointmentBar({
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const barRef = useRef<HTMLDivElement>(null);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = (e: React.MouseEvent) => {
     if (barRef.current) {
       const rect = barRef.current.getBoundingClientRect();
       setTooltipPosition({
-        x: rect.left,
-        y: rect.bottom
+        x: rect.right + 10,
+        y: rect.top
       });
     }
-    setShowTooltip(true);
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setShowTooltip(true);
+    }, 400);
+  };
+
+  const handleMouseLeave = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setShowTooltip(false);
   };
 
   const getContrastColor = (hexColor: string) => {
@@ -334,7 +351,7 @@ function AppointmentBar({
       ref={barRef}
       className="relative"
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseLeave={handleMouseLeave}
       onDoubleClick={onDoubleClick}
     >
       <div
