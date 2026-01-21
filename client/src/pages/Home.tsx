@@ -8,6 +8,7 @@ import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
 import { EmployeeManagement } from "@/components/EmployeeManagement";
 import { ProjectForm } from "@/components/ProjectForm";
+import ProjectList from "@/components/ProjectList";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { addMonths, subMonths, addWeeks, subWeeks, format, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
 import { de } from "date-fns/locale";
@@ -122,9 +123,7 @@ export default function Home() {
           ) : view === 'appointment' ? (
             <AppointmentForm onCancel={() => setView('month')} />
           ) : view === 'projectList' ? (
-            <div className="h-full flex items-center justify-center text-slate-400">
-              <p>Projektliste - Demo Platzhalter</p>
-            </div>
+            <ProjectList onCancel={() => setView('month')} />
           ) : view === 'week' ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <WeekGrid 
