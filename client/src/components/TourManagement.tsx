@@ -15,9 +15,9 @@ interface TourManagementProps {
 }
 
 const initialTours: Tour[] = [
-  { id: "1", name: "Tour Nord", color: "#4A90A4" },
-  { id: "2", name: "Tour Süd", color: "#E8B86D" },
-  { id: "3", name: "Tour West", color: "#7BA05B" },
+  { id: "1", name: "Tour 1", color: "#4A90A4" },
+  { id: "2", name: "Tour 2", color: "#E8B86D" },
+  { id: "3", name: "Tour 3", color: "#7BA05B" },
 ];
 
 function TourCard({
@@ -108,6 +108,7 @@ function TourCard({
 
 export function TourManagement({ onCancel }: TourManagementProps) {
   const [tours, setTours] = useState<Tour[]>(initialTours);
+  const [tourCounter, setTourCounter] = useState(initialTours.length + 1);
 
   const handleDelete = (id: string) => {
     setTours(tours.filter((t) => t.id !== id));
@@ -125,7 +126,8 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     const newId = String(Date.now());
     const colors = ["#D4A574", "#8B9DC3", "#C49A6C", "#6B8E8E", "#B8860B"];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    setTours([...tours, { id: newId, name: "Neue Tour", color: randomColor }]);
+    setTours([...tours, { id: newId, name: `Tour ${tourCounter}`, color: randomColor }]);
+    setTourCounter(tourCounter + 1);
   };
 
   return (
