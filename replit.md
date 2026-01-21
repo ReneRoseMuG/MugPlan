@@ -39,16 +39,25 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
   - Team shortcuts to quickly assign multiple employees
   - Demo form only - no database integration yet
 - **Calendar Appointments**: Extended CalendarGrid with demo appointment visualization
+  - **Virtual Tour Slots**: Each day has 3 fixed slots for Tour 1, Tour 2, Tour 3
+    - Appointments automatically placed in their tour slot
+    - Maintains consistent vertical alignment across days
+    - Multi-day appointments stay in same slot position
   - Appointments appear as colored bars (color from assigned Tour)
-  - Customer name (lastname) displayed on left, PLZ on right
-  - Multi-day appointments span across calendar days
-  - Vertical sorting by tour name
+  - Customer name display: 
+    - Single-day: Last name only + PLZ
+    - Multi-day: Full name (Nachname, Vorname) + PLZ
+  - Multi-day appointments span as continuous bars across calendar days
+  - Appointments crossing week boundaries continue in next week row
+  - PLZ always visible on right side (mandatory field)
   - Mouseover tooltip showing:
     - Customer info (name, company, address, phone) - compact layout
     - Employee chips (initials in colored circles)
     - Tour info with color indicator
+    - **Date display**: Start date (+ end date for multi-day appointments)
     - Project description text
     - Attachment previews with thumbnails
+    - **Smart positioning**: Tooltip flips upward when near screen bottom
 
 ## User Preferences
 
