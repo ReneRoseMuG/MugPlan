@@ -21,6 +21,7 @@ import { MapPin, Phone, Users, Route, FileText, Paperclip, Eye, Calendar } from 
 interface CalendarGridProps {
   currentDate: Date;
   onNewAppointment?: () => void;
+  onAppointmentDoubleClick?: () => void;
 }
 
 interface DemoAppointment {
@@ -290,7 +291,8 @@ function AppointmentBar({
   totalDaysInRow,
   isFirstDay,
   isLastDay,
-  spanDays
+  spanDays,
+  onDoubleClick
 }: { 
   appointment: DemoAppointment;
   dayIndex: number;
@@ -298,6 +300,7 @@ function AppointmentBar({
   isFirstDay: boolean;
   isLastDay: boolean;
   spanDays: number;
+  onDoubleClick?: () => void;
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -332,6 +335,7 @@ function AppointmentBar({
       className="relative"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setShowTooltip(false)}
+      onDoubleClick={onDoubleClick}
     >
       <div
         className="h-6 flex items-center justify-between px-2 text-xs font-medium cursor-pointer transition-all hover:brightness-95"
@@ -363,7 +367,7 @@ function AppointmentBar({
   );
 }
 
-export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProps) {
+export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubleClick }: CalendarGridProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -503,6 +507,7 @@ export function CalendarGrid({ currentDate, onNewAppointment }: CalendarGridProp
                             isFirstDay={isFirst}
                             isLastDay={isLast}
                             spanDays={spanDays}
+                            onDoubleClick={onAppointmentDoubleClick}
                           />
                         );
                       })}

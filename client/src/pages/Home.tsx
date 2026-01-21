@@ -147,7 +147,11 @@ export default function Home() {
           ) : view === 'week' ? renderWeekView() : 
            view === 'year' ? renderYearView() : (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
-              <CalendarGrid currentDate={currentDate} />
+              <CalendarGrid 
+                currentDate={currentDate} 
+                onNewAppointment={() => setView('appointment')}
+                onAppointmentDoubleClick={() => setView('project')}
+              />
             </div>
           )}
         </div>
