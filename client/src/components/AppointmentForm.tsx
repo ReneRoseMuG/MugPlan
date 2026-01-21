@@ -228,33 +228,42 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                   <FolderKanban className="w-4 h-4" />
                   Projekt
                 </span>
-                <Popover open={projectPopoverOpen} onOpenChange={setProjectPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button size="sm" variant="ghost" data-testid="button-add-project">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-2" align="end">
-                    <Select 
-                      value={selectedProject || ""} 
-                      onValueChange={(val) => {
-                        setSelectedProject(val);
-                        setProjectPopoverOpen(false);
-                      }}
-                    >
-                      <SelectTrigger data-testid="select-project">
-                        <SelectValue placeholder="Projekt wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {demoProjects.map(project => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </PopoverContent>
-                </Popover>
+                {!currentProject && (
+                  <Popover open={projectPopoverOpen} onOpenChange={setProjectPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="ghost" data-testid="button-add-project">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-3" align="end">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-slate-700 mb-2">Projekt wählen</p>
+                        {demoProjects.map(project => {
+                          const customer = demoCustomers.find(c => c.id === project.customerId);
+                          return (
+                            <button
+                              key={project.id}
+                              onClick={() => {
+                                setSelectedProject(project.id);
+                                setProjectPopoverOpen(false);
+                              }}
+                              className="w-full text-left p-3 rounded-lg border border-border hover:bg-slate-50 transition-colors"
+                              data-testid={`button-select-project-${project.id}`}
+                            >
+                              <p className="font-medium text-slate-800">{project.name}</p>
+                              {customer && (
+                                <p className="text-sm text-slate-500 mt-1">
+                                  {customer.firstName} {customer.name}
+                                  {customer.company && ` · ${customer.company}`}
+                                </p>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </h3>
               {currentProject ? (
                 <div 
