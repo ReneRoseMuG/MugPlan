@@ -221,9 +221,9 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-6 items-start">
             <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center justify-between">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center justify-between min-h-[32px]">
                 <span className="flex items-center gap-2">
                   <FolderKanban className="w-4 h-4" />
                   Projekt
@@ -313,7 +313,7 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2 min-h-[32px]">
                 <UserCircle className="w-4 h-4" />
                 Kunde
               </h3>
