@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { 
   X, 
   FolderKanban, 
@@ -312,34 +312,13 @@ Der Kunde wünscht eine *schnelle Abwicklung* und regelmäßige Updates.`);
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                   <FileText className="w-4 h-4" />
-                  Beschreibung (Markdown)
+                  Beschreibung
                 </h3>
-                <Textarea 
+                <RichTextEditor
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[200px] font-mono text-sm"
-                  placeholder="Projektbeschreibung mit Markdown-Formatierung..."
-                  data-testid="textarea-description"
+                  onChange={setDescription}
+                  placeholder="Projektbeschreibung eingeben..."
                 />
-                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border prose prose-sm max-w-none dark:prose-invert">
-                  <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">Vorschau</div>
-                  <div className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
-                    {description.split('\n').map((line, i) => {
-                      if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-bold mt-4 mb-2">{line.slice(3)}</h2>;
-                      if (line.startsWith('### ')) return <h3 key={i} className="text-base font-semibold mt-3 mb-1">{line.slice(4)}</h3>;
-                      if (line.startsWith('- ')) return <li key={i} className="ml-4">{line.slice(2)}</li>;
-                      if (line.includes('**')) {
-                        const parts = line.split('**');
-                        return <p key={i}>{parts.map((part, j) => j % 2 === 1 ? <strong key={j}>{part}</strong> : part)}</p>;
-                      }
-                      if (line.includes('*')) {
-                        const parts = line.split('*');
-                        return <p key={i}>{parts.map((part, j) => j % 2 === 1 ? <em key={j}>{part}</em> : part)}</p>;
-                      }
-                      return line ? <p key={i}>{line}</p> : <br key={i} />;
-                    })}
-                  </div>
-                </div>
               </div>
 
               <div className="space-y-4">
