@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { 
   format, 
   startOfMonth, 
@@ -162,23 +163,13 @@ const demoAppointments: DemoAppointment[] = [
   }
 ];
 
-function AppointmentTooltip({ appointment }: { appointment: DemoAppointment }) {
-  const getContrastColor = (hexColor: string) => {
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5 ? "#1a1a1a" : "#ffffff";
-  };
-
-  return (
+function AppointmentTooltip({ appointment, position }: { appointment: DemoAppointment; position: { x: number; y: number } }) {
+  return createPortal(
     <div 
-      className="absolute z-50 w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-0 overflow-hidden pointer-events-none"
+      className="fixed z-[9999] w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-0 overflow-hidden pointer-events-none"
       style={{ 
-        top: "100%", 
-        left: "50%", 
-        transform: "translateX(-50%)",
-        marginTop: "8px"
+        top: position.y + 10,
+        left: Math.min(position.x, window.innerWidth - 340),
       }}
     >
       <div className="flex">
@@ -268,7 +259,8 @@ function AppointmentTooltip({ appointment }: { appointment: DemoAppointment }) {
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -288,6 +280,19 @@ function AppointmentBar({
   spanDays: number;
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const barRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (barRef.current) {
+      const rect = barRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left,
+        y: rect.bottom
+      });
+    }
+    setShowTooltip(true);
+  };
 
   const getContrastColor = (hexColor: string) => {
     const r = parseInt(hexColor.slice(1, 3), 16);
@@ -303,8 +308,9 @@ function AppointmentBar({
 
   return (
     <div 
+      ref={barRef}
       className="relative"
-      onMouseEnter={() => setShowTooltip(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setShowTooltip(false)}
     >
       <div
@@ -329,7 +335,7 @@ function AppointmentBar({
       </div>
       
       {showTooltip && isFirstDay && (
-        <AppointmentTooltip appointment={appointment} />
+        <AppointmentTooltip appointment={appointment} position={tooltipPosition} />
       )}
     </div>
   );
