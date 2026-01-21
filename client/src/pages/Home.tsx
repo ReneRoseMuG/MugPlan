@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
+import { WeekGrid } from "@/components/WeekGrid";
 import { CustomerDetail } from "@/components/CustomerDetail";
 import { CustomerData } from "@/components/CustomerData";
 import { TourManagement } from "@/components/TourManagement";
@@ -8,7 +9,7 @@ import { TeamManagement } from "@/components/TeamManagement";
 import { EmployeeManagement } from "@/components/EmployeeManagement";
 import { ProjectForm } from "@/components/ProjectForm";
 import { AppointmentForm } from "@/components/AppointmentForm";
-import { addMonths, subMonths, format, startOfWeek, endOfWeek, eachDayOfInterval, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
+import { addMonths, subMonths, addWeeks, subWeeks, format, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -21,13 +22,13 @@ export default function Home() {
   // Handlers for navigation
   const next = () => {
     if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
-    if (view === 'week') setCurrentDate(addMonths(currentDate, 1 / 4)); // Simplistic week jump
+    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
     if (view === 'year') setCurrentDate(addMonths(currentDate, 12));
   };
   
   const prev = () => {
     if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
-    if (view === 'week') setCurrentDate(subMonths(currentDate, 1 / 4));
+    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
     if (view === 'year') setCurrentDate(subMonths(currentDate, 12));
   };
 
@@ -35,26 +36,6 @@ export default function Home() {
     setView(newView);
   };
 
-  const renderWeekView = () => {
-    const start = startOfWeek(currentDate, { locale: de });
-    const end = endOfWeek(currentDate, { locale: de });
-    const days = eachDayOfInterval({ start, end });
-
-    return (
-      <div className="week-grid h-full bg-white rounded-lg overflow-hidden">
-        {days.map((day) => (
-          <div key={day.toString()} className="week-cell bg-white">
-            <div className="text-sm font-bold uppercase text-slate-500 mb-2">
-              {format(day, "EEEE", { locale: de })}
-            </div>
-            <div className="text-3xl font-extrabold text-foreground">
-              {format(day, "d")}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   const renderYearView = () => {
     const start = startOfYear(currentDate);
@@ -144,8 +125,15 @@ export default function Home() {
             <div className="h-full flex items-center justify-center text-slate-400">
               <p>Projektliste - Demo Platzhalter</p>
             </div>
-          ) : view === 'week' ? renderWeekView() : 
-           view === 'year' ? renderYearView() : (
+          ) : view === 'week' ? (
+            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
+              <WeekGrid 
+                currentDate={currentDate} 
+                onNewAppointment={() => setView('appointment')}
+                onAppointmentDoubleClick={() => setView('appointment')}
+              />
+            </div>
+          ) : view === 'year' ? renderYearView() : (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <CalendarGrid 
                 currentDate={currentDate} 
