@@ -254,7 +254,6 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                               {customer && (
                                 <p className="text-sm text-slate-500 mt-1">
                                   {customer.firstName} {customer.name}
-                                  {customer.company && ` · ${customer.company}`}
                                 </p>
                               )}
                             </button>
