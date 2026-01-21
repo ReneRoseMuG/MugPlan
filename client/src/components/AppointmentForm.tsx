@@ -190,9 +190,6 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                   />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Mehrtägige Termine werden im Kalender als durchgehender Balken dargestellt
-              </p>
             </div>
 
             <div className="space-y-4">
