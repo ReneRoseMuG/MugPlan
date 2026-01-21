@@ -150,7 +150,7 @@ export default function Home() {
               <CalendarGrid 
                 currentDate={currentDate} 
                 onNewAppointment={() => setView('appointment')}
-                onAppointmentDoubleClick={() => setView('project')}
+                onAppointmentDoubleClick={() => setView('appointment')}
               />
             </div>
           )}

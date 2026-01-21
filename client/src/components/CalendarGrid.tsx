@@ -448,11 +448,8 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
     setDraggedAppointment(null);
   };
 
-  const canDropOnSlot = (targetDate: Date, targetTourId: string, appointmentId?: string): boolean => {
-    const aptId = appointmentId || draggedAppointment;
-    if (!aptId) return false;
-    
-    const apt = appointments.find(a => a.id === aptId);
+  const canDropOnDay = (targetDate: Date, appointmentId: string): boolean => {
+    const apt = appointments.find(a => a.id === appointmentId);
     if (!apt) return false;
     
     const duration = differenceInDays(parseISO(apt.endDate), parseISO(apt.startDate));
@@ -462,8 +459,8 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
       checkDate.setDate(checkDate.getDate() + i);
       
       const existingApt = appointments.find(a => {
-        if (a.id === aptId) return false;
-        if (a.tourId !== targetTourId) return false;
+        if (a.id === appointmentId) return false;
+        if (a.tourId !== apt.tourId) return false;
         const start = parseISO(a.startDate);
         const end = parseISO(a.endDate);
         return isWithinInterval(checkDate, { start, end }) || isSameDay(checkDate, start) || isSameDay(checkDate, end);
@@ -474,11 +471,11 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
     return true;
   };
 
-  const handleDrop = (e: React.DragEvent, targetDate: Date, targetTourId: string) => {
+  const handleDrop = (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
     const appointmentId = e.dataTransfer.getData("text/plain");
     
-    if (!canDropOnSlot(targetDate, targetTourId, appointmentId)) {
+    if (!canDropOnDay(targetDate, appointmentId)) {
       setDraggedAppointment(null);
       return;
     }
@@ -491,24 +488,23 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
       const newEndDate = new Date(targetDate);
       newEndDate.setDate(newEndDate.getDate() + duration);
       
-      const targetTour = TOUR_SLOTS.find(t => t.id === targetTourId);
-      
       return {
         ...apt,
         startDate: newStartDate,
         endDate: format(newEndDate, "yyyy-MM-dd"),
-        tourId: targetTourId,
-        tourName: targetTour?.name || apt.tourName,
-        tourColor: targetTour?.color || apt.tourColor,
       };
     }));
     
     setDraggedAppointment(null);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+    if (draggedAppointment && canDropOnDay(targetDate, draggedAppointment)) {
+      e.dataTransfer.dropEffect = "move";
+    } else {
+      e.dataTransfer.dropEffect = "none";
+    }
   };
 
   return (
@@ -548,6 +544,8 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
                       ${!isCurrentMonth ? "bg-muted/10 text-muted-foreground/40" : "bg-white text-foreground hover:bg-slate-50"}
                       ${dayIdx === 6 ? "border-r-0" : ""} 
                     `}
+                    onDragOver={(e) => handleDragOver(e, day)}
+                    onDrop={(e) => handleDrop(e, day)}
                     data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
                   >
                     <div className="flex justify-between items-start mb-1">
@@ -573,15 +571,12 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
                     <div className="space-y-0.5">
                       {TOUR_SLOTS.map(tour => {
                         const apt = getAppointmentForDayAndTour(day, tour.id);
-                        const canDrop = draggedAppointment && canDropOnSlot(day, tour.id);
                         
                         if (!apt) {
                           return (
                             <div 
                               key={tour.id} 
-                              className={`h-6 rounded transition-colors ${canDrop ? 'bg-primary/20 border-2 border-dashed border-primary' : ''}`}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, day, tour.id)}
+                              className="h-6"
                               data-testid={`slot-empty-${tour.id}-${format(day, 'yyyy-MM-dd')}`}
                             />
                           );
