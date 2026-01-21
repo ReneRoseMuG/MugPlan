@@ -319,10 +319,13 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
               </h3>
               {currentCustomer ? (
                 <div 
-                  className="p-4 bg-slate-50 rounded-lg border border-border"
+                  className="p-4 bg-slate-50 rounded-lg border border-border relative"
                   data-testid="customer-info"
                 >
-                  <div className="flex items-start gap-3">
+                  <Badge variant="secondary" className="absolute top-3 right-3" data-testid="badge-plz">
+                    PLZ: {currentCustomer.plz}
+                  </Badge>
+                  <div className="flex items-start gap-3 pr-16">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <UserCircle className="w-5 h-5 text-primary" />
                     </div>
@@ -343,9 +346,6 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="mt-2" data-testid="badge-plz">
-                    PLZ: {currentCustomer.plz}
-                  </Badge>
                 </div>
               ) : (
                 <div className="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center text-sm text-muted-foreground">
