@@ -116,7 +116,7 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
   const handleAssignTeam = (teamId: string) => {
     const team = demoTeams.find(t => t.id === teamId);
     if (team) {
-      const newEmployees = [...new Set([...assignedEmployees, ...team.members])];
+      const newEmployees = Array.from(new Set([...assignedEmployees, ...team.members]));
       setAssignedEmployees(newEmployees);
     }
   };

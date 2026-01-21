@@ -45,8 +45,8 @@ interface DemoAppointment {
 const demoAppointments: DemoAppointment[] = [
   {
     id: "a1",
-    startDate: "2025-01-20",
-    endDate: "2025-01-20",
+    startDate: "2026-01-20",
+    endDate: "2026-01-20",
     tourId: "1",
     tourName: "Tour 1",
     tourColor: "#4A90A4",
@@ -70,8 +70,8 @@ const demoAppointments: DemoAppointment[] = [
   },
   {
     id: "a2",
-    startDate: "2025-01-21",
-    endDate: "2025-01-23",
+    startDate: "2026-01-21",
+    endDate: "2026-01-23",
     tourId: "2",
     tourName: "Tour 2",
     tourColor: "#E8B86D",
@@ -92,8 +92,8 @@ const demoAppointments: DemoAppointment[] = [
   },
   {
     id: "a3",
-    startDate: "2025-01-22",
-    endDate: "2025-01-22",
+    startDate: "2026-01-22",
+    endDate: "2026-01-22",
     tourId: "1",
     tourName: "Tour 1",
     tourColor: "#4A90A4",
@@ -113,8 +113,8 @@ const demoAppointments: DemoAppointment[] = [
   },
   {
     id: "a4",
-    startDate: "2025-01-24",
-    endDate: "2025-01-24",
+    startDate: "2026-01-24",
+    endDate: "2026-01-24",
     tourId: "3",
     tourName: "Tour 3",
     tourColor: "#7BA05B",
@@ -138,8 +138,8 @@ const demoAppointments: DemoAppointment[] = [
   },
   {
     id: "a5",
-    startDate: "2025-01-27",
-    endDate: "2025-01-29",
+    startDate: "2026-01-27",
+    endDate: "2026-01-29",
     tourId: "2",
     tourName: "Tour 2",
     tourColor: "#E8B86D",

@@ -27,9 +27,28 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
 - **Customer Management Prototype**: Added two customer views accessible via a popover menu on the "Kunden" button:
   - **Stammdaten** (`CustomerDetail.tsx`): Basic customer form with personal data, contact, address, and status
   - **Kundendaten** (`CustomerData.tsx`): Extended view with customer form + appointment list (read-only) + notes journal with delete functionality
-- **Tour Management Prototype**: Added tour management via "Touren Übersicht" button
+- **Tour Management Prototype**: Added tour management via "Touren" button under Mitarbeiter Verwaltung
   - Color-coded cards with name field, color picker, and delete button
   - Tours serve as visual identifiers for regionally grouped appointments
+  - Automatic naming with sequential index (Tour 1, Tour 2, Tour 3...)
+- **Appointment Form Prototype**: Added "Neuer Termin" demo form (`AppointmentForm.tsx`)
+  - Date range selection (start date, end date - defaults to same day)
+  - Tour assignment with color preview
+  - Project selection with derived customer relationship
+  - Employee assignment as small chips with initials and tour colors
+  - Team shortcuts to quickly assign multiple employees
+  - Demo form only - no database integration yet
+- **Calendar Appointments**: Extended CalendarGrid with demo appointment visualization
+  - Appointments appear as colored bars (color from assigned Tour)
+  - Customer name (lastname) displayed on left, PLZ on right
+  - Multi-day appointments span across calendar days
+  - Vertical sorting by tour name
+  - Mouseover tooltip showing:
+    - Customer info (name, company, address, phone) - compact layout
+    - Employee chips (initials in colored circles)
+    - Tour info with color indicator
+    - Project description text
+    - Attachment previews with thumbnails
 
 ## User Preferences
 
