@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   X, 
   Calendar,
@@ -95,13 +96,14 @@ function EmployeeChip({
 
 export function AppointmentForm({ onCancel, initialDate, fromProject }: AppointmentFormProps) {
   const [selectedTour, setSelectedTour] = useState<string>("1");
-  const [selectedProject, setSelectedProject] = useState<string>("1");
+  const [selectedProject, setSelectedProject] = useState<string | null>("1");
   const [assignedEmployees, setAssignedEmployees] = useState<string[]>(["e1", "e2"]);
   const [startDate, setStartDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
+  const [projectPopoverOpen, setProjectPopoverOpen] = useState(false);
 
   const currentTour = demoTours.find(t => t.id === selectedTour);
-  const currentProject = demoProjects.find(p => p.id === selectedProject);
+  const currentProject = selectedProject ? demoProjects.find(p => p.id === selectedProject) : null;
   const currentCustomer = demoCustomers.find(c => c.id === currentProject?.customerId);
 
   const handleRemoveEmployee = (empId: string) => {
@@ -189,45 +191,98 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                 <Route className="w-4 h-4" />
                 Tour zuweisen
               </h3>
-              <Select value={selectedTour} onValueChange={setSelectedTour}>
-                <SelectTrigger data-testid="select-tour">
-                  <SelectValue placeholder="Tour wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {demoTours.map(tour => (
-                    <SelectItem key={tour.id} value={tour.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded" 
-                          style={{ backgroundColor: tour.color }}
-                        />
-                        {tour.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Tour</Label>
+                <Select value={selectedTour} onValueChange={setSelectedTour}>
+                  <SelectTrigger data-testid="select-tour">
+                    <SelectValue placeholder="Tour wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {demoTours.map(tour => (
+                      <SelectItem key={tour.id} value={tour.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded" 
+                            style={{ backgroundColor: tour.color }}
+                          />
+                          {tour.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                <FolderKanban className="w-4 h-4" />
-                Projekt
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <FolderKanban className="w-4 h-4" />
+                  Projekt
+                </span>
+                <Popover open={projectPopoverOpen} onOpenChange={setProjectPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button size="sm" variant="ghost" data-testid="button-add-project">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-2" align="end">
+                    <Select 
+                      value={selectedProject || ""} 
+                      onValueChange={(val) => {
+                        setSelectedProject(val);
+                        setProjectPopoverOpen(false);
+                      }}
+                    >
+                      <SelectTrigger data-testid="select-project">
+                        <SelectValue placeholder="Projekt wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {demoProjects.map(project => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </PopoverContent>
+                </Popover>
               </h3>
-              <Select value={selectedProject} onValueChange={setSelectedProject}>
-                <SelectTrigger data-testid="select-project">
-                  <SelectValue placeholder="Projekt wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {demoProjects.map(project => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {currentProject ? (
+                <div 
+                  className="p-4 bg-slate-50 rounded-lg border border-border relative"
+                  data-testid="project-info"
+                >
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedProject(null)}
+                    className="absolute top-2 right-2"
+                    data-testid="button-remove-project"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <FolderKanban className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 pr-6">
+                      <p className="font-semibold text-slate-800" data-testid="text-project-name">
+                        {currentProject.name}
+                      </p>
+                      <p className="text-sm text-slate-500 mt-1">
+                        Projekt-ID: {currentProject.id}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center text-sm text-muted-foreground">
+                  Kein Projekt ausgewählt
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -235,7 +290,7 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                 <UserCircle className="w-4 h-4" />
                 Kunde
               </h3>
-              {currentCustomer && (
+              {currentCustomer ? (
                 <div 
                   className="p-4 bg-slate-50 rounded-lg border border-border"
                   data-testid="customer-info"
@@ -264,6 +319,10 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                   <Badge variant="secondary" className="mt-2" data-testid="badge-plz">
                     PLZ: {currentCustomer.plz}
                   </Badge>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center text-sm text-muted-foreground">
+                  Kein Kunde (Projekt wählen)
                 </div>
               )}
             </div>
