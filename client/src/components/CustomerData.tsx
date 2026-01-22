@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Phone, MapPin, Save, X, Calendar, StickyNote, Plus } from "lucide-react";
+import { User, Phone, MapPin, Save, X, Calendar } from "lucide-react";
+import { NotesSection, Note } from "@/components/NotesSection";
 
 interface CustomerDataProps {
   onCancel?: () => void;
@@ -16,41 +18,35 @@ const demoAppointments = [
   { id: "3", date: "05.02.2026" },
 ];
 
-const demoNotes = [
+const initialNotes: Note[] = [
   {
     id: "1",
     text: "Kunde bevorzugt Vormittagstermine zwischen 9 und 12 Uhr. Parkplatz vor dem Haus verfügbar.",
+    createdAt: "20.01.2026",
   },
   {
     id: "2", 
     text: "Rückruf am Montag vereinbart. Angebot für Zusatzleistungen besprechen.",
+    createdAt: "18.01.2026",
   },
 ];
 
-function NoteCard({ 
-  text, 
-  onDelete 
-}: { 
-  text: string; 
-  onDelete: () => void;
-}) {
-  return (
-    <div className="relative bg-white border border-border rounded-lg p-4 shadow-sm">
-      <button
-        onClick={onDelete}
-        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/10 text-slate-400 hover:text-destructive transition-colors"
-        data-testid="button-delete-note"
-      >
-        <X className="w-4 h-4" />
-      </button>
-      <p className="text-sm text-slate-700 pr-6">
-        {text}
-      </p>
-    </div>
-  );
-}
-
 export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
+
+  const handleAddNote = (text: string) => {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    setNotes([
+      { id: Date.now().toString(), text, createdAt: dateStr },
+      ...notes
+    ]);
+  };
+
+  const handleDeleteNote = (id: string) => {
+    setNotes(notes.filter(n => n.id !== id));
+  };
+
   return (
     <div className="h-full p-8 overflow-auto">
       <div className="max-w-5xl grid grid-cols-3 gap-6">
@@ -201,27 +197,12 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
           </Card>
 
           <Card>
-            <CardHeader className="border-b border-border py-4">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <StickyNote className="w-4 h-4" />
-                  Notizen
-                </CardTitle>
-                <Button size="icon" variant="ghost" data-testid="button-new-note">
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
             <CardContent className="pt-4">
-              <div className="space-y-3" data-testid="list-notes">
-                {demoNotes.map((note) => (
-                  <NoteCard 
-                    key={note.id} 
-                    text={note.text} 
-                    onDelete={() => {}} 
-                  />
-                ))}
-              </div>
+              <NotesSection
+                notes={notes}
+                onAdd={handleAddNote}
+                onDelete={handleDeleteNote}
+              />
             </CardContent>
           </Card>
         </div>

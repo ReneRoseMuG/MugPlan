@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { NotesSection, Note } from "@/components/NotesSection";
 import { 
   X, 
   FolderKanban, 
@@ -12,7 +13,6 @@ import {
   FileText, 
   Calendar, 
   Paperclip, 
-  StickyNote,
   Plus,
   Eye,
   Download,
@@ -41,10 +41,10 @@ const mockCustomer = {
   phone: "+49 123 456789",
 };
 
-const mockNotes = [
-  { id: "1", text: "Kunde wünscht Lieferung vor 10 Uhr", createdAt: "2024-01-15" },
-  { id: "2", text: "Rückruf vereinbart für Montag", createdAt: "2024-01-14" },
-  { id: "3", text: "Sonderkonditionen besprochen", createdAt: "2024-01-12" },
+const initialNotes: Note[] = [
+  { id: "1", text: "Kunde wünscht Lieferung vor 10 Uhr", createdAt: "15.01.2026" },
+  { id: "2", text: "Rückruf vereinbart für Montag", createdAt: "14.01.2026" },
+  { id: "3", text: "Sonderkonditionen besprochen", createdAt: "12.01.2026" },
 ];
 
 const mockAppointments = [
@@ -57,21 +57,6 @@ const mockDocuments = [
   { id: "3", name: "Skizze_Grundriss.jpg", type: "image/jpeg", size: "1.2 MB", preview: null },
 ];
 
-function NoteCard({ id, text, date, onDelete }: { id: string; text: string; date: string; onDelete: () => void }) {
-  return (
-    <div className="relative bg-white dark:bg-slate-800 border border-border rounded-lg p-4 shadow-sm" data-testid={`note-card-${id}`}>
-      <button
-        onClick={onDelete}
-        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/10 text-slate-400 hover:text-destructive transition-colors"
-        data-testid={`button-delete-note-${id}`}
-      >
-        <X className="w-4 h-4" />
-      </button>
-      <p className="text-sm text-slate-700 dark:text-slate-300 pr-6" data-testid={`text-note-${id}`}>{text}</p>
-      <p className="text-xs text-slate-400 mt-2" data-testid={`text-note-date-${id}`}>{date}</p>
-    </div>
-  );
-}
 
 function DocumentCard({ 
   doc, 
@@ -187,25 +172,23 @@ function DocumentPreviewDialog({
 }
 
 export function ProjectForm({ onCancel }: ProjectFormProps) {
-  const [notes, setNotes] = useState(mockNotes);
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [documents, setDocuments] = useState(mockDocuments);
-  const [newNote, setNewNote] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [description, setDescription] = useState(`<b>Projektbeschreibung</b><br><br>Dies ist ein Beispielprojekt für die Demonstration des Formulars.<br><br><b>Anforderungen</b><br><ul><li>Lieferung bis Ende Februar</li><li>Installation vor Ort</li><li>Schulung der Mitarbeiter</li></ul><br><b>Besondere Hinweise</b><br>Der Kunde wünscht eine schnelle Abwicklung und regelmäßige Updates.`);
 
-  const handleDeleteNote = (id: string) => {
-    setNotes(notes.filter(n => n.id !== id));
+  const handleAddNote = (text: string) => {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    setNotes([
+      { id: Date.now().toString(), text, createdAt: dateStr },
+      ...notes
+    ]);
   };
 
-  const handleAddNote = () => {
-    if (newNote.trim()) {
-      setNotes([
-        { id: Date.now().toString(), text: newNote, createdAt: new Date().toISOString().split('T')[0] },
-        ...notes
-      ]);
-      setNewNote("");
-    }
+  const handleDeleteNote = (id: string) => {
+    setNotes(notes.filter(n => n.id !== id));
   };
 
   const handleDeleteDocument = (id: string) => {
@@ -356,35 +339,11 @@ export function ProjectForm({ onCancel }: ProjectFormProps) {
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <StickyNote className="w-4 h-4" />
-                  Notizen ({notes.length})
-                </h3>
-                <div className="flex gap-2">
-                  <Input 
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Neue Notiz..."
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-                    data-testid="input-new-note"
-                  />
-                  <Button onClick={handleAddNote} data-testid="button-add-note">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {notes.map(note => (
-                    <NoteCard 
-                      key={note.id}
-                      id={note.id}
-                      text={note.text} 
-                      date={note.createdAt}
-                      onDelete={() => handleDeleteNote(note.id)} 
-                    />
-                  ))}
-                </div>
-              </div>
+              <NotesSection
+                notes={notes}
+                onAdd={handleAddNote}
+                onDelete={handleDeleteNote}
+              />
             </div>
           </div>
 
