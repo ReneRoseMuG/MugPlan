@@ -13,7 +13,9 @@ import {
   differenceInDays
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { MapPin, Phone, Users, Route, FileText, Paperclip, Eye, Calendar } from "lucide-react";
+import { MapPin, Phone, Users, Route, FileText, Paperclip, Eye, Calendar, Map } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapOverlay } from "@/components/MapOverlay";
 
 interface WeekGridProps {
   currentDate: Date;
@@ -387,6 +389,7 @@ function WeekAppointmentBar({
 
 export function WeekGrid({ currentDate, onNewAppointment, onAppointmentDoubleClick }: WeekGridProps) {
   const [appointments, setAppointments] = useState<DemoAppointment[]>(initialAppointments);
+  const [showMapOverlay, setShowMapOverlay] = useState(false);
   const [draggedAppointment, setDraggedAppointment] = useState<string | null>(null);
   
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1, locale: de });
@@ -500,6 +503,16 @@ export function WeekGrid({ currentDate, onNewAppointment, onAppointmentDoubleCli
             {format(weekStart, "d. MMMM", { locale: de })} - {format(weekEnd, "d. MMMM yyyy", { locale: de })}
           </span>
         </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2"
+          onClick={() => setShowMapOverlay(true)}
+          data-testid="button-show-map-week"
+        >
+          <Map className="w-4 h-4" />
+          Auf Karte anzeigen
+        </Button>
       </div>
 
       <div className="flex-1 grid grid-cols-7 divide-x divide-border/30">
@@ -591,6 +604,7 @@ export function WeekGrid({ currentDate, onNewAppointment, onAppointmentDoubleCli
           );
         })}
       </div>
+      <MapOverlay isOpen={showMapOverlay} onClose={() => setShowMapOverlay(false)} />
     </div>
   );
 }
