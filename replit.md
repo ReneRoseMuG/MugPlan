@@ -27,10 +27,11 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
 - **Customer Management Prototype**: Added two customer views accessible via a popover menu on the "Kunden" button:
   - **Stammdaten** (`CustomerDetail.tsx`): Basic customer form with personal data, contact, address, and status
   - **Kundendaten** (`CustomerData.tsx`): Extended view with customer form + appointment list (read-only) + notes journal with delete functionality
-- **Tour Management Prototype**: Added tour management via "Touren" button under Mitarbeiter Verwaltung
-  - Color-coded cards with name field, color picker, and delete button
-  - Tours serve as visual identifiers for regionally grouped appointments
-  - Automatic naming with sequential index (Tour 1, Tour 2, Tour 3...)
+- **Tour Management** (mit Datenbank verbunden): Tour-Verwaltung via "Touren" Button
+  - Color-coded cards mit Name-Label (ReadOnly) und Farbwähler
+  - Tours dienen als visuelle Kennzeichnung für regional gruppierte Termine
+  - Automatische Benennung (Tour 1, Tour 2, Tour 3...)
+  - CRUD-Operationen gegen PostgreSQL-Datenbank
 - **Appointment Form Prototype**: Added "Neuer Termin" demo form (`AppointmentForm.tsx`)
   - Date range selection (start date, end date - defaults to same day)
   - Tour assignment with color preview
@@ -58,6 +59,14 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
     - Project description text
     - Attachment previews with thumbnails
     - **Smart positioning**: Tooltip flips upward when near screen bottom
+
+## Development Guidelines
+
+**Siehe `docs/guardrails.md`** für verbindliche Regeln zu:
+- Rollenverständnis und Vorschlagsmechanismus
+- Modulare UI-Struktur (View/Controller/Service)
+- Datenbank-Operationen und Relationen
+- Keine stillen Seiteneffekte
 
 ## User Preferences
 
@@ -102,16 +111,31 @@ The backend uses a storage abstraction pattern:
 - **Migrations**: Drizzle Kit (`db:push` command)
 - **Schema Location**: `shared/schema.ts`
 
-Current schema includes an `events` table with:
+Current schema includes:
+
+**events** table:
 - `id` (serial primary key)
 - `title` (text)
 - `date` (date)
 
+**tours** table (mit Datenbank verbunden):
+- `id` (serial primary key)
+- `name` (text, auto-generiert: "Tour 1", "Tour 2"...)
+- `color` (text, Hex-Farbwert)
+
 ### API Structure
 Routes are defined declaratively in `shared/routes.ts` with Zod schemas for validation:
+
+**Events:**
 - `GET /api/events` - List all events
 - `POST /api/events` - Create an event
 - `DELETE /api/events/:id` - Delete an event
+
+**Tours:**
+- `GET /api/tours` - List all tours
+- `POST /api/tours` - Create a tour (name auto-generated)
+- `PATCH /api/tours/:id` - Update tour color
+- `DELETE /api/tours/:id` - Delete a tour
 
 ## External Dependencies
 

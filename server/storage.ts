@@ -1,15 +1,23 @@
 import { db } from "./db";
 import {
   events,
+  tours,
   type InsertEvent,
-  type Event
+  type Event,
+  type Tour,
+  type InsertTour,
+  type UpdateTour
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, max } from "drizzle-orm";
 
 export interface IStorage {
   getEvents(): Promise<Event[]>;
   createEvent(event: InsertEvent): Promise<Event>;
   deleteEvent(id: number): Promise<void>;
+  getTours(): Promise<Tour[]>;
+  createTour(tour: InsertTour): Promise<Tour>;
+  updateTour(id: number, data: UpdateTour): Promise<Tour | null>;
+  deleteTour(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -24,6 +32,28 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEvent(id: number): Promise<void> {
     await db.delete(events).where(eq(events.id, id));
+  }
+
+  async getTours(): Promise<Tour[]> {
+    return await db.select().from(tours).orderBy(tours.id);
+  }
+
+  async createTour(insertTour: InsertTour): Promise<Tour> {
+    const result = await db.select({ maxId: max(tours.id) }).from(tours);
+    const nextNumber = (result[0]?.maxId ?? 0) + 1;
+    const name = `Tour ${nextNumber}`;
+    
+    const [tour] = await db.insert(tours).values({ ...insertTour, name }).returning();
+    return tour;
+  }
+
+  async updateTour(id: number, data: UpdateTour): Promise<Tour | null> {
+    const [tour] = await db.update(tours).set(data).where(eq(tours.id, id)).returning();
+    return tour || null;
+  }
+
+  async deleteTour(id: number): Promise<void> {
+    await db.delete(tours).where(eq(tours.id, id));
   }
 }
 

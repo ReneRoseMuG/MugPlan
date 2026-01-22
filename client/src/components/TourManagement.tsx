@@ -1,35 +1,25 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, Route } from "lucide-react";
-
-interface Tour {
-  id: string;
-  name: string;
-  color: string;
-}
+import { X, Plus, Route, Loader2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { Tour } from "@shared/schema";
 
 interface TourManagementProps {
   onCancel?: () => void;
 }
 
-const initialTours: Tour[] = [
-  { id: "1", name: "Tour 1", color: "#4A90A4" },
-  { id: "2", name: "Tour 2", color: "#E8B86D" },
-  { id: "3", name: "Tour 3", color: "#7BA05B" },
-];
-
 function TourCard({
   tour,
   onDelete,
-  onNameChange,
   onColorChange,
+  isDeleting,
 }: {
   tour: Tour;
   onDelete: () => void;
-  onNameChange: (name: string) => void;
   onColorChange: (color: string) => void;
+  isDeleting: boolean;
 }) {
   const getContrastColor = (hexColor: string) => {
     const r = parseInt(hexColor.slice(1, 3), 16);
@@ -51,6 +41,7 @@ function TourCard({
         size="icon"
         variant="ghost"
         onClick={onDelete}
+        disabled={isDeleting}
         className="absolute top-2 right-2"
         style={{ 
           backgroundColor: `${textColor}20`,
@@ -58,7 +49,7 @@ function TourCard({
         }}
         data-testid={`button-delete-tour-${tour.id}`}
       >
-        <X className="w-4 h-4" />
+        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
       </Button>
 
       <div className="space-y-3 pr-6">
@@ -69,12 +60,12 @@ function TourCard({
           >
             Name
           </label>
-          <Input
-            value={tour.name}
-            onChange={(e) => onNameChange(e.target.value)}
-            className="bg-white/90 border-white/50 text-slate-800"
-            data-testid={`input-tour-name-${tour.id}`}
-          />
+          <div
+            className="bg-white/90 border border-white/50 text-slate-800 rounded-md px-3 py-2 text-sm"
+            data-testid={`label-tour-name-${tour.id}`}
+          >
+            {tour.name}
+          </div>
         </div>
 
         <div>
@@ -107,28 +98,54 @@ function TourCard({
 }
 
 export function TourManagement({ onCancel }: TourManagementProps) {
-  const [tours, setTours] = useState<Tour[]>(initialTours);
-  const [tourCounter, setTourCounter] = useState(initialTours.length + 1);
+  const { data: tours = [], isLoading } = useQuery<Tour[]>({
+    queryKey: ['/api/tours'],
+  });
 
-  const handleDelete = (id: string) => {
-    setTours(tours.filter((t) => t.id !== id));
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const colors = ["#4A90A4", "#E8B86D", "#7BA05B", "#D4A574", "#8B9DC3", "#C49A6C", "#6B8E8E", "#B8860B"];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      return apiRequest('POST', '/api/tours', { color: randomColor });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tours'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, color }: { id: number; color: string }) => {
+      return apiRequest('PATCH', `/api/tours/${id}`, { color });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tours'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/tours/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tours'] });
+    },
+  });
+
+  const handleColorChange = (id: number, color: string) => {
+    updateMutation.mutate({ id, color });
   };
 
-  const handleNameChange = (id: string, name: string) => {
-    setTours(tours.map((t) => (t.id === id ? { ...t, name } : t)));
-  };
-
-  const handleColorChange = (id: string, color: string) => {
-    setTours(tours.map((t) => (t.id === id ? { ...t, color } : t)));
-  };
-
-  const handleAddTour = () => {
-    const newId = String(Date.now());
-    const colors = ["#D4A574", "#8B9DC3", "#C49A6C", "#6B8E8E", "#B8860B"];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    setTours([...tours, { id: newId, name: `Tour ${tourCounter}`, color: randomColor }]);
-    setTourCounter(tourCounter + 1);
-  };
+  if (isLoading) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <Card className="bg-card">
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -152,9 +169,9 @@ export function TourManagement({ onCancel }: TourManagementProps) {
               <TourCard
                 key={tour.id}
                 tour={tour}
-                onDelete={() => handleDelete(tour.id)}
-                onNameChange={(name) => handleNameChange(tour.id, name)}
+                onDelete={() => deleteMutation.mutate(tour.id)}
                 onColorChange={(color) => handleColorChange(tour.id, color)}
+                isDeleting={deleteMutation.isPending}
               />
             ))}
           </div>
@@ -162,24 +179,24 @@ export function TourManagement({ onCancel }: TourManagementProps) {
           <div className="mt-6 flex justify-between items-center">
             <Button
               variant="outline"
-              onClick={handleAddTour}
+              onClick={() => createMutation.mutate()}
+              disabled={createMutation.isPending}
               className="flex items-center gap-2"
               data-testid="button-new-tour"
             >
-              <Plus className="w-4 h-4" />
+              {createMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
               Neue Tour
             </Button>
 
-            <div className="flex gap-2">
-              {onCancel && (
-                <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-tours">
-                  Abbrechen
-                </Button>
-              )}
-              <Button data-testid="button-save-tours">
-                Speichern
+            {onCancel && (
+              <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-tours">
+                Schließen
               </Button>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
