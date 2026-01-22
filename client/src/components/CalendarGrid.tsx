@@ -16,7 +16,9 @@ import {
   differenceInDays
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { MapPin, Phone, Users, Route, FileText, Paperclip, Eye, Calendar } from "lucide-react";
+import { MapPin, Phone, Users, Route, FileText, Paperclip, Eye, Calendar, Map } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapOverlay } from "@/components/MapOverlay";
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -395,6 +397,7 @@ function AppointmentBar({
 
 export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubleClick }: CalendarGridProps) {
   const [appointments, setAppointments] = useState<DemoAppointment[]>(initialAppointments);
+  const [showMapOverlay, setShowMapOverlay] = useState(false);
   const [draggedAppointment, setDraggedAppointment] = useState<string | null>(null);
   
   const monthStart = startOfMonth(currentDate);
@@ -509,6 +512,18 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
 
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
+      <div className="flex items-center justify-end px-4 py-2 border-b border-border/40 bg-muted/20">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2"
+          onClick={() => setShowMapOverlay(true)}
+          data-testid="button-show-map"
+        >
+          <Map className="w-4 h-4" />
+          Auf Karte anzeigen
+        </Button>
+      </div>
       <div className="grid grid-cols-[50px_repeat(7,1fr)] border-b border-border/40 bg-muted/30">
         <div className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider border-r border-border/30">
           KW
@@ -622,6 +637,7 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
           );
         })}
       </div>
+      <MapOverlay isOpen={showMapOverlay} onClose={() => setShowMapOverlay(false)} />
     </div>
   );
 }
