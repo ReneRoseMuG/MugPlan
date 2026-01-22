@@ -218,6 +218,7 @@ export function ProjectForm({ onCancel }: ProjectFormProps) {
         </CardHeader>
         <CardContent className="pt-6">
           <div className="grid grid-cols-3 gap-6">
+            {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
             <div className="col-span-2 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
@@ -294,28 +295,15 @@ export function ProjectForm({ onCancel }: ProjectFormProps) {
                 />
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <Paperclip className="w-4 h-4" />
-                  Dokumente
-                </h3>
-                <div className="space-y-2">
-                  {documents.map((doc, index) => (
-                    <DocumentCard 
-                      key={doc.id} 
-                      doc={doc} 
-                      onPreview={() => handlePreview(index)}
-                      onDelete={() => handleDeleteDocument(doc.id)}
-                    />
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full" data-testid="button-add-document">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Dokument hinzufügen
-                </Button>
-              </div>
+              {/* Notizen unter dem Hauptbereich */}
+              <NotesSection
+                notes={notes}
+                onAdd={handleAddNote}
+                onDelete={handleDeleteNote}
+              />
             </div>
 
+            {/* Rechte Spalte: Termine und Dokumente */}
             <div className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
@@ -339,11 +327,26 @@ export function ProjectForm({ onCancel }: ProjectFormProps) {
                 </p>
               </div>
 
-              <NotesSection
-                notes={notes}
-                onAdd={handleAddNote}
-                onDelete={handleDeleteNote}
-              />
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                  <Paperclip className="w-4 h-4" />
+                  Dokumente
+                </h3>
+                <div className="space-y-2">
+                  {documents.map((doc, index) => (
+                    <DocumentCard 
+                      key={doc.id} 
+                      doc={doc} 
+                      onPreview={() => handlePreview(index)}
+                      onDelete={() => handleDeleteDocument(doc.id)}
+                    />
+                  ))}
+                </div>
+                <Button variant="outline" className="w-full" data-testid="button-add-document">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Dokument hinzufügen
+                </Button>
+              </div>
             </div>
           </div>
 
