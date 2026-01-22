@@ -6,6 +6,18 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Tour } from "@shared/schema";
 
+function hslToHex(h: number, s: number, l: number): string {
+  s /= 100;
+  l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
 interface TourManagementProps {
   onCancel?: () => void;
 }
@@ -104,9 +116,11 @@ export function TourManagement({ onCancel }: TourManagementProps) {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const colors = ["#4A90A4", "#E8B86D", "#7BA05B", "#D4A574", "#8B9DC3", "#C49A6C", "#6B8E8E", "#B8860B"];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      return apiRequest('POST', '/api/tours', { color: randomColor });
+      const hue = Math.floor(Math.random() * 360);
+      const saturation = 40 + Math.floor(Math.random() * 30);
+      const lightness = 45 + Math.floor(Math.random() * 20);
+      const color = hslToHex(hue, saturation, lightness);
+      return apiRequest('POST', '/api/tours', { color });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tours'] });

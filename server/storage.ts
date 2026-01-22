@@ -8,7 +8,7 @@ import {
   type InsertTour,
   type UpdateTour
 } from "@shared/schema";
-import { eq, max } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getEvents(): Promise<Event[]>;
@@ -39,9 +39,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTour(insertTour: InsertTour): Promise<Tour> {
-    const result = await db.select({ maxId: max(tours.id) }).from(tours);
-    const nextNumber = (result[0]?.maxId ?? 0) + 1;
-    const name = `Tour ${nextNumber}`;
+    const existingTours = await this.getTours();
+    const nextNumber = existingTours.length + 1;
+    
+    let name = `Tour ${nextNumber}`;
+    const existingNames = new Set(existingTours.map(t => t.name));
+    while (existingNames.has(name)) {
+      const num = parseInt(name.split(' ')[1]) + 1;
+      name = `Tour ${num}`;
+    }
     
     const [tour] = await db.insert(tours).values({ ...insertTour, name }).returning();
     return tour;
