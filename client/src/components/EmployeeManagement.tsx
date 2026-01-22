@@ -121,9 +121,10 @@ const demoEmployees: Employee[] = [
 
 interface EmployeeManagementProps {
   onCancel: () => void;
+  onOpenEmployeeWeekly?: (employeeId: string, employeeName: string) => void;
 }
 
-export function EmployeeManagement({ onCancel }: EmployeeManagementProps) {
+export function EmployeeManagement({ onCancel, onOpenEmployeeWeekly }: EmployeeManagementProps) {
   const [showArchived, setShowArchived] = useState(false);
   const { toast } = useToast();
 
@@ -175,6 +176,7 @@ export function EmployeeManagement({ onCancel }: EmployeeManagementProps) {
               key={employee.id} 
               employee={employee} 
               onArchiveClick={handleArchiveClick}
+              onDoubleClick={() => onOpenEmployeeWeekly?.(employee.id, `${employee.firstName} ${employee.lastName}`)}
             />
           ))}
         </div>
@@ -194,18 +196,21 @@ export function EmployeeManagement({ onCancel }: EmployeeManagementProps) {
 
 function EmployeeCard({ 
   employee, 
-  onArchiveClick 
+  onArchiveClick,
+  onDoubleClick 
 }: { 
   employee: Employee; 
   onArchiveClick: () => void;
+  onDoubleClick?: () => void;
 }) {
   const isArchived = employee.archived;
 
   return (
     <div 
-      className={`flex rounded-lg border border-border overflow-hidden ${
+      className={`flex rounded-lg border border-border overflow-hidden cursor-pointer transition-shadow hover:shadow-md ${
         isArchived ? "bg-slate-100 opacity-60" : "bg-white"
       }`}
+      onDoubleClick={onDoubleClick}
       data-testid={`card-employee-${employee.id}`}
     >
       <div className="flex-[4] p-4">
