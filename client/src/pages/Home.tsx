@@ -123,7 +123,10 @@ export default function Home() {
           ) : view === 'projectList' ? (
             <ProjectList onCancel={() => setView('month')} />
           ) : view === 'weeklyProjects' ? (
-            <WeeklyProjectView onCancel={() => setView('month')} />
+            <WeeklyProjectView 
+              onCancel={() => setView('month')} 
+              onOpenProject={() => setView('project')}
+            />
           ) : view === 'week' ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <WeekGrid 
