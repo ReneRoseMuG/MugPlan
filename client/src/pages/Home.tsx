@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { WeekGrid } from "@/components/WeekGrid";
-import { CustomerDetail } from "@/components/CustomerDetail";
 import { CustomerData } from "@/components/CustomerData";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
@@ -14,7 +13,7 @@ import { addMonths, subMonths, addWeeks, subWeeks, format, startOfYear, endOfYea
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerData' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment';
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -75,11 +74,11 @@ export default function Home() {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kunden - Stammdaten' : view === 'customerData' ? 'Kunden - Kundendaten' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Team Vorlagen' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Team Vorlagen' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
-          {view !== 'customer' && view !== 'customerData' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'project' && view !== 'projectList' && view !== 'appointment' && (
+          {view !== 'customer' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'project' && view !== 'projectList' && view !== 'appointment' && (
             <div className="flex items-center gap-2 bg-border rounded-md p-1">
               <button
                 onClick={prev}
@@ -109,8 +108,6 @@ export default function Home() {
         {/* Content Area */}
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
           {view === 'customer' ? (
-            <CustomerDetail onCancel={() => setView('month')} />
-          ) : view === 'customerData' ? (
             <CustomerData onCancel={() => setView('month')} />
           ) : view === 'tours' ? (
             <TourManagement onCancel={() => setView('month')} />

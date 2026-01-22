@@ -25,46 +25,20 @@ function NavGroup({ title, children }: { title: string; children: React.ReactNod
 }
 
 function CustomerMenuButton({ isActive, onViewChange }: { isActive?: boolean; onViewChange: (view: ViewType) => void }) {
-  const [open, setOpen] = useState(false);
-  
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          data-testid="nav-kunden"
-          className={`
-            flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full text-left
-            ${isActive 
-              ? "bg-white text-primary border border-slate-200" 
-              : "text-slate-600 hover:bg-white hover:text-slate-900"}
-          `}
-        >
-          <div className="flex items-center gap-2">
-            <UserCircle className="w-4 h-4 opacity-80" />
-            Kunden
-          </div>
-          <ChevronDown className="w-3 h-3 opacity-60" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-48 p-2" align="start">
-        <div className="flex flex-col gap-1">
-          <button
-            onClick={() => { onViewChange('customer'); setOpen(false); }}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 w-full text-left"
-            data-testid="menu-customer-detail"
-          >
-            Stammdaten
-          </button>
-          <button
-            onClick={() => { onViewChange('customerData'); setOpen(false); }}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 w-full text-left"
-            data-testid="menu-customer-data"
-          >
-            Kundendaten
-          </button>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <button
+      data-testid="nav-kunden"
+      onClick={() => onViewChange('customer')}
+      className={`
+        flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full text-left
+        ${isActive 
+          ? "bg-white text-primary border border-slate-200" 
+          : "text-slate-600 hover:bg-white hover:text-slate-900"}
+      `}
+    >
+      <UserCircle className="w-4 h-4 opacity-80" />
+      Kunden
+    </button>
   );
 }
 
@@ -174,7 +148,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
             onViewChange={onViewChange} 
           />
           <CustomerMenuButton 
-            isActive={currentView === 'customer' || currentView === 'customerData'} 
+            isActive={currentView === 'customer'} 
             onViewChange={onViewChange} 
           />
           <NavButton icon={ListChecks} label="Projektstatus" />

@@ -4,19 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Phone, MapPin, Save, X, Calendar } from "lucide-react";
+import { User, Phone, MapPin, Save, X, Calendar, FolderKanban } from "lucide-react";
 import { NotesSection, Note } from "@/components/NotesSection";
 
 interface CustomerDataProps {
   onCancel?: () => void;
   onSave?: () => void;
 }
-
-const demoAppointments = [
-  { id: "1", date: "15.01.2026" },
-  { id: "2", date: "22.01.2026" },
-  { id: "3", date: "05.02.2026" },
-];
 
 const initialNotes: Note[] = [
   {
@@ -29,6 +23,18 @@ const initialNotes: Note[] = [
     text: "Rückruf am Montag vereinbart. Angebot für Zusatzleistungen besprechen.",
     createdAt: "18.01.2026",
   },
+];
+
+const demoProjects = [
+  { id: "1", name: "Renovierung Bürogebäude", status: "In Bearbeitung", statusColor: "#f59e0b" },
+  { id: "2", name: "Neugestaltung Empfangsbereich", status: "Neu", statusColor: "#3b82f6" },
+  { id: "3", name: "Wintergarten Anbau", status: "Abgeschlossen", statusColor: "#22c55e" },
+];
+
+const demoAppointments = [
+  { id: "1", date: "28.01.2026", title: "Aufmaß vor Ort", project: "Renovierung Bürogebäude" },
+  { id: "2", date: "05.02.2026", title: "Materialauswahl", project: "Neugestaltung Empfangsbereich" },
+  { id: "3", date: "12.02.2026", title: "Abnahme", project: "Wintergarten Anbau" },
 ];
 
 export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
@@ -48,24 +54,25 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
   };
 
   return (
-    <div className="h-full p-8 overflow-auto">
-      <div className="max-w-5xl grid grid-cols-3 gap-6">
-        <Card className="col-span-2">
-          <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
-                <User className="w-6 h-6" />
-                Kundendaten
-              </CardTitle>
-              {onCancel && (
-                <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-customer">
-                  <X className="w-6 h-6" />
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <form className="space-y-8">
+    <div className="h-full p-6 overflow-auto">
+      <Card className="max-w-6xl mx-auto">
+        <CardHeader className="border-b border-border">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
+              <User className="w-6 h-6" />
+              Kundendaten
+            </CardTitle>
+            {onCancel && (
+              <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-customer">
+                <X className="w-6 h-6" />
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-3 gap-6">
+            {/* Linke Spalte: Stammdaten */}
+            <div className="col-span-2 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
@@ -76,7 +83,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                     <Label htmlFor="firstName" data-testid="label-firstname">Vorname</Label>
                     <Input 
                       id="firstName" 
-                      placeholder="Max" 
+                      defaultValue="Hans"
                       data-testid="input-firstname"
                     />
                   </div>
@@ -84,7 +91,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                     <Label htmlFor="lastName" data-testid="label-lastname">Nachname</Label>
                     <Input 
                       id="lastName" 
-                      placeholder="Mustermann" 
+                      defaultValue="Müller"
                       data-testid="input-lastname"
                     />
                   </div>
@@ -93,7 +100,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   <Label htmlFor="fullName" data-testid="label-fullname">Vollständiger Name / Firma</Label>
                   <Input 
                     id="fullName" 
-                    placeholder="Max Mustermann GmbH" 
+                    defaultValue="Müller GmbH"
                     data-testid="input-fullname"
                   />
                 </div>
@@ -108,7 +115,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   <Label htmlFor="phone" data-testid="label-phone">Telefon *</Label>
                   <Input 
                     id="phone" 
-                    placeholder="+49 123 456789" 
+                    defaultValue="+49 123 456789"
                     data-testid="input-phone"
                   />
                 </div>
@@ -123,7 +130,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   <Label htmlFor="street" data-testid="label-street">Straße</Label>
                   <Input 
                     id="street" 
-                    placeholder="Musterstraße 123" 
+                    defaultValue="Industriestraße 42"
                     data-testid="input-street"
                   />
                 </div>
@@ -132,7 +139,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                     <Label htmlFor="zip" data-testid="label-zip">PLZ</Label>
                     <Input 
                       id="zip" 
-                      placeholder="12345" 
+                      defaultValue="80331"
                       data-testid="input-zip"
                     />
                   </div>
@@ -140,7 +147,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                     <Label htmlFor="city" data-testid="label-city">Ort</Label>
                     <Input 
                       id="city" 
-                      placeholder="Musterstadt" 
+                      defaultValue="München"
                       data-testid="input-city"
                     />
                   </div>
@@ -169,44 +176,101 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   Abbrechen
                 </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="border-b border-border py-4">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Termine
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <ul className="space-y-2" data-testid="list-appointments">
-                {demoAppointments.map((apt) => (
-                  <li 
-                    key={apt.id} 
-                    className="text-sm text-slate-600 py-2 px-3 bg-slate-50 rounded-md"
-                    data-testid={`appointment-${apt.id}`}
-                  >
-                    {apt.date}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+            {/* Rechte Spalte: Notizen, Projekte, Termine */}
+            <div className="space-y-6">
+              {/* Notizen */}
+              <Card>
+                <CardContent className="pt-4">
+                  <NotesSection
+                    notes={notes}
+                    onAdd={handleAddNote}
+                    onDelete={handleDeleteNote}
+                  />
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-4">
-              <NotesSection
-                notes={notes}
-                onAdd={handleAddNote}
-                onDelete={handleDeleteNote}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              {/* Projekte (readonly) */}
+              <Card>
+                <CardHeader className="border-b border-border py-3">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                    <FolderKanban className="w-4 h-4" />
+                    Verknüpfte Projekte ({demoProjects.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="space-y-2" data-testid="list-projects">
+                    {demoProjects.map((project) => (
+                      <div 
+                        key={project.id}
+                        className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border"
+                        data-testid={`project-card-${project.id}`}
+                      >
+                        <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-project-name-${project.id}`}>
+                          {project.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div 
+                            className="w-2 h-2 rounded-full" 
+                            style={{ backgroundColor: project.statusColor }}
+                          />
+                          <span className="text-xs text-slate-500" data-testid={`text-project-status-${project.id}`}>
+                            {project.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {demoProjects.length === 0 && (
+                      <p className="text-sm text-slate-400 text-center py-2">
+                        Keine Projekte verknüpft
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Termine (readonly) */}
+              <Card>
+                <CardHeader className="border-b border-border py-3">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Termine ({demoAppointments.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="space-y-2" data-testid="list-appointments">
+                    {demoAppointments.map((apt) => (
+                      <div 
+                        key={apt.id}
+                        className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border"
+                        data-testid={`appointment-card-${apt.id}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-appointment-title-${apt.id}`}>
+                            {apt.title}
+                          </p>
+                          <span className="text-xs font-medium text-primary" data-testid={`text-appointment-date-${apt.id}`}>
+                            {apt.date}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1" data-testid={`text-appointment-project-${apt.id}`}>
+                          {apt.project}
+                        </p>
+                      </div>
+                    ))}
+                    {demoAppointments.length === 0 && (
+                      <p className="text-sm text-slate-400 text-center py-2">
+                        Keine Termine vorhanden
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
