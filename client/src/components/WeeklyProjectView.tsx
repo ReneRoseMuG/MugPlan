@@ -347,6 +347,7 @@ function ProjectCard({
 
 export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 22));
+  const [expandedTourId, setExpandedTourId] = useState<string>(tours[0]?.id || "1");
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -363,6 +364,10 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
 
   const getTourById = (tourId: string): Tour => {
     return tours.find(t => t.id === tourId) || tours[0];
+  };
+
+  const handleTourClick = (tourId: string) => {
+    setExpandedTourId(tourId);
   };
 
   return (
@@ -412,11 +417,42 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                 
                 <div className="flex-1 flex flex-col gap-1">
                   {tours.map((tour) => {
+                    const isExpanded = tour.id === expandedTourId;
                     const dayProjects = getProjectsForDayAndTour(day, tour.id);
+                    const projectCount = dayProjects.length;
+                    
+                    if (!isExpanded) {
+                      return (
+                        <div 
+                          key={tour.id}
+                          className="h-6 rounded-lg flex items-center gap-1.5 px-2 cursor-pointer transition-all hover-elevate overflow-visible"
+                          style={{ backgroundColor: hexToRgba(tour.color, 0.4) }}
+                          onClick={() => handleTourClick(tour.id)}
+                          data-testid={`slot-collapsed-${format(day, "yyyy-MM-dd")}-tour-${tour.id}`}
+                        >
+                          <div 
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: tour.color }}
+                          />
+                          <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300 truncate">
+                            {tour.name}
+                          </span>
+                          {projectCount > 0 && (
+                            <span 
+                              className="ml-auto text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full"
+                              style={{ backgroundColor: tour.color }}
+                            >
+                              {projectCount}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    }
+                    
                     return (
                       <div 
                         key={tour.id}
-                        className="flex-1 min-h-[160px] rounded-lg p-1 border border-slate-200 dark:border-slate-700"
+                        className="flex-1 min-h-[160px] rounded-lg p-1 border border-slate-200 dark:border-slate-700 transition-all overflow-auto"
                         style={{ backgroundColor: hexToRgba(tour.color, 0.15) }}
                         data-testid={`slot-${format(day, "yyyy-MM-dd")}-tour-${tour.id}`}
                       >
