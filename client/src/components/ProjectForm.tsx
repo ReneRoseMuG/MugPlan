@@ -192,17 +192,7 @@ export function ProjectForm({ onCancel }: ProjectFormProps) {
   const [newNote, setNewNote] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
-  const [description, setDescription] = useState(`## Projektbeschreibung
-
-Dies ist ein **Beispielprojekt** für die Demonstration des Formulars.
-
-### Anforderungen
-- Lieferung bis Ende Februar
-- Installation vor Ort
-- Schulung der Mitarbeiter
-
-### Besondere Hinweise
-Der Kunde wünscht eine *schnelle Abwicklung* und regelmäßige Updates.`);
+  const [description, setDescription] = useState(`<b>Projektbeschreibung</b><br><br>Dies ist ein Beispielprojekt für die Demonstration des Formulars.<br><br><b>Anforderungen</b><br><ul><li>Lieferung bis Ende Februar</li><li>Installation vor Ort</li><li>Schulung der Mitarbeiter</li></ul><br><b>Besondere Hinweise</b><br>Der Kunde wünscht eine schnelle Abwicklung und regelmäßige Updates.`);
 
   const handleDeleteNote = (id: string) => {
     setNotes(notes.filter(n => n.id !== id));
