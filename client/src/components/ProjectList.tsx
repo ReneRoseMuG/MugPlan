@@ -25,12 +25,54 @@ const demoCustomers = [
 ];
 
 const demoProjects = [
-  { id: "1", name: "Renovierung Bürogebäude", customerId: "1", statusId: "s2", appointmentCount: 5 },
-  { id: "2", name: "Neugestaltung Empfangsbereich", customerId: "1", statusId: "s1", appointmentCount: 2 },
-  { id: "3", name: "Gartenanlage Villa", customerId: "2", statusId: "s3", appointmentCount: 3 },
-  { id: "4", name: "Fassadensanierung", customerId: "3", statusId: "s4", appointmentCount: 8 },
-  { id: "5", name: "Innenausbau Penthouse", customerId: "2", statusId: "s2", appointmentCount: 4 },
-  { id: "6", name: "Altbausanierung", customerId: "1", statusId: "s5", appointmentCount: 0 },
+  { 
+    id: "1", 
+    name: "Projekt 1", 
+    customerId: "1", 
+    statusId: "s2", 
+    appointmentCount: 5,
+    description: "GESPIEGELT\nPalkkio 'E', Core, R-alu-schw\nFenster rund 90 cm\nBrillenablage 2-fach, 3 Düfte\n2 Yoga Lampen, Lixum farblos"
+  },
+  { 
+    id: "2", 
+    name: "Projekt 2", 
+    customerId: "1", 
+    statusId: "s1", 
+    appointmentCount: 2,
+    description: "GESPIEGELT\nPalkkio 'E', Core; R-alu-schw\nFenster rund 90 cm\nBrillenablage 2-fach, 3 Düfte\n2 Yoga Lampen, Lixum farblos"
+  },
+  { 
+    id: "3", 
+    name: "Projekt 3", 
+    customerId: "2", 
+    statusId: "s3", 
+    appointmentCount: 3,
+    description: "Premium4, Core, Lixum farblos\nR-alu-schw, Yoga\n2er Steckdose"
+  },
+  { 
+    id: "4", 
+    name: "Projekt 4", 
+    customerId: "3", 
+    statusId: "s4", 
+    appointmentCount: 8,
+    description: "Premium 4, Aries\nR-alu-schw, Lixum\nfarblos"
+  },
+  { 
+    id: "5", 
+    name: "Projekt 5", 
+    customerId: "2", 
+    statusId: "s2", 
+    appointmentCount: 4,
+    description: "Palkkio; Drop;\nR-alu-grün; 1 Steckdose\nim Ruheraum unter der\nkurzen Bank"
+  },
+  { 
+    id: "6", 
+    name: "Projekt 6", 
+    customerId: "1", 
+    statusId: "s5", 
+    appointmentCount: 0,
+    description: "XL; Aries; R-alu-schw\nOHNE FENSTER\n2 Vordachlampen\nEinstiegsstufe\n\nRelax Lampenschirm"
+  },
 ];
 
 export default function ProjectList({ onCancel }: ProjectListProps) {
@@ -115,8 +157,17 @@ export default function ProjectList({ onCancel }: ProjectListProps) {
                   </Badge>
                 )}
 
+                {project.description && (
+                  <div 
+                    className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line mb-3"
+                    data-testid={`description-${project.id}`}
+                  >
+                    {project.description}
+                  </div>
+                )}
+
                 {customer && (
-                  <div className="space-y-1 text-sm text-slate-600">
+                  <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400 border-t pt-3 mt-2">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{customer.firstName} {customer.name}</span>
                     </div>
