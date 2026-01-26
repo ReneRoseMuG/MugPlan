@@ -2,11 +2,15 @@ import { db } from "./db";
 import {
   events,
   tours,
+  teams,
   type InsertEvent,
   type Event,
   type Tour,
   type InsertTour,
-  type UpdateTour
+  type UpdateTour,
+  type Team,
+  type InsertTeam,
+  type UpdateTeam
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
@@ -18,6 +22,10 @@ export interface IStorage {
   createTour(tour: InsertTour): Promise<Tour>;
   updateTour(id: number, data: UpdateTour): Promise<Tour | null>;
   deleteTour(id: number): Promise<void>;
+  getTeams(): Promise<Team[]>;
+  createTeam(team: InsertTeam): Promise<Team>;
+  updateTeam(id: number, data: UpdateTeam): Promise<Team | null>;
+  deleteTeam(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -60,6 +68,34 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTour(id: number): Promise<void> {
     await db.delete(tours).where(eq(tours.id, id));
+  }
+
+  async getTeams(): Promise<Team[]> {
+    return await db.select().from(teams).orderBy(teams.id);
+  }
+
+  async createTeam(insertTeam: InsertTeam): Promise<Team> {
+    const existingTeams = await this.getTeams();
+    const nextNumber = existingTeams.length + 1;
+    
+    let name = `Team ${nextNumber}`;
+    const existingNames = new Set(existingTeams.map(t => t.name));
+    while (existingNames.has(name)) {
+      const num = parseInt(name.split(' ')[1]) + 1;
+      name = `Team ${num}`;
+    }
+    
+    const [team] = await db.insert(teams).values({ ...insertTeam, name }).returning();
+    return team;
+  }
+
+  async updateTeam(id: number, data: UpdateTeam): Promise<Team | null> {
+    const [team] = await db.update(teams).set(data).where(eq(teams.id, id)).returning();
+    return team || null;
+  }
+
+  async deleteTeam(id: number): Promise<void> {
+    await db.delete(teams).where(eq(teams.id, id));
   }
 }
 

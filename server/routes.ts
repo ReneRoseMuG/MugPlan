@@ -81,5 +81,51 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Teams API
+  app.get(api.teams.list.path, async (req, res) => {
+    const teams = await storage.getTeams();
+    res.json(teams);
+  });
+
+  app.post(api.teams.create.path, async (req, res) => {
+    try {
+      const input = api.teams.create.input.parse(req.body);
+      const team = await storage.createTeam(input);
+      res.status(201).json(team);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.teams.update.path, async (req, res) => {
+    try {
+      const input = api.teams.update.input.parse(req.body);
+      const team = await storage.updateTeam(Number(req.params.id), input);
+      if (!team) {
+        return res.status(404).json({ message: 'Team not found' });
+      }
+      res.json(team);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.teams.delete.path, async (req, res) => {
+    await storage.deleteTeam(Number(req.params.id));
+    res.status(204).send();
+  });
+
   return httpServer;
 }
