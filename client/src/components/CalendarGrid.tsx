@@ -66,7 +66,7 @@ const initialAppointments: DemoAppointment[] = [
       { id: "e1", firstName: "Thomas", lastName: "Müller", initials: "TM" },
       { id: "e2", firstName: "Anna", lastName: "Schmidt", initials: "AS" }
     ],
-    projectDescription: "Renovierung des Empfangsbereichs. Neue Bodenbeläge und Wandgestaltung.",
+    projectDescription: "GESPIEGELT\nPalkkio 'E', Core, R-alu-schw\nFenster rund 90 cm\nBrillenablage 2-fach, 3 Düfte\n2 Yoga Lampen, Lixum farblos",
     attachments: [
       { id: "d1", name: "Grundriss.pdf", type: "pdf" },
       { id: "d2", name: "Muster.jpg", type: "image" }
@@ -89,7 +89,7 @@ const initialAppointments: DemoAppointment[] = [
     employees: [
       { id: "e3", firstName: "Michael", lastName: "Weber", initials: "MW" }
     ],
-    projectDescription: "Gartenanlage mit Terrasse und Bepflanzung.",
+    projectDescription: "GESPIEGELT\nPalkkio 'E', Core; R-alu-schw\nFenster rund 90 cm\nBrillenablage 2-fach, 3 Düfte\n2 Yoga Lampen, Lixum farblos",
     attachments: [
       { id: "d3", name: "Skizze.pdf", type: "pdf" }
     ]
@@ -112,7 +112,7 @@ const initialAppointments: DemoAppointment[] = [
     employees: [
       { id: "e1", firstName: "Thomas", lastName: "Müller", initials: "TM" }
     ],
-    projectDescription: "Fassadenarbeiten und Fensteraustausch.",
+    projectDescription: "Premium4, Core, Lixum farblos\nR-alu-schw, Yoga\n2er Steckdose",
     attachments: []
   },
   {
@@ -133,7 +133,7 @@ const initialAppointments: DemoAppointment[] = [
       { id: "e5", firstName: "Klaus", lastName: "Hoffmann", initials: "KH" },
       { id: "e6", firstName: "Maria", lastName: "Becker", initials: "MB" }
     ],
-    projectDescription: "Innenausbau Büroetage.",
+    projectDescription: "Premium 4, Aries\nR-alu-schw, Lixum\nfarblos",
     attachments: [
       { id: "d4", name: "Raumplan.pdf", type: "pdf" },
       { id: "d5", name: "Foto1.jpg", type: "image" },
@@ -159,7 +159,7 @@ const initialAppointments: DemoAppointment[] = [
       { id: "e3", firstName: "Michael", lastName: "Weber", initials: "MW" },
       { id: "e4", firstName: "Sandra", lastName: "Fischer", initials: "SF" }
     ],
-    projectDescription: "Komplettsanierung Altbau mit Denkmalschutzauflagen.",
+    projectDescription: "Palkkio; Drop;\nR-alu-grün; 1 Steckdose\nim Ruheraum unter der\nkurzen Bank",
     attachments: [
       { id: "d7", name: "Genehmigung.pdf", type: "pdf" }
     ]
