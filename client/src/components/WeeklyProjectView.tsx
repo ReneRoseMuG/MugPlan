@@ -13,7 +13,7 @@ import {
   subWeeks
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { X, ChevronLeft, ChevronRight, CalendarDays, FolderKanban, MapPin, Route, FileText } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, CalendarDays, FolderKanban, MapPin, Route, FileText, ChevronsUpDown } from "lucide-react";
 
 interface WeeklyProjectViewProps {
   onCancel?: () => void;
@@ -322,6 +322,7 @@ function ProjectCard({
 export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 22));
   const [expandedTourId, setExpandedTourId] = useState<string>(tours[0]?.id || "1");
+  const [allExpanded, setAllExpanded] = useState(false);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -341,7 +342,13 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
   };
 
   const handleTourClick = (tourId: string) => {
-    setExpandedTourId(tourId);
+    if (!allExpanded) {
+      setExpandedTourId(tourId);
+    }
+  };
+
+  const handleExpandAll = () => {
+    setAllExpanded(!allExpanded);
   };
 
   return (
@@ -365,6 +372,15 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                   <ChevronRight className="w-5 h-5" />
                 </Button>
               </div>
+              <Button 
+                variant={allExpanded ? "default" : "outline"} 
+                onClick={handleExpandAll} 
+                className="gap-2"
+                data-testid="button-expand-all"
+              >
+                <ChevronsUpDown className="w-4 h-4" />
+                {allExpanded ? "Einklappen" : "Alle Aufklappen"}
+              </Button>
               {onCancel && (
                 <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-weekly">
                   <X className="w-6 h-6" />
@@ -374,7 +390,10 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
           </div>
         </CardHeader>
         <CardContent className="pt-4 flex-1 overflow-auto">
-          <div className="grid grid-cols-7 gap-2 h-full">
+          <div 
+              className="grid gap-2 h-full"
+              style={{ gridTemplateColumns: '2fr 2fr 2fr 2fr 2fr 1fr 1fr' }}
+            >
             {weekDays.map((day) => (
               <div key={day.toISOString()} className="flex flex-col min-h-0">
                 <div 
@@ -391,7 +410,7 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                 
                 <div className="flex-1 flex flex-col gap-1">
                   {tours.map((tour) => {
-                    const isExpanded = tour.id === expandedTourId;
+                    const isExpanded = allExpanded || tour.id === expandedTourId;
                     const dayProjects = getProjectsForDayAndTour(day, tour.id);
                     const projectCount = dayProjects.length;
                     
