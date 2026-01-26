@@ -409,7 +409,10 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                   <div className="text-lg">{format(day, "d")}</div>
                 </div>
                 
-                <div className={`flex-1 gap-1 ${allExpanded ? 'grid grid-rows-3' : 'flex flex-col'}`}>
+                <div 
+                  className={`flex-1 gap-1 ${allExpanded ? 'grid' : 'flex flex-col'}`}
+                  style={allExpanded ? { gridTemplateRows: '1fr 1fr 1fr' } : undefined}
+                >
                   {tours.map((tour) => {
                     const isExpanded = allExpanded || tour.id === expandedTourId;
                     const dayProjects = isSaturday(day) ? [] : getProjectsForDayAndTour(day, tour.id);
