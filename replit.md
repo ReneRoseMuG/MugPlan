@@ -19,16 +19,20 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
   - Card-based layout with 80/20 split (data | assignments)
   - Shows name, phone, and Tour/Team mini-badges
   - 8 demo employees with varying assignments
-- **Team Management Prototype**: Added team template management via "Team Vorlagen" button in sidebar
+- **Team Management Prototype**: Added team management via "Teams" button in sidebar
   - Automatic team naming (Team 1, Team 2, Team 3...)
   - Pastel-colored headers for visual distinction
   - Employee assignment with checkbox selection (already assigned employees greyed out)
+  - Edit button (Pencil icon) opens dialog to modify team members
   - Teams are helper constructs to assign multiple employees to appointments without individual selection
 - **Customer Management Prototype**: Added two customer views accessible via a popover menu on the "Kunden" button:
   - **Stammdaten** (`CustomerDetail.tsx`): Basic customer form with personal data, contact, address, and status
   - **Kundendaten** (`CustomerData.tsx`): Extended view with customer form + appointment list (read-only) + notes journal with delete functionality
 - **Tour Management** (mit Datenbank verbunden): Tour-Verwaltung via "Touren" Button
-  - Color-coded cards mit Name-Label (ReadOnly) und Farbwähler
+  - Einheitliches Design wie Team-Karten: Header mit Farbe + Name + Delete-Button
+  - Mitarbeiterliste als zentrales Element mit UserCheck Icons
+  - Color-Picker als Button über volle Breite am unteren Rand
+  - Edit button (Pencil icon) opens dialog to modify tour members (Demo-Daten)
   - Tours dienen als visuelle Kennzeichnung für regional gruppierte Termine
   - Automatische Benennung (Tour 1, Tour 2, Tour 3...)
   - CRUD-Operationen gegen PostgreSQL-Datenbank
