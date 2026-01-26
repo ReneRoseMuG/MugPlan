@@ -25,3 +25,16 @@ export const updateTourSchema = z.object({ color: z.string() });
 export type Tour = typeof tours.$inferSelect;
 export type InsertTour = z.infer<typeof insertTourSchema>;
 export type UpdateTour = z.infer<typeof updateTourSchema>;
+
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  color: text("color").notNull(),
+});
+
+export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, name: true });
+export const updateTeamSchema = z.object({ color: z.string() });
+
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type UpdateTeam = z.infer<typeof updateTeamSchema>;
