@@ -78,7 +78,7 @@ export default function Home() {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'weeklyProjects' ? 'Wochenplanung' : view === 'appointment' ? 'Neuer Termin' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'weeklyProjects' ? 'Wochenübersicht' : view === 'appointment' ? 'Neuer Termin' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 

@@ -82,14 +82,6 @@ function ProjectMenuButton({ isActive, onViewChange }: { isActive?: boolean; onV
             <List className="w-4 h-4" />
             Projektliste
           </button>
-          <button
-            onClick={() => { onViewChange('weeklyProjects'); setOpen(false); }}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 w-full text-left"
-            data-testid="menu-weekly-projects"
-          >
-            <CalendarDays className="w-4 h-4" />
-            Wochenplanung
-          </button>
         </div>
       </PopoverContent>
     </Popover>
@@ -142,7 +134,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
 
       <nav className="flex flex-col">
         <NavGroup title="Terminplanung">
-          <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week'} onClick={() => onViewChange('week')} />
+          <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week' || currentView === 'weeklyProjects'} onClick={() => onViewChange('weeklyProjects')} />
           <NavButton icon={Calendar} label="Monatsübersicht" isActive={currentView === 'month'} onClick={() => onViewChange('month')} />
           <NavButton icon={CalendarRange} label="Jahresübersicht" isActive={currentView === 'year'} onClick={() => onViewChange('year')} />
           <NavButton icon={BarChart3} label="Auslastungsübersicht" />
@@ -152,7 +144,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
 
         <NavGroup title="Projektplanung">
           <ProjectMenuButton 
-            isActive={currentView === 'project' || currentView === 'projectList' || currentView === 'weeklyProjects'} 
+            isActive={currentView === 'project' || currentView === 'projectList'} 
             onViewChange={onViewChange} 
           />
           <CustomerMenuButton 
