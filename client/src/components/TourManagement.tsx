@@ -12,6 +12,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { EntityCard } from "@/components/ui/entity-card";
+import { defaultHeaderColor } from "@/lib/colors";
 import type { Tour } from "@shared/schema";
 
 interface TourMember {
@@ -171,10 +172,13 @@ function ColorPickerButton({
       />
       <Button
         size="icon"
-        variant="ghost"
+        variant="outline"
         onClick={(e) => e.preventDefault()}
+        className="border-slate-300"
+        style={{ backgroundColor: color }}
+        data-testid="button-color-picker"
       >
-        <Palette className="w-4 h-4" />
+        <Palette className="w-4 h-4 text-slate-600" />
       </Button>
     </label>
   );
@@ -278,11 +282,11 @@ export function TourManagement({ onCancel }: TourManagementProps) {
                 key={tour.id}
                 title={tour.name}
                 icon={<Route className="w-4 h-4" />}
-                headerColor={tour.color}
+                headerColor={defaultHeaderColor}
                 onDelete={() => deleteMutation.mutate(tour.id)}
                 isDeleting={deleteMutation.isPending}
                 testId={`card-tour-${tour.id}`}
-                actions={
+                footer={
                   <>
                     <ColorPickerButton
                       color={tour.color}
@@ -297,7 +301,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
                       }}
                       data-testid={`button-edit-tour-members-${tour.id}`}
                     >
-                      <Pencil className="w-3 h-3" />
+                      <Pencil className="w-4 h-4" />
                     </Button>
                   </>
                 }

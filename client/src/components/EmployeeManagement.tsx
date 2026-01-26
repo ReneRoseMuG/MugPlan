@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Users, X, Phone, Plus, Archive } from "lucide-react";
+import { Users, X, Phone, Plus, Archive, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { EntityCard } from "@/components/ui/entity-card";
+import { defaultHeaderColor } from "@/lib/colors";
 
 interface Tour {
   id: string;
@@ -204,88 +206,73 @@ function EmployeeCard({
   onDoubleClick?: () => void;
 }) {
   const isArchived = employee.archived;
+  const fullName = `${employee.firstName} ${employee.lastName}`;
 
   return (
-    <div 
-      className={`flex rounded-lg border border-border overflow-hidden cursor-pointer transition-all hover:shadow-md hover:border-primary/50 ${
-        isArchived ? "bg-slate-100 opacity-60" : "bg-white"
-      }`}
-      onDoubleClick={onDoubleClick}
-      data-testid={`card-employee-${employee.id}`}
-    >
-      <div className="flex-[4] p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span 
-              className={`font-bold text-lg ${isArchived ? "text-slate-500" : "text-slate-800"}`}
-              data-testid={`text-employee-name-${employee.id}`}
-            >
-              {employee.firstName} {employee.lastName}
-            </span>
+    <div onDoubleClick={onDoubleClick}>
+      <EntityCard
+        title={fullName}
+        icon={<User className="w-4 h-4" />}
+        headerColor={isArchived ? "#e2e8f0" : defaultHeaderColor}
+        onDelete={!isArchived ? onArchiveClick : undefined}
+        testId={`card-employee-${employee.id}`}
+        className={isArchived ? "opacity-60" : ""}
+      >
+        <div className="flex gap-4">
+          <div className="flex-[3]">
             {isArchived && (
-              <Badge variant="secondary" className="text-xs gap-1" data-testid={`badge-archived-${employee.id}`}>
+              <Badge variant="secondary" className="text-xs gap-1 mb-2" data-testid={`badge-archived-${employee.id}`}>
                 <Archive className="w-3 h-3" />
                 Archiviert
               </Badge>
             )}
+            <div className={`flex items-center gap-2 ${isArchived ? "text-slate-400" : "text-slate-600"}`}>
+              <Phone className="w-4 h-4" />
+              <span className="text-sm">{employee.phone}</span>
+            </div>
           </div>
-          {!isArchived && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onArchiveClick}
-              className="text-slate-400"
-              data-testid={`button-archive-${employee.id}`}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-        <div className={`flex items-center gap-2 mt-2 ${isArchived ? "text-slate-400" : "text-slate-600"}`}>
-          <Phone className="w-4 h-4" />
-          <span className="text-sm">{employee.phone}</span>
-        </div>
-      </div>
 
-      <div className={`flex-1 p-3 border-l border-border flex flex-col gap-3 ${
-        isArchived ? "bg-slate-200" : "bg-slate-50"
-      }`}>
-        <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-            Tour
-          </div>
-          {employee.tour ? (
-            <Badge 
-              variant="secondary"
-              className={`w-full justify-center border-0 ${isArchived ? "text-slate-500" : "text-white"}`}
-              style={{ backgroundColor: isArchived ? "#9CA3AF" : employee.tour.color }}
-              data-testid={`badge-tour-${employee.id}`}
-            >
-              {employee.tour.name}
-            </Badge>
-          ) : (
-            <div className="h-5 rounded bg-slate-200" />
-          )}
-        </div>
+          <div className={`flex-1 pl-3 border-l border-border flex flex-col gap-2 ${
+            isArchived ? "opacity-70" : ""
+          }`}>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Tour
+              </div>
+              {employee.tour ? (
+                <Badge 
+                  variant="secondary"
+                  className={`w-full justify-center border-0 text-xs ${isArchived ? "text-slate-500" : "text-white"}`}
+                  style={{ backgroundColor: isArchived ? "#9CA3AF" : employee.tour.color }}
+                  data-testid={`badge-tour-${employee.id}`}
+                >
+                  {employee.tour.name}
+                </Badge>
+              ) : (
+                <div className="h-5 rounded bg-slate-200" />
+              )}
+            </div>
 
-        <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-            Team
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Team
+              </div>
+              {employee.team ? (
+                <Badge 
+                  variant="outline"
+                  className={`w-full justify-center text-xs ${isArchived ? "text-slate-500 border-slate-300" : ""}`}
+                  style={{ backgroundColor: isArchived ? "#E5E7EB" : employee.team.color }}
+                  data-testid={`badge-team-${employee.id}`}
+                >
+                  {employee.team.name}
+                </Badge>
+              ) : (
+                <div className="h-5 rounded bg-slate-200" />
+              )}
+            </div>
           </div>
-          {employee.team ? (
-            <Badge 
-              variant="outline"
-              className={`w-full justify-center ${isArchived ? "text-slate-500 border-slate-300" : ""}`}
-              style={{ backgroundColor: isArchived ? "#E5E7EB" : employee.team.color }}
-              data-testid={`badge-team-${employee.id}`}
-            >
-              {employee.team.name}
-            </Badge>
-          ) : (
-            <div className="h-5 rounded bg-slate-200" />
-          )}
         </div>
-      </div>
+      </EntityCard>
     </div>
   );
 }

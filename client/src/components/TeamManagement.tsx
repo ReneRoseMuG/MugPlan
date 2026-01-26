@@ -230,7 +230,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                 onDelete={() => deleteMutation.mutate(team.id)}
                 isDeleting={deleteMutation.isPending}
                 testId={`card-team-${team.id}`}
-                actions={
+                footer={
                   <Button
                     size="icon"
                     variant="ghost"
@@ -240,7 +240,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                     }}
                     data-testid={`button-edit-team-members-${team.id}`}
                   >
-                    <Pencil className="w-3 h-3" />
+                    <Pencil className="w-4 h-4" />
                   </Button>
                 }
               >

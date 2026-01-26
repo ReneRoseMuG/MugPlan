@@ -10,8 +10,10 @@ interface EntityCardProps {
   onDelete?: () => void;
   isDeleting?: boolean;
   actions?: ReactNode;
+  footer?: ReactNode;
   children: ReactNode;
   testId?: string;
+  className?: string;
 }
 
 export function EntityCard({
@@ -21,12 +23,14 @@ export function EntityCard({
   onDelete,
   isDeleting,
   actions,
+  footer,
   children,
   testId,
+  className = "",
 }: EntityCardProps) {
   return (
     <div
-      className="rounded-lg border border-border bg-white overflow-hidden transition-all hover:border-primary/50 hover:shadow-md cursor-pointer"
+      className={`rounded-lg border border-border bg-white overflow-hidden transition-all hover:border-primary/50 hover:shadow-md cursor-pointer flex flex-col ${className}`}
       data-testid={testId}
     >
       <div
@@ -55,7 +59,12 @@ export function EntityCard({
           )}
         </div>
       </div>
-      <div className="p-4">{children}</div>
+      <div className="p-4 flex-1">{children}</div>
+      {footer && (
+        <div className="px-4 py-2 border-t border-border bg-slate-50 flex items-center justify-end gap-2">
+          {footer}
+        </div>
+      )}
     </div>
   );
 }

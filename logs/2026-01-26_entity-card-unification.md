@@ -150,3 +150,41 @@ Alle Icon-Buttons verwenden ausschließlich `size="icon"` ohne manuelle Größen
 - `client/src/components/EmployeeManagement.tsx` (GEÄNDERT)
 - `client/src/components/Sidebar.tsx` (GEÄNDERT)
 - `client/src/pages/Home.tsx` (GEÄNDERT)
+
+---
+
+## Update 26.01.2026 - Zweite Iteration
+
+### Änderungen an EntityCard
+
+- **Neuer Footer-Bereich**: Optional für Aktionsbuttons
+- **className Prop**: Für zusätzliches Styling
+
+```typescript
+interface EntityCardProps {
+  // ... bestehende Props
+  footer?: ReactNode;   // NEU: Footer für Aktionsbuttons
+  className?: string;   // NEU: Zusätzliches Styling
+}
+```
+
+### Tour-Karten
+
+- **Header-Farbe**: Jetzt neutral (slate-100) wie Projekte
+- **Tourfarbe**: Visualisiert über den Farbwähler-Button im Footer
+- **Aktionsbuttons**: In Footer-Zeile verschoben (Farbwähler + Bearbeiten)
+- **Farbwähler-Button**: Zeigt die aktuelle Tourfarbe als Hintergrund
+
+### Team-Karten
+
+- **Header-Farbe**: Weiterhin die Team-Pastel-Farbe
+- **Aktionsbuttons**: In Footer-Zeile verschoben (nur Bearbeiten)
+
+### Mitarbeiter-Karten
+
+- **Jetzt mit EntityCard**: Vollständig auf EntityCard-Schablone umgestellt
+- **2-Spalten-Layout**: Beibehalten innerhalb des EntityCard-Children
+  - Linke Spalte (flex-3): Telefon, Archiviert-Badge
+  - Rechte Spalte (flex-1): Tour- und Team-Badges
+- **Header**: Neutral (slate-100), bei archivierten Mitarbeitern grau
+- **Icon**: User-Icon im Header
