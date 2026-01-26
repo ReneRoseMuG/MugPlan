@@ -173,7 +173,7 @@ function TourCard({
     >
       <div 
         className="px-4 py-3 rounded-t-lg border-b border-border"
-        style={{ backgroundColor: tour.color }}
+        style={{ backgroundColor: `${tour.color}50` }}
       >
         <div className="flex items-center justify-between">
           <span className="font-bold text-slate-700" data-testid={`text-tour-name-${tour.id}`}>
@@ -233,7 +233,7 @@ function TourCard({
           />
           <div 
             className="w-full py-2 rounded-md border border-border text-center text-sm font-medium transition-colors hover:bg-slate-50"
-            style={{ backgroundColor: `${tour.color}30` }}
+            style={{ backgroundColor: `${tour.color}50` }}
           >
             Farbe ändern
           </div>
