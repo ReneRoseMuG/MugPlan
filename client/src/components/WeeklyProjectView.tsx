@@ -280,13 +280,13 @@ function ProjectCard({
     <>
       <div 
         ref={cardRef}
-        className="p-3 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm text-xs cursor-pointer hover:shadow-md transition-shadow"
+        className="p-2 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm text-xs cursor-pointer hover:shadow-md transition-shadow h-[100px] flex flex-col"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onDoubleClick={onDoubleClick}
         data-testid={`project-card-${project.id}`}
       >
-        <div className="flex items-center justify-between gap-1 mb-2">
+        <div className="flex items-center justify-between gap-1 mb-1 flex-shrink-0">
           <span className="font-semibold text-slate-700 dark:text-slate-200 truncate" data-testid={`text-project-customer-${project.id}`}>
             {project.customerName}
           </span>
@@ -295,11 +295,11 @@ function ProjectCard({
           </span>
         </div>
         <div 
-          className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed mb-2"
+          className="text-slate-600 dark:text-slate-300 text-[10px] leading-tight flex-1 overflow-hidden"
           dangerouslySetInnerHTML={{ __html: project.description }}
           data-testid={`text-project-description-${project.id}`}
         />
-        <div className="flex items-center gap-1 pt-1 border-t border-slate-100 dark:border-slate-700">
+        <div className="flex items-center gap-1 pt-1 border-t border-slate-100 dark:border-slate-700 flex-shrink-0 mt-1">
           <div 
             className="w-2 h-2 rounded-full flex-shrink-0" 
             style={{ backgroundColor: project.statusColor }}
