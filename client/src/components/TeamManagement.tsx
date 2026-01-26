@@ -79,7 +79,7 @@ function TeamCard({
     >
       <div 
         className="px-4 py-3 rounded-t-lg border-b border-border"
-        style={{ backgroundColor: `${team.color}50` }}
+        style={{ backgroundColor: team.color }}
       >
         <div className="flex items-center justify-between">
           <span className="font-bold text-slate-700" data-testid={`text-team-name-${team.id}`}>
