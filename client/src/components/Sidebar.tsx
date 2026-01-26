@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Calendar, BarChart3, MapPin, Users, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, Route, CalendarOff, Activity, CloudUpload, ChevronDown, Plus, List } from "lucide-react";
+import { CalendarDays, CalendarRange, Calendar, BarChart3, MapPin, Users, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, Route, Activity, CloudUpload, ChevronDown, Plus, List } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
@@ -164,9 +164,8 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
 
         <NavGroup title="Mitarbeiter Verwaltung">
           <NavButton icon={UsersRound} label="Mitarbeiter" isActive={currentView === 'employees'} onClick={() => onViewChange('employees')} />
-          <NavButton icon={Layers} label="Team Vorlagen" isActive={currentView === 'teams'} onClick={() => onViewChange('teams')} />
+          <NavButton icon={Layers} label="Teams" isActive={currentView === 'teams'} onClick={() => onViewChange('teams')} />
           <NavButton icon={MapPin} label="Touren" isActive={currentView === 'tours'} onClick={() => onViewChange('tours')} />
-          <NavButton icon={CalendarOff} label="Abwesenheiten" />
         </NavGroup>
 
         <NavGroup title="Monitoring & Backup">
