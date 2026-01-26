@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Plus, Users, UserCheck } from "lucide-react";
+import { X, Plus, Users, UserCheck, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -66,9 +66,11 @@ const initialTeams: Team[] = [
 function TeamCard({
   team,
   onDelete,
+  onEditMembers,
 }: {
   team: Team;
   onDelete: () => void;
+  onEditMembers: () => void;
 }) {
   return (
     <div
@@ -87,7 +89,6 @@ function TeamCard({
             size="icon"
             variant="ghost"
             onClick={onDelete}
-            className="h-7 w-7"
             data-testid={`button-delete-team-${team.id}`}
           >
             <X className="w-4 h-4" />
@@ -95,8 +96,18 @@ function TeamCard({
         </div>
       </div>
       <div className="p-4">
-        <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
-          Mitarbeiter
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Mitarbeiter
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onEditMembers}
+            data-testid={`button-edit-team-members-${team.id}`}
+          >
+            <Pencil className="w-3 h-3" />
+          </Button>
         </div>
         <div className="space-y-1">
           {team.members.map((member) => (
@@ -117,6 +128,113 @@ function TeamCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function EditTeamMembersDialog({
+  open,
+  onOpenChange,
+  team,
+  onSaveMembers,
+  assignedMemberIds,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  team: Team;
+  onSaveMembers: (teamId: string, memberIds: string[]) => void;
+  assignedMemberIds: string[];
+}) {
+  const currentMemberIds = team.members.map(m => m.id);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>(currentMemberIds);
+
+  const handleToggleMember = (memberId: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  const handleSave = () => {
+    onSaveMembers(team.id, selectedMembers);
+    onOpenChange(false);
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      setSelectedMembers(currentMemberIds);
+    }
+    onOpenChange(isOpen);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-primary">
+            <Users className="w-5 h-5" />
+            Mitarbeiter bearbeiten - Team {team.number}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-4">
+          <div 
+            className="px-4 py-3 rounded-lg border border-border"
+            style={{ backgroundColor: team.color }}
+          >
+            <span className="font-bold text-slate-700">Team {team.number}</span>
+          </div>
+          
+          <div>
+            <div className="text-sm font-medium text-slate-700 mb-3">
+              Mitarbeiter auswählen:
+            </div>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {allEmployees.map((employee) => {
+                const isAssignedElsewhere = assignedMemberIds.includes(employee.id) && !currentMemberIds.includes(employee.id);
+                const isSelected = selectedMembers.includes(employee.id);
+                return (
+                  <div
+                    key={employee.id}
+                    onClick={() => !isAssignedElsewhere && handleToggleMember(employee.id)}
+                    className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${
+                      isAssignedElsewhere ? "opacity-50 bg-slate-100 cursor-not-allowed" : isSelected ? "bg-primary/10" : "hover:bg-slate-50"
+                    }`}
+                    data-testid={`checkbox-edit-employee-${employee.id}`}
+                  >
+                    <Checkbox
+                      id={`edit-employee-${employee.id}`}
+                      disabled={isAssignedElsewhere}
+                      checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() => handleToggleMember(employee.id)}
+                    />
+                    <span
+                      className={`text-sm ${
+                        isAssignedElsewhere ? "text-slate-400" : "text-slate-700"
+                      }`}
+                    >
+                      {employee.name}
+                      {isAssignedElsewhere && (
+                        <span className="ml-2 text-xs text-slate-400">(bereits in Team)</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleSave} data-testid="button-save-team-members">
+              Speichern
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -224,6 +342,7 @@ function NewTeamDialog({
 export function TeamManagement({ onCancel }: TeamManagementProps) {
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
   const assignedMemberIds = teams.flatMap((t) => t.members.map((m) => m.id));
   const nextTeamNumber = teams.length > 0 ? Math.max(...teams.map((t) => t.number)) + 1 : 1;
@@ -242,6 +361,14 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     setTeams([...teams, newTeam]);
   };
 
+  const handleSaveMembers = (teamId: string, memberIds: string[]) => {
+    setTeams(teams.map(team => 
+      team.id === teamId 
+        ? { ...team, members: allEmployees.filter(e => memberIds.includes(e.id)) }
+        : team
+    ));
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <Card className="bg-card">
@@ -249,7 +376,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Team Vorlagen
+              Teams
             </CardTitle>
             {onCancel && (
               <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-teams">
@@ -265,6 +392,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                 key={team.id}
                 team={team}
                 onDelete={() => handleDeleteTeam(team.id)}
+                onEditMembers={() => setEditingTeam(team)}
               />
             ))}
           </div>
@@ -290,6 +418,16 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         assignedMemberIds={assignedMemberIds}
         nextTeamNumber={nextTeamNumber}
       />
+
+      {editingTeam && (
+        <EditTeamMembersDialog
+          open={!!editingTeam}
+          onOpenChange={(open) => !open && setEditingTeam(null)}
+          team={editingTeam}
+          onSaveMembers={handleSaveMembers}
+          assignedMemberIds={assignedMemberIds}
+        />
+      )}
     </div>
   );
 }
