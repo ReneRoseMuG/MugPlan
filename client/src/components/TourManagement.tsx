@@ -172,7 +172,6 @@ function ColorPickerButton({
       <Button
         size="icon"
         variant="ghost"
-        className="h-7 w-7"
         onClick={(e) => e.preventDefault()}
       >
         <Palette className="w-4 h-4" />
@@ -292,7 +291,6 @@ export function TourManagement({ onCancel }: TourManagementProps) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-7 w-7"
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingTour(tour);

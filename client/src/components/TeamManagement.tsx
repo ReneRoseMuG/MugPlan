@@ -234,7 +234,6 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7"
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingTeam(team);

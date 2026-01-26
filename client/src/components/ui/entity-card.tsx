@@ -48,7 +48,6 @@ export function EntityCard({
                 onDelete();
               }}
               disabled={isDeleting}
-              className="h-7 w-7"
               data-testid={testId ? `button-delete-${testId}` : undefined}
             >
               <X className="w-4 h-4" />
