@@ -28,7 +28,7 @@ function CustomerMenuButton({ isActive, onViewChange }: { isActive?: boolean; on
   return (
     <button
       data-testid="nav-kunden"
-      onClick={() => onViewChange('customer')}
+      onClick={() => onViewChange('customerList')}
       className={`
         flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full text-left
         ${isActive 
@@ -156,7 +156,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
             onViewChange={onViewChange} 
           />
           <CustomerMenuButton 
-            isActive={currentView === 'customer'} 
+            isActive={currentView === 'customer' || currentView === 'customerList'} 
             onViewChange={onViewChange} 
           />
           <NavButton icon={ListChecks} label="Projektstatus" />

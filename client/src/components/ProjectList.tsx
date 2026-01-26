@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, FolderKanban, Calendar, MapPin } from "lucide-react";
+import { EntityCard } from "@/components/ui/entity-card";
+import { defaultHeaderColor } from "@/lib/colors";
 
 interface ProjectListProps {
   onCancel?: () => void;
@@ -92,28 +94,13 @@ export default function ProjectList({ onCancel }: ProjectListProps) {
             const status = getStatus(project.statusId);
             
             return (
-              <div
+              <EntityCard
                 key={project.id}
-                className="p-4 bg-slate-50 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer"
-                data-testid={`project-card-${project.id}`}
+                title={project.name}
+                icon={<FolderKanban className="w-4 h-4" style={{ color: status?.color }} />}
+                headerColor={defaultHeaderColor}
+                testId={`project-card-${project.id}`}
               >
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: status?.color ? `${status.color}20` : '#f1f5f9' }}
-                    >
-                      <FolderKanban 
-                        className="w-4 h-4" 
-                        style={{ color: status?.color || '#64748b' }}
-                      />
-                    </div>
-                    <h3 className="font-semibold text-slate-800 line-clamp-2">
-                      {project.name}
-                    </h3>
-                  </div>
-                </div>
-
                 {status && (
                   <Badge 
                     className="mb-3"
@@ -143,7 +130,7 @@ export default function ProjectList({ onCancel }: ProjectListProps) {
                     </div>
                   </div>
                 )}
-              </div>
+              </EntityCard>
             );
           })}
         </div>

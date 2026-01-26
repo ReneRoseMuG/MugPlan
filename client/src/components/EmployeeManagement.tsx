@@ -207,7 +207,7 @@ function EmployeeCard({
 
   return (
     <div 
-      className={`flex rounded-lg border border-border overflow-hidden cursor-pointer transition-shadow hover:shadow-md ${
+      className={`flex rounded-lg border border-border overflow-hidden cursor-pointer transition-all hover:shadow-md hover:border-primary/50 ${
         isArchived ? "bg-slate-100 opacity-60" : "bg-white"
       }`}
       onDoubleClick={onDoubleClick}

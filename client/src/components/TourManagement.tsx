@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Plus, Route, Loader2, Pencil, UserCheck } from "lucide-react";
+import { X, Plus, Route, Loader2, Pencil, UserCheck, Palette } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { EntityCard } from "@/components/ui/entity-card";
 import type { Tour } from "@shared/schema";
 
 interface TourMember {
@@ -93,7 +94,7 @@ function EditTourMembersDialog({
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div 
-            className="px-4 py-3 rounded-lg border border-border"
+            className="px-4 py-2 rounded-lg border border-border"
             style={{ backgroundColor: tour.color }}
           >
             <span className="font-bold text-slate-700">{tour.name}</span>
@@ -153,93 +154,30 @@ function EditTourMembersDialog({
   );
 }
 
-function TourCard({
-  tour,
-  onDelete,
-  onColorChange,
-  onEditMembers,
-  isDeleting,
-}: {
-  tour: TourWithMembers;
-  onDelete: () => void;
-  onColorChange: (color: string) => void;
-  onEditMembers: () => void;
-  isDeleting: boolean;
+function ColorPickerButton({ 
+  color, 
+  onChange 
+}: { 
+  color: string; 
+  onChange: (color: string) => void;
 }) {
   return (
-    <div
-      className="relative rounded-lg border border-border shadow-sm bg-white"
-      data-testid={`card-tour-${tour.id}`}
-    >
-      <div 
-        className="px-4 py-3 rounded-t-lg border-b border-border"
-        style={{ backgroundColor: `${tour.color}50` }}
+    <label className="relative cursor-pointer">
+      <input
+        type="color"
+        value={color}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      />
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-7 w-7"
+        onClick={(e) => e.preventDefault()}
       >
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-slate-700" data-testid={`text-tour-name-${tour.id}`}>
-            {tour.name}
-          </span>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onDelete}
-            disabled={isDeleting}
-            data-testid={`button-delete-tour-${tour.id}`}
-          >
-            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-          </Button>
-        </div>
-      </div>
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Mitarbeiter
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onEditMembers}
-            data-testid={`button-edit-tour-members-${tour.id}`}
-          >
-            <Pencil className="w-3 h-3" />
-          </Button>
-        </div>
-        <div className="space-y-1">
-          {tour.members.map((member) => (
-            <div 
-              key={member.id} 
-              className="text-sm text-slate-700 flex items-center gap-2"
-              data-testid={`text-tour-member-${member.id}`}
-            >
-              <UserCheck className="w-3 h-3 text-primary" />
-              {member.name}
-            </div>
-          ))}
-          {tour.members.length === 0 && (
-            <div className="text-sm text-slate-400 italic">
-              Keine Mitarbeiter zugewiesen
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="px-4 pb-4">
-        <label className="relative block w-full cursor-pointer">
-          <input
-            type="color"
-            value={tour.color}
-            onChange={(e) => onColorChange(e.target.value)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            data-testid={`input-tour-color-${tour.id}`}
-          />
-          <div 
-            className="w-full py-2 rounded-md border border-border text-center text-sm font-medium transition-colors hover:bg-slate-50"
-            style={{ backgroundColor: `${tour.color}50` }}
-          >
-            Farbe ändern
-          </div>
-        </label>
-      </div>
-    </div>
+        <Palette className="w-4 h-4" />
+      </Button>
+    </label>
   );
 }
 
@@ -337,14 +275,56 @@ export function TourManagement({ onCancel }: TourManagementProps) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="list-tours">
             {toursWithMembers.map((tour) => (
-              <TourCard
+              <EntityCard
                 key={tour.id}
-                tour={tour}
+                title={tour.name}
+                icon={<Route className="w-4 h-4" />}
+                headerColor={tour.color}
                 onDelete={() => deleteMutation.mutate(tour.id)}
-                onColorChange={(color) => handleColorChange(tour.id, color)}
-                onEditMembers={() => setEditingTour(tour)}
                 isDeleting={deleteMutation.isPending}
-              />
+                testId={`card-tour-${tour.id}`}
+                actions={
+                  <>
+                    <ColorPickerButton
+                      color={tour.color}
+                      onChange={(color) => handleColorChange(tour.id, color)}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTour(tour);
+                      }}
+                      data-testid={`button-edit-tour-members-${tour.id}`}
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                  </>
+                }
+              >
+                <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+                  Mitarbeiter
+                </div>
+                <div className="space-y-1">
+                  {tour.members.map((member) => (
+                    <div 
+                      key={member.id} 
+                      className="text-sm text-slate-700 flex items-center gap-2"
+                      data-testid={`text-tour-member-${member.id}`}
+                    >
+                      <UserCheck className="w-3 h-3 text-primary" />
+                      {member.name}
+                    </div>
+                  ))}
+                  {tour.members.length === 0 && (
+                    <div className="text-sm text-slate-400 italic">
+                      Keine Mitarbeiter zugewiesen
+                    </div>
+                  )}
+                </div>
+              </EntityCard>
             ))}
           </div>
 

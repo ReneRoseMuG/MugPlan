@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { EntityCard } from "@/components/ui/entity-card";
+import { getRandomPastelColor } from "@/lib/colors";
 import type { Team } from "@shared/schema";
 
 interface TeamMember {
@@ -26,15 +28,6 @@ interface TeamManagementProps {
   onCancel?: () => void;
 }
 
-const pastelColors = [
-  "#E8F4F8",
-  "#FDF6E3",
-  "#F0F4E8",
-  "#F8E8F4",
-  "#E8E8F8",
-  "#F4F0E8",
-];
-
 const allEmployees: TeamMember[] = [
   { id: "e1", name: "Thomas Müller" },
   { id: "e2", name: "Anna Schmidt" },
@@ -42,96 +35,6 @@ const allEmployees: TeamMember[] = [
   { id: "e4", name: "Sandra Fischer" },
   { id: "e5", name: "Klaus Hoffmann" },
 ];
-
-function TeamCard({
-  team,
-  onDelete,
-  onEditMembers,
-  onColorChange,
-  isDeleting,
-}: {
-  team: TeamWithMembers;
-  onDelete: () => void;
-  onEditMembers: () => void;
-  onColorChange: (color: string) => void;
-  isDeleting: boolean;
-}) {
-  return (
-    <div
-      className="relative rounded-lg border border-border shadow-sm bg-white"
-      data-testid={`card-team-${team.id}`}
-    >
-      <div 
-        className="px-4 py-3 rounded-t-lg border-b border-border"
-        style={{ backgroundColor: team.color }}
-      >
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-slate-700" data-testid={`text-team-name-${team.id}`}>
-            {team.name}
-          </span>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onDelete}
-            disabled={isDeleting}
-            data-testid={`button-delete-team-${team.id}`}
-          >
-            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-          </Button>
-        </div>
-      </div>
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Mitarbeiter
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onEditMembers}
-            data-testid={`button-edit-team-members-${team.id}`}
-          >
-            <Pencil className="w-3 h-3" />
-          </Button>
-        </div>
-        <div className="space-y-1">
-          {team.members.map((member) => (
-            <div 
-              key={member.id} 
-              className="text-sm text-slate-700 flex items-center gap-2"
-              data-testid={`text-member-${member.id}`}
-            >
-              <UserCheck className="w-3 h-3 text-primary" />
-              {member.name}
-            </div>
-          ))}
-          {team.members.length === 0 && (
-            <div className="text-sm text-slate-400 italic">
-              Keine Mitarbeiter zugewiesen
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="px-4 pb-4">
-        <label className="relative block w-full cursor-pointer">
-          <input
-            type="color"
-            value={team.color}
-            onChange={(e) => onColorChange(e.target.value)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            data-testid={`input-team-color-${team.id}`}
-          />
-          <div 
-            className="w-full py-2 rounded-md border border-border text-center text-sm font-medium transition-colors hover:bg-slate-50"
-            style={{ backgroundColor: team.color }}
-          >
-            Farbe ändern
-          </div>
-        </label>
-      </div>
-    </div>
-  );
-}
 
 function EditTeamMembersDialog({
   open,
@@ -180,7 +83,7 @@ function EditTeamMembersDialog({
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div 
-            className="px-4 py-3 rounded-lg border border-border"
+            className="px-4 py-2 rounded-lg border border-border"
             style={{ backgroundColor: team.color }}
           >
             <span className="font-bold text-slate-700">{team.name}</span>
@@ -248,27 +151,18 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     queryKey: ['/api/teams'],
   });
 
-  const teamsWithMembers: TeamWithMembers[] = teams.map(team => ({
+  const teamsWithMembers: TeamWithMembers[] = teams.map((team, index) => ({
     ...team,
     members: teamMembers[team.id] || [],
+    color: team.color || getRandomPastelColor(index),
   }));
 
   const assignedMemberIds = teamsWithMembers.flatMap((t) => t.members.map((m) => m.id));
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const colorIndex = teams.length % pastelColors.length;
-      const color = pastelColors[colorIndex];
+      const color = getRandomPastelColor(teams.length);
       return apiRequest('POST', '/api/teams', { color });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, color }: { id: number; color: string }) => {
-      return apiRequest('PATCH', `/api/teams/${id}`, { color });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
@@ -288,10 +182,6 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
       });
     },
   });
-
-  const handleColorChange = (id: number, color: string) => {
-    updateMutation.mutate({ id, color });
-  };
 
   const handleSaveMembers = (teamId: number, memberIds: string[]) => {
     const members = allEmployees.filter(e => memberIds.includes(e.id));
@@ -332,14 +222,50 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="list-teams">
             {teamsWithMembers.map((team) => (
-              <TeamCard
+              <EntityCard
                 key={team.id}
-                team={team}
+                title={team.name}
+                icon={<Users className="w-4 h-4" />}
+                headerColor={team.color}
                 onDelete={() => deleteMutation.mutate(team.id)}
-                onEditMembers={() => setEditingTeam(team)}
-                onColorChange={(color) => handleColorChange(team.id, color)}
                 isDeleting={deleteMutation.isPending}
-              />
+                testId={`card-team-${team.id}`}
+                actions={
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingTeam(team);
+                    }}
+                    data-testid={`button-edit-team-members-${team.id}`}
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                }
+              >
+                <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+                  Mitarbeiter
+                </div>
+                <div className="space-y-1">
+                  {team.members.map((member) => (
+                    <div 
+                      key={member.id} 
+                      className="text-sm text-slate-700 flex items-center gap-2"
+                      data-testid={`text-member-${member.id}`}
+                    >
+                      <UserCheck className="w-3 h-3 text-primary" />
+                      {member.name}
+                    </div>
+                  ))}
+                  {team.members.length === 0 && (
+                    <div className="text-sm text-slate-400 italic">
+                      Keine Mitarbeiter zugewiesen
+                    </div>
+                  )}
+                </div>
+              </EntityCard>
             ))}
           </div>
 
