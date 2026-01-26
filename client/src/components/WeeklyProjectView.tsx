@@ -409,7 +409,7 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                   <div className="text-lg">{format(day, "d")}</div>
                 </div>
                 
-                <div className="flex-1 flex flex-col gap-1">
+                <div className={`flex-1 gap-1 ${allExpanded ? 'grid grid-rows-3' : 'flex flex-col'}`}>
                   {tours.map((tour) => {
                     const isExpanded = allExpanded || tour.id === expandedTourId;
                     const dayProjects = isSaturday(day) ? [] : getProjectsForDayAndTour(day, tour.id);
@@ -446,7 +446,7 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                     return (
                       <div 
                         key={tour.id}
-                        className="h-1/3 min-h-[180px] rounded-lg p-2 border border-slate-200 dark:border-slate-700 transition-all overflow-auto"
+                        className="min-h-[180px] rounded-lg p-2 border border-slate-200 dark:border-slate-700 transition-all overflow-auto"
                         style={{ backgroundColor: hexToRgba(tour.color, 0.15) }}
                         data-testid={`slot-${format(day, "yyyy-MM-dd")}-tour-${tour.id}`}
                       >
