@@ -49,107 +49,81 @@ const tours: Tour[] = [
 const projects: Project[] = [
   {
     id: "p1",
-    name: "Renovierung Büro",
+    name: "Projekt 1",
     status: "In Bearbeitung",
     statusColor: "#f59e0b",
     customerId: "c1",
     customerName: "Müller GmbH",
     customerPlz: "80331",
     customerCity: "München",
-    description: "<b>Empfangsbereich</b> komplett neu gestalten. Boden, Wände, Beleuchtung.",
+    description: "<b>GESPIEGELT</b><br/>Palkkio 'E', Core, R-alu-schw<br/>Fenster rund 90 cm<br/>Brillenablage 2-fach, 3 Düfte<br/>2 Yoga Lampen, Lixum farblos",
     appointmentDate: "2026-01-20",
     tourId: "1"
   },
   {
     id: "p2",
-    name: "Gartenanlage",
+    name: "Projekt 2",
     status: "Neu",
     statusColor: "#3b82f6",
     customerId: "c2",
     customerName: "Schmidt, Anna",
     customerPlz: "10115",
     customerCity: "Berlin",
-    description: "Terrasse mit <b>Naturstein</b> und Bepflanzung.",
+    description: "<b>GESPIEGELT</b><br/>Palkkio 'E', Core; R-alu-schw<br/>Fenster rund 90 cm<br/>Brillenablage 2-fach, 3 Düfte<br/>2 Yoga Lampen, Lixum farblos",
     appointmentDate: "2026-01-21",
     tourId: "2"
   },
   {
     id: "p3",
-    name: "Dachsanierung",
+    name: "Projekt 3",
     status: "Warten auf Kunde",
     statusColor: "#8b5cf6",
     customerId: "c3",
     customerName: "Weber & Söhne",
     customerPlz: "50667",
     customerCity: "Köln",
-    description: "Komplette <b>Dacherneuerung</b> inkl. Dämmung.",
+    description: "<b>Premium4</b>, Core, Lixum farblos<br/>R-alu-schw, Yoga<br/>2er Steckdose",
     appointmentDate: "2026-01-22",
     tourId: "1"
   },
   {
     id: "p4",
-    name: "Badumbau",
+    name: "Projekt 4",
     status: "In Bearbeitung",
     statusColor: "#f59e0b",
     customerId: "c4",
     customerName: "Fischer, Thomas",
     customerPlz: "60313",
     customerCity: "Frankfurt",
-    description: "Barrierefreies Bad mit <b>bodengleicher Dusche</b>.",
+    description: "<b>Premium 4</b>, Aries<br/>R-alu-schw, Lixum<br/>farblos",
     appointmentDate: "2026-01-22",
     tourId: "2"
   },
   {
     id: "p5",
-    name: "Wintergarten",
+    name: "Projekt 5",
     status: "Abgeschlossen",
     statusColor: "#22c55e",
     customerId: "c5",
     customerName: "Becker, Maria",
     customerPlz: "70173",
     customerCity: "Stuttgart",
-    description: "Anbau <b>Wintergarten</b> 25qm mit Heizung.",
+    description: "<b>Palkkio; Drop;</b><br/>R-alu-grün; 1 Steckdose<br/>im Ruheraum unter der<br/>kurzen Bank",
     appointmentDate: "2026-01-23",
     tourId: "3"
   },
   {
     id: "p6",
-    name: "Fassade streichen",
+    name: "Projekt 6",
     status: "Neu",
     statusColor: "#3b82f6",
     customerId: "c6",
     customerName: "Hoffmann AG",
     customerPlz: "40213",
     customerCity: "Düsseldorf",
-    description: "Außenfassade <b>3-stöckig</b> mit Gerüst.",
+    description: "<b>XL; Aries; R-alu-schw</b><br/>OHNE FENSTER<br/>2 Vordachlampen<br/>Einstiegsstufe<br/>Relax Lampenschirm",
     appointmentDate: "2026-01-24",
     tourId: "1"
-  },
-  {
-    id: "p7",
-    name: "Parkett verlegen",
-    status: "In Bearbeitung",
-    statusColor: "#f59e0b",
-    customerId: "c7",
-    customerName: "Klein, Peter",
-    customerPlz: "20095",
-    customerCity: "Hamburg",
-    description: "Eichenparkett <b>120qm</b> Wohnbereich.",
-    appointmentDate: "2026-01-24",
-    tourId: "2"
-  },
-  {
-    id: "p8",
-    name: "Elektroinstallation",
-    status: "Neu",
-    statusColor: "#3b82f6",
-    customerId: "c8",
-    customerName: "Neumann GmbH",
-    customerPlz: "30159",
-    customerCity: "Hannover",
-    description: "Komplette <b>Neuverkabelung</b> Altbau.",
-    appointmentDate: "2026-01-20",
-    tourId: "3"
   }
 ];
 
@@ -305,13 +279,13 @@ function ProjectCard({
     <>
       <div 
         ref={cardRef}
-        className="p-2 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm text-xs cursor-pointer hover:shadow-md transition-shadow"
+        className="p-3 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm text-xs cursor-pointer hover:shadow-md transition-shadow"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onDoubleClick={onDoubleClick}
         data-testid={`project-card-${project.id}`}
       >
-        <div className="flex items-center justify-between gap-1 mb-1">
+        <div className="flex items-center justify-between gap-1 mb-2">
           <span className="font-semibold text-slate-700 dark:text-slate-200 truncate" data-testid={`text-project-customer-${project.id}`}>
             {project.customerName}
           </span>
@@ -320,11 +294,11 @@ function ProjectCard({
           </span>
         </div>
         <div 
-          className="text-slate-600 dark:text-slate-300 text-[11px] leading-tight mb-1 line-clamp-2"
+          className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed mb-2"
           dangerouslySetInnerHTML={{ __html: project.description }}
           data-testid={`text-project-description-${project.id}`}
         />
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 pt-1 border-t border-slate-100 dark:border-slate-700">
           <div 
             className="w-2 h-2 rounded-full flex-shrink-0" 
             style={{ backgroundColor: project.statusColor }}
@@ -452,7 +426,7 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                     return (
                       <div 
                         key={tour.id}
-                        className="flex-1 min-h-[160px] rounded-lg p-1 border border-slate-200 dark:border-slate-700 transition-all overflow-auto"
+                        className="flex-1 min-h-[220px] rounded-lg p-2 border border-slate-200 dark:border-slate-700 transition-all overflow-auto"
                         style={{ backgroundColor: hexToRgba(tour.color, 0.15) }}
                         data-testid={`slot-${format(day, "yyyy-MM-dd")}-tour-${tour.id}`}
                       >
