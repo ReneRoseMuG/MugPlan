@@ -449,7 +449,7 @@ export function WeeklyProjectView({ onCancel, onOpenProject }: WeeklyProjectView
                     return (
                       <div 
                         key={tour.id}
-                        className="min-h-[180px] rounded-lg p-2 border border-slate-200 dark:border-slate-700 transition-all overflow-auto"
+                        className="rounded-lg p-2 border border-slate-200 dark:border-slate-700 transition-all overflow-y-auto min-h-0"
                         style={{ backgroundColor: hexToRgba(tour.color, 0.15) }}
                         data-testid={`slot-${format(day, "yyyy-MM-dd")}-tour-${tour.id}`}
                       >
