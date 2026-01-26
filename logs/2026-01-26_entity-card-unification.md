@@ -188,3 +188,19 @@ interface EntityCardProps {
   - Rechte Spalte (flex-1): Tour- und Team-Badges
 - **Header**: Neutral (slate-100), bei archivierten Mitarbeitern grau
 - **Icon**: User-Icon im Header
+
+---
+
+## Bestätigung: Einheitliche Header-Höhe
+
+Alle fünf Kartentypen nutzen die EntityCard-Komponente mit identischem Header-Styling:
+
+| Kartentyp | Header-Padding | Resultat |
+|-----------|----------------|----------|
+| Projekt | `py-2` (8px) | ✓ Gleiche Höhe |
+| Kunde | `py-2` (8px) | ✓ Gleiche Höhe |
+| Mitarbeiter | `py-2` (8px) | ✓ Gleiche Höhe |
+| Team | `py-2` (8px) | ✓ Gleiche Höhe |
+| Tour | `py-2` (8px) | ✓ Gleiche Höhe |
+
+Die Header-Höhe ist konsistent über alle Entity-Karten hinweg.
