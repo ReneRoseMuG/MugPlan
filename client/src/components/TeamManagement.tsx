@@ -2,23 +2,23 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Plus, Users, UserCheck, Pencil } from "lucide-react";
+import { X, Plus, Users, UserCheck, Pencil, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { Team } from "@shared/schema";
 
 interface TeamMember {
   id: string;
   name: string;
 }
 
-interface Team {
-  id: string;
-  number: number;
-  color: string;
+interface TeamWithMembers extends Team {
   members: TeamMember[];
 }
 
@@ -43,34 +43,18 @@ const allEmployees: TeamMember[] = [
   { id: "e5", name: "Klaus Hoffmann" },
 ];
 
-const initialTeams: Team[] = [
-  {
-    id: "t1",
-    number: 1,
-    color: pastelColors[0],
-    members: [
-      { id: "e1", name: "Thomas Müller" },
-      { id: "e2", name: "Anna Schmidt" },
-    ],
-  },
-  {
-    id: "t2",
-    number: 2,
-    color: pastelColors[1],
-    members: [
-      { id: "e3", name: "Michael Weber" },
-    ],
-  },
-];
-
 function TeamCard({
   team,
   onDelete,
   onEditMembers,
+  onColorChange,
+  isDeleting,
 }: {
-  team: Team;
+  team: TeamWithMembers;
   onDelete: () => void;
   onEditMembers: () => void;
+  onColorChange: (color: string) => void;
+  isDeleting: boolean;
 }) {
   return (
     <div
@@ -83,15 +67,16 @@ function TeamCard({
       >
         <div className="flex items-center justify-between">
           <span className="font-bold text-slate-700" data-testid={`text-team-name-${team.id}`}>
-            Team {team.number}
+            {team.name}
           </span>
           <Button
             size="icon"
             variant="ghost"
             onClick={onDelete}
+            disabled={isDeleting}
             data-testid={`button-delete-team-${team.id}`}
           >
-            <X className="w-4 h-4" />
+            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
           </Button>
         </div>
       </div>
@@ -127,6 +112,23 @@ function TeamCard({
           )}
         </div>
       </div>
+      <div className="px-4 pb-4">
+        <label className="relative block w-full cursor-pointer">
+          <input
+            type="color"
+            value={team.color}
+            onChange={(e) => onColorChange(e.target.value)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            data-testid={`input-team-color-${team.id}`}
+          />
+          <div 
+            className="w-full py-2 rounded-md border border-border text-center text-sm font-medium transition-colors hover:bg-slate-50"
+            style={{ backgroundColor: team.color }}
+          >
+            Farbe ändern
+          </div>
+        </label>
+      </div>
     </div>
   );
 }
@@ -140,8 +142,8 @@ function EditTeamMembersDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  team: Team;
-  onSaveMembers: (teamId: string, memberIds: string[]) => void;
+  team: TeamWithMembers;
+  onSaveMembers: (teamId: number, memberIds: string[]) => void;
   assignedMemberIds: string[];
 }) {
   const currentMemberIds = team.members.map(m => m.id);
@@ -173,7 +175,7 @@ function EditTeamMembersDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-primary">
             <Users className="w-5 h-5" />
-            Mitarbeiter bearbeiten - Team {team.number}
+            Mitarbeiter bearbeiten - {team.name}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
@@ -181,7 +183,7 @@ function EditTeamMembersDialog({
             className="px-4 py-3 rounded-lg border border-border"
             style={{ backgroundColor: team.color }}
           >
-            <span className="font-bold text-slate-700">Team {team.number}</span>
+            <span className="font-bold text-slate-700">{team.name}</span>
           </div>
           
           <div>
@@ -238,136 +240,78 @@ function EditTeamMembersDialog({
   );
 }
 
-function NewTeamDialog({
-  open,
-  onOpenChange,
-  onCreateTeam,
-  assignedMemberIds,
-  nextTeamNumber,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCreateTeam: (memberIds: string[]) => void;
-  assignedMemberIds: string[];
-  nextTeamNumber: number;
-}) {
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const nextColor = pastelColors[(nextTeamNumber - 1) % pastelColors.length];
-
-  const handleToggleMember = (memberId: string) => {
-    setSelectedMembers((prev) =>
-      prev.includes(memberId)
-        ? prev.filter((id) => id !== memberId)
-        : [...prev, memberId]
-    );
-  };
-
-  const handleCreate = () => {
-    onCreateTeam(selectedMembers);
-    setSelectedMembers([]);
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-primary">
-            <Users className="w-5 h-5" />
-            Neues Team erstellen
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 pt-4">
-          <div 
-            className="px-4 py-3 rounded-lg border border-border"
-            style={{ backgroundColor: nextColor }}
-          >
-            <span className="font-bold text-slate-700">Team {nextTeamNumber}</span>
-          </div>
-          
-          <div>
-            <div className="text-sm font-medium text-slate-700 mb-3">
-              Mitarbeiter auswählen:
-            </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {allEmployees.map((employee) => {
-                const isAssigned = assignedMemberIds.includes(employee.id);
-                const isSelected = selectedMembers.includes(employee.id);
-                return (
-                  <div
-                    key={employee.id}
-                    onClick={() => !isAssigned && handleToggleMember(employee.id)}
-                    className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${
-                      isAssigned ? "opacity-50 bg-slate-100 cursor-not-allowed" : isSelected ? "bg-primary/10" : "hover:bg-slate-50"
-                    }`}
-                    data-testid={`checkbox-employee-${employee.id}`}
-                  >
-                    <Checkbox
-                      id={`employee-${employee.id}`}
-                      disabled={isAssigned}
-                      checked={isSelected}
-                      onClick={(e) => e.stopPropagation()}
-                      onCheckedChange={() => handleToggleMember(employee.id)}
-                    />
-                    <span
-                      className={`text-sm ${
-                        isAssigned ? "text-slate-400" : "text-slate-700"
-                      }`}
-                    >
-                      {employee.name}
-                      {isAssigned && (
-                        <span className="ml-2 text-xs text-slate-400">(bereits in Team)</span>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={handleCreate} data-testid="button-create-team">
-              Team erstellen
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function TeamManagement({ onCancel }: TeamManagementProps) {
-  const [teams, setTeams] = useState<Team[]>(initialTeams);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [teamMembers, setTeamMembers] = useState<Record<number, TeamMember[]>>({});
+  const [editingTeam, setEditingTeam] = useState<TeamWithMembers | null>(null);
 
-  const assignedMemberIds = teams.flatMap((t) => t.members.map((m) => m.id));
-  const nextTeamNumber = teams.length > 0 ? Math.max(...teams.map((t) => t.number)) + 1 : 1;
+  const { data: teams = [], isLoading } = useQuery<Team[]>({
+    queryKey: ['/api/teams'],
+  });
 
-  const handleDeleteTeam = (id: string) => {
-    setTeams(teams.filter((t) => t.id !== id));
+  const teamsWithMembers: TeamWithMembers[] = teams.map(team => ({
+    ...team,
+    members: teamMembers[team.id] || [],
+  }));
+
+  const assignedMemberIds = teamsWithMembers.flatMap((t) => t.members.map((m) => m.id));
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const colorIndex = teams.length % pastelColors.length;
+      const color = pastelColors[colorIndex];
+      return apiRequest('POST', '/api/teams', { color });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, color }: { id: number; color: string }) => {
+      return apiRequest('PATCH', `/api/teams/${id}`, { color });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/teams/${id}`);
+    },
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+      setTeamMembers(prev => {
+        const next = { ...prev };
+        delete next[deletedId];
+        return next;
+      });
+    },
+  });
+
+  const handleColorChange = (id: number, color: string) => {
+    updateMutation.mutate({ id, color });
   };
 
-  const handleCreateTeam = (memberIds: string[]) => {
-    const newTeam: Team = {
-      id: `t${Date.now()}`,
-      number: nextTeamNumber,
-      color: pastelColors[(nextTeamNumber - 1) % pastelColors.length],
-      members: allEmployees.filter((e) => memberIds.includes(e.id)),
-    };
-    setTeams([...teams, newTeam]);
+  const handleSaveMembers = (teamId: number, memberIds: string[]) => {
+    const members = allEmployees.filter(e => memberIds.includes(e.id));
+    setTeamMembers(prev => ({
+      ...prev,
+      [teamId]: members,
+    }));
   };
 
-  const handleSaveMembers = (teamId: string, memberIds: string[]) => {
-    setTeams(teams.map(team => 
-      team.id === teamId 
-        ? { ...team, members: allEmployees.filter(e => memberIds.includes(e.id)) }
-        : team
-    ));
-  };
+  if (isLoading) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <Card className="bg-card">
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -387,37 +331,42 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="list-teams">
-            {teams.map((team) => (
+            {teamsWithMembers.map((team) => (
               <TeamCard
                 key={team.id}
                 team={team}
-                onDelete={() => handleDeleteTeam(team.id)}
+                onDelete={() => deleteMutation.mutate(team.id)}
                 onEditMembers={() => setEditingTeam(team)}
+                onColorChange={(color) => handleColorChange(team.id, color)}
+                isDeleting={deleteMutation.isPending}
               />
             ))}
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 flex justify-between items-center">
             <Button
               variant="outline"
-              onClick={() => setDialogOpen(true)}
+              onClick={() => createMutation.mutate()}
+              disabled={createMutation.isPending}
               className="flex items-center gap-2"
               data-testid="button-new-team"
             >
-              <Plus className="w-4 h-4" />
+              {createMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
               Neues Team
             </Button>
+
+            {onCancel && (
+              <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-teams">
+                Schließen
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
-
-      <NewTeamDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onCreateTeam={handleCreateTeam}
-        assignedMemberIds={assignedMemberIds}
-        nextTeamNumber={nextTeamNumber}
-      />
 
       {editingTeam && (
         <EditTeamMembersDialog
