@@ -5,7 +5,7 @@ import {
   insertTeamSchema, updateTeamSchema, teams,
   insertCustomerSchema, updateCustomerSchema, customers,
   insertNoteSchema, updateNoteSchema, notes,
-  insertNoteTemplateSchema, noteTemplates
+  insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates
 } from './schema';
 
 export const errorSchemas = {
@@ -219,6 +219,24 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/note-templates/:id',
+      input: updateNoteTemplateSchema,
+      responses: {
+        200: z.custom<typeof noteTemplates.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/note-templates/:id',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
   },
 };
 
@@ -254,4 +272,5 @@ export type NoteUpdateInput = z.infer<typeof api.notes.update.input>;
 export type NoteResponse = z.infer<typeof api.notes.update.responses[200]>;
 
 export type NoteTemplateInput = z.infer<typeof api.noteTemplates.create.input>;
+export type NoteTemplateUpdateInput = z.infer<typeof api.noteTemplates.update.input>;
 export type NoteTemplateResponse = z.infer<typeof api.noteTemplates.create.responses[201]>;

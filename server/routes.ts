@@ -288,5 +288,30 @@ export async function registerRoutes(
     }
   });
 
+  app.put(api.noteTemplates.update.path, async (req, res) => {
+    try {
+      const templateId = Number(req.params.id);
+      const input = api.noteTemplates.update.input.parse(req.body);
+      const template = await storage.updateNoteTemplate(templateId, input);
+      if (!template) {
+        return res.status(404).json({ message: 'Note template not found' });
+      }
+      res.json(template);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.noteTemplates.delete.path, async (req, res) => {
+    await storage.deleteNoteTemplate(Number(req.params.id));
+    res.status(204).send();
+  });
+
   return httpServer;
 }

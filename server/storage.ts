@@ -22,7 +22,8 @@ import {
   type InsertNote,
   type UpdateNote,
   type NoteTemplate,
-  type InsertNoteTemplate
+  type InsertNoteTemplate,
+  type UpdateNoteTemplate
 } from "@shared/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -50,6 +51,8 @@ export interface IStorage {
   getNoteTemplates(activeOnly?: boolean): Promise<NoteTemplate[]>;
   getNoteTemplate(id: number): Promise<NoteTemplate | null>;
   createNoteTemplate(template: InsertNoteTemplate): Promise<NoteTemplate>;
+  updateNoteTemplate(id: number, data: UpdateNoteTemplate): Promise<NoteTemplate | null>;
+  deleteNoteTemplate(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -206,6 +209,19 @@ export class DatabaseStorage implements IStorage {
   async createNoteTemplate(template: InsertNoteTemplate): Promise<NoteTemplate> {
     const [result] = await db.insert(noteTemplates).values(template).returning();
     return result;
+  }
+
+  async updateNoteTemplate(id: number, data: UpdateNoteTemplate): Promise<NoteTemplate | null> {
+    const [template] = await db
+      .update(noteTemplates)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(noteTemplates.id, id))
+      .returning();
+    return template || null;
+  }
+
+  async deleteNoteTemplate(id: number): Promise<void> {
+    await db.delete(noteTemplates).where(eq(noteTemplates.id, id));
   }
 }
 

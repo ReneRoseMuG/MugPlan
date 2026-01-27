@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Calendar, BarChart3, MapPin, Users, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, Route, Activity, CloudUpload, ChevronDown, Plus, List } from "lucide-react";
+import { CalendarDays, CalendarRange, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, ChevronDown, Plus, List } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
@@ -137,9 +137,6 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
           <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week' || currentView === 'weeklyProjects'} onClick={() => onViewChange('weeklyProjects')} />
           <NavButton icon={Calendar} label="Monatsübersicht" isActive={currentView === 'month'} onClick={() => onViewChange('month')} />
           <NavButton icon={CalendarRange} label="Jahresübersicht" isActive={currentView === 'year'} onClick={() => onViewChange('year')} />
-          <NavButton icon={BarChart3} label="Auslastungsübersicht" />
-          <NavButton icon={Route} label="Touren Übersicht" />
-          <NavButton icon={Users} label="Mitarbeiter Übersicht" />
         </NavGroup>
 
         <NavGroup title="Projektplanung">
@@ -151,7 +148,6 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
             isActive={currentView === 'customer' || currentView === 'customerList'} 
             onViewChange={onViewChange} 
           />
-          <NavButton icon={ListChecks} label="Projektstatus" />
         </NavGroup>
 
         <NavGroup title="Mitarbeiter Verwaltung">
@@ -160,9 +156,10 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
           <NavButton icon={MapPin} label="Touren" isActive={currentView === 'tours'} onClick={() => onViewChange('tours')} />
         </NavGroup>
 
-        <NavGroup title="Monitoring & Backup">
-          <NavButton icon={Activity} label="Termin Monitoring" />
-          <NavButton icon={CloudUpload} label="Backup & Sync" />
+        <NavGroup title="Administration">
+          <NavButton icon={FileText} label="Notiz Vorlagen" isActive={currentView === 'noteTemplates'} onClick={() => onViewChange('noteTemplates')} />
+          <NavButton icon={ListChecks} label="Projekt Status" isActive={currentView === 'projectStatus'} onClick={() => onViewChange('projectStatus')} />
+          <NavButton icon={Settings} label="Einstellungen" />
         </NavGroup>
       </nav>
     </div>

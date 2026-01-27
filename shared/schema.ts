@@ -119,8 +119,16 @@ export const insertNoteTemplateSchema = createInsertSchema(noteTemplates).omit({
   updatedAt: true,
 });
 
+export const updateNoteTemplateSchema = z.object({
+  title: z.string().optional(),
+  body: z.string().optional(),
+  sortOrder: z.number().optional(),
+  isActive: z.boolean().optional(),
+});
+
 export type NoteTemplate = typeof noteTemplates.$inferSelect;
 export type InsertNoteTemplate = z.infer<typeof insertNoteTemplateSchema>;
+export type UpdateNoteTemplate = z.infer<typeof updateNoteTemplateSchema>;
 
 // Customer Note Relation (FT 13)
 export const customerNotes = pgTable("customer_note", {
