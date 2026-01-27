@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { FileText, Plus, X, Pencil } from "lucide-react";
+import { CardListLayout } from "@/components/ui/card-list-layout";
+import { FileText, X, Pencil } from "lucide-react";
 import type { NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -159,55 +160,35 @@ export function NoteTemplatesPage() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h3 className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Notiz Vorlagen ({templates.length})
-        </h3>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="list-templates">
-        {isLoading ? (
-          <>
-            <div className="animate-pulse h-32 bg-slate-200 dark:bg-slate-700 rounded-lg" />
-            <div className="animate-pulse h-32 bg-slate-200 dark:bg-slate-700 rounded-lg" />
-          </>
-        ) : (
-          <>
-            {templates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onEdit={() => handleOpenEdit(template)}
-                onDelete={() => handleDelete(template.id)}
-              />
-            ))}
-            {templates.length === 0 && (
-              <p className="text-sm text-slate-400 text-center py-8 col-span-2">
-                Keine Vorlagen vorhanden
-              </p>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="mt-6 flex justify-between items-center">
-        <Button
-          variant="outline"
-          onClick={handleOpenCreate}
-          disabled={createMutation.isPending}
-          className="flex items-center gap-2"
-          data-testid="button-new-template"
-        >
-          {createMutation.isPending ? (
-            <span className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
-          ) : (
-            <Plus className="w-4 h-4" />
-          )}
-          Neue Vorlage
-        </Button>
-      </div>
+    <>
+      <CardListLayout
+        title="Notiz Vorlagen"
+        icon={<FileText className="w-5 h-5" />}
+        isLoading={isLoading}
+        gridTestId="list-templates"
+        gridCols="2"
+        primaryAction={{
+          label: "Neue Vorlage",
+          onClick: handleOpenCreate,
+          isPending: createMutation.isPending,
+          testId: "button-new-template",
+        }}
+        isEmpty={templates.length === 0}
+        emptyState={
+          <p className="text-sm text-slate-400 text-center py-8 col-span-2">
+            Keine Vorlagen vorhanden
+          </p>
+        }
+      >
+        {templates.map((template) => (
+          <TemplateCard
+            key={template.id}
+            template={template}
+            onEdit={() => handleOpenEdit(template)}
+            onDelete={() => handleDelete(template.id)}
+          />
+        ))}
+      </CardListLayout>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
@@ -265,6 +246,6 @@ export function NoteTemplatesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
