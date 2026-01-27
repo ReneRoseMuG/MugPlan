@@ -103,6 +103,33 @@ Preferred communication style: Simple, everyday language.
 - **Geplant**: Einheitliches Layout-System für alle Formulare mit Vollansicht und Miniaturansicht (Card-Darstellung) für konsistentes Erscheinungsbild
 - **Kundendaten in Infokärtchen**: Das Unternehmensfeld wird in Tooltips/Cards niemals angezeigt - nur Name, Adresse, Kontaktdaten. Das Unternehmen ist für die Übersicht nicht relevant und verbraucht Platz.
 
+### Wiederverwendbare Layout-Komponenten
+
+**CardListLayout** (`client/src/components/ui/card-list-layout.tsx`)
+- **Wann verwenden**: Für jede Ansicht, die mehrere gleichartige Elemente als Liste/Grid anzeigt
+- **Features**: Full-Height Layout, fixer Header mit Titel/Icon, scrollbarer Content, fixer Footer mit Action-Buttons
+- **Props**:
+  - `title`, `icon` - Überschrift mit Icon
+  - `gridCols` - "2" oder "3" Spalten
+  - `toolbar` - Optionaler Bereich für Steuerelemente (z.B. Filter, Schalter)
+  - `primaryAction` - Hauptbutton (z.B. "Neu erstellen")
+  - `secondaryAction` - Nebenbutton (z.B. "Schließen")
+  - `onClose` - X-Button zum Schließen
+  - `emptyState` - Anzeige wenn keine Daten
+  - `isLoading` - Ladezustand
+- **Verwendet von**: TourManagement, TeamManagement, NoteTemplatesPage, CustomerList, EmployeeManagement
+
+**EntityCard** (`client/src/components/ui/entity-card.tsx`)
+- **Wann verwenden**: Für einzelne Datensätze als Karten (Tour, Team, Kunde, Mitarbeiter...)
+- **Features**: Farbiger Header mit Titel/Icon, optionaler Löschen-Button, Footer-Bereich
+- **Props**:
+  - `title`, `icon` - Kartenname mit Icon
+  - `headerColor` - Hintergrundfarbe des Headers
+  - `onDelete` - Löschen-Button (Mülleimer-Icon)
+  - `footer` - Optionaler Footer-Bereich (z.B. ColorPicker, Edit-Button)
+  - `children` - Inhalt der Karte
+- **Verwendet von**: Tour-Karten, Team-Karten, Kunden-Karten, Mitarbeiter-Karten
+
 ## System Architecture
 
 ### Frontend Architecture
