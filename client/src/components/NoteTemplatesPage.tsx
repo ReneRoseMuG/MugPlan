@@ -160,15 +160,11 @@ export function NoteTemplatesPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
         <h3 className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
           <FileText className="w-5 h-5" />
           Notiz Vorlagen ({templates.length})
         </h3>
-        <Button onClick={handleOpenCreate} data-testid="button-new-template">
-          <Plus className="w-4 h-4 mr-2" />
-          Neue Vorlage
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="list-templates">
@@ -194,6 +190,23 @@ export function NoteTemplatesPage() {
             )}
           </>
         )}
+      </div>
+
+      <div className="mt-6 flex justify-between items-center">
+        <Button
+          variant="outline"
+          onClick={handleOpenCreate}
+          disabled={createMutation.isPending}
+          className="flex items-center gap-2"
+          data-testid="button-new-template"
+        >
+          {createMutation.isPending ? (
+            <span className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
+          ) : (
+            <Plus className="w-4 h-4" />
+          )}
+          Neue Vorlage
+        </Button>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
