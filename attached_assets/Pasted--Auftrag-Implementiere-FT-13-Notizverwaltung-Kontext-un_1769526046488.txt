@@ -1,0 +1,151 @@
+# Auftrag: Implementiere FT (13) Notizverwaltung
+
+## Kontext und Pflichtlektüre
+Lies die Dokumente im Ordner `docs/` sowie das PDF **„FT (13) Notizverwaltung“** vollständig. :contentReference[oaicite:0]{index=0}  
+Die Architektur-Doku ist verbindlich (Trennung Routes/Controller/Service/Repository, keine Monolith-Dateien, keine Redundanzen). Prüfe vorhandene JS-Dateien und nutze vorhandene Patterns, bevor du neue Dateien anlegst.
+
+Wichtig: Notizen werden ausschließlich im Kontext von **Kundendetails** oder **Projektdetails** verwaltet. Es gibt **keinen** eigenen Navigationspunkt „Notizen“. :contentReference[oaicite:1]{index=1}
+
+---
+
+## Zielbild (fachlich)
+Notizen sind eigenständige Domainobjekte mit:
+- `title` (Pflicht)
+- `body` (formatierter Text inkl. Text- und Hintergrundfarben; Pflicht)
+- `created_at`, `updated_at` (automatisch)
+- `is_pinned` (Pinning; Default FALSE)
+
+Eine Notiz gehört immer genau **einem** Parent: **Projekt ODER Kunde** (nie unabhängig). Die Verknüpfung erfolgt über Relationstabellen. :contentReference[oaicite:2]{index=2}
+
+Sortierung in der Notizliste:
+1) Gepinnte Notizen zuerst (`is_pinned = true`)
+2) Innerhalb gepinnt und ungepinnt jeweils nach `updated_at` absteigend (neueste zuerst) :contentReference[oaicite:3]{index=3}
+
+---
+
+## Scope für diese Implementierung (wichtig)
+1) Implementiere die Notizen **funktional zuerst für Kunden** (Kundendetails).  
+2) Lege DB/Backend so an, dass Projektnotizen **fachlich identisch** unterstützt werden (Schema + Backend-Endpoints/Repo-Funktionen), auch wenn die Projekt-UI vorerst nur Demo ist.
+
+---
+
+## Datenmodell / Datenbank
+Füge folgende Tabellen gemäß FT (13) ein: :contentReference[oaicite:4]{index=4}
+
+### Tabelle: `note`
+- `id` BIGSERIAL PK
+- `title` TEXT NOT NULL
+- `body` TEXT NOT NULL
+- `is_pinned` BOOLEAN NOT NULL DEFAULT FALSE
+- `created_at` TIMESTAMPTZ NOT NULL DEFAULT NOW()
+- `updated_at` TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+### Tabelle: `note_template` (NEU)
+- `id` BIGSERIAL PK
+- `title` TEXT NOT NULL
+- `body` TEXT NOT NULL
+- `sort_order` INTEGER NOT NULL DEFAULT 0
+- `is_active` BOOLEAN NOT NULL DEFAULT TRUE
+- `created_at` TIMESTAMPTZ NOT NULL DEFAULT NOW()
+- `updated_at` TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+### Relation: `customer_note`
+- `customer_id` BIGINT NOT NULL (FK customer(id) ON DELETE CASCADE)
+- `note_id` BIGINT NOT NULL (FK note(id) ON DELETE CASCADE)
+- PK (`customer_id`, `note_id`)
+
+### Relation: `project_note`
+- `project_id` BIGINT NOT NULL (FK project(id) ON DELETE CASCADE)
+- `note_id` BIGINT NOT NULL (FK note(id) ON DELETE CASCADE)
+- PK (`project_id`, `note_id`)
+
+Kaskaden:
+- Löschen einer Notiz löscht Relation automatisch (CASCADE).
+- Löschen eines Kunden/Projekts löscht zugehörige Notizen und Relationen (CASCADE). :contentReference[oaicite:5]{index=5}
+
+---
+
+## Backend (architekturkonform)
+Lege notwendige Dateien an (Routes/Controller/Service/Repository). Keine Logik im Router.
+
+### Endpunkte (Minimum)
+#### Kundenkontext
+- `GET /api/customers/:customerId/notes`
+  - Liefert Notizen des Kunden, sortiert: pinned zuerst, dann `updated_at` desc.
+- `POST /api/customers/:customerId/notes`
+  - Erstellt Notiz + Relation `customer_note` (in einer Transaktion).
+  - Optional: `template_id` (wenn gesetzt, kopiere `title` + `body` in neue Notiz; danach keine Verbindung zur Vorlage).
+- `PUT /api/notes/:noteId`
+  - Aktualisiert `title`, `body` und setzt `updated_at = now()`.
+- `DELETE /api/customers/:customerId/notes/:noteId`
+  - Löscht Notiz endgültig (aus Parent-Kontext), inkl. Relation. Sicherheitsabfrage ist UI-seitig.
+- `PATCH /api/notes/:noteId/pin`
+  - Setzt `is_pinned` TRUE/FALSE (Toggle oder expliziter Wert). Danach Liste neu sortieren.
+
+#### Vorlagen (Stammdaten)
+- `GET /api/note-templates?active=true`
+  - Liefert aktive Vorlagen sortiert nach `sort_order` (und stabil nach `title`/`id`).
+- `POST /api/note-templates`
+- `PUT /api/note-templates/:id`
+- `PATCH /api/note-templates/:id/active` (aktivieren/deaktivieren)
+- `DELETE /api/note-templates/:id` (nur wenn explizit gefordert; sonst vorerst weglassen)
+
+Hinweis: Rolle/Berechtigungen sind noch nicht final. Implementiere serverseitig sauber, aber ohne neue Auth-Architektur zu erfinden.
+
+---
+
+## UI-Implementierung (Kundendetails)
+### A) Notizkartenliste
+Es existieren Demo-Formulare/Komponenten für Notizkarten. Das Design soll übernommen werden und darf nicht „neu erfunden“ werden.
+
+Ergänzungen innerhalb des bestehenden Designs:
+- Im Header der Karte sitzt ein **Pin-Icon** (klickbar), das `is_pinned` toggelt.
+- Im Footer darf das „letzte Änderungsdatum“ (`updated_at`) angezeigt werden (Format konsistent zur App).
+
+Die Liste ist eine vertikale Kärtchenliste. Gepinnte Notizen sind oben. :contentReference[oaicite:6]{index=6}
+
+### B) Editor (Richtext)
+Die Bearbeitung erfolgt über einen schwebenden Richtext-Editor. Der Editor existiert bereits, aber aktuell schreibt er „verkehrt herum“.
+
+Aufgabe:
+- Analysiere die Ursache (typisch: `direction: rtl`, `unicode-bidi`, falscher Input-Handling, Cursor/Selection-Logik).
+- Behebe das Problem so, dass der Editor normal von links nach rechts schreibt und sich wie erwartet verhält.
+- Keine optischen Redesigns am Editor; nur Bugfix.
+
+Editor-Funktionalität:
+- Titel + formatierbarer Body (Textformatierung, Text- und Hintergrundfarben). :contentReference[oaicite:7]{index=7}
+
+### C) Notiz erstellen
+Flow in Kundendetails:
+- „Notiz hinzufügen“ öffnet den Editor.
+- Optional: Vorlagenliste anzeigen (aktive Templates). Bei Auswahl: kopiere Titel+Body in den Editor.
+- Speichern erzeugt Note + Relation. Abbruch verwirft.
+
+### D) Notiz bearbeiten / löschen
+- Klick auf Notiz öffnet Editor mit aktuellen Inhalten.
+- Speichern aktualisiert Note und setzt `updated_at`.
+- Löschen zeigt Sicherheitsabfrage, danach endgültiges Löschen (kein Soft-Delete). :contentReference[oaicite:8]{index=8}
+
+---
+
+## Wichtige Nicht-Ziele / Grenzen
+- Keine separate Notizverwaltung in der Navigation.
+- Notizen haben keine Wirkung auf Termine/Status/Planungslogik.
+- Keine Versionierung/Historie.
+- Keine „freischwebenden“ Notizen ohne Parent. :contentReference[oaicite:9]{index=9}
+
+---
+
+## Abnahme / Nachweise
+Am Ende lieferst du:
+1) Liste aller geänderten/neu angelegten Dateien.
+2) SQL/Migration(en) für `note`, `note_template`, `customer_note`, `project_note`.
+3) Kurze Endpunkt-Doku (Methode, Pfad, Request/Response-Beispiele).
+4) Nachweis:
+   - Sortierung pinned zuerst, dann `updated_at` desc.
+   - Pin-Icon toggelt korrekt und triggert Re-Sortierung.
+   - `updated_at` wird bei Änderungen korrekt aktualisiert.
+   - Richtext-Editor schreibt nicht mehr „verkehrt herum“.
+   - Löschen ist endgültig und erfolgt aus Kundenkontext heraus.
+
+Wenn du bei der Umsetzung feststellst, dass das vorhandene Demo-Notizkarten-Layout an mehreren Stellen dupliziert ist, melde das als Risiko und schlage eine konsolidierte, aber design-identische Umsetzung vor (ohne UI-Änderungen).

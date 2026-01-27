@@ -1,6 +1,7 @@
 -- ============================================================
 -- MuGPlan / Tour-Master – PostgreSQL Schema (konsolidiert)
 -- Stand: Projektzentriert, Terminplanung, Tour + Teams + Notizen
+--        inkl. Notizvorlagen und Pinning
 -- ============================================================
 
 BEGIN;
@@ -171,6 +172,21 @@ CREATE TABLE IF NOT EXISTS note (
   id         BIGSERIAL PRIMARY KEY,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL,
+  is_pinned  BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- Stammdaten: Notizvorlagen
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS note_template (
+  id         BIGSERIAL PRIMARY KEY,
+  title      TEXT NOT NULL,
+  body       TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_active  BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
