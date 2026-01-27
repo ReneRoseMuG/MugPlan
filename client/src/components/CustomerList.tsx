@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, User, Phone, MapPin, Building2 } from "lucide-react";
+import { X, User, Phone, MapPin, Building2, Plus } from "lucide-react";
 import { EntityCard } from "@/components/ui/entity-card";
 import { defaultHeaderColor } from "@/lib/colors";
 
 interface CustomerListProps {
   onCancel?: () => void;
+  onNewCustomer?: () => void;
 }
 
 const demoCustomers = [
@@ -66,21 +67,33 @@ const demoCustomers = [
   },
 ];
 
-export function CustomerList({ onCancel }: CustomerListProps) {
+export function CustomerList({ onCancel, onNewCustomer }: CustomerListProps) {
   return (
     <Card className="h-full flex flex-col" data-testid="customer-list">
       <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between gap-4 pb-4">
         <CardTitle className="text-xl font-bold">Kundenliste</CardTitle>
-        {onCancel && (
-          <Button 
-            size="lg" 
-            variant="ghost" 
-            onClick={onCancel}
-            data-testid="button-close-customer-list"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {onNewCustomer && (
+            <Button 
+              onClick={onNewCustomer}
+              className="gap-2"
+              data-testid="button-new-customer"
+            >
+              <Plus className="w-4 h-4" />
+              Neuer Kunde
+            </Button>
+          )}
+          {onCancel && (
+            <Button 
+              size="lg" 
+              variant="ghost" 
+              onClick={onCancel}
+              data-testid="button-close-customer-list"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

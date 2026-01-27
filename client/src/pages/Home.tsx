@@ -114,7 +114,7 @@ export default function Home() {
           {view === 'customer' ? (
             <CustomerData onCancel={() => setView('month')} />
           ) : view === 'customerList' ? (
-            <CustomerList onCancel={() => setView('month')} />
+            <CustomerList onCancel={() => setView('month')} onNewCustomer={() => setView('customer')} />
           ) : view === 'tours' ? (
             <TourManagement onCancel={() => setView('month')} />
           ) : view === 'teams' ? (
