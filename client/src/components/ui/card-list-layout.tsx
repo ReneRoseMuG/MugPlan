@@ -63,7 +63,7 @@ export function CardListLayout({
   return (
     <Card className="bg-card h-full flex flex-col overflow-hidden">
       <CardHeader className="pb-4 flex-shrink-0 border-b border-border">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
               {icon}
@@ -75,7 +75,6 @@ export function CardListLayout({
                   <Button 
                     size="icon" 
                     variant="ghost" 
-                    className="h-7 w-7 text-muted-foreground hover:text-primary"
                     data-testid={`button-help-${helpKey}`}
                   >
                     <CircleHelp className="w-5 h-5" />
