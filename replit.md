@@ -5,6 +5,11 @@
 A personal calendar application (German: "Kalender - Persönlicher Planer") built with React and Express. The app provides month, week, and year calendar views with a clean, modern UI. It uses a PostgreSQL database for event storage, though the calendar views are currently display-focused with minimal event integration.
 
 ### Recent Changes (January 2026)
+- **CardListLayout Refactoring**: Einheitliches Layout für Karten-Listen-Ansichten
+  - Neue Komponente `CardListLayout` in `client/src/components/ui/card-list-layout.tsx`
+  - Einheitliches Design: Card-Container, Header (Icon + Titel uppercase), Grid, Action-Buttons
+  - Refaktoriert: TourManagement, TeamManagement, NoteTemplatesPage
+  - Props: title, icon, gridCols (2/3), primaryAction, secondaryAction, loading, emptyState
 - **Note Templates Admin (FT 13)**: Notiz-Vorlagen-Verwaltung im Administration-Bereich
   - Sidebar umstrukturiert: "Monitoring & Backup" → "Administration"
   - Terminplanung: 3 ungenutzte Items entfernt (Auslastung, Touren Übersicht, Mitarbeiter Übersicht)
