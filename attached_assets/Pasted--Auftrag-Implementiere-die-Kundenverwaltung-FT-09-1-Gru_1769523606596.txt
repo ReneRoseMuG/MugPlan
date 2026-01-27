@@ -1,0 +1,91 @@
+# Auftrag: Implementiere die Kundenverwaltung (FT 09)
+
+## 1. Grundregeln und Einarbeitung
+
+Du arbeitest ausschließlich auf expliziten Auftrag hin und veränderst nichts nebenbei. Wenn du bei einer Änderung Risiken erkennst (z. B. unklare Referenzen, potenziell genutzte Dateien oder UI-Abweichungen), meldest du diese und schlägst eine sichere Vorgehensweise vor.
+
+Lies alle Dokumente im Ordner `docs/`. Die Architektur-Dokumentation ist verbindlich für Dateistruktur, Verantwortlichkeiten und Benennungen. FT (13) dient ausschließlich als Orientierung zum fachlichen Verständnis der Zusammenhänge (Notizen), wird aber in diesem Auftrag nicht implementiert, außer es ist explizit gefordert.
+
+Bevor neue Dateien angelegt werden, prüfst du den bestehenden Projektbaum sowie vorhandene JavaScript-Dateien, Controller, Services und Repositories auf mögliche Redundanzen. Bestehende Strukturen sind vorrangig zu nutzen. Neue Dateien dürfen nur angelegt werden, wenn keine passende Struktur existiert, und müssen sich strikt an der vorhandenen Architektur orientieren.
+
+---
+
+## 2. Datenbank
+
+Füge die Tabelle `customer` in die Datenbank ein. Die Felder ergeben sich aus FT (09). Achte auf konsistente Namensgebung, Primär- und Fremdschlüssel-Konventionen, Default-Werte und Constraints gemäß bestehendem Schema.
+
+Kunden dürfen durch normale Anwender nicht gelöscht werden. Die Datenhaltung ist daher als Soft-Variante auszuführen (z. B. Status oder `is_active`). Eine Hard-Delete-Funktion für Kunden darf nicht implementiert werden, sofern dies nicht explizit beauftragt wird.
+
+---
+
+## 3. Backend und Architektur
+
+Implementiere alle notwendigen Backend-Bausteine für eine saubere Customer-Verwaltung gemäß Architektur-Dokumentation:
+
+- Routing (ausschließlich Weiterleitung)
+- Controller (Request/Response, Transport-Validierung)
+- Service (Use-Case-Logik, Orchestrierung)
+- Repository (SQL und Datenzugriff)
+- Fehler- und Validierungslogik gemäß vorhandener Middleware
+
+Folgende Funktionalität muss unterstützt werden:
+
+- Laden der Kundenliste
+- Laden der Kundendetails
+- Anlegen eines Kunden
+- Aktualisieren eines Kunden
+
+---
+
+## 4. Ziel 1: Kundenliste in Kartenansicht
+
+Die bestehende Demo-Kartenansicht für Kunden ist mit echten Daten aus der Datenbank zu befüllen.
+
+Dabei gelten folgende verbindliche Regeln:
+
+- Das bestehende Design und Verhalten der Karten darf nicht verändert werden.
+- Die Angabe „Projekte“ ist aus der Kartenansicht zu entfernen.
+- Der „X“-Button ist zu entfernen.
+- Es darf keine Möglichkeit geben, Kunden über die UI zu löschen.
+
+Layout, Klassen, Abstände, Typografie und Interaktionen der Karten bleiben unverändert, abgesehen von den explizit genannten Entfernungen.
+
+---
+
+## 5. Ziel 2: Kundendetails
+
+Für die Kundendetails existiert ein Demo-Formular. Dieses Formular ist weitgehend unverändert weiterzuverwenden und mit realen Customer-Stammdaten zu verbinden.
+
+Regeln für die Detailansicht:
+
+- Implementiert werden ausschließlich die Kunden-Stammdaten.
+- Die Status-Checkbox ist sichtbar, aber read-only.
+- Eine Änderung des Status darf weder im UI noch über manipulierte Requests möglich sein.
+- Die Bereiche „Projekte“, „Termine“ und „Notizen“ bleiben als Demo-Ansichten bestehen und dürfen funktional nicht implementiert werden.
+
+---
+
+## 6. Sub-Views vorbereiten
+
+Die Kundendetailseite ist so zu strukturieren, dass spätere Sub-Views für folgende Bereiche sauber integrierbar sind:
+
+- Projekte
+- Termine
+- Notizen
+
+Im Rahmen dieses Auftrags bleiben diese Bereiche Platzhalter und dürfen keine eigenen Datenmodelle, Endpunkte oder Datenbanktabellen erhalten.
+
+---
+
+## 7. Abnahme und Dokumentation
+
+Am Ende des Auftrags lieferst du:
+
+- Eine Übersicht aller neu angelegten oder geänderten Dateien
+- Die SQL-Änderungen bzw. Migrationen
+- Eine kurze Beschreibung der implementierten Endpunkte (HTTP-Methode, Pfad, Zweck)
+- Einen Nachweis, dass:
+  - die Kundenkarten optisch unverändert sind (abgesehen von entfernten Elementen)
+  - keine Delete-Funktion für normale Anwender existiert
+  - die Status-Checkbox sichtbar, aber nicht veränderbar ist (UI und Server)
+
