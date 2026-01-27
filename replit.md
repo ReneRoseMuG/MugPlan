@@ -5,6 +5,13 @@
 A personal calendar application (German: "Kalender - Persönlicher Planer") built with React and Express. The app provides month, week, and year calendar views with a clean, modern UI. It uses a PostgreSQL database for event storage, though the calendar views are currently display-focused with minimal event integration.
 
 ### Recent Changes (January 2026)
+- **Note Templates Admin (FT 13)**: Notiz-Vorlagen-Verwaltung im Administration-Bereich
+  - Sidebar umstrukturiert: "Monitoring & Backup" → "Administration"
+  - Terminplanung: 3 ungenutzte Items entfernt (Auslastung, Touren Übersicht, Mitarbeiter Übersicht)
+  - Administration: Notiz Vorlagen + Projekt Status hinzugefügt
+  - NoteTemplatesPage-Komponente mit vollständigem CRUD
+  - API-Endpunkte: GET/POST/PUT/DELETE /api/note-templates
+  - Zeigt alle Vorlagen (inkl. inaktive) für Administratoren
 - **Notes Management (FT 13)**: Vollständige Notizverwaltung mit Datenbankanbindung
   - API-Endpunkte: GET/POST /api/customers/:id/notes, PUT/DELETE /api/notes/:id, PATCH /api/notes/:id/pin
   - Storage-Repository mit IStorage-Interface Pattern
@@ -12,7 +19,6 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
   - NotesSection-Komponente mit Create, Delete, Pin-Toggle
   - Titel (Pflichtfeld) + RichText-Body mit Formatierung
   - Junction-Table customer_note für Kunden-Notiz-Relation
-  - Vorlagen-API bereit (note_template), UI noch nicht implementiert
   - RichTextEditor RTL-Bug behoben (dir="ltr", unicodeBidi)
 - **Project Management Prototype**: Added project form via "Projekte" button dropdown in sidebar
   - Dropdown menu with "Neues Projekt" and "Projektliste" options
