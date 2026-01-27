@@ -212,6 +212,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       <div
         ref={editorRef}
         contentEditable
+        dir="ltr"
         onInput={handleContentChange}
         onBlur={handleContentChange}
         className="min-h-[200px] p-4 focus:outline-none text-sm bg-white dark:bg-slate-900"
@@ -220,6 +221,8 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         data-testid="richtext-editor"
         style={{
           wordBreak: "break-word",
+          unicodeBidi: "plaintext",
+          textAlign: "left",
         }}
       />
 
