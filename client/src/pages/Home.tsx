@@ -22,6 +22,7 @@ export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>('month');
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
 
   // Handlers for navigation
   const next = () => {
@@ -112,9 +113,17 @@ export default function Home() {
         {/* Content Area */}
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
           {view === 'customer' ? (
-            <CustomerData onCancel={() => setView('month')} />
+            <CustomerData 
+              customerId={selectedCustomerId}
+              onCancel={() => { setSelectedCustomerId(null); setView('customerList'); }} 
+              onSave={() => { setSelectedCustomerId(null); setView('customerList'); }}
+            />
           ) : view === 'customerList' ? (
-            <CustomerList onCancel={() => setView('month')} onNewCustomer={() => setView('customer')} />
+            <CustomerList 
+              onCancel={() => setView('month')} 
+              onNewCustomer={() => { setSelectedCustomerId(null); setView('customer'); }}
+              onSelectCustomer={(id) => { setSelectedCustomerId(id); setView('customer'); }}
+            />
           ) : view === 'tours' ? (
             <TourManagement onCancel={() => setView('month')} />
           ) : view === 'teams' ? (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,8 +6,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Phone, MapPin, Save, X, Calendar, FolderKanban } from "lucide-react";
 import { NotesSection, Note } from "@/components/NotesSection";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Customer } from "@shared/schema";
 
 interface CustomerDataProps {
+  customerId?: number | null;
   onCancel?: () => void;
   onSave?: () => void;
 }
@@ -37,8 +43,88 @@ const demoAppointments = [
   { id: "3", date: "12.02.2026", title: "Abnahme", project: "Wintergarten Anbau" },
 ];
 
-export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
+export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps) {
+  const { toast } = useToast();
   const [notes, setNotes] = useState<Note[]>(initialNotes);
+  
+  const [formData, setFormData] = useState({
+    customerNumber: "",
+    name: "",
+    phone: "",
+    addressLine1: "",
+    addressLine2: "",
+    postalCode: "",
+    city: "",
+  });
+
+  const isEditMode = !!customerId;
+
+  const { data: customer, isLoading } = useQuery<Customer>({
+    queryKey: ['/api/customers', customerId],
+    enabled: isEditMode,
+  });
+
+  useEffect(() => {
+    if (customer) {
+      setFormData({
+        customerNumber: customer.customerNumber || "",
+        name: customer.name || "",
+        phone: customer.phone || "",
+        addressLine1: customer.addressLine1 || "",
+        addressLine2: customer.addressLine2 || "",
+        postalCode: customer.postalCode || "",
+        city: customer.city || "",
+      });
+    }
+  }, [customer]);
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const res = await apiRequest('POST', '/api/customers', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      toast({ title: "Kunde angelegt", description: "Der Kunde wurde erfolgreich angelegt." });
+      onSave?.();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const res = await apiRequest('PATCH', `/api/customers/${customerId}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
+      toast({ title: "Gespeichert", description: "Die Kundendaten wurden erfolgreich aktualisiert." });
+      onSave?.();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleSave = () => {
+    if (!formData.customerNumber || !formData.name || !formData.phone) {
+      toast({ 
+        title: "Fehler", 
+        description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Name, Telefon).", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    if (isEditMode) {
+      updateMutation.mutate(formData);
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
 
   const handleAddNote = (text: string) => {
     const today = new Date();
@@ -53,6 +139,27 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
     setNotes(notes.filter(n => n.id !== id));
   };
 
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  if (isEditMode && isLoading) {
+    return (
+      <div className="h-full p-6 overflow-auto">
+        <Card className="max-w-6xl mx-auto">
+          <CardHeader className="border-b border-border">
+            <Skeleton className="h-8 w-48" />
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full p-6 overflow-auto">
       <Card className="max-w-6xl mx-auto">
@@ -60,7 +167,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
               <User className="w-6 h-6" />
-              Kundendaten
+              {isEditMode ? "Kundendaten bearbeiten" : "Neuer Kunde"}
             </CardTitle>
             {onCancel && (
               <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-customer">
@@ -71,46 +178,29 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
         </CardHeader>
         <CardContent className="pt-6">
           <div className="grid grid-cols-3 gap-6">
-            {/* Linke Spalte: Stammdaten + Notizen */}
             <div className="col-span-2 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  Persönliche Daten
+                  Stammdaten
                 </h3>
                 <div className="space-y-2">
-                  <Label htmlFor="customerNumber" data-testid="label-customernumber">Kundennummer</Label>
+                  <Label htmlFor="customerNumber" data-testid="label-customernumber">Kundennummer *</Label>
                   <Input 
                     id="customerNumber" 
-                    defaultValue="K-2026-0001"
+                    value={formData.customerNumber}
+                    onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value })}
                     className="max-w-[200px] font-mono"
                     data-testid="input-customernumber"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName" data-testid="label-firstname">Vorname</Label>
-                    <Input 
-                      id="firstName" 
-                      defaultValue="Hans"
-                      data-testid="input-firstname"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName" data-testid="label-lastname">Nachname</Label>
-                    <Input 
-                      id="lastName" 
-                      defaultValue="Müller"
-                      data-testid="input-lastname"
-                    />
-                  </div>
-                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" data-testid="label-fullname">Vollständiger Name / Firma</Label>
+                  <Label htmlFor="name" data-testid="label-name">Name / Firma *</Label>
                   <Input 
-                    id="fullName" 
-                    defaultValue="Müller GmbH"
-                    data-testid="input-fullname"
+                    id="name" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    data-testid="input-name"
                   />
                 </div>
               </div>
@@ -124,7 +214,8 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   <Label htmlFor="phone" data-testid="label-phone">Telefon *</Label>
                   <Input 
                     id="phone" 
-                    defaultValue="+49 123 456789"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     data-testid="input-phone"
                   />
                 </div>
@@ -136,46 +227,64 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   Adresse
                 </h3>
                 <div className="space-y-2">
-                  <Label htmlFor="street" data-testid="label-street">Straße</Label>
+                  <Label htmlFor="addressLine1" data-testid="label-addressline1">Straße</Label>
                   <Input 
-                    id="street" 
-                    defaultValue="Industriestraße 42"
-                    data-testid="input-street"
+                    id="addressLine1" 
+                    value={formData.addressLine1}
+                    onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                    data-testid="input-addressline1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="addressLine2" data-testid="label-addressline2">Adresszusatz</Label>
+                  <Input 
+                    id="addressLine2" 
+                    value={formData.addressLine2}
+                    onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+                    data-testid="input-addressline2"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="zip" data-testid="label-zip">PLZ</Label>
+                    <Label htmlFor="postalCode" data-testid="label-postalcode">PLZ</Label>
                     <Input 
-                      id="zip" 
-                      defaultValue="80331"
-                      data-testid="input-zip"
+                      id="postalCode" 
+                      value={formData.postalCode}
+                      onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                      data-testid="input-postalcode"
                     />
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="city" data-testid="label-city">Ort</Label>
                     <Input 
                       id="city" 
-                      defaultValue="München"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       data-testid="input-city"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
-                  Status
-                </h3>
-                <div className="flex items-center gap-3">
-                  <Checkbox id="isActive" defaultChecked data-testid="checkbox-active" />
-                  <Label htmlFor="isActive" className="cursor-pointer" data-testid="label-active">
-                    Kunde ist aktiv
-                  </Label>
+              {isEditMode && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
+                    Status
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    <Checkbox 
+                      id="isActive" 
+                      checked={customer?.isActive ?? true} 
+                      disabled
+                      data-testid="checkbox-active" 
+                    />
+                    <Label htmlFor="isActive" className="text-slate-500" data-testid="label-active">
+                      Kunde ist aktiv (nur lesbar)
+                    </Label>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Notizen unter dem Hauptbereich */}
               <NotesSection
                 notes={notes}
                 onAdd={handleAddNote}
@@ -183,9 +292,14 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
               />
 
               <div className="flex gap-3 pt-4 border-t border-border">
-                <Button type="button" onClick={onSave} data-testid="button-save">
+                <Button 
+                  type="button" 
+                  onClick={handleSave} 
+                  disabled={isPending}
+                  data-testid="button-save"
+                >
                   <Save className="w-4 h-4 mr-2" />
-                  Speichern
+                  {isPending ? "Speichern..." : "Speichern"}
                 </Button>
                 <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel">
                   <X className="w-4 h-4 mr-2" />
@@ -194,9 +308,7 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
               </div>
             </div>
 
-            {/* Rechte Spalte: Projekte, Termine */}
             <div className="space-y-6">
-              {/* Projekte (readonly) */}
               <Card>
                 <CardHeader className="border-b border-border py-3">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
@@ -235,7 +347,6 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                 </CardContent>
               </Card>
 
-              {/* Termine (readonly) */}
               <Card>
                 <CardHeader className="border-b border-border py-3">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
