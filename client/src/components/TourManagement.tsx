@@ -252,6 +252,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
       <CardListLayout
         title="Touren"
         icon={<Route className="w-5 h-5" />}
+        helpKey="tours"
         isLoading={isLoading}
         onClose={onCancel}
         closeTestId="button-close-tours"

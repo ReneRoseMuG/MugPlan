@@ -164,6 +164,7 @@ export function NoteTemplatesPage() {
       <CardListLayout
         title="Notiz Vorlagen"
         icon={<FileText className="w-5 h-5" />}
+        helpKey="note-templates"
         isLoading={isLoading}
         gridTestId="list-templates"
         gridCols="2"

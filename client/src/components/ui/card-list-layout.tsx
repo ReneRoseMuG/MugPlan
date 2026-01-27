@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Plus, Loader2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { X, Plus, Loader2, CircleHelp } from "lucide-react";
 
 interface CardListLayoutProps {
   title: string;
@@ -26,6 +27,7 @@ interface CardListLayoutProps {
   emptyState?: ReactNode;
   isEmpty?: boolean;
   toolbar?: ReactNode;
+  helpKey?: string;
 }
 
 export function CardListLayout({
@@ -42,6 +44,7 @@ export function CardListLayout({
   emptyState,
   isEmpty = false,
   toolbar,
+  helpKey,
 }: CardListLayoutProps) {
   const gridColsClass = gridCols === "2" 
     ? "grid-cols-1 md:grid-cols-2" 
@@ -61,10 +64,34 @@ export function CardListLayout({
     <Card className="bg-card h-full flex flex-col overflow-hidden">
       <CardHeader className="pb-4 flex-shrink-0 border-b border-border">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-            {icon}
-            {title}
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+              {icon}
+              {title}
+            </CardTitle>
+            {helpKey && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                    data-testid={`button-help-${helpKey}`}
+                  >
+                    <CircleHelp className="w-5 h-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="start">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Hilfe: {title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Hilfeinhalt für "{helpKey}" wird über die Administration gepflegt.
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
           {onClose && (
             <Button size="lg" variant="ghost" onClick={onClose} data-testid={closeTestId}>
               <X className="w-6 h-6" />

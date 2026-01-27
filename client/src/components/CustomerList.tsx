@@ -22,6 +22,7 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
     <CardListLayout
       title="Kunden"
       icon={<User className="w-5 h-5" />}
+      helpKey="customers"
       isLoading={isLoading}
       onClose={onCancel}
       closeTestId="button-close-customers"

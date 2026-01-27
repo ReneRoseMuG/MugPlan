@@ -159,6 +159,7 @@ export function EmployeeManagement({ onCancel, onOpenEmployeeWeekly }: EmployeeM
     <CardListLayout
       title="Mitarbeiter"
       icon={<Users className="w-5 h-5" />}
+      helpKey="employees"
       onClose={onCancel}
       closeTestId="button-close-employees"
       gridTestId="list-employees"

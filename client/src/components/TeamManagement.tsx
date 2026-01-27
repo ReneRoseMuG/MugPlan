@@ -196,6 +196,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
       <CardListLayout
         title="Teams"
         icon={<Users className="w-5 h-5" />}
+        helpKey="teams"
         isLoading={isLoading}
         onClose={onCancel}
         closeTestId="button-close-teams"
