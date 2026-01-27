@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Plus, Users, UserCheck, Pencil, Loader2 } from "lucide-react";
+import { Users, UserCheck, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +11,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { EntityCard } from "@/components/ui/entity-card";
+import { CardListLayout } from "@/components/ui/card-list-layout";
 import { getRandomPastelColor } from "@/lib/colors";
 import type { Team } from "@shared/schema";
 
@@ -191,107 +191,74 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     }));
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <Card className="bg-card">
-          <CardContent className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <Card className="bg-card">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Teams
-            </CardTitle>
-            {onCancel && (
-              <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-teams">
-                <X className="w-6 h-6" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="list-teams">
-            {teamsWithMembers.map((team) => (
-              <EntityCard
-                key={team.id}
-                title={team.name}
-                icon={<Users className="w-4 h-4" />}
-                headerColor={team.color}
-                onDelete={() => deleteMutation.mutate(team.id)}
-                isDeleting={deleteMutation.isPending}
-                testId={`card-team-${team.id}`}
-                footer={
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingTeam(team);
-                    }}
-                    data-testid={`button-edit-team-members-${team.id}`}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                }
+    <>
+      <CardListLayout
+        title="Teams"
+        icon={<Users className="w-5 h-5" />}
+        isLoading={isLoading}
+        onClose={onCancel}
+        closeTestId="button-close-teams"
+        gridTestId="list-teams"
+        gridCols="3"
+        primaryAction={{
+          label: "Neues Team",
+          onClick: () => createMutation.mutate(),
+          isPending: createMutation.isPending,
+          testId: "button-new-team",
+        }}
+        secondaryAction={onCancel ? {
+          label: "Schließen",
+          onClick: onCancel,
+          testId: "button-cancel-teams",
+        } : undefined}
+      >
+        {teamsWithMembers.map((team) => (
+          <EntityCard
+            key={team.id}
+            title={team.name}
+            icon={<Users className="w-4 h-4" />}
+            headerColor={team.color}
+            onDelete={() => deleteMutation.mutate(team.id)}
+            isDeleting={deleteMutation.isPending}
+            testId={`card-team-${team.id}`}
+            footer={
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTeam(team);
+                }}
+                data-testid={`button-edit-team-members-${team.id}`}
               >
-                <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
-                  Mitarbeiter
-                </div>
-                <div className="space-y-1">
-                  {team.members.map((member) => (
-                    <div 
-                      key={member.id} 
-                      className="text-sm text-slate-700 flex items-center gap-2"
-                      data-testid={`text-member-${member.id}`}
-                    >
-                      <UserCheck className="w-3 h-3 text-primary" />
-                      {member.name}
-                    </div>
-                  ))}
-                  {team.members.length === 0 && (
-                    <div className="text-sm text-slate-400 italic">
-                      Keine Mitarbeiter zugewiesen
-                    </div>
-                  )}
-                </div>
-              </EntityCard>
-            ))}
-          </div>
-
-          <div className="mt-6 flex justify-between items-center">
-            <Button
-              variant="outline"
-              onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending}
-              className="flex items-center gap-2"
-              data-testid="button-new-team"
-            >
-              {createMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4" />
-              )}
-              Neues Team
-            </Button>
-
-            {onCancel && (
-              <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-teams">
-                Schließen
+                <Pencil className="w-4 h-4" />
               </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            }
+          >
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+              Mitarbeiter
+            </div>
+            <div className="space-y-1">
+              {team.members.map((member) => (
+                <div 
+                  key={member.id} 
+                  className="text-sm text-slate-700 flex items-center gap-2"
+                  data-testid={`text-member-${member.id}`}
+                >
+                  <UserCheck className="w-3 h-3 text-primary" />
+                  {member.name}
+                </div>
+              ))}
+              {team.members.length === 0 && (
+                <div className="text-sm text-slate-400 italic">
+                  Keine Mitarbeiter zugewiesen
+                </div>
+              )}
+            </div>
+          </EntityCard>
+        ))}
+      </CardListLayout>
 
       {editingTeam && (
         <EditTeamMembersDialog
@@ -302,6 +269,6 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
           assignedMemberIds={assignedMemberIds}
         />
       )}
-    </div>
+    </>
   );
 }
