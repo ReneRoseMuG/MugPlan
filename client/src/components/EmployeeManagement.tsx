@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Users, X, Phone, Plus, Archive, User } from "lucide-react";
+import { Users, Phone, Archive, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EntityCard } from "@/components/ui/entity-card";
+import { CardListLayout } from "@/components/ui/card-list-layout";
 import { defaultHeaderColor } from "@/lib/colors";
 
 interface Tour {
@@ -142,57 +141,49 @@ export function EmployeeManagement({ onCancel, onOpenEmployeeWeekly }: EmployeeM
     });
   };
 
+  const archivedToolbar = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Switch
+        id="show-archived"
+        checked={showArchived}
+        onCheckedChange={setShowArchived}
+        data-testid="switch-show-archived"
+      />
+      <Label htmlFor="show-archived" className="text-sm text-slate-600 cursor-pointer">
+        Archivierte anzeigen
+      </Label>
+    </div>
+  );
+
   return (
-    <Card className="h-full overflow-hidden" data-testid="employee-management">
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-2 text-primary">
-          <Users className="w-5 h-5" />
-          <h2 className="text-lg font-bold uppercase tracking-wide">Mitarbeiter Übersicht</h2>
-        </div>
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={onCancel}
-          data-testid="button-close-employees"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
-
-      <div className="p-6 overflow-y-auto h-[calc(100%-60px)]">
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <Switch
-            id="show-archived"
-            checked={showArchived}
-            onCheckedChange={setShowArchived}
-            data-testid="switch-show-archived"
-          />
-          <Label htmlFor="show-archived" className="text-sm text-slate-600 cursor-pointer">
-            Archivierte anzeigen
-          </Label>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="list-employees">
-          {filteredEmployees.map((employee) => (
-            <EmployeeCard 
-              key={employee.id} 
-              employee={employee} 
-              onArchiveClick={handleArchiveClick}
-              onDoubleClick={() => onOpenEmployeeWeekly?.(employee.id, `${employee.firstName} ${employee.lastName}`)}
-            />
-          ))}
-        </div>
-
-        <Button
-          variant="outline"
-          className="mt-6 gap-2"
-          data-testid="button-new-employee"
-        >
-          <Plus className="w-4 h-4" />
-          Neuer Mitarbeiter
-        </Button>
-      </div>
-    </Card>
+    <CardListLayout
+      title="Mitarbeiter"
+      icon={<Users className="w-5 h-5" />}
+      onClose={onCancel}
+      closeTestId="button-close-employees"
+      gridTestId="list-employees"
+      gridCols="2"
+      toolbar={archivedToolbar}
+      primaryAction={{
+        label: "Neuer Mitarbeiter",
+        onClick: () => {},
+        testId: "button-new-employee",
+      }}
+      secondaryAction={onCancel ? {
+        label: "Schließen",
+        onClick: onCancel,
+        testId: "button-cancel-employees",
+      } : undefined}
+    >
+      {filteredEmployees.map((employee) => (
+        <EmployeeCard 
+          key={employee.id} 
+          employee={employee} 
+          onArchiveClick={handleArchiveClick}
+          onDoubleClick={() => onOpenEmployeeWeekly?.(employee.id, `${employee.firstName} ${employee.lastName}`)}
+        />
+      ))}
+    </CardListLayout>
   );
 }
 
