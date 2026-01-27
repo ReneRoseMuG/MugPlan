@@ -32,22 +32,26 @@ function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) {
       data-testid={`template-card-${template.id}`}
     >
       <div className="absolute top-2 right-2 flex gap-1">
-        <button
+        <Button
+          size="icon"
+          variant="ghost"
           onClick={onEdit}
-          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-primary/10 text-slate-400 hover:text-primary transition-colors"
+          className="w-6 h-6"
           data-testid={`button-edit-template-${template.id}`}
           title="Bearbeiten"
         >
           <Pencil className="w-4 h-4" />
-        </button>
-        <button
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
           onClick={onDelete}
-          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/10 text-slate-400 hover:text-destructive transition-colors"
+          className="w-6 h-6"
           data-testid={`button-delete-template-${template.id}`}
           title="Löschen"
         >
           <X className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
       <div className="flex items-center gap-2 mb-2">
         <h4 className="font-medium text-sm text-slate-800 dark:text-slate-200 pr-16" data-testid={`text-template-title-${template.id}`}>
@@ -79,11 +83,7 @@ export function NoteTemplatesPage() {
   const [formIsActive, setFormIsActive] = useState(true);
 
   const { data: templates = [], isLoading } = useQuery<NoteTemplate[]>({
-    queryKey: ["/api/note-templates", { active: "false" }],
-    queryFn: async () => {
-      const response = await fetch("/api/note-templates?active=false");
-      return response.json();
-    },
+    queryKey: ["/api/note-templates?active=false"],
   });
 
   const createMutation = useMutation({
@@ -91,7 +91,7 @@ export function NoteTemplatesPage() {
       return apiRequest("POST", "/api/note-templates", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
       handleCloseDialog();
     },
   });
@@ -101,7 +101,7 @@ export function NoteTemplatesPage() {
       return apiRequest("PUT", `/api/note-templates/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
       handleCloseDialog();
     },
   });
@@ -111,7 +111,7 @@ export function NoteTemplatesPage() {
       return apiRequest("DELETE", `/api/note-templates/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
     },
   });
 
