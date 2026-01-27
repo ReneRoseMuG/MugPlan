@@ -176,5 +176,117 @@ export async function registerRoutes(
     }
   });
 
+  // Customer Notes API (FT 13 - Notizverwaltung)
+  app.get(api.customerNotes.list.path, async (req, res) => {
+    const customerId = Number(req.params.customerId);
+    const customer = await storage.getCustomer(customerId);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+    const notes = await storage.getCustomerNotes(customerId);
+    res.json(notes);
+  });
+
+  app.post(api.customerNotes.create.path, async (req, res) => {
+    try {
+      const customerId = Number(req.params.customerId);
+      const customer = await storage.getCustomer(customerId);
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+      
+      const input = api.customerNotes.create.input.parse(req.body);
+      let noteData = { title: input.title, body: input.body };
+      
+      if (input.templateId) {
+        const template = await storage.getNoteTemplate(input.templateId);
+        if (template) {
+          noteData = { title: template.title, body: template.body };
+        }
+      }
+      
+      const note = await storage.createCustomerNote(customerId, noteData);
+      res.status(201).json(note);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.customerNotes.delete.path, async (req, res) => {
+    const noteId = Number(req.params.noteId);
+    await storage.deleteNote(noteId);
+    res.status(204).send();
+  });
+
+  // Notes API (FT 13)
+  app.put(api.notes.update.path, async (req, res) => {
+    try {
+      const noteId = Number(req.params.noteId);
+      const input = api.notes.update.input.parse(req.body);
+      const note = await storage.updateNote(noteId, input);
+      if (!note) {
+        return res.status(404).json({ message: 'Note not found' });
+      }
+      res.json(note);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.notes.togglePin.path, async (req, res) => {
+    try {
+      const noteId = Number(req.params.noteId);
+      const input = api.notes.togglePin.input.parse(req.body);
+      const note = await storage.toggleNotePin(noteId, input.isPinned);
+      if (!note) {
+        return res.status(404).json({ message: 'Note not found' });
+      }
+      res.json(note);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Note Templates API (FT 13)
+  app.get(api.noteTemplates.list.path, async (req, res) => {
+    const activeOnly = req.query.active !== 'false';
+    const templates = await storage.getNoteTemplates(activeOnly);
+    res.json(templates);
+  });
+
+  app.post(api.noteTemplates.create.path, async (req, res) => {
+    try {
+      const input = api.noteTemplates.create.input.parse(req.body);
+      const template = await storage.createNoteTemplate(input);
+      res.status(201).json(template);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   return httpServer;
 }

@@ -3,7 +3,9 @@ import {
   insertEventSchema, events, 
   insertTourSchema, updateTourSchema, tours, 
   insertTeamSchema, updateTeamSchema, teams,
-  insertCustomerSchema, updateCustomerSchema, customers 
+  insertCustomerSchema, updateCustomerSchema, customers,
+  insertNoteSchema, updateNoteSchema, notes,
+  insertNoteTemplateSchema, noteTemplates
 } from './schema';
 
 export const errorSchemas = {
@@ -152,6 +154,72 @@ export const api = {
       },
     },
   },
+  customerNotes: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/customers/:customerId/notes',
+      responses: {
+        200: z.array(z.custom<typeof notes.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/customers/:customerId/notes',
+      input: insertNoteSchema.extend({ templateId: z.number().optional() }),
+      responses: {
+        201: z.custom<typeof notes.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/customers/:customerId/notes/:noteId',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  notes: {
+    update: {
+      method: 'PUT' as const,
+      path: '/api/notes/:noteId',
+      input: updateNoteSchema,
+      responses: {
+        200: z.custom<typeof notes.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    togglePin: {
+      method: 'PATCH' as const,
+      path: '/api/notes/:noteId/pin',
+      input: z.object({ isPinned: z.boolean() }),
+      responses: {
+        200: z.custom<typeof notes.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  noteTemplates: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/note-templates',
+      responses: {
+        200: z.array(z.custom<typeof noteTemplates.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/note-templates',
+      input: insertNoteTemplateSchema,
+      responses: {
+        201: z.custom<typeof noteTemplates.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
@@ -180,3 +248,10 @@ export type TeamResponse = z.infer<typeof api.teams.create.responses[201]>;
 export type CustomerInput = z.infer<typeof api.customers.create.input>;
 export type CustomerUpdateInput = z.infer<typeof api.customers.update.input>;
 export type CustomerResponse = z.infer<typeof api.customers.create.responses[201]>;
+
+export type NoteInput = z.infer<typeof api.customerNotes.create.input>;
+export type NoteUpdateInput = z.infer<typeof api.notes.update.input>;
+export type NoteResponse = z.infer<typeof api.notes.update.responses[200]>;
+
+export type NoteTemplateInput = z.infer<typeof api.noteTemplates.create.input>;
+export type NoteTemplateResponse = z.infer<typeof api.noteTemplates.create.responses[201]>;

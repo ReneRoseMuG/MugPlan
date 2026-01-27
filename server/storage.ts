@@ -4,6 +4,9 @@ import {
   tours,
   teams,
   customers,
+  notes,
+  noteTemplates,
+  customerNotes,
   type InsertEvent,
   type Event,
   type Tour,
@@ -14,9 +17,14 @@ import {
   type UpdateTeam,
   type Customer,
   type InsertCustomer,
-  type UpdateCustomer
+  type UpdateCustomer,
+  type Note,
+  type InsertNote,
+  type UpdateNote,
+  type NoteTemplate,
+  type InsertNoteTemplate
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   getEvents(): Promise<Event[]>;
@@ -34,6 +42,14 @@ export interface IStorage {
   getCustomer(id: number): Promise<Customer | null>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, data: UpdateCustomer): Promise<Customer | null>;
+  getCustomerNotes(customerId: number): Promise<Note[]>;
+  createCustomerNote(customerId: number, note: InsertNote): Promise<Note>;
+  updateNote(noteId: number, data: UpdateNote): Promise<Note | null>;
+  toggleNotePin(noteId: number, isPinned: boolean): Promise<Note | null>;
+  deleteNote(noteId: number): Promise<void>;
+  getNoteTemplates(activeOnly?: boolean): Promise<NoteTemplate[]>;
+  getNoteTemplate(id: number): Promise<NoteTemplate | null>;
+  createNoteTemplate(template: InsertNoteTemplate): Promise<NoteTemplate>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -131,6 +147,65 @@ export class DatabaseStorage implements IStorage {
       .where(eq(customers.id, id))
       .returning();
     return customer || null;
+  }
+
+  async getCustomerNotes(customerId: number): Promise<Note[]> {
+    const result = await db
+      .select({ note: notes })
+      .from(customerNotes)
+      .innerJoin(notes, eq(customerNotes.noteId, notes.id))
+      .where(eq(customerNotes.customerId, customerId))
+      .orderBy(desc(notes.isPinned), desc(notes.updatedAt));
+    return result.map(r => r.note);
+  }
+
+  async createCustomerNote(customerId: number, noteData: InsertNote): Promise<Note> {
+    const [note] = await db.insert(notes).values(noteData).returning();
+    await db.insert(customerNotes).values({ customerId, noteId: note.id });
+    return note;
+  }
+
+  async updateNote(noteId: number, data: UpdateNote): Promise<Note | null> {
+    const [note] = await db
+      .update(notes)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(notes.id, noteId))
+      .returning();
+    return note || null;
+  }
+
+  async toggleNotePin(noteId: number, isPinned: boolean): Promise<Note | null> {
+    const [note] = await db
+      .update(notes)
+      .set({ isPinned, updatedAt: new Date() })
+      .where(eq(notes.id, noteId))
+      .returning();
+    return note || null;
+  }
+
+  async deleteNote(noteId: number): Promise<void> {
+    await db.delete(notes).where(eq(notes.id, noteId));
+  }
+
+  async getNoteTemplates(activeOnly: boolean = true): Promise<NoteTemplate[]> {
+    if (activeOnly) {
+      return await db
+        .select()
+        .from(noteTemplates)
+        .where(eq(noteTemplates.isActive, true))
+        .orderBy(noteTemplates.sortOrder, noteTemplates.title);
+    }
+    return await db.select().from(noteTemplates).orderBy(noteTemplates.sortOrder, noteTemplates.title);
+  }
+
+  async getNoteTemplate(id: number): Promise<NoteTemplate | null> {
+    const [template] = await db.select().from(noteTemplates).where(eq(noteTemplates.id, id));
+    return template || null;
+  }
+
+  async createNoteTemplate(template: InsertNoteTemplate): Promise<NoteTemplate> {
+    const [result] = await db.insert(noteTemplates).values(template).returning();
+    return result;
   }
 }
 
