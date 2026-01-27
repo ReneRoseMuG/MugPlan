@@ -5,31 +5,18 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Phone, MapPin, Save, X, Calendar, FolderKanban } from "lucide-react";
-import { NotesSection, Note } from "@/components/NotesSection";
+import { NotesSection } from "@/components/NotesSection";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Customer } from "@shared/schema";
+import type { Customer, Note } from "@shared/schema";
 
 interface CustomerDataProps {
   customerId?: number | null;
   onCancel?: () => void;
   onSave?: () => void;
 }
-
-const initialNotes: Note[] = [
-  {
-    id: "1",
-    text: "Kunde bevorzugt Vormittagstermine zwischen 9 und 12 Uhr. Parkplatz vor dem Haus verfügbar.",
-    createdAt: "20.01.2026",
-  },
-  {
-    id: "2", 
-    text: "Rückruf am Montag vereinbart. Angebot für Zusatzleistungen besprechen.",
-    createdAt: "18.01.2026",
-  },
-];
 
 const demoProjects = [
   { id: "1", name: "Renovierung Bürogebäude", status: "In Bearbeitung", statusColor: "#f59e0b" },
@@ -45,7 +32,6 @@ const demoAppointments = [
 
 export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps) {
   const { toast } = useToast();
-  const [notes, setNotes] = useState<Note[]>(initialNotes);
   
   const [formData, setFormData] = useState({
     customerNumber: "",
@@ -62,6 +48,49 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
   const { data: customer, isLoading } = useQuery<Customer>({
     queryKey: ['/api/customers', customerId],
     enabled: isEditMode,
+  });
+
+  const { data: notes = [], isLoading: notesLoading } = useQuery<Note[]>({
+    queryKey: ['/api/customers', customerId, 'notes'],
+    enabled: isEditMode && !!customerId,
+  });
+
+  const createNoteMutation = useMutation({
+    mutationFn: async ({ title, body }: { title: string; body: string }) => {
+      const res = await apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: number) => {
+      await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const togglePinMutation = useMutation({
+    mutationFn: async ({ noteId, isPinned }: { noteId: number; isPinned: boolean }) => {
+      const res = await apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
   });
 
   useEffect(() => {
@@ -126,17 +155,18 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
     }
   };
 
-  const handleAddNote = (text: string) => {
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    setNotes([
-      { id: Date.now().toString(), text, createdAt: dateStr },
-      ...notes
-    ]);
+  const handleAddNote = (title: string, body: string) => {
+    if (isEditMode && customerId) {
+      createNoteMutation.mutate({ title, body });
+    }
   };
 
-  const handleDeleteNote = (id: string) => {
-    setNotes(notes.filter(n => n.id !== id));
+  const handleDeleteNote = (id: number) => {
+    deleteNoteMutation.mutate(id);
+  };
+
+  const handleTogglePin = (noteId: number, isPinned: boolean) => {
+    togglePinMutation.mutate({ noteId, isPinned });
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -285,11 +315,15 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
                 </div>
               )}
 
-              <NotesSection
-                notes={notes}
-                onAdd={handleAddNote}
-                onDelete={handleDeleteNote}
-              />
+              {isEditMode && (
+                <NotesSection
+                  notes={notes}
+                  isLoading={notesLoading}
+                  onAdd={handleAddNote}
+                  onDelete={handleDeleteNote}
+                  onTogglePin={handleTogglePin}
+                />
+              )}
 
               <div className="flex gap-3 pt-4 border-t border-border">
                 <Button 
