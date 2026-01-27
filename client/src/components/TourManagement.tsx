@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Plus, Route, Loader2, Pencil, UserCheck, Palette } from "lucide-react";
+import { Route, Pencil, UserCheck, Palette } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +11,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { EntityCard } from "@/components/ui/entity-card";
+import { CardListLayout } from "@/components/ui/card-list-layout";
 import { defaultHeaderColor } from "@/lib/colors";
 import type { Tour } from "@shared/schema";
 
@@ -247,113 +247,80 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     }));
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <Card className="bg-card">
-          <CardContent className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <Card className="bg-card">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-              <Route className="w-5 h-5" />
-              Touren
-            </CardTitle>
-            {onCancel && (
-              <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-tours">
-                <X className="w-6 h-6" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="list-tours">
-            {toursWithMembers.map((tour) => (
-              <EntityCard
-                key={tour.id}
-                title={tour.name}
-                icon={<Route className="w-4 h-4" />}
-                headerColor={defaultHeaderColor}
-                onDelete={() => deleteMutation.mutate(tour.id)}
-                isDeleting={deleteMutation.isPending}
-                testId={`card-tour-${tour.id}`}
-                footer={
-                  <>
-                    <ColorPickerButton
-                      color={tour.color}
-                      onChange={(color) => handleColorChange(tour.id, color)}
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingTour(tour);
-                      }}
-                      data-testid={`button-edit-tour-members-${tour.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  </>
-                }
-              >
-                <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
-                  Mitarbeiter
+    <>
+      <CardListLayout
+        title="Touren"
+        icon={<Route className="w-5 h-5" />}
+        isLoading={isLoading}
+        onClose={onCancel}
+        closeTestId="button-close-tours"
+        gridTestId="list-tours"
+        gridCols="3"
+        primaryAction={{
+          label: "Neue Tour",
+          onClick: () => createMutation.mutate(),
+          isPending: createMutation.isPending,
+          testId: "button-new-tour",
+        }}
+        secondaryAction={onCancel ? {
+          label: "Schließen",
+          onClick: onCancel,
+          testId: "button-cancel-tours",
+        } : undefined}
+      >
+        {toursWithMembers.map((tour) => (
+          <EntityCard
+            key={tour.id}
+            title={tour.name}
+            icon={<Route className="w-4 h-4" />}
+            headerColor={defaultHeaderColor}
+            onDelete={() => deleteMutation.mutate(tour.id)}
+            isDeleting={deleteMutation.isPending}
+            testId={`card-tour-${tour.id}`}
+            footer={
+              <>
+                <ColorPickerButton
+                  color={tour.color}
+                  onChange={(color) => handleColorChange(tour.id, color)}
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingTour(tour);
+                  }}
+                  data-testid={`button-edit-tour-members-${tour.id}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              </>
+            }
+          >
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+              Mitarbeiter
+            </div>
+            <div className="space-y-1">
+              {tour.members.map((member) => (
+                <div 
+                  key={member.id} 
+                  className="text-sm text-slate-700 flex items-center gap-2"
+                  data-testid={`text-tour-member-${member.id}`}
+                >
+                  <UserCheck className="w-3 h-3 text-primary" />
+                  {member.name}
                 </div>
-                <div className="space-y-1">
-                  {tour.members.map((member) => (
-                    <div 
-                      key={member.id} 
-                      className="text-sm text-slate-700 flex items-center gap-2"
-                      data-testid={`text-tour-member-${member.id}`}
-                    >
-                      <UserCheck className="w-3 h-3 text-primary" />
-                      {member.name}
-                    </div>
-                  ))}
-                  {tour.members.length === 0 && (
-                    <div className="text-sm text-slate-400 italic">
-                      Keine Mitarbeiter zugewiesen
-                    </div>
-                  )}
+              ))}
+              {tour.members.length === 0 && (
+                <div className="text-sm text-slate-400 italic">
+                  Keine Mitarbeiter zugewiesen
                 </div>
-              </EntityCard>
-            ))}
-          </div>
-
-          <div className="mt-6 flex justify-between items-center">
-            <Button
-              variant="outline"
-              onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending}
-              className="flex items-center gap-2"
-              data-testid="button-new-tour"
-            >
-              {createMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4" />
               )}
-              Neue Tour
-            </Button>
-
-            {onCancel && (
-              <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-tours">
-                Schließen
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </EntityCard>
+        ))}
+      </CardListLayout>
 
       {editingTour && (
         <EditTourMembersDialog
@@ -364,6 +331,6 @@ export function TourManagement({ onCancel }: TourManagementProps) {
           assignedMemberIds={assignedMemberIds}
         />
       )}
-    </div>
+    </>
   );
 }
