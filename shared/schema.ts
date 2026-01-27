@@ -1,6 +1,7 @@
-import { pgTable, text, serial, date, boolean, timestamp, bigserial } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, boolean, timestamp, bigserial, integer, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // Customer - Kundenverwaltung (FT 09)
 export const customers = pgTable("customer", {
@@ -74,3 +75,65 @@ export const updateTeamSchema = z.object({ color: z.string() });
 export type Team = typeof teams.$inferSelect;
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type UpdateTeam = z.infer<typeof updateTeamSchema>;
+
+// Note - Notizverwaltung (FT 13)
+export const notes = pgTable("note", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  isPinned: boolean("is_pinned").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertNoteSchema = createInsertSchema(notes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isPinned: true,
+});
+
+export const updateNoteSchema = z.object({
+  title: z.string().optional(),
+  body: z.string().optional(),
+});
+
+export type Note = typeof notes.$inferSelect;
+export type InsertNote = z.infer<typeof insertNoteSchema>;
+export type UpdateNote = z.infer<typeof updateNoteSchema>;
+
+// Note Template - Notizvorlagen (FT 13)
+export const noteTemplates = pgTable("note_template", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertNoteTemplateSchema = createInsertSchema(noteTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type NoteTemplate = typeof noteTemplates.$inferSelect;
+export type InsertNoteTemplate = z.infer<typeof insertNoteTemplateSchema>;
+
+// Customer Note Relation (FT 13)
+export const customerNotes = pgTable("customer_note", {
+  customerId: bigserial("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "cascade" }),
+  noteId: bigserial("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.customerId, table.noteId] }),
+}));
+
+// Project Note Relation (FT 13) - prepared for future use
+export const projectNotes = pgTable("project_note", {
+  projectId: bigserial("project_id", { mode: "number" }).notNull(),
+  noteId: bigserial("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.projectId, table.noteId] }),
+}));
