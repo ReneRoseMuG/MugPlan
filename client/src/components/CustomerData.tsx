@@ -78,6 +78,15 @@ export function CustomerData({ onCancel, onSave }: CustomerDataProps) {
                   <User className="w-4 h-4" />
                   Persönliche Daten
                 </h3>
+                <div className="space-y-2">
+                  <Label htmlFor="customerNumber" data-testid="label-customernumber">Kundennummer</Label>
+                  <Input 
+                    id="customerNumber" 
+                    defaultValue="K-2026-0001"
+                    className="max-w-[200px] font-mono"
+                    data-testid="input-customernumber"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName" data-testid="label-firstname">Vorname</Label>
