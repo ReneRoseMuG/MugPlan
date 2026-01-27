@@ -72,28 +72,16 @@ export function CustomerList({ onCancel, onNewCustomer }: CustomerListProps) {
     <Card className="h-full flex flex-col" data-testid="customer-list">
       <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between gap-4 pb-4">
         <CardTitle className="text-xl font-bold">Kundenliste</CardTitle>
-        <div className="flex items-center gap-2">
-          {onNewCustomer && (
-            <Button 
-              onClick={onNewCustomer}
-              className="gap-2"
-              data-testid="button-new-customer"
-            >
-              <Plus className="w-4 h-4" />
-              Neuer Kunde
-            </Button>
-          )}
-          {onCancel && (
-            <Button 
-              size="lg" 
-              variant="ghost" 
-              onClick={onCancel}
-              data-testid="button-close-customer-list"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          )}
-        </div>
+        {onCancel && (
+          <Button 
+            size="lg" 
+            variant="ghost" 
+            onClick={onCancel}
+            data-testid="button-close-customer-list"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="flex-1 overflow-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -133,6 +121,24 @@ export function CustomerList({ onCancel, onNewCustomer }: CustomerListProps) {
             Keine Kunden gefunden.
           </div>
         )}
+
+        <div className="mt-6 flex justify-between items-center">
+          <Button
+            variant="outline"
+            onClick={onNewCustomer}
+            className="flex items-center gap-2"
+            data-testid="button-new-customer"
+          >
+            <Plus className="w-4 h-4" />
+            Neuer Kunde
+          </Button>
+
+          {onCancel && (
+            <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-customers">
+              Schließen
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
