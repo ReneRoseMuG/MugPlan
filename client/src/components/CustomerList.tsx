@@ -39,6 +39,7 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
                 key={customer.id} 
                 onClick={() => onSelectCustomer?.(customer.id)}
                 className="cursor-pointer"
+                data-testid={`button-select-customer-${customer.id}`}
               >
                 <EntityCard
                   title={customer.name}

@@ -107,7 +107,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCustomers(): Promise<Customer[]> {
-    return await db.select().from(customers).orderBy(customers.id);
+    return await db
+      .select()
+      .from(customers)
+      .where(eq(customers.isActive, true))
+      .orderBy(customers.id);
   }
 
   async getCustomer(id: number): Promise<Customer | null> {
