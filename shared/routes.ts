@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { insertEventSchema, events, insertTourSchema, updateTourSchema, tours, insertTeamSchema, updateTeamSchema, teams } from './schema';
+import { 
+  insertEventSchema, events, 
+  insertTourSchema, updateTourSchema, tours, 
+  insertTeamSchema, updateTeamSchema, teams,
+  insertCustomerSchema, updateCustomerSchema, customers 
+} from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -111,6 +116,42 @@ export const api = {
       },
     },
   },
+  customers: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/customers',
+      responses: {
+        200: z.array(z.custom<typeof customers.$inferSelect>()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/customers/:id',
+      responses: {
+        200: z.custom<typeof customers.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/customers',
+      input: insertCustomerSchema,
+      responses: {
+        201: z.custom<typeof customers.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/customers/:id',
+      input: updateCustomerSchema,
+      responses: {
+        200: z.custom<typeof customers.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
@@ -135,3 +176,7 @@ export type TourResponse = z.infer<typeof api.tours.create.responses[201]>;
 export type TeamInput = z.infer<typeof api.teams.create.input>;
 export type TeamUpdateInput = z.infer<typeof api.teams.update.input>;
 export type TeamResponse = z.infer<typeof api.teams.create.responses[201]>;
+
+export type CustomerInput = z.infer<typeof api.customers.create.input>;
+export type CustomerUpdateInput = z.infer<typeof api.customers.update.input>;
+export type CustomerResponse = z.infer<typeof api.customers.create.responses[201]>;

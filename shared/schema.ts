@@ -1,6 +1,42 @@
-import { pgTable, text, serial, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, boolean, timestamp, bigserial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Customer - Kundenverwaltung (FT 09)
+export const customers = pgTable("customer", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  customerNumber: text("customer_number").notNull().unique(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  addressLine1: text("address_line1"),
+  addressLine2: text("address_line2"),
+  postalCode: text("postal_code"),
+  city: text("city"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertCustomerSchema = createInsertSchema(customers).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  isActive: true 
+});
+
+export const updateCustomerSchema = z.object({
+  customerNumber: z.string().optional(),
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  addressLine1: z.string().nullable().optional(),
+  addressLine2: z.string().nullable().optional(),
+  postalCode: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+});
+
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),

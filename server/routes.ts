@@ -127,5 +127,54 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Customers API (FT 09 - Kundenverwaltung)
+  app.get(api.customers.list.path, async (req, res) => {
+    const customers = await storage.getCustomers();
+    res.json(customers);
+  });
+
+  app.get(api.customers.get.path, async (req, res) => {
+    const customer = await storage.getCustomer(Number(req.params.id));
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+    res.json(customer);
+  });
+
+  app.post(api.customers.create.path, async (req, res) => {
+    try {
+      const input = api.customers.create.input.parse(req.body);
+      const customer = await storage.createCustomer(input);
+      res.status(201).json(customer);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.customers.update.path, async (req, res) => {
+    try {
+      const input = api.customers.update.input.parse(req.body);
+      const customer = await storage.updateCustomer(Number(req.params.id), input);
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+      res.json(customer);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   return httpServer;
 }
