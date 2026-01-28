@@ -299,40 +299,28 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
 
           <div className="flex-1 overflow-auto">
             <div className="grid grid-cols-2 gap-6">
-              {/* Left column: Employee form */}
+              {/* Left column: Employee form - always editable */}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">Vorname *</Label>
-                    {isEditing ? (
-                      <Input
-                        id="firstName"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                        placeholder="Vorname..."
-                        data-testid="input-employee-firstname"
-                      />
-                    ) : (
-                      <p className="text-sm py-2" data-testid="text-employee-firstname">
-                        {displayEmployee?.employee.firstName || "-"}
-                      </p>
-                    )}
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      placeholder="Vorname..."
+                      data-testid="input-employee-firstname"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Nachname *</Label>
-                    {isEditing ? (
-                      <Input
-                        id="lastName"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                        placeholder="Nachname..."
-                        data-testid="input-employee-lastname"
-                      />
-                    ) : (
-                      <p className="text-sm py-2" data-testid="text-employee-lastname">
-                        {displayEmployee?.employee.lastName || "-"}
-                      </p>
-                    )}
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      placeholder="Nachname..."
+                      data-testid="input-employee-lastname"
+                    />
                   </div>
                 </div>
 
@@ -342,39 +330,27 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                       <Phone className="w-3 h-3" />
                       Telefon
                     </Label>
-                    {isEditing ? (
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="Telefonnummer..."
-                        data-testid="input-employee-phone"
-                      />
-                    ) : (
-                      <p className="text-sm py-2" data-testid="text-employee-phone">
-                        {displayEmployee?.employee.phone || "-"}
-                      </p>
-                    )}
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Telefonnummer..."
+                      data-testid="input-employee-phone"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email" className="flex items-center gap-1">
                       <Mail className="w-3 h-3" />
                       E-Mail
                     </Label>
-                    {isEditing ? (
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="E-Mail-Adresse..."
-                        data-testid="input-employee-email"
-                      />
-                    ) : (
-                      <p className="text-sm py-2" data-testid="text-employee-email">
-                        {displayEmployee?.employee.email || "-"}
-                      </p>
-                    )}
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="E-Mail-Adresse..."
+                      data-testid="input-employee-email"
+                    />
                   </div>
                 </div>
 
@@ -423,7 +399,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   </p>
                 </div>
 
-                {/* Tour card (read-only) */}
+                {/* Tour card (read-only with edit button) */}
                 <div className="space-y-2">
                   <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
                     <Route className="w-4 h-4" />
@@ -431,20 +407,42 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   </h4>
                   {!isCreating && displayEmployee?.tour ? (
                     <div 
-                      className="flex items-center gap-2 px-3 py-2 rounded-md border"
-                      style={{ backgroundColor: displayEmployee.tour.color }}
+                      className="flex items-center justify-between px-3 py-2 border border-border bg-slate-50 border-l-4"
+                      style={{ borderLeftColor: displayEmployee.tour.color }}
                     >
-                      <Route className="w-4 h-4" />
-                      <span className="font-medium">{displayEmployee.tour.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Route className="w-4 h-4 text-slate-600" />
+                        <span className="font-medium text-slate-700">{displayEmployee.tour.name}</span>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled
+                        title="Tour-Zuweisung über Touren-Verwaltung"
+                        data-testid="button-edit-employee-tour"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-400 italic px-3 py-2 border rounded-md bg-slate-50">
-                      Keiner Tour zugewiesen
-                    </p>
+                    <div className="flex items-center justify-between px-3 py-2 border bg-slate-50">
+                      <p className="text-sm text-slate-400 italic">
+                        Keiner Tour zugewiesen
+                      </p>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled
+                        title="Tour-Zuweisung über Touren-Verwaltung"
+                        data-testid="button-edit-employee-tour"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
 
-                {/* Team card (read-only) */}
+                {/* Team card (read-only with edit button) */}
                 <div className="space-y-2">
                   <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
                     <Users className="w-4 h-4" />
@@ -452,16 +450,38 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   </h4>
                   {!isCreating && displayEmployee?.team ? (
                     <div 
-                      className="flex items-center gap-2 px-3 py-2 rounded-md border"
-                      style={{ backgroundColor: displayEmployee.team.color }}
+                      className="flex items-center justify-between px-3 py-2 border border-border bg-slate-50 border-l-4"
+                      style={{ borderLeftColor: displayEmployee.team.color }}
                     >
-                      <Users className="w-4 h-4" />
-                      <span className="font-medium">{displayEmployee.team.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-slate-600" />
+                        <span className="font-medium text-slate-700">{displayEmployee.team.name}</span>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled
+                        title="Team-Zuweisung über Team-Verwaltung"
+                        data-testid="button-edit-employee-team"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-400 italic px-3 py-2 border rounded-md bg-slate-50">
-                      Keinem Team zugewiesen
-                    </p>
+                    <div className="flex items-center justify-between px-3 py-2 border bg-slate-50">
+                      <p className="text-sm text-slate-400 italic">
+                        Keinem Team zugewiesen
+                      </p>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled
+                        title="Team-Zuweisung über Team-Verwaltung"
+                        data-testid="button-edit-employee-team"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -469,29 +489,16 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
           </div>
 
           <DialogFooter className="flex-shrink-0 gap-2 border-t pt-4 mt-4">
-            {isEditing ? (
-              <>
-                <Button variant="outline" onClick={handleCancelEdit} data-testid="button-cancel-employee">
-                  Abbrechen
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={!formData.firstName.trim() || !formData.lastName.trim() || createMutation.isPending || updateMutation.isPending}
-                  data-testid="button-save-employee"
-                >
-                  {(createMutation.isPending || updateMutation.isPending) ? "Speichern..." : "Speichern"}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={handleCloseDialog} data-testid="button-close-employee">
-                  Schließen
-                </Button>
-                <Button onClick={handleStartEdit} data-testid="button-edit-employee">
-                  Bearbeiten
-                </Button>
-              </>
-            )}
+            <Button variant="outline" onClick={handleCloseDialog} data-testid="button-cancel-employee">
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!formData.firstName.trim() || !formData.lastName.trim() || createMutation.isPending || updateMutation.isPending}
+              data-testid="button-save-employee"
+            >
+              {(createMutation.isPending || updateMutation.isPending) ? "Speichern..." : "Speichern"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
