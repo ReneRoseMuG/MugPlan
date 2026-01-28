@@ -190,25 +190,23 @@ export function ProjectStatusPage() {
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
-                {!status.isDefault && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleActive(status);
-                    }}
-                    disabled={toggleActiveMutation.isPending}
-                    data-testid={`button-toggle-status-${status.id}`}
-                    title={status.isActive ? "Deaktivieren" : "Aktivieren"}
-                  >
-                    {status.isActive ? (
-                      <PowerOff className="w-4 h-4" />
-                    ) : (
-                      <Power className="w-4 h-4" />
-                    )}
-                  </Button>
-                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleActive(status);
+                  }}
+                  disabled={status.isDefault || toggleActiveMutation.isPending}
+                  data-testid={`button-toggle-status-${status.id}`}
+                  title={status.isDefault ? "Default-Status" : (status.isActive ? "Deaktivieren" : "Aktivieren")}
+                >
+                  {status.isActive ? (
+                    <PowerOff className="w-4 h-4" />
+                  ) : (
+                    <Power className="w-4 h-4" />
+                  )}
+                </Button>
               </>
             }
             footer={
