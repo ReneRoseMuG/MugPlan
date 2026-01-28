@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { NotesSection } from "@/components/NotesSection";
 import { ProjectStatusSection } from "@/components/ProjectStatusSection";
 import { 
-  X, 
   FolderKanban, 
   UserCircle, 
   FileText, 
@@ -330,26 +329,22 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
     );
   }
 
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
   return (
-    <div className="h-full overflow-y-auto">
-      <Card className="max-w-6xl mx-auto">
-        <CardHeader className="border-b border-border">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
-              <FolderKanban className="w-6 h-6" />
-              {isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
-            </CardTitle>
-            {onCancel && (
-              <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-project">
-                <X className="w-6 h-6" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-3 gap-6">
-            {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
-            <div className="col-span-2 space-y-6">
+    <EntityFormLayout
+      title={isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
+      icon={<FolderKanban className="w-6 h-6" />}
+      onClose={onCancel}
+      onCancel={onCancel}
+      onSave={handleSave}
+      isSaving={isPending}
+      saveLabel="Projekt speichern"
+      testIdPrefix="project"
+    >
+      <div className="grid grid-cols-3 gap-6">
+        {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
+        <div className="col-span-2 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                   <FolderKanban className="w-4 h-4" />
@@ -482,22 +477,7 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-border">
-            <Button variant="outline" onClick={onCancel} data-testid="button-cancel">
-              Abbrechen
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              disabled={createMutation.isPending || updateMutation.isPending}
-              data-testid="button-save-project"
-            >
-              {createMutation.isPending || updateMutation.isPending ? "Speichern..." : "Projekt speichern"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Customer Selection Dialog */}
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
@@ -539,6 +519,6 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
         onOpenChange={setPreviewOpen}
         onNavigate={setPreviewIndex}
       />
-    </div>
+    </EntityFormLayout>
   );
 }

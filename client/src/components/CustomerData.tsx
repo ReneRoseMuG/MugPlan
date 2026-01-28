@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Phone, MapPin, Save, X, Calendar, FolderKanban } from "lucide-react";
+import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { User, Phone, MapPin, Calendar, FolderKanban } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -195,24 +196,17 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
   }
 
   return (
-    <div className="h-full p-6 overflow-auto">
-      <Card className="max-w-6xl mx-auto">
-        <CardHeader className="border-b border-border">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold text-primary flex items-center gap-3">
-              <User className="w-6 h-6" />
-              {isEditMode ? "Kundendaten bearbeiten" : "Neuer Kunde"}
-            </CardTitle>
-            {onCancel && (
-              <Button size="lg" variant="ghost" onClick={onCancel} data-testid="button-close-customer">
-                <X className="w-6 h-6" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2 space-y-6">
+    <EntityFormLayout
+      title={isEditMode ? "Kundendaten bearbeiten" : "Neuer Kunde"}
+      icon={<User className="w-6 h-6" />}
+      onClose={onCancel}
+      onCancel={onCancel}
+      onSave={handleSave}
+      isSaving={isPending}
+      testIdPrefix="customer"
+    >
+      <div className="grid grid-cols-3 gap-6">
+        <div className="col-span-2 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
@@ -339,112 +333,94 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
                 </div>
               )}
 
-              {isEditMode && (
-                <NotesSection
-                  notes={notes}
-                  isLoading={notesLoading}
-                  onAdd={handleAddNote}
-                  onDelete={handleDeleteNote}
-                  onTogglePin={handleTogglePin}
-                />
-              )}
+          {isEditMode && (
+            <NotesSection
+              notes={notes}
+              isLoading={notesLoading}
+              onAdd={handleAddNote}
+              onDelete={handleDeleteNote}
+              onTogglePin={handleTogglePin}
+            />
+          )}
+        </div>
 
-              <div className="flex gap-3 pt-4 border-t border-border">
-                <Button 
-                  type="button" 
-                  onClick={handleSave} 
-                  disabled={isPending}
-                  data-testid="button-save"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isPending ? "Speichern..." : "Speichern"}
-                </Button>
-                <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel">
-                  <X className="w-4 h-4 mr-2" />
-                  Abbrechen
-                </Button>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="border-b border-border py-3">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <FolderKanban className="w-4 h-4" />
+                Verknüpfte Projekte ({demoProjects.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-2" data-testid="list-projects">
+                {demoProjects.map((project) => (
+                  <div 
+                    key={project.id}
+                    className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border"
+                    data-testid={`project-card-${project.id}`}
+                  >
+                    <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-project-name-${project.id}`}>
+                      {project.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: project.statusColor }}
+                      />
+                      <span className="text-xs text-slate-500" data-testid={`text-project-status-${project.id}`}>
+                        {project.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {demoProjects.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-2">
+                    Keine Projekte verknüpft
+                  </p>
+                )}
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-6">
-              <Card>
-                <CardHeader className="border-b border-border py-3">
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                    <FolderKanban className="w-4 h-4" />
-                    Verknüpfte Projekte ({demoProjects.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-2" data-testid="list-projects">
-                    {demoProjects.map((project) => (
-                      <div 
-                        key={project.id}
-                        className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border"
-                        data-testid={`project-card-${project.id}`}
-                      >
-                        <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-project-name-${project.id}`}>
-                          {project.name}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div 
-                            className="w-2 h-2 rounded-full" 
-                            style={{ backgroundColor: project.statusColor }}
-                          />
-                          <span className="text-xs text-slate-500" data-testid={`text-project-status-${project.id}`}>
-                            {project.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    {demoProjects.length === 0 && (
-                      <p className="text-sm text-slate-400 text-center py-2">
-                        Keine Projekte verknüpft
+          <Card>
+            <CardHeader className="border-b border-border py-3">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Termine ({demoAppointments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-2" data-testid="list-appointments">
+                {demoAppointments.map((apt) => (
+                  <div 
+                    key={apt.id}
+                    className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border"
+                    data-testid={`appointment-card-${apt.id}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-appointment-title-${apt.id}`}>
+                        {apt.title}
                       </p>
-                    )}
+                      <span className="text-xs font-medium text-primary" data-testid={`text-appointment-date-${apt.id}`}>
+                        {apt.date}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1" data-testid={`text-appointment-project-${apt.id}`}>
+                      {apt.project}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="border-b border-border py-3">
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Termine ({demoAppointments.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-2" data-testid="list-appointments">
-                    {demoAppointments.map((apt) => (
-                      <div 
-                        key={apt.id}
-                        className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border"
-                        data-testid={`appointment-card-${apt.id}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-appointment-title-${apt.id}`}>
-                            {apt.title}
-                          </p>
-                          <span className="text-xs font-medium text-primary" data-testid={`text-appointment-date-${apt.id}`}>
-                            {apt.date}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-1" data-testid={`text-appointment-project-${apt.id}`}>
-                          {apt.project}
-                        </p>
-                      </div>
-                    ))}
-                    {demoAppointments.length === 0 && (
-                      <p className="text-sm text-slate-400 text-center py-2">
-                        Keine Termine vorhanden
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                ))}
+                {demoAppointments.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-2">
+                    Keine Termine vorhanden
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </EntityFormLayout>
   );
 }
