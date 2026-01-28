@@ -9,6 +9,7 @@ import {
   customerNotes,
   projectStatus,
   projectProjectStatus,
+  employees,
   helpTexts,
   type InsertEvent,
   type Event,
@@ -30,6 +31,9 @@ import {
   type ProjectStatus,
   type InsertProjectStatus,
   type UpdateProjectStatus,
+  type Employee,
+  type InsertEmployee,
+  type UpdateEmployee,
   type HelpText,
   type InsertHelpText,
   type UpdateHelpText
@@ -76,6 +80,17 @@ export interface IStorage {
   updateHelpText(id: number, data: UpdateHelpText): Promise<{ helpText: HelpText | null; error?: string }>;
   toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null>;
   deleteHelpText(id: number): Promise<void>;
+  // Employee (FT 05)
+  getEmployees(filter?: 'active' | 'inactive' | 'all'): Promise<Employee[]>;
+  getEmployee(id: number): Promise<Employee | null>;
+  getEmployeeWithRelations(id: number): Promise<{ employee: Employee; team: Team | null; tour: Tour | null } | null>;
+  createEmployee(data: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: number, data: UpdateEmployee): Promise<Employee | null>;
+  toggleEmployeeActive(id: number, isActive: boolean): Promise<Employee | null>;
+  getEmployeesByTour(tourId: number): Promise<Employee[]>;
+  getEmployeesByTeam(teamId: number): Promise<Employee[]>;
+  setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null>;
+  setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -404,6 +419,103 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHelpText(id: number): Promise<void> {
     await db.delete(helpTexts).where(eq(helpTexts.id, id));
+  }
+
+  // Employee (FT 05)
+  async getEmployees(filter: 'active' | 'inactive' | 'all' = 'active'): Promise<Employee[]> {
+    if (filter === 'all') {
+      return await db
+        .select()
+        .from(employees)
+        .orderBy(asc(employees.name), asc(employees.id));
+    }
+    const isActive = filter === 'active';
+    return await db
+      .select()
+      .from(employees)
+      .where(eq(employees.isActive, isActive))
+      .orderBy(asc(employees.name), asc(employees.id));
+  }
+
+  async getEmployee(id: number): Promise<Employee | null> {
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+    return employee || null;
+  }
+
+  async getEmployeeWithRelations(id: number): Promise<{ employee: Employee; team: Team | null; tour: Tour | null } | null> {
+    const employee = await this.getEmployee(id);
+    if (!employee) return null;
+    
+    let team: Team | null = null;
+    let tour: Tour | null = null;
+    
+    if (employee.teamId) {
+      const [t] = await db.select().from(teams).where(eq(teams.id, employee.teamId));
+      team = t || null;
+    }
+    if (employee.tourId) {
+      const [t] = await db.select().from(tours).where(eq(tours.id, employee.tourId));
+      tour = t || null;
+    }
+    
+    return { employee, team, tour };
+  }
+
+  async createEmployee(data: InsertEmployee): Promise<Employee> {
+    const [employee] = await db.insert(employees).values(data).returning();
+    return employee;
+  }
+
+  async updateEmployee(id: number, data: UpdateEmployee): Promise<Employee | null> {
+    const [employee] = await db
+      .update(employees)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(employees.id, id))
+      .returning();
+    return employee || null;
+  }
+
+  async toggleEmployeeActive(id: number, isActive: boolean): Promise<Employee | null> {
+    const [employee] = await db
+      .update(employees)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(employees.id, id))
+      .returning();
+    return employee || null;
+  }
+
+  async getEmployeesByTour(tourId: number): Promise<Employee[]> {
+    return await db
+      .select()
+      .from(employees)
+      .where(eq(employees.tourId, tourId))
+      .orderBy(asc(employees.name));
+  }
+
+  async getEmployeesByTeam(teamId: number): Promise<Employee[]> {
+    return await db
+      .select()
+      .from(employees)
+      .where(eq(employees.teamId, teamId))
+      .orderBy(asc(employees.name));
+  }
+
+  async setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {
+    const [employee] = await db
+      .update(employees)
+      .set({ tourId, updatedAt: new Date() })
+      .where(eq(employees.id, employeeId))
+      .returning();
+    return employee || null;
+  }
+
+  async setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null> {
+    const [employee] = await db
+      .update(employees)
+      .set({ teamId, updatedAt: new Date() })
+      .where(eq(employees.id, employeeId))
+      .returning();
+    return employee || null;
   }
 }
 

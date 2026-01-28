@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, UserCheck, Pencil } from "lucide-react";
+import { Users, UserCheck, Pencil, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,56 +13,44 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { EntityCard } from "@/components/ui/entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { getRandomPastelColor } from "@/lib/colors";
-import type { Team } from "@shared/schema";
-
-interface TeamMember {
-  id: string;
-  name: string;
-}
+import type { Team, Employee } from "@shared/schema";
 
 interface TeamWithMembers extends Team {
-  members: TeamMember[];
+  members: Employee[];
 }
 
 interface TeamManagementProps {
   onCancel?: () => void;
 }
 
-const allEmployees: TeamMember[] = [
-  { id: "e1", name: "Thomas Müller" },
-  { id: "e2", name: "Anna Schmidt" },
-  { id: "e3", name: "Michael Weber" },
-  { id: "e4", name: "Sandra Fischer" },
-  { id: "e5", name: "Klaus Hoffmann" },
-];
-
 function EditTeamMembersDialog({
   open,
   onOpenChange,
   team,
+  allEmployees,
   onSaveMembers,
-  assignedMemberIds,
+  isSaving,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   team: TeamWithMembers;
-  onSaveMembers: (teamId: number, memberIds: string[]) => void;
-  assignedMemberIds: string[];
+  allEmployees: Employee[];
+  onSaveMembers: (teamId: number, employeeIds: number[]) => void;
+  isSaving: boolean;
 }) {
   const currentMemberIds = team.members.map(m => m.id);
-  const [selectedMembers, setSelectedMembers] = useState<string[]>(currentMemberIds);
+  const [selectedMembers, setSelectedMembers] = useState<number[]>(currentMemberIds);
 
-  const handleToggleMember = (memberId: string) => {
+  const handleToggleMember = (employeeId: number) => {
     setSelectedMembers((prev) =>
-      prev.includes(memberId)
-        ? prev.filter((id) => id !== memberId)
-        : [...prev, memberId]
+      prev.includes(employeeId)
+        ? prev.filter((id) => id !== employeeId)
+        : [...prev, employeeId]
     );
   };
 
   const handleSave = () => {
     onSaveMembers(team.id, selectedMembers);
-    onOpenChange(false);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -94,8 +82,8 @@ function EditTeamMembersDialog({
               Mitarbeiter auswählen:
             </div>
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {allEmployees.map((employee) => {
-                const isAssignedElsewhere = assignedMemberIds.includes(employee.id) && !currentMemberIds.includes(employee.id);
+              {allEmployees.filter(e => e.isActive).map((employee) => {
+                const isAssignedElsewhere = employee.teamId !== null && employee.teamId !== team.id;
                 const isSelected = selectedMembers.includes(employee.id);
                 return (
                   <div
@@ -104,10 +92,10 @@ function EditTeamMembersDialog({
                     className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${
                       isAssignedElsewhere ? "opacity-50 bg-slate-100 cursor-not-allowed" : isSelected ? "bg-primary/10" : "hover:bg-slate-50"
                     }`}
-                    data-testid={`checkbox-edit-employee-${employee.id}`}
+                    data-testid={`checkbox-team-employee-${employee.id}`}
                   >
                     <Checkbox
-                      id={`edit-employee-${employee.id}`}
+                      id={`team-employee-${employee.id}`}
                       disabled={isAssignedElsewhere}
                       checked={isSelected}
                       onClick={(e) => e.stopPropagation()}
@@ -120,12 +108,17 @@ function EditTeamMembersDialog({
                     >
                       {employee.name}
                       {isAssignedElsewhere && (
-                        <span className="ml-2 text-xs text-slate-400">(bereits in Team)</span>
+                        <span className="ml-2 text-xs text-slate-400">(bereits in anderem Team)</span>
                       )}
                     </span>
                   </div>
                 );
               })}
+              {allEmployees.filter(e => e.isActive).length === 0 && (
+                <div className="text-sm text-slate-400 italic py-2">
+                  Keine aktiven Mitarbeiter vorhanden
+                </div>
+              )}
             </div>
           </div>
 
@@ -133,8 +126,8 @@ function EditTeamMembersDialog({
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleSave} data-testid="button-save-team-members">
-              Speichern
+            <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-team-members">
+              {isSaving ? "Speichern..." : "Speichern"}
             </Button>
           </div>
         </div>
@@ -144,20 +137,23 @@ function EditTeamMembersDialog({
 }
 
 export function TeamManagement({ onCancel }: TeamManagementProps) {
-  const [teamMembers, setTeamMembers] = useState<Record<number, TeamMember[]>>({});
   const [editingTeam, setEditingTeam] = useState<TeamWithMembers | null>(null);
 
-  const { data: teams = [], isLoading } = useQuery<Team[]>({
+  const { data: teams = [], isLoading: teamsLoading } = useQuery<Team[]>({
     queryKey: ['/api/teams'],
   });
 
+  const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
+    queryKey: ['/api/employees'],
+  });
+
+  const isLoading = teamsLoading || employeesLoading;
+
   const teamsWithMembers: TeamWithMembers[] = teams.map((team, index) => ({
     ...team,
-    members: teamMembers[team.id] || [],
+    members: employees.filter(e => e.teamId === team.id),
     color: team.color || getRandomPastelColor(index),
   }));
-
-  const assignedMemberIds = teamsWithMembers.flatMap((t) => t.members.map((m) => m.id));
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -169,26 +165,50 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     },
   });
 
+  const invalidateEmployees = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && key[0] === "/api/employees";
+      }
+    });
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       return apiRequest('DELETE', `/api/teams/${id}`);
     },
-    onSuccess: (_, deletedId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
-      setTeamMembers(prev => {
-        const next = { ...prev };
-        delete next[deletedId];
-        return next;
-      });
+      invalidateEmployees();
     },
   });
 
-  const handleSaveMembers = (teamId: number, memberIds: string[]) => {
-    const members = allEmployees.filter(e => memberIds.includes(e.id));
-    setTeamMembers(prev => ({
-      ...prev,
-      [teamId]: members,
-    }));
+  const assignMembersMutation = useMutation({
+    mutationFn: async ({ teamId, employeeIds }: { teamId: number; employeeIds: number[] }) => {
+      return apiRequest('POST', `/api/teams/${teamId}/employees`, { employeeIds });
+    },
+    onSuccess: () => {
+      invalidateEmployees();
+      setEditingTeam(null);
+    },
+  });
+
+  const removeEmployeeMutation = useMutation({
+    mutationFn: async (employeeId: number) => {
+      return apiRequest('DELETE', `/api/teams/employees/${employeeId}`);
+    },
+    onSuccess: () => {
+      invalidateEmployees();
+    },
+  });
+
+  const handleSaveMembers = (teamId: number, employeeIds: number[]) => {
+    assignMembersMutation.mutate({ teamId, employeeIds });
+  };
+
+  const handleRemoveEmployee = (employeeId: number) => {
+    removeEmployeeMutation.mutate(employeeId);
   };
 
   return (
@@ -244,11 +264,25 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
               {team.members.map((member) => (
                 <div 
                   key={member.id} 
-                  className="text-sm text-slate-700 flex items-center gap-2"
-                  data-testid={`text-member-${member.id}`}
+                  className="text-sm text-slate-700 flex items-center justify-between group"
+                  data-testid={`text-team-member-${member.id}`}
                 >
-                  <UserCheck className="w-3 h-3 text-primary" />
-                  {member.name}
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-3 h-3 text-primary" />
+                    {member.name}
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveEmployee(member.id);
+                    }}
+                    data-testid={`button-remove-team-employee-${member.id}`}
+                  >
+                    <X className="w-3 h-3 text-slate-400 hover:text-red-500" />
+                  </Button>
                 </div>
               ))}
               {team.members.length === 0 && (
@@ -266,8 +300,9 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
           open={!!editingTeam}
           onOpenChange={(open) => !open && setEditingTeam(null)}
           team={editingTeam}
+          allEmployees={employees}
           onSaveMembers={handleSaveMembers}
-          assignedMemberIds={assignedMemberIds}
+          isSaving={assignMembersMutation.isPending}
         />
       )}
     </>

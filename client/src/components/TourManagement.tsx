@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Route, Pencil, UserCheck, Palette } from "lucide-react";
+import { Route, Pencil, UserCheck, Palette, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,24 +13,11 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { EntityCard } from "@/components/ui/entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { defaultHeaderColor } from "@/lib/colors";
-import type { Tour } from "@shared/schema";
-
-interface TourMember {
-  id: string;
-  name: string;
-}
+import type { Tour, Employee } from "@shared/schema";
 
 interface TourWithMembers extends Tour {
-  members: TourMember[];
+  members: Employee[];
 }
-
-const allEmployees: TourMember[] = [
-  { id: "e1", name: "Thomas Müller" },
-  { id: "e2", name: "Anna Schmidt" },
-  { id: "e3", name: "Michael Weber" },
-  { id: "e4", name: "Sandra Fischer" },
-  { id: "e5", name: "Klaus Hoffmann" },
-];
 
 function hslToHex(h: number, s: number, l: number): string {
   s /= 100;
@@ -52,29 +39,30 @@ function EditTourMembersDialog({
   open,
   onOpenChange,
   tour,
+  allEmployees,
   onSaveMembers,
-  assignedMemberIds,
+  isSaving,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tour: TourWithMembers;
-  onSaveMembers: (tourId: number, memberIds: string[]) => void;
-  assignedMemberIds: string[];
+  allEmployees: Employee[];
+  onSaveMembers: (tourId: number, employeeIds: number[]) => void;
+  isSaving: boolean;
 }) {
   const currentMemberIds = tour.members.map(m => m.id);
-  const [selectedMembers, setSelectedMembers] = useState<string[]>(currentMemberIds);
+  const [selectedMembers, setSelectedMembers] = useState<number[]>(currentMemberIds);
 
-  const handleToggleMember = (memberId: string) => {
+  const handleToggleMember = (employeeId: number) => {
     setSelectedMembers((prev) =>
-      prev.includes(memberId)
-        ? prev.filter((id) => id !== memberId)
-        : [...prev, memberId]
+      prev.includes(employeeId)
+        ? prev.filter((id) => id !== employeeId)
+        : [...prev, employeeId]
     );
   };
 
   const handleSave = () => {
     onSaveMembers(tour.id, selectedMembers);
-    onOpenChange(false);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -106,8 +94,8 @@ function EditTourMembersDialog({
               Mitarbeiter auswählen:
             </div>
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {allEmployees.map((employee) => {
-                const isAssignedElsewhere = assignedMemberIds.includes(employee.id) && !currentMemberIds.includes(employee.id);
+              {allEmployees.filter(e => e.isActive).map((employee) => {
+                const isAssignedElsewhere = employee.tourId !== null && employee.tourId !== tour.id;
                 const isSelected = selectedMembers.includes(employee.id);
                 return (
                   <div
@@ -132,12 +120,17 @@ function EditTourMembersDialog({
                     >
                       {employee.name}
                       {isAssignedElsewhere && (
-                        <span className="ml-2 text-xs text-slate-400">(bereits in Tour)</span>
+                        <span className="ml-2 text-xs text-slate-400">(bereits in anderer Tour)</span>
                       )}
                     </span>
                   </div>
                 );
               })}
+              {allEmployees.filter(e => e.isActive).length === 0 && (
+                <div className="text-sm text-slate-400 italic py-2">
+                  Keine aktiven Mitarbeiter vorhanden
+                </div>
+              )}
             </div>
           </div>
 
@@ -145,8 +138,8 @@ function EditTourMembersDialog({
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Abbrechen
             </Button>
-            <Button onClick={handleSave} data-testid="button-save-tour-members">
-              Speichern
+            <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-tour-members">
+              {isSaving ? "Speichern..." : "Speichern"}
             </Button>
           </div>
         </div>
@@ -185,19 +178,22 @@ function ColorPickerButton({
 }
 
 export function TourManagement({ onCancel }: TourManagementProps) {
-  const [tourMembers, setTourMembers] = useState<Record<number, TourMember[]>>({});
   const [editingTour, setEditingTour] = useState<TourWithMembers | null>(null);
 
-  const { data: tours = [], isLoading } = useQuery<Tour[]>({
+  const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
     queryKey: ['/api/tours'],
   });
 
+  const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
+    queryKey: ['/api/employees'],
+  });
+
+  const isLoading = toursLoading || employeesLoading;
+
   const toursWithMembers: TourWithMembers[] = tours.map(tour => ({
     ...tour,
-    members: tourMembers[tour.id] || [],
+    members: employees.filter(e => e.tourId === tour.id),
   }));
-
-  const assignedMemberIds = toursWithMembers.flatMap((t) => t.members.map((m) => m.id));
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -221,17 +217,41 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     },
   });
 
+  const invalidateEmployees = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && key[0] === "/api/employees";
+      }
+    });
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       return apiRequest('DELETE', `/api/tours/${id}`);
     },
-    onSuccess: (_, deletedId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tours'] });
-      setTourMembers(prev => {
-        const next = { ...prev };
-        delete next[deletedId];
-        return next;
-      });
+      invalidateEmployees();
+    },
+  });
+
+  const assignMembersMutation = useMutation({
+    mutationFn: async ({ tourId, employeeIds }: { tourId: number; employeeIds: number[] }) => {
+      return apiRequest('POST', `/api/tours/${tourId}/employees`, { employeeIds });
+    },
+    onSuccess: () => {
+      invalidateEmployees();
+      setEditingTour(null);
+    },
+  });
+
+  const removeEmployeeMutation = useMutation({
+    mutationFn: async (employeeId: number) => {
+      return apiRequest('DELETE', `/api/tours/employees/${employeeId}`);
+    },
+    onSuccess: () => {
+      invalidateEmployees();
     },
   });
 
@@ -239,12 +259,12 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     updateMutation.mutate({ id, color });
   };
 
-  const handleSaveMembers = (tourId: number, memberIds: string[]) => {
-    const members = allEmployees.filter(e => memberIds.includes(e.id));
-    setTourMembers(prev => ({
-      ...prev,
-      [tourId]: members,
-    }));
+  const handleSaveMembers = (tourId: number, employeeIds: number[]) => {
+    assignMembersMutation.mutate({ tourId, employeeIds });
+  };
+
+  const handleRemoveEmployee = (employeeId: number) => {
+    removeEmployeeMutation.mutate(employeeId);
   };
 
   return (
@@ -306,11 +326,25 @@ export function TourManagement({ onCancel }: TourManagementProps) {
               {tour.members.map((member) => (
                 <div 
                   key={member.id} 
-                  className="text-sm text-slate-700 flex items-center gap-2"
+                  className="text-sm text-slate-700 flex items-center justify-between group"
                   data-testid={`text-tour-member-${member.id}`}
                 >
-                  <UserCheck className="w-3 h-3 text-primary" />
-                  {member.name}
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-3 h-3 text-primary" />
+                    {member.name}
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveEmployee(member.id);
+                    }}
+                    data-testid={`button-remove-tour-employee-${member.id}`}
+                  >
+                    <X className="w-3 h-3 text-slate-400 hover:text-red-500" />
+                  </Button>
                 </div>
               ))}
               {tour.members.length === 0 && (
@@ -328,8 +362,9 @@ export function TourManagement({ onCancel }: TourManagementProps) {
           open={!!editingTour}
           onOpenChange={(open) => !open && setEditingTour(null)}
           tour={editingTour}
+          allEmployees={employees}
           onSaveMembers={handleSaveMembers}
-          assignedMemberIds={assignedMemberIds}
+          isSaving={assignMembersMutation.isPending}
         />
       )}
     </>

@@ -6,7 +6,7 @@ import { CustomerData } from "@/components/CustomerData";
 import { CustomerList } from "@/components/CustomerList";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
-import { EmployeeManagement } from "@/components/EmployeeManagement";
+import { EmployeePage } from "@/components/EmployeePage";
 import { ProjectForm } from "@/components/ProjectForm";
 import ProjectList from "@/components/ProjectList";
 import { WeeklyProjectView } from "@/components/WeeklyProjectView";
@@ -132,12 +132,8 @@ export default function Home() {
           ) : view === 'teams' ? (
             <TeamManagement onCancel={() => setView('month')} />
           ) : view === 'employees' ? (
-            <EmployeeManagement 
+            <EmployeePage 
               onCancel={() => setView('month')} 
-              onOpenEmployeeWeekly={(id, name) => {
-                setSelectedEmployee({ id, name });
-                setView('employeeWeekly');
-              }}
             />
           ) : view === 'employeeWeekly' && selectedEmployee ? (
             <EmployeeWeeklyView 

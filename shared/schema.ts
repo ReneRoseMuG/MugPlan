@@ -186,6 +186,35 @@ export const projectProjectStatus = pgTable("project_project_status", {
   pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),
 }));
 
+// Employee - Mitarbeiterverwaltung (FT 05)
+export const employees = pgTable("employee", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  name: text("name").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "set null" }),
+  tourId: integer("tour_id").references(() => tours.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isActive: true,
+  teamId: true,
+  tourId: true,
+});
+
+export const updateEmployeeSchema = z.object({
+  name: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;
+
 // Help Texts (FT 16)
 export const helpTexts = pgTable("help_texts", {
   id: bigserial("id", { mode: "number" }).primaryKey(),

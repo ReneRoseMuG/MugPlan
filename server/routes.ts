@@ -501,5 +501,199 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Employees API (FT 05 - Mitarbeiterverwaltung)
+  app.get(api.employees.list.path, async (req, res) => {
+    const activeParam = req.query.active as string | undefined;
+    let filter: 'active' | 'inactive' | 'all' = 'active';
+    if (activeParam === 'false') filter = 'inactive';
+    if (activeParam === 'all') filter = 'all';
+    const employees = await storage.getEmployees(filter);
+    res.json(employees);
+  });
+
+  app.get(api.employees.get.path, async (req, res) => {
+    const id = Number(req.params.id);
+    const result = await storage.getEmployeeWithRelations(id);
+    if (!result) {
+      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+    }
+    res.json(result);
+  });
+
+  app.post(api.employees.create.path, async (req, res) => {
+    try {
+      // Validate that team_id and tour_id are not provided
+      if (req.body.teamId !== undefined || req.body.tourId !== undefined) {
+        return res.status(400).json({ 
+          message: 'team_id und tour_id können nicht über die Mitarbeiter-API gesetzt werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.'
+        });
+      }
+      const input = api.employees.create.input.parse(req.body);
+      const employee = await storage.createEmployee(input);
+      res.status(201).json(employee);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.put(api.employees.update.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      // Validate that team_id and tour_id are not provided
+      if (req.body.teamId !== undefined || req.body.tourId !== undefined) {
+        return res.status(400).json({ 
+          message: 'team_id und tour_id können nicht über die Mitarbeiter-API geändert werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.'
+        });
+      }
+      const input = api.employees.update.input.parse(req.body);
+      const employee = await storage.updateEmployee(id, input);
+      if (!employee) {
+        return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+      }
+      res.json(employee);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.employees.toggleActive.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const input = api.employees.toggleActive.input.parse(req.body);
+      const employee = await storage.toggleEmployeeActive(id, input.isActive);
+      if (!employee) {
+        return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+      }
+      res.json(employee);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Demo-Terminliste (read-only stub)
+  app.get(api.employees.currentAppointments.path, async (req, res) => {
+    // Stub endpoint für spätere echte Termin-Anbindung
+    // Gibt vorerst Demo-Daten zurück
+    res.json([]);
+  });
+
+  // Tour Employees API
+  app.get(api.tourEmployees.list.path, async (req, res) => {
+    const tourId = Number(req.params.tourId);
+    const employees = await storage.getEmployeesByTour(tourId);
+    res.json(employees);
+  });
+
+  app.delete(api.tourEmployees.remove.path, async (req, res) => {
+    const employeeId = Number(req.params.employeeId);
+    const employee = await storage.setEmployeeTour(employeeId, null);
+    if (!employee) {
+      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+    }
+    res.json(employee);
+  });
+
+  app.post(api.tourEmployees.assign.path, async (req, res) => {
+    try {
+      const tourId = Number(req.params.tourId);
+      const input = api.tourEmployees.assign.input.parse(req.body);
+      
+      // Get current employees assigned to this tour
+      const currentEmployees = await storage.getEmployeesByTour(tourId);
+      const currentIds = currentEmployees.map(e => e.id);
+      const newIds = input.employeeIds;
+      
+      // Remove employees no longer in the list
+      const toRemove = currentIds.filter(id => !newIds.includes(id));
+      for (const employeeId of toRemove) {
+        await storage.setEmployeeTour(employeeId, null);
+      }
+      
+      // Add new employees to this tour
+      const results: any[] = [];
+      for (const employeeId of newIds) {
+        const employee = await storage.setEmployeeTour(employeeId, tourId);
+        if (employee) results.push(employee);
+      }
+      res.json(results);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Team Employees API
+  app.get(api.teamEmployees.list.path, async (req, res) => {
+    const teamId = Number(req.params.teamId);
+    const employees = await storage.getEmployeesByTeam(teamId);
+    res.json(employees);
+  });
+
+  app.delete(api.teamEmployees.remove.path, async (req, res) => {
+    const employeeId = Number(req.params.employeeId);
+    const employee = await storage.setEmployeeTeam(employeeId, null);
+    if (!employee) {
+      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+    }
+    res.json(employee);
+  });
+
+  app.post(api.teamEmployees.assign.path, async (req, res) => {
+    try {
+      const teamId = Number(req.params.teamId);
+      const input = api.teamEmployees.assign.input.parse(req.body);
+      
+      // Get current employees assigned to this team
+      const currentEmployees = await storage.getEmployeesByTeam(teamId);
+      const currentIds = currentEmployees.map(e => e.id);
+      const newIds = input.employeeIds;
+      
+      // Remove employees no longer in the list
+      const toRemove = currentIds.filter(id => !newIds.includes(id));
+      for (const employeeId of toRemove) {
+        await storage.setEmployeeTeam(employeeId, null);
+      }
+      
+      // Add new employees to this team
+      const results: any[] = [];
+      for (const employeeId of newIds) {
+        const employee = await storage.setEmployeeTeam(employeeId, teamId);
+        if (employee) results.push(employee);
+      }
+      res.json(results);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   return httpServer;
 }

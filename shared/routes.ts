@@ -7,6 +7,7 @@ import {
   insertNoteSchema, updateNoteSchema, notes,
   insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
+  insertEmployeeSchema, updateEmployeeSchema, employees,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts
 } from './schema';
 
@@ -287,6 +288,121 @@ export const api = {
       },
     },
   },
+  // Employees API (FT 05 - Mitarbeiterverwaltung)
+  employees: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/employees',
+      responses: {
+        200: z.array(z.custom<typeof employees.$inferSelect>()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/employees/:id',
+      responses: {
+        200: z.object({
+          employee: z.custom<typeof employees.$inferSelect>(),
+          team: z.custom<typeof teams.$inferSelect>().nullable(),
+          tour: z.custom<typeof tours.$inferSelect>().nullable(),
+        }),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/employees',
+      input: insertEmployeeSchema,
+      responses: {
+        201: z.custom<typeof employees.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/employees/:id',
+      input: updateEmployeeSchema,
+      responses: {
+        200: z.custom<typeof employees.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    toggleActive: {
+      method: 'PATCH' as const,
+      path: '/api/employees/:id/active',
+      input: z.object({ isActive: z.boolean() }),
+      responses: {
+        200: z.custom<typeof employees.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    currentAppointments: {
+      method: 'GET' as const,
+      path: '/api/employees/:id/current-appointments',
+      responses: {
+        200: z.array(z.object({
+          id: z.number(),
+          title: z.string(),
+          date: z.string(),
+          customerName: z.string().optional(),
+        })),
+      },
+    },
+  },
+  // Tour employees (for Tour/Team management)
+  tourEmployees: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/tours/:tourId/employees',
+      responses: {
+        200: z.array(z.custom<typeof employees.$inferSelect>()),
+      },
+    },
+    remove: {
+      method: 'DELETE' as const,
+      path: '/api/tours/:tourId/employees/:employeeId',
+      responses: {
+        200: z.custom<typeof employees.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    assign: {
+      method: 'POST' as const,
+      path: '/api/tours/:tourId/employees',
+      input: z.object({ employeeIds: z.array(z.number()) }),
+      responses: {
+        200: z.array(z.custom<typeof employees.$inferSelect>()),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  teamEmployees: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/teams/:teamId/employees',
+      responses: {
+        200: z.array(z.custom<typeof employees.$inferSelect>()),
+      },
+    },
+    remove: {
+      method: 'DELETE' as const,
+      path: '/api/teams/:teamId/employees/:employeeId',
+      responses: {
+        200: z.custom<typeof employees.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    assign: {
+      method: 'POST' as const,
+      path: '/api/teams/:teamId/employees',
+      input: z.object({ employeeIds: z.array(z.number()) }),
+      responses: {
+        200: z.array(z.custom<typeof employees.$inferSelect>()),
+        400: errorSchemas.validation,
+      },
+    },
+  },
   helpTexts: {
     getByKey: {
       method: 'GET' as const,
@@ -398,3 +514,8 @@ export type ProjectStatusResponse = z.infer<typeof api.projectStatus.create.resp
 export type HelpTextInput = z.infer<typeof api.helpTexts.create.input>;
 export type HelpTextUpdateInput = z.infer<typeof api.helpTexts.update.input>;
 export type HelpTextResponse = z.infer<typeof api.helpTexts.create.responses[201]>;
+
+export type EmployeeInput = z.infer<typeof api.employees.create.input>;
+export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
+export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
+export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
