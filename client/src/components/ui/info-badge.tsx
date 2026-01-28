@@ -20,7 +20,7 @@ export function InfoBadge({
   return (
     <div 
       className="flex items-center justify-between gap-2 px-3 py-2 border border-border bg-muted/50 rounded-md"
-      style={borderColor ? { borderLeftWidth: '3px', borderLeftColor: borderColor } : undefined}
+      style={borderColor ? { borderLeftWidth: '5px', borderLeftColor: borderColor } : undefined}
       data-testid={testId}
     >
       <div className="flex items-center gap-2">
