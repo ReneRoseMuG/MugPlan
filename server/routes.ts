@@ -405,7 +405,7 @@ export async function registerRoutes(
     const helpKey = req.params.helpKey as string;
     const helpText = await storage.getHelpTextByKey(helpKey);
     if (!helpText) {
-      return res.status(404).json({ message: 'Hilfetext nicht gefunden' });
+      return res.json(null);
     }
     res.json({
       helpKey: helpText.helpKey,

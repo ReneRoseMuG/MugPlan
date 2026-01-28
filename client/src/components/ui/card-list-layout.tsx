@@ -57,15 +57,8 @@ export function CardListLayout({
     ? "grid-cols-1 md:grid-cols-2" 
     : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
-  const { data: helpText } = useQuery<HelpText | null>({
-    queryKey: ["/api/help-texts/key", helpKey],
-    queryFn: async () => {
-      if (!helpKey) return null;
-      const response = await fetch(`/api/help-texts/${helpKey}`);
-      if (response.status === 404) return null;
-      if (!response.ok) throw new Error("Fehler beim Laden");
-      return response.json();
-    },
+  const { data: helpText, isLoading: helpTextLoading, isError: helpTextError } = useQuery<HelpText | null>({
+    queryKey: ["/api/help-texts", helpKey],
     enabled: !!helpKey,
     staleTime: 5 * 60 * 1000,
   });
@@ -89,7 +82,7 @@ export function CardListLayout({
               {icon}
               {title}
             </CardTitle>
-            {helpKey && helpText && (
+            {helpKey && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
@@ -101,14 +94,33 @@ export function CardListLayout({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-96 max-h-80 overflow-y-auto" align="start">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm">{helpText.title}</h4>
-                    <div 
-                      className="prose prose-sm max-w-none text-muted-foreground"
-                      dangerouslySetInnerHTML={{ __html: helpText.body }}
-                      data-testid={`text-help-body-${helpKey}`}
-                    />
-                  </div>
+                  {helpTextLoading ? (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm">Hilfe: {title}</h4>
+                      <p className="text-sm text-muted-foreground">Hilfetext wird geladen...</p>
+                    </div>
+                  ) : helpTextError ? (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm">Hilfe: {title}</h4>
+                      <p className="text-sm text-destructive">Fehler beim Laden des Hilfetexts.</p>
+                    </div>
+                  ) : helpText ? (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm">{helpText.title}</h4>
+                      <div 
+                        className="prose prose-sm max-w-none text-muted-foreground"
+                        dangerouslySetInnerHTML={{ __html: helpText.body }}
+                        data-testid={`text-help-body-${helpKey}`}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm">Hilfe: {title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Kein Hilfetext für "{helpKey}" verfügbar.
+                      </p>
+                    </div>
+                  )}
                 </PopoverContent>
               </Popover>
             )}
