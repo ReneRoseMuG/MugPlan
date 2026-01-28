@@ -4,82 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CardListLayout } from "@/components/ui/card-list-layout";
-import { HelpCircle, X, Pencil, Search } from "lucide-react";
+import { EntityCard } from "@/components/ui/entity-card";
+import { HelpCircle, Pencil, Search } from "lucide-react";
 import type { HelpText } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-
-interface HelpTextCardProps {
-  helpText: HelpText;
-  onEdit: () => void;
-  onDelete: () => void;
-}
-
-function HelpTextCard({ helpText, onEdit, onDelete }: HelpTextCardProps) {
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return "";
-    const d = typeof date === "string" ? new Date(date) : date;
-    return format(d, "dd.MM.yyyy", { locale: de });
-  };
-
-  return (
-    <div 
-      className={`relative bg-white dark:bg-slate-800 border rounded-lg p-4 shadow-sm ${
-        helpText.isActive ? "border-border" : "border-slate-300 opacity-60"
-      }`}
-      onDoubleClick={onEdit}
-      data-testid={`helptext-card-${helpText.id}`}
-    >
-      <div className="absolute top-2 right-2 flex gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={onEdit}
-          className="w-6 h-6"
-          data-testid={`button-edit-helptext-${helpText.id}`}
-          title="Bearbeiten"
-        >
-          <Pencil className="w-4 h-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={onDelete}
-          className="w-6 h-6"
-          data-testid={`button-delete-helptext-${helpText.id}`}
-          title="Löschen"
-        >
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
-      <div className="flex flex-col gap-1 mb-2 pr-16">
-        <code className="text-xs font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 w-fit" data-testid={`text-helptext-key-${helpText.id}`}>
-          {helpText.helpKey}
-        </code>
-        <h4 className="font-medium text-sm text-slate-800 dark:text-slate-200" data-testid={`text-helptext-title-${helpText.id}`}>
-          {helpText.title}
-        </h4>
-        {!helpText.isActive && (
-          <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded w-fit">Inaktiv</span>
-        )}
-      </div>
-      {helpText.body && (
-        <div 
-          className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 richtext-content"
-          dangerouslySetInnerHTML={{ __html: helpText.body }}
-          data-testid={`text-helptext-body-${helpText.id}`}
-        />
-      )}
-      <p className="text-xs text-slate-400 mt-2" data-testid={`text-helptext-date-${helpText.id}`}>
-        Aktualisiert: {formatDate(helpText.updatedAt)}
-      </p>
-    </div>
-  );
-}
 
 export function HelpTextsPage() {
   const { toast } = useToast();
