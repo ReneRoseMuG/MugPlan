@@ -1,0 +1,236 @@
+Auftrag: Implementiere FT (15) – Projektstatusverwaltung (Stammdaten)
+1. Pflichtlektüre und Leitplanken
+
+Lies alle Dokumente im Ordner docs/ vollständig.
+Die Architektur-Dokumentation ist verbindlich.
+
+Lies zusätzlich FT (02) Projektverwaltung und FT (15) Projektstatusverwaltung, um Regeln, Begriffe und das Datenmodell korrekt zu verstehen.
+
+Du arbeitest ausschließlich auf expliziten Auftrag und veränderst nichts nebenbei.
+Bevor neue Dateien angelegt werden, sind vorhandene JavaScript-Dateien auf Wiederverwendung und bestehende Patterns zu prüfen.
+
+Architekturvorgaben sind strikt einzuhalten:
+
+Route → Controller → Service → Repository
+
+zentrale Fehlerbehandlung und Validierung verwenden
+
+keine wachsende Monolith-Datei (z. B. server.js)
+
+neue Endpunkte sind sauber auszulagern
+
+2. Scope
+
+Dieses Ticket umfasst ausschließlich:
+
+Stammdatenverwaltung für Projektstatus
+
+Admin-UI zur Pflege der Statusliste
+
+Anlegen
+
+Bearbeiten (Titel, Beschreibung)
+
+Sortierreihenfolge
+
+Aktivieren / Deaktivieren
+
+Backend (API, Service, Repository) für project_status
+
+Anlegen der Relationstabelle project_project_status als Grundlage für spätere Nutzung
+
+Nicht Bestandteil dieses Auftrags sind:
+
+Projektverwaltung oder Projektdetailseiten
+
+Zuordnung von Status zu Projekten
+
+Termin- oder Kalenderlogik
+
+Notizen, Anhänge, Druckfunktionen
+
+Benutzer-, Rollen-, Login- oder Authentifizierungssysteme
+
+3. Datenbank (SQL / Schema)
+
+Erweitere das Schema um folgende Tabellen.
+
+Tabelle: project_status
+
+id BIGSERIAL PRIMARY KEY
+
+title TEXT NOT NULL
+
+description TEXT NULL
+
+sort_order INTEGER NOT NULL DEFAULT 0
+
+is_active BOOLEAN NOT NULL DEFAULT TRUE
+
+is_default BOOLEAN NOT NULL DEFAULT FALSE
+
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+Hinweise:
+
+title ist nicht eindeutig.
+
+updated_at ist bei jeder Änderung konsistent zu pflegen (Service- oder Repo-seitig, kein implizites Verhalten).
+
+Default-Status (is_default = TRUE) sind geschützt.
+
+Relationstabelle: project_project_status
+
+(Datenmodell-Grundlage gemäß FT (02), ohne UI-Nutzung in diesem Ticket)
+
+project_id BIGINT NOT NULL
+FK → project(id) ON DELETE CASCADE
+
+project_status_id BIGINT NOT NULL
+FK → project_status(id) ON DELETE RESTRICT
+
+PRIMARY KEY (project_id, project_status_id)
+
+4. Backend (architekturkonform)
+
+Implementiere API-Endpunkte für project_status gemäß bestehender Architektur.
+
+Endpunkte
+
+GET /api/project-status
+Lädt Projektstatus.
+
+Optionaler Query-Parameter:
+active=true | false | all
+Standard: true
+
+Sortierung:
+
+sort_order ASC
+
+title ASC
+
+id ASC
+
+POST /api/project-status
+Legt einen neuen Projektstatus an.
+
+Pflichtfeld: title
+
+is_default ist immer FALSE
+
+Initialwert is_active = TRUE
+
+PUT /api/project-status/:id
+Aktualisiert einen bestehenden Status.
+
+Erlaubte Felder:
+
+title
+
+description
+
+sort_order
+
+is_active
+
+is_default darf nicht geändert werden
+
+Umbenennen ist ausdrücklich erlaubt und wirkt global
+
+PATCH /api/project-status/:id/active
+Aktiviert oder deaktiviert einen Projektstatus.
+
+Default-Status dürfen nicht deaktiviert werden
+
+Deaktivierte Status bleiben in der Datenbank erhalten
+
+DELETE /api/project-status/:id
+Physisches Löschen ist nur zulässig, wenn:
+
+is_default = FALSE
+
+keine Zuordnung in project_project_status existiert
+(serverseitig prüfen, nicht auf DB-Fehler verlassen)
+
+5. Berechtigungen (bewusst reduziert)
+
+Benutzer- und Rollenverwaltung wird nicht implementiert.
+
+Alle Endpunkte gelten fachlich als Admin-Funktionen
+
+Es wird ein zentraler Middleware-Hook (z. B. requireAdmin()) eingebunden
+
+Diese Middleware erlaubt aktuell immer
+
+Keine Login-Logik, keine User-Tabellen, keine Tokens
+
+Ziel: spätere zentrale Aktivierung ohne Änderungen an Controller/Service/Repo
+
+6. Admin-UI – Projektstatusverwaltung
+
+Implementiere einen Navigationspunkt „Projektstatus“ (Admin-Bereich).
+
+Verbindliche UI-Vorgaben
+
+Als Content-Element ist CardListLayout zu verwenden
+
+Jede Status-Darstellung nutzt EntityCard
+
+Es dürfen keine eigenen Karten- oder Layout-Varianten erstellt werden
+
+Falls nötig, dürfen bestehende Komponenten erweitert werden
+
+Funktionsumfang
+
+Anzeige aller Projektstatus in Kartenform
+
+Anlegen neuer Status
+
+Bearbeiten bestehender Status (Titel, Beschreibung)
+
+Aktivieren / Deaktivieren
+
+Pflege der Sortierreihenfolge (sort_order)
+
+Default-Status:
+
+visuell erkennbar
+
+nicht löschbar
+
+nicht deaktivierbar
+
+Deaktivierte Status bleiben sichtbar (z. B. abgeschwächt)
+
+Nicht-Ziele der UI
+
+Keine Projekt-Status-Zuordnung
+
+Kein Import / Export
+
+Keine Massenaktionen
+
+7. Abnahme / Nachweise
+
+Am Ende lieferst du:
+
+Übersicht aller neu angelegten oder geänderten Dateien
+
+SQL-Skripte / Schema-Erweiterungen
+
+Kurze Beschreibung der implementierten Endpunkte
+
+Nachweis, dass:
+
+die Statusliste korrekt sortiert ist
+
+Aktivieren / Deaktivieren funktioniert
+
+Default-Status nicht gelöscht oder deaktiviert werden können
+
+keine Projekt-, Termin- oder Kalenderlogik implementiert wurde
+
+CardListLayout und EntityCard wie vorgegeben verwendet wurden
