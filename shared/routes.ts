@@ -5,7 +5,8 @@ import {
   insertTeamSchema, updateTeamSchema, teams,
   insertCustomerSchema, updateCustomerSchema, customers,
   insertNoteSchema, updateNoteSchema, notes,
-  insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates
+  insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
+  insertProjectStatusSchema, updateProjectStatusSchema, projectStatus
 } from './schema';
 
 export const errorSchemas = {
@@ -238,6 +239,53 @@ export const api = {
       },
     },
   },
+  projectStatus: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/project-status',
+      responses: {
+        200: z.array(z.custom<typeof projectStatus.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/project-status',
+      input: insertProjectStatusSchema,
+      responses: {
+        201: z.custom<typeof projectStatus.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/project-status/:id',
+      input: updateProjectStatusSchema,
+      responses: {
+        200: z.custom<typeof projectStatus.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    toggleActive: {
+      method: 'PATCH' as const,
+      path: '/api/project-status/:id/active',
+      input: z.object({ isActive: z.boolean() }),
+      responses: {
+        200: z.custom<typeof projectStatus.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/project-status/:id',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
@@ -274,3 +322,7 @@ export type NoteResponse = z.infer<typeof api.notes.update.responses[200]>;
 export type NoteTemplateInput = z.infer<typeof api.noteTemplates.create.input>;
 export type NoteTemplateUpdateInput = z.infer<typeof api.noteTemplates.update.input>;
 export type NoteTemplateResponse = z.infer<typeof api.noteTemplates.create.responses[201]>;
+
+export type ProjectStatusInput = z.infer<typeof api.projectStatus.create.input>;
+export type ProjectStatusUpdateInput = z.infer<typeof api.projectStatus.update.input>;
+export type ProjectStatusResponse = z.infer<typeof api.projectStatus.create.responses[201]>;

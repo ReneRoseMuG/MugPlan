@@ -13,6 +13,7 @@ import { WeeklyProjectView } from "@/components/WeeklyProjectView";
 import { EmployeeWeeklyView } from "@/components/EmployeeWeeklyView";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
+import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { addMonths, subMonths, addWeeks, subWeeks, format, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -153,9 +154,7 @@ export default function Home() {
           ) : view === 'noteTemplates' ? (
             <NoteTemplatesPage />
           ) : view === 'projectStatus' ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-slate-400">Projekt Status - Noch nicht implementiert</p>
-            </div>
+            <ProjectStatusPage />
           ) : view === 'weeklyProjects' ? (
             <WeeklyProjectView 
               onCancel={() => setView('month')} 

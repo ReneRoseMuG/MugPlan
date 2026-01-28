@@ -145,3 +145,43 @@ export const projectNotes = pgTable("project_note", {
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.noteId] }),
 }));
+
+// Project Status - Projektstatusverwaltung (FT 15)
+export const projectStatus = pgTable("project_status", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  color: text("color").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertProjectStatusSchema = createInsertSchema(projectStatus).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isDefault: true,
+});
+
+export const updateProjectStatusSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().nullable().optional(),
+  color: z.string().optional(),
+  sortOrder: z.number().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export type ProjectStatus = typeof projectStatus.$inferSelect;
+export type InsertProjectStatus = z.infer<typeof insertProjectStatusSchema>;
+export type UpdateProjectStatus = z.infer<typeof updateProjectStatusSchema>;
+
+// Project <-> Project Status Relation (FT 15) - prepared for future use
+export const projectProjectStatus = pgTable("project_project_status", {
+  projectId: bigserial("project_id", { mode: "number" }).notNull(),
+  projectStatusId: bigserial("project_status_id", { mode: "number" }).notNull().references(() => projectStatus.id, { onDelete: "restrict" }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),
+}));

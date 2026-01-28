@@ -313,5 +313,92 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Project Status API (FT 15 - Projektstatusverwaltung)
+  app.get(api.projectStatus.list.path, async (req, res) => {
+    const activeParam = req.query.active as string | undefined;
+    let filter: 'active' | 'inactive' | 'all' = 'active';
+    if (activeParam === 'false') filter = 'inactive';
+    if (activeParam === 'all') filter = 'all';
+    const statuses = await storage.getProjectStatuses(filter);
+    res.json(statuses);
+  });
+
+  app.post(api.projectStatus.create.path, async (req, res) => {
+    try {
+      const input = api.projectStatus.create.input.parse(req.body);
+      const status = await storage.createProjectStatus(input);
+      res.status(201).json(status);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.put(api.projectStatus.update.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const input = api.projectStatus.update.input.parse(req.body);
+      const result = await storage.updateProjectStatus(id, input);
+      if (result.error) {
+        if (result.error === 'Status nicht gefunden') {
+          return res.status(404).json({ message: result.error });
+        }
+        return res.status(400).json({ message: result.error });
+      }
+      res.json(result.status);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.projectStatus.toggleActive.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const input = api.projectStatus.toggleActive.input.parse(req.body);
+      
+      const existing = await storage.getProjectStatus(id);
+      if (!existing) {
+        return res.status(404).json({ message: 'Projektstatus nicht gefunden' });
+      }
+      if (existing.isDefault && !input.isActive) {
+        return res.status(400).json({ message: 'Default-Status kann nicht deaktiviert werden' });
+      }
+      
+      const status = await storage.toggleProjectStatusActive(id, input.isActive);
+      if (!status) {
+        return res.status(404).json({ message: 'Projektstatus nicht gefunden' });
+      }
+      res.json(status);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.projectStatus.delete.path, async (req, res) => {
+    const id = Number(req.params.id);
+    const result = await storage.deleteProjectStatus(id);
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+    res.status(204).send();
+  });
+
   return httpServer;
 }
