@@ -225,11 +225,13 @@ export function NoteTemplatesPage() {
                 type="checkbox"
                 id="template-active"
                 checked={formIsActive}
-                onChange={(e) => setFormIsActive(e.target.checked)}
-                className="w-4 h-4"
+                disabled={true}
+                className="w-4 h-4 cursor-not-allowed"
                 data-testid="checkbox-template-active"
               />
-              <Label htmlFor="template-active">Aktiv</Label>
+              <Label htmlFor="template-active" className="text-muted-foreground">
+                Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
+              </Label>
             </div>
           </div>
 

@@ -197,9 +197,9 @@ export function ProjectStatusPage() {
                     e.stopPropagation();
                     handleToggleActive(status);
                   }}
-                  disabled={status.isDefault || toggleActiveMutation.isPending}
+                  disabled={true}
                   data-testid={`button-toggle-status-${status.id}`}
-                  title={status.isDefault ? "Default-Status" : (status.isActive ? "Deaktivieren" : "Aktivieren")}
+                  title="Aktivierung nur durch Administrator"
                 >
                   {status.isActive ? (
                     <PowerOff className="w-4 h-4" />
@@ -304,17 +304,19 @@ export function ProjectStatusPage() {
               <p className="text-xs text-slate-500">Niedrigere Werte werden zuerst angezeigt.</p>
             </div>
 
-            {editingStatus && !editingStatus.isDefault && (
+            {editingStatus && (
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="status-active"
                   checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4"
+                  disabled={true}
+                  className="w-4 h-4 cursor-not-allowed"
                   data-testid="checkbox-status-active"
                 />
-                <Label htmlFor="status-active">Aktiv</Label>
+                <Label htmlFor="status-active" className="text-muted-foreground">
+                  Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
+                </Label>
               </div>
             )}
           </div>

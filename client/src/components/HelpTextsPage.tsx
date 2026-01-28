@@ -286,11 +286,13 @@ export function HelpTextsPage() {
                 type="checkbox"
                 id="helptext-active"
                 checked={formIsActive}
-                onChange={(e) => setFormIsActive(e.target.checked)}
-                className="w-4 h-4"
+                disabled={true}
+                className="w-4 h-4 cursor-not-allowed"
                 data-testid="checkbox-helptext-active"
               />
-              <Label htmlFor="helptext-active">Aktiv</Label>
+              <Label htmlFor="helptext-active" className="text-muted-foreground">
+                Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
+              </Label>
             </div>
           </div>
 
