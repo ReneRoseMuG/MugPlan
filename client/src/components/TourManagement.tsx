@@ -78,11 +78,9 @@ function EditTourMembersDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-2 text-primary">
-            <div className="flex items-center gap-2">
-              <Route className="w-5 h-5" />
-              Mitarbeiter bearbeiten - {tour.name}
-            </div>
+          <DialogTitle className="flex items-center gap-2 text-primary">
+            <Route className="w-5 h-5" />
+            {tour.name}
             <ColorPickerButton
               color={tour.color}
               onChange={(color) => onColorChange(tour.id, color)}
