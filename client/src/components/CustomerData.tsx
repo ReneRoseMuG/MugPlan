@@ -35,7 +35,9 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
   
   const [formData, setFormData] = useState({
     customerNumber: "",
-    name: "",
+    firstName: "",
+    lastName: "",
+    company: "",
     phone: "",
     addressLine1: "",
     addressLine2: "",
@@ -97,7 +99,9 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
     if (customer) {
       setFormData({
         customerNumber: customer.customerNumber || "",
-        name: customer.name || "",
+        firstName: customer.firstName || "",
+        lastName: customer.lastName || "",
+        company: customer.company || "",
         phone: customer.phone || "",
         addressLine1: customer.addressLine1 || "",
         addressLine2: customer.addressLine2 || "",
@@ -139,10 +143,10 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
   });
 
   const handleSave = () => {
-    if (!formData.customerNumber || !formData.name || !formData.phone) {
+    if (!formData.customerNumber || !formData.firstName || !formData.lastName || !formData.phone) {
       toast({ 
         title: "Fehler", 
-        description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Name, Telefon).", 
+        description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Vorname, Nachname, Telefon).", 
         variant: "destructive" 
       });
       return;
@@ -224,13 +228,33 @@ export function CustomerData({ customerId, onCancel, onSave }: CustomerDataProps
                     data-testid="input-customernumber"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" data-testid="label-firstname">Vorname *</Label>
+                    <Input 
+                      id="firstName" 
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      data-testid="input-firstname"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" data-testid="label-lastname">Nachname *</Label>
+                    <Input 
+                      id="lastName" 
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      data-testid="input-lastname"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="name" data-testid="label-name">Name / Firma *</Label>
+                  <Label htmlFor="company" data-testid="label-company">Firma</Label>
                   <Input 
-                    id="name" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    data-testid="input-name"
+                    id="company" 
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    data-testid="input-company"
                   />
                 </div>
               </div>

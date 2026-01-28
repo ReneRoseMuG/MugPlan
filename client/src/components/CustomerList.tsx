@@ -53,7 +53,7 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
           data-testid={`button-select-customer-${customer.id}`}
         >
           <EntityCard
-            title={customer.name}
+            title={customer.fullName}
             icon={<User className="w-4 h-4" />}
             headerColor={defaultHeaderColor}
             testId={`customer-card-${customer.id}`}

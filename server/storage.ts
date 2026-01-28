@@ -177,14 +177,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
-    const [customer] = await db.insert(customers).values(insertCustomer).returning();
+    const fullName = `${insertCustomer.lastName}, ${insertCustomer.firstName}`;
+    const [customer] = await db.insert(customers).values({ ...insertCustomer, fullName }).returning();
     return customer;
   }
 
   async updateCustomer(id: number, data: UpdateCustomer): Promise<Customer | null> {
+    const existing = await this.getCustomer(id);
+    if (!existing) return null;
+
+    // Recalculate fullName if firstName or lastName changed
+    let fullName = existing.fullName;
+    if (data.firstName !== undefined || data.lastName !== undefined) {
+      const firstName = data.firstName !== undefined ? data.firstName : existing.firstName;
+      const lastName = data.lastName !== undefined ? data.lastName : existing.lastName;
+      fullName = `${lastName}, ${firstName}`;
+    }
+
     const [customer] = await db
       .update(customers)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...data, fullName, updatedAt: new Date() })
       .where(eq(customers.id, id))
       .returning();
     return customer || null;

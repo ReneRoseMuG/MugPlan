@@ -19,9 +19,9 @@ const demoProjectStatuses = [
 ];
 
 const demoCustomers = [
-  { id: "1", name: "Müller", firstName: "Hans", plz: "80331" },
-  { id: "2", name: "Schmidt", firstName: "Anna", plz: "10115" },
-  { id: "3", name: "Weber", firstName: "Peter", plz: "50667" },
+  { id: "1", lastName: "Müller", firstName: "Hans", fullName: "Müller, Hans", plz: "80331" },
+  { id: "2", lastName: "Schmidt", firstName: "Anna", fullName: "Schmidt, Anna", plz: "10115" },
+  { id: "3", lastName: "Weber", firstName: "Peter", fullName: "Weber, Peter", plz: "50667" },
 ];
 
 const demoProjects = [
@@ -169,7 +169,7 @@ export default function ProjectList({ onCancel }: ProjectListProps) {
                 {customer && (
                   <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400 border-t pt-3 mt-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{customer.firstName} {customer.name}</span>
+                      <span className="font-medium">{customer.fullName}</span>
                     </div>
                     <div className="flex items-center gap-1 text-slate-500">
                       <MapPin className="w-3 h-3" />

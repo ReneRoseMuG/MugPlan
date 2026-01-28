@@ -45,8 +45,8 @@ const demoProjects = [
 ];
 
 const demoCustomers = [
-  { id: "1", name: "Müller", firstName: "Hans", company: "Müller GmbH", plz: "80331", city: "München", street: "Marienplatz 1", phone: "+49 89 123456" },
-  { id: "2", name: "Schmidt", firstName: "Anna", company: "", plz: "10115", city: "Berlin", street: "Unter den Linden 5", phone: "+49 30 987654" },
+  { id: "1", lastName: "Müller", firstName: "Hans", fullName: "Müller, Hans", company: "Müller GmbH", plz: "80331", city: "München", street: "Marienplatz 1", phone: "+49 89 123456" },
+  { id: "2", lastName: "Schmidt", firstName: "Anna", fullName: "Schmidt, Anna", company: "", plz: "10115", city: "Berlin", street: "Unter den Linden 5", phone: "+49 30 987654" },
 ];
 
 const demoTeams = [
@@ -253,7 +253,7 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                               <p className="font-medium text-slate-800">{project.name}</p>
                               {customer && (
                                 <p className="text-sm text-slate-500 mt-1">
-                                  {customer.firstName} {customer.name}
+                                  {customer.fullName}
                                 </p>
                               )}
                             </button>
@@ -336,7 +336,7 @@ export function AppointmentForm({ onCancel, initialDate, fromProject }: Appointm
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-800" data-testid="text-customer-fullname">
-                        {currentCustomer.firstName} {currentCustomer.name}
+                        {currentCustomer.fullName}
                       </p>
                       {currentCustomer.company && (
                         <p className="text-sm text-slate-600">{currentCustomer.company}</p>

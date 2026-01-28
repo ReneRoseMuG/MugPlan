@@ -7,7 +7,10 @@ import { relations } from "drizzle-orm";
 export const customers = pgTable("customer", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   customerNumber: text("customer_number").notNull().unique(),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  fullName: text("full_name").notNull(),
+  company: text("company"),
   phone: text("phone").notNull(),
   addressLine1: text("address_line1"),
   addressLine2: text("address_line2"),
@@ -22,12 +25,15 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true, 
   createdAt: true, 
   updatedAt: true,
-  isActive: true 
+  isActive: true,
+  fullName: true,
 });
 
 export const updateCustomerSchema = z.object({
   customerNumber: z.string().optional(),
-  name: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  company: z.string().nullable().optional(),
   phone: z.string().optional(),
   addressLine1: z.string().nullable().optional(),
   addressLine2: z.string().nullable().optional(),
