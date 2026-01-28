@@ -1,0 +1,157 @@
+Implementierungsauftrag: FT (16) „Hilfetexte verwalten“ – technische Umsetzung + Editor (ohne UI-Aktionen)
+
+Ziel
+Implementiere das Feature zur Speicherung, Auslieferung und Pflege von Hilfetexten. Die UI-Layouts und die help_key-Adressierung sind bereits vorhanden und dürfen nicht verändert werden. Der Auftrag umfasst ausschließlich die technische Backend-Umsetzung, das Datenmodell, die API-Endpunkte sowie einen Editor für die Pflege der Texte (RTF oder Markdown). Die Hilfetexte sind rein informativ und haben keine fachliche Wirkung auf Termine/Projekte/Kunden.
+
+Wichtige Leitplanken (bitte strikt einhalten)
+1. Keine UI-Aktionen beauftragen und keine bestehenden UI-Layouts umbauen. Die UI ruft bereits Hilfetexte per help_key ab.
+2. Keine bestehenden Features fachlich verändern. Nur ergänzen.
+3. Keine Aufblähung einer zentralen Server-Datei. Neue Routen müssen in eigenen Dateien liegen und sauber gemountet werden.
+4. Nutze die vorhandene Backend-Struktur (routes -> controller -> service -> repository), sofern diese im Projekt bereits existiert. Falls diese Struktur noch nicht existiert, lege sie minimal für dieses Feature an, ohne den Rest umzubauen.
+5. SQL gehört ins Repository. Controller dürfen kein SQL enthalten.
+6. Hilfetexte sind global und hängen nur am help_key. Keine Foreign Keys zu anderen Tabellen.
+7. Zum Abschluss muss eine Implementierungs-Logdatei im docs-Ordner erstellt werden.
+
+Deliverables
+A) Datenbank: Tabelle help_texts (inkl. is_active, created_at, updated_at)
+B) Backend-API:
+   - Read für bestehende UI: GET /api/help-texts/:help_key (liefert nur aktive Texte)
+   - Verwaltung für Editor:
+     - GET /api/help-texts?query=... (Liste)
+     - GET /api/help-texts/by-id/:id (Detail, falls benötigt)
+     - POST /api/help-texts (Anlegen)
+     - PATCH /api/help-texts/:id (Bearbeiten inkl. is_active)
+     - DELETE optional (nur wenn zwingend; bevorzugt deaktivieren)
+C) Editor (nur Pflege-UI, keine neuen UI-Aktionen in bestehenden Views)
+   - Ein Editor-View im Config/Backoffice-Bereich ist erlaubt, der Hilfetexte pflegt.
+   - Der Texteditor muss RTF oder Markdown unterstützen.
+D) Doku/Log:
+   - docs/ft16-help-texts-implementation-log.md (muss erstellt werden)
+
+Teil A: Datenbank
+1. Ergänze Schema/Migration um folgende Tabelle:
+
+CREATE TABLE IF NOT EXISTS help_texts (
+  id BIGSERIAL PRIMARY KEY,
+  help_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+2. updated_at:
+- Wenn es im Projekt bereits ein Trigger-Pattern für updated_at gibt, nutze es.
+- Falls nicht, setze updated_at in jedem UPDATE im Repository explizit auf NOW().
+
+3. Seed-Daten:
+Lege mindestens 3 Einträge an, damit die bestehende UI sofort testbar ist:
+- help_key "tours"
+- help_key "customers"
+- help_key "projects"
+
+Teil B: Backend
+B1. Repository
+Erstelle repositories/helpTexts.repo.js (oder nach eurem Namensschema db/*.repo.js).
+Funktionen:
+- getActiveByKey(helpKey): liefert genau einen Datensatz (help_key, title, body) nur bei is_active=true
+- list(query): liefert Liste (id, help_key, title, is_active, updated_at), filterbar per contains auf help_key oder title (case-insensitive)
+- getById(id): liefert Voll-Datensatz für Editor-Detailansicht
+- create(dto): insert (help_key, title, body, is_active)
+- update(id, dto): update (help_key?, title?, body?, is_active?) plus updated_at aktualisieren
+- delete(id): optional; bevorzugt deaktivieren statt löschen
+
+Fehlerfälle:
+- help_key Unique-Verletzung: 409 Conflict oder 400 mit klarer Meldung "help_key bereits vergeben"
+- Not found (bei id oder key): 404
+
+B2. Service
+Erstelle services/helpTexts.service.js.
+Validierungen:
+- create: help_key, title, body sind Pflicht, trimmen, nicht leer
+- update: nur übergebene Felder ändern
+- help_key: minimaler Formatcheck empfohlen (slug-artig), aber nicht übertreiben
+- body: wird unverändert gespeichert (Markdown oder RTF); keine serverseitige Transformation
+
+Wichtig: Entscheide dich für genau ein Speicherformat im Feld body:
+- Option A (empfohlen): Markdown als Plaintext
+- Option B: RTF als Plaintext (dann muss der Editor RTF liefern und die Anzeige muss RTF rendern; nur wählen, wenn das in der bestehenden UI bereits vorgesehen ist)
+Wenn die bestehende UI bereits Markdown erwartet, dann muss body Markdown bleiben.
+
+B3. Controller
+Erstelle controllers/helpTexts.controller.js.
+Endpoints:
+1) GET /api/help-texts/:help_key
+- Muss exakt für die bestehende UI funktionieren.
+- Liefert nur aktive Einträge.
+
+2) GET /api/help-texts?query=...
+- Liefert Liste für den Editor.
+
+3) GET /api/help-texts/by-id/:id
+- Liefert Detaildatensatz für Editor (falls Editor eine separate Detailabfrage nutzt).
+
+4) POST /api/help-texts
+- Legt neuen Hilfetext an.
+
+5) PATCH /api/help-texts/:id
+- Bearbeitet Hilfetext. Muss auch is_active toggeln können.
+
+6) DELETE /api/help-texts/:id
+- Optional. Wenn implementiert, nur verwenden, wenn im Projekt Delete üblich ist. Sonst über is_active=false arbeiten.
+
+Response-Formate (Vertrag zwischen Backend und Editor-Frontend)
+- read: 200 mit JSON {help_key, title, body}
+- list: 200 mit JSON {items:[...]}
+- detail: 200 mit JSON {id, help_key, title, body, is_active, created_at, updated_at}
+- create: 201 mit JSON {id, help_key, title, body, is_active, created_at, updated_at}
+- update: 200 mit JSON {id, help_key, title, body, is_active, created_at, updated_at}
+- delete: 204 ohne JSON-Body
+
+B4. Routes & Mounting
+Erstelle routes/helpTexts.routes.js und mounte sie unter /api.
+Wenn es bereits ein zentrales Mounting gibt, nutze das Pattern. Falls nicht, ergänze minimal und isoliert.
+
+Teil C: Editor (Pflege von Hilfetexten)
+Wichtig: Keine Anpassungen an bestehenden UI-Seiten, die Hilfetexte anzeigen. Der Editor ist eine separate Pflege-Seite.
+
+C1. Editor-Anforderungen
+- Eingabefelder: help_key, title, is_active, body
+- body muss in einem Editor bearbeitet werden können:
+  - Markdown-Editor oder RTF-Editor, je nach festgelegtem Speicherformat.
+- Speichern via POST/PATCH gegen die oben definierten Endpunkte.
+- Anzeige einer Liste der Hilfetexte (für Auswahl), Suche per query.
+- Kein Overengineering: Es reicht eine funktionsfähige Pflegeoberfläche.
+
+C2. Editor-Technik
+- Nutze vorhandene UI-Komponenten/Patterns des Projekts für Admin/Config-Seiten.
+- Verwende keine neuen großen Dependencies, wenn nicht bereits im Projekt vorhanden.
+- Falls ein Richtext-Editor bereits existiert, wiederverwenden.
+- Wenn kein Editor existiert:
+  - Für Markdown: simples Textarea + Preview optional, aber nicht erforderlich.
+  - Für RTF: nur wählen, wenn eine RTF-fähige Komponente bereits im Projekt vorhanden ist.
+
+Teil D: Tests & Log
+D1. Manuelle Tests
+- GET /api/help-texts/tours -> 200 und korrekter Inhalt
+- GET /api/help-texts/unknown -> 404
+- POST neuer help_key -> 201
+- POST mit existierendem help_key -> 409/400 mit klarer Meldung
+- PATCH ändert title/body, updated_at aktualisiert sich
+- PATCH is_active=false -> danach GET /api/help-texts/{key} muss 404 liefern
+- Editor: Liste laden, suchen, Datensatz öffnen, ändern, speichern, Aktiv/Inaktiv umschalten
+
+D2. Implementierungs-Logdatei
+Erstelle docs/ft16-help-texts-implementation-log.md und dokumentiere:
+- Datenbankänderungen (SQL)
+- neue/angepasste Dateien (Backend und Editor-UI)
+- Endpunkte (inkl. Beispielrequests)
+- manuelle Testfälle und Ergebnis
+- offene Punkte (falls vorhanden)
+
+Abschlusskriterien
+- Tabelle help_texts existiert inkl. Seed-Daten.
+- Public Read Endpoint funktioniert für die bestehende UI und liefert nur aktive Texte.
+- Editor kann Hilfetexte anlegen/bearbeiten/aktivieren/deaktivieren.
+- docs/ft16-help-texts-implementation-log.md ist vorhanden und vollständig.
