@@ -26,6 +26,7 @@ export default function Home() {
   const [view, setView] = useState<ViewType>('month');
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   // Handlers for navigation
   const next = () => {
@@ -143,11 +144,19 @@ export default function Home() {
               onOpenAppointment={() => setView('appointment')}
             />
           ) : view === 'project' ? (
-            <ProjectForm onCancel={() => setView('month')} />
+            <ProjectForm 
+              projectId={selectedProjectId || undefined}
+              onCancel={() => { setSelectedProjectId(null); setView('projectList'); }}
+              onSaved={() => { setSelectedProjectId(null); setView('projectList'); }}
+            />
           ) : view === 'appointment' ? (
             <AppointmentForm onCancel={() => setView('month')} />
           ) : view === 'projectList' ? (
-            <ProjectList onCancel={() => setView('month')} />
+            <ProjectList 
+              onCancel={() => setView('month')} 
+              onNewProject={() => { setSelectedProjectId(null); setView('project'); }}
+              onSelectProject={(id) => { setSelectedProjectId(id); setView('project'); }}
+            />
           ) : view === 'noteTemplates' ? (
             <NoteTemplatesPage />
           ) : view === 'projectStatus' ? (
