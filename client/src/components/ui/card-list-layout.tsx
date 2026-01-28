@@ -1,8 +1,15 @@
 import { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { X, Plus, Loader2, CircleHelp } from "lucide-react";
+
+interface HelpText {
+  helpKey: string;
+  title: string;
+  body: string;
+}
 
 interface CardListLayoutProps {
   title: string;
@@ -50,6 +57,19 @@ export function CardListLayout({
     ? "grid-cols-1 md:grid-cols-2" 
     : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
+  const { data: helpText } = useQuery<HelpText | null>({
+    queryKey: ["/api/help-texts/key", helpKey],
+    queryFn: async () => {
+      if (!helpKey) return null;
+      const response = await fetch(`/api/help-texts/${helpKey}`);
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error("Fehler beim Laden");
+      return response.json();
+    },
+    enabled: !!helpKey,
+    staleTime: 5 * 60 * 1000,
+  });
+
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -69,7 +89,7 @@ export function CardListLayout({
               {icon}
               {title}
             </CardTitle>
-            {helpKey && (
+            {helpKey && helpText && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
@@ -80,12 +100,14 @@ export function CardListLayout({
                     <CircleHelp className="w-5 h-5" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80" align="start">
+                <PopoverContent className="w-96 max-h-80 overflow-y-auto" align="start">
                   <div className="space-y-2">
-                    <h4 className="font-semibold text-sm">Hilfe: {title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Hilfeinhalt für "{helpKey}" wird über die Administration gepflegt.
-                    </p>
+                    <h4 className="font-semibold text-sm">{helpText.title}</h4>
+                    <div 
+                      className="prose prose-sm max-w-none text-muted-foreground"
+                      dangerouslySetInnerHTML={{ __html: helpText.body }}
+                      data-testid={`text-help-body-${helpKey}`}
+                    />
                   </div>
                 </PopoverContent>
               </Popover>
