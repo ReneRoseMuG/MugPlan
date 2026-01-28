@@ -7,7 +7,6 @@ interface EntityCardProps {
   title: string;
   icon?: ReactNode;
   headerColor?: string;
-  borderColor?: string;
   onDelete?: () => void;
   isDeleting?: boolean;
   actions?: ReactNode;
@@ -15,6 +14,7 @@ interface EntityCardProps {
   children: ReactNode;
   testId?: string;
   className?: string;
+  style?: React.CSSProperties;
   onDoubleClick?: () => void;
 }
 
@@ -22,7 +22,6 @@ export function EntityCard({
   title,
   icon,
   headerColor = defaultHeaderColor,
-  borderColor,
   onDelete,
   isDeleting,
   actions,
@@ -30,16 +29,13 @@ export function EntityCard({
   children,
   testId,
   className = "",
+  style,
   onDoubleClick,
 }: EntityCardProps) {
-  const borderStyle = borderColor 
-    ? { borderLeftWidth: '4px', borderLeftColor: borderColor }
-    : {};
-
   return (
     <div
       className={`rounded-lg border border-border bg-white overflow-hidden transition-all hover:border-primary/50 hover:shadow-md cursor-pointer flex flex-col ${className}`}
-      style={borderStyle}
+      style={style}
       data-testid={testId}
       onDoubleClick={onDoubleClick}
     >
