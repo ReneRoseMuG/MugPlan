@@ -185,3 +185,30 @@ export const projectProjectStatus = pgTable("project_project_status", {
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),
 }));
+
+// Help Texts (FT 16)
+export const helpTexts = pgTable("help_texts", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  helpKey: text("help_key").notNull().unique(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertHelpTextSchema = createInsertSchema(helpTexts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateHelpTextSchema = createInsertSchema(helpTexts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type HelpText = typeof helpTexts.$inferSelect;
+export type InsertHelpText = z.infer<typeof insertHelpTextSchema>;
+export type UpdateHelpText = z.infer<typeof updateHelpTextSchema>;

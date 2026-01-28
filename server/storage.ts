@@ -9,6 +9,7 @@ import {
   customerNotes,
   projectStatus,
   projectProjectStatus,
+  helpTexts,
   type InsertEvent,
   type Event,
   type Tour,
@@ -28,7 +29,10 @@ import {
   type UpdateNoteTemplate,
   type ProjectStatus,
   type InsertProjectStatus,
-  type UpdateProjectStatus
+  type UpdateProjectStatus,
+  type HelpText,
+  type InsertHelpText,
+  type UpdateHelpText
 } from "@shared/schema";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
 
@@ -65,6 +69,13 @@ export interface IStorage {
   toggleProjectStatusActive(id: number, isActive: boolean): Promise<ProjectStatus | null>;
   deleteProjectStatus(id: number): Promise<{ success: boolean; error?: string }>;
   isProjectStatusInUse(id: number): Promise<boolean>;
+  getHelpTexts(query?: string): Promise<HelpText[]>;
+  getHelpTextById(id: number): Promise<HelpText | null>;
+  getHelpTextByKey(helpKey: string): Promise<HelpText | null>;
+  createHelpText(data: InsertHelpText): Promise<{ helpText: HelpText | null; error?: string }>;
+  updateHelpText(id: number, data: UpdateHelpText): Promise<{ helpText: HelpText | null; error?: string }>;
+  toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null>;
+  deleteHelpText(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -317,6 +328,82 @@ export class DatabaseStorage implements IStorage {
     }
     await db.delete(projectStatus).where(eq(projectStatus.id, id));
     return { success: true };
+  }
+
+  async getHelpTexts(query?: string): Promise<HelpText[]> {
+    if (query && query.trim()) {
+      const searchTerm = `%${query.trim().toLowerCase()}%`;
+      return await db
+        .select()
+        .from(helpTexts)
+        .where(
+          sql`LOWER(${helpTexts.helpKey}) LIKE ${searchTerm} OR LOWER(${helpTexts.title}) LIKE ${searchTerm}`
+        )
+        .orderBy(asc(helpTexts.helpKey));
+    }
+    return await db.select().from(helpTexts).orderBy(asc(helpTexts.helpKey));
+  }
+
+  async getHelpTextById(id: number): Promise<HelpText | null> {
+    const [helpText] = await db.select().from(helpTexts).where(eq(helpTexts.id, id));
+    return helpText || null;
+  }
+
+  async getHelpTextByKey(helpKey: string): Promise<HelpText | null> {
+    const [helpText] = await db
+      .select()
+      .from(helpTexts)
+      .where(and(eq(helpTexts.helpKey, helpKey), eq(helpTexts.isActive, true)));
+    return helpText || null;
+  }
+
+  async createHelpText(data: InsertHelpText): Promise<{ helpText: HelpText | null; error?: string }> {
+    const existing = await db
+      .select()
+      .from(helpTexts)
+      .where(eq(helpTexts.helpKey, data.helpKey));
+    if (existing.length > 0) {
+      return { helpText: null, error: 'help_key bereits vergeben' };
+    }
+    const [helpText] = await db.insert(helpTexts).values(data).returning();
+    return { helpText };
+  }
+
+  async updateHelpText(id: number, data: UpdateHelpText): Promise<{ helpText: HelpText | null; error?: string }> {
+    const existing = await this.getHelpTextById(id);
+    if (!existing) {
+      return { helpText: null, error: 'Hilfetext nicht gefunden' };
+    }
+    if (data.helpKey && data.helpKey !== existing.helpKey) {
+      const duplicate = await db
+        .select()
+        .from(helpTexts)
+        .where(eq(helpTexts.helpKey, data.helpKey));
+      if (duplicate.length > 0) {
+        return { helpText: null, error: 'help_key bereits vergeben' };
+      }
+    }
+    const [helpText] = await db
+      .update(helpTexts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(helpTexts.id, id))
+      .returning();
+    return { helpText: helpText || null };
+  }
+
+  async toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null> {
+    const existing = await this.getHelpTextById(id);
+    if (!existing) return null;
+    const [helpText] = await db
+      .update(helpTexts)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(helpTexts.id, id))
+      .returning();
+    return helpText || null;
+  }
+
+  async deleteHelpText(id: number): Promise<void> {
+    await db.delete(helpTexts).where(eq(helpTexts.id, id));
   }
 }
 

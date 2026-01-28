@@ -400,5 +400,106 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Help Texts (FT 16)
+  app.get(api.helpTexts.getByKey.path, async (req, res) => {
+    const helpKey = req.params.helpKey as string;
+    const helpText = await storage.getHelpTextByKey(helpKey);
+    if (!helpText) {
+      return res.status(404).json({ message: 'Hilfetext nicht gefunden' });
+    }
+    res.json({
+      helpKey: helpText.helpKey,
+      title: helpText.title,
+      body: helpText.body,
+    });
+  });
+
+  app.get(api.helpTexts.list.path, async (req, res) => {
+    const query = req.query.query as string | undefined;
+    const helpTexts = await storage.getHelpTexts(query);
+    res.json(helpTexts);
+  });
+
+  app.get(api.helpTexts.getById.path, async (req, res) => {
+    const id = Number(req.params.id);
+    const helpText = await storage.getHelpTextById(id);
+    if (!helpText) {
+      return res.status(404).json({ message: 'Hilfetext nicht gefunden' });
+    }
+    res.json(helpText);
+  });
+
+  app.post(api.helpTexts.create.path, async (req, res) => {
+    try {
+      const input = api.helpTexts.create.input.parse(req.body);
+      const result = await storage.createHelpText(input);
+      if (result.error) {
+        return res.status(409).json({ message: result.error });
+      }
+      res.status(201).json(result.helpText);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.put(api.helpTexts.update.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const input = api.helpTexts.update.input.parse(req.body);
+      const result = await storage.updateHelpText(id, input);
+      if (result.error) {
+        if (result.error === 'Hilfetext nicht gefunden') {
+          return res.status(404).json({ message: result.error });
+        }
+        return res.status(409).json({ message: result.error });
+      }
+      res.json(result.helpText);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.helpTexts.toggleActive.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const input = api.helpTexts.toggleActive.input.parse(req.body);
+      const helpText = await storage.toggleHelpTextActive(id, input.isActive);
+      if (!helpText) {
+        return res.status(404).json({ message: 'Hilfetext nicht gefunden' });
+      }
+      res.json(helpText);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.helpTexts.delete.path, async (req, res) => {
+    const id = Number(req.params.id);
+    const existing = await storage.getHelpTextById(id);
+    if (!existing) {
+      return res.status(404).json({ message: 'Hilfetext nicht gefunden' });
+    }
+    await storage.deleteHelpText(id);
+    res.status(204).send();
+  });
+
   return httpServer;
 }

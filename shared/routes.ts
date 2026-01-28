@@ -6,7 +6,8 @@ import {
   insertCustomerSchema, updateCustomerSchema, customers,
   insertNoteSchema, updateNoteSchema, notes,
   insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
-  insertProjectStatusSchema, updateProjectStatusSchema, projectStatus
+  insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
+  insertHelpTextSchema, updateHelpTextSchema, helpTexts
 } from './schema';
 
 export const errorSchemas = {
@@ -286,6 +287,73 @@ export const api = {
       },
     },
   },
+  helpTexts: {
+    getByKey: {
+      method: 'GET' as const,
+      path: '/api/help-texts/:helpKey',
+      responses: {
+        200: z.object({
+          helpKey: z.string(),
+          title: z.string(),
+          body: z.string(),
+        }),
+        404: errorSchemas.notFound,
+      },
+    },
+    list: {
+      method: 'GET' as const,
+      path: '/api/help-texts',
+      responses: {
+        200: z.array(z.custom<typeof helpTexts.$inferSelect>()),
+      },
+    },
+    getById: {
+      method: 'GET' as const,
+      path: '/api/help-texts/by-id/:id',
+      responses: {
+        200: z.custom<typeof helpTexts.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/help-texts',
+      input: insertHelpTextSchema,
+      responses: {
+        201: z.custom<typeof helpTexts.$inferSelect>(),
+        400: errorSchemas.validation,
+        409: z.object({ message: z.string() }),
+      },
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/help-texts/:id',
+      input: updateHelpTextSchema,
+      responses: {
+        200: z.custom<typeof helpTexts.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+        409: z.object({ message: z.string() }),
+      },
+    },
+    toggleActive: {
+      method: 'PATCH' as const,
+      path: '/api/help-texts/:id/active',
+      input: z.object({ isActive: z.boolean() }),
+      responses: {
+        200: z.custom<typeof helpTexts.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/help-texts/:id',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
@@ -326,3 +394,7 @@ export type NoteTemplateResponse = z.infer<typeof api.noteTemplates.create.respo
 export type ProjectStatusInput = z.infer<typeof api.projectStatus.create.input>;
 export type ProjectStatusUpdateInput = z.infer<typeof api.projectStatus.update.input>;
 export type ProjectStatusResponse = z.infer<typeof api.projectStatus.create.responses[201]>;
+
+export type HelpTextInput = z.infer<typeof api.helpTexts.create.input>;
+export type HelpTextUpdateInput = z.infer<typeof api.helpTexts.update.input>;
+export type HelpTextResponse = z.infer<typeof api.helpTexts.create.responses[201]>;
