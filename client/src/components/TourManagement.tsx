@@ -40,20 +40,19 @@ function EditTourMembersDialog({
   onOpenChange,
   tour,
   allEmployees,
-  onSaveMembers,
-  onColorChange,
+  onSave,
   isSaving,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tour: TourWithMembers;
   allEmployees: Employee[];
-  onSaveMembers: (tourId: number, employeeIds: number[]) => void;
-  onColorChange: (tourId: number, color: string) => void;
+  onSave: (tourId: number, employeeIds: number[], color: string) => void;
   isSaving: boolean;
 }) {
   const currentMemberIds = tour.members.map(m => m.id);
   const [selectedMembers, setSelectedMembers] = useState<number[]>(currentMemberIds);
+  const [selectedColor, setSelectedColor] = useState<string>(tour.color);
 
   const handleToggleMember = (employeeId: number) => {
     setSelectedMembers((prev) =>
@@ -64,12 +63,13 @@ function EditTourMembersDialog({
   };
 
   const handleSave = () => {
-    onSaveMembers(tour.id, selectedMembers);
+    onSave(tour.id, selectedMembers, selectedColor);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
       setSelectedMembers(currentMemberIds);
+      setSelectedColor(tour.color);
     }
     onOpenChange(isOpen);
   };
@@ -82,15 +82,15 @@ function EditTourMembersDialog({
             <Route className="w-5 h-5" />
             {tour.name}
             <ColorPickerButton
-              color={tour.color}
-              onChange={(color) => onColorChange(tour.id, color)}
+              color={selectedColor}
+              onChange={setSelectedColor}
             />
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div 
             className="border-l-4 border border-border bg-slate-50 p-3"
-            style={{ borderLeftColor: tour.color }}
+            style={{ borderLeftColor: selectedColor }}
           >
             <div className="text-sm font-medium text-slate-700 mb-2">
               Mitarbeiter auswählen:
@@ -261,7 +261,8 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     updateMutation.mutate({ id, color });
   };
 
-  const handleSaveMembers = (tourId: number, employeeIds: number[]) => {
+  const handleSaveTour = async (tourId: number, employeeIds: number[], color: string) => {
+    await updateMutation.mutateAsync({ id: tourId, color });
     assignMembersMutation.mutate({ tourId, employeeIds });
   };
 
@@ -360,9 +361,8 @@ export function TourManagement({ onCancel }: TourManagementProps) {
           onOpenChange={(open) => !open && setEditingTour(null)}
           tour={toursWithMembers.find(t => t.id === editingTour.id) || editingTour}
           allEmployees={employees}
-          onSaveMembers={handleSaveMembers}
-          onColorChange={handleColorChange}
-          isSaving={assignMembersMutation.isPending}
+          onSave={handleSaveTour}
+          isSaving={updateMutation.isPending || assignMembersMutation.isPending}
         />
       )}
     </>
