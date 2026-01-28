@@ -358,7 +358,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
         <EditTourMembersDialog
           open={!!editingTour}
           onOpenChange={(open) => !open && setEditingTour(null)}
-          tour={editingTour}
+          tour={toursWithMembers.find(t => t.id === editingTour.id) || editingTour}
           allEmployees={employees}
           onSaveMembers={handleSaveMembers}
           onColorChange={handleColorChange}
