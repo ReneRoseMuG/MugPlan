@@ -162,14 +162,60 @@ export function HelpTextsPage() {
           </p>
         }
       >
-        {helpTexts.map((helpText) => (
-          <HelpTextCard
-            key={helpText.id}
-            helpText={helpText}
-            onEdit={() => handleOpenEdit(helpText)}
-            onDelete={() => handleDelete(helpText.id)}
-          />
-        ))}
+        {helpTexts.map((helpText) => {
+          const formatDate = (date: Date | string | null) => {
+            if (!date) return "";
+            const d = typeof date === "string" ? new Date(date) : date;
+            return format(d, "dd.MM.yyyy", { locale: de });
+          };
+          
+          return (
+            <EntityCard
+              key={helpText.id}
+              testId={`helptext-card-${helpText.id}`}
+              title={helpText.helpKey}
+              icon={<HelpCircle className="w-4 h-4" />}
+              className={!helpText.isActive ? "opacity-60" : ""}
+              onDelete={() => handleDelete(helpText.id)}
+              isDeleting={deleteMutation.isPending}
+              onDoubleClick={() => handleOpenEdit(helpText)}
+              footer={
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenEdit(helpText);
+                  }}
+                  data-testid={`button-edit-helptext-${helpText.id}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              }
+            >
+              <div className="space-y-2">
+                <p className="font-medium text-sm" data-testid={`text-helptext-title-${helpText.id}`}>
+                  {helpText.title}
+                </p>
+                {helpText.body && (
+                  <div 
+                    className="text-sm text-slate-600 line-clamp-2"
+                    dangerouslySetInnerHTML={{ __html: helpText.body }}
+                    data-testid={`text-helptext-body-${helpText.id}`}
+                  />
+                )}
+                <div className="flex items-center gap-2 pt-1">
+                  {!helpText.isActive && (
+                    <Badge variant="secondary" className="text-xs">Inaktiv</Badge>
+                  )}
+                  <span className="text-xs text-slate-400" data-testid={`text-helptext-date-${helpText.id}`}>
+                    Aktualisiert: {formatDate(helpText.updatedAt)}
+                  </span>
+                </div>
+              </div>
+            </EntityCard>
+          );
+        })}
       </CardListLayout>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
