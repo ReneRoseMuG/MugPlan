@@ -281,8 +281,8 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
       </CardListLayout>
 
       <Dialog open={detailDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0 flex flex-row items-center justify-between pr-8">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogHeader className="flex-shrink-0 flex flex-row items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
               {dialogTitle}
@@ -291,7 +291,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
               size="lg"
               variant="ghost"
               onClick={handleCloseDialog}
-              className="absolute right-4 top-4"
               data-testid="button-close-employee-detail"
             >
               <X className="w-5 h-5" />
@@ -299,157 +298,170 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
           </DialogHeader>
 
           <div className="flex-1 overflow-auto">
-            <div className="grid grid-cols-5 gap-6">
-              {/* Left column: Appointments list */}
-              <div className="col-span-2 space-y-3">
-                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                  <Calendar className="w-4 h-4" />
-                  Aktuelle Termine
-                </h4>
-                <div className="border rounded-md p-3 bg-slate-50 min-h-[300px] max-h-[400px] overflow-y-auto">
-                  {demoAppointments.length === 0 ? (
-                    <p className="text-sm text-slate-400 italic text-center py-4">
-                      Keine aktuellen Termine
-                    </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {demoAppointments.map((apt) => (
-                        <li key={apt.id} className="p-2 bg-white rounded border text-sm">
-                          <div className="font-medium">{apt.title}</div>
-                          <div className="text-slate-500 text-xs">{apt.date}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <p className="text-xs text-slate-400 italic">
-                  Demo-Daten - Terminverwaltung folgt
-                </p>
-              </div>
-
-              {/* Right column: Employee details */}
-              <div className="col-span-3 space-y-4">
-                {/* Tour/Team colored bars */}
-                {!isCreating && displayEmployee && (
+            <div className="grid grid-cols-2 gap-6">
+              {/* Left column: Employee form */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    {displayEmployee.tour && (
-                      <div 
-                        className="flex items-center gap-2 px-3 py-2 rounded-md"
-                        style={{ backgroundColor: displayEmployee.tour.color }}
-                      >
-                        <Route className="w-4 h-4" />
-                        <span className="font-medium">{displayEmployee.tour.name}</span>
-                      </div>
-                    )}
-                    {displayEmployee.team && (
-                      <div 
-                        className="flex items-center gap-2 px-3 py-2 rounded-md"
-                        style={{ backgroundColor: displayEmployee.team.color }}
-                      >
-                        <Users className="w-4 h-4" />
-                        <span className="font-medium">{displayEmployee.team.name}</span>
-                      </div>
-                    )}
-                    {!displayEmployee.tour && !displayEmployee.team && (
-                      <p className="text-sm text-slate-400 italic px-3 py-2">
-                        Keinem Team oder Tour zugewiesen
+                    <Label htmlFor="firstName">Vorname *</Label>
+                    {isEditing ? (
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                        placeholder="Vorname..."
+                        data-testid="input-employee-firstname"
+                      />
+                    ) : (
+                      <p className="text-sm py-2" data-testid="text-employee-firstname">
+                        {displayEmployee?.employee.firstName || "-"}
                       </p>
                     )}
                   </div>
-                )}
-
-                {/* Form fields */}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Vorname *</Label>
-                      {isEditing ? (
-                        <Input
-                          id="firstName"
-                          value={formData.firstName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                          placeholder="Vorname..."
-                          data-testid="input-employee-firstname"
-                        />
-                      ) : (
-                        <p className="text-sm py-2" data-testid="text-employee-firstname">
-                          {displayEmployee?.employee.firstName || "-"}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Nachname *</Label>
-                      {isEditing ? (
-                        <Input
-                          id="lastName"
-                          value={formData.lastName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                          placeholder="Nachname..."
-                          data-testid="input-employee-lastname"
-                        />
-                      ) : (
-                        <p className="text-sm py-2" data-testid="text-employee-lastname">
-                          {displayEmployee?.employee.lastName || "-"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        Telefon
-                      </Label>
-                      {isEditing ? (
-                        <Input
-                          id="phone"
-                          value={formData.phone}
-                          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                          placeholder="Telefonnummer..."
-                          data-testid="input-employee-phone"
-                        />
-                      ) : (
-                        <p className="text-sm py-2" data-testid="text-employee-phone">
-                          {displayEmployee?.employee.phone || "-"}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        E-Mail
-                      </Label>
-                      {isEditing ? (
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                          placeholder="E-Mail-Adresse..."
-                          data-testid="input-employee-email"
-                        />
-                      ) : (
-                        <p className="text-sm py-2" data-testid="text-employee-email">
-                          {displayEmployee?.employee.email || "-"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Active status - read-only */}
-                  {!isCreating && displayEmployee && (
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      <input
-                        type="checkbox"
-                        checked={displayEmployee.employee.isActive}
-                        disabled={true}
-                        className="w-4 h-4 cursor-not-allowed"
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nachname *</Label>
+                    {isEditing ? (
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                        placeholder="Nachname..."
+                        data-testid="input-employee-lastname"
                       />
-                      <Label className="text-muted-foreground text-sm">
-                        Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
-                      </Label>
+                    ) : (
+                      <p className="text-sm py-2" data-testid="text-employee-lastname">
+                        {displayEmployee?.employee.lastName || "-"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-1">
+                      <Phone className="w-3 h-3" />
+                      Telefon
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="Telefonnummer..."
+                        data-testid="input-employee-phone"
+                      />
+                    ) : (
+                      <p className="text-sm py-2" data-testid="text-employee-phone">
+                        {displayEmployee?.employee.phone || "-"}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
+                      E-Mail
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="E-Mail-Adresse..."
+                        data-testid="input-employee-email"
+                      />
+                    ) : (
+                      <p className="text-sm py-2" data-testid="text-employee-email">
+                        {displayEmployee?.employee.email || "-"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Active status - read-only */}
+                {!isCreating && displayEmployee && (
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <input
+                      type="checkbox"
+                      checked={displayEmployee.employee.isActive}
+                      disabled={true}
+                      className="w-4 h-4 cursor-not-allowed"
+                    />
+                    <Label className="text-muted-foreground text-sm">
+                      Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
+                    </Label>
+                  </div>
+                )}
+              </div>
+
+              {/* Right column: Appointments + Tour + Team */}
+              <div className="space-y-4">
+                {/* Appointments list */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                    <Calendar className="w-4 h-4" />
+                    Aktuelle Termine
+                  </h4>
+                  <div className="border rounded-md p-3 bg-slate-50 min-h-[120px] max-h-[180px] overflow-y-auto">
+                    {demoAppointments.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic text-center py-4">
+                        Keine aktuellen Termine
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {demoAppointments.map((apt) => (
+                          <li key={apt.id} className="p-2 bg-white rounded border text-sm">
+                            <div className="font-medium">{apt.title}</div>
+                            <div className="text-slate-500 text-xs">{apt.date}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 italic">
+                    Demo-Daten - Terminverwaltung folgt
+                  </p>
+                </div>
+
+                {/* Tour card (read-only) */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                    <Route className="w-4 h-4" />
+                    Tour
+                  </h4>
+                  {!isCreating && displayEmployee?.tour ? (
+                    <div 
+                      className="flex items-center gap-2 px-3 py-2 rounded-md border"
+                      style={{ backgroundColor: displayEmployee.tour.color }}
+                    >
+                      <Route className="w-4 h-4" />
+                      <span className="font-medium">{displayEmployee.tour.name}</span>
                     </div>
+                  ) : (
+                    <p className="text-sm text-slate-400 italic px-3 py-2 border rounded-md bg-slate-50">
+                      Keiner Tour zugewiesen
+                    </p>
+                  )}
+                </div>
+
+                {/* Team card (read-only) */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                    <Users className="w-4 h-4" />
+                    Team
+                  </h4>
+                  {!isCreating && displayEmployee?.team ? (
+                    <div 
+                      className="flex items-center gap-2 px-3 py-2 rounded-md border"
+                      style={{ backgroundColor: displayEmployee.team.color }}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span className="font-medium">{displayEmployee.team.name}</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400 italic px-3 py-2 border rounded-md bg-slate-50">
+                      Keinem Team zugewiesen
+                    </p>
                   )}
                 </div>
               </div>
