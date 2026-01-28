@@ -69,7 +69,7 @@ function HelpTextCard({ helpText, onEdit, onDelete }: HelpTextCardProps) {
       </div>
       {helpText.body && (
         <div 
-          className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3"
+          className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 richtext-content"
           dangerouslySetInnerHTML={{ __html: helpText.body }}
           data-testid={`text-helptext-body-${helpText.id}`}
         />
