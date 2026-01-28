@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flag, Plus, X } from "lucide-react";
 import type { ProjectStatus } from "@shared/schema";
 
@@ -81,15 +82,26 @@ export function ProjectStatusSection({
           <Flag className="w-4 h-4" />
           {title} ({assignedStatuses.length})
         </h3>
-        <Button 
-          size="icon" 
-          variant="ghost" 
-          onClick={handleOpenDialog}
-          disabled={unassignedStatuses.length === 0}
-          data-testid="button-add-status"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              onClick={handleOpenDialog}
+              data-testid="button-add-status"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {availableStatuses.length === 0 
+              ? "Bitte erst Status unter Administration → Projekt Status anlegen"
+              : unassignedStatuses.length === 0 
+                ? "Alle Status bereits zugewiesen"
+                : "Status hinzufügen"
+            }
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="space-y-2" data-testid="list-project-statuses">
@@ -123,32 +135,44 @@ export function ProjectStatusSection({
               <Flag className="w-5 h-5" />
               Status hinzufügen
             </DialogTitle>
+            <DialogDescription>
+              Wählen Sie einen oder mehrere Status für dieses Projekt aus.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-2 max-h-60 overflow-y-auto py-2">
-            {unassignedStatuses.map(status => (
-              <div
-                key={status.id}
-                onClick={() => handleToggle(status.id)}
-                className={`flex items-center gap-3 p-2 rounded-md cursor-pointer border ${
-                  selectedIds.includes(status.id) 
-                    ? "bg-primary/10 border-primary/30" 
-                    : "border-transparent hover:bg-slate-50"
-                }`}
-                style={{ borderLeftWidth: '4px', borderLeftColor: status.color }}
-                data-testid={`checkbox-status-${status.id}`}
-              >
-                <Checkbox
-                  checked={selectedIds.includes(status.id)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="text-sm text-slate-700">{status.title}</span>
-              </div>
-            ))}
-            {unassignedStatuses.length === 0 && (
+            {availableStatuses.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-4">
+                Es sind noch keine Projektstatus angelegt.
+                <br />
+                <span className="text-slate-400">
+                  Bitte unter Administration → Projekt Status anlegen.
+                </span>
+              </p>
+            ) : unassignedStatuses.length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-4">
                 Alle Status bereits zugewiesen
               </p>
+            ) : (
+              unassignedStatuses.map(status => (
+                <div
+                  key={status.id}
+                  onClick={() => handleToggle(status.id)}
+                  className={`flex items-center gap-3 p-2 rounded-md cursor-pointer border ${
+                    selectedIds.includes(status.id) 
+                      ? "bg-primary/10 border-primary/30" 
+                      : "border-transparent hover:bg-slate-50"
+                  }`}
+                  style={{ borderLeftWidth: '4px', borderLeftColor: status.color }}
+                  data-testid={`checkbox-status-${status.id}`}
+                >
+                  <Checkbox
+                    checked={selectedIds.includes(status.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <span className="text-sm text-slate-700">{status.title}</span>
+                </div>
+              ))
             )}
           </div>
 
