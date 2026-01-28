@@ -247,7 +247,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
             <EntityCard
               key={employee.id}
               testId={`employee-card-${employee.id}`}
-              title={`${employee.lastName}, ${employee.firstName}`}
+              title={employee.fullName}
               icon={<Users className="w-4 h-4" />}
               className={!employee.isActive ? "opacity-60" : ""}
               onDoubleClick={() => handleOpenDetail(employee)}

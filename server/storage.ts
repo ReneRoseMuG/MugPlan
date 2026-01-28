@@ -462,7 +462,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEmployee(data: InsertEmployee): Promise<Employee> {
-    const fullName = `${data.firstName} ${data.lastName}`;
+    const fullName = `${data.lastName}, ${data.firstName}`;
     const [employee] = await db.insert(employees).values({ ...data, fullName }).returning();
     return employee;
   }
@@ -476,7 +476,7 @@ export class DatabaseStorage implements IStorage {
     if (data.firstName !== undefined || data.lastName !== undefined) {
       const firstName = data.firstName !== undefined ? data.firstName : existing.firstName;
       const lastName = data.lastName !== undefined ? data.lastName : existing.lastName;
-      fullName = `${firstName} ${lastName}`;
+      fullName = `${lastName}, ${firstName}`;
     }
 
     const [employee] = await db
