@@ -34,6 +34,9 @@
   --card: 0 0% 100%;
   --card-foreground: var(--color-blue-dark);
 
+  /* SubPanel - dezente Hintergrundfarbe für Unterbereiche in Formularen */
+  --sub-panel-background: 210 30% 96%; /* Sehr helles Blaugrau */
+
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
   
@@ -124,5 +127,11 @@
   
   .text-content {
     color: hsl(var(--color-blue-light));
+  }
+
+  /* SubPanel - dezenter Hintergrund für Unterbereiche in Formularen */
+  .sub-panel {
+    background-color: hsl(var(--sub-panel-background));
+    @apply rounded-lg p-4 border border-border/50;
   }
 }

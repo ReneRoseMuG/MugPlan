@@ -108,7 +108,7 @@ export function NotesSection({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="sub-panel space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
           <StickyNote className="w-4 h-4" />

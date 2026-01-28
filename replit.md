@@ -163,6 +163,15 @@ Preferred communication style: Simple, everyday language.
   - `children` - Inhalt der Karte
 - **Verwendet von**: Tour-Karten, Team-Karten, Kunden-Karten, Mitarbeiter-Karten
 
+### CSS Utility-Klassen
+
+**sub-panel** (`client/src/index.css`)
+- **Wann verwenden**: Für Unterbereiche in Formularen (z.B. Notizen, Dokumente, Termine)
+- **Features**: Dezente Hintergrundfarbe, abgerundete Ecken, leichter Rahmen, Innenabstand
+- **CSS-Variable**: `--sub-panel-background: 210 30% 96%` (sehr helles Blaugrau)
+- **Anwendung**: `className="sub-panel"` auf Container-Element
+- **Verwendet von**: NotesSection
+
 ## System Architecture
 
 ### Frontend Architecture
