@@ -189,7 +189,11 @@ export const projectProjectStatus = pgTable("project_project_status", {
 // Employee - Mitarbeiterverwaltung (FT 05)
 export const employees = pgTable("employee", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
   isActive: boolean("is_active").notNull().default(true),
   teamId: integer("team_id").references(() => teams.id, { onDelete: "set null" }),
   tourId: integer("tour_id").references(() => tours.id, { onDelete: "set null" }),
@@ -204,10 +208,14 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   isActive: true,
   teamId: true,
   tourId: true,
+  fullName: true, // auto-generated from firstName + lastName
 });
 
 export const updateEmployeeSchema = z.object({
-  name: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  phone: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
 });
 

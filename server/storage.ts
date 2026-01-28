@@ -427,14 +427,14 @@ export class DatabaseStorage implements IStorage {
       return await db
         .select()
         .from(employees)
-        .orderBy(asc(employees.name), asc(employees.id));
+        .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
     }
     const isActive = filter === 'active';
     return await db
       .select()
       .from(employees)
       .where(eq(employees.isActive, isActive))
-      .orderBy(asc(employees.name), asc(employees.id));
+      .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
   }
 
   async getEmployee(id: number): Promise<Employee | null> {
@@ -462,14 +462,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEmployee(data: InsertEmployee): Promise<Employee> {
-    const [employee] = await db.insert(employees).values(data).returning();
+    const fullName = `${data.firstName} ${data.lastName}`;
+    const [employee] = await db.insert(employees).values({ ...data, fullName }).returning();
     return employee;
   }
 
   async updateEmployee(id: number, data: UpdateEmployee): Promise<Employee | null> {
+    const existing = await this.getEmployee(id);
+    if (!existing) return null;
+
+    // Recalculate fullName if firstName or lastName changed
+    let fullName = existing.fullName;
+    if (data.firstName !== undefined || data.lastName !== undefined) {
+      const firstName = data.firstName !== undefined ? data.firstName : existing.firstName;
+      const lastName = data.lastName !== undefined ? data.lastName : existing.lastName;
+      fullName = `${firstName} ${lastName}`;
+    }
+
     const [employee] = await db
       .update(employees)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...data, fullName, updatedAt: new Date() })
       .where(eq(employees.id, id))
       .returning();
     return employee || null;
@@ -489,7 +501,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(employees)
       .where(eq(employees.tourId, tourId))
-      .orderBy(asc(employees.name));
+      .orderBy(asc(employees.lastName), asc(employees.firstName));
   }
 
   async getEmployeesByTeam(teamId: number): Promise<Employee[]> {
@@ -497,7 +509,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(employees)
       .where(eq(employees.teamId, teamId))
-      .orderBy(asc(employees.name));
+      .orderBy(asc(employees.lastName), asc(employees.firstName));
   }
 
   async setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {

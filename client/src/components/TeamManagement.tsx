@@ -106,7 +106,7 @@ function EditTeamMembersDialog({
                         isAssignedElsewhere ? "text-slate-400" : "text-slate-700"
                       }`}
                     >
-                      {employee.name}
+                      {employee.lastName}, {employee.firstName}
                       {isAssignedElsewhere && (
                         <span className="ml-2 text-xs text-slate-400">(bereits in anderem Team)</span>
                       )}
@@ -269,7 +269,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                 >
                   <div className="flex items-center gap-2">
                     <UserCheck className="w-3 h-3 text-primary" />
-                    {member.name}
+                    {member.lastName}, {member.firstName}
                   </div>
                   <Button
                     size="icon"
