@@ -1,4 +1,5 @@
-import { User, Phone, MapPin, Building2 } from "lucide-react";
+import { User, Phone, MapPin, Building2, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { defaultHeaderColor } from "@/lib/colors";
@@ -46,36 +47,44 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
       }
     >
       {activeCustomers.map(customer => (
-        <div 
-          key={customer.id} 
-          onClick={() => onSelectCustomer?.(customer.id)}
-          className="cursor-pointer"
-          data-testid={`button-select-customer-${customer.id}`}
+        <EntityCard
+          key={customer.id}
+          title={customer.fullName}
+          icon={<User className="w-4 h-4" />}
+          headerColor={defaultHeaderColor}
+          testId={`customer-card-${customer.id}`}
+          onDoubleClick={() => onSelectCustomer?.(customer.id)}
+          footer={
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectCustomer?.(customer.id);
+              }}
+              data-testid={`button-edit-customer-${customer.id}`}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          }
         >
-          <EntityCard
-            title={customer.fullName}
-            icon={<User className="w-4 h-4" />}
-            headerColor={defaultHeaderColor}
-            testId={`customer-card-${customer.id}`}
-          >
-            <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-              {customer.addressLine2 && (
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-3 h-3 text-slate-400" />
-                  <span className="font-medium">{customer.addressLine2}</span>
-                </div>
-              )}
+          <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
+            {customer.company && (
               <div className="flex items-center gap-2">
-                <Phone className="w-3 h-3 text-slate-400" />
-                <span>{customer.phone}</span>
+                <Building2 className="w-3 h-3 text-slate-400" />
+                <span className="font-medium">{customer.company}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3 h-3 text-slate-400" />
-                <span>{customer.postalCode} {customer.city}</span>
-              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Phone className="w-3 h-3 text-slate-400" />
+              <span>{customer.phone}</span>
             </div>
-          </EntityCard>
-        </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3 h-3 text-slate-400" />
+              <span>{customer.postalCode} {customer.city}</span>
+            </div>
+          </div>
+        </EntityCard>
       ))}
     </CardListLayout>
   );
