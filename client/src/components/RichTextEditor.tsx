@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Bold, Italic, Underline, Palette, Highlighter, List, ListOrdered, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
@@ -25,6 +25,17 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   const editorRef = useRef<HTMLDivElement>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [bgColorPickerOpen, setBgColorPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.style.direction = 'ltr';
+      editorRef.current.style.textAlign = 'left';
+      editorRef.current.setAttribute('dir', 'ltr');
+      if (editorRef.current.innerHTML !== value) {
+        editorRef.current.innerHTML = value;
+      }
+    }
+  }, [value]);
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -216,7 +227,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         onInput={handleContentChange}
         onBlur={handleContentChange}
         className="min-h-[200px] p-4 focus:outline-none text-sm bg-white dark:bg-slate-900"
-        dangerouslySetInnerHTML={{ __html: value }}
         data-placeholder={placeholder}
         data-testid="richtext-editor"
         style={{

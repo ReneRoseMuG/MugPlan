@@ -63,9 +63,10 @@
     @apply cursor-pointer;
   }
 
-  [contenteditable] {
+  [contenteditable],
+  [contenteditable] * {
     direction: ltr !important;
-    unicode-bidi: isolate !important;
+    unicode-bidi: normal !important;
     text-align: left !important;
   }
 }
