@@ -5,6 +5,15 @@
 A personal calendar application (German: "Kalender - Persönlicher Planer") built with React and Express. The app provides month, week, and year calendar views with a clean, modern UI. It uses a PostgreSQL database for event storage, though the calendar views are currently display-focused with minimal event integration.
 
 ### Recent Changes (January 2026)
+- **Project Status Management (FT 15)**: Projektstatusverwaltung im Administration-Bereich
+  - Datenbank-Tabellen: project_status (id, title, description, color, sort_order, is_active, is_default)
+  - Junction-Table: project_project_status für Projekt-Status-Relation
+  - API-Endpunkte: GET/POST/PUT/DELETE /api/project-status, PATCH /api/project-status/:id/active
+  - Schutzlogik: Default-Status kann nicht gelöscht oder deaktiviert werden
+  - Verwendete Status (via project_project_status) können nicht gelöscht werden
+  - Sortierung: sort_order ASC, title ASC, id ASC
+  - ProjectStatusPage-Komponente mit CardListLayout und EntityCard
+  - Farbauswahl für visuelle Unterscheidung der Status
 - **CardListLayout Full-Height Layout**: Vollständige Höhenausfüllung mit Sticky Footer
   - Flexbox-Layout: `h-full flex flex-col overflow-hidden`
   - Fixed Header: `flex-shrink-0` mit Rahmen unten
