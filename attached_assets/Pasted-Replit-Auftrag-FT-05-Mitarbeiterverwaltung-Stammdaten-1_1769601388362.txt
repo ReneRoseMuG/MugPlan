@@ -1,0 +1,180 @@
+Replit-Auftrag: FT (05) Mitarbeiterverwaltung (Stammdaten)
+1) Pflichtlektüre und Leitplanken
+
+Lies alle Dokumente im Ordner docs/ vollständig. Die Architektur-Dokumentation ist verbindlich.
+Arbeite strikt nach dem Pattern Route → Controller → Service → Repository, nutze die bestehende zentrale Fehlerbehandlung und Validierung und vermeide eine wachsende Monolith-Datei (z. B. server.js).
+
+Du änderst nichts nebenbei. Bevor neue Dateien angelegt werden, prüfst du vorhandene Dateien auf Wiederverwendung und bestehende Patterns.
+
+2) Scope
+
+Dieses Ticket umfasst ausschließlich:
+
+Mitarbeiter-Stammdatenverwaltung
+
+Anlegen
+
+Bearbeiten
+
+Anzeigen
+
+Aktivieren / Deaktivieren (Soft-Status)
+
+Anzeige einer ggf. vorhandenen Team- und Tour-Zuordnung in der Mitarbeiter-Detailsicht
+
+eine read-only Demo-Terminliste „Aktuelle Termine“ in der Mitarbeiter-Detailsicht (ohne Terminlogik, ohne Termin-Datenmodell)
+
+Wichtige Abgrenzungen:
+
+Es dürfen keine Auslastungs- oder Übersichtsansichten angelegt werden.
+
+Team- und Tour-Zuweisung wird nicht über die Mitarbeiterverwaltung vorgenommen.
+Zuweisungen erfolgen ausschließlich in den Bereichen Team und Tour.
+
+Keine Terminverwaltung, keine Kalenderlogik, keine Termin-Tabellen, keine Termin-Services.
+
+Nicht Bestandteil dieses Tickets sind außerdem:
+
+Projekt- oder Kundenverwaltung
+
+Notizen, Anhänge, Druckfunktionen
+
+Benutzer-, Rollen-, Login- oder Authentifizierungslogik
+
+3) Datenbank (SQL / Schema)
+Tabelle employee
+
+(Falls nicht vorhanden: anlegen, sonst erweitern.)
+
+id BIGSERIAL PRIMARY KEY
+
+name TEXT NOT NULL
+
+is_active BOOLEAN NOT NULL DEFAULT TRUE
+
+team_id BIGINT NULL
+FK → team(id) ON DELETE SET NULL
+
+tour_id BIGINT NULL
+FK → bestehende Tour-Tabelle (z. B. tours(id)) ON DELETE SET NULL
+
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+Regeln:
+
+Keine Löschkaskade auf Mitarbeiter
+
+Beim Löschen eines Teams oder einer Tour werden ausschließlich die Fremdschlüssel am Mitarbeiter auf NULL gesetzt
+
+Team- und Tour-Tabellen werden in diesem Ticket nicht neu entworfen
+
+4) Backend (API, architekturkonform)
+Employees
+
+GET /api/employees?active=true|false|all
+Standard: active=true
+Sortierung: name, danach id
+
+POST /api/employees
+Pflichtfeld: name
+team_id und tour_id dürfen nicht gesetzt werden
+→ serverseitig 400 mit klarer Fehlermeldung
+
+GET /api/employees/:id
+Liefert Stammdaten plus Anzeigeinformationen:
+
+Team (z. B. id, name) oder null
+
+Tour (z. B. id, name, optional Farbe) oder null
+
+PUT /api/employees/:id
+Änderbar sind ausschließlich:
+
+name
+
+is_active
+team_id und tour_id dürfen nicht geändert werden
+→ serverseitig 400
+
+PATCH /api/employees/:id/active
+Aktiv/Inaktiv schalten
+
+Demo-Terminliste (read-only)
+
+GET /api/employees/:id/current-appointments
+Liefert vorerst Demo-Daten (leer oder statisch).
+Es dürfen keine Termin-Tabellen, keine Termin-Repos und keine Termin-Logik entstehen.
+Der Endpoint ist ein remembering Stub für spätere echte Termin-Anbindung.
+
+5) Frontend – Mitarbeiterverwaltung
+Darstellung (verbindlich)
+
+Als Content-Element ist CardListLayout zu verwenden
+
+Jede Mitarbeiterkarte ist eine EntityCard
+
+Es dürfen keine eigenen Karten- oder Layoutvarianten erstellt werden
+
+Interaktion
+
+Doppelklick auf eine EntityCard öffnet die Mitarbeiter-Detailsansicht
+
+Mitarbeiterliste
+
+Anzeige der Mitarbeiter als Karten im CardListLayout
+
+Filter optional: aktiv / inaktiv / alle
+
+Aktion „Mitarbeiter anlegen“ (nur Name)
+
+Mitarbeiter-Detailsansicht (Karte)
+
+Stammdaten:
+
+Name
+
+Aktivstatus
+
+Badge „Team“, nur wenn team_id gesetzt ist
+
+Badge „Tour“, nur wenn tour_id gesetzt ist
+
+Sektion „Aktuelle Termine“:
+
+read-only Demo-Liste
+
+keine Aktionen
+
+leerer Zustand erlaubt („Keine aktuellen Termine“)
+
+Wichtig:
+
+Keine UI-Controls zur Team- oder Tour-Zuweisung
+
+Keine Bearbeitung der Demo-Terminliste
+
+6) Abnahme / Nachweise
+
+Am Ende lieferst du:
+
+Übersicht aller neu angelegten oder geänderten Dateien
+
+SQL-Skripte / Migrationen
+
+Kurze Beschreibung der Endpunkte
+
+Nachweis, dass:
+
+Mitarbeiter angelegt, bearbeitet und deaktiviert werden können
+
+Team- und Tour-Zugehörigkeit korrekt angezeigt wird, falls vorhanden
+
+Team/Tour nicht über Mitarbeiter-Endpunkte oder UI geändert werden können
+
+keine Auslastungsansichten existieren
+
+keine Termin-, Kalender- oder Projektlogik implementiert wurde
+
+CardListLayout und EntityCard wie vorgegeben verwendet wurden
