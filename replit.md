@@ -107,6 +107,9 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
 
 Preferred communication style: Simple, everyday language.
 
+### Dateiorganisation
+- **Log-Dateien**: Implementierungs-Logs immer im Ordner `logs/` ablegen (z.B. `logs/FT15_Projektstatusverwaltung.md`)
+
 ### UI-Patterns
 - Alle Formulare sollen einen X-Button (size="lg", variant="ghost") im Titelbereich zum Schließen haben
 - **Geplant**: Einheitliches Layout-System für alle Formulare mit Vollansicht und Miniaturansicht (Card-Darstellung) für konsistentes Erscheinungsbild
