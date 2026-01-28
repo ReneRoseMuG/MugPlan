@@ -1,0 +1,135 @@
+Implementierungsauftrag: FT (02) Projektverwaltung – Projekte, Kunden-Zuordnung, Projekt-Anhänge  
+(ohne Termine, Notizen vollständig integrieren, UI weitgehend unverändert)
+
+Ziel  
+Implementiere die technische Projektverwaltung so, dass Projekte persistent angelegt, bearbeitet und angezeigt werden können.  
+Der Fokus liegt auf:
+- stabiler Projekt-CRUD-Logik
+- fester Zuordnung eines Kunden zu jedem Projekt
+- Verwaltung von Projekt-Anhängen
+- **vollständiger Integration der bereits implementierten Notizen**
+
+**Termine sind ausdrücklich nicht Teil der Umsetzung** und bleiben vollständig Demo-Daten.
+
+Wichtige Leitplanken (bitte strikt einhalten)
+1. Das bestehende Projekt-Bearbeitungsformular ist bereits nahezu vollständig umgesetzt (≈ 90 %).  
+   Es darf **wenn überhaupt nur in Nuancen** verändert werden.  
+   Keine strukturellen Layoutänderungen, keine neuen Workflows, keine Umorganisation von Formularbereichen.
+2. **Termine werden nicht implementiert.**  
+   Keine Termin-Tabellen, keine Termin-Endpunkte, keine Projekt–Termin-Relationen.
+3. Für die Projektauflistung ist **CardListLayout** als Content-Control zu verwenden.
+4. Für die Projektkarten ist **EntityCard** zu verwenden.
+5. **Notizen sind bereits vollständig implementiert und müssen voll integriert werden.**  
+   Der Notiz-Bereich im Projektformular:
+   - nutzt die bestehende Komponente **NoteSection**
+   - ist **identisch** zum Notiz-Bereich im Kundenformular (Layout, Verhalten, Bedienung)
+   - wird lediglich fachlich/technisch auf den Projekt-Kontext verdrahtet  
+   Es darf **keine neue Notiz-Komponente** und **keine neue Notiz-Logik** entstehen.
+6. Keine Aufblähung zentraler Server-Dateien.  
+   Neue Routen sauber in eigenen Dateien strukturieren und mounten.
+7. SQL gehört ausschließlich ins Repository.  
+   Controller enthalten kein SQL.
+8. Keine fachlichen Erweiterungen „nebenbei“.  
+   Es wird ausschließlich der hier beschriebene Umfang umgesetzt.
+
+Scope / Deliverables
+
+A) Projekte (CRUD)
+- Projekte anlegen
+- Projekte anzeigen (Detailansicht)
+- Projekte bearbeiten
+- Jedem Projekt ist **genau ein Kunde** zugeordnet (customer_id Pflichtfeld)
+- Projektstatus-Zuordnung bleibt wie bereits implementiert (keine Änderung)
+- Projektbeschreibung als Markdown-Feld (bestehendes Feld verwenden, nicht neu erfinden)
+
+B) Kunden-Zuordnung
+- customer_id wird beim Anlegen und Bearbeiten gespeichert
+- Auswahl erfolgt über die bestehende Kundenquelle
+- Keine neue Kundenlogik
+- Änderungen am Kunden wirken sich korrekt auf Projekte aus (reine Relation)
+
+C) Projektauflistung
+- Darstellung über **CardListLayout**
+- Jede Projektkarte als **EntityCard**
+- Anzeige (nur lesen):
+  - Projektname
+  - zugeordneter Kunde
+  - Projektstatus
+  - Aktiv/Inaktiv-Kennzeichnung
+
+D) Projekt-Anhänge
+- Anhänge gehören fachlich und technisch **zum Projekt**
+- Umsetzung als Nebenaufgabe, aber vollständig funktionsfähig
+- Mindestumfang:
+  - Datei hochladen
+  - Metadaten speichern (Dateiname, Typ, Größe, Upload-Zeitpunkt)
+  - Liste der Anhänge im Projektformular anzeigen
+- Keine Versionierung, keine Archivlogik
+- Speicherung:
+  - Dateiablage nach bestehendem Projekt-Pattern
+  - Metadaten in eigener Tabelle mit project_id als Fremdschlüssel
+
+E) Notizen (vollständige Integration)
+- Der Notiz-Bereich im Projektformular:
+  - verwendet die bestehende **NoteSection**-Komponente
+  - ist visuell und funktional **identisch** zum Kundenformular
+- Technisch:
+  - Nutzung der bestehenden Notiz-Endpunkte und Services
+  - Parent-Typ = Projekt
+  - Keine neue Tabelle, keine neue UI, keine neue Logik
+- Ziel: Notizen sind austauschbar zwischen Kunde und Projekt, ohne UI- oder Logikunterschiede
+
+Backend – Technische Umsetzung
+
+Projekt-Datenmodell (nur zur Orientierung)
+- project
+  - id
+  - customer_id (FK, NOT NULL)
+  - title / name
+  - description_md
+  - is_active
+  - created_at / updated_at
+
+Anhänge
+- project_attachment (oder bestehendes Attachment-Pattern verwenden)
+  - id
+  - project_id (FK)
+  - filename
+  - mime_type
+  - file_size
+  - storage_path
+  - created_at
+
+Architektur
+- project.repo / project.service / project.controller
+- attachment.repo / attachment.service / attachment.controller (projektbezogen)
+- Notiz-Logik **nicht neu bauen**, sondern bestehende Services wiederverwenden
+
+API-Endpunkte (Beispiel, an bestehende Konventionen anpassen)
+- GET /api/projects
+- GET /api/projects/:id
+- POST /api/projects
+- PATCH /api/projects/:id
+- GET /api/projects/:id/attachments
+- POST /api/projects/:id/attachments
+- DELETE /api/project-attachments/:id (optional)
+
+Nicht umsetzen
+- Keine Terminlogik
+- Keine Termin-Relationen
+- Keine neue Notiz-Komponente
+- Keine neue Notiz-UI
+- Keine Rollen-/Rechte-Logik
+
+Tests & Abschluss
+- Projekte lassen sich anlegen, bearbeiten und laden
+- Kunde ist korrekt zugeordnet
+- Projektliste nutzt CardListLayout + EntityCard
+- Anhänge lassen sich hochladen und anzeigen
+- **NoteSection im Projektformular zeigt echte Projektnotizen und verhält sich identisch zum Kundenformular**
+- Termine bleiben Demo und unberührt
+
+Zielzustand  
+Die Projektverwaltung ist fachlich sauber, technisch isoliert und stabil,  
+mit echten Kunden, echten Status, echten Notizen und echten Anhängen –  
+während Termine bewusst außen vor bleiben.
