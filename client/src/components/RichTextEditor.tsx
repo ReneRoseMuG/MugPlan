@@ -221,9 +221,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         data-testid="richtext-editor"
         style={{
           wordBreak: "break-word",
-          unicodeBidi: "bidi-override",
-          direction: "ltr",
-          textAlign: "left",
         }}
       />
 

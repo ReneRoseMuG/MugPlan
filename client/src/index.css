@@ -62,6 +62,12 @@
   button {
     @apply cursor-pointer;
   }
+
+  [contenteditable] {
+    direction: ltr !important;
+    unicode-bidi: isolate !important;
+    text-align: left !important;
+  }
 }
 
 @layer utilities {
