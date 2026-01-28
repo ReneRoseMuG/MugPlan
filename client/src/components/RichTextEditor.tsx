@@ -38,9 +38,13 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   }, [value]);
 
   const execCommand = (command: string, value?: string) => {
-    document.execCommand(command, false, value);
     editorRef.current?.focus();
+    document.execCommand(command, false, value);
     handleContentChange();
+  };
+
+  const preventFocusLoss = (e: React.MouseEvent) => {
+    e.preventDefault();
   };
 
   const handleContentChange = () => {
@@ -66,6 +70,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("bold")}
           className="h-8 w-8"
           title="Fett"
@@ -77,6 +82,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("italic")}
           className="h-8 w-8"
           title="Kursiv"
@@ -88,6 +94,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("underline")}
           className="h-8 w-8"
           title="Unterstrichen"
@@ -164,6 +171,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("insertUnorderedList")}
           className="h-8 w-8"
           title="Aufzählung"
@@ -175,6 +183,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("insertOrderedList")}
           className="h-8 w-8"
           title="Nummerierte Liste"
@@ -189,6 +198,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("justifyLeft")}
           className="h-8 w-8"
           title="Linksbündig"
@@ -200,6 +210,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("justifyCenter")}
           className="h-8 w-8"
           title="Zentriert"
@@ -211,6 +222,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           type="button"
           size="icon"
           variant="ghost"
+          onMouseDown={preventFocusLoss}
           onClick={() => execCommand("justifyRight")}
           className="h-8 w-8"
           title="Rechtsbündig"
