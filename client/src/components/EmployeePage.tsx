@@ -49,10 +49,32 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
     email: "",
   });
 
-  const { data: employees = [], isLoading } = useQuery<Employee[]>({
+  const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees", { active: "all" }],
     queryFn: () => fetch("/api/employees?active=all").then(r => r.json()),
   });
+
+  const { data: tours = [] } = useQuery<Tour[]>({
+    queryKey: ["/api/tours"],
+  });
+
+  const { data: teams = [] } = useQuery<Team[]>({
+    queryKey: ["/api/teams"],
+  });
+
+  const isLoading = employeesLoading;
+
+  const getTourName = (tourId: number | null) => {
+    if (!tourId) return null;
+    const tour = tours.find(t => t.id === tourId);
+    return tour ? { name: tour.name, color: tour.color } : null;
+  };
+
+  const getTeamName = (teamId: number | null) => {
+    if (!teamId) return null;
+    const team = teams.find(t => t.id === teamId);
+    return team ? { name: team.name, color: team.color } : null;
+  };
 
   const { data: employeeDetails } = useQuery<EmployeeWithRelations>({
     queryKey: ["/api/employees", selectedEmployeeId],
@@ -218,66 +240,102 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
           </p>
         }
       >
-        {employees.map((employee) => (
-          <EntityCard
-            key={employee.id}
-            testId={`employee-card-${employee.id}`}
-            title={`${employee.lastName}, ${employee.firstName}`}
-            icon={<Users className="w-4 h-4" />}
-            className={!employee.isActive ? "opacity-60" : ""}
-            onDoubleClick={() => handleOpenDetail(employee)}
-            actions={
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleToggleActive(employee);
-                }}
-                disabled={true}
-                data-testid={`button-toggle-employee-${employee.id}`}
-                title="Aktivierung nur durch Administrator"
-              >
-                {employee.isActive ? (
-                  <PowerOff className="w-4 h-4" />
-                ) : (
-                  <Power className="w-4 h-4" />
-                )}
-              </Button>
-            }
-            footer={
-              <div className="flex items-center gap-2 text-xs flex-wrap">
+        {employees.map((employee) => {
+          const tourInfo = getTourName(employee.tourId);
+          const teamInfo = getTeamName(employee.teamId);
+          return (
+            <EntityCard
+              key={employee.id}
+              testId={`employee-card-${employee.id}`}
+              title={`${employee.lastName}, ${employee.firstName}`}
+              icon={<Users className="w-4 h-4" />}
+              className={!employee.isActive ? "opacity-60" : ""}
+              onDoubleClick={() => handleOpenDetail(employee)}
+              actions={
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleActive(employee);
+                  }}
+                  disabled={true}
+                  data-testid={`button-toggle-employee-${employee.id}`}
+                  title="Aktivierung nur durch Administrator"
+                >
+                  {employee.isActive ? (
+                    <PowerOff className="w-4 h-4" />
+                  ) : (
+                    <Power className="w-4 h-4" />
+                  )}
+                </Button>
+              }
+              footer={
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenDetail(employee);
+                  }}
+                  data-testid={`button-edit-employee-${employee.id}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              }
+            >
+              <div className="space-y-2 text-sm">
                 {employee.phone && (
-                  <span className="flex items-center gap-1 text-slate-500">
+                  <div 
+                    className="flex items-center gap-1 text-slate-600"
+                    data-testid={`text-employee-phone-${employee.id}`}
+                  >
                     <Phone className="w-3 h-3" />
                     {employee.phone}
-                  </span>
+                  </div>
                 )}
-                {employee.teamId && (
-                  <Badge variant="secondary" className="text-xs">
-                    <Users className="w-3 h-3 mr-1" />
-                    Team
-                  </Badge>
+                {employee.email && (
+                  <div 
+                    className="flex items-center gap-1 text-slate-600"
+                    data-testid={`text-employee-email-${employee.id}`}
+                  >
+                    <Mail className="w-3 h-3" />
+                    {employee.email}
+                  </div>
                 )}
-                {employee.tourId && (
-                  <Badge variant="secondary" className="text-xs">
-                    <Route className="w-3 h-3 mr-1" />
-                    Tour
-                  </Badge>
-                )}
-                {!employee.isActive && (
-                  <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-xs">
-                    Inaktiv
-                  </span>
+                {(tourInfo || teamInfo || !employee.isActive) && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1">
+                    {tourInfo && (
+                      <span 
+                        className="inline-flex items-center text-xs px-2 py-0.5 border border-border bg-slate-50 border-l-4"
+                        style={{ borderLeftColor: tourInfo.color }}
+                        data-testid={`badge-employee-tour-${employee.id}`}
+                      >
+                        <Route className="w-3 h-3 mr-1" />
+                        {tourInfo.name}
+                      </span>
+                    )}
+                    {teamInfo && (
+                      <span 
+                        className="inline-flex items-center text-xs px-2 py-0.5 border border-border bg-slate-50 border-l-4"
+                        style={{ borderLeftColor: teamInfo.color }}
+                        data-testid={`badge-employee-team-${employee.id}`}
+                      >
+                        <Users className="w-3 h-3 mr-1" />
+                        {teamInfo.name}
+                      </span>
+                    )}
+                    {!employee.isActive && (
+                      <Badge variant="secondary" className="text-xs">
+                        Inaktiv
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
-            }
-          >
-            <p className="text-sm text-slate-500">
-              Doppelklick für Details
-            </p>
-          </EntityCard>
-        ))}
+            </EntityCard>
+          );
+        })}
       </CardListLayout>
 
       <Dialog open={detailDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
@@ -399,7 +457,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   </p>
                 </div>
 
-                {/* Tour card (read-only with edit button) */}
+                {/* Tour card (read-only) */}
                 <div className="space-y-2">
                   <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
                     <Route className="w-4 h-4" />
@@ -407,42 +465,22 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   </h4>
                   {!isCreating && displayEmployee?.tour ? (
                     <div 
-                      className="flex items-center justify-between px-3 py-2 border border-border bg-slate-50 border-l-4"
+                      className="flex items-center gap-2 px-3 py-2 border border-border bg-slate-50 border-l-4"
                       style={{ borderLeftColor: displayEmployee.tour.color }}
                     >
-                      <div className="flex items-center gap-2">
-                        <Route className="w-4 h-4 text-slate-600" />
-                        <span className="font-medium text-slate-700">{displayEmployee.tour.name}</span>
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled
-                        title="Tour-Zuweisung über Touren-Verwaltung"
-                        data-testid="button-edit-employee-tour"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
+                      <Route className="w-4 h-4 text-slate-600" />
+                      <span className="font-medium text-slate-700">{displayEmployee.tour.name}</span>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between px-3 py-2 border bg-slate-50">
+                    <div className="px-3 py-2 border bg-slate-50">
                       <p className="text-sm text-slate-400 italic">
                         Keiner Tour zugewiesen
                       </p>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled
-                        title="Tour-Zuweisung über Touren-Verwaltung"
-                        data-testid="button-edit-employee-tour"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
                     </div>
                   )}
                 </div>
 
-                {/* Team card (read-only with edit button) */}
+                {/* Team card (read-only) */}
                 <div className="space-y-2">
                   <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
                     <Users className="w-4 h-4" />
@@ -450,37 +488,17 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   </h4>
                   {!isCreating && displayEmployee?.team ? (
                     <div 
-                      className="flex items-center justify-between px-3 py-2 border border-border bg-slate-50 border-l-4"
+                      className="flex items-center gap-2 px-3 py-2 border border-border bg-slate-50 border-l-4"
                       style={{ borderLeftColor: displayEmployee.team.color }}
                     >
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-slate-600" />
-                        <span className="font-medium text-slate-700">{displayEmployee.team.name}</span>
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled
-                        title="Team-Zuweisung über Team-Verwaltung"
-                        data-testid="button-edit-employee-team"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
+                      <Users className="w-4 h-4 text-slate-600" />
+                      <span className="font-medium text-slate-700">{displayEmployee.team.name}</span>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between px-3 py-2 border bg-slate-50">
+                    <div className="px-3 py-2 border bg-slate-50">
                       <p className="text-sm text-slate-400 italic">
                         Keinem Team zugewiesen
                       </p>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled
-                        title="Team-Zuweisung über Team-Verwaltung"
-                        data-testid="button-edit-employee-team"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
                     </div>
                   )}
                 </div>
