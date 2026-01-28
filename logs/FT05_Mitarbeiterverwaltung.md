@@ -7,10 +7,14 @@ Vollständige Mitarbeiterverwaltung mit Datenbankanbindung, Tour- und Team-Zuwei
 
 ## Implementierte Features
 
-### Datenbank-Schema
+### Datenbank-Schema (aktualisiert 28.01.2026)
 - **employees** Tabelle:
-  - `id` (serial primary key)
-  - `name` (text, Pflichtfeld)
+  - `id` (bigserial primary key)
+  - `first_name` (text, Pflichtfeld)
+  - `last_name` (text, Pflichtfeld)
+  - `full_name` (text, automatisch generiert aus first_name + last_name)
+  - `phone` (text, optional)
+  - `email` (text, optional)
   - `is_active` (boolean, default true)
   - `team_id` (FK zu teams, nullable)
   - `tour_id` (FK zu tours, nullable)
@@ -21,8 +25,8 @@ Vollständige Mitarbeiterverwaltung mit Datenbankanbindung, Tour- und Team-Zuwei
 #### Employee CRUD
 - `GET /api/employees` - Liste aller Mitarbeiter (mit ?active=all/true/false Filter)
 - `GET /api/employees/:id` - Einzelner Mitarbeiter mit Team/Tour-Relations
-- `POST /api/employees` - Neuen Mitarbeiter erstellen (nur name, team_id/tour_id verboten!)
-- `PUT /api/employees/:id` - Mitarbeiter aktualisieren (nur name, team_id/tour_id verboten!)
+- `POST /api/employees` - Neuen Mitarbeiter erstellen (firstName, lastName, phone?, email?)
+- `PUT /api/employees/:id` - Mitarbeiter aktualisieren (firstName, lastName, phone?, email?)
 - `PATCH /api/employees/:id/active` - Aktiv-Status ändern (read-only in UI)
 - `GET /api/employees/:id/current-appointments` - Demo-Terminliste (Stub)
 
@@ -40,25 +44,35 @@ Vollständige Mitarbeiterverwaltung mit Datenbankanbindung, Tour- und Team-Zuwei
 - `team_id` und `tour_id` können NICHT über die Employee-API gesetzt/geändert werden
 - Änderungen an Team/Tour-Zuweisungen nur über die jeweilige Verwaltung (Tour-/Team-Karten)
 - 400 Error bei Versuch, team_id oder tour_id über Employee-Endpunkte zu setzen
+- `full_name` wird automatisch aus `first_name + " " + last_name` generiert
 
 ### Frontend-Komponenten
 
 #### EmployeePage (`client/src/components/EmployeePage.tsx`)
 - CardListLayout mit 3-Spalten-Grid
 - EntityCard für jeden Mitarbeiter
-- Team-Badge (blau) und Tour-Badge (grün) in Karten
-- Create/Edit-Dialoge für Name (nur Name editierbar)
-- Aktiv-Status als read-only Badge
-- Detail-Dialog mit "Aktuelle Termine" (Demo-Daten)
+  - Anzeige: "Nachname, Vorname" + Telefonnummer
+  - Team-Badge und Tour-Badge in Karten
+- Detail-Dialog (4/5 Breite):
+  - **Linke Seite (2/5)**: Terminliste (Demo-Daten für zukünftige Implementierung)
+  - **Rechte Seite (3/5)**: 
+    - Farbige Balken für zugewiesene Tour/Team
+    - Formularfelder: Vorname*, Nachname*, Telefon, E-Mail
+    - Aktiv-Checkbox (read-only)
+- "Neuer Mitarbeiter" öffnet leeres Formular im Erstellmodus
+- Doppelklick auf Karte öffnet Ansichts-Modus
+- Edit-Modus mit Speichern/Abbrechen
 
 #### TourManagement (aktualisiert)
 - Echte Mitarbeiter-Daten aus Datenbank statt Demo-Daten
+- Mitarbeiteranzeige: "Nachname, Vorname"
 - X-Button zum Entfernen einzelner Mitarbeiter (on hover)
 - Edit-Dialog zeigt nur aktive Mitarbeiter
 - Mitarbeiter in anderen Touren ausgegraut
 
 #### TeamManagement (aktualisiert)
 - Echte Mitarbeiter-Daten aus Datenbank statt Demo-Daten
+- Mitarbeiteranzeige: "Nachname, Vorname"
 - X-Button zum Entfernen einzelner Mitarbeiter (on hover)
 - Edit-Dialog zeigt nur aktive Mitarbeiter
 - Mitarbeiter in anderen Teams ausgegraut
@@ -74,17 +88,24 @@ Vollständige Mitarbeiterverwaltung mit Datenbankanbindung, Tour- und Team-Zuwei
 - Konsistentes CardListLayout für alle Verwaltungsseiten
 - EntityCard mit farbigem Header für visuelle Unterscheidung
 - Hover-basierte X-Buttons für schnelles Entfernen
+- Detail-Formular mit 2-Spalten-Layout (Termine | Stammdaten)
 
 ## Dateien
 
 ### Backend
-- `shared/schema.ts` - Employee-Schema und Typen
+- `shared/schema.ts` - Employee-Schema und Typen (first_name, last_name, full_name, phone, email)
 - `shared/routes.ts` - API-Route-Definitionen
-- `server/storage.ts` - IStorage-Interface und DatabaseStorage
+- `server/storage.ts` - IStorage-Interface und DatabaseStorage (mit fullName-Generierung)
 - `server/routes.ts` - Express-Route-Handler
 
 ### Frontend
-- `client/src/components/EmployeePage.tsx` - Mitarbeiter-Verwaltung
+- `client/src/components/EmployeePage.tsx` - Mitarbeiter-Verwaltung mit Detail-Formular
 - `client/src/components/TourManagement.tsx` - Tour-Verwaltung (aktualisiert)
 - `client/src/components/TeamManagement.tsx` - Team-Verwaltung (aktualisiert)
 - `client/src/pages/Home.tsx` - Integration der EmployeePage
+
+## Test-Ergebnis (28.01.2026)
+Playwright-Test erfolgreich:
+- Mitarbeiter erstellen mit Vorname, Nachname, Telefon, E-Mail
+- Detail-Ansicht öffnen und bearbeiten
+- Karten-Anzeige "Nachname, Vorname" verifiziert

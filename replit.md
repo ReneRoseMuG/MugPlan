@@ -5,6 +5,19 @@
 A personal calendar application (German: "Kalender - Persönlicher Planer") built with React and Express. The app provides month, week, and year calendar views with a clean, modern UI. It uses a PostgreSQL database for event storage, though the calendar views are currently display-focused with minimal event integration.
 
 ### Recent Changes (January 2026)
+- **Employee Management (FT 05)**: Mitarbeiterverwaltung mit erweitertem Datenmodell
+  - Datenbank-Tabelle: employee (id, first_name, last_name, full_name, phone, email, is_active, team_id, tour_id, created_at, updated_at)
+  - full_name wird automatisch aus first_name + last_name generiert
+  - API-Endpunkte: GET/POST /api/employees, PUT /api/employees/:id, PATCH /api/employees/:id/active
+  - team_id/tour_id sind nur über Tour/Team-Management änderbar (nicht direkt via Employee API)
+  - EmployeePage mit vollständigem Detail-Formular:
+    - Links: Terminliste (Demo-Daten für zukünftige Implementierung)
+    - Rechts: Stammdaten (Vorname, Nachname, Telefon, E-Mail)
+    - Farbige Balken für zugewiesene Tour/Team
+    - Doppelklick auf Karte öffnet Detail-Ansicht
+    - "Neuer Mitarbeiter" öffnet das Formular im Erstellmodus
+  - Karten-Anzeige: "Nachname, Vorname" + Telefonnummer
+  - Aktiv-Checkbox ist read-only (nur durch Administrator änderbar)
 - **Help Texts Management (FT 16)**: Hilfetexte-Verwaltung im Administration-Bereich
   - Datenbank-Tabelle: help_texts (id, help_key, title, body, is_active, created_at, updated_at)
   - help_key ist eindeutig (UNIQUE constraint) für UI-Integration
@@ -54,10 +67,10 @@ A personal calendar application (German: "Kalender - Persönlicher Planer") buil
     - Appointments section (placeholder for future implementation)
     - Documents section with preview dialog (PDF and image placeholders)
   - Demo form only - no database integration yet
-- **Employee Management Prototype**: Added employee overview via "Mitarbeiter" button
-  - Card-based layout with 80/20 split (data | assignments)
-  - Shows name, phone, and Tour/Team mini-badges
-  - 8 demo employees with varying assignments
+- **Employee Management**: Mitarbeiterverwaltung mit Datenbankanbindung
+  - Card-based layout mit "Nachname, Vorname" + Telefon
+  - Detail-Formular mit Terminliste (Demo) und Stammdaten
+  - Tour/Team-Zuweisung über farbige Balken sichtbar
 - **Team Management Prototype**: Added team management via "Teams" button in sidebar
   - Automatic team naming (Team 1, Team 2, Team 3...)
   - Pastel-colored headers for visual distinction
