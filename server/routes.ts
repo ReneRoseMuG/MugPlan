@@ -695,5 +695,136 @@ export async function registerRoutes(
     }
   });
 
+  // Projects API (FT 02)
+  app.get(api.projects.list.path, async (req, res) => {
+    const filter = req.query.filter as 'active' | 'inactive' | 'all' | undefined;
+    const projects = await storage.getProjects(filter || 'all');
+    res.json(projects);
+  });
+
+  app.get(api.projects.get.path, async (req, res) => {
+    const result = await storage.getProjectWithCustomer(Number(req.params.id));
+    if (!result) {
+      return res.status(404).json({ message: 'Projekt nicht gefunden' });
+    }
+    res.json(result);
+  });
+
+  app.post(api.projects.create.path, async (req, res) => {
+    try {
+      const input = api.projects.create.input.parse(req.body);
+      const project = await storage.createProject(input);
+      res.status(201).json(project);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.patch(api.projects.update.path, async (req, res) => {
+    try {
+      const input = api.projects.update.input.parse(req.body);
+      const project = await storage.updateProject(Number(req.params.id), input);
+      if (!project) {
+        return res.status(404).json({ message: 'Projekt nicht gefunden' });
+      }
+      res.json(project);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.projects.delete.path, async (req, res) => {
+    const projectId = Number(req.params.id);
+    const project = await storage.getProject(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Projekt nicht gefunden' });
+    }
+    await storage.deleteProject(projectId);
+    res.status(204).send();
+  });
+
+  // Project Notes API (FT 02)
+  app.get(api.projectNotes.list.path, async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const notes = await storage.getProjectNotes(projectId);
+    res.json(notes);
+  });
+
+  app.post(api.projectNotes.create.path, async (req, res) => {
+    try {
+      const projectId = Number(req.params.projectId);
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: 'Projekt nicht gefunden' });
+      }
+      const input = api.projectNotes.create.input.parse(req.body);
+      const note = await storage.createProjectNote(projectId, input);
+      res.status(201).json(note);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Project Attachments API (FT 02)
+  app.get(api.projectAttachments.list.path, async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const attachments = await storage.getProjectAttachments(projectId);
+    res.json(attachments);
+  });
+
+  app.delete(api.projectAttachments.delete.path, async (req, res) => {
+    await storage.deleteProjectAttachment(Number(req.params.id));
+    res.status(204).send();
+  });
+
+  // Project Status Relations API (FT 02)
+  app.get(api.projectStatusRelations.list.path, async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const statuses = await storage.getProjectStatusesByProject(projectId);
+    res.json(statuses);
+  });
+
+  app.post(api.projectStatusRelations.add.path, async (req, res) => {
+    try {
+      const projectId = Number(req.params.projectId);
+      const input = api.projectStatusRelations.add.input.parse(req.body);
+      await storage.addProjectStatus(projectId, input.statusId);
+      res.status(201).send();
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.projectStatusRelations.remove.path, async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const statusId = Number(req.params.statusId);
+    await storage.removeProjectStatus(projectId, statusId);
+    res.status(204).send();
+  });
+
   return httpServer;
 }

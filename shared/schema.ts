@@ -144,13 +144,62 @@ export const customerNotes = pgTable("customer_note", {
   pk: primaryKey({ columns: [table.customerId, table.noteId] }),
 }));
 
-// Project Note Relation (FT 13) - prepared for future use
+// Project - Projektverwaltung (FT 02)
+export const projects = pgTable("project", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  name: text("name").notNull(),
+  customerId: bigserial("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
+  descriptionMd: text("description_md"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isActive: true,
+});
+
+export const updateProjectSchema = z.object({
+  name: z.string().optional(),
+  customerId: z.number().optional(),
+  descriptionMd: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type UpdateProject = z.infer<typeof updateProjectSchema>;
+
+// Project Note Relation (FT 02)
 export const projectNotes = pgTable("project_note", {
-  projectId: bigserial("project_id", { mode: "number" }).notNull(),
+  projectId: bigserial("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
   noteId: bigserial("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.noteId] }),
 }));
+
+// Project Attachment - Projektanhänge (FT 02)
+export const projectAttachments = pgTable("project_attachment", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  projectId: bigserial("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  storagePath: text("storage_path").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const insertProjectAttachmentSchema = createInsertSchema(projectAttachments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ProjectAttachment = typeof projectAttachments.$inferSelect;
+export type InsertProjectAttachment = z.infer<typeof insertProjectAttachmentSchema>;
 
 // Project Status - Projektstatusverwaltung (FT 15)
 export const projectStatus = pgTable("project_status", {
@@ -184,9 +233,9 @@ export type ProjectStatus = typeof projectStatus.$inferSelect;
 export type InsertProjectStatus = z.infer<typeof insertProjectStatusSchema>;
 export type UpdateProjectStatus = z.infer<typeof updateProjectStatusSchema>;
 
-// Project <-> Project Status Relation (FT 15) - prepared for future use
+// Project <-> Project Status Relation (FT 02/15)
 export const projectProjectStatus = pgTable("project_project_status", {
-  projectId: bigserial("project_id", { mode: "number" }).notNull(),
+  projectId: bigserial("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
   projectStatusId: bigserial("project_status_id", { mode: "number" }).notNull().references(() => projectStatus.id, { onDelete: "restrict" }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),

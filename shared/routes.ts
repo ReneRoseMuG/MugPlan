@@ -6,6 +6,8 @@ import {
   insertCustomerSchema, updateCustomerSchema, customers,
   insertNoteSchema, updateNoteSchema, notes,
   insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
+  insertProjectSchema, updateProjectSchema, projects,
+  insertProjectAttachmentSchema, projectAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts
@@ -464,6 +466,126 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/help-texts/:id',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  // Projects API (FT 02 - Projektverwaltung)
+  projects: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/projects',
+      responses: {
+        200: z.array(z.custom<typeof projects.$inferSelect>()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/projects/:id',
+      responses: {
+        200: z.object({
+          project: z.custom<typeof projects.$inferSelect>(),
+          customer: z.custom<typeof customers.$inferSelect>(),
+        }),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/projects',
+      input: insertProjectSchema,
+      responses: {
+        201: z.custom<typeof projects.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/projects/:id',
+      input: updateProjectSchema,
+      responses: {
+        200: z.custom<typeof projects.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/projects/:id',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  projectNotes: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/projects/:projectId/notes',
+      responses: {
+        200: z.array(z.custom<typeof notes.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/projects/:projectId/notes',
+      input: insertNoteSchema,
+      responses: {
+        201: z.custom<typeof notes.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  projectAttachments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/projects/:projectId/attachments',
+      responses: {
+        200: z.array(z.custom<typeof projectAttachments.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/projects/:projectId/attachments',
+      responses: {
+        201: z.custom<typeof projectAttachments.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/project-attachments/:id',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  projectStatusRelations: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/projects/:projectId/statuses',
+      responses: {
+        200: z.array(z.custom<typeof projectStatus.$inferSelect>()),
+      },
+    },
+    add: {
+      method: 'POST' as const,
+      path: '/api/projects/:projectId/statuses',
+      input: z.object({ statusId: z.number() }),
+      responses: {
+        201: z.void(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    remove: {
+      method: 'DELETE' as const,
+      path: '/api/projects/:projectId/statuses/:statusId',
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,

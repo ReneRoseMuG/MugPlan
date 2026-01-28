@@ -7,6 +7,9 @@ import {
   notes,
   noteTemplates,
   customerNotes,
+  projects,
+  projectNotes,
+  projectAttachments,
   projectStatus,
   projectProjectStatus,
   employees,
@@ -28,6 +31,11 @@ import {
   type NoteTemplate,
   type InsertNoteTemplate,
   type UpdateNoteTemplate,
+  type Project,
+  type InsertProject,
+  type UpdateProject,
+  type ProjectAttachment,
+  type InsertProjectAttachment,
   type ProjectStatus,
   type InsertProjectStatus,
   type UpdateProjectStatus,
@@ -91,6 +99,23 @@ export interface IStorage {
   getEmployeesByTeam(teamId: number): Promise<Employee[]>;
   setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null>;
   setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null>;
+  // Project (FT 02)
+  getProjects(filter?: 'active' | 'inactive' | 'all'): Promise<Project[]>;
+  getProject(id: number): Promise<Project | null>;
+  getProjectWithCustomer(id: number): Promise<{ project: Project; customer: Customer } | null>;
+  createProject(data: InsertProject): Promise<Project>;
+  updateProject(id: number, data: UpdateProject): Promise<Project | null>;
+  // Project Notes (FT 02)
+  getProjectNotes(projectId: number): Promise<Note[]>;
+  createProjectNote(projectId: number, note: InsertNote): Promise<Note>;
+  // Project Attachments (FT 02)
+  getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
+  createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment>;
+  deleteProjectAttachment(id: number): Promise<void>;
+  // Project Status Relations (FT 02)
+  getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]>;
+  addProjectStatus(projectId: number, statusId: number): Promise<void>;
+  removeProjectStatus(projectId: number, statusId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -540,6 +565,105 @@ export class DatabaseStorage implements IStorage {
       .where(eq(employees.id, employeeId))
       .returning();
     return employee || null;
+  }
+
+  // Project (FT 02)
+  async getProjects(filter: 'active' | 'inactive' | 'all' = 'all'): Promise<Project[]> {
+    if (filter === 'active') {
+      return await db.select().from(projects).where(eq(projects.isActive, true)).orderBy(desc(projects.updatedAt));
+    } else if (filter === 'inactive') {
+      return await db.select().from(projects).where(eq(projects.isActive, false)).orderBy(desc(projects.updatedAt));
+    }
+    return await db.select().from(projects).orderBy(desc(projects.updatedAt));
+  }
+
+  async getProject(id: number): Promise<Project | null> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project || null;
+  }
+
+  async getProjectWithCustomer(id: number): Promise<{ project: Project; customer: Customer } | null> {
+    const [result] = await db
+      .select({ project: projects, customer: customers })
+      .from(projects)
+      .innerJoin(customers, eq(projects.customerId, customers.id))
+      .where(eq(projects.id, id));
+    return result || null;
+  }
+
+  async createProject(data: InsertProject): Promise<Project> {
+    const [project] = await db.insert(projects).values(data).returning();
+    return project;
+  }
+
+  async updateProject(id: number, data: UpdateProject): Promise<Project | null> {
+    const [project] = await db
+      .update(projects)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return project || null;
+  }
+
+  // Project Notes (FT 02)
+  async getProjectNotes(projectId: number): Promise<Note[]> {
+    const result = await db
+      .select({ note: notes })
+      .from(projectNotes)
+      .innerJoin(notes, eq(projectNotes.noteId, notes.id))
+      .where(eq(projectNotes.projectId, projectId))
+      .orderBy(desc(notes.isPinned), desc(notes.updatedAt));
+    return result.map(r => r.note);
+  }
+
+  async createProjectNote(projectId: number, note: InsertNote): Promise<Note> {
+    const [newNote] = await db.insert(notes).values(note).returning();
+    await db.insert(projectNotes).values({ projectId, noteId: newNote.id });
+    return newNote;
+  }
+
+  // Project Attachments (FT 02)
+  async getProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
+    return await db
+      .select()
+      .from(projectAttachments)
+      .where(eq(projectAttachments.projectId, projectId))
+      .orderBy(desc(projectAttachments.createdAt));
+  }
+
+  async createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment> {
+    const [attachment] = await db.insert(projectAttachments).values(data).returning();
+    return attachment;
+  }
+
+  async deleteProjectAttachment(id: number): Promise<void> {
+    await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
+  }
+
+  // Project Status Relations (FT 02)
+  async getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]> {
+    const result = await db
+      .select({ status: projectStatus })
+      .from(projectProjectStatus)
+      .innerJoin(projectStatus, eq(projectProjectStatus.projectStatusId, projectStatus.id))
+      .where(eq(projectProjectStatus.projectId, projectId))
+      .orderBy(asc(projectStatus.sortOrder), asc(projectStatus.title));
+    return result.map(r => r.status);
+  }
+
+  async addProjectStatus(projectId: number, statusId: number): Promise<void> {
+    await db.insert(projectProjectStatus).values({ projectId, projectStatusId: statusId }).onConflictDoNothing();
+  }
+
+  async removeProjectStatus(projectId: number, statusId: number): Promise<void> {
+    await db
+      .delete(projectProjectStatus)
+      .where(
+        and(
+          eq(projectProjectStatus.projectId, projectId),
+          eq(projectProjectStatus.projectStatusId, statusId)
+        )
+      );
   }
 }
 
