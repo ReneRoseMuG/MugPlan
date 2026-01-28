@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { EntityCard } from "@/components/ui/entity-card";
-import { Users, Route, Calendar, Power, PowerOff, Phone, Mail, X } from "lucide-react";
+import { Users, Route, Calendar, Power, PowerOff, Phone, Mail, X, Pencil } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
