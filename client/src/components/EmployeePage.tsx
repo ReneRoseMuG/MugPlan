@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { EntityCard } from "@/components/ui/entity-card";
+import { InfoBadge } from "@/components/ui/info-badge";
 import { Users, Route, Calendar, Power, PowerOff, Phone, Mail, X, Pencil } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -464,15 +465,14 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     Tour
                   </h4>
                   {!isCreating && displayEmployee?.tour ? (
-                    <div 
-                      className="flex items-center gap-2 px-3 py-2 border border-border bg-slate-50 border-l-4"
-                      style={{ borderLeftColor: displayEmployee.tour.color }}
-                    >
-                      <Route className="w-4 h-4 text-slate-600" />
-                      <span className="font-medium text-slate-700">{displayEmployee.tour.name}</span>
-                    </div>
+                    <InfoBadge
+                      icon={<Route className="w-4 h-4" />}
+                      label={displayEmployee.tour.name}
+                      borderColor={displayEmployee.tour.color}
+                      testId="badge-employee-tour"
+                    />
                   ) : (
-                    <div className="px-3 py-2 border bg-slate-50">
+                    <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
                       <p className="text-sm text-slate-400 italic">
                         Keiner Tour zugewiesen
                       </p>
@@ -487,15 +487,13 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     Team
                   </h4>
                   {!isCreating && displayEmployee?.team ? (
-                    <div 
-                      className="flex items-center gap-2 px-3 py-2 border border-border bg-slate-50 border-l-4"
-                      style={{ borderLeftColor: displayEmployee.team.color }}
-                    >
-                      <Users className="w-4 h-4 text-slate-600" />
-                      <span className="font-medium text-slate-700">{displayEmployee.team.name}</span>
-                    </div>
+                    <InfoBadge
+                      icon={<Users className="w-4 h-4" />}
+                      label={displayEmployee.team.name}
+                      testId="badge-employee-team"
+                    />
                   ) : (
-                    <div className="px-3 py-2 border bg-slate-50">
+                    <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
                       <p className="text-sm text-slate-400 italic">
                         Keinem Team zugewiesen
                       </p>
