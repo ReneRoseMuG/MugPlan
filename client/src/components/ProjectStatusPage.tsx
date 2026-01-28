@@ -112,7 +112,7 @@ export function ProjectStatusPage() {
         id: editingStatus.id,
         data: {
           title: formData.title,
-          description: formData.description || null,
+          description: formData.description || undefined,
           color: formData.color,
           sortOrder: formData.sortOrder,
           isActive: formData.isActive,
@@ -121,7 +121,7 @@ export function ProjectStatusPage() {
     } else {
       createMutation.mutate({
         title: formData.title,
-        description: formData.description || null,
+        description: formData.description,
         color: formData.color,
         sortOrder: formData.sortOrder,
       });
@@ -175,6 +175,7 @@ export function ProjectStatusPage() {
             className={!status.isActive ? "opacity-60" : ""}
             onDelete={status.isDefault ? undefined : () => handleDelete(status)}
             isDeleting={deleteMutation.isPending}
+            onDoubleClick={() => handleOpenEdit(status)}
             actions={
               <>
                 <Button

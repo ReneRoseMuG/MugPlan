@@ -14,6 +14,7 @@ interface EntityCardProps {
   children: ReactNode;
   testId?: string;
   className?: string;
+  onDoubleClick?: () => void;
 }
 
 export function EntityCard({
@@ -27,11 +28,13 @@ export function EntityCard({
   children,
   testId,
   className = "",
+  onDoubleClick,
 }: EntityCardProps) {
   return (
     <div
       className={`rounded-lg border border-border bg-white overflow-hidden transition-all hover:border-primary/50 hover:shadow-md cursor-pointer flex flex-col ${className}`}
       data-testid={testId}
+      onDoubleClick={onDoubleClick}
     >
       <div
         className="px-4 py-2 border-b border-border flex items-center justify-between gap-2"
