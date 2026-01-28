@@ -5,6 +5,14 @@
 A personal calendar application (German: "Kalender - Persönlicher Planer") built with React and Express. The app provides month, week, and year calendar views with a clean, modern UI. It uses a PostgreSQL database for event storage, though the calendar views are currently display-focused with minimal event integration.
 
 ### Recent Changes (January 2026)
+- **Help Texts Management (FT 16)**: Hilfetexte-Verwaltung im Administration-Bereich
+  - Datenbank-Tabelle: help_texts (id, help_key, title, body, is_active, created_at, updated_at)
+  - help_key ist eindeutig (UNIQUE constraint) für UI-Integration
+  - API-Endpunkte: GET /api/help-texts/key/:helpKey, GET/POST/PUT/DELETE /api/help-texts, PATCH /api/help-texts/:id/active
+  - 409 Conflict bei dupliziertem help_key (CREATE und UPDATE)
+  - Suche: Query-Parameter filtert nach help_key und title (case-insensitive)
+  - HelpTextsPage-Komponente mit CardListLayout, Suchfeld, RichTextEditor
+  - Doppelklick auf Karte öffnet Bearbeiten-Dialog
 - **Project Status Management (FT 15)**: Projektstatusverwaltung im Administration-Bereich
   - Datenbank-Tabellen: project_status (id, title, description, color, sort_order, is_active, is_default)
   - Junction-Table: project_project_status für Projekt-Status-Relation
