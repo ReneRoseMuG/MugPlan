@@ -24,11 +24,14 @@ function StatusBadge({
 }) {
   return (
     <div 
-      className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-border/50 bg-white"
-      style={{ borderLeftWidth: '4px', borderLeftColor: status.color }}
+      className="flex items-center justify-between gap-2 px-3 py-2 border border-border bg-slate-50 border-l-4"
+      style={{ borderLeftColor: status.color }}
       data-testid={`status-badge-${status.id}`}
     >
-      <span className="text-sm font-medium text-slate-700">{status.title}</span>
+      <div className="flex items-center gap-2">
+        <Flag className="w-4 h-4 text-slate-600" />
+        <span className="font-medium text-slate-700">{status.title}</span>
+      </div>
       <button
         onClick={onRemove}
         className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-destructive/10 text-slate-400 hover:text-destructive transition-colors"
