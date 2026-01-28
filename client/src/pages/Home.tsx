@@ -14,11 +14,12 @@ import { EmployeeWeeklyView } from "@/components/EmployeeWeeklyView";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { ProjectStatusPage } from "@/components/ProjectStatusPage";
+import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { addMonths, subMonths, addWeeks, subWeeks, format, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'weeklyProjects' | 'appointment' | 'noteTemplates' | 'projectStatus';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'weeklyProjects' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts';
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -81,11 +82,11 @@ export default function Home() {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'weeklyProjects' ? 'Wochenübersicht' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'weeklyProjects' ? 'Wochenübersicht' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
-          {view !== 'customer' && view !== 'customerList' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'employeeWeekly' && view !== 'project' && view !== 'projectList' && view !== 'weeklyProjects' && view !== 'appointment' && view !== 'noteTemplates' && view !== 'projectStatus' && (
+          {view !== 'customer' && view !== 'customerList' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'employeeWeekly' && view !== 'project' && view !== 'projectList' && view !== 'weeklyProjects' && view !== 'appointment' && view !== 'noteTemplates' && view !== 'projectStatus' && view !== 'helpTexts' && (
             <div className="flex items-center gap-2 bg-border rounded-md p-1">
               <button
                 onClick={prev}
@@ -155,6 +156,8 @@ export default function Home() {
             <NoteTemplatesPage />
           ) : view === 'projectStatus' ? (
             <ProjectStatusPage />
+          ) : view === 'helpTexts' ? (
+            <HelpTextsPage />
           ) : view === 'weeklyProjects' ? (
             <WeeklyProjectView 
               onCancel={() => setView('month')} 

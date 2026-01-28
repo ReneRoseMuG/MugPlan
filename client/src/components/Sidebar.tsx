@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, ChevronDown, Plus, List } from "lucide-react";
+import { CalendarDays, CalendarRange, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, ChevronDown, Plus, List, HelpCircle } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
@@ -159,6 +159,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
         <NavGroup title="Administration">
           <NavButton icon={FileText} label="Notiz Vorlagen" isActive={currentView === 'noteTemplates'} onClick={() => onViewChange('noteTemplates')} />
           <NavButton icon={ListChecks} label="Projekt Status" isActive={currentView === 'projectStatus'} onClick={() => onViewChange('projectStatus')} />
+          <NavButton icon={HelpCircle} label="Hilfetexte" isActive={currentView === 'helpTexts'} onClick={() => onViewChange('helpTexts')} />
           <NavButton icon={Settings} label="Einstellungen" />
         </NavGroup>
       </nav>
