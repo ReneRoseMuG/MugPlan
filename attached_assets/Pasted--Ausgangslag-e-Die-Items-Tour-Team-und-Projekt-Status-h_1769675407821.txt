@@ -1,0 +1,20 @@
+**Ausgangslag**e 
+
+Die Items Tour, Team und Projekt Status haben Farbinformationen. Die Team Farbe wir automatisch festgelegt. Die Tourfarbe wird vom Anweder festgelegt und über einen Farbwähler gesucht. Die Projektstatus Farbe wird vom Anwender aus einer festen Palette von Farben ausgewählt.
+
+### Ziel
+
+Die Farb Informationen von Team und Projekt Status werden auf gleiche Art festgelegt, wie das für eine Tour vogesehen ist, über einen Farb Wähler. DIe Default Einstellung ist entweder null = Keine Farbe oder wenn es anders möglich ist, transparent = keine Farbe Die EntityCard Darstellungen von Projekt Status und Team werden an das Aussehen der Kartendarstellung von Tour angepasst. Zusätzlich sind noch Inkonsistenzen in der Kartendarstellung von Projekt Status zu beseitigen: Der Edit Button wird im Footer rechts platziert. Im Footer dar die Information über die Sortierreihenfolge stehen bleiben. Der Button zum Deaktivieren eine Projekt Status wird entfernt. Eigentlich sollte Projekt Status über EntityCard dargestellt werden.
+
+Die Header der Karten von Team und Projekt Status haben keine indiciduelle Farben. Die Darstellung der Karten orientiert sich an deen Karten von Tour. Die Farbinformation wird auf der Tour Karte durch eine Border Left in der Tour Farbe visualisiert.
+
+Vorschlag: Die Vorlage EntityCard transportiert das Layout der Karten, mit Header (Icon und Headline und X Button (der ausblendbar sein muss)) dem gerahmten zentralen Content Bereich und dem Footer mit dem Edit Button wie bisher. Außerdem hat die Vorlage den Doppelklick Event, der die Bearbeiten Funktion aufruft.
+
+Du entwirfst eine abgeleitete Vorlage ColoredEntityCard, die von EntityCard erbt und die farbige Border left einfügt. Das gibt uns die Möglichkeit, mit der Visualisierung der Farben zu experimentieren. Von dieser Vorlage werden dann die Karten für Tour, team und Projekt Status abgeleitet.
+
+### Info Badges
+
+Wir haben eien Vorlage Info Badge. Diese wird mindestens im Formular Projekt für Projekt Status verwendet, Außerdem im Formular Mitarbeiter für die Darstellung der zugewwiesenen Tour und Team. Im Content Bereich der EntityCard Mitarbeiter sind zwei ähnliche, sehr schmale Badges zu sehen, die ebenfalls Tour und Tam symbolisieren. Ich weiß nicht, ob diese von der Vorlage InfoBadge abgeleitet sind?
+
+Wir haben im Chat besprochen, das InfoBadge einen FullWidth Modus (Property) bekommen. Damit soll ereicht werden, das die Badges sich auf die Breite ihres COntainers ausdehnen, so wie es im Formular Mitarbeiter auf der rechten Seite zu sehen ist oder das die Badges nur durch Ihren Inhalt skaliert werden und auch nebeneinander liegen können. Die Badges sollen abgerundete Ecken bekommen, mit etwas weniger Radius, als die üblichen runden Ecken im System. Die InfoBadge Vorlage wird das Design der Karte an sich, das Icon und die Beschriftung transportieren, sowie rechts ausgerichtet einen deaktivierbaren x Button. Von InfoBadge wird Colored InfoBadge abgeleitet. Diese Vorlage transportiert zusätzlich eine Farb Information, die über Border left visualisiert wird. Das stilistische Design der Farbdarstellung in ColoredEntityCard und ColoredInfoBadge muss identisch ein.
+Von ColoredInfoBadge wird abgeleitet Tour Badge und Team Badge für die EntityCard von Mitarbeiter und das Mitarbeiter Formular, sowie für Projekt Status auf dem projekt Formular.
