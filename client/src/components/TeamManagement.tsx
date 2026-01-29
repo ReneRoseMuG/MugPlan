@@ -13,7 +13,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { ColorPickerButton } from "@/components/ui/color-picker-button";
-import { getRandomPastelColor } from "@/lib/colors";
+import { defaultEntityColor } from "@/lib/colors";
 import type { Team, Employee } from "@shared/schema";
 
 interface TeamWithMembers extends Team {
@@ -160,8 +160,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const color = getRandomPastelColor(teams.length);
-      return apiRequest('POST', '/api/teams', { color });
+      return apiRequest('POST', '/api/teams', { color: defaultEntityColor });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
