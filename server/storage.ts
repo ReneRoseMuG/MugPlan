@@ -88,7 +88,6 @@ export interface IStorage {
   updateHelpText(id: number, data: UpdateHelpText): Promise<{ helpText: HelpText | null; error?: string }>;
   toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null>;
   deleteHelpText(id: number): Promise<void>;
-  // Employee (FT 05)
   getEmployees(filter?: 'active' | 'inactive' | 'all'): Promise<Employee[]>;
   getEmployee(id: number): Promise<Employee | null>;
   getEmployeeWithRelations(id: number): Promise<{ employee: Employee; team: Team | null; tour: Tour | null } | null>;
@@ -99,20 +98,16 @@ export interface IStorage {
   getEmployeesByTeam(teamId: number): Promise<Employee[]>;
   setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null>;
   setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null>;
-  // Project (FT 02)
   getProjects(filter?: 'active' | 'inactive' | 'all'): Promise<Project[]>;
   getProject(id: number): Promise<Project | null>;
   getProjectWithCustomer(id: number): Promise<{ project: Project; customer: Customer } | null>;
   createProject(data: InsertProject): Promise<Project>;
   updateProject(id: number, data: UpdateProject): Promise<Project | null>;
-  // Project Notes (FT 02)
   getProjectNotes(projectId: number): Promise<Note[]>;
   createProjectNote(projectId: number, note: InsertNote): Promise<Note>;
-  // Project Attachments (FT 02)
   getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
   createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment>;
   deleteProjectAttachment(id: number): Promise<void>;
-  // Project Status Relations (FT 02)
   getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]>;
   addProjectStatus(projectId: number, statusId: number): Promise<void>;
   removeProjectStatus(projectId: number, statusId: number): Promise<void>;
@@ -124,7 +119,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
-    const [event] = await db.insert(events).values(insertEvent).returning();
+    const result = await db.insert(events).values(insertEvent);
+    const insertId = (result as any)[0].insertId;
+    const [event] = await db.select().from(events).where(eq(events.id, insertId));
     return event;
   }
 
@@ -147,12 +144,15 @@ export class DatabaseStorage implements IStorage {
       name = `Tour ${num}`;
     }
     
-    const [tour] = await db.insert(tours).values({ ...insertTour, name }).returning();
+    const result = await db.insert(tours).values({ ...insertTour, name });
+    const insertId = (result as any)[0].insertId;
+    const [tour] = await db.select().from(tours).where(eq(tours.id, insertId));
     return tour;
   }
 
   async updateTour(id: number, data: UpdateTour): Promise<Tour | null> {
-    const [tour] = await db.update(tours).set(data).where(eq(tours.id, id)).returning();
+    await db.update(tours).set(data).where(eq(tours.id, id));
+    const [tour] = await db.select().from(tours).where(eq(tours.id, id));
     return tour || null;
   }
 
@@ -175,12 +175,15 @@ export class DatabaseStorage implements IStorage {
       name = `Team ${num}`;
     }
     
-    const [team] = await db.insert(teams).values({ ...insertTeam, name }).returning();
+    const result = await db.insert(teams).values({ ...insertTeam, name });
+    const insertId = (result as any)[0].insertId;
+    const [team] = await db.select().from(teams).where(eq(teams.id, insertId));
     return team;
   }
 
   async updateTeam(id: number, data: UpdateTeam): Promise<Team | null> {
-    const [team] = await db.update(teams).set(data).where(eq(teams.id, id)).returning();
+    await db.update(teams).set(data).where(eq(teams.id, id));
+    const [team] = await db.select().from(teams).where(eq(teams.id, id));
     return team || null;
   }
 
@@ -203,7 +206,9 @@ export class DatabaseStorage implements IStorage {
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
     const fullName = `${insertCustomer.lastName}, ${insertCustomer.firstName}`;
-    const [customer] = await db.insert(customers).values({ ...insertCustomer, fullName }).returning();
+    const result = await db.insert(customers).values({ ...insertCustomer, fullName });
+    const insertId = (result as any)[0].insertId;
+    const [customer] = await db.select().from(customers).where(eq(customers.id, insertId));
     return customer;
   }
 
@@ -211,7 +216,6 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getCustomer(id);
     if (!existing) return null;
 
-    // Recalculate fullName if firstName or lastName changed
     let fullName = existing.fullName;
     if (data.firstName !== undefined || data.lastName !== undefined) {
       const firstName = data.firstName !== undefined ? data.firstName : existing.firstName;
@@ -219,11 +223,11 @@ export class DatabaseStorage implements IStorage {
       fullName = `${lastName}, ${firstName}`;
     }
 
-    const [customer] = await db
+    await db
       .update(customers)
       .set({ ...data, fullName, updatedAt: new Date() })
-      .where(eq(customers.id, id))
-      .returning();
+      .where(eq(customers.id, id));
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
     return customer || null;
   }
 
@@ -238,26 +242,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCustomerNote(customerId: number, noteData: InsertNote): Promise<Note> {
-    const [note] = await db.insert(notes).values(noteData).returning();
+    const result = await db.insert(notes).values(noteData);
+    const insertId = (result as any)[0].insertId;
+    const [note] = await db.select().from(notes).where(eq(notes.id, insertId));
     await db.insert(customerNotes).values({ customerId, noteId: note.id });
     return note;
   }
 
   async updateNote(noteId: number, data: UpdateNote): Promise<Note | null> {
-    const [note] = await db
+    await db
       .update(notes)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(notes.id, noteId))
-      .returning();
+      .where(eq(notes.id, noteId));
+    const [note] = await db.select().from(notes).where(eq(notes.id, noteId));
     return note || null;
   }
 
   async toggleNotePin(noteId: number, isPinned: boolean): Promise<Note | null> {
-    const [note] = await db
+    await db
       .update(notes)
       .set({ isPinned, updatedAt: new Date() })
-      .where(eq(notes.id, noteId))
-      .returning();
+      .where(eq(notes.id, noteId));
+    const [note] = await db.select().from(notes).where(eq(notes.id, noteId));
     return note || null;
   }
 
@@ -282,16 +288,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNoteTemplate(template: InsertNoteTemplate): Promise<NoteTemplate> {
-    const [result] = await db.insert(noteTemplates).values(template).returning();
-    return result;
+    const result = await db.insert(noteTemplates).values(template);
+    const insertId = (result as any)[0].insertId;
+    const [created] = await db.select().from(noteTemplates).where(eq(noteTemplates.id, insertId));
+    return created;
   }
 
   async updateNoteTemplate(id: number, data: UpdateNoteTemplate): Promise<NoteTemplate | null> {
-    const [template] = await db
+    await db
       .update(noteTemplates)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(noteTemplates.id, id))
-      .returning();
+      .where(eq(noteTemplates.id, id));
+    const [template] = await db.select().from(noteTemplates).where(eq(noteTemplates.id, id));
     return template || null;
   }
 
@@ -320,11 +328,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProjectStatus(insertStatus: InsertProjectStatus): Promise<ProjectStatus> {
-    const [status] = await db.insert(projectStatus).values({
+    const result = await db.insert(projectStatus).values({
       ...insertStatus,
       isActive: true,
       isDefault: false,
-    }).returning();
+    });
+    const insertId = (result as any)[0].insertId;
+    const [status] = await db.select().from(projectStatus).where(eq(projectStatus.id, insertId));
     return status;
   }
 
@@ -336,11 +346,11 @@ export class DatabaseStorage implements IStorage {
     if (existing.isDefault && data.isActive === false) {
       return { status: null, error: 'Default-Status kann nicht deaktiviert werden' };
     }
-    const [status] = await db
+    await db
       .update(projectStatus)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(projectStatus.id, id))
-      .returning();
+      .where(eq(projectStatus.id, id));
+    const [status] = await db.select().from(projectStatus).where(eq(projectStatus.id, id));
     return { status: status || null };
   }
 
@@ -350,11 +360,11 @@ export class DatabaseStorage implements IStorage {
     if (existing.isDefault && !isActive) {
       return null;
     }
-    const [status] = await db
+    await db
       .update(projectStatus)
       .set({ isActive, updatedAt: new Date() })
-      .where(eq(projectStatus.id, id))
-      .returning();
+      .where(eq(projectStatus.id, id));
+    const [status] = await db.select().from(projectStatus).where(eq(projectStatus.id, id));
     return status || null;
   }
 
@@ -417,7 +427,9 @@ export class DatabaseStorage implements IStorage {
     if (existing.length > 0) {
       return { helpText: null, error: 'help_key bereits vergeben' };
     }
-    const [helpText] = await db.insert(helpTexts).values(data).returning();
+    const result = await db.insert(helpTexts).values(data);
+    const insertId = (result as any)[0].insertId;
+    const [helpText] = await db.select().from(helpTexts).where(eq(helpTexts.id, insertId));
     return { helpText };
   }
 
@@ -435,22 +447,22 @@ export class DatabaseStorage implements IStorage {
         return { helpText: null, error: 'help_key bereits vergeben' };
       }
     }
-    const [helpText] = await db
+    await db
       .update(helpTexts)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(helpTexts.id, id))
-      .returning();
+      .where(eq(helpTexts.id, id));
+    const [helpText] = await db.select().from(helpTexts).where(eq(helpTexts.id, id));
     return { helpText: helpText || null };
   }
 
   async toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null> {
     const existing = await this.getHelpTextById(id);
     if (!existing) return null;
-    const [helpText] = await db
+    await db
       .update(helpTexts)
       .set({ isActive, updatedAt: new Date() })
-      .where(eq(helpTexts.id, id))
-      .returning();
+      .where(eq(helpTexts.id, id));
+    const [helpText] = await db.select().from(helpTexts).where(eq(helpTexts.id, id));
     return helpText || null;
   }
 
@@ -458,7 +470,6 @@ export class DatabaseStorage implements IStorage {
     await db.delete(helpTexts).where(eq(helpTexts.id, id));
   }
 
-  // Employee (FT 05)
   async getEmployees(filter: 'active' | 'inactive' | 'all' = 'active'): Promise<Employee[]> {
     if (filter === 'all') {
       return await db
@@ -500,7 +511,9 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(data: InsertEmployee): Promise<Employee> {
     const fullName = `${data.lastName}, ${data.firstName}`;
-    const [employee] = await db.insert(employees).values({ ...data, fullName }).returning();
+    const result = await db.insert(employees).values({ ...data, fullName });
+    const insertId = (result as any)[0].insertId;
+    const [employee] = await db.select().from(employees).where(eq(employees.id, insertId));
     return employee;
   }
 
@@ -508,7 +521,6 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getEmployee(id);
     if (!existing) return null;
 
-    // Recalculate fullName if firstName or lastName changed
     let fullName = existing.fullName;
     if (data.firstName !== undefined || data.lastName !== undefined) {
       const firstName = data.firstName !== undefined ? data.firstName : existing.firstName;
@@ -516,20 +528,20 @@ export class DatabaseStorage implements IStorage {
       fullName = `${lastName}, ${firstName}`;
     }
 
-    const [employee] = await db
+    await db
       .update(employees)
       .set({ ...data, fullName, updatedAt: new Date() })
-      .where(eq(employees.id, id))
-      .returning();
+      .where(eq(employees.id, id));
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
     return employee || null;
   }
 
   async toggleEmployeeActive(id: number, isActive: boolean): Promise<Employee | null> {
-    const [employee] = await db
+    await db
       .update(employees)
       .set({ isActive, updatedAt: new Date() })
-      .where(eq(employees.id, id))
-      .returning();
+      .where(eq(employees.id, id));
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
     return employee || null;
   }
 
@@ -550,24 +562,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {
-    const [employee] = await db
+    await db
       .update(employees)
       .set({ tourId, updatedAt: new Date() })
-      .where(eq(employees.id, employeeId))
-      .returning();
+      .where(eq(employees.id, employeeId));
+    const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
     return employee || null;
   }
 
   async setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null> {
-    const [employee] = await db
+    await db
       .update(employees)
       .set({ teamId, updatedAt: new Date() })
-      .where(eq(employees.id, employeeId))
-      .returning();
+      .where(eq(employees.id, employeeId));
+    const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
     return employee || null;
   }
 
-  // Project (FT 02)
   async getProjects(filter: 'active' | 'inactive' | 'all' = 'all'): Promise<Project[]> {
     if (filter === 'active') {
       return await db.select().from(projects).where(eq(projects.isActive, true)).orderBy(desc(projects.updatedAt));
@@ -592,20 +603,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(data: InsertProject): Promise<Project> {
-    const [project] = await db.insert(projects).values(data).returning();
+    const result = await db.insert(projects).values(data);
+    const insertId = (result as any)[0].insertId;
+    const [project] = await db.select().from(projects).where(eq(projects.id, insertId));
     return project;
   }
 
   async updateProject(id: number, data: UpdateProject): Promise<Project | null> {
-    const [project] = await db
+    await db
       .update(projects)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(projects.id, id))
-      .returning();
+      .where(eq(projects.id, id));
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
     return project || null;
   }
 
-  // Project Notes (FT 02)
   async getProjectNotes(projectId: number): Promise<Note[]> {
     const result = await db
       .select({ note: notes })
@@ -617,12 +629,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProjectNote(projectId: number, note: InsertNote): Promise<Note> {
-    const [newNote] = await db.insert(notes).values(note).returning();
+    const result = await db.insert(notes).values(note);
+    const insertId = (result as any)[0].insertId;
+    const [newNote] = await db.select().from(notes).where(eq(notes.id, insertId));
     await db.insert(projectNotes).values({ projectId, noteId: newNote.id });
     return newNote;
   }
 
-  // Project Attachments (FT 02)
   async getProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
     return await db
       .select()
@@ -632,7 +645,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment> {
-    const [attachment] = await db.insert(projectAttachments).values(data).returning();
+    const result = await db.insert(projectAttachments).values(data);
+    const insertId = (result as any)[0].insertId;
+    const [attachment] = await db.select().from(projectAttachments).where(eq(projectAttachments.id, insertId));
     return attachment;
   }
 
@@ -640,7 +655,6 @@ export class DatabaseStorage implements IStorage {
     await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
   }
 
-  // Project Status Relations (FT 02)
   async getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]> {
     const result = await db
       .select({ status: projectStatus })
@@ -652,18 +666,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addProjectStatus(projectId: number, statusId: number): Promise<void> {
-    await db.insert(projectProjectStatus).values({ projectId, projectStatusId: statusId }).onConflictDoNothing();
+    const existing = await db
+      .select()
+      .from(projectProjectStatus)
+      .where(and(
+        eq(projectProjectStatus.projectId, projectId),
+        eq(projectProjectStatus.projectStatusId, statusId)
+      ));
+    if (existing.length === 0) {
+      await db.insert(projectProjectStatus).values({ projectId, projectStatusId: statusId });
+    }
   }
 
   async removeProjectStatus(projectId: number, statusId: number): Promise<void> {
-    await db
-      .delete(projectProjectStatus)
-      .where(
-        and(
-          eq(projectProjectStatus.projectId, projectId),
-          eq(projectProjectStatus.projectStatusId, statusId)
-        )
-      );
+    await db.delete(projectProjectStatus).where(and(
+      eq(projectProjectStatus.projectId, projectId),
+      eq(projectProjectStatus.projectStatusId, statusId)
+    ));
   }
 }
 
