@@ -153,10 +153,9 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
 
   const isLoading = teamsLoading || employeesLoading;
 
-  const teamsWithMembers: TeamWithMembers[] = teams.map((team, index) => ({
+  const teamsWithMembers: TeamWithMembers[] = teams.map((team) => ({
     ...team,
     members: employees.filter(e => e.teamId === team.id),
-    color: team.color || getRandomPastelColor(index),
   }));
 
   const createMutation = useMutation({
