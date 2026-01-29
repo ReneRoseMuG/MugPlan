@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { EntityCard } from "@/components/ui/entity-card";
-import { InfoBadge } from "@/components/ui/info-badge";
+import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { Users, Route, Calendar, Power, PowerOff, Phone, Mail, X, Pencil } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -307,24 +307,22 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                 {(tourInfo || teamInfo || !employee.isActive) && (
                   <div className="flex items-center gap-2 flex-wrap pt-1">
                     {tourInfo && (
-                      <span 
-                        className="inline-flex items-center text-xs px-2 py-0.5 border border-border bg-slate-50 border-l-4"
-                        style={{ borderLeftColor: tourInfo.color }}
-                        data-testid={`badge-employee-tour-${employee.id}`}
-                      >
-                        <Route className="w-3 h-3 mr-1" />
-                        {tourInfo.name}
-                      </span>
+                      <ColoredInfoBadge
+                        icon={<Route className="w-3 h-3" />}
+                        label={tourInfo.name}
+                        color={tourInfo.color}
+                        size="sm"
+                        testId={`badge-employee-tour-${employee.id}`}
+                      />
                     )}
                     {teamInfo && (
-                      <span 
-                        className="inline-flex items-center text-xs px-2 py-0.5 border border-border bg-slate-50 border-l-4"
-                        style={{ borderLeftColor: teamInfo.color }}
-                        data-testid={`badge-employee-team-${employee.id}`}
-                      >
-                        <Users className="w-3 h-3 mr-1" />
-                        {teamInfo.name}
-                      </span>
+                      <ColoredInfoBadge
+                        icon={<Users className="w-3 h-3" />}
+                        label={teamInfo.name}
+                        color={teamInfo.color}
+                        size="sm"
+                        testId={`badge-employee-team-${employee.id}`}
+                      />
                     )}
                     {!employee.isActive && (
                       <Badge variant="secondary" className="text-xs">
@@ -465,10 +463,11 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     Tour
                   </h4>
                   {!isCreating && displayEmployee?.tour ? (
-                    <InfoBadge
+                    <ColoredInfoBadge
                       icon={<Route className="w-4 h-4" />}
                       label={displayEmployee.tour.name}
-                      borderColor={displayEmployee.tour.color}
+                      color={displayEmployee.tour.color}
+                      fullWidth
                       testId="badge-employee-tour"
                     />
                   ) : (
@@ -487,9 +486,11 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     Team
                   </h4>
                   {!isCreating && displayEmployee?.team ? (
-                    <InfoBadge
+                    <ColoredInfoBadge
                       icon={<Users className="w-4 h-4" />}
                       label={displayEmployee.team.name}
+                      color={displayEmployee.team.color}
+                      fullWidth
                       testId="badge-employee-team"
                     />
                   ) : (

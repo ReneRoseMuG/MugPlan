@@ -33,7 +33,7 @@ Preferred communication style: Simple, everyday language.
 - **Verwendet von**: TourManagement, TeamManagement, NoteTemplatesPage, CustomerList, EmployeeManagement
 
 **EntityCard** (`client/src/components/ui/entity-card.tsx`)
-- **Wann verwenden**: Für einzelne Datensätze als Karten (Tour, Team, Kunde, Mitarbeiter...)
+- **Wann verwenden**: Basis-Komponente für einzelne Datensätze als Karten (Kunde, Mitarbeiter ohne Farbe...)
 - **Features**: Farbiger Header mit Titel/Icon, optionaler Löschen-Button, Footer-Bereich
 - **Props**:
   - `title`, `icon` - Kartenname mit Icon
@@ -41,7 +41,54 @@ Preferred communication style: Simple, everyday language.
   - `onDelete` - Löschen-Button (Mülleimer-Icon)
   - `footer` - Optionaler Footer-Bereich (z.B. ColorPicker, Edit-Button)
   - `children` - Inhalt der Karte
-- **Verwendet von**: Tour-Karten, Team-Karten, Kunden-Karten, Mitarbeiter-Karten
+  - `style` - Optionale CSS-Styles (z.B. für Border-Farben)
+  - `onDoubleClick` - Doppelklick-Handler
+- **Verwendet von**: CustomerList, EmployeePage (als Basis für ColoredEntityCard)
+
+**ColoredEntityCard** (`client/src/components/ui/colored-entity-card.tsx`)
+- **Wann verwenden**: Für Karten mit farbiger linker Border (Tour, Team, Projekt Status)
+- **Erbt von**: EntityCard
+- **Features**: Alle EntityCard-Features plus farbige Border-Left (5px)
+- **Props**: Wie EntityCard plus:
+  - `borderColor` - Farbe der linken Border (z.B. Tour-/Team-Farbe)
+- **Verwendet von**: TourManagement, TeamManagement, ProjectStatusPage
+
+**InfoBadge** (`client/src/components/ui/info-badge.tsx`)
+- **Wann verwenden**: Basis-Komponente für kompakte Info-Anzeigen (ohne eigene Farbe)
+- **Features**: Abgerundete Ecken, Icon + Label, optionaler Remove-Button
+- **Props**:
+  - `icon`, `label` - Icon und Text
+  - `borderColor` - Optionale farbige linke Border
+  - `size` - "default" oder "sm" (klein)
+  - `fullWidth` - true = 100% Breite, false = inline (nebeneinander)
+  - `onRemove` - Remove-Button-Handler
+  - `testId` - Test-ID
+- **Größenmodi**:
+  - `size="default"`: Normale Größe für Formulare
+  - `size="sm"`: Kompakte Größe für Card-Inhalte
+- **Breitenmodi**:
+  - `fullWidth={true}`: Volle Breite des Containers (untereinander)
+  - `fullWidth={false}`: Inline-Darstellung (nebeneinander)
+
+**ColoredInfoBadge** (`client/src/components/ui/colored-info-badge.tsx`)
+- **Wann verwenden**: Für Badges mit farbiger linker Border (Tour, Team, Status)
+- **Erbt von**: InfoBadge
+- **Features**: Alle InfoBadge-Features plus automatische farbige Border
+- **Props**: Wie InfoBadge plus:
+  - `color` - Farbe der linken Border (kann null sein für keine Farbe)
+- **Verwendet von**:
+  - EmployeePage (Cards): `size="sm"` für kompakte Tour/Team-Badges
+  - EmployeePage (Formular): `fullWidth` für Tour/Team-Anzeige
+  - ProjectStatusSection: `fullWidth` für Status-Badges im Projekt-Formular
+
+**ColorPickerButton** (`client/src/components/ui/color-picker-button.tsx`)
+- **Wann verwenden**: Für Farbauswahl mit nativer Color-Picker-Funktionalität
+- **Features**: Button mit Palette-Icon, Hintergrund in ausgewählter Farbe
+- **Props**:
+  - `color` - Aktuelle Farbe (Hex-Wert)
+  - `onChange` - Callback bei Farbänderung
+  - `testId` - Test-ID
+- **Verwendet von**: TourManagement, TeamManagement, ProjectStatusPage
 
 ### CSS Utility-Klassen
 

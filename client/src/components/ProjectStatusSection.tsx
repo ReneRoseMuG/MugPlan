@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { InfoBadge } from "@/components/ui/info-badge";
+import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { Flag, Plus } from "lucide-react";
 import type { ProjectStatus } from "@shared/schema";
 
@@ -89,12 +89,13 @@ export function ProjectStatusSection({
         ) : (
           <>
             {assignedStatuses.map(status => (
-              <InfoBadge 
+              <ColoredInfoBadge 
                 key={status.id}
                 icon={<Flag className="w-4 h-4" />}
                 label={status.title}
-                borderColor={status.color}
+                color={status.color}
                 onRemove={() => onRemove(status.id)}
+                fullWidth
                 testId={`status-badge-${status.id}`}
               />
             ))}

@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { EntityCard } from "@/components/ui/entity-card";
+import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
+import { ColorPickerButton } from "@/components/ui/color-picker-button";
 import { getRandomPastelColor } from "@/lib/colors";
 import type { Team, Employee } from "@shared/schema";
 
@@ -28,18 +29,19 @@ function EditTeamMembersDialog({
   onOpenChange,
   team,
   allEmployees,
-  onSaveMembers,
+  onSave,
   isSaving,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   team: TeamWithMembers;
   allEmployees: Employee[];
-  onSaveMembers: (teamId: number, employeeIds: number[]) => void;
+  onSave: (teamId: number, employeeIds: number[], color: string) => void;
   isSaving: boolean;
 }) {
   const currentMemberIds = team.members.map(m => m.id);
   const [selectedMembers, setSelectedMembers] = useState<number[]>(currentMemberIds);
+  const [selectedColor, setSelectedColor] = useState<string>(team.color);
 
   const handleToggleMember = (employeeId: number) => {
     setSelectedMembers((prev) =>
@@ -50,12 +52,13 @@ function EditTeamMembersDialog({
   };
 
   const handleSave = () => {
-    onSaveMembers(team.id, selectedMembers);
+    onSave(team.id, selectedMembers, selectedColor);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
       setSelectedMembers(currentMemberIds);
+      setSelectedColor(team.color);
     }
     onOpenChange(isOpen);
   };
@@ -66,19 +69,20 @@ function EditTeamMembersDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-primary">
             <Users className="w-5 h-5" />
-            Mitarbeiter bearbeiten - {team.name}
+            {team.name}
+            <ColorPickerButton
+              color={selectedColor}
+              onChange={setSelectedColor}
+              testId="button-team-color-picker"
+            />
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div 
-            className="px-4 py-2 rounded-lg border border-border"
-            style={{ backgroundColor: team.color }}
+            className="border-l-4 border border-border bg-slate-50 p-3"
+            style={{ borderLeftColor: selectedColor }}
           >
-            <span className="font-bold text-slate-700">{team.name}</span>
-          </div>
-          
-          <div>
-            <div className="text-sm font-medium text-slate-700 mb-3">
+            <div className="text-sm font-medium text-slate-700 mb-2">
               Mitarbeiter auswählen:
             </div>
             <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -90,7 +94,7 @@ function EditTeamMembersDialog({
                     key={employee.id}
                     onClick={() => !isAssignedElsewhere && handleToggleMember(employee.id)}
                     className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${
-                      isAssignedElsewhere ? "opacity-50 bg-slate-100 cursor-not-allowed" : isSelected ? "bg-primary/10" : "hover:bg-slate-50"
+                      isAssignedElsewhere ? "opacity-50 bg-slate-100 cursor-not-allowed" : isSelected ? "bg-primary/10" : "hover:bg-white"
                     }`}
                     data-testid={`checkbox-team-employee-${employee.id}`}
                   >
@@ -184,6 +188,15 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, color }: { id: number; color: string }) => {
+      return apiRequest('PATCH', `/api/teams/${id}`, { color });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+    },
+  });
+
   const assignMembersMutation = useMutation({
     mutationFn: async ({ teamId, employeeIds }: { teamId: number; employeeIds: number[] }) => {
       return apiRequest('POST', `/api/teams/${teamId}/employees`, { employeeIds });
@@ -203,7 +216,8 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     },
   });
 
-  const handleSaveMembers = (teamId: number, employeeIds: number[]) => {
+  const handleSaveTeam = async (teamId: number, employeeIds: number[], color: string) => {
+    await updateMutation.mutateAsync({ id: teamId, color });
     assignMembersMutation.mutate({ teamId, employeeIds });
   };
 
@@ -235,11 +249,11 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         } : undefined}
       >
         {teamsWithMembers.map((team) => (
-          <EntityCard
+          <ColoredEntityCard
             key={team.id}
             title={team.name}
             icon={<Users className="w-4 h-4" />}
-            headerColor={team.color}
+            borderColor={team.color}
             onDelete={() => deleteMutation.mutate(team.id)}
             isDeleting={deleteMutation.isPending}
             testId={`card-team-${team.id}`}
@@ -291,7 +305,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                 </div>
               )}
             </div>
-          </EntityCard>
+          </ColoredEntityCard>
         ))}
       </CardListLayout>
 
@@ -299,10 +313,10 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         <EditTeamMembersDialog
           open={!!editingTeam}
           onOpenChange={(open) => !open && setEditingTeam(null)}
-          team={editingTeam}
+          team={teamsWithMembers.find(t => t.id === editingTeam.id) || editingTeam}
           allEmployees={employees}
-          onSaveMembers={handleSaveMembers}
-          isSaving={assignMembersMutation.isPending}
+          onSave={handleSaveTeam}
+          isSaving={updateMutation.isPending || assignMembersMutation.isPending}
         />
       )}
     </>

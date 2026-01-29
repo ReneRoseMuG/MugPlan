@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Route, Pencil, UserCheck, Palette, X } from "lucide-react";
+import { Route, Pencil, UserCheck, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { EntityCard } from "@/components/ui/entity-card";
+import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
-import { defaultHeaderColor } from "@/lib/colors";
+import { ColorPickerButton } from "@/components/ui/color-picker-button";
 import type { Tour, Employee } from "@shared/schema";
 
 interface TourWithMembers extends Tour {
@@ -150,34 +150,6 @@ function EditTourMembersDialog({
   );
 }
 
-function ColorPickerButton({ 
-  color, 
-  onChange 
-}: { 
-  color: string; 
-  onChange: (color: string) => void;
-}) {
-  return (
-    <label className="relative cursor-pointer">
-      <input
-        type="color"
-        value={color}
-        onChange={(e) => onChange(e.target.value)}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-      />
-      <Button
-        size="icon"
-        variant="outline"
-        onClick={(e) => e.preventDefault()}
-        className="border-slate-300"
-        style={{ backgroundColor: color }}
-        data-testid="button-color-picker"
-      >
-        <Palette className="w-4 h-4 text-slate-600" />
-      </Button>
-    </label>
-  );
-}
 
 export function TourManagement({ onCancel }: TourManagementProps) {
   const [editingTour, setEditingTour] = useState<TourWithMembers | null>(null);
@@ -294,12 +266,11 @@ export function TourManagement({ onCancel }: TourManagementProps) {
         } : undefined}
       >
         {toursWithMembers.map((tour) => (
-          <EntityCard
+          <ColoredEntityCard
             key={tour.id}
             title={tour.name}
             icon={<Route className="w-4 h-4" />}
-            headerColor={defaultHeaderColor}
-            style={{ borderLeftWidth: '4px', borderLeftColor: tour.color }}
+            borderColor={tour.color}
             onDelete={() => deleteMutation.mutate(tour.id)}
             isDeleting={deleteMutation.isPending}
             testId={`card-tour-${tour.id}`}
@@ -351,7 +322,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
                 </div>
               )}
             </div>
-          </EntityCard>
+          </ColoredEntityCard>
         ))}
       </CardListLayout>
 

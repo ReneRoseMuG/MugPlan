@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CardListLayout } from "@/components/ui/card-list-layout";
-import { EntityCard } from "@/components/ui/entity-card";
+import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
+import { ColorPickerButton } from "@/components/ui/color-picker-button";
 import { ListChecks, Pencil, Power, PowerOff, Shield, GripVertical } from "lucide-react";
 import type { ProjectStatus } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { pastelColors } from "@/lib/colors";
 
 interface StatusFormData {
   title: string;
@@ -23,7 +23,7 @@ interface StatusFormData {
 const defaultFormData: StatusFormData = {
   title: "",
   description: "",
-  color: pastelColors[0],
+  color: "#E8F4F8",
   sortOrder: 0,
   isActive: true,
 };
@@ -81,7 +81,6 @@ export function ProjectStatusPage() {
     setFormData({
       ...defaultFormData,
       sortOrder: maxSortOrder + 1,
-      color: pastelColors[(statuses.length) % pastelColors.length],
     });
     setDialogOpen(true);
   };
@@ -166,11 +165,11 @@ export function ProjectStatusPage() {
         }
       >
         {statuses.map((status) => (
-          <EntityCard
+          <ColoredEntityCard
             key={status.id}
             testId={`status-card-${status.id}`}
             title={status.title}
-            headerColor={status.color}
+            borderColor={status.color}
             icon={status.isDefault ? <Shield className="w-4 h-4 text-amber-600" /> : undefined}
             className={!status.isActive ? "opacity-60" : ""}
             onDelete={status.isDefault ? undefined : () => handleDelete(status)}
@@ -233,7 +232,7 @@ export function ProjectStatusPage() {
             ) : (
               <p className="text-sm text-slate-400 italic">Keine Beschreibung</p>
             )}
-          </EntityCard>
+          </ColoredEntityCard>
         ))}
       </CardListLayout>
 
@@ -272,22 +271,15 @@ export function ProjectStatusPage() {
 
             <div className="space-y-2">
               <Label>Farbe</Label>
-              <div className="flex flex-wrap gap-2" data-testid="color-picker">
-                {pastelColors.map((color, index) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, color })}
-                    className={`w-8 h-8 rounded-md border-2 transition-all ${
-                      formData.color === color 
-                        ? "border-primary ring-2 ring-primary/30 scale-110" 
-                        : "border-slate-200 hover:border-slate-300"
-                    }`}
-                    style={{ backgroundColor: color }}
-                    data-testid={`color-option-${index}`}
-                    title={`Farbe ${index + 1}`}
-                  />
-                ))}
+              <div className="flex items-center gap-3">
+                <ColorPickerButton
+                  color={formData.color}
+                  onChange={(color) => setFormData({ ...formData, color })}
+                  testId="button-status-color-picker"
+                />
+                <span className="text-sm text-slate-500">
+                  Klicken Sie auf die Palette, um eine Farbe auszuwählen
+                </span>
               </div>
             </div>
 
