@@ -1,18 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Users, UserCheck, Pencil, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
-import { ColorPickerButton } from "@/components/ui/color-picker-button";
+import { TeamEditDialog } from "@/components/ui/team-edit-dialog";
 import { defaultEntityColor } from "@/lib/colors";
 import type { Team, Employee } from "@shared/schema";
 
@@ -24,124 +17,9 @@ interface TeamManagementProps {
   onCancel?: () => void;
 }
 
-function EditTeamMembersDialog({
-  open,
-  onOpenChange,
-  team,
-  allEmployees,
-  onSave,
-  isSaving,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  team: TeamWithMembers;
-  allEmployees: Employee[];
-  onSave: (teamId: number, employeeIds: number[], color: string) => void;
-  isSaving: boolean;
-}) {
-  const currentMemberIds = team.members.map(m => m.id);
-  const [selectedMembers, setSelectedMembers] = useState<number[]>(currentMemberIds);
-  const [selectedColor, setSelectedColor] = useState<string>(team.color);
-
-  const handleToggleMember = (employeeId: number) => {
-    setSelectedMembers((prev) =>
-      prev.includes(employeeId)
-        ? prev.filter((id) => id !== employeeId)
-        : [...prev, employeeId]
-    );
-  };
-
-  const handleSave = () => {
-    onSave(team.id, selectedMembers, selectedColor);
-  };
-
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
-      setSelectedMembers(currentMemberIds);
-      setSelectedColor(team.color);
-    }
-    onOpenChange(isOpen);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-primary">
-            <Users className="w-5 h-5" />
-            {team.name}
-            <ColorPickerButton
-              color={selectedColor}
-              onChange={setSelectedColor}
-              testId="button-team-color-picker"
-            />
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 pt-4">
-          <div 
-            className="border-l-4 border border-border bg-slate-50 p-3"
-            style={{ borderLeftColor: selectedColor }}
-          >
-            <div className="text-sm font-medium text-slate-700 mb-2">
-              Mitarbeiter auswählen:
-            </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {allEmployees.filter(e => e.isActive).map((employee) => {
-                const isAssignedElsewhere = employee.teamId !== null && employee.teamId !== team.id;
-                const isSelected = selectedMembers.includes(employee.id);
-                return (
-                  <div
-                    key={employee.id}
-                    onClick={() => !isAssignedElsewhere && handleToggleMember(employee.id)}
-                    className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${
-                      isAssignedElsewhere ? "opacity-50 bg-slate-100 cursor-not-allowed" : isSelected ? "bg-primary/10" : "hover:bg-white"
-                    }`}
-                    data-testid={`checkbox-team-employee-${employee.id}`}
-                  >
-                    <Checkbox
-                      id={`team-employee-${employee.id}`}
-                      disabled={isAssignedElsewhere}
-                      checked={isSelected}
-                      onClick={(e) => e.stopPropagation()}
-                      onCheckedChange={() => handleToggleMember(employee.id)}
-                    />
-                    <span
-                      className={`text-sm ${
-                        isAssignedElsewhere ? "text-slate-400" : "text-slate-700"
-                      }`}
-                    >
-                      {employee.lastName}, {employee.firstName}
-                      {isAssignedElsewhere && (
-                        <span className="ml-2 text-xs text-slate-400">(bereits in anderem Team)</span>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-              {allEmployees.filter(e => e.isActive).length === 0 && (
-                <div className="text-sm text-slate-400 italic py-2">
-                  Keine aktiven Mitarbeiter vorhanden
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-team-members">
-              {isSaving ? "Speichern..." : "Speichern"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function TeamManagement({ onCancel }: TeamManagementProps) {
   const [editingTeam, setEditingTeam] = useState<TeamWithMembers | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery<Team[]>({
     queryKey: ['/api/teams'],
@@ -158,12 +36,24 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     members: employees.filter(e => e.teamId === team.id),
   }));
 
+  const getNextTeamName = () => {
+    const existingNumbers = teams
+      .map(t => {
+        const match = t.name.match(/^Team (\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(n => n > 0);
+    const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+    return `Team ${maxNumber + 1}`;
+  };
+
   const createMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest('POST', '/api/teams', { color: defaultEntityColor });
+    mutationFn: async ({ color }: { color: string }) => {
+      return apiRequest('POST', '/api/teams', { color });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+      return response;
     },
   });
 
@@ -202,6 +92,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     onSuccess: () => {
       invalidateEmployees();
       setEditingTeam(null);
+      setIsCreating(false);
     },
   });
 
@@ -214,13 +105,29 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     },
   });
 
-  const handleSaveTeam = async (teamId: number, employeeIds: number[], color: string) => {
-    await updateMutation.mutateAsync({ id: teamId, color });
-    assignMembersMutation.mutate({ teamId, employeeIds });
+  const handleOpenCreate = () => {
+    setEditingTeam(null);
+    setIsCreating(true);
+  };
+
+  const handleSaveTeam = async (teamId: number | null, employeeIds: number[], color: string) => {
+    if (teamId === null) {
+      const response = await createMutation.mutateAsync({ color });
+      const newTeam = await response.json();
+      assignMembersMutation.mutate({ teamId: newTeam.id, employeeIds });
+    } else {
+      await updateMutation.mutateAsync({ id: teamId, color });
+      assignMembersMutation.mutate({ teamId, employeeIds });
+    }
   };
 
   const handleRemoveEmployee = (employeeId: number) => {
     removeEmployeeMutation.mutate(employeeId);
+  };
+
+  const handleCloseDialog = () => {
+    setEditingTeam(null);
+    setIsCreating(false);
   };
 
   return (
@@ -236,7 +143,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         gridCols="3"
         primaryAction={{
           label: "Neues Team",
-          onClick: () => createMutation.mutate(),
+          onClick: handleOpenCreate,
           isPending: createMutation.isPending,
           testId: "button-new-team",
         }}
@@ -307,16 +214,17 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         ))}
       </CardListLayout>
 
-      {editingTeam && (
-        <EditTeamMembersDialog
-          open={!!editingTeam}
-          onOpenChange={(open) => !open && setEditingTeam(null)}
-          team={teamsWithMembers.find(t => t.id === editingTeam.id) || editingTeam}
-          allEmployees={employees}
-          onSave={handleSaveTeam}
-          isSaving={updateMutation.isPending || assignMembersMutation.isPending}
-        />
-      )}
+      <TeamEditDialog
+        open={!!editingTeam || isCreating}
+        onOpenChange={(open) => !open && handleCloseDialog()}
+        team={editingTeam ? (teamsWithMembers.find(t => t.id === editingTeam.id) || editingTeam) : null}
+        allEmployees={employees}
+        onSave={handleSaveTeam}
+        isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
+        isCreate={isCreating}
+        defaultName={getNextTeamName()}
+        defaultColor={defaultEntityColor}
+      />
     </>
   );
 }
