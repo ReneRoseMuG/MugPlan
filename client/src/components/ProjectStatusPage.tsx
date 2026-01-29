@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ColorPickerButton } from "@/components/ui/color-picker-button";
-import { ListChecks, Pencil, Power, PowerOff, Shield, GripVertical } from "lucide-react";
+import { ListChecks, Pencil, Shield, GripVertical } from "lucide-react";
 import type { ProjectStatus } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -175,8 +175,22 @@ export function ProjectStatusPage() {
             onDelete={status.isDefault ? undefined : () => handleDelete(status)}
             isDeleting={deleteMutation.isPending}
             onDoubleClick={() => handleOpenEdit(status)}
-            actions={
-              <>
+            footer={
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <GripVertical className="w-3 h-3" />
+                  <span>Reihenfolge: {status.sortOrder}</span>
+                  {status.isDefault && (
+                    <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                      Standard
+                    </span>
+                  )}
+                  {!status.isActive && (
+                    <span className="ml-2 px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-xs">
+                      Inaktiv
+                    </span>
+                  )}
+                </div>
                 <Button
                   size="icon"
                   variant="ghost"
@@ -189,39 +203,6 @@ export function ProjectStatusPage() {
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleActive(status);
-                  }}
-                  disabled={true}
-                  data-testid={`button-toggle-status-${status.id}`}
-                  title="Aktivierung nur durch Administrator"
-                >
-                  {status.isActive ? (
-                    <PowerOff className="w-4 h-4" />
-                  ) : (
-                    <Power className="w-4 h-4" />
-                  )}
-                </Button>
-              </>
-            }
-            footer={
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <GripVertical className="w-3 h-3" />
-                <span>Reihenfolge: {status.sortOrder}</span>
-                {status.isDefault && (
-                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
-                    Standard
-                  </span>
-                )}
-                {!status.isActive && (
-                  <span className="ml-2 px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-xs">
-                    Inaktiv
-                  </span>
-                )}
               </div>
             }
           >
