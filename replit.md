@@ -90,6 +90,58 @@ Preferred communication style: Simple, everyday language.
   - `testId` - Test-ID
 - **Verwendet von**: TourManagement, TeamManagement, ProjectStatusPage
 
+### Entity Edit Dialog Hierarchie
+
+**EntityEditDialog** (`client/src/components/ui/entity-edit-dialog.tsx`)
+- **Wann verwenden**: Basis-Schablone für alle Entity-Bearbeitungsdialoge
+- **Features**: Dialog mit Header (Icon + Titel), Content-Bereich, Footer mit Speichern/Abbrechen Buttons
+- **Props**:
+  - `open`, `onOpenChange` - Dialog-Steuerung
+  - `title`, `icon` - Header-Inhalt
+  - `onSave`, `onCancel` - Aktionen
+  - `isSaving`, `saveDisabled` - Zustandssteuerung
+  - `headerExtra` - Zusätzlicher Header-Inhalt (z.B. ColorPicker)
+  - `children` - Dialog-Inhalt
+- **Basis für**: ColorSelectEntityEditDialog
+
+**ColorSelectEntityEditDialog** (`client/src/components/ui/color-select-entity-edit-dialog.tsx`)
+- **Wann verwenden**: Für Dialoge mit Farbauswahl (Tour, Team, Projekt Status)
+- **Erbt von**: EntityEditDialog
+- **Features**: Farbauswahl-Button mit Farbvorschau im Header
+- **Props**: Wie EntityEditDialog plus:
+  - `selectedColor` - Aktuelle Farbe
+  - `onColorChange` - Callback bei Farbänderung
+- **Basis für**: EmployeeSelectEntityEditDialog, ProjectStatusEditDialog
+
+**EmployeeSelectEntityEditDialog** (`client/src/components/ui/employee-select-entity-edit-dialog.tsx`)
+- **Wann verwenden**: Für Dialoge mit Mitarbeiter-Zuweisung (Tour, Team)
+- **Erbt von**: ColorSelectEntityEditDialog
+- **Features**: Mitarbeiter-Auswahlliste mit Checkboxen, bereits zugewiesene Mitarbeiter werden ausgegraut
+- **Props**: Wie ColorSelectEntityEditDialog plus:
+  - `allEmployees` - Liste aller Mitarbeiter
+  - `selectedMembers` - Aktuell ausgewählte Mitarbeiter-IDs
+  - `onToggleMember` - Toggle-Handler
+  - `entityType` - "tour" oder "team"
+- **Basis für**: TourEditDialog, TeamEditDialog
+
+**TourEditDialog** (`client/src/components/ui/tour-edit-dialog.tsx`)
+- **Wann verwenden**: Bearbeitung von Touren
+- **Erbt von**: EmployeeSelectEntityEditDialog
+- **Features**: Tour-spezifisches Icon (Route), automatische Namenserzeugung
+- **Verwendet von**: TourManagement
+
+**TeamEditDialog** (`client/src/components/ui/team-edit-dialog.tsx`)
+- **Wann verwenden**: Bearbeitung von Teams
+- **Erbt von**: EmployeeSelectEntityEditDialog
+- **Features**: Team-spezifisches Icon (Users), automatische Namenserzeugung
+- **Verwendet von**: TeamManagement
+
+**ProjectStatusEditDialog** (`client/src/components/ui/project-status-edit-dialog.tsx`)
+- **Wann verwenden**: Bearbeitung von Projektstatus
+- **Erbt von**: ColorSelectEntityEditDialog
+- **Features**: Titel-Eingabe (Pflichtfeld), RTF-Editor für Beschreibung, Sortierreihenfolge
+- **Verwendet von**: ProjectStatusPage
+
 ### CSS Utility-Klassen
 
 **sub-panel** (`client/src/index.css`)

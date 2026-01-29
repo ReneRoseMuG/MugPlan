@@ -104,8 +104,8 @@ export function ProjectStatusEditDialog({
         <div className="space-y-2">
           <Label htmlFor="status-description">Beschreibung</Label>
           <RichTextEditor
-            content={formData.description}
-            onChange={(content) => setFormData({ ...formData, description: content })}
+            value={formData.description}
+            onChange={(value) => setFormData({ ...formData, description: value })}
             placeholder="Optionale Beschreibung..."
           />
         </div>
