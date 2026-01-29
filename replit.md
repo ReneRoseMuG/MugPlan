@@ -82,13 +82,22 @@ Preferred communication style: Simple, everyday language.
   - ProjectStatusSection: `fullWidth` für Status-Badges im Projekt-Formular
 
 **ColorPickerButton** (`client/src/components/ui/color-picker-button.tsx`)
-- **Wann verwenden**: Für Farbauswahl mit nativer Color-Picker-Funktionalität
+- **Wann verwenden**: Für kompakte Farbauswahl (z.B. in Card-Footern)
 - **Features**: Button mit Palette-Icon, Hintergrund in ausgewählter Farbe
 - **Props**:
   - `color` - Aktuelle Farbe (Hex-Wert)
   - `onChange` - Callback bei Farbänderung
   - `testId` - Test-ID
-- **Verwendet von**: TourManagement, TeamManagement, ProjectStatusPage
+- **Verwendet von**: TourManagement, TeamManagement (in Card-Footern)
+
+**ColorSelectButton** (`client/src/components/ui/color-select-button.tsx`)
+- **Wann verwenden**: Für Farbauswahl in Dialogen (volle Breite, prominente Anzeige)
+- **Features**: Zwei-Spalten-Layout mit Farbvorschau links und "Farbe wählen" rechts
+- **Props**:
+  - `color` - Aktuelle Farbe (Hex-Wert)
+  - `onChange` - Callback bei Farbänderung
+  - `testId` - Test-ID (generiert automatisch -preview und -input Varianten)
+- **Verwendet von**: ColorSelectEntityEditDialog (und alle abgeleiteten Dialoge)
 
 ### Entity Edit Dialog Hierarchie
 
