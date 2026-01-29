@@ -32,10 +32,15 @@ export function EntityCard({
   style,
   onDoubleClick,
 }: EntityCardProps) {
+  const borderStyle = style?.borderLeftColor 
+    ? { borderLeftColor: style.borderLeftColor } 
+    : undefined;
+  const hasBorderColor = !!style?.borderLeftColor;
+
   return (
     <div
-      className={`rounded-lg border border-border bg-white overflow-hidden transition-all hover:border-primary/50 hover:shadow-md cursor-pointer flex flex-col ${className}`}
-      style={style}
+      className={`rounded-lg border border-border bg-white overflow-hidden transition-all hover:border-primary/50 hover:shadow-md cursor-pointer flex flex-col ${hasBorderColor ? 'border-l-[5px]' : ''} ${className}`}
+      style={borderStyle}
       data-testid={testId}
       onDoubleClick={onDoubleClick}
     >

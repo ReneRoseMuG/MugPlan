@@ -23,7 +23,7 @@ interface StatusFormData {
 const defaultFormData: StatusFormData = {
   title: "",
   description: "",
-  color: "#E8F4F8",
+  color: "#60a5fa",
   sortOrder: 0,
   isActive: true,
 };
