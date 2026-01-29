@@ -89,7 +89,6 @@ export function ProjectStatusEditDialog({
       saveTestId="button-save-status"
       cancelTestId="button-cancel-status"
     >
-      <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="status-title">Titel *</Label>
           <Input
@@ -138,7 +137,6 @@ export function ProjectStatusEditDialog({
             </Label>
           </div>
         )}
-      </div>
     </ColorSelectEntityEditDialog>
   );
 }
