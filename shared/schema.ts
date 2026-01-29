@@ -1,7 +1,7 @@
-import { mysqlTable, text, int, date, boolean, datetime, bigint, primaryKey, varchar } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, boolean, datetime, bigint, primaryKey, varchar, timestamp } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Customer - Kundenverwaltung (FT 09)
 export const customers = mysqlTable("customer", {
@@ -17,8 +17,8 @@ export const customers = mysqlTable("customer", {
   postalCode: varchar("postal_code", { length: 255 }),
   city: varchar("city", { length: 255 }),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: datetime("created_at").notNull().default(new Date()),
-  updatedAt: datetime("updated_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertCustomerSchema = createInsertSchema(customers).omit({ 
@@ -88,8 +88,8 @@ export const notes = mysqlTable("note", {
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
   isPinned: boolean("is_pinned").notNull().default(false),
-  createdAt: datetime("created_at").notNull().default(new Date()),
-  updatedAt: datetime("updated_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertNoteSchema = createInsertSchema(notes).omit({
@@ -115,8 +115,8 @@ export const noteTemplates = mysqlTable("note_template", {
   body: text("body").notNull(),
   sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: datetime("created_at").notNull().default(new Date()),
-  updatedAt: datetime("updated_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertNoteTemplateSchema = createInsertSchema(noteTemplates).omit({
@@ -151,8 +151,8 @@ export const projects = mysqlTable("project", {
   customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
   descriptionMd: text("description_md"),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: datetime("created_at").notNull().default(new Date()),
-  updatedAt: datetime("updated_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
@@ -190,7 +190,7 @@ export const projectAttachments = mysqlTable("project_attachment", {
   mimeType: varchar("mime_type", { length: 255 }).notNull(),
   fileSize: int("file_size").notNull(),
   storagePath: varchar("storage_path", { length: 500 }).notNull(),
-  createdAt: datetime("created_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertProjectAttachmentSchema = createInsertSchema(projectAttachments).omit({
@@ -210,8 +210,8 @@ export const projectStatus = mysqlTable("project_status", {
   sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   isDefault: boolean("is_default").notNull().default(false),
-  createdAt: datetime("created_at").notNull().default(new Date()),
-  updatedAt: datetime("updated_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertProjectStatusSchema = createInsertSchema(projectStatus).omit({
@@ -252,8 +252,8 @@ export const employees = mysqlTable("employee", {
   isActive: boolean("is_active").notNull().default(true),
   teamId: int("team_id").references(() => teams.id, { onDelete: "set null" }),
   tourId: int("tour_id").references(() => tours.id, { onDelete: "set null" }),
-  createdAt: datetime("created_at").notNull().default(new Date()),
-  updatedAt: datetime("updated_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
@@ -285,8 +285,8 @@ export const helpTexts = mysqlTable("help_texts", {
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: datetime("created_at").notNull().default(new Date()),
-  updatedAt: datetime("updated_at").notNull().default(new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertHelpTextSchema = createInsertSchema(helpTexts).omit({
