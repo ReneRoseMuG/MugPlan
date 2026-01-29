@@ -44,15 +44,6 @@ export function ProjectStatusPage() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/project-status/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
-    },
-  });
-
   const handleOpenCreate = () => {
     setEditingStatus(null);
     setDialogOpen(true);
@@ -90,16 +81,6 @@ export function ProjectStatusPage() {
     }
   };
 
-  const handleDelete = (status: ProjectStatus) => {
-    if (status.isDefault) {
-      alert("Default-Status kann nicht gelöscht werden.");
-      return;
-    }
-    if (window.confirm(`Möchten Sie den Status "${status.title}" wirklich löschen?`)) {
-      deleteMutation.mutate(status.id);
-    }
-  };
-
   const getDefaultSortOrder = () => {
     return statuses.reduce((max, s) => Math.max(max, s.sortOrder), -1) + 1;
   };
@@ -134,8 +115,6 @@ export function ProjectStatusPage() {
             borderColor={status.color}
             icon={status.isDefault ? <Shield className="w-4 h-4 text-amber-600" /> : undefined}
             className={!status.isActive ? "opacity-60" : ""}
-            onDelete={status.isDefault ? undefined : () => handleDelete(status)}
-            isDeleting={deleteMutation.isPending}
             onDoubleClick={() => handleOpenEdit(status)}
             footer={
               <div className="flex items-center justify-between w-full">
