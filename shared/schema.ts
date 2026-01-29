@@ -1,24 +1,24 @@
-import { pgTable, text, serial, date, boolean, timestamp, bigserial, integer, primaryKey } from "drizzle-orm/pg-core";
+import { mysqlTable, text, int, date, boolean, datetime, bigint, primaryKey, varchar } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 // Customer - Kundenverwaltung (FT 09)
-export const customers = pgTable("customer", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  customerNumber: text("customer_number").notNull().unique(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  fullName: text("full_name").notNull(),
-  company: text("company"),
-  phone: text("phone").notNull(),
-  addressLine1: text("address_line1"),
-  addressLine2: text("address_line2"),
-  postalCode: text("postal_code"),
-  city: text("city"),
+export const customers = mysqlTable("customer", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  customerNumber: varchar("customer_number", { length: 255 }).notNull().unique(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  phone: varchar("phone", { length: 255 }).notNull(),
+  addressLine1: varchar("address_line1", { length: 255 }),
+  addressLine2: varchar("address_line2", { length: 255 }),
+  postalCode: varchar("postal_code", { length: 255 }),
+  city: varchar("city", { length: 255 }),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: datetime("created_at").notNull().default(new Date()),
+  updatedAt: datetime("updated_at").notNull().default(new Date()),
 });
 
 export const insertCustomerSchema = createInsertSchema(customers).omit({ 
@@ -45,9 +45,9 @@ export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 
-export const events = pgTable("events", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
+export const events = mysqlTable("events", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
   date: date("date").notNull(),
 });
 
@@ -56,10 +56,10 @@ export const insertEventSchema = createInsertSchema(events).omit({ id: true });
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 
-export const tours = pgTable("tours", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  color: text("color").notNull(),
+export const tours = mysqlTable("tours", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  color: varchar("color", { length: 255 }).notNull(),
 });
 
 export const insertTourSchema = createInsertSchema(tours).omit({ id: true, name: true });
@@ -69,10 +69,10 @@ export type Tour = typeof tours.$inferSelect;
 export type InsertTour = z.infer<typeof insertTourSchema>;
 export type UpdateTour = z.infer<typeof updateTourSchema>;
 
-export const teams = pgTable("teams", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  color: text("color").notNull(),
+export const teams = mysqlTable("teams", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  color: varchar("color", { length: 255 }).notNull(),
 });
 
 export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, name: true });
@@ -83,13 +83,13 @@ export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type UpdateTeam = z.infer<typeof updateTeamSchema>;
 
 // Note - Notizverwaltung (FT 13)
-export const notes = pgTable("note", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  title: text("title").notNull(),
+export const notes = mysqlTable("note", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
   isPinned: boolean("is_pinned").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: datetime("created_at").notNull().default(new Date()),
+  updatedAt: datetime("updated_at").notNull().default(new Date()),
 });
 
 export const insertNoteSchema = createInsertSchema(notes).omit({
@@ -109,14 +109,14 @@ export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type UpdateNote = z.infer<typeof updateNoteSchema>;
 
 // Note Template - Notizvorlagen (FT 13)
-export const noteTemplates = pgTable("note_template", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  title: text("title").notNull(),
+export const noteTemplates = mysqlTable("note_template", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
-  sortOrder: integer("sort_order").notNull().default(0),
+  sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: datetime("created_at").notNull().default(new Date()),
+  updatedAt: datetime("updated_at").notNull().default(new Date()),
 });
 
 export const insertNoteTemplateSchema = createInsertSchema(noteTemplates).omit({
@@ -137,22 +137,22 @@ export type InsertNoteTemplate = z.infer<typeof insertNoteTemplateSchema>;
 export type UpdateNoteTemplate = z.infer<typeof updateNoteTemplateSchema>;
 
 // Customer Note Relation (FT 13)
-export const customerNotes = pgTable("customer_note", {
-  customerId: bigserial("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "cascade" }),
-  noteId: bigserial("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
+export const customerNotes = mysqlTable("customer_note", {
+  customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "cascade" }),
+  noteId: bigint("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.customerId, table.noteId] }),
 }));
 
 // Project - Projektverwaltung (FT 02)
-export const projects = pgTable("project", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  name: text("name").notNull(),
-  customerId: bigserial("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
+export const projects = mysqlTable("project", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
   descriptionMd: text("description_md"),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: datetime("created_at").notNull().default(new Date()),
+  updatedAt: datetime("updated_at").notNull().default(new Date()),
 });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
@@ -174,23 +174,23 @@ export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
 
 // Project Note Relation (FT 02)
-export const projectNotes = pgTable("project_note", {
-  projectId: bigserial("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
-  noteId: bigserial("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
+export const projectNotes = mysqlTable("project_note", {
+  projectId: bigint("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
+  noteId: bigint("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.noteId] }),
 }));
 
 // Project Attachment - Projektanhänge (FT 02)
-export const projectAttachments = pgTable("project_attachment", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  projectId: bigserial("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
-  filename: text("filename").notNull(),
-  originalName: text("original_name").notNull(),
-  mimeType: text("mime_type").notNull(),
-  fileSize: integer("file_size").notNull(),
-  storagePath: text("storage_path").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+export const projectAttachments = mysqlTable("project_attachment", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  projectId: bigint("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  originalName: varchar("original_name", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 255 }).notNull(),
+  fileSize: int("file_size").notNull(),
+  storagePath: varchar("storage_path", { length: 500 }).notNull(),
+  createdAt: datetime("created_at").notNull().default(new Date()),
 });
 
 export const insertProjectAttachmentSchema = createInsertSchema(projectAttachments).omit({
@@ -202,16 +202,16 @@ export type ProjectAttachment = typeof projectAttachments.$inferSelect;
 export type InsertProjectAttachment = z.infer<typeof insertProjectAttachmentSchema>;
 
 // Project Status - Projektstatusverwaltung (FT 15)
-export const projectStatus = pgTable("project_status", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  title: text("title").notNull(),
+export const projectStatus = mysqlTable("project_status", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  color: text("color").notNull(),
-  sortOrder: integer("sort_order").notNull().default(0),
+  color: varchar("color", { length: 255 }).notNull(),
+  sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   isDefault: boolean("is_default").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: datetime("created_at").notNull().default(new Date()),
+  updatedAt: datetime("updated_at").notNull().default(new Date()),
 });
 
 export const insertProjectStatusSchema = createInsertSchema(projectStatus).omit({
@@ -234,26 +234,26 @@ export type InsertProjectStatus = z.infer<typeof insertProjectStatusSchema>;
 export type UpdateProjectStatus = z.infer<typeof updateProjectStatusSchema>;
 
 // Project <-> Project Status Relation (FT 02/15)
-export const projectProjectStatus = pgTable("project_project_status", {
-  projectId: bigserial("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
-  projectStatusId: bigserial("project_status_id", { mode: "number" }).notNull().references(() => projectStatus.id, { onDelete: "restrict" }),
+export const projectProjectStatus = mysqlTable("project_project_status", {
+  projectId: bigint("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
+  projectStatusId: bigint("project_status_id", { mode: "number" }).notNull().references(() => projectStatus.id, { onDelete: "restrict" }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),
 }));
 
 // Employee - Mitarbeiterverwaltung (FT 05)
-export const employees = pgTable("employee", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  fullName: text("full_name").notNull(),
-  phone: text("phone"),
-  email: text("email"),
+export const employees = mysqlTable("employee", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 255 }),
+  email: varchar("email", { length: 255 }),
   isActive: boolean("is_active").notNull().default(true),
-  teamId: integer("team_id").references(() => teams.id, { onDelete: "set null" }),
-  tourId: integer("tour_id").references(() => tours.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  teamId: int("team_id").references(() => teams.id, { onDelete: "set null" }),
+  tourId: int("tour_id").references(() => tours.id, { onDelete: "set null" }),
+  createdAt: datetime("created_at").notNull().default(new Date()),
+  updatedAt: datetime("updated_at").notNull().default(new Date()),
 });
 
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
@@ -263,7 +263,7 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   isActive: true,
   teamId: true,
   tourId: true,
-  fullName: true, // auto-generated from firstName + lastName
+  fullName: true,
 });
 
 export const updateEmployeeSchema = z.object({
@@ -279,14 +279,14 @@ export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;
 
 // Help Texts (FT 16)
-export const helpTexts = pgTable("help_texts", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  helpKey: text("help_key").notNull().unique(),
-  title: text("title").notNull(),
+export const helpTexts = mysqlTable("help_texts", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  helpKey: varchar("help_key", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: datetime("created_at").notNull().default(new Date()),
+  updatedAt: datetime("updated_at").notNull().default(new Date()),
 });
 
 export const insertHelpTextSchema = createInsertSchema(helpTexts).omit({
