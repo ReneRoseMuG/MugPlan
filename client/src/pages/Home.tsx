@@ -27,6 +27,7 @@ export default function Home() {
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
 
   // Handlers for navigation
   const next = () => {
@@ -121,6 +122,11 @@ export default function Home() {
               customerId={selectedCustomerId}
               onCancel={() => { setSelectedCustomerId(null); setView('customerList'); }} 
               onSave={() => { setSelectedCustomerId(null); setView('customerList'); }}
+              onOpenProject={(id) => {
+                setSelectedProjectId(id);
+                setProjectReturnView('customer');
+                setView('project');
+              }}
             />
           ) : view === 'customerList' ? (
             <CustomerList 
@@ -146,16 +152,16 @@ export default function Home() {
           ) : view === 'project' ? (
             <ProjectForm 
               projectId={selectedProjectId || undefined}
-              onCancel={() => { setSelectedProjectId(null); setView('projectList'); }}
-              onSaved={() => { setSelectedProjectId(null); setView('projectList'); }}
+              onCancel={() => { setSelectedProjectId(null); setView(projectReturnView); }}
+              onSaved={() => { setSelectedProjectId(null); setView(projectReturnView); }}
             />
           ) : view === 'appointment' ? (
             <AppointmentForm onCancel={() => setView('month')} />
           ) : view === 'projectList' ? (
             <ProjectList 
               onCancel={() => setView('month')} 
-              onNewProject={() => { setSelectedProjectId(null); setView('project'); }}
-              onSelectProject={(id) => { setSelectedProjectId(id); setView('project'); }}
+              onNewProject={() => { setSelectedProjectId(null); setProjectReturnView('projectList'); setView('project'); }}
+              onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView('projectList'); setView('project'); }}
             />
           ) : view === 'noteTemplates' ? (
             <NoteTemplatesPage />
@@ -166,7 +172,7 @@ export default function Home() {
           ) : view === 'weeklyProjects' ? (
             <WeeklyProjectView 
               onCancel={() => setView('month')} 
-              onOpenProject={() => setView('project')}
+              onOpenProject={() => { setProjectReturnView('projectList'); setView('project'); }}
             />
           ) : view === 'week' ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">

@@ -6,6 +6,13 @@ export async function listProjects(filter: "active" | "inactive" | "all" = "all"
   return projectsRepository.getProjects(filter);
 }
 
+export async function listProjectsByCustomer(
+  customerId: number,
+  filter: "active" | "inactive" | "all" = "all",
+): Promise<Project[]> {
+  return projectsRepository.getProjectsByCustomer(customerId, filter);
+}
+
 export async function getProject(id: number): Promise<Project | null> {
   return projectsRepository.getProject(id);
 }

@@ -6,6 +6,17 @@ import { handleZodError } from "./validation";
 export async function listProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const filter = req.query.filter as "active" | "inactive" | "all" | undefined;
+    const customerIdParam = req.query.customerId as string | undefined;
+    if (customerIdParam) {
+      const customerId = Number(customerIdParam);
+      if (Number.isNaN(customerId)) {
+        res.status(400).json({ message: "Ungültige customerId" });
+        return;
+      }
+      const projects = await projectsService.listProjectsByCustomer(customerId, filter || "all");
+      res.json(projects);
+      return;
+    }
     const projects = await projectsService.listProjects(filter || "all");
     res.json(projects);
   } catch (err) {

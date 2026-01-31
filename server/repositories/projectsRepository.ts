@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import {
   customers,
@@ -20,6 +20,24 @@ export async function getProjects(filter: "active" | "inactive" | "all" = "all")
     return db.select().from(projects).where(eq(projects.isActive, false)).orderBy(desc(projects.updatedAt));
   }
   return db.select().from(projects).orderBy(desc(projects.updatedAt));
+}
+
+export async function getProjectsByCustomer(
+  customerId: number,
+  filter: "active" | "inactive" | "all" = "all",
+): Promise<Project[]> {
+  const conditions = [eq(projects.customerId, customerId)];
+  if (filter === "active") {
+    conditions.push(eq(projects.isActive, true));
+  }
+  if (filter === "inactive") {
+    conditions.push(eq(projects.isActive, false));
+  }
+  return db
+    .select()
+    .from(projects)
+    .where(and(...conditions))
+    .orderBy(desc(projects.updatedAt));
 }
 
 export async function getProject(id: number): Promise<Project | null> {
