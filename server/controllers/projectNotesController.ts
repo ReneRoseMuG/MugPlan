@@ -24,6 +24,10 @@ export async function createProjectNote(req: Request, res: Response, next: NextF
     }
     res.status(201).json(note);
   } catch (err) {
+    if (err instanceof Error && err.message === "Note template not found") {
+      res.status(404).json({ message: "Notizvorlage nicht gefunden" });
+      return;
+    }
     if (handleZodError(err, res)) return;
     next(err);
   }

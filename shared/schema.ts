@@ -98,6 +98,7 @@ export const insertNoteSchema = createInsertSchema(notes).omit({
   createdAt: true,
   updatedAt: true,
   isPinned: true,
+  color: true,
 });
 
 export const updateNoteSchema = z.object({
@@ -106,7 +107,8 @@ export const updateNoteSchema = z.object({
 });
 
 export type Note = typeof notes.$inferSelect;
-export type InsertNote = z.infer<typeof insertNoteSchema>;
+export type InsertNote = typeof notes.$inferInsert;
+export type CreateNoteInput = z.infer<typeof insertNoteSchema>;
 export type UpdateNote = z.infer<typeof updateNoteSchema>;
 
 // Note Template - Notizvorlagen (FT 13)
