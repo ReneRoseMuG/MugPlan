@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { StickyNote, Plus, Pin, PinOff } from "lucide-react";
+import { StickyNote, Plus, Pin, PinOff, X } from "lucide-react";
 import type { Note, NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -16,15 +16,18 @@ interface NotesSectionProps {
   isLoading?: boolean;
   onAdd: (data: { title: string; body: string; templateId?: number }) => void;
   onTogglePin?: (id: number, isPinned: boolean) => void;
+  onDelete?: (id: number) => void;
   title?: string;
 }
 
 function NoteCard({ 
   note, 
-  onTogglePin
+  onTogglePin,
+  onDelete,
 }: { 
   note: Note;
   onTogglePin?: (isPinned: boolean) => void;
+  onDelete?: () => void;
 }) {
   const formatDate = (date: Date | string | null) => {
     if (!date) return "";
@@ -55,6 +58,16 @@ function NoteCard({
             {note.isPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
           </button>
         )}
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            data-testid={`button-delete-note-${note.id}`}
+            title="Notiz löschen"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
       <h4 className="font-medium text-sm text-slate-800 dark:text-slate-200 pr-16 mb-2" data-testid={`text-note-title-${note.id}`}>
         {note.title}
@@ -78,6 +91,7 @@ export function NotesSection({
   isLoading = false, 
   onAdd, 
   onTogglePin,
+  onDelete,
   title = "Notizen" 
 }: NotesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -118,6 +132,13 @@ export function NotesSection({
     }
   };
 
+  const handleDelete = (note: Note) => {
+    if (!onDelete) return;
+    if (window.confirm(`Wollen Sie die Notiz ${note.title} wirklich löschen?`)) {
+      onDelete(note.id);
+    }
+  };
+
   return (
     <div className="sub-panel space-y-4">
       <div className="flex items-center justify-between">
@@ -148,6 +169,7 @@ export function NotesSection({
                 key={note.id}
                 note={note}
                 onTogglePin={onTogglePin ? (isPinned) => onTogglePin(note.id, isPinned) : undefined}
+                onDelete={onDelete ? () => handleDelete(note) : undefined}
               />
             ))}
             {notes.length === 0 && (
@@ -198,6 +220,7 @@ export function NotesSection({
             <div className="space-y-2">
               <Label>Inhalt</Label>
               <RichTextEditor
+                key={selectedTemplateId}
                 value={newNoteBody}
                 onChange={setNewNoteBody}
                 placeholder="Notizinhalt eingeben..."

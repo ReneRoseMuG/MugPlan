@@ -261,6 +261,15 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
     },
   });
 
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: number) => {
+      await apiRequest('DELETE', `/api/projects/${projectId}/notes/${noteId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+    },
+  });
+
   // Status mutations
   const addStatusMutation = useMutation({
     mutationFn: async (statusId: number) => {
@@ -405,6 +414,7 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
                   isLoading={notesLoading}
                   onAdd={(data) => createNoteMutation.mutate(data)}
                   onTogglePin={(id, isPinned) => togglePinMutation.mutate({ noteId: id, isPinned })}
+                  onDelete={(noteId) => deleteNoteMutation.mutate(noteId)}
                 />
               )}
             </div>

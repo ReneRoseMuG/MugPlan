@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
 import * as projectNotesService from "../services/projectNotesService";
+import * as notesService from "../services/notesService";
 import { handleZodError } from "./validation";
 
 export async function listProjectNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -29,6 +30,16 @@ export async function createProjectNote(req: Request, res: Response, next: NextF
       return;
     }
     if (handleZodError(err, res)) return;
+    next(err);
+  }
+}
+
+export async function deleteProjectNote(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const noteId = Number(req.params.noteId);
+    await notesService.deleteNote(noteId);
+    res.status(204).send();
+  } catch (err) {
     next(err);
   }
 }

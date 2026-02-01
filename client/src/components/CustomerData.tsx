@@ -80,6 +80,18 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
   });
 
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: number) => {
+      await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
   useEffect(() => {
     if (customer) {
       setFormData({
@@ -152,6 +164,12 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
 
   const handleTogglePin = (noteId: number, isPinned: boolean) => {
     togglePinMutation.mutate({ noteId, isPinned });
+  };
+
+  const handleDeleteNote = (noteId: number) => {
+    if (isEditMode && customerId) {
+      deleteNoteMutation.mutate(noteId);
+    }
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -319,6 +337,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               isLoading={notesLoading}
               onAdd={handleAddNote}
               onTogglePin={handleTogglePin}
+              onDelete={handleDeleteNote}
             />
           )}
         </div>

@@ -72,8 +72,6 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
 }
 
 export function NoteTemplatesPage() {
-  // TODO: Replace this temporary admin flag with a real role/permission signal once available.
-  const canEditColor = typeof window !== "undefined" && window.localStorage.getItem("mugplanAdmin") === "true";
   const defaultColor = "#94a3b8";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null);
@@ -154,7 +152,7 @@ export function NoteTemplatesPage() {
       body: formBody,
       sortOrder: formSortOrder,
       isActive: formIsActive,
-      ...(canEditColor ? { color: formColor } : {}),
+      color: formColor,
     };
 
     if (editingTemplate) {
@@ -221,7 +219,6 @@ export function NoteTemplatesPage() {
         colorPickerTestId="button-template-color-picker"
         saveTestId="button-save-template"
         cancelTestId="button-cancel-template"
-        colorPickerDisabled={!canEditColor}
       >
         <div className="space-y-2">
           <Label htmlFor="template-title">Titel *</Label>
@@ -267,9 +264,7 @@ export function NoteTemplatesPage() {
             Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
           </Label>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Farbe <span className="text-xs">(nur durch Administrator änderbar)</span>
-        </p>
+        <p className="text-xs text-muted-foreground">Farbe</p>
       </ColorSelectEntityEditDialog>
     </>
   );
