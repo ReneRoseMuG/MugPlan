@@ -21,7 +21,11 @@ export async function createCustomerNote(
   if (data.templateId) {
     const template = await noteTemplatesRepository.getNoteTemplate(data.templateId);
     if (template) {
-      noteData = { title: template.title, body: template.body };
+      noteData = {
+        title: template.title,
+        body: template.body,
+        color: template.color ?? undefined,
+      };
     }
   }
 

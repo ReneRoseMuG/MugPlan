@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -11,7 +10,8 @@ import type { NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { EntityCard } from "@/components/ui/entity-card";
+import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
+import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
 
 interface TemplateCardProps {
   template: NoteTemplate;
@@ -29,10 +29,11 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
 
   return (
     <div data-testid={`template-card-${template.id}`}>
-      <EntityCard
+      <ColoredEntityCard
         testId={`template-${template.id}`}
         title={template.title}
         icon={<FileText className="w-4 h-4" />}
+        borderColor={template.color ?? undefined}
         className={!template.isActive ? "opacity-60" : ""}
         onDelete={onDelete}
         isDeleting={isDeleting}
@@ -65,16 +66,20 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
             Aktualisiert: {formatDate(template.updatedAt)}
           </p>
         </div>
-      </EntityCard>
+      </ColoredEntityCard>
     </div>
   );
 }
 
 export function NoteTemplatesPage() {
+  const canEditColor = false;
+  const defaultColor = "#94a3b8";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formBody, setFormBody] = useState("");
+  const [formColor, setFormColor] = useState(defaultColor);
+  const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
 
   const { data: templates = [], isLoading } = useQuery<NoteTemplate[]>({
@@ -82,7 +87,7 @@ export function NoteTemplatesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { title: string; body: string; isActive: boolean }) => {
+    mutationFn: async (data: { title: string; body: string; isActive: boolean; sortOrder: number; color?: string }) => {
       return apiRequest("POST", "/api/note-templates", data);
     },
     onSuccess: () => {
@@ -92,7 +97,7 @@ export function NoteTemplatesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean; sortOrder?: number; color?: string } }) => {
       return apiRequest("PUT", `/api/note-templates/${id}`, data);
     },
     onSuccess: () => {
@@ -114,6 +119,8 @@ export function NoteTemplatesPage() {
     setEditingTemplate(null);
     setFormTitle("");
     setFormBody("");
+    setFormColor(defaultColor);
+    setFormSortOrder(0);
     setFormIsActive(true);
     setDialogOpen(true);
   };
@@ -122,6 +129,8 @@ export function NoteTemplatesPage() {
     setEditingTemplate(template);
     setFormTitle(template.title);
     setFormBody(template.body);
+    setFormColor(template.color ?? defaultColor);
+    setFormSortOrder(template.sortOrder ?? 0);
     setFormIsActive(template.isActive);
     setDialogOpen(true);
   };
@@ -131,19 +140,29 @@ export function NoteTemplatesPage() {
     setEditingTemplate(null);
     setFormTitle("");
     setFormBody("");
+    setFormColor(defaultColor);
+    setFormSortOrder(0);
     setFormIsActive(true);
   };
 
   const handleSave = () => {
     if (!formTitle.trim()) return;
 
+    const payload = {
+      title: formTitle,
+      body: formBody,
+      sortOrder: formSortOrder,
+      isActive: formIsActive,
+      ...(canEditColor ? { color: formColor } : {}),
+    };
+
     if (editingTemplate) {
       updateMutation.mutate({
         id: editingTemplate.id,
-        data: { title: formTitle, body: formBody, isActive: formIsActive },
+        data: payload,
       });
     } else {
-      createMutation.mutate({ title: formTitle, body: formBody, isActive: formIsActive });
+      createMutation.mutate(payload);
     }
   };
 
@@ -186,64 +205,71 @@ export function NoteTemplatesPage() {
         ))}
       </CardListLayout>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              {editingTemplate ? "Vorlage bearbeiten" : "Neue Vorlage"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="template-title">Titel *</Label>
-              <Input
-                id="template-title"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="Titel der Vorlage..."
-                data-testid="input-template-title"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Inhalt</Label>
-              <RichTextEditor
-                value={formBody}
-                onChange={setFormBody}
-                placeholder="Vorlagen-Inhalt eingeben..."
-                className="min-h-[150px]"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="template-active"
-                checked={formIsActive}
-                disabled={true}
-                className="w-4 h-4 cursor-not-allowed"
-                data-testid="checkbox-template-active"
-              />
-              <Label htmlFor="template-active" className="text-muted-foreground">
-                Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
-              </Label>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleCloseDialog} data-testid="button-cancel-template">
-              Abbrechen
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              disabled={!formTitle.trim() || createMutation.isPending || updateMutation.isPending}
-              data-testid="button-save-template"
-            >
-              {createMutation.isPending || updateMutation.isPending ? "Speichern..." : "Speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ColorSelectEntityEditDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editingTemplate ? "Vorlage bearbeiten" : "Neue Vorlage"}
+        icon={FileText}
+        selectedColor={formColor}
+        onColorChange={setFormColor}
+        onSave={handleSave}
+        onCancel={handleCloseDialog}
+        isSaving={createMutation.isPending || updateMutation.isPending}
+        saveDisabled={!formTitle.trim()}
+        maxWidth="max-w-lg"
+        colorPickerTestId="button-template-color-picker"
+        saveTestId="button-save-template"
+        cancelTestId="button-cancel-template"
+        colorPickerDisabled={!canEditColor}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="template-title">Titel *</Label>
+          <Input
+            id="template-title"
+            value={formTitle}
+            onChange={(e) => setFormTitle(e.target.value)}
+            placeholder="Titel der Vorlage..."
+            data-testid="input-template-title"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Inhalt</Label>
+          <RichTextEditor
+            value={formBody}
+            onChange={setFormBody}
+            placeholder="Vorlagen-Inhalt eingeben..."
+            className="min-h-[150px]"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="template-sort-order">Sortierreihenfolge</Label>
+          <Input
+            id="template-sort-order"
+            type="number"
+            min="0"
+            value={formSortOrder}
+            onChange={(e) => setFormSortOrder(Number(e.target.value) || 0)}
+            data-testid="input-template-sort-order"
+          />
+          <p className="text-xs text-slate-500">Niedrigere Werte werden zuerst angezeigt.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="template-active"
+            checked={formIsActive}
+            disabled={true}
+            className="w-4 h-4 cursor-not-allowed"
+            data-testid="checkbox-template-active"
+          />
+          <Label htmlFor="template-active" className="text-muted-foreground">
+            Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
+          </Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Farbe <span className="text-xs">(nur durch Administrator änderbar)</span>
+        </p>
+      </ColorSelectEntityEditDialog>
     </>
   );
 }

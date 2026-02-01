@@ -55,21 +55,9 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   });
 
   const createNoteMutation = useMutation({
-    mutationFn: async ({ title, body }: { title: string; body: string }) => {
-      const res = await apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body });
+    mutationFn: async ({ title, body, templateId }: { title: string; body: string; templateId?: number }) => {
+      const res = await apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body, templateId });
       return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId: number) => {
-      await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
@@ -156,14 +144,10 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     }
   };
 
-  const handleAddNote = (title: string, body: string) => {
+  const handleAddNote = ({ title, body, templateId }: { title: string; body: string; templateId?: number }) => {
     if (isEditMode && customerId) {
-      createNoteMutation.mutate({ title, body });
+      createNoteMutation.mutate({ title, body, templateId });
     }
-  };
-
-  const handleDeleteNote = (id: number) => {
-    deleteNoteMutation.mutate(id);
   };
 
   const handleTogglePin = (noteId: number, isPinned: boolean) => {
@@ -334,7 +318,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               notes={notes}
               isLoading={notesLoading}
               onAdd={handleAddNote}
-              onDelete={handleDeleteNote}
               onTogglePin={handleTogglePin}
             />
           )}

@@ -531,7 +531,7 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/projects/:projectId/notes',
-      input: insertNoteSchema,
+      input: insertNoteSchema.extend({ templateId: z.number().optional() }),
       responses: {
         201: z.custom<typeof notes.$inferSelect>(),
         400: errorSchemas.validation,

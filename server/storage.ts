@@ -64,7 +64,7 @@ export interface IStorage {
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, data: UpdateCustomer): Promise<Customer | null>;
   getCustomerNotes(customerId: number): Promise<Note[]>;
-  createCustomerNote(customerId: number, note: InsertNote): Promise<Note>;
+  createCustomerNote(customerId: number, note: InsertNote & { templateId?: number }): Promise<Note>;
   updateNote(noteId: number, data: UpdateNote): Promise<Note | null>;
   toggleNotePin(noteId: number, isPinned: boolean): Promise<Note | null>;
   deleteNote(noteId: number): Promise<void>;
@@ -104,7 +104,7 @@ export interface IStorage {
   updateProject(id: number, data: UpdateProject): Promise<Project | null>;
   deleteProject(id: number): Promise<void>;
   getProjectNotes(projectId: number): Promise<Note[]>;
-  createProjectNote(projectId: number, note: InsertNote): Promise<Note>;
+  createProjectNote(projectId: number, note: InsertNote & { templateId?: number }): Promise<Note>;
   getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
   createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment>;
   deleteProjectAttachment(id: number): Promise<void>;
@@ -179,7 +179,7 @@ export class DatabaseStorage implements IStorage {
     return notes ?? [];
   }
 
-  async createCustomerNote(customerId: number, note: InsertNote): Promise<Note> {
+  async createCustomerNote(customerId: number, note: InsertNote & { templateId?: number }): Promise<Note> {
     const created = await customerNotesService.createCustomerNote(customerId, note);
     if (!created) {
       throw new Error("Customer not found");
@@ -349,7 +349,7 @@ export class DatabaseStorage implements IStorage {
     return projectNotesService.listProjectNotes(projectId);
   }
 
-  async createProjectNote(projectId: number, note: InsertNote): Promise<Note> {
+  async createProjectNote(projectId: number, note: InsertNote & { templateId?: number }): Promise<Note> {
     const created = await projectNotesService.createProjectNote(projectId, note);
     if (!created) {
       throw new Error("Projekt nicht gefunden");
