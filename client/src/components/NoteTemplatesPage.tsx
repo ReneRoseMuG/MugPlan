@@ -72,7 +72,8 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
 }
 
 export function NoteTemplatesPage() {
-  const canEditColor = false;
+  // TODO: Replace this temporary admin flag with a real role/permission signal once available.
+  const canEditColor = typeof window !== "undefined" && window.localStorage.getItem("mugplanAdmin") === "true";
   const defaultColor = "#94a3b8";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null);

@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS note (
   id         BIGSERIAL PRIMARY KEY,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL,
+  color      TEXT NULL,
   is_pinned  BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -78,6 +79,7 @@ CREATE TABLE IF NOT EXISTS note_template (
   id         BIGSERIAL PRIMARY KEY,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL,
+  color      TEXT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0,
   is_active  BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -1,4 +1,4 @@
-import type { Note, InsertNote } from "@shared/schema";
+import type { CreateNoteInput, Note, InsertNote } from "@shared/schema";
 import * as customersRepository from "../repositories/customersRepository";
 import * as notesRepository from "../repositories/notesRepository";
 import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
@@ -12,20 +12,19 @@ export async function listCustomerNotes(customerId: number): Promise<Note[] | nu
 
 export async function createCustomerNote(
   customerId: number,
-  data: InsertNote & { templateId?: number },
+  data: CreateNoteInput & { templateId?: number },
 ): Promise<Note | null> {
   const customer = await customersRepository.getCustomer(customerId);
   if (!customer) return null;
 
-  let noteData: InsertNote = { title: data.title, body: data.body };
+  const noteData: InsertNote = { title: data.title, body: data.body };
   if (data.templateId) {
     const template = await noteTemplatesRepository.getNoteTemplate(data.templateId);
-    if (template) {
-      noteData = {
-        title: template.title,
-        body: template.body,
-        color: template.color ?? undefined,
-      };
+    if (!template) {
+      throw new Error("Note template not found");
+    }
+    if (template.color) {
+      noteData.color = template.color;
     }
   }
 

@@ -1,4 +1,4 @@
-import type { InsertNote, Note } from "@shared/schema";
+import type { CreateNoteInput, InsertNote, Note } from "@shared/schema";
 import * as notesRepository from "../repositories/notesRepository";
 import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
 import * as projectsRepository from "../repositories/projectsRepository";
@@ -9,20 +9,19 @@ export async function listProjectNotes(projectId: number): Promise<Note[]> {
 
 export async function createProjectNote(
   projectId: number,
-  data: InsertNote & { templateId?: number },
+  data: CreateNoteInput & { templateId?: number },
 ): Promise<Note | null> {
   const project = await projectsRepository.getProject(projectId);
   if (!project) return null;
 
-  let noteData: InsertNote = { title: data.title, body: data.body };
+  const noteData: InsertNote = { title: data.title, body: data.body };
   if (data.templateId) {
     const template = await noteTemplatesRepository.getNoteTemplate(data.templateId);
-    if (template) {
-      noteData = {
-        title: template.title,
-        body: template.body,
-        color: template.color ?? undefined,
-      };
+    if (!template) {
+      throw new Error("Note template not found");
+    }
+    if (template.color) {
+      noteData.color = template.color;
     }
   }
 
