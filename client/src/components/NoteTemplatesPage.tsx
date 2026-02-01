@@ -6,19 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CardListLayout } from "@/components/ui/card-list-layout";
-import { FileText, X, Pencil } from "lucide-react";
+import { FileText, Pencil } from "lucide-react";
 import type { NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { EntityCard } from "@/components/ui/entity-card";
 
 interface TemplateCardProps {
   template: NoteTemplate;
   onEdit: () => void;
   onDelete: () => void;
+  isDeleting: boolean;
 }
 
-function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) {
+function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardProps) {
   const formatDate = (date: Date | string | null) => {
     if (!date) return "";
     const d = typeof date === "string" ? new Date(date) : date;
@@ -26,52 +28,44 @@ function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) {
   };
 
   return (
-    <div 
-      className={`relative bg-white dark:bg-slate-800 border rounded-lg p-4 shadow-sm ${
-        template.isActive ? "border-border" : "border-slate-300 opacity-60"
-      }`}
-      data-testid={`template-card-${template.id}`}
-    >
-      <div className="absolute top-2 right-2 flex gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={onEdit}
-          className="w-6 h-6"
-          data-testid={`button-edit-template-${template.id}`}
-          title="Bearbeiten"
-        >
-          <Pencil className="w-4 h-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={onDelete}
-          className="w-6 h-6"
-          data-testid={`button-delete-template-${template.id}`}
-          title="Löschen"
-        >
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="font-medium text-sm text-slate-800 dark:text-slate-200 pr-16" data-testid={`text-template-title-${template.id}`}>
-          {template.title}
-        </h4>
-        {!template.isActive && (
-          <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Inaktiv</span>
-        )}
-      </div>
-      {template.body && (
-        <div 
-          className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3"
-          dangerouslySetInnerHTML={{ __html: template.body }}
-          data-testid={`text-template-body-${template.id}`}
-        />
-      )}
-      <p className="text-xs text-slate-400 mt-2" data-testid={`text-template-date-${template.id}`}>
-        Aktualisiert: {formatDate(template.updatedAt)}
-      </p>
+    <div data-testid={`template-card-${template.id}`}>
+      <EntityCard
+        testId={`template-${template.id}`}
+        title={template.title}
+        icon={<FileText className="w-4 h-4" />}
+        className={!template.isActive ? "opacity-60" : ""}
+        onDelete={onDelete}
+        isDeleting={isDeleting}
+        footer={
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            data-testid={`button-edit-template-${template.id}`}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+        }
+      >
+        <div className="space-y-2">
+          {!template.isActive && (
+            <span className="inline-flex text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Inaktiv</span>
+          )}
+          {template.body && (
+            <div
+              className="text-sm text-slate-600 line-clamp-3"
+              dangerouslySetInnerHTML={{ __html: template.body }}
+              data-testid={`text-template-body-${template.id}`}
+            />
+          )}
+          <p className="text-xs text-slate-400" data-testid={`text-template-date-${template.id}`}>
+            Aktualisiert: {formatDate(template.updatedAt)}
+          </p>
+        </div>
+      </EntityCard>
     </div>
   );
 }
@@ -153,9 +147,9 @@ export function NoteTemplatesPage() {
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm("Möchten Sie diese Vorlage wirklich löschen?")) {
-      deleteMutation.mutate(id);
+  const handleDelete = (template: NoteTemplate) => {
+    if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich löschen?`)) {
+      deleteMutation.mutate(template.id);
     }
   };
 
@@ -186,7 +180,8 @@ export function NoteTemplatesPage() {
             key={template.id}
             template={template}
             onEdit={() => handleOpenEdit(template)}
-            onDelete={() => handleDelete(template.id)}
+            onDelete={() => handleDelete(template)}
+            isDeleting={deleteMutation.isPending}
           />
         ))}
       </CardListLayout>

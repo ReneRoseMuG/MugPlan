@@ -130,6 +130,16 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     setIsCreating(false);
   };
 
+  const handleOpenEdit = (tour: TourWithMembers) => {
+    setEditingTour(tour);
+  };
+
+  const handleDelete = (tour: TourWithMembers) => {
+    if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich löschen?`)) {
+      deleteMutation.mutate(tour.id);
+    }
+  };
+
   return (
     <>
       <CardListLayout
@@ -159,16 +169,17 @@ export function TourManagement({ onCancel }: TourManagementProps) {
             title={tour.name}
             icon={<Route className="w-4 h-4" />}
             borderColor={tour.color}
-            onDelete={() => deleteMutation.mutate(tour.id)}
+            onDelete={() => handleDelete(tour)}
             isDeleting={deleteMutation.isPending}
             testId={`card-tour-${tour.id}`}
+            onDoubleClick={() => handleOpenEdit(tour)}
             footer={
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setEditingTour(tour);
+                  handleOpenEdit(tour);
                 }}
                 data-testid={`button-edit-tour-members-${tour.id}`}
               >

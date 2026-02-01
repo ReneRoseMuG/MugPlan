@@ -130,6 +130,16 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     setIsCreating(false);
   };
 
+  const handleOpenEdit = (team: TeamWithMembers) => {
+    setEditingTeam(team);
+  };
+
+  const handleDelete = (team: TeamWithMembers) => {
+    if (window.confirm(`Wollen Sie das Team ${team.name} wirklich löschen?`)) {
+      deleteMutation.mutate(team.id);
+    }
+  };
+
   return (
     <>
       <CardListLayout
@@ -159,16 +169,17 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
             title={team.name}
             icon={<Users className="w-4 h-4" />}
             borderColor={team.color}
-            onDelete={() => deleteMutation.mutate(team.id)}
+            onDelete={() => handleDelete(team)}
             isDeleting={deleteMutation.isPending}
             testId={`card-team-${team.id}`}
+            onDoubleClick={() => handleOpenEdit(team)}
             footer={
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setEditingTeam(team);
+                  handleOpenEdit(team);
                 }}
                 data-testid={`button-edit-team-members-${team.id}`}
               >

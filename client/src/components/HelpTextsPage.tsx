@@ -123,9 +123,9 @@ export function HelpTextsPage() {
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm("Möchten Sie diesen Hilfetext wirklich löschen?")) {
-      deleteMutation.mutate(id);
+  const handleDelete = (helpText: HelpText) => {
+    if (window.confirm(`Wollen Sie den Hilfetext ${helpText.title} wirklich löschen?`)) {
+      deleteMutation.mutate(helpText.id);
     }
   };
 
@@ -173,10 +173,10 @@ export function HelpTextsPage() {
             <EntityCard
               key={helpText.id}
               testId={`helptext-card-${helpText.id}`}
-              title={helpText.helpKey}
+              title={helpText.title}
               icon={<HelpCircle className="w-4 h-4" />}
               className={!helpText.isActive ? "opacity-60" : ""}
-              onDelete={() => handleDelete(helpText.id)}
+              onDelete={() => handleDelete(helpText)}
               isDeleting={deleteMutation.isPending}
               onDoubleClick={() => handleOpenEdit(helpText)}
               footer={
