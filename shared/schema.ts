@@ -87,6 +87,7 @@ export const notes = mysqlTable("note", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
+  color: varchar("color", { length: 255 }),
   isPinned: boolean("is_pinned").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
@@ -113,6 +114,7 @@ export const noteTemplates = mysqlTable("note_template", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
+  color: varchar("color", { length: 255 }),
   sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -128,6 +130,7 @@ export const insertNoteTemplateSchema = createInsertSchema(noteTemplates).omit({
 export const updateNoteTemplateSchema = z.object({
   title: z.string().optional(),
   body: z.string().optional(),
+  color: z.string().nullable().optional(),
   sortOrder: z.number().optional(),
   isActive: z.boolean().optional(),
 });

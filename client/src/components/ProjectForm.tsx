@@ -242,18 +242,9 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
 
   // Note mutations
   const createNoteMutation = useMutation({
-    mutationFn: async (data: { title: string; body: string }) => {
+    mutationFn: async (data: { title: string; body: string; templateId?: number }) => {
       const res = await apiRequest('POST', `/api/projects/${projectId}/notes`, data);
       return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
-    },
-  });
-
-  const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId: number) => {
-      await apiRequest('DELETE', `/api/notes/${noteId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
@@ -412,8 +403,7 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
                 <NotesSection
                   notes={projectNotes}
                   isLoading={notesLoading}
-                  onAdd={(title, body) => createNoteMutation.mutate({ title, body })}
-                  onDelete={(id) => deleteNoteMutation.mutate(id)}
+                  onAdd={(data) => createNoteMutation.mutate(data)}
                   onTogglePin={(id, isPinned) => togglePinMutation.mutate({ noteId: id, isPinned })}
                 />
               )}

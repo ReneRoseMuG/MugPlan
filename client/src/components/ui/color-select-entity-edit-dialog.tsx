@@ -5,12 +5,14 @@ export interface ColorSelectEntityEditDialogProps extends Omit<EntityEditDialogP
   selectedColor: string;
   onColorChange: (color: string) => void;
   colorPickerTestId?: string;
+  colorPickerDisabled?: boolean;
 }
 
 export function ColorSelectEntityEditDialog({
   selectedColor,
   onColorChange,
   colorPickerTestId = "button-entity-color-picker",
+  colorPickerDisabled = false,
   children,
   ...props
 }: ColorSelectEntityEditDialogProps) {
@@ -21,6 +23,7 @@ export function ColorSelectEntityEditDialog({
           color={selectedColor}
           onChange={onColorChange}
           testId={colorPickerTestId}
+          disabled={colorPickerDisabled}
         />
         {children}
       </div>

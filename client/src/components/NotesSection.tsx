@@ -1,30 +1,29 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { StickyNote, Plus, X, Pin, PinOff } from "lucide-react";
-import type { Note } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StickyNote, Plus, Pin, PinOff } from "lucide-react";
+import type { Note, NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
 interface NotesSectionProps {
   notes: Note[];
   isLoading?: boolean;
-  onAdd: (title: string, body: string) => void;
-  onDelete: (id: number) => void;
+  onAdd: (data: { title: string; body: string; templateId?: number }) => void;
   onTogglePin?: (id: number, isPinned: boolean) => void;
   title?: string;
 }
 
 function NoteCard({ 
   note, 
-  onDelete,
   onTogglePin
 }: { 
   note: Note;
-  onDelete: () => void;
   onTogglePin?: (isPinned: boolean) => void;
 }) {
   const formatDate = (date: Date | string | null) => {
@@ -37,7 +36,8 @@ function NoteCard({
     <div 
       className={`relative bg-white dark:bg-slate-800 border rounded-lg p-4 shadow-sm ${
         note.isPinned ? "border-primary/50 bg-primary/5" : "border-border"
-      }`}
+      } ${note.color ? "border-l-4" : ""}`}
+      style={note.color ? { borderLeftColor: note.color } : undefined}
       data-testid={`note-card-${note.id}`}
     >
       <div className="absolute top-2 right-2 flex gap-1">
@@ -55,13 +55,6 @@ function NoteCard({
             {note.isPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
           </button>
         )}
-        <button
-          onClick={onDelete}
-          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/10 text-slate-400 hover:text-destructive transition-colors"
-          data-testid={`button-delete-note-${note.id}`}
-        >
-          <X className="w-4 h-4" />
-        </button>
       </div>
       <h4 className="font-medium text-sm text-slate-800 dark:text-slate-200 pr-16 mb-2" data-testid={`text-note-title-${note.id}`}>
         {note.title}
@@ -84,19 +77,26 @@ export function NotesSection({
   notes, 
   isLoading = false, 
   onAdd, 
-  onDelete, 
   onTogglePin,
   title = "Notizen" 
 }: NotesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteBody, setNewNoteBody] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
+
+  const { data: templates = [], isLoading: templatesLoading } = useQuery<NoteTemplate[]>({
+    queryKey: ["/api/note-templates"],
+    enabled: dialogOpen,
+  });
 
   const handleSave = () => {
     if (newNoteTitle.trim()) {
-      onAdd(newNoteTitle, newNoteBody);
+      const templateId = selectedTemplateId === "none" ? undefined : Number(selectedTemplateId);
+      onAdd({ title: newNoteTitle, body: newNoteBody, templateId });
       setNewNoteTitle("");
       setNewNoteBody("");
+      setSelectedTemplateId("none");
       setDialogOpen(false);
     }
   };
@@ -104,7 +104,18 @@ export function NotesSection({
   const handleCancel = () => {
     setNewNoteTitle("");
     setNewNoteBody("");
+    setSelectedTemplateId("none");
     setDialogOpen(false);
+  };
+
+  const handleTemplateChange = (value: string) => {
+    setSelectedTemplateId(value);
+    if (value === "none") return;
+    const template = templates.find((item) => item.id === Number(value));
+    if (template) {
+      setNewNoteTitle(template.title);
+      setNewNoteBody(template.body);
+    }
   };
 
   return (
@@ -136,7 +147,6 @@ export function NotesSection({
               <NoteCard 
                 key={note.id}
                 note={note}
-                onDelete={() => onDelete(note.id)} 
                 onTogglePin={onTogglePin ? (isPinned) => onTogglePin(note.id, isPinned) : undefined}
               />
             ))}
@@ -159,6 +169,22 @@ export function NotesSection({
           </DialogHeader>
           
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Vorlage</Label>
+              <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
+                <SelectTrigger data-testid="select-note-template" disabled={templatesLoading}>
+                  <SelectValue placeholder={templatesLoading ? "Vorlagen laden..." : "Vorlage auswählen (optional)"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Keine Vorlage</SelectItem>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={String(template.id)}>
+                      {template.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="note-title">Titel *</Label>
               <Input
