@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { CustomerList } from "@/components/CustomerList";
 import { NotesSection } from "@/components/NotesSection";
 import { ProjectStatusSection } from "@/components/ProjectStatusSection";
 import { 
@@ -19,7 +20,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -481,34 +482,17 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
 
       {/* Customer Selection Dialog */}
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserCircle className="w-5 h-5" />
-              Kunde auswählen
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 max-h-60 overflow-y-auto py-2">
-            {customers.filter(c => c.isActive).map(customer => (
-              <div
-                key={customer.id}
-                onClick={() => {
-                  setCustomerId(customer.id);
-                  setCustomerDialogOpen(false);
-                }}
-                className={`p-3 rounded-lg border cursor-pointer ${
-                  customerId === customer.id 
-                    ? "bg-primary/10 border-primary/30" 
-                    : "border-border hover:bg-slate-50"
-                }`}
-                data-testid={`select-customer-${customer.id}`}
-              >
-                <p className="font-medium text-slate-700">{customer.fullName}</p>
-                {customer.company && <p className="text-sm text-slate-500">{customer.company}</p>}
-                <p className="text-sm text-slate-400">{customer.phone}</p>
-              </div>
-            ))}
-          </div>
+        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
+          <CustomerList
+            mode="picker"
+            selectedCustomerId={customerId}
+            onSelectCustomer={(id) => {
+              setCustomerId(id);
+              setCustomerDialogOpen(false);
+            }}
+            onCancel={() => setCustomerDialogOpen(false)}
+            title="Kunde auswählen"
+          />
         </DialogContent>
       </Dialog>
 

@@ -16,6 +16,7 @@ interface EntityCardProps {
   className?: string;
   style?: React.CSSProperties;
   onDoubleClick?: () => void;
+  onClick?: () => void;
 }
 
 export function EntityCard({
@@ -31,6 +32,7 @@ export function EntityCard({
   className = "",
   style,
   onDoubleClick,
+  onClick,
 }: EntityCardProps) {
   const borderStyle = style?.borderLeftColor 
     ? { borderLeftColor: style.borderLeftColor } 
@@ -43,6 +45,7 @@ export function EntityCard({
       style={borderStyle}
       data-testid={testId}
       onDoubleClick={onDoubleClick}
+      onClick={onClick}
     >
       <div
         className="px-4 py-2 border-b border-border flex items-center justify-between gap-2"

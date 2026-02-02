@@ -12,9 +12,19 @@ interface CustomerListProps {
   onCancel?: () => void;
   onNewCustomer?: () => void;
   onSelectCustomer?: (id: number) => void;
+  mode?: "list" | "picker";
+  selectedCustomerId?: number | null;
+  title?: string;
 }
 
-export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: CustomerListProps) {
+export function CustomerList({
+  onCancel,
+  onNewCustomer,
+  onSelectCustomer,
+  mode = "list",
+  selectedCustomerId = null,
+  title,
+}: CustomerListProps) {
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ['/api/customers'],
   });
@@ -39,9 +49,12 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
     });
   }, [activeCustomers, lastNameFilter, customerNumberFilter]);
 
+  const isPicker = mode === "picker";
+  const resolvedTitle = title ?? (isPicker ? "Kunde auswählen" : "Kunden");
+
   return (
     <CardListLayout
-      title="Kunden"
+      title={resolvedTitle}
       icon={<User className="w-5 h-5" />}
       helpKey="customers"
       isLoading={isLoading}
@@ -89,46 +102,53 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
         </div>
       )}
     >
-      {filteredCustomers.map(customer => (
-        <EntityCard
-          key={customer.id}
-          title={customer.fullName}
-          icon={<User className="w-4 h-4" />}
-          headerColor={defaultHeaderColor}
-          testId={`customer-card-${customer.id}`}
-          onDoubleClick={() => onSelectCustomer?.(customer.id)}
-          footer={
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectCustomer?.(customer.id);
-              }}
-              data-testid={`button-edit-customer-${customer.id}`}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-          }
-        >
-          <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-            {customer.company && (
-              <div className="flex items-center gap-2">
-                <Building2 className="w-3 h-3 text-slate-400" />
-                <span className="font-medium">{customer.company}</span>
-              </div>
+      {filteredCustomers.map(customer => {
+        const isSelected = selectedCustomerId === customer.id;
+        const handleSelect = () => onSelectCustomer?.(customer.id);
+
+        return (
+          <EntityCard
+            key={customer.id}
+            title={customer.fullName}
+            icon={<User className="w-4 h-4" />}
+            headerColor={defaultHeaderColor}
+            testId={`customer-card-${customer.id}`}
+            onClick={isPicker ? handleSelect : undefined}
+            onDoubleClick={!isPicker ? handleSelect : undefined}
+            className={isSelected ? "ring-2 ring-primary/40 border-primary/40 bg-primary/5" : ""}
+            footer={isPicker ? undefined : (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelect();
+                }}
+                data-testid={`button-edit-customer-${customer.id}`}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
             )}
-            <div className="flex items-center gap-2">
-              <Phone className="w-3 h-3 text-slate-400" />
-              <span>{customer.phone}</span>
+          >
+            <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
+              {customer.company && (
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-3 h-3 text-slate-400" />
+                  <span className="font-medium">{customer.company}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Phone className="w-3 h-3 text-slate-400" />
+                <span>{customer.phone}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3 h-3 text-slate-400" />
+                <span>{customer.postalCode} {customer.city}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-3 h-3 text-slate-400" />
-              <span>{customer.postalCode} {customer.city}</span>
-            </div>
-          </div>
-        </EntityCard>
-      ))}
+          </EntityCard>
+        );
+      })}
     </CardListLayout>
   );
 }
