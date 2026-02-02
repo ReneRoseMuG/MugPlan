@@ -1,7 +1,9 @@
+import { useMemo, useState } from "react";
 import { User, Phone, MapPin, Building2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
+import { FilterInput } from "@/components/ui/filter-input";
 import { defaultHeaderColor } from "@/lib/colors";
 import { useQuery } from "@tanstack/react-query";
 import type { Customer } from "@shared/schema";
@@ -17,7 +19,25 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
     queryKey: ['/api/customers'],
   });
 
+  const [lastNameFilter, setLastNameFilter] = useState("");
+  const [customerNumberFilter, setCustomerNumberFilter] = useState("");
+
   const activeCustomers = customers.filter(c => c.isActive);
+  const filteredCustomers = useMemo(() => {
+    const normalizedLastName = lastNameFilter.trim().toLowerCase();
+    const normalizedCustomerNumber = customerNumberFilter.trim();
+
+    return activeCustomers.filter((customer) => {
+      const matchesLastName = normalizedLastName
+        ? (customer.lastName ?? "").toLowerCase().includes(normalizedLastName)
+        : true;
+      const matchesCustomerNumber = normalizedCustomerNumber
+        ? (customer.customerNumber ?? "").includes(normalizedCustomerNumber)
+        : true;
+
+      return matchesLastName && matchesCustomerNumber;
+    });
+  }, [activeCustomers, lastNameFilter, customerNumberFilter]);
 
   return (
     <CardListLayout
@@ -39,14 +59,37 @@ export function CustomerList({ onCancel, onNewCustomer, onSelectCustomer }: Cust
         onClick: onCancel,
         testId: "button-cancel-customers",
       } : undefined}
-      isEmpty={activeCustomers.length === 0}
+      isEmpty={filteredCustomers.length === 0}
       emptyState={
         <p className="text-sm text-slate-400 text-center py-8 col-span-3">
           Keine Kunden gefunden.
         </p>
       }
+      bottomBar={(
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <FilterInput
+            id="customer-filter-last-name"
+            label="Nachname"
+            value={lastNameFilter}
+            placeholder="Suche Nachname"
+            onChange={setLastNameFilter}
+            onClear={() => setLastNameFilter("")}
+            className="flex-1"
+          />
+          <FilterInput
+            id="customer-filter-number"
+            label="Kundennummer"
+            value={customerNumberFilter}
+            placeholder="Kundennummer"
+            onChange={setCustomerNumberFilter}
+            onClear={() => setCustomerNumberFilter("")}
+            numericOnly
+            className="flex-1"
+          />
+        </div>
+      )}
     >
-      {activeCustomers.map(customer => (
+      {filteredCustomers.map(customer => (
         <EntityCard
           key={customer.id}
           title={customer.fullName}
