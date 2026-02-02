@@ -157,9 +157,11 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   };
 
   const handleAddNote = ({ title, body, templateId }: { title: string; body: string; templateId?: number }) => {
-    if (isEditMode && customerId) {
-      createNoteMutation.mutate({ title, body, templateId });
+    if (!isEditMode || !customerId) {
+      toast({ title: "Notiz noch nicht verfügbar", description: "Bitte speichern Sie den Kunden zuerst." });
+      return;
     }
+    createNoteMutation.mutate({ title, body, templateId });
   };
 
   const handleTogglePin = (noteId: number, isPinned: boolean) => {
@@ -331,15 +333,13 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               )}
 
-          {isEditMode && (
-            <NotesSection
-              notes={notes}
-              isLoading={notesLoading}
-              onAdd={handleAddNote}
-              onTogglePin={handleTogglePin}
-              onDelete={handleDeleteNote}
-            />
-          )}
+          <NotesSection
+            notes={notes}
+            isLoading={notesLoading}
+            onAdd={handleAddNote}
+            onTogglePin={isEditMode ? handleTogglePin : undefined}
+            onDelete={isEditMode ? handleDeleteNote : undefined}
+          />
         </div>
 
         <div className="space-y-6">
