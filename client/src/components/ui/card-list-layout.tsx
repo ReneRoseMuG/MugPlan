@@ -34,6 +34,7 @@ interface CardListLayoutProps {
   emptyState?: ReactNode;
   isEmpty?: boolean;
   toolbar?: ReactNode;
+  bottomBar?: ReactNode;
   helpKey?: string;
 }
 
@@ -51,6 +52,7 @@ export function CardListLayout({
   emptyState,
   isEmpty = false,
   toolbar,
+  bottomBar,
   helpKey,
 }: CardListLayoutProps) {
   const gridColsClass = gridCols === "2" 
@@ -143,6 +145,12 @@ export function CardListLayout({
           {isEmpty && emptyState ? emptyState : children}
         </div>
       </div>
+
+      {bottomBar && (
+        <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+          {bottomBar}
+        </div>
+      )}
 
       {(primaryAction || secondaryAction) && (
         <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card flex justify-between items-center">
