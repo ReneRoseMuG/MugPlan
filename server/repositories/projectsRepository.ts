@@ -1,9 +1,10 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   customers,
   projectAttachments,
   projectNotes,
+  projectProjectStatus,
   projects,
   type Project,
   type ProjectAttachment,
@@ -12,19 +13,38 @@ import {
   type InsertProjectAttachment,
 } from "@shared/schema";
 
-export async function getProjects(filter: "active" | "inactive" | "all" = "all"): Promise<Project[]> {
+export async function getProjects(
+  filter: "active" | "inactive" | "all" = "all",
+  statusIds: number[] = [],
+): Promise<Project[]> {
+  const conditions = [];
   if (filter === "active") {
-    return db.select().from(projects).where(eq(projects.isActive, true)).orderBy(desc(projects.updatedAt));
+    conditions.push(eq(projects.isActive, true));
   }
   if (filter === "inactive") {
-    return db.select().from(projects).where(eq(projects.isActive, false)).orderBy(desc(projects.updatedAt));
+    conditions.push(eq(projects.isActive, false));
   }
-  return db.select().from(projects).orderBy(desc(projects.updatedAt));
+  if (statusIds.length > 0) {
+    const statusIdList = sql.join(statusIds.map((id) => sql`${id}`), sql`, `);
+    conditions.push(sql`exists (
+      select 1
+      from ${projectProjectStatus}
+      where ${projectProjectStatus.projectId} = ${projects.id}
+        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
+    )`);
+  }
+
+  const query = conditions.length > 0
+    ? db.select().from(projects).where(and(...conditions))
+    : db.select().from(projects);
+
+  return query.orderBy(desc(projects.updatedAt));
 }
 
 export async function getProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
+  statusIds: number[] = [],
 ): Promise<Project[]> {
   const conditions = [eq(projects.customerId, customerId)];
   if (filter === "active") {
@@ -32,6 +52,15 @@ export async function getProjectsByCustomer(
   }
   if (filter === "inactive") {
     conditions.push(eq(projects.isActive, false));
+  }
+  if (statusIds.length > 0) {
+    const statusIdList = sql.join(statusIds.map((id) => sql`${id}`), sql`, `);
+    conditions.push(sql`exists (
+      select 1
+      from ${projectProjectStatus}
+      where ${projectProjectStatus.projectId} = ${projects.id}
+        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
+    )`);
   }
   return db
     .select()
