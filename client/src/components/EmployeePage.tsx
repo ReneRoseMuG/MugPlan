@@ -48,21 +48,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
     email: "",
   });
 
-  const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { active: "all" }],
-    queryFn: () => fetch("/api/employees?active=all").then(r => r.json()),
-  });
-
-  const { data: tours = [] } = useQuery<Tour[]>({
-    queryKey: ["/api/tours"],
-  });
-
-  const { data: teams = [] } = useQuery<Team[]>({
-    queryKey: ["/api/teams"],
-  });
-
-  const isLoading = employeesLoading;
-
   const { data: employeeDetails } = useQuery<EmployeeWithRelations>({
     queryKey: ["/api/employees", selectedEmployeeId],
     queryFn: () => fetch(`/api/employees/${selectedEmployeeId}`).then(r => r.json()),
@@ -206,10 +191,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   return (
     <>
       <EmployeeList
-        employees={employees}
-        teams={teams}
-        tours={tours}
-        isLoading={isLoading}
         onClose={handleClose}
         onNewEmployee={handleOpenCreate}
         isNewEmployeePending={createMutation.isPending}

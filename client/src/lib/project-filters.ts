@@ -8,17 +8,19 @@ export const defaultProjectFilters: ProjectFilters = {
   title: "",
 };
 
+const normalizeText = (value: string) => value.trim().toLowerCase();
+
 export function applyProjectFilters(
   projects: Project[],
   filters: ProjectFilters,
 ): Project[] {
-  const normalizedTitle = filters.title.trim().toLowerCase();
+  const normalizedTitle = normalizeText(filters.title);
 
-  if (!normalizedTitle) {
-    return projects;
-  }
+  return projects.filter((project) => {
+    if (!normalizedTitle) {
+      return true;
+    }
 
-  return projects.filter((project) =>
-    (project.name ?? "").toLowerCase().includes(normalizedTitle),
-  );
+    return (project.name ?? "").toLowerCase().includes(normalizedTitle);
+  });
 }

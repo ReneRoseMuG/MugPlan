@@ -1,33 +1,10 @@
-import { ReactNode } from "react";
+import { ComponentProps, ReactNode } from "react";
 import { Filter } from "lucide-react";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 
-interface FilteredCardListLayoutProps {
-  title: string;
-  icon: ReactNode;
-  children: ReactNode;
+type FilteredCardListLayoutProps = Omit<ComponentProps<typeof CardListLayout>, "bottomBar"> & {
   filters?: ReactNode;
-  isLoading?: boolean;
-  onClose?: () => void;
-  closeTestId?: string;
-  primaryAction?: {
-    label: string;
-    onClick: () => void;
-    isPending?: boolean;
-    testId?: string;
-  };
-  secondaryAction?: {
-    label: string;
-    onClick: () => void;
-    testId?: string;
-  };
-  gridTestId?: string;
-  gridCols?: "2" | "3";
-  emptyState?: ReactNode;
-  isEmpty?: boolean;
-  toolbar?: ReactNode;
-  helpKey?: string;
-}
+};
 
 export function FilteredCardListLayout({
   filters,

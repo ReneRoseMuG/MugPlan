@@ -8,11 +8,13 @@ export const defaultEmployeeFilters: EmployeeFilters = {
   lastName: "",
 };
 
+const normalizeText = (value: string) => value.trim().toLowerCase();
+
 export function applyEmployeeFilters(
   employees: Employee[],
   filters: EmployeeFilters,
 ): Employee[] {
-  const normalizedLastName = filters.lastName.trim().toLowerCase();
+  const normalizedLastName = normalizeText(filters.lastName);
 
   return employees.filter((employee) => {
     if (!normalizedLastName) {

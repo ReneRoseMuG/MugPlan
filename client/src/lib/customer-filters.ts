@@ -10,12 +10,15 @@ export const defaultCustomerFilters: CustomerFilters = {
   customerNumber: "",
 };
 
+const normalizeText = (value: string) => value.trim().toLowerCase();
+const normalizeNumber = (value: string) => value.trim();
+
 export function applyCustomerFilters(
   customers: Customer[],
   filters: CustomerFilters,
 ): Customer[] {
-  const normalizedLastName = filters.lastName.trim().toLowerCase();
-  const normalizedCustomerNumber = filters.customerNumber.trim();
+  const normalizedLastName = normalizeText(filters.lastName);
+  const normalizedCustomerNumber = normalizeNumber(filters.customerNumber);
 
   return customers.filter((customer) => {
     const matchesLastName = normalizedLastName

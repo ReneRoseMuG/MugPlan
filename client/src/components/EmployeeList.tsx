@@ -7,9 +7,10 @@ import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { EntityCard } from "@/components/ui/entity-card";
 import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-filters";
+import { useQuery } from "@tanstack/react-query";
 import type { Employee, Team, Tour } from "@shared/schema";
 
-interface EmployeeListProps {
+interface EmployeeListViewProps {
   employees: Employee[];
   teams: Team[];
   tours: Tour[];
@@ -19,13 +20,15 @@ interface EmployeeListProps {
   isNewEmployeePending?: boolean;
   onOpenEmployee?: (employee: Employee) => void;
   onToggleActive?: (employee: Employee) => void;
-  onSelectEmployee?: (employee: Employee) => void;
+  onSelectEmployee?: (id: number) => void;
   mode?: "list" | "picker";
   selectedEmployeeId?: number | null;
   title?: string;
 }
 
-export function EmployeeList({
+type EmployeeListProps = Omit<EmployeeListViewProps, "employees" | "teams" | "tours" | "isLoading">;
+
+export function EmployeeListView({
   employees,
   teams,
   tours,
@@ -39,7 +42,7 @@ export function EmployeeList({
   mode = "list",
   selectedEmployeeId = null,
   title,
-}: EmployeeListProps) {
+}: EmployeeListViewProps) {
   const [filters, setFilters] = useState(defaultEmployeeFilters);
 
   const filteredEmployees = useMemo(
@@ -47,7 +50,7 @@ export function EmployeeList({
     [employees, filters],
   );
 
-  const isPicker = mode === "picker" && !!onSelectEmployee;
+  const isPicker = mode === "picker";
   const resolvedTitle = title ?? "Mitarbeiter";
 
   const getTourName = (tourId: number | null) => {
@@ -99,7 +102,7 @@ export function EmployeeList({
         const tourInfo = getTourName(employee.tourId);
         const teamInfo = getTeamName(employee.teamId);
         const isSelected = selectedEmployeeId === employee.id;
-        const handleSelect = isPicker ? () => onSelectEmployee?.(employee) : undefined;
+        const handleSelect = isPicker ? () => onSelectEmployee?.(employee.id) : undefined;
         const handleOpen = () => onOpenEmployee?.(employee);
 
         return (
@@ -133,7 +136,7 @@ export function EmployeeList({
                 )}
               </Button>
             }
-            footer={
+            footer={isPicker ? undefined : (
               <Button
                 size="icon"
                 variant="ghost"
@@ -145,7 +148,7 @@ export function EmployeeList({
               >
                 <Pencil className="w-4 h-4" />
               </Button>
-            }
+            )}
           >
             <div className="space-y-2 text-sm">
               {employee.phone && (
@@ -198,5 +201,30 @@ export function EmployeeList({
         );
       })}
     </FilteredCardListLayout>
+  );
+}
+
+export function EmployeeList(props: EmployeeListProps) {
+  const { data: employees = [], isLoading } = useQuery<Employee[]>({
+    queryKey: ["/api/employees", { active: "all" }],
+    queryFn: () => fetch("/api/employees?active=all").then((response) => response.json()),
+  });
+
+  const { data: tours = [] } = useQuery<Tour[]>({
+    queryKey: ["/api/tours"],
+  });
+
+  const { data: teams = [] } = useQuery<Team[]>({
+    queryKey: ["/api/teams"],
+  });
+
+  return (
+    <EmployeeListView
+      {...props}
+      employees={employees}
+      teams={teams}
+      tours={tours}
+      isLoading={isLoading}
+    />
   );
 }
