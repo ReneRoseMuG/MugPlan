@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, asc, eq, gte } from "drizzle-orm";
 import { db } from "../db";
 import { appointmentEmployees, appointments, employees, type Appointment, type InsertAppointment } from "@shared/schema";
 
@@ -76,4 +76,18 @@ export async function updateAppointment(
     const assignedEmployees = await getAppointmentEmployees(tx as DbLike, appointmentId);
     return { ...appointment, employees: assignedEmployees };
   });
+}
+
+export async function listAppointmentsByProjectFromDate(projectId: number, fromDate: string): Promise<Appointment[]> {
+  console.log(`${logPrefix} list appointments projectId=${projectId} fromDate>=${fromDate}`);
+  return db
+    .select()
+    .from(appointments)
+    .where(and(eq(appointments.projectId, projectId), gte(appointments.startDate, fromDate)))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
+export async function deleteAppointment(appointmentId: number): Promise<void> {
+  console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
+  await db.delete(appointments).where(eq(appointments.id, appointmentId));
 }

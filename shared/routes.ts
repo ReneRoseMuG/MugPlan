@@ -129,6 +129,15 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/appointments/:id',
+      responses: {
+        204: z.void(),
+        403: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
   },
   tours: {
     list: {
@@ -621,6 +630,22 @@ export const api = {
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+      },
+    },
+  },
+  projectAppointments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/projects/:projectId/appointments',
+      responses: {
+        200: z.array(z.object({
+          id: z.number(),
+          projectId: z.number(),
+          startDate: z.string(),
+          endDate: z.string().nullable(),
+          startTimeHour: z.number().int().min(0).max(23).nullable(),
+          isLocked: z.boolean(),
+        })),
       },
     },
   },

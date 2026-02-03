@@ -69,3 +69,45 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
     next(err);
   }
 }
+
+export async function listProjectAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const projectId = Number(req.params.projectId);
+    if (Number.isNaN(projectId)) {
+      res.status(400).json({ message: "Ungültige projectId" });
+      return;
+    }
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
+      console.log(`${logPrefix} list project appointments rejected: invalid fromDate=${fromDate}`);
+      res.status(400).json({ message: "Ungültiges fromDate" });
+      return;
+    }
+    const isAdmin = isAdminRequest(req);
+    console.log(`${logPrefix} list project appointments request projectId=${projectId} fromDate=${fromDate ?? "n/a"}`);
+    const appointments = await appointmentsService.listProjectAppointments(projectId, fromDate, isAdmin);
+    res.json(appointments);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const appointmentId = Number(req.params.id);
+    const isAdmin = isAdminRequest(req);
+    console.log(`${logPrefix} delete request appointmentId=${appointmentId}`);
+    const appointment = await appointmentsService.deleteAppointment(appointmentId, isAdmin);
+    if (!appointment) {
+      res.status(404).json({ message: "Termin nicht gefunden" });
+      return;
+    }
+    res.status(204).send();
+  } catch (err) {
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ message: err.message });
+      return;
+    }
+    next(err);
+  }
+}

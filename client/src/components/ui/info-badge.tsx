@@ -9,6 +9,7 @@ interface InfoBadgeProps {
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
+  actionDisabled?: boolean;
   testId?: string;
   size?: "default" | "sm";
   fullWidth?: boolean;
@@ -21,6 +22,7 @@ export function InfoBadge({
   action,
   onAdd,
   onRemove,
+  actionDisabled = false,
   testId,
   size = "default",
   fullWidth = false
@@ -59,6 +61,7 @@ export function InfoBadge({
             size="icon"
             variant="ghost"
             onClick={handleActionClick}
+            disabled={actionDisabled}
             className={size === "sm" ? "h-4 w-4" : "h-5 w-5"}
             data-testid={testId ? `${testId}-add` : undefined}
           >
@@ -70,6 +73,7 @@ export function InfoBadge({
             size="icon"
             variant="ghost"
             onClick={handleActionClick}
+            disabled={actionDisabled}
             className={size === "sm" ? "h-4 w-4" : "h-5 w-5"}
             data-testid={testId ? `${testId}-remove` : undefined}
           >

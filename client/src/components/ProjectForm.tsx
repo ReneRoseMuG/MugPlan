@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { InfoBadge } from "@/components/ui/info-badge";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CustomerList } from "@/components/CustomerList";
 import { NotesSection } from "@/components/NotesSection";
@@ -33,9 +34,24 @@ interface ProjectFormProps {
   onOpenAppointment?: (projectId: number) => void;
 }
 
-const mockAppointments = [
-  { id: "1", date: "2024-02-15", title: "Montage vor Ort" },
-];
+interface ProjectAppointmentSummary {
+  id: number;
+  projectId: number;
+  startDate: string;
+  endDate: string | null;
+  startTimeHour: number | null;
+  isLocked: boolean;
+}
+
+const appointmentsLogPrefix = "[ProjectForm-appointments]";
+
+const getBerlinTodayDateString = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 
 function DocumentCard({ 
   attachment, 
@@ -155,7 +171,7 @@ function DocumentPreviewDialog({
   );
 }
 
-export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) {
+export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
   
@@ -165,6 +181,11 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [userRole] = useState(() =>
+    window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
+  );
+  const fromDate = getBerlinTodayDateString();
+  const appointmentsQueryKey = ['/api/projects', projectId, 'appointments', fromDate, userRole];
 
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
@@ -198,6 +219,55 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
   // Fetch all available project statuses
   const { data: allStatuses = [] } = useQuery<ProjectStatus[]>({
     queryKey: ['/api/project-status'],
+  });
+
+  const { data: projectAppointments = [], isLoading: appointmentsLoading } = useQuery<ProjectAppointmentSummary[]>({
+    queryKey: appointmentsQueryKey,
+    queryFn: async () => {
+      if (!projectId) return [];
+      const url = `/api/projects/${projectId}/appointments?fromDate=${fromDate}`;
+      console.info(`${appointmentsLogPrefix} request`, { projectId, fromDate });
+      const response = await fetch(url, {
+        credentials: "include",
+        headers: {
+          "x-user-role": userRole,
+        },
+      });
+      const payload = await response.json();
+      console.info(`${appointmentsLogPrefix} response`, { status: response.status, count: payload?.length });
+      if (!response.ok) {
+        throw new Error(payload?.message ?? response.statusText);
+      }
+      return payload as ProjectAppointmentSummary[];
+    },
+    enabled: isEditing && Boolean(projectId),
+  });
+
+  const deleteAppointmentMutation = useMutation({
+    mutationFn: async (appointmentId: number) => {
+      console.info(`${appointmentsLogPrefix} delete request`, { appointmentId });
+      const response = await fetch(`/api/appointments/${appointmentId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "x-user-role": userRole,
+        },
+      });
+      const payload = response.status === 204 ? null : await response.json();
+      console.info(`${appointmentsLogPrefix} delete response`, { appointmentId, status: response.status });
+      if (!response.ok) {
+        throw new Error(payload?.message ?? response.statusText);
+      }
+      return appointmentId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      toast({ title: "Termin gelöscht" });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
+      toast({ title: "Fehler", description: message, variant: "destructive" });
+    },
   });
 
   // Initialize form when project data loads
@@ -437,7 +507,7 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
               <div className="sub-panel space-y-3">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Termine (Demo)
+                  Termine
                 </h3>
                 {isEditing && onOpenAppointment && projectId && (
                   <Button
@@ -451,16 +521,38 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
                   </Button>
                 )}
                 <div className="space-y-2">
-                  {mockAppointments.map(apt => (
-                    <div key={apt.id} className="p-3 bg-white rounded-lg border border-border" data-testid={`appointment-card-${apt.id}`}>
-                      <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-appointment-title-${apt.id}`}>{apt.title}</p>
-                      <p className="text-xs text-slate-400 mt-1" data-testid={`text-appointment-date-${apt.id}`}>{apt.date}</p>
-                    </div>
-                  ))}
+                  {appointmentsLoading ? (
+                    <p className="text-sm text-slate-400 text-center py-2">Termine werden geladen...</p>
+                  ) : projectAppointments.length === 0 ? (
+                    <p className="text-sm text-slate-400 text-center py-2">Keine Termine ab heute</p>
+                  ) : (
+                    projectAppointments.map((appointment) => {
+                      const timeLabel = appointment.startTimeHour !== null
+                        ? `${String(appointment.startTimeHour).padStart(2, "0")}:00`
+                        : null;
+                      const label = timeLabel
+                        ? `${appointment.startDate} • ${timeLabel}`
+                        : appointment.startDate;
+                      return (
+                        <InfoBadge
+                          key={appointment.id}
+                          icon={<Calendar className="w-4 h-4" />}
+                          label={label}
+                          action="remove"
+                          actionDisabled={appointment.isLocked}
+                          onRemove={() => deleteAppointmentMutation.mutate(appointment.id)}
+                          testId={`project-appointment-${appointment.id}`}
+                          fullWidth
+                        />
+                      );
+                    })
+                  )}
                 </div>
-                <p className="text-xs text-slate-400 text-center">
-                  Termindarstellung wird später ergänzt
-                </p>
+                {projectAppointments.some((appointment) => appointment.isLocked) && (
+                  <p className="text-xs text-slate-400 text-center">
+                    Gesperrte Termine können nur Admins löschen.
+                  </p>
+                )}
               </div>
 
               {/* Dokumente - nur bei Bearbeitung */}
