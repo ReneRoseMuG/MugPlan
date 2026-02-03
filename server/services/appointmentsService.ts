@@ -4,6 +4,13 @@ import * as projectsRepository from "../repositories/projectsRepository";
 
 const logPrefix = "[appointments-service]";
 
+const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Berlin",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 class AppointmentError extends Error {
   status: number;
 
@@ -13,11 +20,13 @@ class AppointmentError extends Error {
   }
 }
 
+function getBerlinTodayDateString(): string {
+  return berlinFormatter.format(new Date());
+}
+
 function isStartDateLocked(startDate: string): boolean {
-  const startDateValue = new Date(`${startDate}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return startDateValue <= today;
+  const todayBerlin = getBerlinTodayDateString();
+  return startDate <= todayBerlin;
 }
 
 function normalizeEmployeeIds(employeeIds?: number[]) {
@@ -115,6 +124,48 @@ export async function updateAppointment(
 
   console.log(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
   return appointmentsRepository.updateAppointment(appointmentId, appointmentData, employeeIds);
+}
+
+export async function listProjectAppointments(
+  projectId: number,
+  fromDate: string | undefined,
+  isAdmin: boolean,
+) {
+  const todayBerlin = getBerlinTodayDateString();
+  const effectiveFromDate = fromDate && fromDate >= todayBerlin ? fromDate : todayBerlin;
+
+  if (!fromDate) {
+    console.log(`${logPrefix} list appointments defaulting fromDate=${effectiveFromDate}`);
+  } else if (fromDate < todayBerlin) {
+    console.log(`${logPrefix} list appointments override fromDate=${fromDate} -> ${effectiveFromDate}`);
+  }
+
+  console.log(`${logPrefix} list appointments projectId=${projectId} fromDate=${effectiveFromDate}`);
+  const appointments = await appointmentsRepository.listAppointmentsByProjectFromDate(projectId, effectiveFromDate);
+  console.log(`${logPrefix} list appointments result projectId=${projectId} count=${appointments.length}`);
+
+  return appointments.map((appointment) => ({
+    id: appointment.id,
+    projectId: appointment.projectId,
+    startDate: appointment.startDate,
+    endDate: appointment.endDate,
+    startTimeHour: appointment.startTime ? Number(appointment.startTime.slice(0, 2)) : null,
+    isLocked: !isAdmin && isStartDateLocked(appointment.startDate),
+  }));
+}
+
+export async function deleteAppointment(appointmentId: number, isAdmin: boolean) {
+  const existing = await appointmentsRepository.getAppointment(appointmentId);
+  if (!existing) return null;
+
+  if (!isAdmin && isStartDateLocked(existing.startDate)) {
+    console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403);
+  }
+
+  console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
+  await appointmentsRepository.deleteAppointment(appointmentId);
+  return existing;
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {
