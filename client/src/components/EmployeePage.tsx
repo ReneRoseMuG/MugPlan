@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { EmployeeList } from "@/components/EmployeeList";
+import { EntityEditDialog } from "@/components/ui/entity-edit-dialog";
 import { Users, Route, Calendar, Phone, Mail, X } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -39,7 +39,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   const handleClose = onClose || onCancel;
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<EmployeeFormData>({
     firstName: "",
@@ -69,9 +68,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
     },
     onSuccess: () => {
       invalidateEmployees();
-      setDetailDialogOpen(false);
-      setIsCreating(false);
-      resetForm();
     },
   });
 
@@ -81,7 +77,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
     },
     onSuccess: () => {
       invalidateEmployees();
-      setIsEditing(false);
     },
   });
 
@@ -101,7 +96,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   const handleOpenCreate = () => {
     setSelectedEmployeeId(null);
     setIsCreating(true);
-    setIsEditing(true);
     resetForm();
     setDetailDialogOpen(true);
   };
@@ -109,7 +103,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   const handleOpenDetail = (employee: Employee) => {
     setSelectedEmployeeId(employee.id);
     setIsCreating(false);
-    setIsEditing(false);
     setFormData({
       firstName: employee.firstName,
       lastName: employee.lastName,
@@ -119,30 +112,20 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
     setDetailDialogOpen(true);
   };
 
-  const handleStartEdit = () => {
-    if (employeeDetails) {
-      setFormData({
-        firstName: employeeDetails.employee.firstName,
-        lastName: employeeDetails.employee.lastName,
-        phone: employeeDetails.employee.phone || "",
-        email: employeeDetails.employee.email || "",
-      });
-      setIsEditing(true);
+  const handleSubmit = async () => {
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      throw new Error("validation");
     }
-  };
 
-  const handleSave = () => {
-    if (!formData.firstName.trim() || !formData.lastName.trim()) return;
-    
     if (isCreating) {
-      createMutation.mutate({
+      await createMutation.mutateAsync({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
       });
     } else if (selectedEmployeeId) {
-      updateMutation.mutate({
+      await updateMutation.mutateAsync({
         id: selectedEmployeeId,
         data: {
           firstName: formData.firstName.trim(),
@@ -154,28 +137,9 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
     }
   };
 
-  const handleCancelEdit = () => {
-    if (isCreating) {
-      setDetailDialogOpen(false);
-      setIsCreating(false);
-      resetForm();
-    } else {
-      setIsEditing(false);
-      if (employeeDetails) {
-        setFormData({
-          firstName: employeeDetails.employee.firstName,
-          lastName: employeeDetails.employee.lastName,
-          phone: employeeDetails.employee.phone || "",
-          email: employeeDetails.employee.email || "",
-        });
-      }
-    }
-  };
-
   const handleCloseDialog = () => {
     setDetailDialogOpen(false);
     setIsCreating(false);
-    setIsEditing(false);
     resetForm();
   };
 
@@ -198,188 +162,181 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
         onToggleActive={handleToggleActive}
       />
 
-      <Dialog open={detailDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="flex-shrink-0 flex flex-row items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              {dialogTitle}
-            </DialogTitle>
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={handleCloseDialog}
-              data-testid="button-close-employee-detail"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-auto">
-            <div className="grid grid-cols-2 gap-6">
-              {/* Left column: Employee form - always editable */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">Vorname *</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                      placeholder="Vorname..."
-                      data-testid="input-employee-firstname"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Nachname *</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                      placeholder="Nachname..."
-                      data-testid="input-employee-lastname"
-                    />
-                  </div>
+      <EntityEditDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        title={dialogTitle}
+        icon={Users}
+        onSubmit={handleSubmit}
+        onCancel={handleCloseDialog}
+        isSaving={createMutation.isPending || updateMutation.isPending}
+        saveDisabled={!formData.firstName.trim() || !formData.lastName.trim()}
+        maxWidth="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden"
+        headerExtra={
+          <Button
+            size="lg"
+            variant="ghost"
+            onClick={handleCloseDialog}
+            className="ml-auto"
+            data-testid="button-close-employee-detail"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        }
+        saveTestId="button-save-employee"
+        cancelTestId="button-cancel-employee"
+      >
+        <div className="flex-1 overflow-auto">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left column: Employee form - always editable */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Vorname *</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                    placeholder="Vorname..."
+                    data-testid="input-employee-firstname"
+                  />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      Telefon
-                    </Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Telefonnummer..."
-                      data-testid="input-employee-phone"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="flex items-center gap-1">
-                      <Mail className="w-3 h-3" />
-                      E-Mail
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="E-Mail-Adresse..."
-                      data-testid="input-employee-email"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Nachname *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                    placeholder="Nachname..."
+                    data-testid="input-employee-lastname"
+                  />
                 </div>
+              </div>
 
-                {/* Active status - read-only */}
-                {!isCreating && displayEmployee && (
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <input
-                      type="checkbox"
-                      checked={displayEmployee.employee.isActive}
-                      disabled={true}
-                      className="w-4 h-4 cursor-not-allowed"
-                    />
-                    <Label className="text-muted-foreground text-sm">
-                      Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
-                    </Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-1">
+                    <Phone className="w-3 h-3" />
+                    Telefon
+                  </Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Telefonnummer..."
+                    data-testid="input-employee-phone"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    E-Mail
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="E-Mail-Adresse..."
+                    data-testid="input-employee-email"
+                  />
+                </div>
+              </div>
+
+              {/* Active status - read-only */}
+              {!isCreating && displayEmployee && (
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <input
+                    type="checkbox"
+                    checked={displayEmployee.employee.isActive}
+                    disabled={true}
+                    className="w-4 h-4 cursor-not-allowed"
+                  />
+                  <Label className="text-muted-foreground text-sm">
+                    Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
+                  </Label>
+                </div>
+              )}
+            </div>
+
+            {/* Right column: Appointments + Tour + Team */}
+            <div className="space-y-4">
+              {/* Appointments list */}
+              <div className="space-y-2">
+                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                  <Calendar className="w-4 h-4" />
+                  Aktuelle Termine
+                </h4>
+                <div className="border rounded-md p-3 bg-slate-50 min-h-[120px] max-h-[180px] overflow-y-auto">
+                  {demoAppointments.length === 0 ? (
+                    <p className="text-sm text-slate-400 italic text-center py-4">
+                      Keine aktuellen Termine
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {demoAppointments.map((apt) => (
+                        <li key={apt.id} className="p-2 bg-white rounded border text-sm">
+                          <div className="font-medium">{apt.title}</div>
+                          <div className="text-slate-500 text-xs">{apt.date}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 italic">
+                  Demo-Daten - Terminverwaltung folgt
+                </p>
+              </div>
+
+              {/* Tour card (read-only) */}
+              <div className="space-y-2">
+                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                  <Route className="w-4 h-4" />
+                  Tour
+                </h4>
+                {!isCreating && displayEmployee?.tour ? (
+                  <ColoredInfoBadge
+                    icon={<Route className="w-4 h-4" />}
+                    label={displayEmployee.tour.name}
+                    color={displayEmployee.tour.color}
+                    fullWidth
+                    testId="badge-employee-tour"
+                  />
+                ) : (
+                  <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
+                    <p className="text-sm text-slate-400 italic">
+                      Keiner Tour zugewiesen
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Right column: Appointments + Tour + Team */}
-              <div className="space-y-4">
-                {/* Appointments list */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                    <Calendar className="w-4 h-4" />
-                    Aktuelle Termine
-                  </h4>
-                  <div className="border rounded-md p-3 bg-slate-50 min-h-[120px] max-h-[180px] overflow-y-auto">
-                    {demoAppointments.length === 0 ? (
-                      <p className="text-sm text-slate-400 italic text-center py-4">
-                        Keine aktuellen Termine
-                      </p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {demoAppointments.map((apt) => (
-                          <li key={apt.id} className="p-2 bg-white rounded border text-sm">
-                            <div className="font-medium">{apt.title}</div>
-                            <div className="text-slate-500 text-xs">{apt.date}</div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+              {/* Team card (read-only) */}
+              <div className="space-y-2">
+                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                  <Users className="w-4 h-4" />
+                  Team
+                </h4>
+                {!isCreating && displayEmployee?.team ? (
+                  <ColoredInfoBadge
+                    icon={<Users className="w-4 h-4" />}
+                    label={displayEmployee.team.name}
+                    color={displayEmployee.team.color}
+                    fullWidth
+                    testId="badge-employee-team"
+                  />
+                ) : (
+                  <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
+                    <p className="text-sm text-slate-400 italic">
+                      Keinem Team zugewiesen
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-400 italic">
-                    Demo-Daten - Terminverwaltung folgt
-                  </p>
-                </div>
-
-                {/* Tour card (read-only) */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                    <Route className="w-4 h-4" />
-                    Tour
-                  </h4>
-                  {!isCreating && displayEmployee?.tour ? (
-                    <ColoredInfoBadge
-                      icon={<Route className="w-4 h-4" />}
-                      label={displayEmployee.tour.name}
-                      color={displayEmployee.tour.color}
-                      fullWidth
-                      testId="badge-employee-tour"
-                    />
-                  ) : (
-                    <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                      <p className="text-sm text-slate-400 italic">
-                        Keiner Tour zugewiesen
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Team card (read-only) */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                    <Users className="w-4 h-4" />
-                    Team
-                  </h4>
-                  {!isCreating && displayEmployee?.team ? (
-                    <ColoredInfoBadge
-                      icon={<Users className="w-4 h-4" />}
-                      label={displayEmployee.team.name}
-                      color={displayEmployee.team.color}
-                      fullWidth
-                      testId="badge-employee-team"
-                    />
-                  ) : (
-                    <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                      <p className="text-sm text-slate-400 italic">
-                        Keinem Team zugewiesen
-                      </p>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
-
-          <DialogFooter className="flex-shrink-0 gap-2 border-t pt-4 mt-4">
-            <Button variant="outline" onClick={handleCloseDialog} data-testid="button-cancel-employee">
-              Abbrechen
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!formData.firstName.trim() || !formData.lastName.trim() || createMutation.isPending || updateMutation.isPending}
-              data-testid="button-save-employee"
-            >
-              {(createMutation.isPending || updateMutation.isPending) ? "Speichern..." : "Speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </EntityEditDialog>
     </>
   );
 }

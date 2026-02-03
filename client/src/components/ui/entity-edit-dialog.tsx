@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,9 +14,11 @@ export interface EntityEditDialogProps {
   title: string;
   icon: LucideIcon;
   children: ReactNode;
-  onSave: () => void;
+  onSave?: () => void;
+  onSubmit?: () => Promise<void>;
   onCancel: () => void;
   isSaving?: boolean;
+  closeOnSubmitSuccess?: boolean;
   saveDisabled?: boolean;
   saveLabel?: string;
   cancelLabel?: string;
@@ -33,8 +35,10 @@ export function EntityEditDialog({
   icon: Icon,
   children,
   onSave,
+  onSubmit,
   onCancel,
   isSaving = false,
+  closeOnSubmitSuccess = true,
   saveDisabled = false,
   saveLabel = "Speichern",
   cancelLabel = "Abbrechen",
@@ -43,11 +47,31 @@ export function EntityEditDialog({
   saveTestId = "button-save-entity",
   cancelTestId = "button-cancel-entity",
 }: EntityEditDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitAction = onSubmit ?? (onSave ? async () => onSave() : undefined);
+  const shouldAutoClose = closeOnSubmitSuccess && !!onSubmit;
+  const isBusy = isSaving || isSubmitting;
+
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       onCancel();
     }
     onOpenChange(isOpen);
+  };
+
+  const handleSave = async () => {
+    if (!submitAction) return;
+    try {
+      setIsSubmitting(true);
+      await submitAction();
+      if (shouldAutoClose) {
+        handleOpenChange(false);
+      }
+    } catch {
+      // keep dialog open on submit errors
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,11 +91,11 @@ export function EntityEditDialog({
               {cancelLabel}
             </Button>
             <Button 
-              onClick={onSave} 
-              disabled={isSaving || saveDisabled} 
+              onClick={handleSave} 
+              disabled={isBusy || saveDisabled} 
               data-testid={saveTestId}
             >
-              {isSaving ? "Speichern..." : saveLabel}
+              {isBusy ? "Speichern..." : saveLabel}
             </Button>
           </div>
         </div>

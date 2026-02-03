@@ -116,7 +116,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({ title: "Kunde angelegt", description: "Der Kunde wurde erfolgreich angelegt." });
-      onSave?.();
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -132,27 +131,30 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
       toast({ title: "Gespeichert", description: "Die Kundendaten wurden erfolgreich aktualisiert." });
-      onSave?.();
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
     },
   });
 
-  const handleSave = () => {
+  const handleSubmit = async () => {
     if (!formData.customerNumber || !formData.firstName || !formData.lastName || !formData.phone) {
       toast({ 
         title: "Fehler", 
         description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Vorname, Nachname, Telefon).", 
         variant: "destructive" 
       });
-      return;
+      throw new Error("validation");
     }
 
     if (isEditMode) {
-      updateMutation.mutate(formData);
+      await updateMutation.mutateAsync(formData);
     } else {
-      createMutation.mutate(formData);
+      await createMutation.mutateAsync(formData);
+    }
+
+    if (onSave && onSave !== onCancel) {
+      onSave();
     }
   };
 
@@ -173,8 +175,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       deleteNoteMutation.mutate(noteId);
     }
   };
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
 
   if (isEditMode && isLoading) {
     return (
@@ -201,8 +201,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       icon={<User className="w-6 h-6" />}
       onClose={onCancel}
       onCancel={onCancel}
-      onSave={handleSave}
-      isSaving={isPending}
+      onSubmit={handleSubmit}
       testIdPrefix="customer"
     >
       <div className="grid grid-cols-3 gap-6">

@@ -219,7 +219,6 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       toast({ title: "Projekt erstellt" });
-      onSaved?.();
     },
     onError: () => {
       toast({ title: "Fehler beim Erstellen", variant: "destructive" });
@@ -300,20 +299,24 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
     },
   });
 
-  const handleSave = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
-      return;
+      throw new Error("validation");
     }
     if (!customerId) {
       toast({ title: "Kunde muss ausgewählt werden", variant: "destructive" });
-      return;
+      throw new Error("validation");
     }
 
     if (isEditing) {
-      updateMutation.mutate({ name, customerId, descriptionMd: descriptionMd || undefined });
+      await updateMutation.mutateAsync({ name, customerId, descriptionMd: descriptionMd || undefined });
     } else {
-      createMutation.mutate({ name, customerId, descriptionMd: descriptionMd || undefined });
+      await createMutation.mutateAsync({ name, customerId, descriptionMd: descriptionMd || undefined });
+    }
+
+    if (onSaved && onSaved !== onCancel) {
+      onSaved();
     }
   };
 
@@ -330,16 +333,13 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
     );
   }
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
-
   return (
     <EntityFormLayout
       title={isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
       icon={<FolderKanban className="w-6 h-6" />}
       onClose={onCancel}
       onCancel={onCancel}
-      onSave={handleSave}
-      isSaving={isPending}
+      onSubmit={handleSubmit}
       saveLabel="Projekt speichern"
       testIdPrefix="project"
     >
