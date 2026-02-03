@@ -1,4 +1,4 @@
-import { mysqlTable, text, int, date, boolean, datetime, bigint, primaryKey, varchar, timestamp } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, time, boolean, datetime, bigint, primaryKey, varchar, timestamp } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations, sql } from "drizzle-orm";
@@ -206,6 +206,26 @@ export const insertProjectAttachmentSchema = createInsertSchema(projectAttachmen
 export type ProjectAttachment = typeof projectAttachments.$inferSelect;
 export type InsertProjectAttachment = z.infer<typeof insertProjectAttachmentSchema>;
 
+// Appointment - Terminverwaltung (FT 01)
+export const appointments = mysqlTable("appointments", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  projectId: bigint("project_id", { mode: "number" })
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  tourId: int("tour_id").references(() => tours.id, { onDelete: "set null", onUpdate: "restrict" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startDate: date("start_date").notNull(),
+  startTime: time("start_time"),
+  endDate: date("end_date"),
+  endTime: time("end_time"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = typeof appointments.$inferInsert;
+
 // Project Status - Projektstatusverwaltung (FT 15)
 export const projectStatus = mysqlTable("project_status", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
@@ -282,6 +302,20 @@ export const updateEmployeeSchema = z.object({
 export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;
+
+// Appointment <-> Employee Relation (FT 01)
+export const appointmentEmployees = mysqlTable("appointment_employee", {
+  appointmentId: bigint("appointment_id", { mode: "number" })
+    .notNull()
+    .references(() => appointments.id, { onDelete: "cascade" }),
+  employeeId: bigint("employee_id", { mode: "number" })
+    .notNull()
+    .references(() => employees.id, { onDelete: "cascade" }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.appointmentId, table.employeeId] }),
+}));
+
+export type AppointmentEmployee = typeof appointmentEmployees.$inferSelect;
 
 // Help Texts (FT 16)
 export const helpTexts = mysqlTable("help_texts", {

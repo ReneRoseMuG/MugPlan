@@ -22,8 +22,8 @@ import { MapOverlay } from "@/components/MapOverlay";
 
 interface CalendarGridProps {
   currentDate: Date;
-  onNewAppointment?: () => void;
-  onAppointmentDoubleClick?: () => void;
+  onNewAppointment?: (date: string) => void;
+  onAppointmentDoubleClick?: (date: string) => void;
 }
 
 interface DemoAppointment {
@@ -311,7 +311,7 @@ function AppointmentBar({
   isFirstDay: boolean;
   isLastDay: boolean;
   spanDays: number;
-  onDoubleClick?: () => void;
+  onDoubleClick?: (date: string) => void;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
   isDragging?: boolean;
@@ -360,7 +360,7 @@ function AppointmentBar({
       className={`relative ${isDragging ? 'opacity-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onDoubleClick={onDoubleClick}
+        onDoubleClick={() => onDoubleClick?.(appointment.startDate)}
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -565,7 +565,7 @@ export function CalendarGrid({ currentDate, onNewAppointment, onAppointmentDoubl
                   >
                     <div className="flex justify-between items-start mb-1">
                       <button
-                        onClick={onNewAppointment}
+                        onClick={() => onNewAppointment?.(format(day, 'yyyy-MM-dd'))}
                         className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
                         data-testid={`button-new-appointment-${format(day, 'yyyy-MM-dd')}`}
                       >

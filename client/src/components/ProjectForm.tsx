@@ -30,6 +30,7 @@ interface ProjectFormProps {
   projectId?: number;
   onCancel?: () => void;
   onSaved?: () => void;
+  onOpenAppointment?: (projectId: number) => void;
 }
 
 const mockAppointments = [
@@ -438,6 +439,17 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
                   <Calendar className="w-4 h-4" />
                   Termine (Demo)
                 </h3>
+                {isEditing && onOpenAppointment && projectId && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => onOpenAppointment(projectId)}
+                    data-testid="button-new-appointment-from-project"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Neuer Termin
+                  </Button>
+                )}
                 <div className="space-y-2">
                   {mockAppointments.map(apt => (
                     <div key={apt.id} className="p-3 bg-white rounded-lg border border-border" data-testid={`appointment-card-${apt.id}`}>
