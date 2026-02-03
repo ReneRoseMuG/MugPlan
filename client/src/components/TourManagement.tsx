@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Route, Pencil, UserCheck, X } from "lucide-react";
+import { Route, Pencil } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { TourEditDialog } from "@/components/ui/tour-edit-dialog";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { defaultEntityColor } from "@/lib/colors";
 import type { Tour, Employee } from "@shared/schema";
 
@@ -94,14 +95,6 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     },
   });
 
-  const removeEmployeeMutation = useMutation({
-    mutationFn: async (employeeId: number) => {
-      return apiRequest('DELETE', `/api/tours/employees/${employeeId}`);
-    },
-    onSuccess: () => {
-      invalidateEmployees();
-    },
-  });
 
   const handleOpenCreate = () => {
     setEditingTour(null);
@@ -117,10 +110,6 @@ export function TourManagement({ onCancel }: TourManagementProps) {
       await updateMutation.mutateAsync({ id: tourId, color });
       await assignMembersMutation.mutateAsync({ tourId, employeeIds });
     }
-  };
-
-  const handleRemoveEmployee = (employeeId: number) => {
-    removeEmployeeMutation.mutate(employeeId);
   };
 
   const handleCloseDialog = () => {
@@ -188,30 +177,18 @@ export function TourManagement({ onCancel }: TourManagementProps) {
             <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
               Mitarbeiter
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {tour.members.map((member) => (
-                <div 
-                  key={member.id} 
-                  className="text-sm text-slate-700 flex items-center justify-between group"
-                  data-testid={`text-tour-member-${member.id}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-3 h-3 text-primary" />
-                    {member.lastName}, {member.firstName}
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveEmployee(member.id);
-                    }}
-                    data-testid={`button-remove-tour-employee-${member.id}`}
-                  >
-                    <X className="w-3 h-3 text-slate-400 hover:text-red-500" />
-                  </Button>
-                </div>
+                <EmployeeInfoBadge
+                  key={member.id}
+                  id={member.id}
+                  firstName={member.firstName}
+                  lastName={member.lastName}
+                  action="none"
+                  size="sm"
+                  fullWidth
+                  testId={`text-tour-member-${member.id}`}
+                />
               ))}
               {tour.members.length === 0 && (
                 <div className="text-sm text-slate-400 italic">
