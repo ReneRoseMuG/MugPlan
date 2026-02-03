@@ -12,7 +12,7 @@ export interface TourEditDialogProps {
   onOpenChange: (open: boolean) => void;
   tour: TourWithMembers | null;
   allEmployees: Employee[];
-  onSave: (tourId: number | null, employeeIds: number[], color: string) => void;
+  onSubmit: (tourId: number | null, employeeIds: number[], color: string) => Promise<void>;
   isSaving: boolean;
   isCreate?: boolean;
   defaultName?: string;
@@ -24,7 +24,7 @@ export function TourEditDialog({
   onOpenChange,
   tour,
   allEmployees,
-  onSave,
+  onSubmit,
   isSaving,
   isCreate = false,
   defaultName = "Neue Tour",
@@ -49,8 +49,8 @@ export function TourEditDialog({
     );
   };
 
-  const handleSave = () => {
-    onSave(tour?.id || null, selectedMembers, selectedColor);
+  const handleSubmit = () => {
+    return onSubmit(tour?.id || null, selectedMembers, selectedColor);
   };
 
   const handleCancel = () => {
@@ -72,7 +72,7 @@ export function TourEditDialog({
       entityType="tour"
       selectedColor={selectedColor}
       onColorChange={setSelectedColor}
-      onSave={handleSave}
+      onSubmit={handleSubmit}
       onCancel={handleCancel}
       isSaving={isSaving}
       colorPickerTestId="button-tour-color-picker"

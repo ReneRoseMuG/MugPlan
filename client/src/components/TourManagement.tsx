@@ -91,8 +91,6 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     },
     onSuccess: () => {
       invalidateEmployees();
-      setEditingTour(null);
-      setIsCreating(false);
     },
   });
 
@@ -110,14 +108,14 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     setIsCreating(true);
   };
 
-  const handleSaveTour = async (tourId: number | null, employeeIds: number[], color: string) => {
+  const handleSubmitTour = async (tourId: number | null, employeeIds: number[], color: string) => {
     if (tourId === null) {
       const response = await createMutation.mutateAsync({ color });
       const newTour = await response.json();
-      assignMembersMutation.mutate({ tourId: newTour.id, employeeIds });
+      await assignMembersMutation.mutateAsync({ tourId: newTour.id, employeeIds });
     } else {
       await updateMutation.mutateAsync({ id: tourId, color });
-      assignMembersMutation.mutate({ tourId, employeeIds });
+      await assignMembersMutation.mutateAsync({ tourId, employeeIds });
     }
   };
 
@@ -230,7 +228,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
         onOpenChange={(open) => !open && handleCloseDialog()}
         tour={editingTour ? (toursWithMembers.find(t => t.id === editingTour.id) || editingTour) : null}
         allEmployees={employees}
-        onSave={handleSaveTour}
+        onSubmit={handleSubmitTour}
         isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
         isCreate={isCreating}
         defaultName={getNextTourName()}
