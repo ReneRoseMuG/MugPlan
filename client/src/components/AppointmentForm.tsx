@@ -135,7 +135,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   });
 
   const { data: appointmentDetail, isLoading: appointmentLoading } = useQuery<AppointmentDetail>({
-    queryKey: [\"/api/appointments\", appointmentId],
+    queryKey: ["/api/appointments", appointmentId],
     queryFn: () => fetchJson<AppointmentDetail>(`/api/appointments/${appointmentId}`),
     enabled: Boolean(appointmentId),
   });
