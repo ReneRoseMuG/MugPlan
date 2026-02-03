@@ -26,6 +26,7 @@ export interface EntityEditDialogProps {
   headerExtra?: ReactNode;
   saveTestId?: string;
   cancelTestId?: string;
+  hideActions?: boolean;
 }
 
 export function EntityEditDialog({
@@ -46,6 +47,7 @@ export function EntityEditDialog({
   headerExtra,
   saveTestId = "button-save-entity",
   cancelTestId = "button-cancel-entity",
+  hideActions = false,
 }: EntityEditDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitAction = onSubmit ?? (onSave ? async () => onSave() : undefined);
@@ -86,18 +88,20 @@ export function EntityEditDialog({
         </DialogHeader>
         <div className="space-y-4 pt-4">
           {children}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="ghost" onClick={onCancel} data-testid={cancelTestId}>
-              {cancelLabel}
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              disabled={isBusy || saveDisabled} 
-              data-testid={saveTestId}
-            >
-              {isBusy ? "Speichern..." : saveLabel}
-            </Button>
-          </div>
+          {!hideActions && (
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="ghost" onClick={onCancel} data-testid={cancelTestId}>
+                {cancelLabel}
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                disabled={isBusy || saveDisabled} 
+                data-testid={saveTestId}
+              >
+                {isBusy ? "Speichern..." : saveLabel}
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

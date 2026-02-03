@@ -1,6 +1,7 @@
 import { Flag, FolderKanban } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
+import { getProjectStatusColor } from "@/lib/project-status";
 import type { Project, ProjectStatus } from "@shared/schema";
 
 interface LinkedProjectCardProps {
@@ -39,7 +40,7 @@ export function LinkedProjectCard({ project, onOpenProject }: LinkedProjectCardP
               key={status.id}
               icon={<Flag className="w-3 h-3" />}
               label={status.title}
-              color={status.color}
+              color={getProjectStatusColor(status)}
               size="sm"
               fullWidth
               testId={`linked-project-status-${project.id}-${status.id}`}
