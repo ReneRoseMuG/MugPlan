@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
+import { getProjectStatusColor } from "@/lib/project-status";
 import { Flag, Plus } from "lucide-react";
 import type { ProjectStatus } from "@shared/schema";
 
@@ -93,7 +94,7 @@ export function ProjectStatusSection({
                 key={status.id}
                 icon={<Flag className="w-4 h-4" />}
                 label={status.title}
-                color={status.color}
+                color={getProjectStatusColor(status)}
                 onRemove={() => onRemove(status.id)}
                 fullWidth
                 testId={`status-badge-${status.id}`}
@@ -143,7 +144,7 @@ export function ProjectStatusSection({
                       ? "bg-primary/10 border-primary/30" 
                       : "border-transparent hover:bg-slate-50"
                   }`}
-                  style={{ borderLeftWidth: '4px', borderLeftColor: status.color }}
+                  style={{ borderLeftWidth: '4px', borderLeftColor: getProjectStatusColor(status) }}
                   data-testid={`checkbox-status-${status.id}`}
                 >
                   <Checkbox

@@ -14,6 +14,7 @@ interface ColoredEntityCardProps {
   testId?: string;
   className?: string;
   onDoubleClick?: () => void;
+  onClick?: () => void;
 }
 
 export function ColoredEntityCard({
@@ -29,6 +30,7 @@ export function ColoredEntityCard({
   testId,
   className = "",
   onDoubleClick,
+  onClick,
 }: ColoredEntityCardProps) {
   const style = borderColor 
     ? { borderLeftWidth: '5px', borderLeftColor: borderColor } 
@@ -47,6 +49,7 @@ export function ColoredEntityCard({
       className={className}
       style={style}
       onDoubleClick={onDoubleClick}
+      onClick={onClick}
     >
       {children}
     </EntityCard>
