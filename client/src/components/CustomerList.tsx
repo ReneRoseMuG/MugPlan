@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { User, Phone, MapPin, Building2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
-import { CardListLayout } from "@/components/ui/card-list-layout";
-import { FilterInput } from "@/components/ui/filter-input";
+import { FilteredCardListLayout } from "@/components/ui/filtered-card-list-layout";
+import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { defaultHeaderColor } from "@/lib/colors";
+import { applyCustomerFilters, defaultCustomerFilters } from "@/lib/customer-filters";
 import { useQuery } from "@tanstack/react-query";
 import type { Customer } from "@shared/schema";
 
@@ -17,43 +18,37 @@ interface CustomerListProps {
   title?: string;
 }
 
-export function CustomerList({
+interface CustomerListViewProps extends CustomerListProps {
+  customers: Customer[];
+  isLoading?: boolean;
+}
+
+export function CustomerListView({
+  customers,
+  isLoading = false,
   onCancel,
   onNewCustomer,
   onSelectCustomer,
   mode = "list",
   selectedCustomerId = null,
   title,
-}: CustomerListProps) {
-  const { data: customers = [], isLoading } = useQuery<Customer[]>({
-    queryKey: ['/api/customers'],
-  });
+}: CustomerListViewProps) {
+  const [filters, setFilters] = useState(defaultCustomerFilters);
 
-  const [lastNameFilter, setLastNameFilter] = useState("");
-  const [customerNumberFilter, setCustomerNumberFilter] = useState("");
-
-  const activeCustomers = customers.filter(c => c.isActive);
-  const filteredCustomers = useMemo(() => {
-    const normalizedLastName = lastNameFilter.trim().toLowerCase();
-    const normalizedCustomerNumber = customerNumberFilter.trim();
-
-    return activeCustomers.filter((customer) => {
-      const matchesLastName = normalizedLastName
-        ? (customer.lastName ?? "").toLowerCase().includes(normalizedLastName)
-        : true;
-      const matchesCustomerNumber = normalizedCustomerNumber
-        ? (customer.customerNumber ?? "").includes(normalizedCustomerNumber)
-        : true;
-
-      return matchesLastName && matchesCustomerNumber;
-    });
-  }, [activeCustomers, lastNameFilter, customerNumberFilter]);
+  const activeCustomers = useMemo(
+    () => customers.filter((customer) => customer.isActive),
+    [customers],
+  );
+  const filteredCustomers = useMemo(
+    () => applyCustomerFilters(activeCustomers, filters),
+    [activeCustomers, filters],
+  );
 
   const isPicker = mode === "picker";
   const resolvedTitle = title ?? (isPicker ? "Kunde auswählen" : "Kunden");
 
   return (
-    <CardListLayout
+    <FilteredCardListLayout
       title={resolvedTitle}
       icon={<User className="w-5 h-5" />}
       helpKey="customers"
@@ -78,28 +73,26 @@ export function CustomerList({
           Keine Kunden gefunden.
         </p>
       }
-      bottomBar={(
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <FilterInput
+      filters={(
+        <>
+          <SearchFilterInput
             id="customer-filter-last-name"
             label="Nachname"
-            value={lastNameFilter}
-            placeholder="Suche Nachname"
-            onChange={setLastNameFilter}
-            onClear={() => setLastNameFilter("")}
+            value={filters.lastName}
+            onChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
+            onClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
             className="flex-1"
           />
-          <FilterInput
+          <SearchFilterInput
             id="customer-filter-number"
             label="Kundennummer"
-            value={customerNumberFilter}
-            placeholder="Kundennummer"
-            onChange={setCustomerNumberFilter}
-            onClear={() => setCustomerNumberFilter("")}
+            value={filters.customerNumber}
+            onChange={(value) => setFilters((prev) => ({ ...prev, customerNumber: value }))}
+            onClear={() => setFilters((prev) => ({ ...prev, customerNumber: "" }))}
             numericOnly
             className="flex-1"
           />
-        </div>
+        </>
       )}
     >
       {filteredCustomers.map(customer => {
@@ -149,6 +142,20 @@ export function CustomerList({
           </EntityCard>
         );
       })}
-    </CardListLayout>
+    </FilteredCardListLayout>
+  );
+}
+
+export function CustomerList(props: CustomerListProps) {
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
+    queryKey: ['/api/customers'],
+  });
+
+  return (
+    <CustomerListView
+      {...props}
+      customers={customers}
+      isLoading={isLoading}
+    />
   );
 }

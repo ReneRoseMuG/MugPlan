@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { Users, Route, Power, PowerOff, Phone, Mail, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CardListLayout } from "@/components/ui/card-list-layout";
+import { FilteredCardListLayout } from "@/components/ui/filtered-card-list-layout";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { EntityCard } from "@/components/ui/entity-card";
-import { FilterInput } from "@/components/ui/filter-input";
+import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-filters";
 import type { Employee, Team, Tour } from "@shared/schema";
 
@@ -63,7 +63,7 @@ export function EmployeeList({
   };
 
   return (
-    <CardListLayout
+    <FilteredCardListLayout
       title={resolvedTitle}
       icon={<Users className="w-5 h-5" />}
       helpKey="employees"
@@ -84,18 +84,15 @@ export function EmployeeList({
           Keine Mitarbeiter vorhanden
         </p>
       }
-      bottomBar={(
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <FilterInput
-            id="employee-filter-last-name"
-            label="Nachname"
-            value={filters.lastName}
-            placeholder="Suche Nachname"
-            onChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
-            onClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
-            className="flex-1"
-          />
-        </div>
+      filters={(
+        <SearchFilterInput
+          id="employee-filter-last-name"
+          label="Nachname"
+          value={filters.lastName}
+          onChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
+          onClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
+          className="flex-1"
+        />
       )}
     >
       {filteredEmployees.map((employee) => {
@@ -200,6 +197,6 @@ export function EmployeeList({
           </EntityCard>
         );
       })}
-    </CardListLayout>
+    </FilteredCardListLayout>
   );
 }

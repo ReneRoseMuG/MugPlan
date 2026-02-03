@@ -3,9 +3,10 @@ import { FolderKanban, MapPin, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityCard } from "@/components/ui/entity-card";
-import { CardListLayout } from "@/components/ui/card-list-layout";
-import { FilterInput } from "@/components/ui/filter-input";
+import { FilteredCardListLayout } from "@/components/ui/filtered-card-list-layout";
+import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { defaultHeaderColor } from "@/lib/colors";
+import { applyProjectFilters, defaultProjectFilters } from "@/lib/project-filters";
 import { useQuery } from "@tanstack/react-query";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
 
@@ -23,53 +24,48 @@ interface ProjectWithDetails extends Project {
   statuses?: ProjectStatus[];
 }
 
-export default function ProjectList({
+interface ProjectListViewProps extends ProjectListProps {
+  projects: Project[];
+  customers: Customer[];
+  projectStatuses: ProjectStatus[];
+  isLoading?: boolean;
+}
+
+export function ProjectListView({
+  projects,
+  customers,
+  projectStatuses,
+  isLoading = false,
   onCancel,
   onNewProject,
   onSelectProject,
   mode = "list",
   selectedProjectId = null,
   title,
-}: ProjectListProps) {
-  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
-    queryKey: ['/api/projects'],
-  });
+}: ProjectListViewProps) {
+  const [filters, setFilters] = useState(defaultProjectFilters);
 
-  const { data: customers = [] } = useQuery<Customer[]>({
-    queryKey: ['/api/customers'],
-  });
+  const activeProjects = useMemo(
+    () => projects.filter((project) => project.isActive),
+    [projects],
+  );
+  const filteredProjects = useMemo(
+    () => applyProjectFilters(activeProjects, filters),
+    [activeProjects, filters],
+  );
 
-  const { data: projectStatuses = [] } = useQuery<ProjectStatus[]>({
-    queryKey: ['/api/project-status'],
-  });
-
-  const [titleFilter, setTitleFilter] = useState("");
-
-  const activeProjects = projects.filter(p => p.isActive);
-  const filteredProjects = useMemo(() => {
-    const normalizedTitle = titleFilter.trim().toLowerCase();
-
-    if (!normalizedTitle) {
-      return activeProjects;
-    }
-
-    return activeProjects.filter((project) =>
-      (project.name ?? "").toLowerCase().includes(normalizedTitle),
-    );
-  }, [activeProjects, titleFilter]);
-
-  const getCustomer = (customerId: number) => 
+  const getCustomer = (customerId: number) =>
     customers.find(c => c.id === customerId);
 
   const isPicker = mode === "picker";
   const resolvedTitle = title ?? (isPicker ? "Projekt auswählen" : "Projekte");
 
   return (
-    <CardListLayout
+    <FilteredCardListLayout
       title={resolvedTitle}
       icon={<FolderKanban className="w-5 h-5" />}
       helpKey="projects"
-      isLoading={projectsLoading}
+      isLoading={isLoading}
       onClose={onCancel}
       closeTestId="button-close-projects"
       gridTestId="list-projects"
@@ -90,18 +86,15 @@ export default function ProjectList({
           Keine Projekte gefunden.
         </p>
       }
-      bottomBar={(
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <FilterInput
-            id="project-filter-title"
-            label="Projekttitel"
-            value={titleFilter}
-            placeholder="Suche Projekttitel"
-            onChange={setTitleFilter}
-            onClear={() => setTitleFilter("")}
-            className="flex-1"
-          />
-        </div>
+      filters={(
+        <SearchFilterInput
+          id="project-filter-title"
+          label="Projekttitel"
+          value={filters.title}
+          onChange={(value) => setFilters((prev) => ({ ...prev, title: value }))}
+          onClear={() => setFilters((prev) => ({ ...prev, title: "" }))}
+          className="flex-1"
+        />
       )}
     >
       {filteredProjects.map(project => {
@@ -163,6 +156,30 @@ export default function ProjectList({
           </EntityCard>
         );
       })}
-    </CardListLayout>
+    </FilteredCardListLayout>
+  );
+}
+
+export default function ProjectList(props: ProjectListProps) {
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+  });
+
+  const { data: customers = [] } = useQuery<Customer[]>({
+    queryKey: ['/api/customers'],
+  });
+
+  const { data: projectStatuses = [] } = useQuery<ProjectStatus[]>({
+    queryKey: ['/api/project-status'],
+  });
+
+  return (
+    <ProjectListView
+      {...props}
+      projects={projects}
+      customers={customers}
+      projectStatuses={projectStatuses}
+      isLoading={projectsLoading}
+    />
   );
 }
