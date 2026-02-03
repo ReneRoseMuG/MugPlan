@@ -12,7 +12,7 @@ export interface TeamEditDialogProps {
   onOpenChange: (open: boolean) => void;
   team: TeamWithMembers | null;
   allEmployees: Employee[];
-  onSave: (teamId: number | null, employeeIds: number[], color: string) => void;
+  onSubmit: (teamId: number | null, employeeIds: number[], color: string) => Promise<void>;
   isSaving: boolean;
   isCreate?: boolean;
   defaultName?: string;
@@ -24,7 +24,7 @@ export function TeamEditDialog({
   onOpenChange,
   team,
   allEmployees,
-  onSave,
+  onSubmit,
   isSaving,
   isCreate = false,
   defaultName = "Neues Team",
@@ -49,8 +49,8 @@ export function TeamEditDialog({
     );
   };
 
-  const handleSave = () => {
-    onSave(team?.id || null, selectedMembers, selectedColor);
+  const handleSubmit = () => {
+    return onSubmit(team?.id || null, selectedMembers, selectedColor);
   };
 
   const handleCancel = () => {
@@ -72,7 +72,7 @@ export function TeamEditDialog({
       entityType="team"
       selectedColor={selectedColor}
       onColorChange={setSelectedColor}
-      onSave={handleSave}
+      onSubmit={handleSubmit}
       onCancel={handleCancel}
       isSaving={isSaving}
       colorPickerTestId="button-team-color-picker"

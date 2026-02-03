@@ -91,8 +91,6 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     },
     onSuccess: () => {
       invalidateEmployees();
-      setEditingTeam(null);
-      setIsCreating(false);
     },
   });
 
@@ -110,14 +108,14 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     setIsCreating(true);
   };
 
-  const handleSaveTeam = async (teamId: number | null, employeeIds: number[], color: string) => {
+  const handleSubmitTeam = async (teamId: number | null, employeeIds: number[], color: string) => {
     if (teamId === null) {
       const response = await createMutation.mutateAsync({ color });
       const newTeam = await response.json();
-      assignMembersMutation.mutate({ teamId: newTeam.id, employeeIds });
+      await assignMembersMutation.mutateAsync({ teamId: newTeam.id, employeeIds });
     } else {
       await updateMutation.mutateAsync({ id: teamId, color });
-      assignMembersMutation.mutate({ teamId, employeeIds });
+      await assignMembersMutation.mutateAsync({ teamId, employeeIds });
     }
   };
 
@@ -230,7 +228,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
         onOpenChange={(open) => !open && handleCloseDialog()}
         team={editingTeam ? (teamsWithMembers.find(t => t.id === editingTeam.id) || editingTeam) : null}
         allEmployees={employees}
-        onSave={handleSaveTeam}
+        onSubmit={handleSubmitTeam}
         isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
         isCreate={isCreating}
         defaultName={getNextTeamName()}
