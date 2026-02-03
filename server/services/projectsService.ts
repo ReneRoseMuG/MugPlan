@@ -2,15 +2,19 @@ import type { Customer, InsertProject, Project, UpdateProject } from "@shared/sc
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as projectStatusService from "./projectStatusService";
 
-export async function listProjects(filter: "active" | "inactive" | "all" = "all"): Promise<Project[]> {
-  return projectsRepository.getProjects(filter);
+export async function listProjects(
+  filter: "active" | "inactive" | "all" = "all",
+  statusIds: number[] = [],
+): Promise<Project[]> {
+  return projectsRepository.getProjects(filter, statusIds);
 }
 
 export async function listProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
+  statusIds: number[] = [],
 ): Promise<Project[]> {
-  return projectsRepository.getProjectsByCustomer(customerId, filter);
+  return projectsRepository.getProjectsByCustomer(customerId, filter, statusIds);
 }
 
 export async function getProject(id: number): Promise<Project | null> {
