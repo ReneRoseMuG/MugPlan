@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 interface EntityFormLayoutProps {
@@ -10,6 +11,8 @@ interface EntityFormLayoutProps {
   onClose?: () => void;
   onCancel?: () => void;
   onSave?: () => void;
+  onSubmit?: () => Promise<void>;
+  closeOnSubmitSuccess?: boolean;
   isSaving?: boolean;
   saveLabel?: string;
   cancelLabel?: string;
@@ -23,11 +26,33 @@ export function EntityFormLayout({
   onClose,
   onCancel,
   onSave,
+  onSubmit,
+  closeOnSubmitSuccess = true,
   isSaving = false,
   saveLabel = "Speichern",
   cancelLabel = "Abbrechen",
   testIdPrefix = "entity",
 }: EntityFormLayoutProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitAction = onSubmit ?? (onSave ? async () => onSave() : undefined);
+  const shouldAutoClose = closeOnSubmitSuccess && !!onSubmit;
+  const isBusy = isSaving || isSubmitting;
+
+  const handleSubmit = async () => {
+    if (!submitAction) return;
+    try {
+      setIsSubmitting(true);
+      await submitAction();
+      if (shouldAutoClose) {
+        (onClose ?? onCancel)?.();
+      }
+    } catch {
+      // keep dialog open on submit errors
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <Card className="max-w-6xl mx-auto">
@@ -62,13 +87,13 @@ export function EntityFormLayout({
                 {cancelLabel}
               </Button>
             )}
-            {onSave && (
+            {submitAction && (
               <Button 
-                onClick={onSave} 
-                disabled={isSaving}
+                onClick={handleSubmit} 
+                disabled={isBusy}
                 data-testid={`button-save-${testIdPrefix}`}
               >
-                {isSaving ? `${saveLabel}...` : saveLabel}
+                {isBusy ? `${saveLabel}...` : saveLabel}
               </Button>
             )}
           </div>
