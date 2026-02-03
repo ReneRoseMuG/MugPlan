@@ -4,11 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { CardListLayout } from "@/components/ui/card-list-layout";
-import { EntityCard } from "@/components/ui/entity-card";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
-import { Users, Route, Calendar, Power, PowerOff, Phone, Mail, X, Pencil } from "lucide-react";
+import { EmployeeList } from "@/components/EmployeeList";
+import { Users, Route, Calendar, Phone, Mail, X } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -64,18 +62,6 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   });
 
   const isLoading = employeesLoading;
-
-  const getTourName = (tourId: number | null) => {
-    if (!tourId) return null;
-    const tour = tours.find(t => t.id === tourId);
-    return tour ? { name: tour.name, color: tour.color } : null;
-  };
-
-  const getTeamName = (teamId: number | null) => {
-    if (!teamId) return null;
-    const team = teams.find(t => t.id === teamId);
-    return team ? { name: team.name, color: team.color } : null;
-  };
 
   const { data: employeeDetails } = useQuery<EmployeeWithRelations>({
     queryKey: ["/api/employees", selectedEmployeeId],
@@ -219,123 +205,17 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
 
   return (
     <>
-      <CardListLayout
-        title="Mitarbeiter"
-        icon={<Users className="w-5 h-5" />}
-        helpKey="employees"
+      <EmployeeList
+        employees={employees}
+        teams={teams}
+        tours={tours}
         isLoading={isLoading}
         onClose={handleClose}
-        closeTestId="button-close-employees"
-        gridTestId="list-employees"
-        gridCols="3"
-        primaryAction={{
-          label: "Neuer Mitarbeiter",
-          onClick: handleOpenCreate,
-          isPending: createMutation.isPending,
-          testId: "button-new-employee",
-        }}
-        isEmpty={employees.length === 0}
-        emptyState={
-          <p className="text-sm text-slate-400 text-center py-8 col-span-3">
-            Keine Mitarbeiter vorhanden
-          </p>
-        }
-      >
-        {employees.map((employee) => {
-          const tourInfo = getTourName(employee.tourId);
-          const teamInfo = getTeamName(employee.teamId);
-          return (
-            <EntityCard
-              key={employee.id}
-              testId={`employee-card-${employee.id}`}
-              title={employee.fullName}
-              icon={<Users className="w-4 h-4" />}
-              className={!employee.isActive ? "opacity-60" : ""}
-              onDoubleClick={() => handleOpenDetail(employee)}
-              actions={
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleActive(employee);
-                  }}
-                  disabled={true}
-                  data-testid={`button-toggle-employee-${employee.id}`}
-                  title="Aktivierung nur durch Administrator"
-                >
-                  {employee.isActive ? (
-                    <PowerOff className="w-4 h-4" />
-                  ) : (
-                    <Power className="w-4 h-4" />
-                  )}
-                </Button>
-              }
-              footer={
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenDetail(employee);
-                  }}
-                  data-testid={`button-edit-employee-${employee.id}`}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              }
-            >
-              <div className="space-y-2 text-sm">
-                {employee.phone && (
-                  <div 
-                    className="flex items-center gap-1 text-slate-600"
-                    data-testid={`text-employee-phone-${employee.id}`}
-                  >
-                    <Phone className="w-3 h-3" />
-                    {employee.phone}
-                  </div>
-                )}
-                {employee.email && (
-                  <div 
-                    className="flex items-center gap-1 text-slate-600"
-                    data-testid={`text-employee-email-${employee.id}`}
-                  >
-                    <Mail className="w-3 h-3" />
-                    {employee.email}
-                  </div>
-                )}
-                {(tourInfo || teamInfo || !employee.isActive) && (
-                  <div className="flex items-center gap-2 flex-wrap pt-1">
-                    {tourInfo && (
-                      <ColoredInfoBadge
-                        icon={<Route className="w-3 h-3" />}
-                        label={tourInfo.name}
-                        color={tourInfo.color}
-                        size="sm"
-                        testId={`badge-employee-tour-${employee.id}`}
-                      />
-                    )}
-                    {teamInfo && (
-                      <ColoredInfoBadge
-                        icon={<Users className="w-3 h-3" />}
-                        label={teamInfo.name}
-                        color={teamInfo.color}
-                        size="sm"
-                        testId={`badge-employee-team-${employee.id}`}
-                      />
-                    )}
-                    {!employee.isActive && (
-                      <Badge variant="secondary" className="text-xs">
-                        Inaktiv
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
-            </EntityCard>
-          );
-        })}
-      </CardListLayout>
+        onNewEmployee={handleOpenCreate}
+        isNewEmployeePending={createMutation.isPending}
+        onOpenEmployee={handleOpenDetail}
+        onToggleActive={handleToggleActive}
+      />
 
       <Dialog open={detailDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden">
