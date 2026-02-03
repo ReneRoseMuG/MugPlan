@@ -1,6 +1,10 @@
-import { ReactNode } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ReactNode, useState } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ColorSelectEntityEditDialog, ColorSelectEntityEditDialogProps } from "./color-select-entity-edit-dialog";
+import { EmployeeInfoBadge } from "./employee-info-badge";
+import { EmployeeListView } from "@/components/EmployeeList";
 import type { Employee } from "@shared/schema";
 
 export interface EmployeeSelectEntityEditDialogProps extends Omit<ColorSelectEntityEditDialogProps, 'children'> {
@@ -22,6 +26,8 @@ export function EmployeeSelectEntityEditDialog({
   children,
   ...props
 }: EmployeeSelectEntityEditDialogProps) {
+  const [selectionDialogOpen, setSelectionDialogOpen] = useState(false);
+
   const getIsAssignedElsewhere = (employee: Employee) => {
     if (entityType === 'tour') {
       return employee.tourId !== null && employee.tourId !== entityId;
@@ -30,9 +36,11 @@ export function EmployeeSelectEntityEditDialog({
     }
   };
 
-  const getAssignedElsewhereText = () => {
-    return entityType === 'tour' ? "(bereits in anderer Tour)" : "(bereits in anderem Team)";
-  };
+  const availableEmployees = allEmployees.filter((employee) => {
+    if (!employee.isActive) return false;
+    if (getIsAssignedElsewhere(employee)) return false;
+    return !selectedMembers.includes(employee.id);
+  });
 
   return (
     <ColorSelectEntityEditDialog
@@ -40,57 +48,68 @@ export function EmployeeSelectEntityEditDialog({
       selectedColor={selectedColor}
     >
       {children}
-      <div 
-        className="border-l-4 border border-border bg-slate-50 dark:bg-slate-900 p-3"
+      <div
+        className="border-l-4 border border-border bg-slate-50 dark:bg-slate-900 p-3 space-y-3"
         style={{ borderLeftColor: selectedColor }}
       >
-        <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Mitarbeiter auswählen:
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Mitarbeiter
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setSelectionDialogOpen(true)}
+            data-testid={`button-add-${entityType}-member`}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Hinzufügen
+          </Button>
         </div>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
-          {allEmployees.filter(e => e.isActive).map((employee) => {
-            const isAssignedElsewhere = getIsAssignedElsewhere(employee);
-            const isSelected = selectedMembers.includes(employee.id);
+        <div className="space-y-2">
+          {selectedMembers.map((memberId) => {
+            const employee = allEmployees.find((member) => member.id === memberId);
+            if (!employee) return null;
             return (
-              <div
+              <EmployeeInfoBadge
                 key={employee.id}
-                onClick={() => !isAssignedElsewhere && onToggleMember(employee.id)}
-                className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${
-                  isAssignedElsewhere 
-                    ? "opacity-50 bg-slate-100 dark:bg-slate-800 cursor-not-allowed" 
-                    : isSelected 
-                      ? "bg-primary/10" 
-                      : "hover:bg-white dark:hover:bg-slate-800"
-                }`}
-                data-testid={`checkbox-${entityType}-employee-${employee.id}`}
-              >
-                <Checkbox
-                  id={`${entityType}-employee-${employee.id}`}
-                  disabled={isAssignedElsewhere}
-                  checked={isSelected}
-                  onClick={(e) => e.stopPropagation()}
-                  onCheckedChange={() => onToggleMember(employee.id)}
-                />
-                <span
-                  className={`text-sm ${
-                    isAssignedElsewhere ? "text-slate-400" : "text-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  {employee.lastName}, {employee.firstName}
-                  {isAssignedElsewhere && (
-                    <span className="ml-2 text-xs text-slate-400">{getAssignedElsewhereText()}</span>
-                  )}
-                </span>
-              </div>
+                id={employee.id}
+                firstName={employee.firstName}
+                lastName={employee.lastName}
+                action="remove"
+                onRemove={() => onToggleMember(employee.id)}
+                size="sm"
+                fullWidth
+                testId={`badge-${entityType}-member-${employee.id}`}
+              />
             );
           })}
-          {allEmployees.filter(e => e.isActive).length === 0 && (
-            <div className="text-sm text-slate-400 italic py-2">
-              Keine aktiven Mitarbeiter vorhanden
+          {selectedMembers.length === 0 && (
+            <div className="text-sm text-slate-400 italic">
+              Keine Mitarbeiter zugewiesen
             </div>
           )}
         </div>
       </div>
+
+      <Dialog open={selectionDialogOpen} onOpenChange={setSelectionDialogOpen}>
+        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
+          <EmployeeListView
+            mode="picker"
+            employees={availableEmployees}
+            teams={[]}
+            tours={[]}
+            onSelectEmployee={(employeeId) => {
+              if (!selectedMembers.includes(employeeId)) {
+                onToggleMember(employeeId);
+              }
+              setSelectionDialogOpen(false);
+            }}
+            onClose={() => setSelectionDialogOpen(false)}
+            title="Mitarbeiter auswählen"
+          />
+        </DialogContent>
+      </Dialog>
     </ColorSelectEntityEditDialog>
   );
 }
