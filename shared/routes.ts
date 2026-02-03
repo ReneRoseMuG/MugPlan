@@ -10,6 +10,7 @@ import {
   insertProjectAttachmentSchema, projectAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
+  insertAppointmentSchema, updateAppointmentSchema, appointments,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts
 } from './schema';
 
@@ -594,6 +595,56 @@ export const api = {
     remove: {
       method: 'DELETE' as const,
       path: '/api/projects/:projectId/statuses/:statusId',
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  appointments: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/appointments/:id',
+      responses: {
+        200: z.object({
+          appointment: z.custom<typeof appointments.$inferSelect>(),
+          employees: z.array(z.object({
+            id: z.number(),
+            firstName: z.string(),
+            lastName: z.string(),
+            fullName: z.string(),
+            isActive: z.boolean(),
+          })),
+        }),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/appointments',
+      input: insertAppointmentSchema.extend({
+        employeeIds: z.array(z.number()).optional(),
+      }),
+      responses: {
+        201: z.custom<typeof appointments.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/appointments/:id',
+      input: updateAppointmentSchema.extend({
+        employeeIds: z.array(z.number()).optional(),
+      }),
+      responses: {
+        200: z.custom<typeof appointments.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/appointments/:id',
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,

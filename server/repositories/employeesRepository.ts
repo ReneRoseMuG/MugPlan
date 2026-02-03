@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { employees, type Employee, type InsertEmployee, type UpdateEmployee } from "@shared/schema";
 
@@ -61,6 +61,11 @@ export async function getEmployeesByTeam(teamId: number): Promise<Employee[]> {
     .from(employees)
     .where(eq(employees.teamId, teamId))
     .orderBy(asc(employees.lastName), asc(employees.firstName));
+}
+
+export async function getEmployeesByIds(employeeIds: number[]): Promise<Employee[]> {
+  if (employeeIds.length === 0) return [];
+  return db.select().from(employees).where(inArray(employees.id, employeeIds));
 }
 
 export async function setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {

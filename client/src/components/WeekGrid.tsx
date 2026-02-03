@@ -19,8 +19,8 @@ import { MapOverlay } from "@/components/MapOverlay";
 
 interface WeekGridProps {
   currentDate: Date;
-  onNewAppointment?: () => void;
-  onAppointmentDoubleClick?: () => void;
+  onNewAppointment?: (date: string) => void;
+  onAppointmentDoubleClick?: (appointment: DemoAppointment) => void;
 }
 
 interface DemoAppointment {
@@ -547,7 +547,7 @@ export function WeekGrid({ currentDate, onNewAppointment, onAppointmentDoubleCli
               <div className="flex-1 p-2 space-y-1.5 overflow-visible">
                 <div className="flex justify-end mb-2">
                   <button
-                    onClick={onNewAppointment}
+                    onClick={() => onNewAppointment?.(format(day, "yyyy-MM-dd"))}
                     className="w-6 h-6 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
                     data-testid={`button-new-appointment-week-${format(day, 'yyyy-MM-dd')}`}
                   >
@@ -592,7 +592,7 @@ export function WeekGrid({ currentDate, onNewAppointment, onAppointmentDoubleCli
                       isFirstDay={isFirst}
                       isLastDay={isLast}
                       spanDays={spanDays}
-                      onDoubleClick={onAppointmentDoubleClick}
+                      onDoubleClick={onAppointmentDoubleClick ? () => onAppointmentDoubleClick(apt) : undefined}
                       onDragStart={(e) => handleDragStart(e, apt.id)}
                       onDragEnd={handleDragEnd}
                       isDragging={draggedAppointment === apt.id}

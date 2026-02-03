@@ -28,6 +28,17 @@ export default function Home() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
+  const [appointmentContext, setAppointmentContext] = useState<{
+    appointmentId: number | null;
+    initialDate?: string;
+    initialProjectId?: number | null;
+    returnView: ViewType;
+  }>({
+    appointmentId: null,
+    initialDate: undefined,
+    initialProjectId: null,
+    returnView: "month",
+  });
 
   // Handlers for navigation
   const next = () => {
@@ -44,6 +55,31 @@ export default function Home() {
 
   const handleViewChange = (newView: ViewType) => {
     setView(newView);
+  };
+
+  const openNewAppointment = (options?: { date?: string; projectId?: number | null; returnView?: ViewType }) => {
+    setAppointmentContext({
+      appointmentId: null,
+      initialDate: options?.date,
+      initialProjectId: options?.projectId ?? null,
+      returnView: options?.returnView ?? view,
+    });
+    setView("appointment");
+  };
+
+  const openEditAppointment = (appointment: { id: string; startDate: string }) => {
+    const numericId = Number(appointment.id);
+    if (Number.isNaN(numericId)) {
+      openNewAppointment({ date: appointment.startDate, returnView: view });
+      return;
+    }
+    setAppointmentContext({
+      appointmentId: numericId,
+      initialDate: appointment.startDate,
+      initialProjectId: null,
+      returnView: view,
+    });
+    setView("appointment");
   };
 
 
@@ -84,7 +120,7 @@ export default function Home() {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'weeklyProjects' ? 'Wochenübersicht' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'weeklyProjects' ? 'Wochenübersicht' : view === 'appointment' ? (appointmentContext.appointmentId ? 'Termin bearbeiten' : 'Neuer Termin') : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
@@ -147,16 +183,23 @@ export default function Home() {
               employeeId={selectedEmployee.id}
               employeeName={selectedEmployee.name}
               onCancel={() => setView('employees')} 
-              onOpenAppointment={() => setView('appointment')}
+              onOpenAppointment={() => openNewAppointment({ returnView: "employeeWeekly" })}
             />
           ) : view === 'project' ? (
             <ProjectForm 
               projectId={selectedProjectId || undefined}
               onCancel={() => { setSelectedProjectId(null); setView(projectReturnView); }}
               onSaved={() => { setSelectedProjectId(null); setView(projectReturnView); }}
+              onNewAppointment={(projectId) => openNewAppointment({ projectId, returnView: "project" })}
             />
           ) : view === 'appointment' ? (
-            <AppointmentForm onCancel={() => setView('month')} />
+            <AppointmentForm
+              appointmentId={appointmentContext.appointmentId}
+              initialDate={appointmentContext.initialDate}
+              initialProjectId={appointmentContext.initialProjectId}
+              onCancel={() => setView(appointmentContext.returnView)}
+              onSaved={() => setView(appointmentContext.returnView)}
+            />
           ) : view === 'projectList' ? (
             <ProjectList 
               onCancel={() => setView('month')} 
@@ -178,16 +221,16 @@ export default function Home() {
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <WeekGrid 
                 currentDate={currentDate} 
-                onNewAppointment={() => setView('appointment')}
-                onAppointmentDoubleClick={() => setView('appointment')}
+                onNewAppointment={(date) => openNewAppointment({ date, returnView: "week" })}
+                onAppointmentDoubleClick={openEditAppointment}
               />
             </div>
           ) : view === 'year' ? renderYearView() : (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <CalendarGrid 
                 currentDate={currentDate} 
-                onNewAppointment={() => setView('appointment')}
-                onAppointmentDoubleClick={() => setView('appointment')}
+                onNewAppointment={(date) => openNewAppointment({ date, returnView: "month" })}
+                onAppointmentDoubleClick={openEditAppointment}
               />
             </div>
           )}
