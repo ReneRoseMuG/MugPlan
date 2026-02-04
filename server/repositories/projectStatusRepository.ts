@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   projectStatus,
@@ -77,6 +77,19 @@ export async function getProjectStatusesByProject(projectId: number): Promise<Pr
     .where(eq(projectProjectStatus.projectId, projectId))
     .orderBy(asc(projectStatus.sortOrder), asc(projectStatus.title));
   return result.map((row) => row.status);
+}
+
+export async function getProjectStatusesByProjectIds(projectIds: number[]) {
+  if (projectIds.length === 0) return [];
+  return db
+    .select({
+      projectId: projectProjectStatus.projectId,
+      status: projectStatus,
+    })
+    .from(projectProjectStatus)
+    .innerJoin(projectStatus, eq(projectProjectStatus.projectStatusId, projectStatus.id))
+    .where(inArray(projectProjectStatus.projectId, projectIds))
+    .orderBy(asc(projectProjectStatus.projectId), asc(projectStatus.sortOrder), asc(projectStatus.title));
 }
 
 export async function addProjectStatus(projectId: number, statusId: number): Promise<void> {

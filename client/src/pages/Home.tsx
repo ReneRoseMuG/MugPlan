@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { WeekGrid } from "@/components/WeekGrid";
+import { CalendarYearView } from "@/components/calendar/CalendarYearView";
+import { CalendarEmployeeFilter } from "@/components/calendar/CalendarEmployeeFilter";
 import { CustomerData } from "@/components/CustomerData";
 import { CustomerList } from "@/components/CustomerList";
 import { TourManagement } from "@/components/TourManagement";
@@ -15,9 +17,10 @@ import { AppointmentForm } from "@/components/AppointmentForm";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
-import { addMonths, subMonths, addWeeks, subWeeks, format, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
+import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'weeklyProjects' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts';
 
@@ -28,6 +31,8 @@ export default function Home() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
+  const [calendarEmployeeFilterId, setCalendarEmployeeFilterId] = useState<number | null>(null);
+  const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
   const [appointmentContext, setAppointmentContext] = useState<{
     initialDate?: string;
     projectId?: number;
@@ -48,30 +53,64 @@ export default function Home() {
   };
 
   const handleViewChange = (newView: ViewType) => {
+    console.info("[navigation] view change", { from: view, to: newView });
     setView(newView);
   };
 
 
-  const renderYearView = () => {
-    const start = startOfYear(currentDate);
-    const end = endOfYear(currentDate);
-    const months = eachMonthOfInterval({ start, end });
+  const isCalendarView = view === 'month' || view === 'week' || view === 'year';
+
+  const renderCalendarContent = () => {
+    if (view === 'week') {
+      return (
+        <WeekGrid
+          currentDate={currentDate}
+          employeeFilterId={calendarEmployeeFilterId}
+          onNewAppointment={(date) => {
+            console.info("[calendar] new appointment", { date, view: "week" });
+            setAppointmentContext({ initialDate: date });
+            setView('appointment');
+          }}
+          onOpenAppointment={(appointmentId) => {
+            setAppointmentContext({ appointmentId });
+            setView('appointment');
+          }}
+        />
+      );
+    }
+
+    if (view === 'year') {
+      return (
+        <CalendarYearView
+          currentDate={currentDate}
+          employeeFilterId={calendarEmployeeFilterId}
+          onNewAppointment={(date) => {
+            console.info("[calendar] new appointment", { date, view: "year" });
+            setAppointmentContext({ initialDate: date });
+            setView('appointment');
+          }}
+          onOpenAppointment={(appointmentId) => {
+            setAppointmentContext({ appointmentId });
+            setView('appointment');
+          }}
+        />
+      );
+    }
 
     return (
-      <div className="year-grid h-full overflow-y-auto">
-        {months.map((month) => (
-          <div key={month.toString()} className="mini-month rounded-lg p-3 bg-white hover:border-primary transition-colors cursor-pointer" onClick={() => { setCurrentDate(month); setView('month'); }}>
-            <h4 className="font-bold text-center mb-2 uppercase text-xs tracking-widest text-primary">
-              {format(month, "MMMM", { locale: de })}
-            </h4>
-            <div className="grid grid-cols-7 gap-1">
-              {[...Array(31)].map((_, i) => (
-                <div key={i} className="w-1.5 h-1.5 bg-slate-200 rounded-full mx-auto" />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      <CalendarGrid
+        currentDate={currentDate}
+        employeeFilterId={calendarEmployeeFilterId}
+        onNewAppointment={(date) => {
+          console.info("[calendar] new appointment", { date, view: "month" });
+          setAppointmentContext({ initialDate: date });
+          setView('appointment');
+        }}
+        onOpenAppointment={(appointmentId) => {
+          setAppointmentContext({ appointmentId });
+          setView('appointment');
+        }}
+      />
     );
   };
 
@@ -115,6 +154,19 @@ export default function Home() {
                   <span className="text-xs uppercase tracking-tighter">Vor</span>
                   <ChevronRight className="w-5 h-5" />
                 </div>
+              </button>
+            </div>
+          )}
+
+          {isCalendarView && (
+            <div className="flex items-center gap-3">
+              <CalendarEmployeeFilter value={calendarEmployeeFilterId} onChange={setCalendarEmployeeFilterId} />
+              <button
+                onClick={() => setCalendarDialogOpen(true)}
+                className="px-4 py-2 rounded bg-background text-primary font-black hover:bg-primary hover:text-white transition-all active:scale-95"
+                data-testid="button-calendar-dialog"
+              >
+                Dialog öffnen
               </button>
             </div>
           )}
@@ -200,38 +252,26 @@ export default function Home() {
               onCancel={() => setView('month')} 
               onOpenProject={() => { setProjectReturnView('projectList'); setView('project'); }}
             />
-          ) : view === 'week' ? (
+          ) : isCalendarView ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
-              <WeekGrid 
-                currentDate={currentDate} 
-                onNewAppointment={(date) => {
-                  setAppointmentContext({ initialDate: date });
-                  setView('appointment');
-                }}
-                onAppointmentDoubleClick={(date) => {
-                  setAppointmentContext({ initialDate: date });
-                  setView('appointment');
-                }}
-              />
+              {/* Kalenderansicht benötigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
+              {renderCalendarContent()}
             </div>
-          ) : view === 'year' ? renderYearView() : (
-            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
-              <CalendarGrid 
-                currentDate={currentDate} 
-                onNewAppointment={(date) => {
-                  setAppointmentContext({ initialDate: date });
-                  setView('appointment');
-                }}
-                onAppointmentDoubleClick={(date) => {
-                  setAppointmentContext({ initialDate: date });
-                  setView('appointment');
-                }}
-              />
-            </div>
-          )}
+          ) : null}
         </div>
 
       </main>
+
+      {isCalendarView && (
+        <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
+          <DialogContent className="max-w-[1200px] h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>Kalenderansicht</DialogTitle>
+            </DialogHeader>
+            <div className="h-full">{renderCalendarContent()}</div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

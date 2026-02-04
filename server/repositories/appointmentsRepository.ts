@@ -1,4 +1,4 @@
-import { and, asc, eq, gte } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
@@ -6,6 +6,7 @@ import {
   customers,
   employees,
   projects,
+  tours,
   type Appointment,
   type InsertAppointment,
 } from "@shared/schema";
@@ -21,6 +22,27 @@ async function getAppointmentEmployees(conn: DbLike, appointmentId: number) {
     .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
     .where(eq(appointmentEmployees.appointmentId, appointmentId));
   return rows.map((row) => row.employee);
+}
+
+export async function getAppointmentEmployeesByAppointmentIds(appointmentIds: number[]) {
+  if (appointmentIds.length === 0) return [];
+  const conditions = [
+    lte(appointments.startDate, toDate),
+    or(isNull(appointments.endDate), gte(appointments.endDate, fromDate)),
+  ];
+
+  if (employeeAppointmentIdsQuery) {
+    conditions.push(inArray(appointments.id, employeeAppointmentIdsQuery));
+  }
+
+  return db
+    .select({
+      appointmentId: appointmentEmployees.appointmentId,
+      employee: employees,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
+    .where(inArray(appointmentEmployees.appointmentId, appointmentIds));
 }
 
 export async function getAppointment(id: number): Promise<Appointment | null> {
@@ -108,6 +130,39 @@ export async function listAppointmentsByEmployeeFromDate(employeeId: number, fro
     .innerJoin(projects, eq(appointments.projectId, projects.id))
     .innerJoin(customers, eq(projects.customerId, customers.id))
     .where(and(eq(appointmentEmployees.employeeId, employeeId), gte(appointments.startDate, fromDate)))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
+export async function listAppointmentsForCalendarRange({
+  fromDate,
+  toDate,
+  employeeId,
+}: {
+  fromDate: string;
+  toDate: string;
+  employeeId?: number | null;
+}) {
+  console.log(`${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
+
+  const employeeAppointmentIdsQuery = employeeId
+    ? db
+        .select({ appointmentId: appointmentEmployees.appointmentId })
+        .from(appointmentEmployees)
+        .where(eq(appointmentEmployees.employeeId, employeeId))
+    : null;
+
+  return db
+    .select({
+      appointment: appointments,
+      project: projects,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointments)
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(and(...conditions))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 

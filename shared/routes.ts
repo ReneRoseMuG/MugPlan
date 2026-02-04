@@ -139,6 +139,49 @@ export const api = {
       },
     },
   },
+  calendarAppointments: {
+    list: {
+      method: "GET" as const,
+      path: "/api/calendar/appointments",
+      responses: {
+        200: z.array(
+          z.object({
+            id: z.number(),
+            projectId: z.number(),
+            projectName: z.string(),
+            projectDescription: z.string().nullable(),
+            projectStatuses: z.array(
+              z.object({
+                id: z.number(),
+                title: z.string(),
+                color: z.string(),
+              }),
+            ),
+            startDate: z.string(),
+            endDate: z.string().nullable(),
+            startTime: z.string().nullable(),
+            tourId: z.number().nullable(),
+            tourName: z.string().nullable(),
+            tourColor: z.string().nullable(),
+            customer: z.object({
+              id: z.number(),
+              customerNumber: z.string(),
+              fullName: z.string(),
+              postalCode: z.string().nullable(),
+              city: z.string().nullable(),
+            }),
+            employees: z.array(
+              z.object({
+                id: z.number(),
+                fullName: z.string(),
+              }),
+            ),
+            isLocked: z.boolean(),
+          }),
+        ),
+      },
+    },
+  },
   tours: {
     list: {
       method: 'GET' as const,

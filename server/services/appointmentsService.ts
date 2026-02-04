@@ -1,6 +1,7 @@
 import type { InsertAppointment } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as projectsRepository from "../repositories/projectsRepository";
+import * as projectStatusRepository from "../repositories/projectStatusRepository";
 
 const logPrefix = "[appointments-service]";
 
@@ -176,6 +177,72 @@ export async function listEmployeeAppointments(employeeId: number, fromDate: str
     endDate: appointment.endDate,
     startTimeHour: appointment.startTime ? Number(appointment.startTime.slice(0, 2)) : null,
     customerName,
+  }));
+}
+
+export async function listCalendarAppointments({
+  fromDate,
+  toDate,
+  employeeId,
+  isAdmin,
+}: {
+  fromDate: string;
+  toDate: string;
+  employeeId?: number | null;
+  isAdmin: boolean;
+}) {
+  console.log(`${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
+  const rows = await appointmentsRepository.listAppointmentsForCalendarRange({ fromDate, toDate, employeeId });
+  console.log(`${logPrefix} list calendar appointments result count=${rows.length}`);
+
+  const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
+  const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+
+  const employeeRows = await appointmentsRepository.getAppointmentEmployeesByAppointmentIds(appointmentIds);
+  const statusRows = await projectStatusRepository.getProjectStatusesByProjectIds(projectIds);
+
+  const employeesByAppointment = new Map<number, { id: number; fullName: string }[]>();
+  for (const row of employeeRows) {
+    const list = employeesByAppointment.get(row.appointmentId) ?? [];
+    list.push({
+      id: row.employee.id,
+      fullName: row.employee.fullName,
+    });
+    employeesByAppointment.set(row.appointmentId, list);
+  }
+
+  const statusesByProject = new Map<number, { id: number; title: string; color: string }[]>();
+  for (const row of statusRows) {
+    const list = statusesByProject.get(row.projectId) ?? [];
+    list.push({
+      id: row.status.id,
+      title: row.status.title,
+      color: row.status.color,
+    });
+    statusesByProject.set(row.projectId, list);
+  }
+
+  return rows.map((row) => ({
+    id: row.appointment.id,
+    projectId: row.project.id,
+    projectName: row.project.name,
+    projectDescription: row.project.descriptionMd ?? null,
+    projectStatuses: statusesByProject.get(row.project.id) ?? [],
+    startDate: row.appointment.startDate,
+    endDate: row.appointment.endDate,
+    startTime: row.appointment.startTime ?? null,
+    tourId: row.appointment.tourId ?? null,
+    tourName: row.tour?.name ?? null,
+    tourColor: row.tour?.color ?? null,
+    customer: {
+      id: row.customer.id,
+      customerNumber: row.customer.customerNumber,
+      fullName: row.customer.fullName,
+      postalCode: row.customer.postalCode ?? null,
+      city: row.customer.city ?? null,
+    },
+    employees: employeesByAppointment.get(row.appointment.id) ?? [],
+    isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
   }));
 }
 
