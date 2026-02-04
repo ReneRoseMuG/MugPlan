@@ -170,6 +170,32 @@ export function CalendarMonthView({
     const appointment = appointments.find((item) => item.id === appointmentId);
     if (!appointment) return;
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const appointmentStart = parseISO(appointment.startDate);
+
+    if (appointmentStart < today) {
+      console.info(`${logPrefix} drop blocked: past source`, { appointmentId, startDate: appointment.startDate });
+      toast({
+        title: "Verschieben nicht erlaubt",
+        description: "Vergangene Termine kÃ¶nnen nicht per Drag & Drop verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
+      return;
+    }
+
+    if (targetDate < today) {
+      console.info(`${logPrefix} drop blocked: past target`, { appointmentId, targetDate: format(targetDate, "yyyy-MM-dd") });
+      toast({
+        title: "Verschieben nicht erlaubt",
+        description: "Ein Termin kann nicht in die Vergangenheit verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     if (appointment.isLocked && !isAdmin) {
       console.info(`${logPrefix} drop blocked`, { appointmentId });
       toast({
@@ -324,7 +350,7 @@ export function CalendarMonthView({
                             showPopover={true}
                             isLocked={appointment.isLocked && !isAdmin}
                             isDragging={draggedAppointmentId === appointment.id}
-                            onClick={() => handleAppointmentClick(appointment.id)}
+                            onDoubleClick={() => handleAppointmentClick(appointment.id)}
                             onDragStart={
                               appointment.isLocked && !isAdmin ? undefined : (event) => handleDragStart(event, appointment.id)
                             }

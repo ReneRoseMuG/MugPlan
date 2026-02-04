@@ -4,14 +4,14 @@ import { CalendarAppointmentDetails } from "./CalendarAppointmentDetails";
 
 export function CalendarWeekAppointmentPanel({
   appointment,
-  onClick,
+  onDoubleClick,
   isDragging,
   onDragStart,
   onDragEnd,
   isLocked,
 }: {
   appointment: CalendarAppointment;
-  onClick?: () => void;
+  onDoubleClick?: () => void;
   isDragging?: boolean;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
@@ -25,7 +25,7 @@ export function CalendarWeekAppointmentPanel({
         isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md"
       } ${isDragging ? "opacity-50" : ""}`}
       style={{ borderLeftColor: backgroundColor, borderLeftWidth: "4px" }}
-      onClick={onClick}
+      onDoubleClick={onDoubleClick}
       draggable={Boolean(onDragStart)}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}

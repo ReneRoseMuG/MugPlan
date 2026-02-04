@@ -104,7 +104,7 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
 
       <nav className="flex flex-col">
         <NavGroup title="Terminplanung">
-          <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week' || currentView === 'weeklyProjects'} onClick={() => onViewChange('weeklyProjects')} />
+          <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week'} onClick={() => onViewChange('week')} />
           <NavButton icon={Calendar} label="Monatsübersicht" isActive={currentView === 'month'} onClick={() => onViewChange('month')} />
           <NavButton icon={CalendarRange} label="Jahresübersicht" isActive={currentView === 'year'} onClick={() => onViewChange('year')} />
         </NavGroup>

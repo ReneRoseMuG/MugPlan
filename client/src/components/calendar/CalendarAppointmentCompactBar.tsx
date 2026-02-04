@@ -13,7 +13,7 @@ type CompactBarProps = {
   showPopover?: boolean;
   isLocked?: boolean;
   isDragging?: boolean;
-  onClick?: () => void;
+  onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
   onDragOver?: (event: React.DragEvent) => void;
@@ -32,7 +32,7 @@ export function CalendarAppointmentCompactBar({
   showPopover = isFirstDay,
   isLocked,
   isDragging,
-  onClick,
+  onDoubleClick,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -86,7 +86,7 @@ export function CalendarAppointmentCompactBar({
       className={`relative ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onDragOver={onDragOver}
       onDrop={onDrop}
       draggable={Boolean(onDragStart)}

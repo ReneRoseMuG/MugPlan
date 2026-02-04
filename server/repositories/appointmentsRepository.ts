@@ -13,10 +13,20 @@ import {
 
 const logPrefix = "[appointments-repo]";
 
-type DbLike = typeof db;
+async function getAppointmentEmployees(appointmentId: number) {
+  const rows = await db
+    .select({ employee: employees })
+    .from(appointmentEmployees)
+    .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
+    .where(eq(appointmentEmployees.appointmentId, appointmentId));
+  return rows.map((row) => row.employee);
+}
 
-async function getAppointmentEmployees(conn: DbLike, appointmentId: number) {
-  const rows = await conn
+async function getAppointmentEmployeesTx(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  appointmentId: number,
+) {
+  const rows = await tx
     .select({ employee: employees })
     .from(appointmentEmployees)
     .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
@@ -26,14 +36,6 @@ async function getAppointmentEmployees(conn: DbLike, appointmentId: number) {
 
 export async function getAppointmentEmployeesByAppointmentIds(appointmentIds: number[]) {
   if (appointmentIds.length === 0) return [];
-  const conditions = [
-    lte(appointments.startDate, toDate),
-    or(isNull(appointments.endDate), gte(appointments.endDate, fromDate)),
-  ];
-
-  if (employeeAppointmentIdsQuery) {
-    conditions.push(inArray(appointments.id, employeeAppointmentIdsQuery));
-  }
 
   return db
     .select({
@@ -53,7 +55,7 @@ export async function getAppointment(id: number): Promise<Appointment | null> {
 export async function getAppointmentWithEmployees(id: number) {
   const [appointment] = await db.select().from(appointments).where(eq(appointments.id, id));
   if (!appointment) return null;
-  const employeeRows = await getAppointmentEmployees(db, id);
+  const employeeRows = await getAppointmentEmployees(id);
   return { ...appointment, employees: employeeRows };
 }
 
@@ -76,7 +78,7 @@ export async function createAppointment(data: InsertAppointment, employeeIds: nu
     }
 
     const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, insertId));
-    const assignedEmployees = await getAppointmentEmployees(tx as DbLike, insertId);
+    const assignedEmployees = await getAppointmentEmployeesTx(tx, insertId);
 
     return { ...appointment, employees: assignedEmployees };
   });
@@ -103,12 +105,12 @@ export async function updateAppointment(
     }
 
     const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, appointmentId));
-    const assignedEmployees = await getAppointmentEmployees(tx as DbLike, appointmentId);
+    const assignedEmployees = await getAppointmentEmployeesTx(tx, appointmentId);
     return { ...appointment, employees: assignedEmployees };
   });
 }
 
-export async function listAppointmentsByProjectFromDate(projectId: number, fromDate: string): Promise<Appointment[]> {
+export async function listAppointmentsByProjectFromDate(projectId: number, fromDate: Date): Promise<Appointment[]> {
   console.log(`${logPrefix} list appointments projectId=${projectId} fromDate>=${fromDate}`);
   return db
     .select()
@@ -117,13 +119,13 @@ export async function listAppointmentsByProjectFromDate(projectId: number, fromD
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 
-export async function listAppointmentsByEmployeeFromDate(employeeId: number, fromDate: string) {
+export async function listAppointmentsByEmployeeFromDate(employeeId: number, fromDate: Date) {
   console.log(`${logPrefix} list appointments employeeId=${employeeId} fromDate>=${fromDate}`);
   return db
     .select({
       appointment: appointments,
       projectName: projects.name,
-      customerName: customers.name,
+      customerName: customers.fullName,
     })
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
@@ -138,8 +140,8 @@ export async function listAppointmentsForCalendarRange({
   toDate,
   employeeId,
 }: {
-  fromDate: string;
-  toDate: string;
+  fromDate: Date;
+  toDate: Date;
   employeeId?: number | null;
 }) {
   console.log(`${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
@@ -150,6 +152,15 @@ export async function listAppointmentsForCalendarRange({
         .from(appointmentEmployees)
         .where(eq(appointmentEmployees.employeeId, employeeId))
     : null;
+
+  const conditions = [
+    lte(appointments.startDate, toDate),
+    or(isNull(appointments.endDate), gte(appointments.endDate, fromDate)),
+  ];
+
+  if (employeeAppointmentIdsQuery) {
+    conditions.push(inArray(appointments.id, employeeAppointmentIdsQuery));
+  }
 
   return db
     .select({
