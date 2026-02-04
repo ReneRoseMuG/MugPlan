@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
-import { InfoBadge } from "@/components/ui/info-badge";
+import { TerminInfoBadge } from "@/components/ui/termin-info-badge";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CustomerList } from "@/components/CustomerList";
 import { NotesSection } from "@/components/NotesSection";
@@ -416,6 +416,8 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     );
   }
 
+  const appointmentSecondaryLabel = name.trim() ? `Termin · ${name.trim()}` : "Termin";
+
   return (
     <EntityFormLayout
       title={isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
@@ -539,17 +541,18 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                     <p className="text-sm text-slate-400 text-center py-2">Keine Termine ab heute</p>
                   ) : (
                     projectAppointments.map((appointment) => {
-                      const timeLabel = appointment.startTimeHour !== null
-                        ? `${String(appointment.startTimeHour).padStart(2, "0")}:00`
-                        : null;
-                      const label = timeLabel
-                        ? `${appointment.startDate} • ${timeLabel}`
-                        : appointment.startDate;
+                      const appointmentBorderColor = appointment.startDate < fromDate
+                        ? "#9ca3af"
+                        : "#22c55e";
                       return (
-                        <InfoBadge
+                        <TerminInfoBadge
                           key={appointment.id}
-                          icon={<Calendar className="w-4 h-4" />}
-                          label={label}
+                          startDate={appointment.startDate}
+                          endDate={appointment.endDate}
+                          startTimeHour={appointment.startTimeHour}
+                          mode="projekt"
+                          projectLabel={appointmentSecondaryLabel}
+                          color={appointmentBorderColor}
                           action="remove"
                           actionDisabled={appointment.isLocked}
                           onRemove={() => deleteAppointmentMutation.mutate(appointment.id)}
