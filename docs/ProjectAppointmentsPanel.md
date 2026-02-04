@@ -10,7 +10,7 @@
 - `onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void` – Callback für „Neuer Termin“ (nur `projectId`) und für das Öffnen bestehender Termine (mit `appointmentId`).
 
 ## Toggle „Alle Termine“
-Der Toggle wird von `AppointmentsPanel` gerendert. `ProjectAppointmentsPanel` lädt alle Termine (inkl. Vergangenheit), damit der Filter „ab heute“ ausschließlich im UI erfolgt.
+Der Toggle wird von `AppointmentsPanel` gerendert und meldet seinen Zustand an den Wrapper. Standardmäßig werden nur Termine **ab heute** (Berlin-Zeitzone) serverseitig geladen. Erst wenn der Toggle aktiviert wird, lädt `ProjectAppointmentsPanel` die vollständige Historie nach und zeigt anschließend alle Termine an.
 
 ## Header-Action & Zähler
 Der „Neuer Termin“-Trigger wird über die Header-Action-Zone (`addAction`) von `AppointmentsPanel` bereitgestellt, nicht im Panel-Body. Der Termin-Zähler wird im Panel-Header als Text in Klammern direkt hinter dem Titel angezeigt (z. B. „Termine (2)“), ohne Badge oder Footer-Wiederholung.
@@ -19,7 +19,8 @@ Der „Neuer Termin“-Trigger wird über die Header-Action-Zone (`addAction`) v
 Ein Doppelklick auf einen Termin-Badge ruft `onOpenAppointment` mit `appointmentId` (und dem aktuellen `projectId`) auf, sodass das bestehende Terminformular im Edit-Modus geöffnet werden kann.
 
 ## Datenladung
-- Termine über `GET /api/projects/<projectId>/appointments?fromDate=1900-01-01`.
+- Standard (ab heute): `GET /api/projects/<projectId>/appointments?fromDate=<heute>` (Berlin-Zeitzone).
+- „Alle Termine“: `GET /api/projects/<projectId>/appointments?fromDate=1900-01-01`.
 - Löschen über `DELETE /api/appointments/<appointmentId>` mit `x-user-role`-Header.
 - Mapping in `AppointmentPanelItem` (Mode: `"projekt"`) inkl. Border-Farbe (vergangene Termine grau, zukünftige grün) und Sperr-Status.
 

@@ -31,23 +31,30 @@ export function ProjectAppointmentsPanel({
   onOpenAppointment,
 }: ProjectAppointmentsPanelProps) {
   const { toast } = useToast();
+  const [showAll, setShowAll] = useState(false);
   const [userRole] = useState(() =>
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
   );
-  const fromDate = PROJECT_APPOINTMENTS_ALL_FROM_DATE;
   const today = getBerlinTodayDateString();
-  const appointmentsQueryKey = getProjectAppointmentsQueryKey({
+  const upcomingFromDate = today;
+  const allFromDate = PROJECT_APPOINTMENTS_ALL_FROM_DATE;
+  const upcomingQueryKey = getProjectAppointmentsQueryKey({
     projectId,
-    fromDate,
+    fromDate: upcomingFromDate,
+    userRole,
+  });
+  const allQueryKey = getProjectAppointmentsQueryKey({
+    projectId,
+    fromDate: allFromDate,
     userRole,
   });
 
-  const { data: projectAppointments = [], isLoading: appointmentsLoading } = useQuery<ProjectAppointmentSummary[]>({
-    queryKey: appointmentsQueryKey,
+  const { data: upcomingAppointments = [], isLoading: upcomingLoading } = useQuery<ProjectAppointmentSummary[]>({
+    queryKey: upcomingQueryKey,
     queryFn: async () => {
       if (!projectId) return [];
-      const url = `/api/projects/${projectId}/appointments?fromDate=${fromDate}`;
-      console.info(`${appointmentsLogPrefix} request`, { projectId, fromDate });
+      const url = `/api/projects/${projectId}/appointments?fromDate=${upcomingFromDate}`;
+      console.info(`${appointmentsLogPrefix} request`, { projectId, fromDate: upcomingFromDate });
       const response = await fetch(url, {
         credentials: "include",
         headers: {
@@ -57,7 +64,7 @@ export function ProjectAppointmentsPanel({
       const payload = await response.json();
       console.info(`${appointmentsLogPrefix} response`, {
         projectId,
-        fromDate,
+        fromDate: upcomingFromDate,
         status: response.status,
         count: payload?.length,
       });
@@ -67,6 +74,33 @@ export function ProjectAppointmentsPanel({
       return payload as ProjectAppointmentSummary[];
     },
     enabled: isEditing && Boolean(projectId),
+  });
+
+  const { data: allAppointments = [], isLoading: allLoading } = useQuery<ProjectAppointmentSummary[]>({
+    queryKey: allQueryKey,
+    queryFn: async () => {
+      if (!projectId) return [];
+      const url = `/api/projects/${projectId}/appointments?fromDate=${allFromDate}`;
+      console.info(`${appointmentsLogPrefix} request`, { projectId, fromDate: allFromDate });
+      const response = await fetch(url, {
+        credentials: "include",
+        headers: {
+          "x-user-role": userRole,
+        },
+      });
+      const payload = await response.json();
+      console.info(`${appointmentsLogPrefix} response`, {
+        projectId,
+        fromDate: allFromDate,
+        status: response.status,
+        count: payload?.length,
+      });
+      if (!response.ok) {
+        throw new Error(payload?.message ?? response.statusText);
+      }
+      return payload as ProjectAppointmentSummary[];
+    },
+    enabled: isEditing && Boolean(projectId) && showAll,
   });
 
   const deleteAppointmentMutation = useMutation({
@@ -92,9 +126,10 @@ export function ProjectAppointmentsPanel({
         projectId,
       });
       console.info(`${appointmentsLogPrefix} cache invalidate`, {
-        queryKey: appointmentsQueryKey,
+        queryKey: upcomingQueryKey,
       });
-      queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      queryClient.invalidateQueries({ queryKey: upcomingQueryKey });
+      queryClient.invalidateQueries({ queryKey: allQueryKey });
       toast({ title: "Termin gelöscht" });
     },
     onError: (error) => {
@@ -103,11 +138,12 @@ export function ProjectAppointmentsPanel({
     },
   });
 
+  const appointmentSource = showAll ? allAppointments : upcomingAppointments;
   const items = useMemo<AppointmentPanelItem[]>(() => {
     const appointmentSecondaryLabel = projectName?.trim()
       ? `Termin · ${projectName.trim()}`
       : "Termin";
-    return projectAppointments.map((appointment) => {
+    return appointmentSource.map((appointment) => {
       const appointmentBorderColor = appointment.startDate < today
         ? "#9ca3af"
         : "#22c55e";
@@ -125,9 +161,9 @@ export function ProjectAppointmentsPanel({
         testId: `project-appointment-${appointment.id}`,
       };
     });
-  }, [projectAppointments, projectName, today, deleteAppointmentMutation]);
+  }, [appointmentSource, projectName, today, deleteAppointmentMutation]);
 
-  const showLockedNote = projectAppointments.some((appointment) => appointment.isLocked);
+  const showLockedNote = appointmentSource.some((appointment) => appointment.isLocked);
   const handleOpenAppointment = onOpenAppointment && projectId
     ? (appointmentId: number | string) => onOpenAppointment({ projectId, appointmentId: Number(appointmentId) })
     : undefined;
@@ -143,8 +179,10 @@ export function ProjectAppointmentsPanel({
     <AppointmentsPanel
       title="Termine"
       icon={<Calendar className="w-4 h-4" />}
+      showAll={showAll}
+      onShowAllChange={setShowAll}
       items={items}
-      isLoading={appointmentsLoading}
+      isLoading={showAll ? allLoading : upcomingLoading}
       addAction={addAction}
       onOpenAppointment={handleOpenAppointment}
       emptyStateFilteredLabel="Keine Termine ab heute"
