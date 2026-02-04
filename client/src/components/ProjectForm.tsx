@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
-import { TerminInfoBadge } from "@/components/ui/termin-info-badge";
+import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CustomerList } from "@/components/CustomerList";
 import { NotesSection } from "@/components/NotesSection";
@@ -12,7 +12,6 @@ import {
   FolderKanban, 
   UserCircle, 
   FileText, 
-  Calendar, 
   Paperclip, 
   Plus,
   Eye,
@@ -24,10 +23,6 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import {
-  getBerlinTodayDateString,
-  getProjectAppointmentsQueryKey,
-} from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, Customer, Note, ProjectStatus, ProjectAttachment } from "@shared/schema";
 
@@ -38,16 +33,6 @@ interface ProjectFormProps {
   onOpenAppointment?: (projectId: number) => void;
 }
 
-interface ProjectAppointmentSummary {
-  id: number;
-  projectId: number;
-  startDate: string;
-  endDate: string | null;
-  startTimeHour: number | null;
-  isLocked: boolean;
-}
-
-const appointmentsLogPrefix = "[ProjectForm-appointments]";
 
 function DocumentCard({ 
   attachment, 
@@ -177,16 +162,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
-  const [userRole] = useState(() =>
-    window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-  );
-  const fromDate = getBerlinTodayDateString();
-  const appointmentsQueryKey = getProjectAppointmentsQueryKey({
-    projectId,
-    fromDate,
-    userRole,
-  });
-
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
     queryKey: ['/api/projects', projectId],
@@ -221,66 +196,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     queryKey: ['/api/project-status'],
   });
 
-  const { data: projectAppointments = [], isLoading: appointmentsLoading } = useQuery<ProjectAppointmentSummary[]>({
-    queryKey: appointmentsQueryKey,
-    queryFn: async () => {
-      if (!projectId) return [];
-      const url = `/api/projects/${projectId}/appointments?fromDate=${fromDate}`;
-      console.info(`${appointmentsLogPrefix} request`, { projectId, fromDate });
-      const response = await fetch(url, {
-        credentials: "include",
-        headers: {
-          "x-user-role": userRole,
-        },
-      });
-      const payload = await response.json();
-      console.info(`${appointmentsLogPrefix} response`, {
-        projectId,
-        fromDate,
-        status: response.status,
-        count: payload?.length,
-      });
-      if (!response.ok) {
-        throw new Error(payload?.message ?? response.statusText);
-      }
-      return payload as ProjectAppointmentSummary[];
-    },
-    enabled: isEditing && Boolean(projectId),
-  });
-
-  const deleteAppointmentMutation = useMutation({
-    mutationFn: async (appointmentId: number) => {
-      console.info(`${appointmentsLogPrefix} delete request`, { appointmentId });
-      const response = await fetch(`/api/appointments/${appointmentId}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-          "x-user-role": userRole,
-        },
-      });
-      const payload = response.status === 204 ? null : await response.json();
-      console.info(`${appointmentsLogPrefix} delete response`, { appointmentId, status: response.status });
-      if (!response.ok) {
-        throw new Error(payload?.message ?? response.statusText);
-      }
-      return appointmentId;
-    },
-    onSuccess: (appointmentId) => {
-      console.info(`${appointmentsLogPrefix} delete success`, {
-        appointmentId,
-        projectId,
-      });
-      console.info(`${appointmentsLogPrefix} cache invalidate`, {
-        queryKey: appointmentsQueryKey,
-      });
-      queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
-      toast({ title: "Termin gelöscht" });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
-      toast({ title: "Fehler", description: message, variant: "destructive" });
-    },
-  });
 
   // Initialize form when project data loads
   useEffect(() => {
@@ -416,8 +331,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     );
   }
 
-  const appointmentSecondaryLabel = name.trim() ? `Termin · ${name.trim()}` : "Termin";
-
   return (
     <EntityFormLayout
       title={isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
@@ -518,57 +431,12 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 />
               )}
 
-              <div className="sub-panel space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Termine
-                </h3>
-                {isEditing && onOpenAppointment && projectId && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => onOpenAppointment(projectId)}
-                    data-testid="button-new-appointment-from-project"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Neuer Termin
-                  </Button>
-                )}
-                <div className="space-y-2">
-                  {appointmentsLoading ? (
-                    <p className="text-sm text-slate-400 text-center py-2">Termine werden geladen...</p>
-                  ) : projectAppointments.length === 0 ? (
-                    <p className="text-sm text-slate-400 text-center py-2">Keine Termine ab heute</p>
-                  ) : (
-                    projectAppointments.map((appointment) => {
-                      const appointmentBorderColor = appointment.startDate < fromDate
-                        ? "#9ca3af"
-                        : "#22c55e";
-                      return (
-                        <TerminInfoBadge
-                          key={appointment.id}
-                          startDate={appointment.startDate}
-                          endDate={appointment.endDate}
-                          startTimeHour={appointment.startTimeHour}
-                          mode="projekt"
-                          projectLabel={appointmentSecondaryLabel}
-                          color={appointmentBorderColor}
-                          action="remove"
-                          actionDisabled={appointment.isLocked}
-                          onRemove={() => deleteAppointmentMutation.mutate(appointment.id)}
-                          testId={`project-appointment-${appointment.id}`}
-                          fullWidth
-                        />
-                      );
-                    })
-                  )}
-                </div>
-                {projectAppointments.some((appointment) => appointment.isLocked) && (
-                  <p className="text-xs text-slate-400 text-center">
-                    Gesperrte Termine können nur Admins löschen.
-                  </p>
-                )}
-              </div>
+              <ProjectAppointmentsPanel
+                projectId={projectId}
+                projectName={name}
+                isEditing={isEditing}
+                onOpenAppointment={onOpenAppointment}
+              />
 
               {/* Dokumente - nur bei Bearbeitung */}
               {isEditing && (

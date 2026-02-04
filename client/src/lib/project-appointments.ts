@@ -6,6 +6,8 @@ export const getBerlinTodayDateString = () =>
     day: "2-digit",
   }).format(new Date());
 
+export const PROJECT_APPOINTMENTS_ALL_FROM_DATE = "1900-01-01";
+
 export const getProjectAppointmentsQueryKey = ({
   projectId,
   fromDate,
