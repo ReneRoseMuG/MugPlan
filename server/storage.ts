@@ -24,6 +24,7 @@ import type {
   Tour,
   UpdateCustomer,
   UpdateEmployee,
+  UpdateHelpText,
   UpdateNote,
   UpdateNoteTemplate,
   UpdateProject,

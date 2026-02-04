@@ -70,7 +70,7 @@ const isPastStartDate = (startDate: string) => {
   const startDateValue = new Date(`${startDate}T00:00:00`);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return startDateValue <= today;
+  return startDateValue < today;
 };
 
 const fetchJson = async <T,>(url: string) => {
@@ -333,7 +333,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
       console.info(`${logPrefix} cache invalidate`, {
         queryKey: appointmentsQueryKey,
       });
-      queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      await queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
       toast({
         title: isEditing ? "Termin gespeichert" : "Termin erstellt",
       });

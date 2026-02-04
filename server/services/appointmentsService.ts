@@ -1,6 +1,7 @@
 import type { InsertAppointment } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as projectsRepository from "../repositories/projectsRepository";
+import * as projectStatusRepository from "../repositories/projectStatusRepository";
 
 const logPrefix = "[appointments-service]";
 
@@ -24,9 +25,29 @@ function getBerlinTodayDateString(): string {
   return berlinFormatter.format(new Date());
 }
 
-function isStartDateLocked(startDate: string): boolean {
+function parseDateOnly(input: string): Date {
+  const parsed = new Date(`${input}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new AppointmentError("Ungueltiges Datum", 400);
+  }
+  return parsed;
+}
+
+function toDateOnlyString(input: Date | string | null | undefined): string | null {
+  if (!input) return null;
+  if (typeof input === "string") return input.slice(0, 10);
+
+  const year = input.getFullYear();
+  const month = String(input.getMonth() + 1).padStart(2, "0");
+  const day = String(input.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isStartDateLocked(startDate: Date | string | null | undefined): boolean {
+  const normalizedStartDate = toDateOnlyString(startDate);
+  if (!normalizedStartDate) return false;
   const todayBerlin = getBerlinTodayDateString();
-  return startDate <= todayBerlin;
+  return normalizedStartDate < todayBerlin;
 }
 
 function normalizeEmployeeIds(employeeIds?: number[]) {
@@ -72,8 +93,8 @@ export async function createAppointment(
     tourId: data.tourId ?? null,
     title: project.name,
     description: null,
-    startDate: data.startDate,
-    endDate: data.endDate ?? null,
+    startDate: parseDateOnly(data.startDate),
+    endDate: data.endDate ? parseDateOnly(data.endDate) : null,
     startTime: data.startTime ?? null,
     endTime: null,
   };
@@ -116,8 +137,8 @@ export async function updateAppointment(
     tourId: data.tourId ?? null,
     title: project.name,
     description: null,
-    startDate: data.startDate,
-    endDate: data.endDate ?? null,
+    startDate: parseDateOnly(data.startDate),
+    endDate: data.endDate ? parseDateOnly(data.endDate) : null,
     startTime: data.startTime ?? null,
     endTime: null,
   };
@@ -141,14 +162,17 @@ export async function listProjectAppointments(
   }
 
   console.log(`${logPrefix} list appointments projectId=${projectId} fromDate=${effectiveFromDate}`);
-  const appointments = await appointmentsRepository.listAppointmentsByProjectFromDate(projectId, effectiveFromDate);
+  const appointments = await appointmentsRepository.listAppointmentsByProjectFromDate(
+    projectId,
+    parseDateOnly(effectiveFromDate),
+  );
   console.log(`${logPrefix} list appointments result projectId=${projectId} count=${appointments.length}`);
 
   return appointments.map((appointment) => ({
     id: appointment.id,
     projectId: appointment.projectId,
-    startDate: appointment.startDate,
-    endDate: appointment.endDate,
+    startDate: toDateOnlyString(appointment.startDate) ?? "",
+    endDate: toDateOnlyString(appointment.endDate),
     startTimeHour: appointment.startTime ? Number(appointment.startTime.slice(0, 2)) : null,
     isLocked: !isAdmin && isStartDateLocked(appointment.startDate),
   }));
@@ -165,17 +189,90 @@ export async function listEmployeeAppointments(employeeId: number, fromDate: str
   }
 
   console.log(`${logPrefix} list employee appointments employeeId=${employeeId} fromDate=${effectiveFromDate}`);
-  const appointments = await appointmentsRepository.listAppointmentsByEmployeeFromDate(employeeId, effectiveFromDate);
+  const appointments = await appointmentsRepository.listAppointmentsByEmployeeFromDate(
+    employeeId,
+    parseDateOnly(effectiveFromDate),
+  );
   console.log(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
 
   return appointments.map(({ appointment, projectName, customerName }) => ({
     id: appointment.id,
     projectId: appointment.projectId,
     title: appointment.title ?? projectName,
-    startDate: appointment.startDate,
-    endDate: appointment.endDate,
+    startDate: toDateOnlyString(appointment.startDate) ?? "",
+    endDate: toDateOnlyString(appointment.endDate),
     startTimeHour: appointment.startTime ? Number(appointment.startTime.slice(0, 2)) : null,
     customerName,
+  }));
+}
+
+export async function listCalendarAppointments({
+  fromDate,
+  toDate,
+  employeeId,
+  isAdmin,
+}: {
+  fromDate: string;
+  toDate: string;
+  employeeId?: number | null;
+  isAdmin: boolean;
+}) {
+  console.log(`${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
+  const rows = await appointmentsRepository.listAppointmentsForCalendarRange({
+    fromDate: parseDateOnly(fromDate),
+    toDate: parseDateOnly(toDate),
+    employeeId,
+  });
+  console.log(`${logPrefix} list calendar appointments result count=${rows.length}`);
+
+  const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
+  const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+
+  const employeeRows = await appointmentsRepository.getAppointmentEmployeesByAppointmentIds(appointmentIds);
+  const statusRows = await projectStatusRepository.getProjectStatusesByProjectIds(projectIds);
+
+  const employeesByAppointment = new Map<number, { id: number; fullName: string }[]>();
+  for (const row of employeeRows) {
+    const list = employeesByAppointment.get(row.appointmentId) ?? [];
+    list.push({
+      id: row.employee.id,
+      fullName: row.employee.fullName,
+    });
+    employeesByAppointment.set(row.appointmentId, list);
+  }
+
+  const statusesByProject = new Map<number, { id: number; title: string; color: string }[]>();
+  for (const row of statusRows) {
+    const list = statusesByProject.get(row.projectId) ?? [];
+    list.push({
+      id: row.status.id,
+      title: row.status.title,
+      color: row.status.color,
+    });
+    statusesByProject.set(row.projectId, list);
+  }
+
+  return rows.map((row) => ({
+    id: row.appointment.id,
+    projectId: row.project.id,
+    projectName: row.project.name,
+    projectDescription: row.project.descriptionMd ?? null,
+    projectStatuses: statusesByProject.get(row.project.id) ?? [],
+    startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+    endDate: toDateOnlyString(row.appointment.endDate),
+    startTime: row.appointment.startTime ?? null,
+    tourId: row.appointment.tourId ?? null,
+    tourName: row.tour?.name ?? null,
+    tourColor: row.tour?.color ?? null,
+    customer: {
+      id: row.customer.id,
+      customerNumber: row.customer.customerNumber,
+      fullName: row.customer.fullName,
+      postalCode: row.customer.postalCode ?? null,
+      city: row.customer.city ?? null,
+    },
+    employees: employeesByAppointment.get(row.appointment.id) ?? [],
+    isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
   }));
 }
 

@@ -111,3 +111,44 @@ export async function deleteAppointment(req: Request, res: Response, next: NextF
     next(err);
   }
 }
+
+export async function listCalendarAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
+    const employeeIdParam = typeof req.query.employeeId === "string" ? req.query.employeeId : undefined;
+
+    if (!fromDate || !toDate) {
+      res.status(400).json({ message: "fromDate und toDate sind erforderlich" });
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+      console.log(`${logPrefix} list calendar appointments rejected: invalid range ${fromDate}-${toDate}`);
+      res.status(400).json({ message: "Ungültiger Datumsbereich" });
+      return;
+    }
+    if (toDate < fromDate) {
+      res.status(400).json({ message: "toDate darf nicht vor fromDate liegen" });
+      return;
+    }
+
+    const employeeId = employeeIdParam ? Number(employeeIdParam) : undefined;
+    if (employeeIdParam && Number.isNaN(employeeId)) {
+      res.status(400).json({ message: "Ungültige employeeId" });
+      return;
+    }
+
+    const isAdmin = isAdminRequest(req);
+    console.log(`${logPrefix} list calendar appointments request fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
+    const appointments = await appointmentsService.listCalendarAppointments({
+      fromDate,
+      toDate,
+      employeeId,
+      isAdmin,
+    });
+    res.json(appointments);
+  } catch (err) {
+    next(err);
+  }
+}
