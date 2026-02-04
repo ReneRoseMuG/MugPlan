@@ -10,6 +10,12 @@
 ## Toggle „Alle Termine“
 Der Toggle wird von `AppointmentsPanel` gerendert. Der Wrapper lädt **alle** Termine zu den Projekten des Kunden, damit die Umschaltung zwischen „ab heute“ und „alle Termine“ rein clientseitig erfolgen kann.
 
+## Header-Action & Zähler
+`CustomerAppointmentsPanel` liefert keine Body-CTA. Aktionen laufen ausschließlich über die Header-Action-Zone von `AppointmentsPanel`, falls erforderlich. Der Termin-Zähler wird im Header als Text in Klammern direkt hinter dem Titel angezeigt (z. B. „Termine (2)“), ohne Badge und ohne Wiederholung im Footer.
+
+## Doppelklick-Verhalten
+Ein Doppelklick auf einen Termin-Badge kann über `AppointmentsPanel` einen `onOpenAppointment`-Callback auslösen. Dieser Wrapper stellt standardmäßig keinen Edit-Callback bereit und bleibt damit rein darstellend.
+
 ## Datenladung
 - Projekte des Kunden über `GET /api/projects?customerId=<id>&filter=all`.
 - Termine je Projekt über `GET /api/projects/<projectId>/appointments?fromDate=1900-01-01`.

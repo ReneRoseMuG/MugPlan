@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Calendar, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
 import { PROJECT_APPOINTMENTS_ALL_FROM_DATE, getBerlinTodayDateString, getProjectAppointmentsQueryKey } from "@/lib/project-appointments";
 import { queryClient } from "@/lib/queryClient";
@@ -11,7 +10,7 @@ interface ProjectAppointmentsPanelProps {
   projectId?: number | null;
   projectName?: string | null;
   isEditing: boolean;
-  onOpenAppointment?: (projectId: number) => void;
+  onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
 }
 
 interface ProjectAppointmentSummary {
@@ -128,20 +127,17 @@ export function ProjectAppointmentsPanel({
     });
   }, [projectAppointments, projectName, today, deleteAppointmentMutation]);
 
-  const topContent =
-    isEditing && onOpenAppointment && projectId ? (
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => onOpenAppointment(projectId)}
-        data-testid="button-new-appointment-from-project"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        Neuer Termin
-      </Button>
-    ) : null;
-
   const showLockedNote = projectAppointments.some((appointment) => appointment.isLocked);
+  const handleOpenAppointment = onOpenAppointment && projectId
+    ? (appointmentId: number | string) => onOpenAppointment({ projectId, appointmentId: Number(appointmentId) })
+    : undefined;
+  const addAction = isEditing && onOpenAppointment && projectId
+    ? {
+        onClick: () => onOpenAppointment({ projectId }),
+        ariaLabel: "Termin hinzufügen",
+        testId: "button-new-appointment-from-project",
+      }
+    : undefined;
 
   return (
     <AppointmentsPanel
@@ -149,7 +145,8 @@ export function ProjectAppointmentsPanel({
       icon={<Calendar className="w-4 h-4" />}
       items={items}
       isLoading={appointmentsLoading}
-      topContent={topContent}
+      addAction={addAction}
+      onOpenAppointment={handleOpenAppointment}
       emptyStateFilteredLabel="Keine Termine ab heute"
       note={showLockedNote ? "Gesperrte Termine können nur Admins löschen." : null}
     />

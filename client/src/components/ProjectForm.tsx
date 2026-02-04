@@ -30,7 +30,7 @@ interface ProjectFormProps {
   projectId?: number;
   onCancel?: () => void;
   onSaved?: () => void;
-  onOpenAppointment?: (projectId: number) => void;
+  onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
 }
 
 
