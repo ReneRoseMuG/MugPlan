@@ -159,8 +159,11 @@ export default function Home() {
               projectId={selectedProjectId || undefined}
               onCancel={() => { setSelectedProjectId(null); setView(projectReturnView); }}
               onSaved={() => { setSelectedProjectId(null); setView(projectReturnView); }}
-              onOpenAppointment={(projectId) => {
-                setAppointmentContext({ projectId });
+              onOpenAppointment={(context) => {
+                setAppointmentContext({
+                  projectId: context.projectId,
+                  appointmentId: context.appointmentId,
+                });
                 setView('appointment');
               }}
             />

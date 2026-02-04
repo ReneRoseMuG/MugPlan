@@ -7,10 +7,16 @@
 - `projectId?: number | null` – ID des Projekts.
 - `projectName?: string | null` – Anzeigename für die Badge-Zeile.
 - `isEditing: boolean` – Steuert, ob Termine geladen und Aktionen angezeigt werden.
-- `onOpenAppointment?: (projectId: number) => void` – Callback für „Neuer Termin“.
+- `onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void` – Callback für „Neuer Termin“ (nur `projectId`) und für das Öffnen bestehender Termine (mit `appointmentId`).
 
 ## Toggle „Alle Termine“
 Der Toggle wird von `AppointmentsPanel` gerendert. `ProjectAppointmentsPanel` lädt alle Termine (inkl. Vergangenheit), damit der Filter „ab heute“ ausschließlich im UI erfolgt.
+
+## Header-Action & Zähler
+Der „Neuer Termin“-Trigger wird über die Header-Action-Zone (`addAction`) von `AppointmentsPanel` bereitgestellt, nicht im Panel-Body. Der Termin-Zähler wird im Panel-Header als Text in Klammern direkt hinter dem Titel angezeigt (z. B. „Termine (2)“), ohne Badge oder Footer-Wiederholung.
+
+## Doppelklick-Verhalten
+Ein Doppelklick auf einen Termin-Badge ruft `onOpenAppointment` mit `appointmentId` (und dem aktuellen `projectId`) auf, sodass das bestehende Terminformular im Edit-Modus geöffnet werden kann.
 
 ## Datenladung
 - Termine über `GET /api/projects/<projectId>/appointments?fromDate=1900-01-01`.

@@ -13,6 +13,7 @@ interface InfoBadgeProps {
   testId?: string;
   size?: "default" | "sm";
   fullWidth?: boolean;
+  onDoubleClick?: () => void;
 }
 
 export function InfoBadge({ 
@@ -25,7 +26,8 @@ export function InfoBadge({
   actionDisabled = false,
   testId,
   size = "default",
-  fullWidth = false
+  fullWidth = false,
+  onDoubleClick,
 }: InfoBadgeProps) {
   const sizeClasses = size === "sm" 
     ? "px-2 py-0.5 text-xs gap-1" 
@@ -50,6 +52,7 @@ export function InfoBadge({
       className={`flex items-center justify-between border border-border bg-muted/50 rounded ${sizeClasses} ${widthClass}`}
       style={borderColor ? { borderLeftWidth: '5px', borderLeftColor: borderColor } : undefined}
       data-testid={testId}
+      onDoubleClick={onDoubleClick}
     >
       <div className={`flex items-center flex-1 min-w-0 ${size === "sm" ? "gap-1" : "gap-2"}`}>
         <span className="text-muted-foreground">{icon}</span>

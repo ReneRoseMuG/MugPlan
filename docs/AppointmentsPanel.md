@@ -1,7 +1,7 @@
 # AppointmentsPanel
 
 ## Zweck
-`AppointmentsPanel` ist eine rein darstellende UI-Komponente für Terminlisten in Formular-Seitenleisten. Sie kapselt die standardisierte Hülle mit `SidebarChildPanel`, rendert die Einträge als `TerminInfoBadge` und stellt im Footer den Toggle „Alle Termine“ bereit, ohne selbst Kontext- oder Fetch-Logik zu kennen.
+`AppointmentsPanel` ist eine rein darstellende UI-Komponente für Terminlisten in Formular-Seitenleisten. Sie kapselt die standardisierte Hülle mit `SidebarChildPanel`, rendert die Einträge als `TerminInfoBadge` und stellt im Footer den Toggle „Alle Termine“ bereit, ohne selbst Kontext- oder Fetch-Logik zu kennen. Der Header zeigt die Anzahl der aktuell gerenderten Termine als schlichten Text in Klammern direkt hinter dem Titel (z. B. „Termine (2)“), ohne Badge oder farbige Hervorhebung.
 
 ## Props
 - `title: string` – Titel im Panel-Header.
@@ -12,7 +12,7 @@
 - `headerActions?: ReactNode` – Optionaler Actions-Slot im Header (überschreibt Default-Actions).
 - `addAction?: { onClick: () => void; disabled?: boolean; ariaLabel?: string; testId?: string }` – Optionaler Add-Button (Icon) im Header.
 - `closeAction?: { onClick: () => void; disabled?: boolean; ariaLabel?: string; testId?: string }` – Optionaler Close-Button (Icon) im Header.
-- `topContent?: ReactNode` – Inhalt oberhalb der Liste im Body (z. B. ein „Neuer Termin“-Button).
+- `onOpenAppointment?: (appointmentId: number | string) => void` – Callback, der bei Doppelklick auf einen `TerminInfoBadge` ausgelöst wird.
 - `note?: ReactNode` – Hinweistext unterhalb der Liste.
 - `emptyStateLabel?: string` – Text für leere Liste im „Alle Termine“-Modus.
 - `emptyStateFilteredLabel?: string` – Text für leere Liste im „ab heute“-Modus.
@@ -35,7 +35,13 @@
 - `testId?: string`
 
 ## Toggle „Alle Termine“
-Der Schalter ist standardmäßig **aus**. In diesem Zustand filtert `AppointmentsPanel` die übergebenen Termine auf **heute und Zukunft** (lokal, per Berlin-Zeitzone). Bei aktiviertem Schalter wird der Filter entfernt und es werden alle übergebenen Termine angezeigt. Die Komponente lädt **keine** Daten nach – der Wrapper liefert die vollständige Liste.
+Der Schalter ist standardmäßig **aus**. In diesem Zustand filtert `AppointmentsPanel` die übergebenen Termine auf **heute und Zukunft** (lokal, per Berlin-Zeitzone). Bei aktiviertem Schalter wird der Filter entfernt und es werden alle übergebenen Termine angezeigt. Die Komponente lädt **keine** Daten nach – der Wrapper liefert die vollständige Liste. Der Footer enthält ausschließlich diesen Toggle und keine zusätzlichen Zähler oder Statusanzeigen.
+
+## Header-Actions statt Body-CTA
+`AppointmentsPanel` rendert **keine** Call-to-Action-Buttons im Panel-Body. Aktionen wie „Neuer Termin“ laufen ausschließlich über die Header-Action-Zone von `SidebarChildPanel` (`headerActions`, `addAction`, `closeAction`).
+
+## Doppelklick-Verhalten
+Ein Doppelklick auf einen `TerminInfoBadge` löst `onOpenAppointment` aus. Das Panel selbst enthält keine Routing- oder Kontextlogik, sondern meldet nur die `appointmentId` nach oben.
 
 ## Datenquelle
 `AppointmentsPanel` kennt keine APIs oder Kontexte. Es erwartet, dass Wrapper-Komponenten die Daten bereitstellen und in `AppointmentPanelItem` mappen.

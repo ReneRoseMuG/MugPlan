@@ -43,7 +43,7 @@ interface AppointmentsPanelProps {
   headerActions?: ReactNode;
   addAction?: AppointmentsPanelAction;
   closeAction?: AppointmentsPanelAction;
-  topContent?: ReactNode;
+  onOpenAppointment?: (appointmentId: number | string) => void;
   note?: ReactNode;
   emptyStateLabel?: string;
   emptyStateFilteredLabel?: string;
@@ -63,7 +63,7 @@ export function AppointmentsPanel({
   headerActions,
   addAction,
   closeAction,
-  topContent,
+  onOpenAppointment,
   note,
   emptyStateLabel,
   emptyStateFilteredLabel,
@@ -80,12 +80,12 @@ export function AppointmentsPanel({
   const emptyLabel = showAll
     ? emptyStateLabel ?? "Keine Termine vorhanden"
     : emptyStateFilteredLabel ?? "Keine Termine ab heute";
+  const titleWithCount = `${title} (${visibleItems.length})`;
 
   return (
     <SidebarChildPanel
-      title={title}
+      title={titleWithCount}
       icon={icon}
-      count={isLoading ? null : visibleItems.length}
       helpKey={helpKey}
       headerActions={headerActions}
       addAction={addAction}
@@ -99,7 +99,6 @@ export function AppointmentsPanel({
         </div>
       )}
     >
-      {topContent}
       <div className="space-y-2">
         {isLoading ? (
           <p className="text-sm text-slate-400 text-center py-2">Termine werden geladen...</p>
@@ -123,6 +122,7 @@ export function AppointmentsPanel({
               onRemove={appointment.onRemove}
               actionDisabled={appointment.actionDisabled}
               testId={appointment.testId}
+              onDoubleClick={onOpenAppointment ? () => onOpenAppointment(appointment.id) : undefined}
               fullWidth
             />
           ))

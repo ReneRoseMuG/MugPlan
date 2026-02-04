@@ -22,6 +22,7 @@ interface TerminInfoBadgeProps {
   onAdd?: () => void;
   onRemove?: () => void;
   actionDisabled?: boolean;
+  onDoubleClick?: () => void;
 }
 
 const formatDateLabel = (value: string) => {
@@ -62,6 +63,7 @@ export function TerminInfoBadge({
   onAdd,
   onRemove,
   actionDisabled = false,
+  onDoubleClick,
 }: TerminInfoBadgeProps) {
   const dateLabel = formatDateLabel(startDate);
   const isMultiDay = Boolean(endDate && endDate !== startDate);
@@ -108,6 +110,7 @@ export function TerminInfoBadge({
       testId={testId}
       size={size}
       fullWidth={fullWidth}
+      onDoubleClick={onDoubleClick}
     />
   );
 }
