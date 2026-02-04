@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
-import { User, Phone, MapPin, Calendar } from "lucide-react";
+import { User, Phone, MapPin } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
+import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -20,12 +21,6 @@ interface CustomerDataProps {
   onSave?: () => void;
   onOpenProject?: (id: number) => void;
 }
-
-const demoAppointments = [
-  { id: "1", date: "28.01.2026", title: "Aufmaß vor Ort", project: "Renovierung Bürogebäude" },
-  { id: "2", date: "05.02.2026", title: "Materialauswahl", project: "Neugestaltung Empfangsbereich" },
-  { id: "3", date: "12.02.2026", title: "Abnahme", project: "Wintergarten Anbau" },
-];
 
 export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: CustomerDataProps) {
   const { toast } = useToast();
@@ -344,42 +339,10 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         <div className="space-y-6">
           <LinkedProjectsPanel customerId={customerId} onOpenProject={onOpenProject} />
 
-          <Card>
-            <CardHeader className="border-b border-border py-3">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Termine ({demoAppointments.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="space-y-2" data-testid="list-appointments">
-                {demoAppointments.map((apt) => (
-                  <div 
-                    key={apt.id}
-                    className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border"
-                    data-testid={`appointment-card-${apt.id}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-appointment-title-${apt.id}`}>
-                        {apt.title}
-                      </p>
-                      <span className="text-xs font-medium text-primary" data-testid={`text-appointment-date-${apt.id}`}>
-                        {apt.date}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1" data-testid={`text-appointment-project-${apt.id}`}>
-                      {apt.project}
-                    </p>
-                  </div>
-                ))}
-                {demoAppointments.length === 0 && (
-                  <p className="text-sm text-slate-400 text-center py-2">
-                    Keine Termine vorhanden
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <CustomerAppointmentsPanel
+            customerId={customerId}
+            customerName={customer?.fullName ?? null}
+          />
         </div>
       </div>
     </EntityFormLayout>

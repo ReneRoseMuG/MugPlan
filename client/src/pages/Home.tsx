@@ -28,6 +28,11 @@ export default function Home() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
+  const [appointmentContext, setAppointmentContext] = useState<{
+    initialDate?: string;
+    projectId?: number;
+    appointmentId?: number;
+  } | null>(null);
 
   // Handlers for navigation
   const next = () => {
@@ -154,9 +159,27 @@ export default function Home() {
               projectId={selectedProjectId || undefined}
               onCancel={() => { setSelectedProjectId(null); setView(projectReturnView); }}
               onSaved={() => { setSelectedProjectId(null); setView(projectReturnView); }}
+              onOpenAppointment={(projectId) => {
+                setAppointmentContext({ projectId });
+                setView('appointment');
+              }}
             />
           ) : view === 'appointment' ? (
-            <AppointmentForm onCancel={() => setView('month')} />
+            <AppointmentForm
+              appointmentId={appointmentContext?.appointmentId}
+              initialDate={appointmentContext?.initialDate}
+              projectId={appointmentContext?.projectId}
+              onCancel={() => {
+                const returnToProject = Boolean(appointmentContext?.projectId);
+                setAppointmentContext(null);
+                setView(returnToProject ? 'project' : 'month');
+              }}
+              onSaved={() => {
+                const returnToProject = Boolean(appointmentContext?.projectId);
+                setAppointmentContext(null);
+                setView(returnToProject ? 'project' : 'month');
+              }}
+            />
           ) : view === 'projectList' ? (
             <ProjectList 
               onCancel={() => setView('month')} 
@@ -178,16 +201,28 @@ export default function Home() {
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <WeekGrid 
                 currentDate={currentDate} 
-                onNewAppointment={() => setView('appointment')}
-                onAppointmentDoubleClick={() => setView('appointment')}
+                onNewAppointment={(date) => {
+                  setAppointmentContext({ initialDate: date });
+                  setView('appointment');
+                }}
+                onAppointmentDoubleClick={(date) => {
+                  setAppointmentContext({ initialDate: date });
+                  setView('appointment');
+                }}
               />
             </div>
           ) : view === 'year' ? renderYearView() : (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               <CalendarGrid 
                 currentDate={currentDate} 
-                onNewAppointment={() => setView('appointment')}
-                onAppointmentDoubleClick={() => setView('appointment')}
+                onNewAppointment={(date) => {
+                  setAppointmentContext({ initialDate: date });
+                  setView('appointment');
+                }}
+                onAppointmentDoubleClick={(date) => {
+                  setAppointmentContext({ initialDate: date });
+                  setView('appointment');
+                }}
               />
             </div>
           )}

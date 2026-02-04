@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CustomerList } from "@/components/CustomerList";
 import { NotesSection } from "@/components/NotesSection";
@@ -11,7 +12,6 @@ import {
   FolderKanban, 
   UserCircle, 
   FileText, 
-  Calendar, 
   Paperclip, 
   Plus,
   Eye,
@@ -30,11 +30,9 @@ interface ProjectFormProps {
   projectId?: number;
   onCancel?: () => void;
   onSaved?: () => void;
+  onOpenAppointment?: (projectId: number) => void;
 }
 
-const mockAppointments = [
-  { id: "1", date: "2024-02-15", title: "Montage vor Ort" },
-];
 
 function DocumentCard({ 
   attachment, 
@@ -154,7 +152,7 @@ function DocumentPreviewDialog({
   );
 }
 
-export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) {
+export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
   
@@ -164,7 +162,6 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
-
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
     queryKey: ['/api/projects', projectId],
@@ -198,6 +195,7 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
   const { data: allStatuses = [] } = useQuery<ProjectStatus[]>({
     queryKey: ['/api/project-status'],
   });
+
 
   // Initialize form when project data loads
   useEffect(() => {
@@ -433,23 +431,12 @@ export function ProjectForm({ projectId, onCancel, onSaved }: ProjectFormProps) 
                 />
               )}
 
-              <div className="sub-panel space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Termine (Demo)
-                </h3>
-                <div className="space-y-2">
-                  {mockAppointments.map(apt => (
-                    <div key={apt.id} className="p-3 bg-white rounded-lg border border-border" data-testid={`appointment-card-${apt.id}`}>
-                      <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-appointment-title-${apt.id}`}>{apt.title}</p>
-                      <p className="text-xs text-slate-400 mt-1" data-testid={`text-appointment-date-${apt.id}`}>{apt.date}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-slate-400 text-center">
-                  Termindarstellung wird später ergänzt
-                </p>
-              </div>
+              <ProjectAppointmentsPanel
+                projectId={projectId}
+                projectName={name}
+                isEditing={isEditing}
+                onOpenAppointment={onOpenAppointment}
+              />
 
               {/* Dokumente - nur bei Bearbeitung */}
               {isEditing && (

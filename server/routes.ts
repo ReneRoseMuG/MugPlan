@@ -7,6 +7,7 @@ import eventsRoutes from "./routes/eventsRoutes";
 import helpTextsRoutes from "./routes/helpTextsRoutes";
 import noteTemplatesRoutes from "./routes/noteTemplatesRoutes";
 import notesRoutes from "./routes/notesRoutes";
+import appointmentsRoutes from "./routes/appointmentsRoutes";
 import projectAttachmentsRoutes from "./routes/projectAttachmentsRoutes";
 import projectNotesRoutes from "./routes/projectNotesRoutes";
 import projectStatusRelationsRoutes from "./routes/projectStatusRelationsRoutes";
@@ -19,6 +20,7 @@ import toursRoutes from "./routes/toursRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   app.use(eventsRoutes);
+  app.use(appointmentsRoutes);
   app.use(toursRoutes);
   app.use(teamsRoutes);
   app.use(customersRoutes);

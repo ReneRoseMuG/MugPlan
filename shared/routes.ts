@@ -53,6 +53,92 @@ export const api = {
       },
     },
   },
+  appointments: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/appointments/:id',
+      responses: {
+        200: z.object({
+          id: z.number(),
+          projectId: z.number(),
+          tourId: z.number().nullable(),
+          title: z.string(),
+          description: z.string().nullable(),
+          startDate: z.string(),
+          startTime: z.string().nullable(),
+          endDate: z.string().nullable(),
+          endTime: z.string().nullable(),
+          employees: z.array(z.custom<typeof employees.$inferSelect>()),
+        }),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/appointments',
+      input: z.object({
+        projectId: z.number(),
+        tourId: z.number().nullable().optional(),
+        startDate: z.string(),
+        endDate: z.string().nullable().optional(),
+        startTime: z.string().nullable().optional(),
+        employeeIds: z.array(z.number()).optional(),
+      }),
+      responses: {
+        201: z.object({
+          id: z.number(),
+          projectId: z.number(),
+          tourId: z.number().nullable(),
+          title: z.string(),
+          description: z.string().nullable(),
+          startDate: z.string(),
+          startTime: z.string().nullable(),
+          endDate: z.string().nullable(),
+          endTime: z.string().nullable(),
+          employees: z.array(z.custom<typeof employees.$inferSelect>()),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/appointments/:id',
+      input: z.object({
+        projectId: z.number(),
+        tourId: z.number().nullable().optional(),
+        startDate: z.string(),
+        endDate: z.string().nullable().optional(),
+        startTime: z.string().nullable().optional(),
+        employeeIds: z.array(z.number()).optional(),
+      }),
+      responses: {
+        200: z.object({
+          id: z.number(),
+          projectId: z.number(),
+          tourId: z.number().nullable(),
+          title: z.string(),
+          description: z.string().nullable(),
+          startDate: z.string(),
+          startTime: z.string().nullable(),
+          endDate: z.string().nullable(),
+          endTime: z.string().nullable(),
+          employees: z.array(z.custom<typeof employees.$inferSelect>()),
+        }),
+        400: errorSchemas.validation,
+        403: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/appointments/:id',
+      responses: {
+        204: z.void(),
+        403: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   tours: {
     list: {
       method: 'GET' as const,
@@ -544,6 +630,22 @@ export const api = {
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+      },
+    },
+  },
+  projectAppointments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/projects/:projectId/appointments',
+      responses: {
+        200: z.array(z.object({
+          id: z.number(),
+          projectId: z.number(),
+          startDate: z.string(),
+          endDate: z.string().nullable(),
+          startTimeHour: z.number().int().min(0).max(23).nullable(),
+          isLocked: z.boolean(),
+        })),
       },
     },
   },
