@@ -154,6 +154,31 @@ export async function listProjectAppointments(
   }));
 }
 
+export async function listEmployeeAppointments(employeeId: number, fromDate: string | undefined) {
+  const todayBerlin = getBerlinTodayDateString();
+  const effectiveFromDate = fromDate ?? todayBerlin;
+
+  if (!fromDate) {
+    console.log(`${logPrefix} list employee appointments defaulting fromDate=${effectiveFromDate}`);
+  } else {
+    console.log(`${logPrefix} list employee appointments using fromDate=${effectiveFromDate}`);
+  }
+
+  console.log(`${logPrefix} list employee appointments employeeId=${employeeId} fromDate=${effectiveFromDate}`);
+  const appointments = await appointmentsRepository.listAppointmentsByEmployeeFromDate(employeeId, effectiveFromDate);
+  console.log(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
+
+  return appointments.map(({ appointment, projectName, customerName }) => ({
+    id: appointment.id,
+    projectId: appointment.projectId,
+    title: appointment.title ?? projectName,
+    startDate: appointment.startDate,
+    endDate: appointment.endDate,
+    startTimeHour: appointment.startTime ? Number(appointment.startTime.slice(0, 2)) : null,
+    customerName,
+  }));
+}
+
 export async function deleteAppointment(appointmentId: number, isAdmin: boolean) {
   const existing = await appointmentsRepository.getAppointment(appointmentId);
   if (!existing) return null;

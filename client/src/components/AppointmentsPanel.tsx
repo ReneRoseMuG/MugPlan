@@ -1,11 +1,9 @@
-import { useId, useMemo, useState } from "react";
+import { useId } from "react";
 import type { ReactNode } from "react";
-import { format, isValid, parseISO } from "date-fns";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { TerminInfoBadge } from "@/components/ui/termin-info-badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { getBerlinTodayDateString } from "@/lib/project-appointments";
 
 type AppointmentItemMode = "kunde" | "projekt" | "mitarbeiter";
 
@@ -38,6 +36,8 @@ interface AppointmentsPanelProps {
   title: string;
   icon: ReactNode;
   items: AppointmentPanelItem[];
+  showAll: boolean;
+  onShowAllChange: (showAll: boolean) => void;
   isLoading?: boolean;
   helpKey?: string;
   headerActions?: ReactNode;
@@ -49,15 +49,12 @@ interface AppointmentsPanelProps {
   emptyStateFilteredLabel?: string;
 }
 
-const normalizeDateString = (value: string) => {
-  const parsed = parseISO(value);
-  return isValid(parsed) ? format(parsed, "yyyy-MM-dd") : value;
-};
-
 export function AppointmentsPanel({
   title,
   icon,
   items,
+  showAll,
+  onShowAllChange,
   isLoading = false,
   helpKey,
   headerActions,
@@ -69,18 +66,9 @@ export function AppointmentsPanel({
   emptyStateFilteredLabel,
 }: AppointmentsPanelProps) {
   const toggleId = useId();
-  const [showAll, setShowAll] = useState(false);
-  const today = getBerlinTodayDateString();
 
-  const visibleItems = useMemo(() => {
-    if (showAll) return items;
-    return items.filter((item) => normalizeDateString(item.startDate) >= today);
-  }, [items, showAll, today]);
-
-  const emptyLabel = showAll
-    ? emptyStateLabel ?? "Keine Termine vorhanden"
-    : emptyStateFilteredLabel ?? "Keine Termine ab heute";
-  const titleWithCount = `${title} (${visibleItems.length})`;
+  const emptyLabel = showAll ? emptyStateLabel ?? "Keine Termine vorhanden" : emptyStateFilteredLabel ?? "Keine Termine ab heute";
+  const titleWithCount = `${title} (${items.length})`;
 
   return (
     <SidebarChildPanel
@@ -95,17 +83,17 @@ export function AppointmentsPanel({
           <Label htmlFor={toggleId} className="text-sm text-muted-foreground">
             Alle Termine
           </Label>
-          <Switch id={toggleId} checked={showAll} onCheckedChange={setShowAll} />
+          <Switch id={toggleId} checked={showAll} onCheckedChange={onShowAllChange} />
         </div>
       )}
     >
       <div className="space-y-2">
         {isLoading ? (
           <p className="text-sm text-slate-400 text-center py-2">Termine werden geladen...</p>
-        ) : visibleItems.length === 0 ? (
+        ) : items.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-2">{emptyLabel}</p>
         ) : (
-          visibleItems.map((appointment) => (
+          items.map((appointment) => (
             <TerminInfoBadge
               key={appointment.id}
               startDate={appointment.startDate}

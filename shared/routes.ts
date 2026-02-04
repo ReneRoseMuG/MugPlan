@@ -431,8 +431,11 @@ export const api = {
       responses: {
         200: z.array(z.object({
           id: z.number(),
+          projectId: z.number(),
           title: z.string(),
-          date: z.string(),
+          startDate: z.string(),
+          endDate: z.string().nullable().optional(),
+          startTimeHour: z.number().int().min(0).max(23).nullable().optional(),
           customerName: z.string().optional(),
         })),
       },

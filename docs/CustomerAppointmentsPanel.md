@@ -8,7 +8,7 @@
 - `customerName?: string | null` – Optionaler Anzeigename des Kunden (derzeit nicht als Label verwendet).
 
 ## Toggle „Alle Termine“
-Der Toggle wird von `AppointmentsPanel` gerendert. Der Wrapper lädt **alle** Termine zu den Projekten des Kunden, damit die Umschaltung zwischen „ab heute“ und „alle Termine“ rein clientseitig erfolgen kann.
+Der Toggle wird von `AppointmentsPanel` gerendert und meldet seinen Zustand an den Wrapper. Standardmäßig werden nur Termine **ab heute** (Berlin-Zeitzone) serverseitig geladen. Wird der Toggle aktiviert, lädt `CustomerAppointmentsPanel` die vollständige Historie der Termine zu den Projekten des Kunden nach und zeigt anschließend alle Termine an.
 
 ## Header-Action & Zähler
 `CustomerAppointmentsPanel` liefert keine Body-CTA. Aktionen laufen ausschließlich über die Header-Action-Zone von `AppointmentsPanel`, falls erforderlich. Der Termin-Zähler wird im Header als Text in Klammern direkt hinter dem Titel angezeigt (z. B. „Termine (2)“), ohne Badge und ohne Wiederholung im Footer.
@@ -18,7 +18,8 @@ Ein Doppelklick auf einen Termin-Badge kann über `AppointmentsPanel` einen `onO
 
 ## Datenladung
 - Projekte des Kunden über `GET /api/projects?customerId=<id>&filter=all`.
-- Termine je Projekt über `GET /api/projects/<projectId>/appointments?fromDate=1900-01-01`.
+- Standard (ab heute): `GET /api/projects/<projectId>/appointments?fromDate=<heute>` (Berlin-Zeitzone).
+- „Alle Termine“: `GET /api/projects/<projectId>/appointments?fromDate=1900-01-01`.
 - Die Termine werden in `AppointmentPanelItem` gemappt (Mode: `"projekt"`), wobei der Projekttitel als Label angezeigt wird.
 
 ## Einbindung in Formularen

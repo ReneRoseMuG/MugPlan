@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
+import * as appointmentsService from "../services/appointmentsService";
 import * as employeesService from "../services/employeesService";
 import { handleZodError } from "./validation";
 
@@ -87,6 +88,21 @@ export async function toggleEmployeeActive(req: Request, res: Response, next: Ne
   }
 }
 
-export async function listCurrentAppointments(_req: Request, res: Response): Promise<void> {
-  res.json([]);
+export async function listCurrentAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const employeeId = Number(req.params.id);
+    if (Number.isNaN(employeeId)) {
+      res.status(400).json({ message: "Ungültige employeeId" });
+      return;
+    }
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
+      res.status(400).json({ message: "Ungültiges fromDate" });
+      return;
+    }
+    const appointments = await appointmentsService.listEmployeeAppointments(employeeId, fromDate);
+    res.json(appointments);
+  } catch (err) {
+    next(err);
+  }
 }

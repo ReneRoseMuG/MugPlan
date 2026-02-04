@@ -7,6 +7,8 @@
 - `title: string` – Titel im Panel-Header.
 - `icon: ReactNode` – Icon im Header.
 - `items: AppointmentPanelItem[]` – Termin-Daten für die Anzeige.
+- `showAll: boolean` – Steuerung des Toggle-Zustands („Alle Termine“).
+- `onShowAllChange: (showAll: boolean) => void` – Meldet Toggle-Änderungen an den Wrapper.
 - `isLoading?: boolean` – Zeigt den Ladezustand an.
 - `helpKey?: string` – Optionaler Hilfetext-Schlüssel für den Header.
 - `headerActions?: ReactNode` – Optionaler Actions-Slot im Header (überschreibt Default-Actions).
@@ -35,7 +37,7 @@
 - `testId?: string`
 
 ## Toggle „Alle Termine“
-Der Schalter ist standardmäßig **aus**. In diesem Zustand filtert `AppointmentsPanel` die übergebenen Termine auf **heute und Zukunft** (lokal, per Berlin-Zeitzone). Bei aktiviertem Schalter wird der Filter entfernt und es werden alle übergebenen Termine angezeigt. Die Komponente lädt **keine** Daten nach – der Wrapper liefert die vollständige Liste. Der Footer enthält ausschließlich diesen Toggle und keine zusätzlichen Zähler oder Statusanzeigen.
+Der Schalter ist standardmäßig **aus** und wird von den Wrappern kontrolliert. `AppointmentsPanel` filtert **nicht** selbst, sondern zeigt genau die `items`, die der Wrapper basierend auf dem Toggle-Status liefert. Der Footer enthält ausschließlich diesen Toggle und keine zusätzlichen Zähler oder Statusanzeigen.
 
 ## Header-Actions statt Body-CTA
 `AppointmentsPanel` rendert **keine** Call-to-Action-Buttons im Panel-Body. Aktionen wie „Neuer Termin“ laufen ausschließlich über die Header-Action-Zone von `SidebarChildPanel` (`headerActions`, `addAction`, `closeAction`).

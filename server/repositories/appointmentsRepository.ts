@@ -1,6 +1,14 @@
 import { and, asc, eq, gte } from "drizzle-orm";
 import { db } from "../db";
-import { appointmentEmployees, appointments, employees, type Appointment, type InsertAppointment } from "@shared/schema";
+import {
+  appointmentEmployees,
+  appointments,
+  customers,
+  employees,
+  projects,
+  type Appointment,
+  type InsertAppointment,
+} from "@shared/schema";
 
 const logPrefix = "[appointments-repo]";
 
@@ -84,6 +92,22 @@ export async function listAppointmentsByProjectFromDate(projectId: number, fromD
     .select()
     .from(appointments)
     .where(and(eq(appointments.projectId, projectId), gte(appointments.startDate, fromDate)))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
+export async function listAppointmentsByEmployeeFromDate(employeeId: number, fromDate: string) {
+  console.log(`${logPrefix} list appointments employeeId=${employeeId} fromDate>=${fromDate}`);
+  return db
+    .select({
+      appointment: appointments,
+      projectName: projects.name,
+      customerName: customers.name,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .where(and(eq(appointmentEmployees.employeeId, employeeId), gte(appointments.startDate, fromDate)))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 
