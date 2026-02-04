@@ -27,7 +27,7 @@ import { EmployeeListView } from "@/components/EmployeeList";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import {
-  getBerlinTodayDateString,
+  PROJECT_APPOINTMENTS_ALL_FROM_DATE,
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
 
@@ -113,7 +113,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   );
   const isAdmin = userRole === "ADMIN";
   const isEditing = Boolean(appointmentId);
-  const projectAppointmentsFromDate = getBerlinTodayDateString();
+  const projectAppointmentsFromDate = PROJECT_APPOINTMENTS_ALL_FROM_DATE;
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects?filter=all"],

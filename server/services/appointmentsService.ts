@@ -132,12 +132,12 @@ export async function listProjectAppointments(
   isAdmin: boolean,
 ) {
   const todayBerlin = getBerlinTodayDateString();
-  const effectiveFromDate = fromDate && fromDate >= todayBerlin ? fromDate : todayBerlin;
+  const effectiveFromDate = fromDate ?? todayBerlin;
 
   if (!fromDate) {
     console.log(`${logPrefix} list appointments defaulting fromDate=${effectiveFromDate}`);
-  } else if (fromDate < todayBerlin) {
-    console.log(`${logPrefix} list appointments override fromDate=${fromDate} -> ${effectiveFromDate}`);
+  } else {
+    console.log(`${logPrefix} list appointments using fromDate=${effectiveFromDate}`);
   }
 
   console.log(`${logPrefix} list appointments projectId=${projectId} fromDate=${effectiveFromDate}`);

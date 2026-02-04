@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
+import { EmployeeAppointmentsPanel } from "@/components/EmployeeAppointmentsPanel";
 import { EmployeeList } from "@/components/EmployeeList";
 import { EntityEditDialog } from "@/components/ui/entity-edit-dialog";
-import { Users, Route, Calendar, Phone, Mail, X } from "lucide-react";
+import { Users, Route, Phone, Mail, X } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -28,12 +29,6 @@ interface EmployeeFormData {
   phone: string;
   email: string;
 }
-
-const demoAppointments = [
-  { id: 1, title: "Müller, Max - Wartung", date: "Mo, 03.02.2026" },
-  { id: 2, title: "Schmidt, Anna - Installation", date: "Di, 04.02.2026" },
-  { id: 3, title: "Weber, Peter - Service", date: "Mi, 05.02.2026" },
-];
 
 export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   const handleClose = onClose || onCancel;
@@ -261,32 +256,10 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
 
             {/* Right column: Appointments + Tour + Team */}
             <div className="space-y-4">
-              {/* Appointments list */}
-              <div className="space-y-2">
-                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                  <Calendar className="w-4 h-4" />
-                  Aktuelle Termine
-                </h4>
-                <div className="border rounded-md p-3 bg-slate-50 min-h-[120px] max-h-[180px] overflow-y-auto">
-                  {demoAppointments.length === 0 ? (
-                    <p className="text-sm text-slate-400 italic text-center py-4">
-                      Keine aktuellen Termine
-                    </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {demoAppointments.map((apt) => (
-                        <li key={apt.id} className="p-2 bg-white rounded border text-sm">
-                          <div className="font-medium">{apt.title}</div>
-                          <div className="text-slate-500 text-xs">{apt.date}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <p className="text-xs text-slate-400 italic">
-                  Demo-Daten - Terminverwaltung folgt
-                </p>
-              </div>
+              <EmployeeAppointmentsPanel
+                employeeId={selectedEmployeeId}
+                employeeName={displayEmployee?.employee.fullName ?? null}
+              />
 
               {/* Tour card (read-only) */}
               <div className="space-y-2">
