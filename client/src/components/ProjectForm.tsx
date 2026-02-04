@@ -24,6 +24,10 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import {
+  getBerlinTodayDateString,
+  getProjectAppointmentsQueryKey,
+} from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, Customer, Note, ProjectStatus, ProjectAttachment } from "@shared/schema";
 
@@ -44,14 +48,6 @@ interface ProjectAppointmentSummary {
 }
 
 const appointmentsLogPrefix = "[ProjectForm-appointments]";
-
-const getBerlinTodayDateString = () =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Berlin",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
 
 function DocumentCard({ 
   attachment, 
@@ -185,7 +181,11 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
   );
   const fromDate = getBerlinTodayDateString();
-  const appointmentsQueryKey = ['/api/projects', projectId, 'appointments', fromDate, userRole];
+  const appointmentsQueryKey = getProjectAppointmentsQueryKey({
+    projectId,
+    fromDate,
+    userRole,
+  });
 
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
@@ -234,7 +234,12 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         },
       });
       const payload = await response.json();
-      console.info(`${appointmentsLogPrefix} response`, { status: response.status, count: payload?.length });
+      console.info(`${appointmentsLogPrefix} response`, {
+        projectId,
+        fromDate,
+        status: response.status,
+        count: payload?.length,
+      });
       if (!response.ok) {
         throw new Error(payload?.message ?? response.statusText);
       }
@@ -260,7 +265,14 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       }
       return appointmentId;
     },
-    onSuccess: () => {
+    onSuccess: (appointmentId) => {
+      console.info(`${appointmentsLogPrefix} delete success`, {
+        appointmentId,
+        projectId,
+      });
+      console.info(`${appointmentsLogPrefix} cache invalidate`, {
+        queryKey: appointmentsQueryKey,
+      });
       queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
       toast({ title: "Termin gelöscht" });
     },
