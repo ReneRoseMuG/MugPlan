@@ -25,6 +25,11 @@ import { ProjectInfoBadge } from "@/components/ui/project-info-badge";
 import ProjectList from "@/components/ProjectList";
 import { EmployeeListView } from "@/components/EmployeeList";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
+import {
+  getBerlinTodayDateString,
+  getProjectAppointmentsQueryKey,
+} from "@/lib/project-appointments";
 
 interface AppointmentFormProps {
   onCancel?: () => void;
@@ -108,6 +113,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   );
   const isAdmin = userRole === "ADMIN";
   const isEditing = Boolean(appointmentId);
+  const projectAppointmentsFromDate = getBerlinTodayDateString();
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects?filter=all"],
@@ -313,6 +319,21 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
       if (!response.ok) {
         throw new Error(data?.message ?? "Speichern fehlgeschlagen");
       }
+      const savedAppointmentId = data?.id ?? appointmentId ?? null;
+      console.info(`${logPrefix} save success`, {
+        action: isEditing ? "edit" : "create",
+        projectId: payload.projectId,
+        appointmentId: savedAppointmentId,
+      });
+      const appointmentsQueryKey = getProjectAppointmentsQueryKey({
+        projectId: payload.projectId,
+        fromDate: projectAppointmentsFromDate,
+        userRole,
+      });
+      console.info(`${logPrefix} cache invalidate`, {
+        queryKey: appointmentsQueryKey,
+      });
+      queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
       toast({
         title: isEditing ? "Termin gespeichert" : "Termin erstellt",
       });

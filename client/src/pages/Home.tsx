@@ -170,12 +170,14 @@ export default function Home() {
               initialDate={appointmentContext?.initialDate}
               projectId={appointmentContext?.projectId}
               onCancel={() => {
+                const returnToProject = Boolean(appointmentContext?.projectId);
                 setAppointmentContext(null);
-                setView('month');
+                setView(returnToProject ? 'project' : 'month');
               }}
               onSaved={() => {
+                const returnToProject = Boolean(appointmentContext?.projectId);
                 setAppointmentContext(null);
-                setView('month');
+                setView(returnToProject ? 'project' : 'month');
               }}
             />
           ) : view === 'projectList' ? (
