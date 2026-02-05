@@ -20,10 +20,15 @@ import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts';
 
-export default function Home() {
+type HomeProps = {
+  onLogout: () => void;
+};
+
+export default function Home({ onLogout }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>('month');
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
@@ -132,6 +137,7 @@ export default function Home() {
             </h2>
           </div>
 
+          <div className="flex items-center gap-3">
           {view !== 'customer' && view !== 'customerList' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'employeeWeekly' && view !== 'project' && view !== 'projectList' && view !== 'appointment' && view !== 'noteTemplates' && view !== 'projectStatus' && view !== 'helpTexts' && (
             <div className="flex items-center gap-2 bg-border rounded-md p-1">
               <button
@@ -170,6 +176,10 @@ export default function Home() {
               </button>
             </div>
           )}
+            <Button variant="outline" onClick={onLogout}>
+              Logout
+            </Button>
+          </div>
         </header>
 
         {/* Content Area */}

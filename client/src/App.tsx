@@ -5,22 +5,48 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import Login from "@/pages/Login";
+import { isAuthenticated, logout } from "@/lib/auth";
+import { useState } from "react";
 
-function Router() {
+type RouterProps = {
+  onLogout: () => void;
+};
+
+function Router({ onLogout }: RouterProps) {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/">
+        {() => <Home onLogout={onLogout} />}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
+  const [isAuthed, setIsAuthed] = useState(() => isAuthenticated());
+
+  if (!isAuthed) {
+    return (
+      <Login
+        onAuthenticated={() => {
+          setIsAuthed(true);
+        }}
+      />
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        <Router
+          onLogout={() => {
+            logout();
+            setIsAuthed(false);
+          }}
+        />
       </TooltipProvider>
     </QueryClientProvider>
   );
