@@ -69,7 +69,21 @@ async function ensureProjectExists(projectId: number) {
 }
 
 export async function getAppointmentDetails(id: number) {
-  return appointmentsRepository.getAppointmentWithEmployees(id);
+  const appointment = await appointmentsRepository.getAppointmentWithEmployees(id);
+  if (!appointment) return null;
+
+  return {
+    id: appointment.id,
+    projectId: appointment.projectId,
+    tourId: appointment.tourId ?? null,
+    title: appointment.title,
+    description: appointment.description ?? null,
+    startDate: toDateOnlyString(appointment.startDate) ?? "",
+    startTime: appointment.startTime ?? null,
+    endDate: toDateOnlyString(appointment.endDate),
+    endTime: appointment.endTime ?? null,
+    employees: appointment.employees,
+  };
 }
 
 export async function createAppointment(
