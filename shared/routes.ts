@@ -720,6 +720,14 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    download: {
+      method: 'GET' as const,
+      path: '/api/project-attachments/:id/download',
+      responses: {
+        200: z.any(),
+        404: errorSchemas.notFound,
+      },
+    },
   },
   projectStatusRelations: {
     list: {

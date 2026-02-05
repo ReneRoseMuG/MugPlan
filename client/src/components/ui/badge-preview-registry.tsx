@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { Calendar, Clock, FolderKanban, Phone, Route, User, Users } from "lucide-react";
+import { Calendar, Clock, ExternalLink, FileText, FolderKanban, Image as ImageIcon, Phone, Route, User, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 
-export type BadgeType = "team" | "tour" | "appointment" | "employee" | "customer" | "project";
+export type BadgeType = "team" | "tour" | "appointment" | "employee" | "customer" | "project" | "attachment";
 
 type BaseBadgeData = {
   id: number | string | null;
@@ -48,13 +49,21 @@ export type AppointmentBadgeData = BaseBadgeData & {
   employeeName?: string | null;
 };
 
+export type AttachmentBadgeData = BaseBadgeData & {
+  originalName: string;
+  mimeType?: string | null;
+  openUrl: string;
+  downloadUrl: string;
+};
+
 export type BadgeData =
   | TeamBadgeData
   | TourBadgeData
   | EmployeeBadgeData
   | CustomerBadgeData
   | ProjectBadgeData
-  | AppointmentBadgeData;
+  | AppointmentBadgeData
+  | AttachmentBadgeData;
 
 type PreviewOptions = {
   openDelayMs: number;
@@ -99,6 +108,13 @@ export function getPreviewOptions(type: BadgeType): PreviewOptions {
       ...defaultPreviewOptions,
       maxWidth: 420,
       maxHeight: 300,
+    };
+  }
+  if (type === "attachment") {
+    return {
+      ...defaultPreviewOptions,
+      maxWidth: 760,
+      maxHeight: 600,
     };
   }
   return defaultPreviewOptions;
@@ -227,6 +243,66 @@ export function renderPreview(type: BadgeType, data: BadgeData): ReactNode | nul
           {appointment.projectName && <div>Projekt: {appointment.projectName}</div>}
           {appointment.customerName && <div>Kunde: {appointment.customerName}</div>}
           {appointment.employeeName && <div>Mitarbeiter: {appointment.employeeName}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "attachment") {
+    const attachment = data as AttachmentBadgeData;
+    const mimeType = attachment.mimeType ?? "";
+    const lowerName = attachment.originalName.toLowerCase();
+    const isPdf = mimeType === "application/pdf" || lowerName.endsWith(".pdf");
+    const isImage = mimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(lowerName);
+    const isWord = mimeType.includes("word") || /\.(doc|docx)$/i.test(lowerName);
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm font-semibold min-w-0">
+            {isImage ? (
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="truncate">{attachment.originalName}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <a href={attachment.openUrl} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-3 w-3" />
+                Öffnen
+              </a>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <a href={attachment.downloadUrl} target="_blank" rel="noreferrer" download>
+                Download
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        <div className="border border-border rounded-md bg-background p-2 max-h-[460px] overflow-auto">
+          {isPdf ? (
+            <iframe
+              title={`Vorschau ${attachment.originalName}`}
+              src={attachment.openUrl}
+              className="w-full h-[440px] border-0"
+            />
+          ) : isImage ? (
+            <img
+              src={attachment.openUrl}
+              alt={attachment.originalName}
+              className="max-w-full h-auto"
+            />
+          ) : (
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>Keine Inline-Vorschau verfügbar.</p>
+              {isWord && (
+                <p>Word-Dokumente können ohne Viewer nicht direkt angezeigt werden.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );

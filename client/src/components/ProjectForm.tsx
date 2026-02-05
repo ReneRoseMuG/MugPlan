@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
+import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CustomerList } from "@/components/CustomerList";
 import { NotesSection } from "@/components/NotesSection";
@@ -12,19 +13,13 @@ import {
   FolderKanban, 
   UserCircle, 
   FileText, 
-  Paperclip, 
-  Plus,
-  Eye,
-  Download,
-  Trash2,
-  ChevronLeft,
-  ChevronRight
+  Plus
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, ProjectStatus, ProjectAttachment } from "@shared/schema";
+import type { Project, Customer, Note, ProjectStatus } from "@shared/schema";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -34,124 +29,6 @@ interface ProjectFormProps {
 }
 
 
-function DocumentCard({ 
-  attachment, 
-  onPreview, 
-  onDelete 
-}: { 
-  attachment: ProjectAttachment; 
-  onPreview: () => void;
-  onDelete: () => void;
-}) {
-  const isPdf = attachment.mimeType === "application/pdf";
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-  
-  return (
-    <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-border rounded-lg hover-elevate" data-testid={`document-card-${attachment.id}`}>
-      <div className={`w-10 h-10 rounded flex items-center justify-center ${isPdf ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-        <FileText className="w-5 h-5" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate" data-testid={`text-document-name-${attachment.id}`}>{attachment.originalName}</p>
-        <p className="text-xs text-slate-400" data-testid={`text-document-size-${attachment.id}`}>{formatSize(attachment.fileSize)}</p>
-      </div>
-      <div className="flex items-center gap-1">
-        <Button size="icon" variant="ghost" onClick={onPreview} data-testid={`button-preview-${attachment.id}`}>
-          <Eye className="w-4 h-4" />
-        </Button>
-        <Button size="icon" variant="ghost" data-testid={`button-download-${attachment.id}`}>
-          <Download className="w-4 h-4" />
-        </Button>
-        <Button size="icon" variant="ghost" onClick={onDelete} data-testid={`button-delete-doc-${attachment.id}`}>
-          <Trash2 className="w-4 h-4 text-destructive" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function DocumentPreviewDialog({ 
-  attachments, 
-  currentIndex, 
-  open, 
-  onOpenChange,
-  onNavigate
-}: { 
-  attachments: ProjectAttachment[];
-  currentIndex: number;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onNavigate: (index: number) => void;
-}) {
-  const attachment = attachments[currentIndex];
-  if (!attachment) return null;
-  
-  const isPdf = attachment.mimeType === "application/pdf";
-  const hasMultiple = attachments.length > 1;
-  
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b border-border">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              <span data-testid="text-preview-document-name">{attachment.originalName}</span>
-            </DialogTitle>
-            {hasMultiple && (
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => onNavigate(currentIndex - 1)}
-                  disabled={currentIndex === 0}
-                  data-testid="button-prev-doc"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <span data-testid="text-preview-page-indicator">{currentIndex + 1} / {attachments.length}</span>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => onNavigate(currentIndex + 1)}
-                  disabled={currentIndex === attachments.length - 1}
-                  data-testid="button-next-doc"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogHeader>
-        <div className="flex-1 flex items-center justify-center bg-slate-100 dark:bg-slate-900 min-h-[500px] p-4">
-          {isPdf ? (
-            <div className="flex flex-col items-center justify-center text-slate-500 gap-4" data-testid="preview-pdf-container">
-              <FileText className="w-24 h-24 text-red-400" />
-              <p className="text-lg font-medium" data-testid="text-preview-pdf-label">PDF Vorschau</p>
-              <p className="text-sm" data-testid="text-preview-pdf-name">{attachment.originalName}</p>
-              <Button variant="outline" className="mt-4" data-testid="button-download-pdf">
-                <Download className="w-4 h-4 mr-2" />
-                PDF herunterladen
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center text-slate-500 gap-4" data-testid="preview-image-container">
-              <div className="w-[400px] h-[300px] bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center" data-testid="preview-image-placeholder">
-                <span className="text-lg font-medium" data-testid="text-preview-image-label">Bildvorschau</span>
-              </div>
-              <p className="text-sm" data-testid="text-preview-image-name">{attachment.originalName}</p>
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
@@ -159,8 +36,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const [name, setName] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
@@ -176,12 +51,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   // Fetch project notes
   const { data: projectNotes = [], isLoading: notesLoading } = useQuery<Note[]>({
     queryKey: ['/api/projects', projectId, 'notes'],
-    enabled: isEditing,
-  });
-
-  // Fetch project attachments
-  const { data: attachments = [], isLoading: attachmentsLoading } = useQuery<ProjectAttachment[]>({
-    queryKey: ['/api/projects', projectId, 'attachments'],
     enabled: isEditing,
   });
 
@@ -287,16 +156,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
   });
 
-  // Attachment delete mutation
-  const deleteAttachmentMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest('DELETE', `/api/project-attachments/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'attachments'] });
-    },
-  });
-
   const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
@@ -316,11 +175,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     if (onSaved && onSaved !== onCancel) {
       onSaved();
     }
-  };
-
-  const handlePreview = (index: number) => {
-    setPreviewIndex(index);
-    setPreviewOpen(true);
   };
 
   if (projectLoading) {
@@ -440,29 +294,10 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
               {/* Dokumente - nur bei Bearbeitung */}
               {isEditing && (
-                <div className="sub-panel space-y-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                    <Paperclip className="w-4 h-4" />
-                    Dokumente ({attachments.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {attachments.map((attachment, index) => (
-                      <DocumentCard 
-                        key={attachment.id} 
-                        attachment={attachment} 
-                        onPreview={() => handlePreview(index)}
-                        onDelete={() => deleteAttachmentMutation.mutate(attachment.id)}
-                      />
-                    ))}
-                    {attachments.length === 0 && !attachmentsLoading && (
-                      <p className="text-sm text-slate-400 text-center py-2">Keine Dokumente</p>
-                    )}
-                  </div>
-                  <Button variant="outline" className="w-full" data-testid="button-add-document">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Dokument hinzufügen
-                  </Button>
-                </div>
+                <ProjectAttachmentsPanel
+                  projectId={projectId}
+                  isEditing={isEditing}
+                />
               )}
             </div>
       </div>
@@ -483,13 +318,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         </DialogContent>
       </Dialog>
 
-      <DocumentPreviewDialog
-        attachments={attachments}
-        currentIndex={previewIndex}
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        onNavigate={setPreviewIndex}
-      />
     </EntityFormLayout>
   );
 }

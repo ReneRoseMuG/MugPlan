@@ -108,6 +108,7 @@ export interface IStorage {
   getProjectNotes(projectId: number): Promise<Note[]>;
   createProjectNote(projectId: number, note: CreateNoteInput & { templateId?: number }): Promise<Note>;
   getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
+  getProjectAttachmentById(id: number): Promise<ProjectAttachment | null>;
   createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment>;
   deleteProjectAttachment(id: number): Promise<void>;
   getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]>;
@@ -361,6 +362,10 @@ export class DatabaseStorage implements IStorage {
 
   async getProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
     return projectAttachmentsRepository.getProjectAttachments(projectId);
+  }
+
+  async getProjectAttachmentById(id: number): Promise<ProjectAttachment | null> {
+    return projectAttachmentsRepository.getProjectAttachmentById(id);
   }
 
   async createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment> {

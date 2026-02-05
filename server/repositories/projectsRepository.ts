@@ -115,6 +115,14 @@ export async function getProjectAttachments(projectId: number): Promise<ProjectA
     .orderBy(desc(projectAttachments.createdAt));
 }
 
+export async function getProjectAttachmentById(id: number): Promise<ProjectAttachment | null> {
+  const [attachment] = await db
+    .select()
+    .from(projectAttachments)
+    .where(eq(projectAttachments.id, id));
+  return attachment ?? null;
+}
+
 export async function createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment> {
   const result = await db.insert(projectAttachments).values(data);
   const insertId = (result as any)[0].insertId;
