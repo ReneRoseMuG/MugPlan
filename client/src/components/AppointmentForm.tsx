@@ -377,6 +377,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
 
           {selectedProject ? (
             <ProjectInfoBadge
+              id={selectedProject.id}
               title={selectedProject.name}
               customerFullName={selectedCustomer?.fullName ?? null}
               action={isLocked ? "none" : "remove"}
@@ -499,6 +500,12 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                 icon={<Route className="w-3 h-3" />}
                 label={selectedTour.name}
                 color={selectedTour.color}
+                badgeType="tour"
+                badgeData={{
+                  id: selectedTour.id,
+                  name: selectedTour.name,
+                  color: selectedTour.color,
+                }}
                 action={isLocked ? "none" : "remove"}
                 onRemove={() => handleTourChange(null)}
                 fullWidth
@@ -517,6 +524,12 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                   icon={<Route className="w-3 h-3" />}
                   label={tour.name}
                   color={tour.color}
+                  badgeType="tour"
+                  badgeData={{
+                    id: tour.id,
+                    name: tour.name,
+                    color: tour.color,
+                  }}
                   action={isLocked ? "none" : "add"}
                   onAdd={() => handleTourChange(tour.id)}
                   size="sm"
@@ -566,6 +579,12 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                 icon={<Users className="w-3 h-3" />}
                 label={team.name}
                 color={team.color}
+                badgeType="team"
+                badgeData={{
+                  id: team.id,
+                  name: team.name,
+                  color: team.color,
+                }}
                 action={isLocked ? "none" : "add"}
                 onAdd={() => handleAssignTeam(team)}
                 size="sm"

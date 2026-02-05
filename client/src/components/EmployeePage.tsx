@@ -272,6 +272,12 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     icon={<Route className="w-4 h-4" />}
                     label={displayEmployee.tour.name}
                     color={displayEmployee.tour.color}
+                    badgeType="tour"
+                    badgeData={{
+                      id: displayEmployee.tour.id,
+                      name: displayEmployee.tour.name,
+                      color: displayEmployee.tour.color,
+                    }}
                     fullWidth
                     testId="badge-employee-tour"
                   />
@@ -295,6 +301,12 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     icon={<Users className="w-4 h-4" />}
                     label={displayEmployee.team.name}
                     color={displayEmployee.team.color}
+                    badgeType="team"
+                    badgeData={{
+                      id: displayEmployee.team.id,
+                      name: displayEmployee.team.name,
+                      color: displayEmployee.team.color,
+                    }}
                     fullWidth
                     testId="badge-employee-team"
                   />

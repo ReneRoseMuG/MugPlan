@@ -23,6 +23,9 @@ export interface AppointmentPanelItem {
   customerLabel?: string | null;
   projectLabel?: string | null;
   employeeLabel?: string | null;
+  customerName?: string | null;
+  projectName?: string | null;
+  employeeName?: string | null;
   icon?: ReactNode;
   color?: string | null;
   action?: "add" | "remove" | "none";
@@ -96,6 +99,7 @@ export function AppointmentsPanel({
           items.map((appointment) => (
             <TerminInfoBadge
               key={appointment.id}
+              id={appointment.id}
               startDate={appointment.startDate}
               endDate={appointment.endDate}
               startTimeHour={appointment.startTimeHour}
@@ -103,6 +107,9 @@ export function AppointmentsPanel({
               customerLabel={appointment.customerLabel}
               projectLabel={appointment.projectLabel}
               employeeLabel={appointment.employeeLabel}
+              customerName={appointment.customerName}
+              projectName={appointment.projectName}
+              employeeName={appointment.employeeName}
               icon={appointment.icon}
               color={appointment.color}
               action={appointment.action}

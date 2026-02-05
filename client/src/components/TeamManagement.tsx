@@ -7,6 +7,7 @@ import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { TeamEditDialog } from "@/components/ui/team-edit-dialog";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
+import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
 import type { Team, Employee } from "@shared/schema";
 
@@ -121,6 +122,13 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     setEditingTeam(team);
   };
 
+  const handleOpenEditById = (teamId: number | string) => {
+    const target = teamsWithMembers.find((team) => String(team.id) === String(teamId));
+    if (!target) return;
+    setEditingTeam(target);
+    setIsCreating(false);
+  };
+
   const handleDelete = (team: TeamWithMembers) => {
     if (window.confirm(`Wollen Sie das Team ${team.name} wirklich löschen?`)) {
       deleteMutation.mutate(team.id);
@@ -129,7 +137,8 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
 
   return (
     <>
-      <CardListLayout
+      <BadgeInteractionProvider value={{ openTeamEdit: handleOpenEditById }}>
+        <CardListLayout
         title="Teams"
         icon={<Users className="w-5 h-5" />}
         helpKey="teams"
@@ -198,7 +207,8 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
             </div>
           </ColoredEntityCard>
         ))}
-      </CardListLayout>
+        </CardListLayout>
+      </BadgeInteractionProvider>
 
       <TeamEditDialog
         open={!!editingTeam || isCreating}

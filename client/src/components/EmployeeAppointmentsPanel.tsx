@@ -45,6 +45,8 @@ export function EmployeeAppointmentsPanel({ employeeId, employeeName }: Employee
       startDate: appointment.startDate,
       endDate: appointment.endDate ?? null,
       startTimeHour: appointment.startTimeHour ?? null,
+      projectName: appointment.title ?? null,
+      customerName: appointment.customerName ?? null,
       mode: "mitarbeiter",
       employeeLabel: appointment.customerName
         ? `${appointment.title} · ${appointment.customerName}`

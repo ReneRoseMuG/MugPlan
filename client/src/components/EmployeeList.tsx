@@ -56,13 +56,13 @@ export function EmployeeListView({
   const getTourName = (tourId: number | null) => {
     if (!tourId) return null;
     const tour = tours.find(t => t.id === tourId);
-    return tour ? { name: tour.name, color: tour.color } : null;
+    return tour ? { id: tour.id, name: tour.name, color: tour.color } : null;
   };
 
   const getTeamName = (teamId: number | null) => {
     if (!teamId) return null;
     const team = teams.find(t => t.id === teamId);
-    return team ? { name: team.name, color: team.color } : null;
+    return team ? { id: team.id, name: team.name, color: team.color } : null;
   };
 
   return (
@@ -176,6 +176,12 @@ export function EmployeeListView({
                       icon={<Route className="w-3 h-3" />}
                       label={tourInfo.name}
                       color={tourInfo.color}
+                      badgeType="tour"
+                      badgeData={{
+                        id: tourInfo.id,
+                        name: tourInfo.name,
+                        color: tourInfo.color,
+                      }}
                       size="sm"
                       testId={`badge-employee-tour-${employee.id}`}
                     />
@@ -185,6 +191,12 @@ export function EmployeeListView({
                       icon={<Users className="w-3 h-3" />}
                       label={teamInfo.name}
                       color={teamInfo.color}
+                      badgeType="team"
+                      badgeData={{
+                        id: teamInfo.id,
+                        name: teamInfo.name,
+                        color: teamInfo.color,
+                      }}
                       size="sm"
                       testId={`badge-employee-team-${employee.id}`}
                     />

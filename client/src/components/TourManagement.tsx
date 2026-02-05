@@ -7,6 +7,7 @@ import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { CardListLayout } from "@/components/ui/card-list-layout";
 import { TourEditDialog } from "@/components/ui/tour-edit-dialog";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
+import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
 import type { Tour, Employee } from "@shared/schema";
 
@@ -121,6 +122,13 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     setEditingTour(tour);
   };
 
+  const handleOpenEditById = (tourId: number | string) => {
+    const target = toursWithMembers.find((tour) => String(tour.id) === String(tourId));
+    if (!target) return;
+    setEditingTour(target);
+    setIsCreating(false);
+  };
+
   const handleDelete = (tour: TourWithMembers) => {
     if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich löschen?`)) {
       deleteMutation.mutate(tour.id);
@@ -129,7 +137,8 @@ export function TourManagement({ onCancel }: TourManagementProps) {
 
   return (
     <>
-      <CardListLayout
+      <BadgeInteractionProvider value={{ openTourEdit: handleOpenEditById }}>
+        <CardListLayout
         title="Touren"
         icon={<Route className="w-5 h-5" />}
         helpKey="tours"
@@ -198,7 +207,8 @@ export function TourManagement({ onCancel }: TourManagementProps) {
             </div>
           </ColoredEntityCard>
         ))}
-      </CardListLayout>
+        </CardListLayout>
+      </BadgeInteractionProvider>
 
       <TourEditDialog
         open={!!editingTour || isCreating}

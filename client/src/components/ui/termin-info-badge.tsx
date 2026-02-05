@@ -1,4 +1,5 @@
 import { InfoBadge } from "@/components/ui/info-badge";
+import type { AppointmentBadgeData } from "@/components/ui/badge-preview-registry";
 import { Calendar } from "lucide-react";
 import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 import type { ReactNode } from "react";
@@ -6,6 +7,7 @@ import type { ReactNode } from "react";
 type TerminInfoBadgeMode = "kunde" | "projekt" | "mitarbeiter";
 
 interface TerminInfoBadgeProps {
+  id?: number | string | null;
   startDate: string;
   endDate?: string | null;
   startTimeHour?: number | null;
@@ -13,6 +15,9 @@ interface TerminInfoBadgeProps {
   customerLabel?: string | null;
   projectLabel?: string | null;
   employeeLabel?: string | null;
+  customerName?: string | null;
+  projectName?: string | null;
+  employeeName?: string | null;
   icon?: ReactNode;
   color?: string | null;
   testId?: string;
@@ -47,6 +52,7 @@ const resolveStartHourLabel = (value?: number | null) => {
 };
 
 export function TerminInfoBadge({
+  id,
   startDate,
   endDate,
   startTimeHour,
@@ -54,6 +60,9 @@ export function TerminInfoBadge({
   customerLabel,
   projectLabel,
   employeeLabel,
+  customerName,
+  projectName,
+  employeeName,
   icon,
   color,
   testId,
@@ -79,6 +88,15 @@ export function TerminInfoBadge({
   })();
 
   const secondaryLine = modeLine?.trim() ? modeLine : null;
+  const badgeData: AppointmentBadgeData = {
+    id: id ?? null,
+    startDate,
+    endDate: endDate ?? null,
+    startTimeHour: startTimeHour ?? null,
+    projectName: projectName ?? projectLabel ?? null,
+    customerName: customerName ?? customerLabel ?? null,
+    employeeName: employeeName ?? employeeLabel ?? null,
+  };
 
   return (
     <InfoBadge
@@ -111,6 +129,8 @@ export function TerminInfoBadge({
       size={size}
       fullWidth={fullWidth}
       onDoubleClick={onDoubleClick}
+      badgeType="appointment"
+      badgeData={badgeData}
     />
   );
 }

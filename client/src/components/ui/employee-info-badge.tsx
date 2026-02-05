@@ -1,4 +1,5 @@
 import { PersonInfoBadge } from "@/components/ui/person-info-badge";
+import type { EmployeeBadgeData } from "@/components/ui/badge-preview-registry";
 
 interface EmployeeInfoBadgeProps {
   id?: string | number | null;
@@ -74,6 +75,13 @@ export function EmployeeInfoBadge({
     teamName ? `Team: ${teamName}` : null,
   ];
 
+  const badgeData: EmployeeBadgeData = {
+    id: id ?? null,
+    fullName: resolvedFullName,
+    teamName: teamName ?? null,
+    tourName: tourName ?? null,
+  };
+
   return (
     <PersonInfoBadge
       firstName={firstName}
@@ -88,6 +96,8 @@ export function EmployeeInfoBadge({
       onRemove={onRemove}
       avatarClassName="text-white border-transparent"
       avatarStyle={{ backgroundColor }}
+      badgeType="employee"
+      badgeData={badgeData}
     />
   );
 }

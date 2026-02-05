@@ -83,6 +83,7 @@ export function CustomerAppointmentsPanel({ customerId, customerName }: Customer
               startDate: appointment.startDate,
               endDate: appointment.endDate,
               startTimeHour: appointment.startTimeHour,
+              projectName: projectName ? projectName : null,
               mode: "projekt" as const,
               projectLabel: projectName ? `Projekt · ${projectName}` : "Projekt",
             };

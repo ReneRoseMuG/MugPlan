@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
+import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { PROJECT_APPOINTMENTS_ALL_FROM_DATE, getBerlinTodayDateString, getProjectAppointmentsQueryKey } from "@/lib/project-appointments";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -154,6 +155,7 @@ export function ProjectAppointmentsPanel({
         startTimeHour: appointment.startTimeHour,
         mode: "projekt",
         projectLabel: appointmentSecondaryLabel,
+        projectName: projectName ?? null,
         color: appointmentBorderColor,
         action: "remove",
         actionDisabled: appointment.isLocked,
@@ -176,7 +178,8 @@ export function ProjectAppointmentsPanel({
     : undefined;
 
   return (
-    <AppointmentsPanel
+    <BadgeInteractionProvider value={{ openAppointmentEdit: handleOpenAppointment }}>
+      <AppointmentsPanel
       title="Termine"
       icon={<Calendar className="w-4 h-4" />}
       showAll={showAll}
@@ -187,6 +190,7 @@ export function ProjectAppointmentsPanel({
       onOpenAppointment={handleOpenAppointment}
       emptyStateFilteredLabel="Keine Termine ab heute"
       note={showLockedNote ? "Gesperrte Termine können nur Admins löschen." : null}
-    />
+      />
+    </BadgeInteractionProvider>
   );
 }
