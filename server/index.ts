@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import fs from "fs";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -24,6 +26,25 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+type LogLevel = "log" | "info" | "warn" | "error";
+
+function logLine(level: LogLevel, message: string, meta?: Record<string, unknown>) {
+  const timestamp = new Date().toISOString();
+  const payload = meta ? ` ${JSON.stringify(meta)}` : "";
+  const line = `${timestamp} [${level}] ${message}${payload}`;
+  const logger = console[level] ?? console.log;
+  logger(line);
+
+  const logPath = path.resolve(process.cwd(), "server.log");
+  fs.appendFile(logPath, `${line}\n`, (err) => {
+    if (err) {
+      console.warn(`${timestamp} [warn] failed to write log file`, {
+        message: err.message,
+      });
+    }
+  });
+}
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -32,7 +53,7 @@ export function log(message: string, source = "express") {
     hour12: true,
   });
 
-  console.log(`${formattedTime} [${source}] ${message}`);
+  logLine("log", `${formattedTime} [${source}] ${message}`);
 }
 
 app.use((req, res, next) => {
@@ -80,7 +101,10 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const envPort = process.env.PORT;
+  const port = parseInt(envPort || "5000", 10);
+  const envPath = path.resolve(process.cwd(), ".env");
+  const envExists = fs.existsSync(envPath);
 
   // Windows/local-dev: do NOT bind to 0.0.0.0 (can lead to ENOTSUP)
   // Production/deploy: 0.0.0.0 is fine.
@@ -88,12 +112,35 @@ app.use((req, res, next) => {
     process.env.HOST ??
     (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 
+  logLine("info", "startup", {
+    nodeEnv: process.env.NODE_ENV ?? "undefined",
+    nodeVersion: process.version,
+    envExists,
+    port: envPort ?? "undefined",
+  });
+
+  process.on("uncaughtException", (err) => {
+    logLine("error", "uncaughtException", {
+      message: err.message,
+      stack: err.stack,
+    });
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    const error = reason instanceof Error ? reason : undefined;
+    logLine("error", "unhandledRejection", {
+      message: error?.message ?? String(reason),
+      stack: error?.stack,
+    });
+  });
+
   httpServer.listen(
     {
       port,
       host,
     },
     () => {
+      logLine("info", "listening", { host, port });
       log(`serving on http://${host}:${port}`);
     },
   );
