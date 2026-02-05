@@ -178,6 +178,48 @@ Auf `AppointmentsPanel` sitzen kontextspezifische Wrapper, die die jeweilige Abl
 
 `EmployeeAppointmentsPanel` kapselt die Ableitung „Mitarbeiter → Terminzuordnungen“ und stellt sicher, dass Einsatzlisten nicht in Dialogen oder Screens mehrfach unterschiedlich implementiert werden.
 
+### Kalender- und Termin-Komponenten
+
+Die Kalenderdarstellung setzt sich aus drei Hauptansichten (Monat, Woche, Jahr) zusammen, die alle denselben Datenhook und dieselben Termin-Bausteine verwenden. Legacy-Wrapper sorgen dafür, dass bestehende Einstiegspunkte stabil bleiben.
+
+**CalendarGrid** (`client/src/components/CalendarGrid.tsx`) und **WeekGrid** (`client/src/components/WeekGrid.tsx`) sind reine Wrapper. Sie delegieren an die jeweilige View und reichen Filter sowie Callbacks weiter (`currentDate`, `employeeFilterId`, `onNewAppointment`, `onOpenAppointment`).
+
+**CalendarMonthView** (`client/src/components/calendar/CalendarMonthView.tsx`) bildet das Monatsraster mit Termin-Lanes und Drag & Drop. **CalendarWeekView** (`client/src/components/calendar/CalendarWeekView.tsx`) zeigt eine detailreichere Wochenansicht mit Panel-Karten. **CalendarYearView** (`client/src/components/calendar/CalendarYearView.tsx`) komprimiert Termine in einer 12‑Monats-Übersicht. Alle drei verwenden dieselben Props:
+
+- `currentDate`, `employeeFilterId`
+- `onNewAppointment`, `onOpenAppointment`
+
+Der globale Filter ist **CalendarEmployeeFilter** (`client/src/components/calendar/CalendarEmployeeFilter.tsx`). Er lädt aktive Mitarbeiter und ermöglicht die Auswahl „Alle Mitarbeiter“. Props:
+
+- `value` (employeeId oder `null`)
+- `onChange`
+
+Für die eigentliche Terminvisualisierung gibt es zwei Bausteine:
+
+**CalendarAppointmentCompactBar** (`client/src/components/calendar/CalendarAppointmentCompactBar.tsx`) ist die kompakte Leiste für Monat/Jahr (mit Popover und DnD).
+
+**CalendarWeekAppointmentPanel** (`client/src/components/calendar/CalendarWeekAppointmentPanel.tsx`) ist die Detailkarte der Wochenansicht.
+
+Termin-Details sind zentralisiert:
+
+**CalendarAppointmentPopover** (`client/src/components/calendar/CalendarAppointmentPopover.tsx`) ist der Overlay-Container,
+
+**CalendarAppointmentDetails** (`client/src/components/calendar/CalendarAppointmentDetails.tsx`) liefert das wiederverwendete Detail-Template (Popover/Panel).
+
+Für Terminlisten außerhalb der Kalenderansicht gibt es Panels und Badges.
+
+**AppointmentsPanel** (`client/src/components/AppointmentsPanel.tsx`) ist das Standard-Panel mit „Alle Termine“-Toggle, Items, Actions und optionalem Hinweistext.
+
+Kontext-spezifische Panels darauf aufbauend:
+
+- **CustomerAppointmentsPanel** (`client/src/components/CustomerAppointmentsPanel.tsx`) aggregiert Termine über alle Projekte eines Kunden.
+- **EmployeeAppointmentsPanel** (`client/src/components/EmployeeAppointmentsPanel.tsx`) lädt kommende oder alle Termine eines Mitarbeiters.
+- **ProjectAppointmentsPanel** (`client/src/components/ProjectAppointmentsPanel.tsx`) listet Termine im Projekt-Kontext inkl. Lösch- und Sperrlogik.
+
+Die UI für einzelne Einträge ist **TerminInfoBadge** (`client/src/components/ui/termin-info-badge.tsx`), das Datum, Mehrtages-Labels, Startzeit und Kontextzeile darstellt.
+
+Zum Erstellen und Bearbeiten von Terminen dient **AppointmentForm** (`client/src/components/AppointmentForm.tsx`) mit Projekt-/Tour-/Mitarbeiter-Zuordnung, Validierung und Sperrlogik.
+
 ## Regeln & Randbedingungen
 
 Die Kompositionsschicht enthält ausschließlich Layout- und Strukturkomponenten, die keine fachliche Logik besitzen und keine Datenhaltung erzwingen. Fachlogik, Mutationen und Validierungen verbleiben in den Feature-Screens oder in fachnahen Hooks, während die Kompositionskomponenten nur definierte Slots bereitstellen.
