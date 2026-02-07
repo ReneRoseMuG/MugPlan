@@ -1,4 +1,4 @@
-import { mysqlTable, text, int, date, time, boolean, datetime, bigint, primaryKey, varchar, timestamp } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, time, boolean, datetime, bigint, primaryKey, varchar, timestamp, json, uniqueIndex } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations, sql } from "drizzle-orm";
@@ -81,6 +81,36 @@ export const updateTeamSchema = z.object({ color: z.string() });
 export type Team = typeof teams.$inferSelect;
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type UpdateTeam = z.infer<typeof updateTeamSchema>;
+
+export const roles = mysqlTable("roles", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  isSystem: boolean("is_system").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+});
+
+export type Role = typeof roles.$inferSelect;
+
+export const users = mysqlTable("users", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  username: varchar("username", { length: 100 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  fullName: varchar("full_name", { length: 200 }).notNull(),
+  roleId: int("role_id").notNull().references(() => roles.id, { onDelete: "restrict" }),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdBy: bigint("created_by", { mode: "number" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+});
+
+export type User = typeof users.$inferSelect;
 
 // Note - Notizverwaltung (FT 13)
 export const notes = mysqlTable("note", {
@@ -343,3 +373,25 @@ export const updateHelpTextSchema = createInsertSchema(helpTexts).omit({
 export type HelpText = typeof helpTexts.$inferSelect;
 export type InsertHelpText = z.infer<typeof insertHelpTextSchema>;
 export type UpdateHelpText = z.infer<typeof updateHelpTextSchema>;
+
+export const userSettingsValue = mysqlTable(
+  "user_settings_value",
+  {
+    id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+    settingKey: varchar("setting_key", { length: 128 }).notNull(),
+    scopeType: varchar("scope_type", { length: 16 }).notNull(),
+    scopeId: varchar("scope_id", { length: 128 }).notNull(),
+    valueJson: json("value_json").$type<unknown>().notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+    updatedBy: bigint("updated_by", { mode: "number" }),
+  },
+  (table) => ({
+    settingScopeUnique: uniqueIndex("user_settings_value_key_scope_unique").on(
+      table.settingKey,
+      table.scopeType,
+      table.scopeId,
+    ),
+  }),
+);
+
+export type UserSettingsValue = typeof userSettingsValue.$inferSelect;

@@ -1,0 +1,22 @@
+﻿import { and, eq } from "drizzle-orm";
+import { db } from "../db";
+import { roles, users } from "@shared/schema";
+import { assertDbRoleCode, type DbRoleCode } from "../settings/registry";
+
+export async function getActiveUserRoleCodeByUserId(userId: number): Promise<DbRoleCode | null> {
+  const [row] = await db
+    .select({
+      roleCode: roles.code,
+      userIsActive: users.isActive,
+    })
+    .from(users)
+    .innerJoin(roles, eq(users.roleId, roles.id))
+    .where(and(eq(users.id, userId), eq(users.isActive, true)));
+
+  if (!row || !row.userIsActive) {
+    return null;
+  }
+
+  const normalizedCode = assertDbRoleCode(row.roleCode.toUpperCase());
+  return normalizedCode;
+}

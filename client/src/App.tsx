@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import { isAuthenticated, logout } from "@/lib/auth";
 import { useState } from "react";
+import { SettingsProvider } from "@/providers/SettingsProvider";
 
 type RouterProps = {
   onLogout: () => void;
@@ -40,13 +41,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router
-          onLogout={() => {
-            logout();
-            setIsAuthed(false);
-          }}
-        />
+        <SettingsProvider>
+          <Toaster />
+          <Router
+            onLogout={() => {
+              logout();
+              setIsAuthed(false);
+            }}
+          />
+        </SettingsProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

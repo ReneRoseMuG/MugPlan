@@ -17,6 +17,7 @@ import teamEmployeesRoutes from "./routes/teamEmployeesRoutes";
 import teamsRoutes from "./routes/teamsRoutes";
 import tourEmployeesRoutes from "./routes/tourEmployeesRoutes";
 import toursRoutes from "./routes/toursRoutes";
+import userSettingsRoutes from "./routes/userSettingsRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   app.use(eventsRoutes);
@@ -36,6 +37,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(projectNotesRoutes);
   app.use(projectAttachmentsRoutes);
   app.use(projectStatusRelationsRoutes);
+  app.use(userSettingsRoutes);
 
   return httpServer;
 }

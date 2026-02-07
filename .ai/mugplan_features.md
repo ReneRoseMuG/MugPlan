@@ -2866,6 +2866,60 @@ Die UI für einzelne Einträge ist **TerminInfoBadge** (`client/src/components/u
 
 Zum Erstellen und Bearbeiten von Terminen dient **AppointmentForm** (`client/src/components/AppointmentForm.tsx`) mit Projekt-/Tour-/Mitarbeiter-Zuordnung, Validierung und Sperrlogik.
 
+### **Typ-spezifische Preview-Komponenten**
+
+Ordner: `client/src/components/ui/badge-previews/`
+
+- appointment-info-badge-preview.tsx
+- attachment-info-badge-preview.tsx
+- customer-info-badge-preview.tsx
+- employee-info-badge-preview.tsx
+- project-info-badge-preview.tsx
+- team-info-badge-preview.tsx
+tour-info-badge-preview.tsx
+
+Jede Preview-Datei kapselt: 
+
+1. den visuellen Preview-Inhalt,
+2. typ-spezifische Popover-Optionen (`openDelayMs`, `side`, `align`, `maxWidth`, `maxHeight`),
+3. einen `create...Preview(...)`-Helper für die Übergabe an `InfoBadge`.
+
+## **Abhängigkeiten**
+
+### **Badge-Kompositionsketten**
+
+- TeamInfoBadge -> ColoredInfoBadge -> InfoBadge
+- TourInfoBadge -> ColoredInfoBadge -> InfoBadge
+- CustomerInfoBadge -> PersonInfoBadge -> InfoBadge
+- EmployeeInfoBadge -> PersonInfoBadge -> InfoBadge
+- ProjectInfoBadge -> InfoBadge
+- TerminInfoBadge -> InfoBadge
+- AttachmentInfoBadge -> InfoBadge
+
+### **Preview-Abhängigkeiten**
+
+- TeamInfoBadge -> createTeamInfoBadgePreview -> TeamInfoBadgePreview
+- TourInfoBadge -> createTourInfoBadgePreview -> TourInfoBadgePreview
+- CustomerInfoBadge -> createCustomerInfoBadgePreview -> CustomerInfoBadgePreview
+- EmployeeInfoBadge -> createEmployeeInfoBadgePreview -> EmployeeInfoBadgePreview
+- ProjectInfoBadge -> createProjectInfoBadgePreview -> ProjectInfoBadgePreview
+- TerminInfoBadge -> createAppointmentInfoBadgePreview -> AppointmentInfoBadgePreview
+- AttachmentInfoBadge -> createAttachmentInfoBadgePreview -> AttachmentInfoBadgePreview
+
+### **Screen-Abhängigkeiten (direkte Nutzung)**
+
+- client/src/components/AppointmentForm.tsx: TeamInfoBadge, TourInfoBadge
+- client/src/components/EmployeeList.tsx: TeamInfoBadge, TourInfoBadge
+- client/src/components/EmployeePage.tsx: TeamInfoBadge, TourInfoBadge
+
+## **Attachment-Preview-Matrix**
+
+- PDF: Inline per `iframe`
+- Bilder: Inline per `img`
+- DOC/DOCX: Inline über Office-Embed (`iframe`)
+- TXT: Textvorschau per `fetch` + `<pre>`
+- Sonstige Formate: Fallback-Hinweis + Öffnen/Download
+
 ## Regeln & Randbedingungen
 
 Die Kompositionsschicht enthält ausschließlich Layout- und Strukturkomponenten, die keine fachliche Logik besitzen und keine Datenhaltung erzwingen. Fachlogik, Mutationen und Validierungen verbleiben in den Feature-Screens oder in fachnahen Hooks, während die Kompositionskomponenten nur definierte Slots bereitstellen.
@@ -2876,3 +2930,66 @@ Hilfetexte werden systemweit über einen `helpKey` angebunden. Wenn ein `helpKey
 
 Neue Kompositionskomponenten werden nur dann eingeführt, wenn sie mindestens zwei echte Wiederholungsfälle vereinheitlichen oder absehbar ein Standardpattern etablieren. Reine „Einmal-Wrapper“ ohne Wiederverwendung sind nicht Teil dieser Schicht.
 
+# FT (18); User Preferences
+
+# ZIEL / ZWECK
+
+Dieses Feature stellt editierbare Einstellungen zu App-Funktionen direkt in der Anwendung bereit. Ziel ist, dass definierte Verhaltensweisen und Parameter ohne Code-Änderungen konfigurierbar sind und die Lösung auch bei wachsender Anzahl und Vielfalt von Einstellungstypen stabil und wartbar bleibt.
+
+### FACHLICHE BESCHREIBUNG
+
+Die Anwendung bietet eine zentrale Oberfläche, in der berechtigte Nutzer Einstellungen anzeigen und ändern können. Jede Einstellung ist durch einen eindeutigen Schlüssel identifiziert und besitzt einen fest definierten Datentyp sowie einen Standardwert. Der wirksame Wert ergibt sich aus einem gespeicherten Wert; sofern kein Wert gespeichert ist, gilt der Standardwert.
+
+Die Eingabe und Darstellung in der UI erfolgt generisch anhand des Einstellungstyps. Bool-Einstellungen werden als Schalter bedient, Zahlen als numerische Eingabe und Farben über eine Farbauswahl. Das System ist so gestaltet, dass weitere Typen und neue Einstellungen ergänzt werden können, ohne dass dafür für jede Einstellung eine eigene Persistenzlogik oder ein eigener Screen erforderlich wird.
+
+### REGELN & RANDBEDINGUNGEN
+
+Eine Einstellung darf nur gespeichert werden, wenn der Wert zum definierten Typ passt und die fachlich vorgesehenen Constraints erfüllt. Ungültige Eingaben werden abgelehnt und mit einer verständlichen Fehlermeldung zurückgemeldet.
+
+Jede Einstellung besitzt einen Standardwert. Wenn kein Wert gespeichert ist, wird ausschließlich der Standardwert verwendet. Der aktuell wirksame Wert muss in der UI transparent angezeigt werden.
+
+Berechtigungen müssen eindeutig greifen. Normale Nutzer dürfen ausschließlich ihre benutzerspezifischen Einstellungen bearbeiten. Administratoren dürfen zusätzlich Einstellungen bearbeiten, die in einem übergeordneten Kontext gelten, sofern solche Kontexte im Produkt genutzt werden.
+
+Zu Beginn müssen mindestens die Typen Zahl, Bool (Aktivität) und Farbe unterstützt werden. Weitere Typen wie Text, Auswahlwerte (Enum) oder Wertebereiche (Min/Max/Step) sollen später ohne Bruch ergänzt werden können.
+
+# USE CASES
+
+### UC: PERSÖNLICHE EINSTELLUNG ÄNDERN
+
+**AKTEUR**
+
+Nutzer
+
+**ZIEL**
+
+Der Nutzer passt eine persönliche Einstellung an, sodass die App sich entsprechend verhält.
+
+**VORBEDINGUNGEN**
+
+Der Nutzer ist angemeldet.
+
+Der Nutzer ist berechtigt, die betroffene Einstellung zu bearbeiten.
+
+Die Einstellung ist in der Oberfläche sichtbar.
+
+**ABLAUF**
+
+Der Nutzer öffnet die Seite „Einstellungen“.
+
+Der Nutzer sieht den aktuell wirksamen Wert der Einstellung.
+
+Der Nutzer ändert den Wert über das zum Typ passende Eingabeelement.
+
+Der Nutzer speichert die Änderung.
+
+Das System validiert den Wert und übernimmt ihn bei Erfolg.
+
+**ALTERNATIVEN**
+
+Der Nutzer bricht den Vorgang ab, dann bleibt der bisher wirksame Wert unverändert.
+
+Der Nutzer gibt einen ungültigen Wert ein, dann lehnt das System ab und zeigt eine Fehlermeldung; es wird nichts gespeichert.
+
+**ERGEBNIS**
+
+Der neue Wert ist gespeichert und für den Nutzer wirksam.

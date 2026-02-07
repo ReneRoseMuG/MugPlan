@@ -756,6 +756,37 @@ export const api = {
       },
     },
   },
+  userSettings: {
+    getResolved: {
+      method: 'GET' as const,
+      path: '/api/user-settings/resolved',
+      responses: {
+        200: z.array(
+          z.object({
+            key: z.string(),
+            label: z.string(),
+            description: z.string(),
+            type: z.enum(["enum"]),
+            constraints: z.object({
+              options: z.array(z.string()),
+            }),
+            allowedScopes: z.array(z.enum(["GLOBAL", "ROLE", "USER"])),
+            defaultValue: z.unknown(),
+            globalValue: z.unknown().optional(),
+            roleValue: z.unknown().optional(),
+            userValue: z.unknown().optional(),
+            resolvedValue: z.unknown(),
+            resolvedScope: z.enum(["USER", "ROLE", "GLOBAL", "DEFAULT"]),
+            roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+            roleKey: z.enum(["LESER", "DISPONENT", "ADMIN"]),
+            updatedAt: z.string().nullable().optional(),
+            updatedBy: z.number().nullable().optional(),
+          }),
+        ),
+        400: errorSchemas.validation,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
@@ -805,3 +836,4 @@ export type EmployeeInput = z.infer<typeof api.employees.create.input>;
 export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
 export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
 export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
+export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
