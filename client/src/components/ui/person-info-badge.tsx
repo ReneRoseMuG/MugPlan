@@ -1,5 +1,5 @@
 import { InfoBadge } from "@/components/ui/info-badge";
-import type { BadgeData, BadgeType } from "@/components/ui/badge-preview-registry";
+import type { InfoBadgePreview } from "@/components/ui/info-badge";
 import type { CSSProperties } from "react";
 
 interface PersonInfoBadgeProps {
@@ -17,8 +17,7 @@ interface PersonInfoBadgeProps {
   avatarClassName?: string;
   avatarTextClassName?: string;
   avatarStyle?: CSSProperties;
-  badgeType?: BadgeType;
-  badgeData?: BadgeData;
+  preview?: InfoBadgePreview;
 }
 
 const buildNameParts = (value: string | null | undefined) =>
@@ -57,8 +56,7 @@ export function PersonInfoBadge({
   avatarClassName,
   avatarTextClassName,
   avatarStyle,
-  badgeType,
-  badgeData,
+  preview,
 }: PersonInfoBadgeProps) {
   const resolvedFirstName = firstName?.trim() ?? "";
   const resolvedLastName = lastName?.trim() ?? "";
@@ -99,8 +97,7 @@ export function PersonInfoBadge({
       testId={testId}
       size={size}
       fullWidth={fullWidth}
-      badgeType={badgeType}
-      badgeData={badgeData}
+      preview={preview}
     />
   );
 }

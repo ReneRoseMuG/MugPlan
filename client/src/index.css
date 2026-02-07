@@ -97,32 +97,6 @@
   .info-badge {
     position: relative;
   }
-
-  .info-badge__overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: inherit;
-    background-color: hsl(var(--accent) / 0.18);
-    border: 1px solid hsl(var(--accent) / 0.35);
-    opacity: 0;
-    transition: opacity 160ms ease;
-    pointer-events: none;
-  }
-
-  .info-badge__overlay--visible {
-    opacity: 1;
-  }
-
-  .info-badge__overlay-text {
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: hsl(var(--foreground) / 0.85);
-    text-transform: none;
-  }
 }
 
 @layer utilities {

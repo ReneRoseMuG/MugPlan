@@ -1,5 +1,5 @@
 import { PersonInfoBadge } from "@/components/ui/person-info-badge";
-import type { CustomerBadgeData } from "@/components/ui/badge-preview-registry";
+import { createCustomerInfoBadgePreview } from "@/components/ui/badge-previews/customer-info-badge-preview";
 
 interface CustomerInfoBadgeProps {
   id?: string | number | null;
@@ -76,13 +76,6 @@ export function CustomerInfoBadge({
     phone ? `Tel.: ${phone}` : null,
   ];
 
-  const badgeData: CustomerBadgeData = {
-    id: id ?? null,
-    fullName: resolvedFullName,
-    customerNumber: customerNumber ?? null,
-    phone: phone ?? null,
-  };
-
   return (
     <PersonInfoBadge
       firstName={firstName}
@@ -97,8 +90,11 @@ export function CustomerInfoBadge({
       onRemove={onRemove}
       avatarClassName="border-2 bg-slate-200 text-slate-700"
       avatarStyle={{ borderColor }}
-      badgeType="customer"
-      badgeData={badgeData}
+      preview={createCustomerInfoBadgePreview({
+        fullName: resolvedFullName,
+        customerNumber: customerNumber ?? null,
+        phone: phone ?? null,
+      })}
     />
   );
 }

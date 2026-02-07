@@ -18,10 +18,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { CustomerInfoBadge } from "@/components/ui/customer-info-badge";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { ProjectInfoBadge } from "@/components/ui/project-info-badge";
+import { TeamInfoBadge } from "@/components/ui/team-info-badge";
+import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import ProjectList from "@/components/ProjectList";
 import { EmployeeListView } from "@/components/EmployeeList";
 import { useToast } from "@/hooks/use-toast";
@@ -496,16 +497,10 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
             </h3>
 
             {selectedTour ? (
-              <ColoredInfoBadge
-                icon={<Route className="w-3 h-3" />}
-                label={selectedTour.name}
+              <TourInfoBadge
+                id={selectedTour.id}
+                name={selectedTour.name}
                 color={selectedTour.color}
-                badgeType="tour"
-                badgeData={{
-                  id: selectedTour.id,
-                  name: selectedTour.name,
-                  color: selectedTour.color,
-                }}
                 action={isLocked ? "none" : "remove"}
                 onRemove={() => handleTourChange(null)}
                 fullWidth
@@ -519,17 +514,11 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
 
             <div className="flex flex-wrap gap-2">
               {tours.map((tour) => (
-                <ColoredInfoBadge
+                <TourInfoBadge
                   key={tour.id}
-                  icon={<Route className="w-3 h-3" />}
-                  label={tour.name}
+                  id={tour.id}
+                  name={tour.name}
                   color={tour.color}
-                  badgeType="tour"
-                  badgeData={{
-                    id: tour.id,
-                    name: tour.name,
-                    color: tour.color,
-                  }}
                   action={isLocked ? "none" : "add"}
                   onAdd={() => handleTourChange(tour.id)}
                   size="sm"
@@ -574,17 +563,11 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
           <Label className="text-xs text-muted-foreground">Teams</Label>
           <div className="flex flex-wrap gap-2">
             {teams.map((team) => (
-              <ColoredInfoBadge
+              <TeamInfoBadge
                 key={team.id}
-                icon={<Users className="w-3 h-3" />}
-                label={team.name}
+                id={team.id}
+                name={team.name}
                 color={team.color}
-                badgeType="team"
-                badgeData={{
-                  id: team.id,
-                  name: team.name,
-                  color: team.color,
-                }}
                 action={isLocked ? "none" : "add"}
                 onAdd={() => handleAssignTeam(team)}
                 size="sm"

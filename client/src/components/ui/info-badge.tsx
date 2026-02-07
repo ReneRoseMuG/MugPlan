@@ -1,12 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getPreviewOptions, renderPreview } from "@/components/ui/badge-preview-registry";
-import type { BadgeData, BadgeType } from "@/components/ui/badge-preview-registry";
-import { useBadgeInteractions } from "@/components/ui/badge-interaction-provider";
 import { Minus, Plus, X } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+export type InfoBadgePreviewOptions = {
+  openDelayMs: number;
+  side: "top" | "right" | "bottom" | "left";
+  align: "start" | "center" | "end";
+  maxWidth: number;
+  maxHeight: number;
+};
+
+export type InfoBadgePreview = {
+  content: ReactNode;
+  options?: Partial<InfoBadgePreviewOptions>;
+};
 
 interface InfoBadgeProps {
   icon: ReactNode;
@@ -20,9 +29,16 @@ interface InfoBadgeProps {
   size?: "default" | "sm";
   fullWidth?: boolean;
   onDoubleClick?: () => void;
-  badgeType?: BadgeType;
-  badgeData?: BadgeData;
+  preview?: InfoBadgePreview;
 }
+
+const defaultPreviewOptions: InfoBadgePreviewOptions = {
+  openDelayMs: 380,
+  side: "right",
+  align: "start",
+  maxWidth: 360,
+  maxHeight: 260,
+};
 
 export function InfoBadge({ 
   icon, 
@@ -36,16 +52,11 @@ export function InfoBadge({
   size = "default",
   fullWidth = false,
   onDoubleClick,
-  badgeType,
-  badgeData,
+  preview,
 }: InfoBadgeProps) {
-  const interactions = useBadgeInteractions();
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [contextMenuOpen, setContextMenuOpen] = useState(false);
-  const [overlayVisible, setOverlayVisible] = useState(false);
   const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const overlayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sizeClasses = size === "sm" 
     ? "px-2 py-0.5 text-xs gap-1" 
     : "px-3 py-2 gap-2";
@@ -53,35 +64,16 @@ export function InfoBadge({
   const widthClass = fullWidth ? "w-full" : "inline-flex";
   const actionColumnClass = size === "sm" ? "w-5" : "w-6";
   const resolvedAction = action ?? (onRemove ? "remove" : "none");
-  const previewContent = useMemo(
-    () => (badgeType && badgeData ? renderPreview(badgeType, badgeData) : null),
-    [badgeType, badgeData],
-  );
-  const previewOptions = useMemo(
-    () => (badgeType ? getPreviewOptions(badgeType) : null),
-    [badgeType],
-  );
-
-  const editHandler = useMemo(() => {
-    if (!badgeType || !interactions) return null;
-    if (badgeType === "team") return interactions.openTeamEdit ?? null;
-    if (badgeType === "tour") return interactions.openTourEdit ?? null;
-    if (badgeType === "appointment") return interactions.openAppointmentEdit ?? null;
-    if (badgeType === "employee") return interactions.openEmployeeEdit ?? null;
-    if (badgeType === "customer") return interactions.openCustomerEdit ?? null;
-    if (badgeType === "project") return interactions.openProjectEdit ?? null;
-    return null;
-  }, [badgeType, interactions]);
-
-  const canEdit = Boolean(editHandler && badgeData?.id != null);
-  const isCompact = size === "sm";
-  const overlayEnabled = canEdit && !isCompact && Boolean(previewContent);
+  const previewContent = preview?.content ?? null;
+  const previewOptions = {
+    ...defaultPreviewOptions,
+    ...preview?.options,
+  };
 
   useEffect(() => {
     return () => {
       if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
       if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
-      if (overlayTimeoutRef.current) clearTimeout(overlayTimeoutRef.current);
     };
   }, []);
 
@@ -96,19 +88,12 @@ export function InfoBadge({
   };
   
   const handleMouseEnter = () => {
-    if (contextMenuOpen) return;
     if (previewContent && previewOptions) {
       if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
       if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
       openTimeoutRef.current = setTimeout(() => {
         setPreviewOpen(true);
       }, previewOptions.openDelayMs);
-    }
-    if (overlayEnabled) {
-      if (overlayTimeoutRef.current) clearTimeout(overlayTimeoutRef.current);
-      overlayTimeoutRef.current = setTimeout(() => {
-        setOverlayVisible(true);
-      }, 2000);
     }
   };
 
@@ -122,11 +107,6 @@ export function InfoBadge({
         setPreviewOpen(false);
       }, 80);
     }
-    if (overlayTimeoutRef.current) {
-      clearTimeout(overlayTimeoutRef.current);
-      overlayTimeoutRef.current = null;
-    }
-    setOverlayVisible(false);
   };
 
   const badgeBody = (
@@ -135,18 +115,6 @@ export function InfoBadge({
       style={borderColor ? { borderLeftWidth: '5px', borderLeftColor: borderColor } : undefined}
       data-testid={testId}
       onDoubleClick={onDoubleClick}
-      onContextMenu={() => {
-        setPreviewOpen(false);
-        setOverlayVisible(false);
-        if (overlayTimeoutRef.current) {
-          clearTimeout(overlayTimeoutRef.current);
-          overlayTimeoutRef.current = null;
-        }
-        if (openTimeoutRef.current) {
-          clearTimeout(openTimeoutRef.current);
-          openTimeoutRef.current = null;
-        }
-      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -184,11 +152,6 @@ export function InfoBadge({
           </Button>
         )}
       </div>
-      {overlayEnabled && (
-        <div className={`info-badge__overlay ${overlayVisible ? "info-badge__overlay--visible" : ""}`}>
-          <span className="info-badge__overlay-text">Rechtsklick zum Bearbeiten</span>
-        </div>
-      )}
     </div>
   );
 
@@ -215,11 +178,6 @@ export function InfoBadge({
       >
         <div className="space-y-2">
           {previewContent}
-          {canEdit && (
-            <div className="text-[11px] text-muted-foreground">
-              Rechtsklick: Bearbeiten
-            </div>
-          )}
         </div>
       </PopoverContent>
     </Popover>
@@ -227,42 +185,5 @@ export function InfoBadge({
     badgeBody
   );
 
-  if (!canEdit) {
-    return previewWrapper;
-  }
-
-  const wrapperClass = fullWidth ? "w-full" : "inline-flex";
-
-  return (
-    <ContextMenu
-      open={contextMenuOpen}
-      onOpenChange={(nextOpen) => {
-        setContextMenuOpen(nextOpen);
-        if (nextOpen) {
-          setPreviewOpen(false);
-          if (openTimeoutRef.current) {
-            clearTimeout(openTimeoutRef.current);
-            openTimeoutRef.current = null;
-          }
-        }
-      }}
-    >
-      <ContextMenuTrigger asChild>
-        <div className={wrapperClass}>
-          {previewWrapper}
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem
-          onSelect={() => {
-            if (editHandler && badgeData?.id != null) {
-              editHandler(badgeData.id);
-            }
-          }}
-        >
-          Bearbeiten
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
-  );
+  return previewWrapper;
 }

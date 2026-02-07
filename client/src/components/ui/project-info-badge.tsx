@@ -1,5 +1,5 @@
 import { InfoBadge } from "@/components/ui/info-badge";
-import type { ProjectBadgeData } from "@/components/ui/badge-preview-registry";
+import { createProjectInfoBadgePreview } from "@/components/ui/badge-previews/project-info-badge-preview";
 import { FolderKanban } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -46,14 +46,6 @@ export function ProjectInfoBadge({
     appointmentLine,
   ].filter(Boolean) as string[];
 
-  const badgeData: ProjectBadgeData = {
-    id: id ?? null,
-    title,
-    customerName: customerFullName ?? null,
-    appointmentCount: typeof appointmentCount === "number" ? appointmentCount : null,
-    earliestAppointmentDate: earliestAppointmentDate ?? null,
-  };
-
   return (
     <InfoBadge
       icon={icon ?? <FolderKanban className="w-4 h-4" />}
@@ -74,8 +66,12 @@ export function ProjectInfoBadge({
       testId={testId}
       size={size}
       fullWidth={fullWidth}
-      badgeType="project"
-      badgeData={badgeData}
+      preview={createProjectInfoBadgePreview({
+        title,
+        customerName: customerFullName ?? null,
+        appointmentCount: typeof appointmentCount === "number" ? appointmentCount : null,
+        earliestAppointmentDate: earliestAppointmentDate ?? null,
+      })}
     />
   );
 }

@@ -3,7 +3,8 @@ import { Users, Route, Power, PowerOff, Phone, Mail, Pencil } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FilteredCardListLayout } from "@/components/ui/filtered-card-list-layout";
-import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
+import { TeamInfoBadge } from "@/components/ui/team-info-badge";
+import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { EntityCard } from "@/components/ui/entity-card";
 import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-filters";
@@ -172,31 +173,19 @@ export function EmployeeListView({
               {(tourInfo || teamInfo || !employee.isActive) && (
                 <div className="flex items-center gap-2 flex-wrap pt-1">
                   {tourInfo && (
-                    <ColoredInfoBadge
-                      icon={<Route className="w-3 h-3" />}
-                      label={tourInfo.name}
+                    <TourInfoBadge
+                      id={tourInfo.id}
+                      name={tourInfo.name}
                       color={tourInfo.color}
-                      badgeType="tour"
-                      badgeData={{
-                        id: tourInfo.id,
-                        name: tourInfo.name,
-                        color: tourInfo.color,
-                      }}
                       size="sm"
                       testId={`badge-employee-tour-${employee.id}`}
                     />
                   )}
                   {teamInfo && (
-                    <ColoredInfoBadge
-                      icon={<Users className="w-3 h-3" />}
-                      label={teamInfo.name}
+                    <TeamInfoBadge
+                      id={teamInfo.id}
+                      name={teamInfo.name}
                       color={teamInfo.color}
-                      badgeType="team"
-                      badgeData={{
-                        id: teamInfo.id,
-                        name: teamInfo.name,
-                        color: teamInfo.color,
-                      }}
                       size="sm"
                       testId={`badge-employee-team-${employee.id}`}
                     />

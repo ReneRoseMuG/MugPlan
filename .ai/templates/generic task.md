@@ -16,8 +16,6 @@ implementation.md (Engineering-Handbook, Contracts, Schichtregeln, React Query P
 
 mugplan_features.md (fachliche Regeln und Invarianten, insbesondere Termin/Projekt/Mitarbeiter-Regeln).
 
-project-doc.md (Domänenüberblick und Rollen, als fachlicher Kurzanker).
-
 2. Pflicht: Dann Leitplanken und Verbote lesen und bestätigen
 
 Du liest danach die folgenden Leitplanken und Verbote (dieser Abschnitt) vollständig und bestätigst wiederum kurz „Leitplanken und Verbote gelesen und verstanden“. Du startest erst danach mit dem eigentlichen Aufgabentext.
@@ -43,13 +41,7 @@ Du nimmst keine Änderungen an Dateien vor, die nicht klar zum Auftrag gehören,
 Ab hier folgt der konkrete Auftrag. Du behandelst ihn als verbindlich und vollständig, außer wenn du Widersprüche zu den gelesenen Architektur-/Regeldokumenten erkennst. In dem Fall benennst du den Konflikt und schlägst minimalinvasive Optionen vor.
 
 Aufgabe:
-„{HIER DEN KONKRETEN AUFGABENTEXT EINFÜGEN}“
-
-Nicht-Ziele (optional, aber empfohlen):
-„{HIER OPTIONAL EXPLIZITE NICHT-ZIELE EINFÜGEN}“
-
-Akzeptanzkriterien (optional, aber empfohlen):
-„{HIER OPTIONAL PRÜFBARE KRITERIEN EINFÜGEN}“
+Codex soll alle verbliebenen Reste der ehemaligen Datenbanktabelle events vollständig entfernen und dabei konsequent auch alle damit zusammenhängenden Artefakte bereinigen. Dazu gehören sämtliche Backend-Bestandteile wie Migrationen, ORM-Modelle oder -Schemas, Repositories, Services, Controller, Routen, Contracts oder DTOs, Validierungen, Tests sowie jegliche Hilfsfunktionen oder Konfigurationen, die direkt oder indirekt auf events referenzieren. Codex soll außerdem den gesamten Codebestand nach Referenzen auf events durchsuchen und diese entfernen oder sauber auf den aktuellen, vorgesehenen Daten- und Featurepfad umstellen, ohne dabei fachliche Logik unbeabsichtigt zu verändern. Codex darf keine neuen Features einführen, keine Architekturpatterns verändern und keine großflächigen Refactorings durchführen, die über die notwendige Bereinigung hinausgehen; Ziel ist eine vollständige, konsistente Entfernung aller events-Altlasten bei weiterhin lauffähigem Systemzustand.
 
 4. Planungspflicht: Erst planen, dann umsetzen
 

@@ -1,5 +1,5 @@
 import { InfoBadge } from "@/components/ui/info-badge";
-import type { AppointmentBadgeData } from "@/components/ui/badge-preview-registry";
+import { createAppointmentInfoBadgePreview } from "@/components/ui/badge-previews/appointment-info-badge-preview";
 import { Calendar } from "lucide-react";
 import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 import type { ReactNode } from "react";
@@ -88,16 +88,6 @@ export function TerminInfoBadge({
   })();
 
   const secondaryLine = modeLine?.trim() ? modeLine : null;
-  const badgeData: AppointmentBadgeData = {
-    id: id ?? null,
-    startDate,
-    endDate: endDate ?? null,
-    startTimeHour: startTimeHour ?? null,
-    projectName: projectName ?? projectLabel ?? null,
-    customerName: customerName ?? customerLabel ?? null,
-    employeeName: employeeName ?? employeeLabel ?? null,
-  };
-
   return (
     <InfoBadge
       icon={icon ?? <Calendar className="w-4 h-4" />}
@@ -129,8 +119,14 @@ export function TerminInfoBadge({
       size={size}
       fullWidth={fullWidth}
       onDoubleClick={onDoubleClick}
-      badgeType="appointment"
-      badgeData={badgeData}
+      preview={createAppointmentInfoBadgePreview({
+        startDate,
+        endDate: endDate ?? null,
+        startTimeHour: startTimeHour ?? null,
+        projectName: projectName ?? projectLabel ?? null,
+        customerName: customerName ?? customerLabel ?? null,
+        employeeName: employeeName ?? employeeLabel ?? null,
+      })}
     />
   );
 }

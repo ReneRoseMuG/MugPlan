@@ -1,6 +1,7 @@
 import { FileText, Image as ImageIcon, Paperclip } from "lucide-react";
 import type { ProjectAttachment } from "@shared/schema";
 import { InfoBadge } from "@/components/ui/info-badge";
+import { createAttachmentInfoBadgePreview } from "@/components/ui/badge-previews/attachment-info-badge-preview";
 
 interface AttachmentInfoBadgeProps {
   attachment: ProjectAttachment;
@@ -43,14 +44,12 @@ export function AttachmentInfoBadge({
       actionDisabled={actionDisabled}
       fullWidth
       testId={testId}
-      badgeType="attachment"
-      badgeData={{
-        id: attachment.id,
+      preview={createAttachmentInfoBadgePreview({
         originalName: attachment.originalName,
         mimeType: attachment.mimeType,
         openUrl,
         downloadUrl,
-      }}
+      })}
     />
   );
 }

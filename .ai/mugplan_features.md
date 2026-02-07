@@ -2876,22 +2876,3 @@ Hilfetexte werden systemweit über einen `helpKey` angebunden. Wenn ein `helpKey
 
 Neue Kompositionskomponenten werden nur dann eingeführt, wenn sie mindestens zwei echte Wiederholungsfälle vereinheitlichen oder absehbar ein Standardpattern etablieren. Reine „Einmal-Wrapper“ ohne Wiederverwendung sind nicht Teil dieser Schicht.
 
----
-
-### Vollständigkeits-Checks
-
-- FT (01) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (02) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (03) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (04) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (05) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (06) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (07) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (09) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (11) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (12) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (13) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (14) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (15) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (16) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)
-- FT (17) vollständig übertragen: Ja (Abschnitt „Projekt Verwaltung“ absichtlich nicht übernommen)

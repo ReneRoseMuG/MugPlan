@@ -1,5 +1,5 @@
 import { InfoBadge } from "@/components/ui/info-badge";
-import type { BadgeData, BadgeType } from "@/components/ui/badge-preview-registry";
+import type { InfoBadgePreview } from "@/components/ui/info-badge";
 import type { ReactNode } from "react";
 
 interface ColoredInfoBadgeProps {
@@ -12,8 +12,7 @@ interface ColoredInfoBadgeProps {
   testId?: string;
   size?: "default" | "sm";
   fullWidth?: boolean;
-  badgeType?: BadgeType;
-  badgeData?: BadgeData;
+  preview?: InfoBadgePreview;
 }
 
 export function ColoredInfoBadge({ 
@@ -26,8 +25,7 @@ export function ColoredInfoBadge({
   testId,
   size = "default",
   fullWidth = false,
-  badgeType,
-  badgeData,
+  preview,
 }: ColoredInfoBadgeProps) {
   return (
     <InfoBadge
@@ -40,8 +38,7 @@ export function ColoredInfoBadge({
       testId={testId}
       size={size}
       fullWidth={fullWidth}
-      badgeType={badgeType}
-      badgeData={badgeData}
+      preview={preview}
     />
   );
 }

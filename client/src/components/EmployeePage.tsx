@@ -3,9 +3,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { EmployeeAppointmentsPanel } from "@/components/EmployeeAppointmentsPanel";
 import { EmployeeList } from "@/components/EmployeeList";
+import { TeamInfoBadge } from "@/components/ui/team-info-badge";
+import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { EntityEditDialog } from "@/components/ui/entity-edit-dialog";
 import { Users, Route, Phone, Mail, X } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
@@ -268,16 +269,10 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   Tour
                 </h4>
                 {!isCreating && displayEmployee?.tour ? (
-                  <ColoredInfoBadge
-                    icon={<Route className="w-4 h-4" />}
-                    label={displayEmployee.tour.name}
+                  <TourInfoBadge
+                    id={displayEmployee.tour.id}
+                    name={displayEmployee.tour.name}
                     color={displayEmployee.tour.color}
-                    badgeType="tour"
-                    badgeData={{
-                      id: displayEmployee.tour.id,
-                      name: displayEmployee.tour.name,
-                      color: displayEmployee.tour.color,
-                    }}
                     fullWidth
                     testId="badge-employee-tour"
                   />
@@ -297,16 +292,10 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                   Team
                 </h4>
                 {!isCreating && displayEmployee?.team ? (
-                  <ColoredInfoBadge
-                    icon={<Users className="w-4 h-4" />}
-                    label={displayEmployee.team.name}
+                  <TeamInfoBadge
+                    id={displayEmployee.team.id}
+                    name={displayEmployee.team.name}
                     color={displayEmployee.team.color}
-                    badgeType="team"
-                    badgeData={{
-                      id: displayEmployee.team.id,
-                      name: displayEmployee.team.name,
-                      color: displayEmployee.team.color,
-                    }}
                     fullWidth
                     testId="badge-employee-team"
                   />
