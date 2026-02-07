@@ -72,9 +72,9 @@ Anhänge sind projektspezifisch.
 
 Ein Termin ist fachlich nur gültig, wenn er einem Projekt zugeordnet ist. Flows zum Erstellen oder Verschieben von Terminen müssen diese Invariante sichern.
 
-Ein Mitarbeiter darf nicht zeitlich überschneidend mehreren Terminen zugewiesen sein. Diese Regel ist blockierend und muss serverseitig zuverlässig geprüft werden, weil Client‑Prüfungen allein nicht genügen.
+Ein Mitarbeiter darf nicht zeitlich überschneidend mehreren Terminen zugewiesen sein. Diese Hard-Rule bleibt fachlich verbindlich und muss bei Mehrbenutzer-Disposition serverseitig blockierend durchgesetzt werden, weil Client‑Prüfungen allein nicht genügen. Der aktuelle Ist‑Stand ist hierfür jedoch noch nicht zuverlässig verifiziert und die vollständige serverseitige Umsetzung ist nicht eindeutig bestätigt.
 
-Termine gelten ab ihrem Startdatum als gesperrt. Nicht‑Admins dürfen gesperrte Termine nicht verändern; Admins dürfen weiterhin bearbeiten. Diese Regel ist sowohl Teil des API‑Contracts (Lock‑Information) als auch Teil der UI‑Interaktionslogik.
+Termine gelten ab ihrem Startdatum als gesperrt. Nicht‑Admins dürfen gesperrte Termine nicht verändern; Admins dürfen weiterhin bearbeiten. Diese Regel ist sowohl Teil des API‑Contracts (Lock‑Information) als auch Teil der UI‑Interaktionslogik. Im aktuellen Ist‑Stand des Kalender‑/Terminbereichs wird die serverseitige Unterscheidung Admin/Nicht‑Admin jedoch über das vom Client gesendete Signal `x-user-role` getroffen; das ist kein autoritatives Rollen‑ oder Berechtigungsmodell.
 
 ---
 
@@ -92,7 +92,7 @@ Das Backend folgt einem Schichtenmodell aus Route‑Modulen, Controller‑Funkti
 
 Route‑Module registrieren Endpunkte und sind die zentrale Stelle, an der die API‑Oberfläche sichtbar wird.
 
-Controller übernehmen Validierung und Request‑Parsing, halten die Schnittstelle zu Contracts stabil und geben definierte Fehlerformate zurück.
+Controller übernehmen Validierung und Request‑Parsing, halten die Schnittstelle zu Contracts stabil und geben definierte Fehlerformate zurück. Für JSON‑Requests erfolgt Parsing/Validierung über die Contract‑Definitionen (oder äquivalent in der Controller‑Schicht). Multipart‑Requests, insbesondere Datei‑Uploads, sind ein definierter Sonderfall: Parsing und technische Validierung laufen dort über Multipart‑Parser und Limits; Fehlerformate, Grenzwerte und Schichtgrenzen bleiben dabei einheitlich.
 
 Services implementieren Fachregeln, Aggregation und Cross‑Entity‑Anreicherung.
 
@@ -130,7 +130,7 @@ Fachfehler entstehen, wenn ein Request formal korrekt ist, aber gegen Regeln ver
 
 ## 4.5 Rolleninformation als Request‑Kontext
 
-Mehrere Features hängen von Rollen‑ oder Berechtigungsinformation ab. Im Ist‑Stand wird diese Information requestweise über einen Header transportiert. Für Erweiterungen ist entscheidend, dass Berechtigungen nicht allein im Frontend implementiert werden, sondern serverseitig durchgesetzt bleiben.
+Das autoritative Rollenmodell ist serverseitig und wird über die Datenbankbeziehungen `users -> roles` abgeleitet. Client‑seitige Header wie `x-user-role` sind keine Rollen‑ oder Autorisierungsquelle. Wenn solche Header im Ist‑Stand verwendet werden, gelten sie ausschließlich als nicht‑autoritatives Dev‑/Simulationssignal; daraus dürfen keine Berechtigungen, keine Freigaben und keine Sicherheitsentscheidungen abgeleitet werden. Eine Ablösung solcher Header erfolgt in einem späteren Schritt, sobald ein belastbarer Authentifizierungs‑ und Identitätskontext etabliert ist.
 
 # 5. Erweiterungspunkte
 
@@ -174,7 +174,7 @@ Kunden, Projekte und Mitarbeiter werden primär archiviert. Features dürfen nic
 
 ## 6.4 Lock‑Regel ist serverseitig durchzusetzen
 
-Die UI darf Locks respektieren und Interaktionen blockieren, aber die Durchsetzung muss serverseitig erfolgen. Andernfalls entstehen Manipulationsmöglichkeiten und schwer reproduzierbare Zustände.
+Die UI darf Locks respektieren und Interaktionen blockieren, aber die Durchsetzung muss serverseitig erfolgen. Andernfalls entstehen Manipulationsmöglichkeiten und schwer reproduzierbare Zustände. Im aktuellen Kalender‑/Termin‑Iststand ist diese Durchsetzung noch nicht belastbar autoritativ, weil die Rolleninformation serverseitig aus dem clientübermittelten Signal `x-user-role` stammt.
 
 ## 6.5 Kalenderdaten sind ein Aggregat
 
@@ -196,7 +196,7 @@ Der Ist‑Stand der Architektur ist gut beschreibbar, aber für wirklich schnell
 
 ## 7.3 Rollen- und Auth‑Konzept ist aktuell minimal
 
-Die aktuelle Rolleninformation wird requestweise übergeben. Das ist für interne Tools pragmatisch, wird aber bei Wachstum schnell kritisch, weil eine echte Authentifizierung, Session‑ und Audit‑Fragen damit nur teilweise abgedeckt sind. Solange dieses Modell beibehalten wird, müssen serverseitige Checks konsequent sein.
+Das autoritative Rollenmodell ist serverseitig über `users -> roles` definiert. Request‑Header wie `x-user-role` sind im Ist‑Stand lediglich ein technisches Dev‑/Simulationssignal und kein Berechtigungsmodell. Solange im Kalender‑/Terminbereich Rollenentscheidungen auf diesem Signal beruhen, existiert dort keine belastbare serverseitige Rollenbegrenzung.
 
 ---
 
@@ -262,11 +262,11 @@ Die UI startet Drag‑and‑Drop. Aus der Zielposition berechnet sie das neue Da
 
 ## 11.2 Ablauf mit Lock
 
-Vor dem Start des Drags prüft die UI das Lock‑Flag. Wenn der Termin gesperrt ist und der Nutzer kein Admin ist, wird die Interaktion blockiert und es erfolgt keine Mutation. Sollte dennoch ein Request ausgelöst werden, muss der Server denselben Lock‑Check erzwingen und mit einem fachlichen Fehler antworten.
+Vor dem Start des Drags prüft die UI das Lock‑Flag. Wenn der Termin gesperrt ist und der Nutzer kein Admin ist, wird die Interaktion blockiert und es erfolgt keine Mutation. Im aktuellen Ist‑Stand basiert die serverseitige Lock‑Entscheidung dabei auf dem nicht‑autoritativen Signal `x-user-role` und stellt daher noch keine belastbare Berechtigungsprüfung dar.
 
 ## 11.3 Ablauf bei Überschneidungsfehler
 
-Wenn das Verschieben dazu führt, dass ein Mitarbeiter zeitlich überschneidend mehreren Terminen zugeordnet wäre, muss der Server diese Regel blockierend durchsetzen und einen fachlichen Fehler zurückgeben. Die UI zeigt diesen Fehler als verständliche Meldung an und bleibt ansonsten im konsistenten Zustand, weil kein Optimistic Update die Sicht „falsch“ machen durfte.
+Wenn das Verschieben dazu führt, dass ein Mitarbeiter zeitlich überschneidend mehreren Terminen zugeordnet wäre, ist die fachliche Zielregel eine serverseitig blockierende Ablehnung mit fachlichem Fehler. Der aktuelle Ist‑Stand dieser serverseitigen Konfliktblockierung ist jedoch noch nicht zuverlässig verifiziert beziehungsweise nicht vollständig umgesetzt; die UI-Darstellung eines Konfliktfehlers ist daher als Zielverhalten zu lesen.
 
 ---
 
@@ -353,7 +353,7 @@ Im Projekt-Dump sind die folgenden Endpunktgruppen nachweisbar (inkl. HTTP-Metho
 
 * `POST /api/projects/:projectId/attachments` (Multipart-Upload, Field `file`).
 
-* `DELETE /api/project-attachments/:id`.
+* `DELETE /api/project-attachments/:id` (absichtlich blockiert, `405`).
 
 * `GET /api/project-attachments/:id/download` (optional Query `download=1`).
 
@@ -436,9 +436,9 @@ Im Projekt-Dump sind die folgenden Endpunktgruppen nachweisbar (inkl. HTTP-Metho
 
 Für Kalender- und einige Listen-Endpoints wird ein Date-only-Format `YYYY-MM-DD` verwendet. Für den Kalender ist `fromDate`/`toDate` verpflichtend, und `toDate` darf nicht vor `fromDate` liegen.
 
-### C2.2 Rollen-Header
+### C2.2 Rollen-Header (nicht autoritativ)
 
-Mehrere Workflows nutzen den Header `x-user-role` (z. B. `ADMIN`), insbesondere um Termin-Sperrlogik (editierbar vs. gesperrt) abbilden zu können.
+Der Header `x-user-role` (z. B. `ADMIN`) kann im Ist‑Stand als technisches Dev‑/Simulationssignal auftreten, insbesondere im Kalender‑/Terminfluss. Er ist keine autoritative Rollen‑ oder Autorisierungsquelle; Berechtigungen und Sicherheitsentscheidungen dürfen daraus nicht abgeleitet werden.
 
 ## C3. React Query: Query Keys und Invalidierung
 
@@ -538,13 +538,13 @@ Controller/Service/Repository (Beispiel Kalender-Terminfluss, explizit dokumenti
 Shared Contracts:
 
 * `shared/routes.ts` (API-Contracts inkl. Zod).
-* `shared/schema` (Drizzle-Schema + Typen; genaue DB-Technologie ist in den Quellen inkonsistent, das Datenmodell ist aber im MySQL-Dump vollständig).
+* `shared/schema` (Drizzle-Schema + Typen für den MySQL-basierten Persistenzstack; Backend-Zugriff über Drizzle ORM und mysql2).
 
 ## C5. Offene Punkte, die bewusst nicht „phantasiert“ werden
 
 Die folgenden Punkte sind für Architektur- und Implementierungsarbeit relevant, können aber aus den vorhandenen Quellen nicht zweifelsfrei hergeleitet werden und sollten bei Gelegenheit direkt im Code verifiziert werden.
 
-Exakte React‑Query‑Keys außerhalb des Kalenders sind im Dump nicht als zentrale Liste sichtbar. Vollständiges wouter‑Routing (konkrete Pfade) ist ebenfalls nicht in einem einzigen, eindeutig extrahierbaren Snippet enthalten. Außerdem existiert eine Inkonsistenz in der textlichen Beschreibung der Datenbanktechnologie gegenüber dem vorliegenden Schema‑Dump.
+Eine vollständig zentrale Liste aller React‑Query‑Keys außerhalb des Kalenders ist im Dump nicht als einheitlicher Index sichtbar. Gleichzeitig existieren außerhalb des Kalenders bereits nachweisbar stabile Query‑Keys, mindestens im Attachments‑Wrapper‑Pattern (Projekt/Customer/Employee). Vollständiges wouter‑Routing (konkrete Pfade) ist ebenfalls nicht in einem einzigen, eindeutig extrahierbaren Snippet enthalten. Historische Relativierungen zur Datenbanktechnologie sind vom aktuellen Ist‑Stand zu trennen: Der Ist‑Stand ist MySQL mit Drizzle ORM und mysql2.
 
 ---
 
@@ -570,11 +570,11 @@ MuGPlan unterscheidet praktisch drei Fehlerklassen, die im Backend verschieden b
 
 Validierungsfehler entstehen, wenn Request‑Body oder Query nicht dem Zod‑Contract entsprechen. Die zentrale Helper‑Funktion `handleZodError` antwortet in diesem Fall mit HTTP 400 und einem JSON‑Body, der mindestens `message` sowie ein Feld `field` enthält, das aus dem Zod‑Path gebildet wird.
 
-Fachfehler entstehen, wenn der Request formal korrekt ist, aber gegen Regeln verstößt, insbesondere im Terminbereich. Im Appointment‑Controller wird hierfür ein domänenspezifischer Error‑Typ aus dem Service erkannt (AppointmentError) und dann mit dem im Error enthaltenen HTTP‑Status sowie `{ message }` beantwortet. Diese Klasse umfasst unter anderem Überschneidungsregeln und Sperrlogik.
+Fachfehler entstehen, wenn der Request formal korrekt ist, aber gegen Regeln verstößt, insbesondere im Terminbereich. Im Appointment‑Controller wird hierfür ein domänenspezifischer Error‑Typ aus dem Service erkannt (AppointmentError) und dann mit dem im Error enthaltenen HTTP‑Status sowie `{ message }` beantwortet. Für die Sperrlogik ist das im Ist‑Stand nachweisbar; für die serverseitige Überschneidungsblockierung bei Mitarbeiterzuweisungen ist der Nachweis im aktuellen Stand nicht eindeutig abgeschlossen.
 
 Nicht‑Gefunden‑Fehler sind explizit als 404 mit `{ message }` umgesetzt.
 
-Für neue Features gilt die Leitplanke, dass Validierung ausschließlich über Contracts erfolgt, Fachfehler als explizite, maschinenlesbare Service‑Errors modelliert werden und Controller keine „freien Textfehler“ erfinden, die UI nicht konsistent interpretieren kann.
+Für neue Features gilt die Leitplanke, dass Validierung für JSON‑Requests über Contracts erfolgt; Multipart‑Requests bleiben als technischer Sonderfall mit Parser/Limits in der Controller‑Schicht zulässig. Fachfehler werden als explizite, maschinenlesbare Service‑Errors modelliert, und Controller erfinden keine „freien Textfehler“, die UI nicht konsistent interpretieren kann.
 
 ---
 
@@ -588,7 +588,7 @@ Erstens wird im Contract‑Index eine neue Definition ergänzt, bestehend aus `p
 
 Zweitens wird der Endpunkt in einem Route‑Modul registriert, indem exakt dieser Contract‑Path verwendet wird.
 
-Drittens parst der Controller ausschließlich über das Contract‑Schema und delegiert dann an Service/Repository.
+Drittens parst der Controller bei JSON‑Requests über das Contract‑Schema und delegiert dann an Service/Repository. Für Multipart‑Requests nutzt die Controller‑Schicht den vorgesehenen Multipart‑Parser mit Grenzwerten als definierten Sonderfall.
 
 Dieses Vorgehen verhindert Abweichungen zwischen Client‑Erwartung und Server‑Implementierung und ist deshalb als Architekturvertrag zu behandeln.
 
@@ -663,7 +663,7 @@ Für API/Resolver wird auf die kanonische Menge gemappt:
 - `DISPATCHER -> DISPONENT`
 - `ADMIN -> ADMIN`
 
-Resolver und Frontend-Darstellung arbeiten danach mit den kanonischen Werten. Persistenz auf ROLE-Ebene bleibt beim DB-Code (siehe D5).
+Resolver und Frontend-Darstellung arbeiten danach mit den kanonischen Werten. Dieses Mapping ist eine Darstellungs-/API-Normalisierung und nicht die DB-Wahrheit. Persistenz auf ROLE-Ebene bleibt beim DB-Code (siehe D5), also beim Rollen-`code` und nicht bei einer numerischen `role_id`.
 
 Wenn kein valider User-Kontext oder keine eindeutig mappbare Rolle vorliegt, wird der Request abgelehnt, um deterministisches Verhalten zu garantieren.
 
@@ -709,7 +709,7 @@ Die Response liefert pro Key:
 - `resolvedScope` (`USER|ROLE|GLOBAL|DEFAULT`)
 - Rollentransparenz (`roleCode`, `roleKey`)
 
-Damit kann die UI die Herkunft eines wirksamen Werts transparent anzeigen, ohne Resolverlogik zu duplizieren.
+Damit kann die UI die Herkunft eines wirksamen Werts transparent anzeigen, ohne Resolverlogik zu duplizieren. `defaultValue` und die Definitions-/Metadaten stammen aus der Registry; persistierte Scope-Werte stammen aus `user_settings_value`.
 
 ## D7. Backend-Schichten in FT (18)
 
@@ -728,9 +728,9 @@ Die Routenregistrierung erfolgt zentral in `server/routes.ts`, konsistent mit de
 
 ## D8. User-Kontext und aktueller Übergangsstatus
 
-Die Zielarchitektur sieht echten Auth-Kontext vor (`req.userId` aus Auth-Middleware). Im aktuellen Ist-Stand von FT (18) wird `req.userId` übergangsweise über `SETTINGS_USER_ID` gesetzt (`requestUserContext`), damit die Resolverstrecke gegen reale DB-Daten testbar bleibt.
+Die Zielarchitektur sieht echten Auth-Kontext vor (`req.userId` aus Auth-Middleware). Im aktuellen Ist-Stand von FT (18) wird `req.userId` übergangsweise über `SETTINGS_USER_ID` gesetzt (`requestUserContext`), damit die Resolverstrecke gegen reale DB-Daten testbar bleibt. Diese UserId-Injektion ist ein Entwicklungs-/Übergangsmechanismus und ersetzt keine Authentifizierung und keine Session.
 
-Wichtig: Trotz Übergang ist die Rollenauflösung selbst DB-basiert und nicht aus Client-Headern abgeleitet.
+Wichtig: Trotz Übergang ist die Rollenauflösung für Settings weiterhin autoritativ serverseitig DB-basiert (`users -> roles`) und nicht aus Client-Headern abgeleitet. "Serverseitig" bedeutet hier die autoritative Rollenquelle aus der DB, nicht bereits einen vollständig authentifizierten Session-Kontext.
 
 ## D9. Frontend-Architektur für read-only Settings
 

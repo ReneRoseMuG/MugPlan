@@ -30,13 +30,13 @@ Im Ist‑Stand ist die Persistenz MySQL‑basiert. Schema und referentielle Inte
 
 ## 2.1 Contracts sind der API‑Vertrag
 
-Die API‑Oberfläche wird zentral über `shared/routes.ts` als Contract‑Index definiert. Route‑Module benutzen diese Contract‑Pfadstrings, und Controller validieren Input ausschließlich über die Contract‑Schemas. Neue Endpunkte werden nie „frei“ in Express definiert, sondern immer zuerst im Contract ergänzt.
+Die API‑Oberfläche wird zentral über `shared/routes.ts` als Contract‑Index definiert. Route‑Module benutzen diese Contract‑Pfadstrings. Für JSON‑Requests validieren und parsen Controller über die Contract‑Schemas. Multipart‑Requests (insbesondere Uploads) sind ein definierter Sonderfall mit Multipart‑Parser und technischen Limits in der Controller‑Schicht. Neue Endpunkte werden nie „frei“ in Express definiert, sondern immer zuerst im Contract ergänzt.
 
 ## 2.2 Schichten im Backend
 
 Backend‑Änderungen folgen der Kette Route → Controller → Service → Repository.
 
-Der Controller ist ausschließlich für Parsing und Validierung zuständig und soll keine Fachlogik enthalten.
+Der Controller ist für Parsing und Validierung zuständig und soll keine Fachlogik enthalten. Für JSON‑Requests erfolgt Parsing/Validierung über Contracts; für Multipart‑Requests über den vorgesehenen Multipart‑Parser mit Limits.
 
 Der Service ist der Ort für Fachregeln, Aggregation und Querbezüge zwischen Entitäten.
 
@@ -60,7 +60,7 @@ Zuerst wird im Contract‑Index (`shared/routes.ts`) eine neue Definition ergän
 
 Danach wird im passenden `server/routes/*Routes.ts` der Endpunkt registriert, indem exakt der Contract‑Path verwendet wird.
 
-Im Controller wird der Input über das Contract‑Schema geparst, und die Ausführung wird an einen Service delegiert.
+Im Controller wird JSON‑Input über das Contract‑Schema geparst; Multipart‑Input wird über den vorgesehenen Multipart‑Parser mit Limits verarbeitet. Die Ausführung wird anschließend an einen Service delegiert.
 
 Im Service werden Fachregeln durchgesetzt und für Persistenz wird ein Repository genutzt.
 
@@ -88,9 +88,13 @@ Validierungsfehler entstehen, wenn Requests nicht dem Contract entsprechen. Dies
 
 Fachfehler entstehen, wenn Requests formal korrekt sind, aber gegen Regeln verstoßen. Diese werden als explizite Service‑Errors modelliert und mit passendem Statuscode und einer maschinenlesbaren Message beantwortet.
 
+Für die Hard-Rule zur Mitarbeiter-Überschneidungsprüfung bei Terminzuweisungen konnte im Gegencheck der aktuelle Implementationsstand der serverseitigen Konfliktblockierung nicht eindeutig bestätigt werden. Diese Regel bleibt fachlich verbindlich als Zielzustand, ist im Ist‑Stand aber noch nicht zuverlässig verifiziert beziehungsweise noch nicht vollständig umgesetzt.
+
+Zur belastbaren Absicherung der Hard-Rule ist daher eine separate Implementations-/Refactoring-Aufgabe notwendig, die die serverseitige Konfliktblockierung eindeutig herstellt und verifizierbar macht.
+
 ## 4.2 Lock‑ und Rollenprobleme
 
-Wenn Interaktionen im Kalender „nicht gehen“, wird zuerst geprüft, ob der Termin gesperrt ist und welche Rolle über den Request‑Kontext übermittelt wird. Die UI blockiert, aber der Server muss dieselbe Regel ebenfalls erzwingen.
+Wenn Interaktionen im Kalender „nicht gehen“, wird zuerst geprüft, ob der Termin gesperrt ist und welches technische Kontextsignal über den Request mitläuft. Im aktuellen Ist‑Stand wird dafür unter anderem `x-user-role` verwendet; dieses Signal ist nicht autoritativ und kein Rollen‑ oder Berechtigungsmodell. Die UI blockiert entsprechend, und der Server trifft derzeit dieselbe Lock‑Entscheidung auf Basis dieses Signals.
 
 ## 4.3 Typische Debug‑Reihenfolge
 
@@ -178,15 +182,33 @@ Es gelten genau drei Scopes:
 
 ### 7.4.2 Persistenzregeln in `user_settings_value`
 
-- `GLOBAL`: `scope_id = "global"`
-- `ROLE`: `scope_id = DB-Rollencode` (`READER|DISPATCHER|ADMIN`)
-- `USER`: `scope_id = userId` als String
+Die Persistenz erfolgt in der Tabelle `user_settings_value` mit den folgenden relevanten Feldern:
+
+- `id`
+- `setting_key`
+- `scope_type` (`GLOBAL|ROLE|USER`)
+- `scope_id`
+- `value_json`
+- `updated_at`
+- `updated_by` (optional)
 
 Unique-Constraint:
 
 - `(setting_key, scope_type, scope_id)`
 
+Scope-Konventionen:
+
+- `GLOBAL`: `scope_id = "global"`
+- `ROLE`: `scope_id = DB-Rollencode` (`READER|DISPATCHER|ADMIN`), bewusst nicht numerische `role_id`
+- `USER`: `scope_id = userId` als String
+
 Diese Konventionen sind nicht optional, sondern stabiler Teil des Datenmodells.
+
+### 7.4.3 Registry-Beispiel und Default-Herkunft
+
+Der aktuell geführte Registry-Key ist `attachmentPreviewSize` mit Wertebereich `small|medium|large` und Default `medium`.
+
+Wenn für einen Scope kein persistierter Wert in `user_settings_value` vorliegt (oder kein gültiger Kandidat aufgelöst werden kann), stammt der wirksame Default aus der Settings-Registry (`DEFAULT` in der Resolver-Reihenfolge), nicht aus einer impliziten DB-Vorgabe.
 
 ## 7.5 Rollenmodell und Mapping
 
@@ -286,9 +308,11 @@ inkl. Rollen-Insert via `ON DUPLICATE KEY UPDATE`.
 
 Der langfristige Zielzustand ist echter Auth-Kontext mit serverseitig ermittelter `userId`.
 
-Aktuell wird für FT (18) `req.userId` übergangsweise über `SETTINGS_USER_ID` gesetzt (`requestUserContext`). Das ist eine bewusst begrenzte Lösung, um FT (18) ohne parallele Auth-Replattforming-Arbeit auslieferbar und testbar zu machen.
+Aktuell wird für FT (18) `req.userId` übergangsweise über `SETTINGS_USER_ID` gesetzt (`requestUserContext`). Das ist eine bewusst begrenzte Lösung, um FT (18) ohne parallele Auth-Replattforming-Arbeit auslieferbar und testbar zu machen. Dieser Mechanismus liefert im aktuellen Entwicklungsstand ausschließlich den Identitätsinput und ersetzt keine Authentifizierung und keine Session.
 
-Die Rollenauflösung selbst bleibt trotzdem DB-basiert (`users -> roles`) und wird nicht aus Frontenddaten abgeleitet.
+Die Rollenauflösung selbst bleibt trotzdem DB-basiert (`users -> roles`) und wird nicht aus Frontenddaten abgeleitet. "Serverseitig" bedeutet hier die autoritative Rollenquelle aus der DB, nicht bereits einen vollständig authentifizierten Session-Kontext.
+
+Diese DB-basierte Rollenauflösung ist das autoritative Modell. Eine eventuelle Header-Nutzung in anderen Bereichen ist nicht als Rollen- oder Berechtigungsmodell zu interpretieren, sondern nur als technischer Kontext für Entwicklung und UI-Simulation. Für den aktuellen Kalender-/Terminbereich bedeutet das: Es gibt dort derzeit keine belastbare serverseitige Rollenbegrenzung, solange Rollenentscheidungen auf dem nicht-autoritativen Signal `x-user-role` beruhen.
 
 ## 7.11 Verifikation von FT (18)
 
@@ -442,7 +466,7 @@ Kein Delete-Endpunkt.
 - `GET /api/projects/:projectId/attachments`
 - `POST /api/projects/:projectId/attachments`
 - `GET /api/project-attachments/:id/download`
-- `DELETE /api/project-attachments/:id` ist absichtlich blockiert
+- `DELETE /api/project-attachments/:id` ist absichtlich blockiert (`405`)
 
 Blockierungsantwort:
 
