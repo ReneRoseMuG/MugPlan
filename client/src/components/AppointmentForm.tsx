@@ -137,8 +137,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   });
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees"],
-    queryFn: () => fetchJson<Employee[]>("/api/employees"),
+    queryKey: ["/api/employees", { active: "all" }],
+    queryFn: () => fetchJson<Employee[]>("/api/employees?active=all"),
   });
 
   const { data: appointmentDetail, isLoading: appointmentLoading } = useQuery<AppointmentDetail>({
@@ -196,6 +196,28 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
     () => employees.filter((employee) => employee.isActive && !assignedEmployeeIds.includes(employee.id)),
     [employees, assignedEmployeeIds],
   );
+
+  const teamMembersById = useMemo(() => {
+    const result = new Map<number, { id: number; fullName: string }[]>();
+    for (const employee of employees) {
+      if (!employee.teamId) continue;
+      const current = result.get(employee.teamId) ?? [];
+      current.push({ id: employee.id, fullName: employee.fullName });
+      result.set(employee.teamId, current);
+    }
+    return result;
+  }, [employees]);
+
+  const tourMembersById = useMemo(() => {
+    const result = new Map<number, { id: number; fullName: string }[]>();
+    for (const employee of employees) {
+      if (!employee.tourId) continue;
+      const current = result.get(employee.tourId) ?? [];
+      current.push({ id: employee.id, fullName: employee.fullName });
+      result.set(employee.tourId, current);
+    }
+    return result;
+  }, [employees]);
 
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
@@ -501,6 +523,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                 id={selectedTour.id}
                 name={selectedTour.name}
                 color={selectedTour.color}
+                members={tourMembersById.get(selectedTour.id) ?? []}
                 action={isLocked ? "none" : "remove"}
                 onRemove={() => handleTourChange(null)}
                 fullWidth
@@ -519,6 +542,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                   id={tour.id}
                   name={tour.name}
                   color={tour.color}
+                  members={tourMembersById.get(tour.id) ?? []}
                   action={isLocked ? "none" : "add"}
                   onAdd={() => handleTourChange(tour.id)}
                   size="sm"
@@ -568,6 +592,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                 id={team.id}
                 name={team.name}
                 color={team.color}
+                members={teamMembersById.get(team.id) ?? []}
                 action={isLocked ? "none" : "add"}
                 onAdd={() => handleAssignTeam(team)}
                 size="sm"
@@ -633,6 +658,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
           <EmployeeListView
             employees={availableEmployees}
+            allEmployeesForBadgePreview={employees}
             teams={teams}
             tours={tours}
             isLoading={employeesLoading}

@@ -6,7 +6,7 @@ interface TeamInfoBadgeProps {
   id?: number | string | null;
   name: string;
   color?: string | null;
-  memberCount?: number | null;
+  members?: { id?: number | string; fullName: string }[] | null;
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
@@ -19,7 +19,7 @@ export function TeamInfoBadge({
   id,
   name,
   color,
-  memberCount,
+  members,
   action,
   onAdd,
   onRemove,
@@ -40,7 +40,7 @@ export function TeamInfoBadge({
       fullWidth={fullWidth}
       preview={createTeamInfoBadgePreview({
         name,
-        memberCount,
+        members,
       })}
     />
   );

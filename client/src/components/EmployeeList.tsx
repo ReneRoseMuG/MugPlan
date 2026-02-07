@@ -13,6 +13,7 @@ import type { Employee, Team, Tour } from "@shared/schema";
 
 interface EmployeeListViewProps {
   employees: Employee[];
+  allEmployeesForBadgePreview?: Employee[];
   teams: Team[];
   tours: Tour[];
   isLoading?: boolean;
@@ -31,6 +32,7 @@ type EmployeeListProps = Omit<EmployeeListViewProps, "employees" | "teams" | "to
 
 export function EmployeeListView({
   employees,
+  allEmployeesForBadgePreview,
   teams,
   tours,
   isLoading = false,
@@ -45,11 +47,34 @@ export function EmployeeListView({
   title,
 }: EmployeeListViewProps) {
   const [filters, setFilters] = useState(defaultEmployeeFilters);
+  const employeesForBadgePreview = allEmployeesForBadgePreview ?? employees;
 
   const filteredEmployees = useMemo(
     () => applyEmployeeFilters(employees, filters),
     [employees, filters],
   );
+
+  const teamMembersById = useMemo(() => {
+    const result = new Map<number, { id: number; fullName: string }[]>();
+    for (const employee of employeesForBadgePreview) {
+      if (!employee.teamId) continue;
+      const current = result.get(employee.teamId) ?? [];
+      current.push({ id: employee.id, fullName: employee.fullName });
+      result.set(employee.teamId, current);
+    }
+    return result;
+  }, [employeesForBadgePreview]);
+
+  const tourMembersById = useMemo(() => {
+    const result = new Map<number, { id: number; fullName: string }[]>();
+    for (const employee of employeesForBadgePreview) {
+      if (!employee.tourId) continue;
+      const current = result.get(employee.tourId) ?? [];
+      current.push({ id: employee.id, fullName: employee.fullName });
+      result.set(employee.tourId, current);
+    }
+    return result;
+  }, [employeesForBadgePreview]);
 
   const isPicker = mode === "picker";
   const resolvedTitle = title ?? "Mitarbeiter";
@@ -177,6 +202,7 @@ export function EmployeeListView({
                       id={tourInfo.id}
                       name={tourInfo.name}
                       color={tourInfo.color}
+                      members={tourMembersById.get(tourInfo.id) ?? []}
                       size="sm"
                       testId={`badge-employee-tour-${employee.id}`}
                     />
@@ -186,6 +212,7 @@ export function EmployeeListView({
                       id={teamInfo.id}
                       name={teamInfo.name}
                       color={teamInfo.color}
+                      members={teamMembersById.get(teamInfo.id) ?? []}
                       size="sm"
                       testId={`badge-employee-team-${employee.id}`}
                     />

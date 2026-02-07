@@ -6,7 +6,7 @@ interface TourInfoBadgeProps {
   id?: number | string | null;
   name: string;
   color?: string | null;
-  memberCount?: number | null;
+  members?: { id?: number | string; fullName: string }[] | null;
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
@@ -19,7 +19,7 @@ export function TourInfoBadge({
   id,
   name,
   color,
-  memberCount,
+  members,
   action,
   onAdd,
   onRemove,
@@ -40,7 +40,7 @@ export function TourInfoBadge({
       fullWidth={fullWidth}
       preview={createTourInfoBadgePreview({
         name,
-        memberCount,
+        members,
       })}
     />
   );

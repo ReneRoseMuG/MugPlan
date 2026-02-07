@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,11 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
     queryKey: ["/api/employees", selectedEmployeeId],
     queryFn: () => fetch(`/api/employees/${selectedEmployeeId}`).then(r => r.json()),
     enabled: !!selectedEmployeeId,
+  });
+
+  const { data: allEmployees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees", { active: "all" }],
+    queryFn: () => fetch("/api/employees?active=all").then((response) => response.json()),
   });
 
   const invalidateEmployees = () => {
@@ -144,6 +149,20 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   };
 
   const displayEmployee = isCreating ? null : employeeDetails;
+  const teamMembers = useMemo(() => {
+    if (!displayEmployee?.team?.id) return [];
+    return allEmployees
+      .filter((employee) => employee.teamId === displayEmployee.team?.id)
+      .map((employee) => ({ id: employee.id, fullName: employee.fullName }));
+  }, [allEmployees, displayEmployee?.team?.id]);
+
+  const tourMembers = useMemo(() => {
+    if (!displayEmployee?.tour?.id) return [];
+    return allEmployees
+      .filter((employee) => employee.tourId === displayEmployee.tour?.id)
+      .map((employee) => ({ id: employee.id, fullName: employee.fullName }));
+  }, [allEmployees, displayEmployee?.tour?.id]);
+
   const dialogTitle = isCreating 
     ? "Neuer Mitarbeiter" 
     : (displayEmployee ? `${displayEmployee.employee.lastName}, ${displayEmployee.employee.firstName}` : "Mitarbeiter Details");
@@ -273,6 +292,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     id={displayEmployee.tour.id}
                     name={displayEmployee.tour.name}
                     color={displayEmployee.tour.color}
+                    members={tourMembers}
                     fullWidth
                     testId="badge-employee-tour"
                   />
@@ -296,6 +316,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                     id={displayEmployee.team.id}
                     name={displayEmployee.team.name}
                     color={displayEmployee.team.color}
+                    members={teamMembers}
                     fullWidth
                     testId="badge-employee-team"
                   />
