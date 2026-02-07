@@ -8,6 +8,8 @@ import {
   insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
   insertProjectSchema, updateProjectSchema, projects,
   insertProjectAttachmentSchema, projectAttachments,
+  insertCustomerAttachmentSchema, customerAttachments,
+  insertEmployeeAttachmentSchema, employeeAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts
@@ -716,8 +718,7 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/project-attachments/:id',
       responses: {
-        204: z.void(),
-        404: errorSchemas.notFound,
+        405: errorSchemas.validation,
       },
     },
     download: {
@@ -752,6 +753,58 @@ export const api = {
       path: '/api/projects/:projectId/statuses/:statusId',
       responses: {
         204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  employeeAttachments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/employees/:employeeId/attachments',
+      responses: {
+        200: z.array(z.custom<typeof employeeAttachments.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/employees/:employeeId/attachments',
+      responses: {
+        201: z.custom<typeof employeeAttachments.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    download: {
+      method: 'GET' as const,
+      path: '/api/employee-attachments/:id/download',
+      responses: {
+        200: z.any(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  customerAttachments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/customers/:customerId/attachments',
+      responses: {
+        200: z.array(z.custom<typeof customerAttachments.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/customers/:customerId/attachments',
+      responses: {
+        201: z.custom<typeof customerAttachments.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    download: {
+      method: 'GET' as const,
+      path: '/api/customer-attachments/:id/download',
+      responses: {
+        200: z.any(),
         404: errorSchemas.notFound,
       },
     },

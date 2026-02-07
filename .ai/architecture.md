@@ -1,4 +1,4 @@
-# MuGPlan – Architektur (Ist‑Stand)
+﻿# MuGPlan – Architektur (Ist‑Stand)
 
 ## Ziel dieses Dokuments
 
@@ -603,3 +603,363 @@ Der Datenfluss beginnt im Home‑Bereich, der `currentDate` und `employeeFilterI
 Auf der Serverseite wird der Request in `appointmentsController.listCalendarAppointments` validiert, im Service aggregiert (`appointmentsService.listCalendarAppointments`) und in Repositories aufgelöst (`appointmentsRepository.*`, `projectStatusRepository.*`). Der Service reichert die Termine um Projekt, Kunde, Tour, Mitarbeiter, Projektstatus und Lock‑Flag an.
 
 Für neue Kalenderfeatures gilt die Leitplanke, dass zusätzliche darstellungsrelevante Informationen in dieser Aggregation ergänzt werden, statt neue View‑spezifische Zusatzrequests einzuführen.
+
+---
+
+# Teil D - Architektur-Erweiterung FT (18): User Settings mit Scopes GLOBAL/ROLE/USER
+
+Dieser Teil dokumentiert den nachträglich eingeführten Architekturstand für FT (18). Er ist bewusst explizit, weil das Feature mehrere Querschnittsaspekte berührt: Contract-First API, Scope-Auflösung, Rollenkanonisierung, Persistenzstrategie und Frontend-State-Modell.
+
+## D1. Zweck und Einordnung im Gesamtsystem
+
+FT (18) führt eine read-only Settings-Infrastruktur ein, deren Primärziel nicht ein sofortiger Edit-Flow ist, sondern ein belastbares Fundament für spätere Schreibpfade und generische Settings-UIs.
+
+Die Architekturentscheidung lautet: Settings werden serverseitig aufgelöst und als wirksame Werte inkl. Herkunft geliefert. Das Frontend berechnet keine Defaults, keine Scope-Priorisierung und keine Rollenlogik lokal.
+
+Damit bleibt die fachliche Wahrheit auf dem Server, konsistent mit den bestehenden Leitplanken für MuGPlan.
+
+## D2. Domaenenmodell für Settings
+
+Ein Setting ist ein Registry-definiertes Artefakt mit:
+
+- eindeutigem Key,
+- Typdefinition,
+- Defaultwert,
+- Validierung,
+- Anzeige-Metadaten,
+- erlaubten Scopes (`allowedScopes`).
+
+Das erste produktiv geführte Setting ist `attachmentPreviewSize` (Enum: `small|medium|large`, Default `medium`).
+
+## D3. Scope-Modell und deterministische Auflösung
+
+FT (18) nutzt drei Persistenz-Scopes:
+
+- `GLOBAL`
+- `ROLE`
+- `USER`
+
+Die wirksame Auflösung ist strikt und unveränderlich:
+
+1. `USER`
+2. `ROLE`
+3. `GLOBAL`
+4. `DEFAULT` (Registry)
+
+Damit ist das System deterministisch. Es gibt keine Mehrrollen-Prioritätsmatrix und keine konfigurierbare Auflösungsreihenfolge.
+
+## D4. Rollenquelle, Rollenkanonisierung und Determinismus
+
+Die Rollenquelle für FT (18) ist ausschließlich serverseitig:
+
+- User wird über `users` bestimmt,
+- Rolle über Relation `users.role_id -> roles.id`.
+
+Die DB-Codes bleiben wie im Schema: `READER`, `DISPATCHER`, `ADMIN`.
+
+Für API/Resolver wird auf die kanonische Menge gemappt:
+
+- `READER -> LESER`
+- `DISPATCHER -> DISPONENT`
+- `ADMIN -> ADMIN`
+
+Resolver und Frontend-Darstellung arbeiten danach mit den kanonischen Werten. Persistenz auf ROLE-Ebene bleibt beim DB-Code (siehe D5).
+
+Wenn kein valider User-Kontext oder keine eindeutig mappbare Rolle vorliegt, wird der Request abgelehnt, um deterministisches Verhalten zu garantieren.
+
+## D5. Persistenzarchitektur
+
+### D5.1 Tabelle
+
+Settingswerte werden in einer generischen Tabelle `user_settings_value` gespeichert, mit mindestens:
+
+- `setting_key`
+- `scope_type` (`GLOBAL|ROLE|USER`)
+- `scope_id`
+- `value_json`
+- `updated_at`
+- optional `updated_by`
+
+Unique-Constraint:
+
+- `(setting_key, scope_type, scope_id)`
+
+### D5.2 Scope-ID-Konventionen
+
+Konventionen sind hart und stackweit identisch:
+
+- GLOBAL: `scope_id = "global"` (kein `NULL`)
+- ROLE: `scope_id = DB-Rollencode` (`READER|DISPATCHER|ADMIN`)
+- USER: `scope_id = userId` (string-normalisiert)
+
+Diese Konvention verhindert ambige Persistenzzustände und reduziert Mapping-Komplexität im Repository.
+
+## D6. Contract-First API-Oberfläche
+
+Es wurde ein kombinierter Read-Endpunkt eingeführt:
+
+- `GET /api/user-settings/resolved`
+
+Die Response liefert pro Key:
+
+- Definition/Metadaten (z. B. `key`, `label`, `description`, `type`, `constraints`, `allowedScopes`)
+- Scope-Werte (`globalValue?`, `roleValue?`, `userValue?`)
+- `defaultValue`
+- `resolvedValue`
+- `resolvedScope` (`USER|ROLE|GLOBAL|DEFAULT`)
+- Rollentransparenz (`roleCode`, `roleKey`)
+
+Damit kann die UI die Herkunft eines wirksamen Werts transparent anzeigen, ohne Resolverlogik zu duplizieren.
+
+## D7. Backend-Schichten in FT (18)
+
+FT (18) wurde entlang der Standardtrennung umgesetzt:
+
+- Route: `server/routes/userSettingsRoutes.ts`
+- Controller: `server/controllers/userSettingsController.ts`
+- Service: `server/services/userSettingsService.ts`
+- Repository:
+  - `server/repositories/userSettingsRepository.ts` (Settings-Kandidaten)
+  - `server/repositories/usersRepository.ts` (User->Role Lookup)
+- Registry:
+  - `server/settings/registry.ts`
+
+Die Routenregistrierung erfolgt zentral in `server/routes.ts`, konsistent mit dem restlichen System.
+
+## D8. User-Kontext und aktueller Übergangsstatus
+
+Die Zielarchitektur sieht echten Auth-Kontext vor (`req.userId` aus Auth-Middleware). Im aktuellen Ist-Stand von FT (18) wird `req.userId` übergangsweise über `SETTINGS_USER_ID` gesetzt (`requestUserContext`), damit die Resolverstrecke gegen reale DB-Daten testbar bleibt.
+
+Wichtig: Trotz Übergang ist die Rollenauflösung selbst DB-basiert und nicht aus Client-Headern abgeleitet.
+
+## D9. Frontend-Architektur für read-only Settings
+
+FT (18) erweitert das Frontend um einen zentralen Server-State-Zugriff:
+
+- `SettingsProvider` als globaler Provider über React Query.
+- `useSettings`/`useSetting` als standardisierte Hook-Oberfläche.
+- `SettingsPage` als read-only Landing-Page.
+
+Integration erfolgt über den bestehenden Menüpunkt "Einstellungen" im vorhandenen Home/View-Flow. Es wurde kein paralleler Navigationspfad eingeführt.
+
+## D10. Architekturelle Leitplanken für Folgeschritte
+
+Für spätere Write-Flows gilt:
+
+- Scope-Berechtigung weiterhin serverseitig erzwingen.
+- `allowedScopes` strikt respektieren (keine implizite Freigabe von USER-Overrides für GLOBAL-only Keys).
+- ROLE-Persistenz weiterhin über DB-Code halten, API aber kanonisch für UI ausgeben.
+- Keine Frontend-Defaultberechnung einführen.
+
+Damit bleibt das Settings-System konsistent mit MuGPlan-Prinzipien: Contract-First, Server als Wahrheit, klar getrennte Schichten.
+
+
+---
+
+# Teil E - Architektur-Erweiterung FT (19): Attachments für Customer und Employee, zentraler Download, Delete deaktiviert
+
+Dieser Teil dokumentiert den Architekturstand nach Einführung von Customer- und Employee-Attachments. Er ergänzt das bestehende Projekt-Attachment-Modell, ohne dessen Grundprinzip zu verlassen.
+
+## E1. Zielbild und Einordnung
+
+FT (19) erweitert die bestehende Attachment-Funktion von Projekten auf zwei zusätzliche Domänenobjekte:
+
+- Customer
+- Employee
+
+Die zentrale Leitentscheidung lautet: Attachments bleiben domaingebundene Datensätze mit eigenen Tabellen je Parent-Typ. Es wurde keine polymorphe Link-Tabelle eingeführt.
+
+Gleichzeitig wurden zwei semantische Regeln systemweit vereinheitlicht:
+
+- Download ist in allen Attachment-Domänen verfügbar und folgt derselben Header-/Disposition-Logik.
+- Löschung von Attachments ist auf API-Ebene deaktiviert, damit eine technische Löschung nicht mehr möglich ist.
+
+## E2. Domaenenmodell und Persistenzstrategie
+
+Die Persistenz folgt dem bereits etablierten Muster von `project_attachment` und erweitert es um:
+
+- `customer_attachment`
+- `employee_attachment`
+
+Jede Tabelle trägt die Dateimetadaten direkt im Datensatz:
+
+- technische Dateiname (`filename`)
+- Originalname (`original_name`)
+- MIME-Typ (`mime_type`)
+- Dateigröße (`file_size`)
+- Dateipfad (`storage_path`)
+- Erstellzeitpunkt (`created_at`)
+
+Jede Tabelle besitzt einen eigenen Foreign Key auf das Parent-Objekt:
+
+- `customer_attachment.customer_id -> customer.id` mit `ON DELETE CASCADE`
+- `employee_attachment.employee_id -> employee.id` mit `ON DELETE CASCADE`
+
+Damit bleibt das Modell konsistent zur bisherigen projektspezifischen Attachment-Architektur. Die Entscheidung priorisiert eindeutige Semantik pro Domäne und vermeidet implizite Typdisambiguierung in Storage- und API-Pfaden.
+
+## E3. API-Oberfläche und Contract-First-Fortführung
+
+Die API wurde contract-first im zentralen Contract-Index erweitert. Neu sind:
+
+- `GET /api/customers/:customerId/attachments`
+- `POST /api/customers/:customerId/attachments`
+- `GET /api/customer-attachments/:id/download`
+- `GET /api/employees/:employeeId/attachments`
+- `POST /api/employees/:employeeId/attachments`
+- `GET /api/employee-attachments/:id/download`
+
+Die Projekt-Attachment-Endpoints bleiben für Listing und Upload bestehen.
+
+Der bestehende Projekt-Delete-Pfad bleibt als Route vorhanden, ist jedoch fachlich deaktiviert und antwortet mit einer klaren Blockierungsantwort (`405` / Message: `"Attachment deletion is disabled"`). Für Customer und Employee wurden von Anfang an keine Delete-Contracts eingeführt.
+
+Diese Entscheidung sichert, dass Löschung nicht nur in der UI fehlt, sondern serverseitig technisch nicht erlaubt ist.
+
+## E4. Download-Architektur: zentrale Streaming-Logik
+
+Statt Download-Logik in mehreren Controllern zu duplizieren, wurde ein gemeinsamer Streaming-Pfad eingeführt. Die Domänencontroller laden nur den Attachment-Datensatz aus dem jeweils passenden Repository und delegieren an eine zentrale Download-Funktion.
+
+Die zentrale Funktion benötigt ausschließlich Metadaten:
+
+- `mimeType`
+- `storagePath`
+- `originalName`
+- `forceDownload` (aus Query-Flag `download=1`)
+
+Die Disposition-Regel ist domänenübergreifend identisch:
+
+- Standard: `inline` für PDF und Bilder
+- Standard: `attachment` für alle anderen Typen
+- `?download=1` erzwingt `attachment`
+
+Damit ist Verhalten in Preview, Öffnen und Download für Projekt, Customer und Employee konsistent.
+
+## E5. Upload-Architektur und Sicherheits-/Validierungsregeln
+
+Upload bleibt auf dem bestehenden technischen Pfad:
+
+- Multipart mit Feldname `file`
+- 10 MB Maximalgröße
+- gleicher Parser und gleiche Fehlersemantik bei Überschreitung
+- identische MIME-Ableitung und Dateinamens-Sanitization
+- gemeinsamer Upload-Ordner (`server/uploads`)
+
+Die Domänencontroller unterscheiden sich nur im Parent-Identifier und dem Zielrepository. Dadurch bleibt der technische Pfad einheitlich und regressionsarm.
+
+## E6. Schichtenlandkarte (End-to-End)
+
+Die End-to-End-Kette ist für alle drei Attachment-Domänen strukturgleich:
+
+`Contract -> Route -> Controller -> Service -> Repository -> DB/Storage`
+
+### E6.1 Projekt
+
+- Contract: `api.projectAttachments.*`
+- Route: `server/routes/projectAttachmentsRoutes.ts`
+- Controller: `server/controllers/projectAttachmentsController.ts`
+- Service: `server/services/projectAttachmentsService.ts`
+- Repository: `server/repositories/projectsRepository.ts`
+
+### E6.2 Customer
+
+- Contract: `api.customerAttachments.*`
+- Route: `server/routes/customerAttachmentsRoutes.ts`
+- Controller: `server/controllers/customerAttachmentsController.ts`
+- Service: `server/services/customerAttachmentsService.ts`
+- Repository: `server/repositories/customersRepository.ts`
+
+### E6.3 Employee
+
+- Contract: `api.employeeAttachments.*`
+- Route: `server/routes/employeeAttachmentsRoutes.ts`
+- Controller: `server/controllers/employeeAttachmentsController.ts`
+- Service: `server/services/employeeAttachmentsService.ts`
+- Repository: `server/repositories/employeesRepository.ts`
+
+Die zentrale Download- und Dateihandhabungslogik sitzt als Querschnittskomponente in `server/lib` und wird von allen drei Controllern genutzt.
+
+## E7. Frontend-Architektur: Wrapper-Muster und generisches Panel
+
+Die Frontend-Umsetzung folgt dem bereits etablierten Wrapper-Prinzip:
+
+- ein generisches strukturelles Panel ohne domänenspezifische API-Logik
+- domänenspezifische Wrapper mit Query-Key, Upload-Mutation und URL-Building
+
+Damit bleibt die UI-Kompositionsschicht schlank und wiederverwendbar.
+
+Neu ist ein generisches `AttachmentsPanel`, das nur mit Daten und Callback-Props arbeitet. Darauf aufbauend kapseln Wrapper die Domänenanbindung:
+
+- `ProjectAttachmentsPanel`
+- `CustomerAttachmentsPanel`
+- `EmployeeAttachmentsPanel`
+
+Die Wrapper liefern:
+
+- Attachment-Liste (React Query)
+- Upload-Mutation
+- `buildOpenUrl(id)`
+- `buildDownloadUrl(id)`
+
+Delete wird bewusst nicht gerendert und nicht angeboten.
+
+## E8. Query- und Invalidation-Strategie
+
+Die Query-Keys bleiben domänenspezifisch und stabil:
+
+- Projekt: `["/api/projects", projectId, "attachments"]`
+- Customer: `["/api/customers", customerId, "attachments"]`
+- Employee: `["/api/employees", employeeId, "attachments"]`
+
+Nach Upload invalidiert jeder Wrapper ausschließlich den eigenen Domänenkey. Damit bleibt die Cache-Erneuerung gezielt und konsistent mit den React-Query-Leitplanken.
+
+## E9. UI-Semantik und Benutzerverhalten
+
+Die sichtbaren UI-Zustände bleiben in allen drei Domänen identisch:
+
+- Loading-Zustand
+- leerer Zustand
+- Liste vorhandener Attachments
+- Upload-Fehler als Toast
+
+Für jedes Item stehen zwei Aktionen zur Verfügung:
+
+- Öffnen/Preview (`openUrl`)
+- erzwungener Download (`downloadUrl` mit `download=1`)
+
+Eine Löschaktion wird nicht mehr angezeigt.
+
+## E10. Semantische Klarstellung: Delete deaktiviert
+
+Architektonisch gilt für FT (19):
+
+- Attachments sind derzeit nicht löschbar.
+- Die API verhindert Löschung aktiv.
+- UI-Verzicht allein reicht nicht, serverseitige Blockierung ist verpflichtend.
+
+Damit ist die Nicht-Löschbarkeit als technische Invariante verankert und nicht nur als UI-Konvention.
+
+## E11. Migrations- und Rollout-Hinweise
+
+Die Einführung umfasst:
+
+- Schema-Erweiterungen in `shared/schema.ts`
+- SQL-Migration mit neuen Tabellen und FK-Constraints
+- Contracts in `shared/routes.ts`
+- neue Route-/Controller-/Service-Module
+- Frontend-Wrapper und Integration in Customer- und Employee-Screens
+
+Der Rollout ist additive und minimalinvasiv. Bestehende Projekt-Listing/Upload/Download-Flows bleiben funktionsgleich; nur Delete-Verhalten wurde bewusst geändert.
+
+## E12. Offene Folgefragen (bewusst nicht in FT 19 gelöst)
+
+Folgende Punkte sind bewusst als Follow-up gekennzeichnet:
+
+- Datenhygiene für physische Dateien bei künftig möglicher Löschung
+- optionales Archiv-/Retention-Konzept für Attachments
+- feinere Berechtigungsregeln pro Attachment-Domäne
+- mögliche zentrale Download-Auditierung
+
+Diese Punkte sind architekturell anschlussfähig, aber nicht Teil des aktuellen Scopes.
+
+
+
+

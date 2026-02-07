@@ -1,10 +1,15 @@
 import { FileText, Image as ImageIcon, Paperclip } from "lucide-react";
-import type { ProjectAttachment } from "@shared/schema";
 import { InfoBadge } from "@/components/ui/info-badge";
 import { createAttachmentInfoBadgePreview } from "@/components/ui/badge-previews/attachment-info-badge-preview";
 
+export interface AttachmentBadgeItem {
+  id: number;
+  originalName: string;
+  mimeType: string | null;
+}
+
 interface AttachmentInfoBadgeProps {
-  attachment: ProjectAttachment;
+  attachment: AttachmentBadgeItem;
   onRemove?: () => void;
   actionDisabled?: boolean;
   downloadUrl: string;
@@ -12,7 +17,7 @@ interface AttachmentInfoBadgeProps {
   testId?: string;
 }
 
-function resolveAttachmentIcon(attachment: ProjectAttachment) {
+function resolveAttachmentIcon(attachment: AttachmentBadgeItem) {
   const mimeType = attachment.mimeType ?? "";
   const name = attachment.originalName.toLowerCase();
   const isPdf = mimeType === "application/pdf" || name.endsWith(".pdf");
@@ -39,7 +44,7 @@ export function AttachmentInfoBadge({
     <InfoBadge
       icon={resolveAttachmentIcon(attachment)}
       label={<span className="truncate">{attachment.originalName}</span>}
-      action="remove"
+      action={onRemove ? "remove" : "none"}
       onRemove={onRemove}
       actionDisabled={actionDisabled}
       fullWidth

@@ -1,29 +1,27 @@
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import type { CustomerAttachment } from "@shared/schema";
 import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { ProjectAttachment } from "@shared/schema";
 
-interface ProjectAttachmentsPanelProps {
-  projectId?: number | null;
-  isEditing: boolean;
+interface CustomerAttachmentsPanelProps {
+  customerId?: number | null;
 }
 
-export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachmentsPanelProps) {
+export function CustomerAttachmentsPanel({ customerId }: CustomerAttachmentsPanelProps) {
   const { toast } = useToast();
-
-  const { data: attachments = [], isLoading } = useQuery<ProjectAttachment[]>({
-    queryKey: ["/api/projects", projectId, "attachments"],
-    enabled: isEditing && Boolean(projectId),
+  const { data: attachments = [], isLoading } = useQuery<CustomerAttachment[]>({
+    queryKey: ["/api/customers", customerId, "attachments"],
+    enabled: Boolean(customerId),
   });
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      if (!projectId) throw new Error("Projekt fehlt");
+      if (!customerId) throw new Error("Kunde fehlt");
       const formData = new FormData();
       formData.append("file", file);
-      const response = await fetch(`/api/projects/${projectId}/attachments`, {
+      const response = await fetch(`/api/customers/${customerId}/attachments`, {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -35,7 +33,7 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "attachments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "attachments"] });
       toast({ title: "Dokument hochgeladen" });
     },
     onError: (error) => {
@@ -51,11 +49,11 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
       title="Dokumente"
       items={items}
       isLoading={isLoading}
-      canUpload={isEditing && Boolean(projectId)}
+      canUpload={Boolean(customerId)}
       isUploading={uploadMutation.isPending}
       onUpload={(file) => uploadMutation.mutate(file)}
-      buildOpenUrl={(id) => `/api/project-attachments/${id}/download`}
-      buildDownloadUrl={(id) => `/api/project-attachments/${id}/download?download=1`}
+      buildOpenUrl={(id) => `/api/customer-attachments/${id}/download`}
+      buildDownloadUrl={(id) => `/api/customer-attachments/${id}/download?download=1`}
     />
   );
 }

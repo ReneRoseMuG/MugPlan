@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmployeeAppointmentsPanel } from "@/components/EmployeeAppointmentsPanel";
+import { EmployeeAttachmentsPanel } from "@/components/EmployeeAttachmentsPanel";
 import { EmployeeList } from "@/components/EmployeeList";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
@@ -280,6 +281,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
                 employeeId={selectedEmployeeId}
                 employeeName={displayEmployee?.employee.fullName ?? null}
               />
+              {!isCreating && <EmployeeAttachmentsPanel employeeId={selectedEmployeeId} />}
 
               {/* Tour card (read-only) */}
               <div className="space-y-2">

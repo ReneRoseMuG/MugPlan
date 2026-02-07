@@ -1,6 +1,14 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db } from "../db";
-import { employees, type Employee, type InsertEmployee, type UpdateEmployee } from "@shared/schema";
+import {
+  employeeAttachments,
+  employees,
+  type Employee,
+  type EmployeeAttachment,
+  type InsertEmployee,
+  type InsertEmployeeAttachment,
+  type UpdateEmployee,
+} from "@shared/schema";
 
 export async function getEmployees(filter: "active" | "inactive" | "all" = "active"): Promise<Employee[]> {
   if (filter === "all") {
@@ -79,4 +87,30 @@ export async function setEmployeeTeam(employeeId: number, teamId: number | null)
     .where(eq(employees.id, employeeId));
   const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
   return employee || null;
+}
+
+export async function getEmployeeAttachments(employeeId: number): Promise<EmployeeAttachment[]> {
+  return db
+    .select()
+    .from(employeeAttachments)
+    .where(eq(employeeAttachments.employeeId, employeeId))
+    .orderBy(desc(employeeAttachments.createdAt));
+}
+
+export async function getEmployeeAttachmentById(id: number): Promise<EmployeeAttachment | null> {
+  const [attachment] = await db
+    .select()
+    .from(employeeAttachments)
+    .where(eq(employeeAttachments.id, id));
+  return attachment ?? null;
+}
+
+export async function createEmployeeAttachment(data: InsertEmployeeAttachment): Promise<EmployeeAttachment> {
+  const result = await db.insert(employeeAttachments).values(data);
+  const insertId = (result as any)[0].insertId;
+  const [attachment] = await db
+    .select()
+    .from(employeeAttachments)
+    .where(eq(employeeAttachments.id, insertId));
+  return attachment;
 }

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import type { InsertProjectAttachment } from "@shared/schema";
+import type { InsertCustomerAttachment } from "@shared/schema";
 import { sendAttachmentDownload } from "../lib/attachmentDownload";
 import {
   MAX_UPLOAD_BYTES,
@@ -9,23 +9,27 @@ import {
   writeAttachmentBuffer,
 } from "../lib/attachmentFiles";
 import { parseMultipartFile } from "../lib/multipart";
-import * as projectAttachmentsService from "../services/projectAttachmentsService";
+import * as customerAttachmentsService from "../services/customerAttachmentsService";
 
-export async function listProjectAttachments(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function listCustomerAttachments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const projectId = Number(req.params.projectId);
-    const attachments = await projectAttachmentsService.listProjectAttachments(projectId);
+    const customerId = Number(req.params.customerId);
+    if (!Number.isFinite(customerId)) {
+      res.status(400).json({ message: "Ungültige customerId" });
+      return;
+    }
+    const attachments = await customerAttachmentsService.listCustomerAttachments(customerId);
     res.json(attachments);
   } catch (err) {
     next(err);
   }
 }
 
-export async function createProjectAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function createCustomerAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const projectId = Number(req.params.projectId);
-    if (!Number.isFinite(projectId)) {
-      res.status(400).json({ message: "Ungültige projectId" });
+    const customerId = Number(req.params.customerId);
+    if (!Number.isFinite(customerId)) {
+      res.status(400).json({ message: "Ungültige customerId" });
       return;
     }
 
@@ -38,8 +42,8 @@ export async function createProjectAttachment(req: Request, res: Response, next:
     const uniqueName = buildStoredFilename(originalName);
     const storagePath = writeAttachmentBuffer(uniqueName, parsed.buffer);
 
-    const attachmentData: InsertProjectAttachment = {
-      projectId,
+    const attachmentData: InsertCustomerAttachment = {
+      customerId,
       filename: uniqueName,
       originalName,
       mimeType: resolveMimeType(originalName, parsed.contentType),
@@ -47,7 +51,7 @@ export async function createProjectAttachment(req: Request, res: Response, next:
       storagePath,
     };
 
-    const created = await projectAttachmentsService.createProjectAttachment(attachmentData);
+    const created = await customerAttachmentsService.createCustomerAttachment(attachmentData);
     res.status(201).json(created);
   } catch (err) {
     if (err instanceof Error && err.message === "Payload too large") {
@@ -58,18 +62,20 @@ export async function createProjectAttachment(req: Request, res: Response, next:
   }
 }
 
-export async function downloadProjectAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function downloadCustomerAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
       res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
-    const attachment = await projectAttachmentsService.getProjectAttachmentById(attachmentId);
+
+    const attachment = await customerAttachmentsService.getCustomerAttachmentById(attachmentId);
     if (!attachment) {
       res.status(404).json({ message: "Anhang nicht gefunden" });
       return;
     }
+
     const forceDownload = req.query.download === "1";
     sendAttachmentDownload(
       res,
@@ -80,15 +86,6 @@ export async function downloadProjectAttachment(req: Request, res: Response, nex
       },
       forceDownload,
     );
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function deleteProjectAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    // Deletion is intentionally disabled system-wide.
-    res.status(405).json({ message: "Attachment deletion is disabled" });
   } catch (err) {
     next(err);
   }

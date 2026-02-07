@@ -9,6 +9,7 @@ import { User, Phone, MapPin } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
+import { CustomerAttachmentsPanel } from "@/components/CustomerAttachmentsPanel";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -343,6 +344,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
             customerId={customerId}
             customerName={customer?.fullName ?? null}
           />
+
+          {isEditMode && <CustomerAttachmentsPanel customerId={customerId} />}
         </div>
       </div>
     </EntityFormLayout>
