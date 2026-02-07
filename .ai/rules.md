@@ -1,4 +1,4 @@
-# Leitplanken für Coding Agents – KI‑gestützte Webentwicklung
+﻿# Leitplanken für Coding Agents – KI‑gestützte Webentwicklung
 
 Dieses Dokument definiert verbindliche Leitplanken für **Coding Agents** (z. B. Codex, Copilot, Replit oder vergleichbare Werkzeuge), die im Auftrag eines Orchestrators Code erzeugen oder ändern.
 
@@ -11,6 +11,10 @@ Coding Agents sind **ausführende Werkzeuge**. Sie treffen keine eigenständigen
 Ein Coding Agent arbeitet ausschließlich auf Basis eines expliziten Arbeitsauftrags. Er interpretiert diesen Auftrag nicht kreativ, erweitert ihn nicht eigenmächtig und schränkt ihn nicht selbstständig ein.
 
 Wenn ein Auftrag unklar, widersprüchlich oder ohne Annahmen nicht umsetzbar ist, bricht der Coding Agent die Umsetzung kontrolliert ab und dokumentiert den Blocker, statt still Entscheidungen zu treffen.
+
+## Workflow-Auswahl
+Standard ist der **Kurzpfad** (direkte Umsetzung ohne formales Plan/Review).  
+Der **Vollpfad** (Plan → Plan-Review → Umsetzung → Arch-Review) gilt **nur**, wenn der Auftrag explizit entsprechend gekennzeichnet ist (z. B. `FULL` oder `Plan+Review+Arch`).
 
 ---
 
@@ -114,5 +118,4 @@ Eine Aufgabe gilt als abgeschlossen, wenn:
 - und keine stillen Nebenwirkungen eingeführt wurden.
 
 Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie ebenfalls als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.
-
 
