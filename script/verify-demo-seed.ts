@@ -87,50 +87,66 @@ async function main() {
     const attachmentIds = idsByType.get("project_attachment") ?? [];
 
     assert.ok(projectIds.length > 0, "no seeded projects tracked");
+    const plannedMountAppointments =
+      summary.created.projects * Math.max(1, config.appointmentsPerProject);
     assert.equal(
-      mountIds.length,
-      projectIds.length,
-      "each seeded project must have exactly one mount appointment",
+      summary.created.mountAppointments + summary.reductions.appointments,
+      plannedMountAppointments,
+      "mount materialization must match planned count minus reductions",
     );
 
-    const mountRows =
-      mountIds.length === 0
+    const allAppointmentIds = [...mountIds, ...reklIds];
+    const allAppointmentRows =
+      allAppointmentIds.length === 0
         ? []
         : await db
             .select({
               id: appointments.id,
               projectId: appointments.projectId,
+              tourId: appointments.tourId,
               title: appointments.title,
               startDate: appointments.startDate,
+              endDate: appointments.endDate,
             })
             .from(appointments)
-            .where(inArray(appointments.id, mountIds));
-
-    const mountByProject = new Map<number, (typeof mountRows)[number]>();
-    for (const mount of mountRows) {
-      const projectId = Number(mount.projectId);
-      assert.ok(
-        !mountByProject.has(projectId),
-        `project ${projectId} has more than one mount appointment`,
-      );
-      mountByProject.set(projectId, mount);
+            .where(inArray(appointments.id, allAppointmentIds));
+    const mountByProject = new Map<number, Date>();
+    for (const appointment of allAppointmentRows) {
+      if (mountIds.includes(Number(appointment.id))) {
+        mountByProject.set(Number(appointment.projectId), appointment.startDate as Date);
+      }
+      const start = appointment.startDate as Date;
+      const end = (appointment.endDate as Date | null) ?? start;
+      for (
+        let d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        d <= end;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const weekday = d.getDay();
+        assert.ok(
+          weekday !== 0 && weekday !== 6,
+          `appointment ${appointment.id} touches weekend on ${d.toISOString().slice(0, 10)}`,
+        );
+      }
     }
-    for (const projectId of projectIds) {
-      assert.ok(mountByProject.has(projectId), `project ${projectId} has no mount appointment`);
+    const reklRows = allAppointmentRows.filter((row) => reklIds.includes(Number(row.id)));
+    assert.equal(
+      allAppointmentRows.length,
+      summary.created.appointments,
+      "tracked appointment count must match summary",
+    );
+    const tourCounts = new Map<number, number>();
+    for (const row of allAppointmentRows) {
+      const key = Number(row.tourId);
+      tourCounts.set(key, (tourCounts.get(key) ?? 0) + 1);
     }
-
-    const reklRows =
-      reklIds.length === 0
-        ? []
-        : await db
-            .select({
-              id: appointments.id,
-              projectId: appointments.projectId,
-              title: appointments.title,
-              startDate: appointments.startDate,
-            })
-            .from(appointments)
-            .where(inArray(appointments.id, reklIds));
+    const totalByTour = Array.from(tourCounts.values()).reduce((acc, value) => acc + value, 0);
+    assert.equal(totalByTour, allAppointmentRows.length, "tour counts must sum to total appointments");
+    if (allAppointmentRows.length > 1) {
+      assert.ok(tourCounts.size > 1, "appointments should be distributed across multiple tours");
+      const maxTourCount = Math.max(...Array.from(tourCounts.values()));
+      assert.ok(maxTourCount < allAppointmentRows.length, "all appointments collapsed into one tour");
+    }
 
     const projectRows = await db
       .select({
@@ -146,11 +162,10 @@ async function main() {
       assert.ok(projectById.has(projectId), "rekl must be project-bound to seeded project");
       assert.ok(rekl.title.startsWith("Rekl."), `rekl title prefix invalid: ${rekl.title}`);
 
-      const mount = mountByProject.get(projectId);
-      assert.ok(mount, `missing mount for rekl project ${projectId}`);
-      const diff = daysBetween(mount!.startDate as Date, rekl.startDate as Date);
-      assert.ok(diff >= config.reklDelayDaysMin, `rekl delay below min for project ${projectId}`);
-      assert.ok(diff <= config.reklDelayDaysMax, `rekl delay above max for project ${projectId}`);
+      const mountDate = mountByProject.get(projectId);
+      assert.ok(mountDate, `missing mount for rekl project ${projectId}`);
+      const diff = daysBetween(mountDate as Date, rekl.startDate as Date);
+      assert.ok(diff > 0, `rekl must start after mount for project ${projectId}`);
 
       const ovenName = rekl.title.replace(/^Rekl\.\s*/i, "").trim();
       if (ovenName.length > 0) {

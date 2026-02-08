@@ -1,4 +1,4 @@
-﻿import { and, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { roles, users } from "@shared/schema";
 import { assertDbRoleCode, type DbRoleCode } from "../settings/registry";
@@ -21,13 +21,3 @@ export async function getActiveUserRoleCodeByUserId(userId: number): Promise<DbR
   return normalizedCode;
 }
 
-export async function listActiveUserIds(limit = 10): Promise<number[]> {
-  const rows = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.isActive, true))
-    .orderBy(users.id)
-    .limit(limit);
-
-  return rows.map((row) => row.id);
-}

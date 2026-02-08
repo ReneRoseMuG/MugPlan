@@ -19,6 +19,7 @@ import * as projectStatusService from "./projectStatusService";
 import * as teamsService from "./teamsService";
 import * as toursService from "./toursService";
 import * as employeesRepository from "../repositories/employeesRepository";
+import * as usersRepository from "../repositories/usersRepository";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as projectAttachmentsService from "./projectAttachmentsService";
 import * as demoSeedRepository from "../repositories/demoSeedRepository";
@@ -128,6 +129,36 @@ type PurgeSummary = {
   noOp: boolean;
 };
 
+type DurationDays = 1 | 2 | 3;
+type IntentKind = "mount" | "rekl";
+
+type ProjectSeedContext = {
+  projectId: number;
+  model: SaunaModelRow;
+  selectedOven: OvenRow | null;
+};
+
+type AppointmentIntent = {
+  seq: number;
+  kind: IntentKind;
+  project: ProjectSeedContext;
+  tourId: number;
+  durationDays: DurationDays;
+  weekIndex: number;
+  delayDays?: number;
+  baseDate?: Date;
+};
+
+type MaterializedAppointment = {
+  id: number;
+  kind: IntentKind;
+  project: ProjectSeedContext;
+  startDate: Date;
+  tourId: number;
+};
+
+type InternalSeedConfig = ReturnType<typeof defaults>;
+
 function createBadRequestError(message: string) {
   const err = new Error(message) as Error & { status?: number };
   err.status = 400;
@@ -206,6 +237,12 @@ function defaults(config: SeedConfig) {
     reklDelayDaysMax: config.reklDelayDaysMax ?? 42,
     reklShare: config.reklShare ?? 0.33,
     locale: config.locale ?? "de",
+    durationWeights: {
+      1: 0.55,
+      2: 0.30,
+      3: 0.15,
+    } as const,
+    tourScatter: 0.8,
   };
 }
 
@@ -241,14 +278,51 @@ function resolveSelectedOven(
   modelId: string,
   ovenById: Map<string, OvenRow>,
   ovenIdsForModel: string[],
+  allOvens: OvenRow[],
 ) {
-  if (ovenIdsForModel.length === 0) return null;
-  const index = hashInt(`${seedRunId}:${modelId}`) % ovenIdsForModel.length;
-  const selectedId = ovenIdsForModel[index];
-  return ovenById.get(selectedId) ?? null;
+  if (ovenIdsForModel.length > 0) {
+    const index = hashInt(`${seedRunId}:${modelId}`) % ovenIdsForModel.length;
+    const selectedId = ovenIdsForModel[index];
+    const mapped = ovenById.get(selectedId);
+    if (mapped) return mapped;
+  }
+  if (allOvens.length === 0) return null;
+  const fallbackIndex = hashInt(`${seedRunId}:${modelId}:fallback`) % allOvens.length;
+  return allOvens[fallbackIndex] ?? null;
 }
 
-async function resolveSeedTemplates(warnings: string[]) {
+function uniqueNumberList(values: number[]) {
+  return Array.from(new Set(values.filter((value) => Number.isFinite(value) && value > 0)));
+}
+
+function templateKeyCandidates(baseKey: string, locale: string) {
+  const normalizedLocale = locale.trim().toLowerCase();
+  const candidates = [
+    `${baseKey}.${normalizedLocale}`,
+    `${baseKey}_${normalizedLocale}`,
+    baseKey,
+    `${baseKey}.default`,
+    `${baseKey}_default`,
+  ];
+  return Array.from(new Set(candidates));
+}
+
+function pickTemplateValue(
+  byKey: Map<string, unknown>,
+  baseKey: string,
+  locale: string,
+  fallback: string,
+) {
+  for (const key of templateKeyCandidates(baseKey, locale)) {
+    const value = byKey.get(key);
+    if (typeof value === "string" && value.trim().length > 0) {
+      return String(value);
+    }
+  }
+  return fallback;
+}
+
+async function resolveSeedTemplates(seedRunId: string, locale: string) {
   const defaultTemplates = {
     [TEMPLATE_KEYS.projectTitle]: "{sauna_model_name}",
     [TEMPLATE_KEYS.projectDescription]: `- Modell: {sauna_model_name}
@@ -271,37 +345,51 @@ async function resolveSeedTemplates(warnings: string[]) {
     [TEMPLATE_KEYS.reklTitle]: "Rekl. {oven_name}",
   };
 
-  const userId = Number(process.env.SETTINGS_USER_ID ?? "1");
-  if (!Number.isFinite(userId) || userId <= 0) {
-    warnings.push("SETTINGS_USER_ID ungueltig; verwende Template-Defaults.");
-    return defaultTemplates;
+  const configuredUserId = Number(process.env.SETTINGS_USER_ID ?? "1");
+  const fallbackUserIds = await usersRepository.listActiveUserIds(10);
+  const candidateUserIds = uniqueNumberList([configuredUserId, 1, ...fallbackUserIds]);
+
+  for (const candidateUserId of candidateUserIds) {
+    try {
+      const resolved = await userSettingsService.getResolvedSettingsForUser(candidateUserId);
+      const byKey = new Map(resolved.map((row) => [row.key, row.resolvedValue]));
+      return {
+        [TEMPLATE_KEYS.projectTitle]: pickTemplateValue(
+          byKey,
+          TEMPLATE_KEYS.projectTitle,
+          locale,
+          defaultTemplates[TEMPLATE_KEYS.projectTitle],
+        ),
+        [TEMPLATE_KEYS.projectDescription]: pickTemplateValue(
+          byKey,
+          TEMPLATE_KEYS.projectDescription,
+          locale,
+          defaultTemplates[TEMPLATE_KEYS.projectDescription],
+        ),
+        [TEMPLATE_KEYS.mountTitle]: pickTemplateValue(
+          byKey,
+          TEMPLATE_KEYS.mountTitle,
+          locale,
+          defaultTemplates[TEMPLATE_KEYS.mountTitle],
+        ),
+        [TEMPLATE_KEYS.reklTitle]: pickTemplateValue(
+          byKey,
+          TEMPLATE_KEYS.reklTitle,
+          locale,
+          defaultTemplates[TEMPLATE_KEYS.reklTitle],
+        ),
+      };
+    } catch {
+      // Try next candidate user context.
+    }
   }
 
-  try {
-    const resolved = await userSettingsService.getResolvedSettingsForUser(userId);
-    const byKey = new Map(resolved.map((row) => [row.key, row.resolvedValue]));
-    return {
-      [TEMPLATE_KEYS.projectTitle]:
-        typeof byKey.get(TEMPLATE_KEYS.projectTitle) === "string"
-          ? String(byKey.get(TEMPLATE_KEYS.projectTitle))
-          : defaultTemplates[TEMPLATE_KEYS.projectTitle],
-      [TEMPLATE_KEYS.projectDescription]:
-        typeof byKey.get(TEMPLATE_KEYS.projectDescription) === "string"
-          ? String(byKey.get(TEMPLATE_KEYS.projectDescription))
-          : defaultTemplates[TEMPLATE_KEYS.projectDescription],
-      [TEMPLATE_KEYS.mountTitle]:
-        typeof byKey.get(TEMPLATE_KEYS.mountTitle) === "string"
-          ? String(byKey.get(TEMPLATE_KEYS.mountTitle))
-          : defaultTemplates[TEMPLATE_KEYS.mountTitle],
-      [TEMPLATE_KEYS.reklTitle]:
-        typeof byKey.get(TEMPLATE_KEYS.reklTitle) === "string"
-          ? String(byKey.get(TEMPLATE_KEYS.reklTitle))
-          : defaultTemplates[TEMPLATE_KEYS.reklTitle],
-    };
-  } catch {
-    warnings.push("Template-Settings konnten nicht aufgeloest werden; verwende Defaults.");
-    return defaultTemplates;
-  }
+  console.info(`${logPrefix} template settings fallback defaults`, {
+    seedRunId,
+    locale,
+    candidateUserIds,
+  });
+  return defaultTemplates;
 }
 
 function buildPdfBuffer(seedRunId: string, projectId: number): Buffer {
@@ -344,29 +432,417 @@ async function createProjectAttachmentFromBuffer(
   });
 }
 
-function createMountDate(index: number, count: number, startDate: Date, minDays: number, maxDays: number) {
-  const span = Math.max(0, maxDays - minDays);
-  const offset = count <= 1 ? minDays : minDays + Math.floor((index * span) / (count - 1));
-  return nextWorkday(addDays(startDate, offset));
+function seededShuffle<T>(items: T[], random: DeterministicRandom): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = random.int(0, i);
+    const tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
 }
 
-function createReklDate(
-  seedRunId: string,
-  projectId: number,
-  mountDate: Date,
-  minDays: number,
-  maxDays: number,
+function largestRemainderDistribute(
+  total: number,
+  weights: number[],
+  random: DeterministicRandom,
+): number[] {
+  if (total <= 0 || weights.length === 0) return weights.map(() => 0);
+  const safeWeights = weights.map((weight) => (Number.isFinite(weight) && weight > 0 ? weight : 0));
+  const sum = safeWeights.reduce((acc, value) => acc + value, 0);
+  const normalized = sum <= 0 ? safeWeights.map(() => 1 / safeWeights.length) : safeWeights.map((value) => value / sum);
+  const exact = normalized.map((value) => value * total);
+  const base = exact.map((value) => Math.floor(value));
+  let remainder = total - base.reduce((acc, value) => acc + value, 0);
+  const order = exact
+    .map((value, index) => ({
+      index,
+      fractional: value - Math.floor(value),
+      tie: random.next(),
+    }))
+    .sort((a, b) => {
+      if (b.fractional !== a.fractional) return b.fractional - a.fractional;
+      return b.tie - a.tie;
+    });
+  for (let i = 0; i < order.length && remainder > 0; i += 1) {
+    base[order[i].index] += 1;
+    remainder -= 1;
+  }
+  return base;
+}
+
+function buildDurationQuotaList(
+  totalAppointments: number,
+  weights: InternalSeedConfig["durationWeights"],
+  random: DeterministicRandom,
+): DurationDays[] {
+  if (totalAppointments <= 0) return [];
+  const counts = largestRemainderDistribute(
+    totalAppointments,
+    [weights[1], weights[2], weights[3]],
+    random,
+  );
+  const out: DurationDays[] = [];
+  for (let i = 0; i < counts[0]; i += 1) out.push(1);
+  for (let i = 0; i < counts[1]; i += 1) out.push(2);
+  for (let i = 0; i < counts[2]; i += 1) out.push(3);
+  return seededShuffle(out, random);
+}
+
+function getWeekBucketCount(config: InternalSeedConfig) {
+  return Math.max(1, Math.floor((config.seedWindowDaysMax - config.seedWindowDaysMin) / 7) + 1);
+}
+
+function distributeAppointmentsPerTour(
+  totalAppointments: number,
+  tours: number[],
+  scatter: number,
+  random: DeterministicRandom,
 ) {
-  const span = Math.max(0, maxDays - minDays + 1);
-  const startOffset = span <= 1 ? minDays : minDays + (hashInt(`${seedRunId}:delay:${projectId}`) % span);
-  for (let i = 0; i < span; i += 1) {
-    const offset = minDays + ((startOffset - minDays + i) % span);
-    const candidate = addDays(mountDate, offset);
-    if (!isWeekend(candidate)) {
-      return candidate;
+  if (tours.length === 0) return [];
+  const p = 1 + Math.max(0, scatter) * 2;
+  const weights = tours.map(() => Math.pow(Math.max(0.0001, random.next()), p));
+  const counts = largestRemainderDistribute(totalAppointments, weights, random);
+  return tours.map((tourId, idx) => ({ tourId, count: counts[idx] }));
+}
+
+function distributeCountsAcrossWeeks(
+  total: number,
+  weekBucketCount: number,
+  random: DeterministicRandom,
+) {
+  if (total <= 0) return new Array<number>(weekBucketCount).fill(0);
+  const weights = Array.from({ length: weekBucketCount }, () => 1 + random.next());
+  return largestRemainderDistribute(total, weights, random);
+}
+
+function planMountAppointmentIntents(params: {
+  random: DeterministicRandom;
+  config: InternalSeedConfig;
+  projects: ProjectSeedContext[];
+  tours: number[];
+}) {
+  const { random, config, projects, tours } = params;
+  const totalAppointments = projects.length * Math.max(1, config.appointmentsPerProject);
+  if (totalAppointments <= 0 || projects.length === 0 || tours.length === 0) return [] as AppointmentIntent[];
+
+  const durations = buildDurationQuotaList(totalAppointments, config.durationWeights, random);
+  const weekBucketCount = getWeekBucketCount(config);
+  const perTour = distributeAppointmentsPerTour(totalAppointments, tours, config.tourScatter, random);
+
+  const projectPool: ProjectSeedContext[] = [];
+  while (projectPool.length < totalAppointments) {
+    projectPool.push(...seededShuffle(projects, random));
+  }
+
+  const intents: AppointmentIntent[] = [];
+  let durationCursor = 0;
+  let projectCursor = 0;
+  let seq = 0;
+
+  for (const tourPlan of perTour) {
+    const weekCounts = distributeCountsAcrossWeeks(tourPlan.count, weekBucketCount, random);
+    for (let weekIndex = 0; weekIndex < weekCounts.length; weekIndex += 1) {
+      for (let c = 0; c < weekCounts[weekIndex]; c += 1) {
+        const jitter = random.next() < 0.2 ? 1 : 0;
+        const project = projectPool[(projectCursor + jitter) % projectPool.length];
+        projectCursor += 1;
+        intents.push({
+          seq,
+          kind: "mount",
+          project,
+          tourId: tourPlan.tourId,
+          durationDays: durations[durationCursor % durations.length] ?? 1,
+          weekIndex,
+        });
+        durationCursor += 1;
+        seq += 1;
+      }
     }
   }
-  return nextWorkday(addDays(mountDate, startOffset));
+
+  return intents;
+}
+
+function toMonday(date: Date) {
+  const out = new Date(date);
+  const day = out.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  out.setDate(out.getDate() + diff);
+  return out;
+}
+
+function dateRangeKeys(startDate: Date, durationDays: number) {
+  const keys: string[] = [];
+  for (let i = 0; i < durationDays; i += 1) {
+    keys.push(toDateString(addDays(startDate, i)));
+  }
+  return keys;
+}
+
+function touchesWeekend(startDate: Date, durationDays: number) {
+  for (let i = 0; i < durationDays; i += 1) {
+    if (isWeekend(addDays(startDate, i))) return true;
+  }
+  return false;
+}
+
+function durationMaxStartDay(duration: DurationDays) {
+  if (duration === 3) return 3;
+  if (duration === 2) return 4;
+  return 5;
+}
+
+function buildCandidateDatesForIntent(params: {
+  seedRunId: string;
+  intent: AppointmentIntent;
+  config: InternalSeedConfig;
+  anchorDate: Date;
+}) {
+  const { seedRunId, intent, config, anchorDate } = params;
+  const windowStart = addDays(anchorDate, config.seedWindowDaysMin);
+  const windowEnd = addDays(anchorDate, config.seedWindowDaysMax);
+  if (intent.kind === "rekl" && intent.baseDate && Number.isFinite(intent.delayDays)) {
+    const reklWindowStart = addDays(anchorDate, config.seedWindowDaysMin);
+    const reklWindowEnd = addDays(
+      anchorDate,
+      config.seedWindowDaysMax + Math.max(0, config.reklDelayDaysMax) + 7,
+    );
+    const targetDate = addDays(intent.baseDate, Number(intent.delayDays ?? 0));
+    const shifts = [0, 1, -1, 2, -2];
+    return shifts
+      .map((shift) => addDays(targetDate, shift))
+      .filter(
+        (date) =>
+          date >= reklWindowStart &&
+          date <= reklWindowEnd &&
+          !touchesWeekend(date, intent.durationDays),
+      );
+  }
+  const base = addDays(windowStart, intent.weekIndex * 7);
+  const baseMonday = toMonday(base);
+  const maxWeek = getWeekBucketCount(config) - 1;
+  const weekShifts = [0, 1, -1, 2, -2];
+  const dayOrder = seededShuffle(
+    Array.from({ length: durationMaxStartDay(intent.durationDays) }, (_, i) => i + 1),
+    new DeterministicRandom(hashInt(`${seedRunId}:${intent.seq}:days`)),
+  );
+
+  const candidates: Date[] = [];
+  for (const shift of weekShifts) {
+    const targetWeek = Math.max(0, Math.min(maxWeek, intent.weekIndex + shift));
+    const weekMonday = addDays(baseMonday, (targetWeek - intent.weekIndex) * 7);
+    for (const weekday of dayOrder) {
+      const candidate = addDays(weekMonday, weekday - 1);
+      const endDate = addDays(candidate, intent.durationDays - 1);
+      if (candidate < windowStart || candidate > windowEnd || endDate > windowEnd) continue;
+      if (touchesWeekend(candidate, intent.durationDays)) continue;
+      candidates.push(candidate);
+    }
+  }
+  return candidates;
+}
+
+function assignAvailableEmployees(params: {
+  random: DeterministicRandom;
+  employees: number[];
+  employeeTourById: Map<number, number>;
+  employeeDaySlots: Map<number, Set<string>>;
+  tourId: number;
+  startDate: Date;
+  durationDays: number;
+  minCount: number;
+  maxCount: number;
+}) {
+  const {
+    random,
+    employees,
+    employeeTourById,
+    employeeDaySlots,
+    tourId,
+    startDate,
+    durationDays,
+    minCount,
+    maxCount,
+  } = params;
+  const keys = dateRangeKeys(startDate, durationDays);
+  const preferred = employees.filter((employeeId) => employeeTourById.get(employeeId) === tourId);
+  const fallback = employees.filter((employeeId) => employeeTourById.get(employeeId) !== tourId);
+  const ordered = [...seededShuffle(preferred, random), ...seededShuffle(fallback, random)];
+  const available = ordered.filter((employeeId) => {
+    const slots = employeeDaySlots.get(employeeId);
+    return keys.every((key) => !slots?.has(key));
+  });
+  if (available.length === 0) return [];
+  const desired = Math.min(
+    available.length,
+    Math.max(minCount, random.int(minCount, Math.max(minCount, maxCount))),
+  );
+  return available.slice(0, desired);
+}
+
+async function materializeAppointmentIntents(params: {
+  seedRunId: string;
+  intents: AppointmentIntent[];
+  config: InternalSeedConfig;
+  anchorDate: Date;
+  employees: number[];
+  employeeTourById: Map<number, number>;
+  employeeDaySlots: Map<number, Set<string>>;
+  templates: Record<string, string>;
+}) {
+  const {
+    seedRunId,
+    intents,
+    config,
+    anchorDate,
+    employees,
+    employeeTourById,
+    employeeDaySlots,
+    templates,
+  } = params;
+  const out: MaterializedAppointment[] = [];
+  const reductions = {
+    appointments: 0,
+    reklSkippedConstraints: 0,
+  };
+  const localRandom = new DeterministicRandom(hashInt(`${seedRunId}:materialize`));
+
+  for (const intent of intents) {
+    const candidates = buildCandidateDatesForIntent({
+      seedRunId,
+      intent,
+      config,
+      anchorDate,
+    });
+    let created: MaterializedAppointment | null = null;
+    for (let d = 0; d < candidates.length && !created; d += 1) {
+      const startDate = candidates[d];
+      const employeeIds = assignAvailableEmployees({
+        random: localRandom,
+        employees,
+        employeeTourById,
+        employeeDaySlots,
+        tourId: intent.tourId,
+        startDate,
+        durationDays: intent.durationDays,
+        minCount: intent.kind === "rekl" ? 1 : 1,
+        maxCount: intent.kind === "rekl" ? 2 : 3,
+      });
+      if (employeeIds.length === 0) continue;
+      const ctx = createSaunaContext(intent.project.model, intent.project.selectedOven);
+      const endDate = intent.durationDays > 1 ? addDays(startDate, intent.durationDays - 1) : null;
+      const startTime =
+        intent.kind === "rekl"
+          ? (["10:00:00", "11:00:00", "13:00:00", "15:00:00"][d % 4] ?? "11:00:00")
+          : null;
+      const titleTemplate = intent.kind === "rekl" ? TEMPLATE_KEYS.reklTitle : TEMPLATE_KEYS.mountTitle;
+      const fallbackTitle =
+        intent.kind === "rekl"
+          ? `Rekl. ${intent.project.selectedOven?.ovenName ?? "Ofen"}`
+          : `Montage: ${intent.project.model.saunaModelName}`;
+      const appointment = await createAppointmentRecord(
+        {
+          projectId: intent.project.projectId,
+          tourId: intent.tourId,
+          title: renderTemplate(templates[titleTemplate], ctx, { allowedKeys: allowedTemplateKeys }) || fallbackTitle,
+          description: null,
+          startDate,
+          startTime,
+          endDate,
+          endTime: null,
+        },
+        employeeIds,
+      );
+      for (const employeeId of employeeIds) {
+        const slots = employeeDaySlots.get(employeeId) ?? new Set<string>();
+        for (const key of dateRangeKeys(startDate, intent.durationDays)) {
+          slots.add(key);
+        }
+        employeeDaySlots.set(employeeId, slots);
+      }
+      created = {
+        id: appointment.id,
+        kind: intent.kind,
+        project: intent.project,
+        startDate,
+        tourId: intent.tourId,
+      };
+      out.push(created);
+    }
+    if (!created) {
+      if (intent.kind === "rekl") {
+        reductions.reklSkippedConstraints += 1;
+      } else {
+        reductions.appointments += 1;
+      }
+    }
+  }
+
+  return {
+    createdAppointments: out,
+    reductions,
+  };
+}
+
+function buildReklIntents(params: {
+  seedRunId: string;
+  config: InternalSeedConfig;
+  mountAppointments: MaterializedAppointment[];
+}) {
+  const { seedRunId, config, mountAppointments } = params;
+  let seq = 1_000_000;
+  const out: AppointmentIntent[] = [];
+  let reklMissingOven = 0;
+  let forcedProjectId: number | null = null;
+  if (config.reklShare > 0) {
+    const withOven = mountAppointments.filter((mount) => mount.project.selectedOven !== null);
+    const sharePercent = Math.round(config.reklShare * 100);
+    const selected = withOven.filter(
+      (mount) => (hashInt(`${seedRunId}:rekl:${mount.project.projectId}`) % 100) < sharePercent,
+    );
+    if (withOven.length > 0 && selected.length === 0) {
+      forcedProjectId =
+        withOven[hashInt(`${seedRunId}:force-rekl`) % withOven.length]?.project.projectId ?? null;
+    }
+  }
+
+  for (const mount of mountAppointments) {
+    const sharePercent = Math.round(config.reklShare * 100);
+    const selectedByShare =
+      (hashInt(`${seedRunId}:rekl:${mount.project.projectId}`) % 100) < sharePercent ||
+      mount.project.projectId === forcedProjectId;
+    if (!selectedByShare) continue;
+    if (!mount.project.selectedOven) {
+      reklMissingOven += 1;
+      continue;
+    }
+    const span = Math.max(0, config.reklDelayDaysMax - config.reklDelayDaysMin + 1);
+    const delayCandidates = seededShuffle(
+      Array.from({ length: span }, (_, idx) => config.reklDelayDaysMin + idx),
+      new DeterministicRandom(hashInt(`${seedRunId}:delay:${mount.project.projectId}`)),
+    );
+    const delay =
+      delayCandidates.find((candidate) => !isWeekend(addDays(mount.startDate, candidate))) ??
+      config.reklDelayDaysMin;
+    const weekIndex = Math.max(
+      0,
+      Math.floor((Math.max(config.seedWindowDaysMin, 0) + delay) / 7),
+    );
+    out.push({
+      seq,
+      kind: "rekl",
+      project: mount.project,
+      tourId: mount.tourId,
+      durationDays: 1,
+      weekIndex,
+      delayDays: delay,
+      baseDate: mount.startDate,
+    });
+    seq += 1;
+  }
+  return { intents: out, reklMissingOven };
 }
 
 async function createAppointmentRecord(
@@ -383,7 +859,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
   const warnings: string[] = [];
   const random = new DeterministicRandom(deriveSeed(seedRunId, config.randomSeed));
   const filler = createDemoDataFiller(deriveSeed(seedRunId, config.randomSeed));
-  const templates = await resolveSeedTemplates(warnings);
+  const templates = await resolveSeedTemplates(seedRunId, config.locale);
   const saunaData = loadSaunaSeedData();
   warnings.push(...saunaData.warnings);
   if (saunaData.saunaModels.length === 0) {
@@ -417,6 +893,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     const teams: number[] = [];
     const tours: number[] = [];
     const employees: number[] = [];
+    const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
 
     for (let i = 0; i < 2; i += 1) {
@@ -443,7 +920,9 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
 
     for (const employeeId of employees) {
       await employeesRepository.setEmployeeTeam(employeeId, random.pick(teams));
-      await employeesRepository.setEmployeeTour(employeeId, random.pick(tours));
+      const assignedTour = random.pick(tours);
+      await employeesRepository.setEmployeeTour(employeeId, assignedTour);
+      employeeTourById.set(employeeId, assignedTour);
     }
 
     for (let i = 0; i < config.customers; i += 1) {
@@ -474,8 +953,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     for (const employeeId of employees) {
       employeeDaySlots.set(employeeId, new Set<string>());
     }
-
-    const mountRecords: Array<{ projectId: number; model: SaunaModelRow; mountDate: Date; selectedOven: OvenRow | null; tourId: number }> = [];
+    const projectSeedContexts: ProjectSeedContext[] = [];
 
     for (let i = 0; i < projectsToCreate; i += 1) {
       const model = random.pick(saunaData.saunaModels);
@@ -486,7 +964,13 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       }
 
       const possibleOvenIds = ovenIdsByModelId.get(model.modelId) ?? [];
-      const selectedOven = resolveSelectedOven(seedRunId, model.modelId, ovenById, possibleOvenIds);
+      const selectedOven = resolveSelectedOven(
+        seedRunId,
+        model.modelId,
+        ovenById,
+        possibleOvenIds,
+        saunaData.ovens,
+      );
       const ctx = createSaunaContext(model, selectedOven);
 
       const project = await projectsService.createProject({
@@ -503,135 +987,82 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         created.projectStatusRelations += 1;
       }
 
-      const mountDate = createMountDate(i, projectsToCreate, startDate, config.seedWindowDaysMin, config.seedWindowDaysMax);
-      const tourId = random.pick(tours);
-      const dateKey = toDateString(mountDate);
-
-      const employeesForTour = employees.filter((employeeId) => {
-        const set = employeeDaySlots.get(employeeId);
-        return !(set?.has(dateKey));
-      });
-      if (employeesForTour.length === 0) {
-        reductions.appointments += 1;
-        warnings.push(`Montage fuer Projekt ${project.id} nicht erzeugt (keine verfuegbaren Mitarbeiter).`);
-        continue;
-      }
-
-      const selectedEmployeeCount = Math.min(employeesForTour.length, random.int(1, 3));
-      const selectedEmployeeIds = employeesForTour.slice(0, selectedEmployeeCount);
-
-      const mountAppointment = await createAppointmentRecord(
-        {
-          projectId: project.id,
-          tourId,
-          title:
-            renderTemplate(templates[TEMPLATE_KEYS.mountTitle], ctx, { allowedKeys: allowedTemplateKeys }) ||
-            `Montage: ${model.saunaModelName}`,
-          description: null,
-          startDate: mountDate,
-          startTime: null,
-          endDate: null,
-          endTime: null,
-        },
-        selectedEmployeeIds,
-      );
-      created.appointments += 1;
-      created.mountAppointments += 1;
-      await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_mount", mountAppointment.id);
-      for (const employeeId of selectedEmployeeIds) {
-        employeeDaySlots.get(employeeId)?.add(dateKey);
-      }
-
-      mountRecords.push({
+      projectSeedContexts.push({
         projectId: project.id,
         model,
-        mountDate,
         selectedOven,
-        tourId,
       });
     }
 
-    let forcedReklProjectId: number | null = null;
-    if (config.reklShare > 0) {
-      const ovenBackedProjects = mountRecords.filter((record) => record.selectedOven !== null);
-      const sharePercent = Math.round(config.reklShare * 100);
-      const selectedByShare = ovenBackedProjects.filter(
-        (record) => (hashInt(`${seedRunId}:rekl:${record.projectId}`) % 100) < sharePercent,
-      );
-      if (ovenBackedProjects.length > 0 && selectedByShare.length === 0) {
-        const idx = hashInt(`${seedRunId}:force-rekl`) % ovenBackedProjects.length;
-        forcedReklProjectId = ovenBackedProjects[idx]?.projectId ?? null;
-      }
-    }
+    const mountIntents = planMountAppointmentIntents({
+      random,
+      config,
+      projects: projectSeedContexts,
+      tours,
+    });
+    const mountResult = await materializeAppointmentIntents({
+      seedRunId,
+      intents: mountIntents,
+      config,
+      anchorDate: startDate,
+      employees,
+      employeeTourById,
+      employeeDaySlots,
+      templates,
+    });
+    const mountAppointments = mountResult.createdAppointments.filter((appointment) => appointment.kind === "mount");
+    const reklPlan = buildReklIntents({
+      seedRunId,
+      config,
+      mountAppointments,
+    });
+    const reklResult = await materializeAppointmentIntents({
+      seedRunId,
+      intents: reklPlan.intents,
+      config,
+      anchorDate: startDate,
+      employees,
+      employeeTourById,
+      employeeDaySlots,
+      templates,
+    });
 
-    for (const record of mountRecords) {
-      const sharePercent = Math.round(config.reklShare * 100);
-      const shouldCreateRekl =
-        (hashInt(`${seedRunId}:rekl:${record.projectId}`) % 100) < sharePercent ||
-        record.projectId === forcedReklProjectId;
-      if (!shouldCreateRekl) continue;
+    reductions.appointments += mountResult.reductions.appointments + reklResult.reductions.appointments;
+    reductions.reklMissingOven += reklPlan.reklMissingOven;
+    reductions.reklSkippedConstraints +=
+      mountResult.reductions.reklSkippedConstraints + reklResult.reductions.reklSkippedConstraints;
 
-      if (!record.selectedOven) {
-        reductions.reklMissingOven += 1;
-        continue;
-      }
-
-      const reklDate = createReklDate(
-        seedRunId,
-        record.projectId,
-        record.mountDate,
-        config.reklDelayDaysMin,
-        config.reklDelayDaysMax,
-      );
-      const dateKey = toDateString(reklDate);
-
-      const availableEmployees = employees.filter((employeeId) => !employeeDaySlots.get(employeeId)?.has(dateKey));
-      if (availableEmployees.length === 0) {
-        reductions.reklSkippedConstraints += 1;
-        continue;
-      }
-
-      const ctx = createSaunaContext(record.model, record.selectedOven);
-      const selectedEmployeeIds = availableEmployees.slice(0, Math.min(availableEmployees.length, 2));
-      const reklAppointment = await createAppointmentRecord(
-        {
-          projectId: record.projectId,
-          tourId: record.tourId,
-          title:
-            renderTemplate(templates[TEMPLATE_KEYS.reklTitle], ctx, { allowedKeys: allowedTemplateKeys }) ||
-            `Rekl. ${record.selectedOven.ovenName}`,
-          description: null,
-          startDate: reklDate,
-          startTime: "11:00:00",
-          endDate: null,
-          endTime: null,
-        },
-        selectedEmployeeIds,
-      );
+    const allCreatedAppointments = [
+      ...mountResult.createdAppointments,
+      ...reklResult.createdAppointments,
+    ];
+    for (const appointment of allCreatedAppointments) {
       created.appointments += 1;
-      created.reklAppointments += 1;
-      await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_rekl", reklAppointment.id);
-      for (const employeeId of selectedEmployeeIds) {
-        employeeDaySlots.get(employeeId)?.add(dateKey);
+      if (appointment.kind === "mount") {
+        created.mountAppointments += 1;
+        await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_mount", appointment.id);
+      } else {
+        created.reklAppointments += 1;
+        await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_rekl", appointment.id);
       }
     }
 
-    if (config.generateAttachments && mountRecords.length > 0) {
-      const attachProjectCount = Math.max(1, Math.floor(mountRecords.length * 0.3));
-      const selectedProjects = mountRecords.slice(0, attachProjectCount);
-      for (const record of selectedProjects) {
+    if (config.generateAttachments && projectSeedContexts.length > 0) {
+      const attachProjectCount = Math.max(1, Math.floor(projectSeedContexts.length * 0.3));
+      const selectedProjects = seededShuffle(projectSeedContexts, random).slice(0, attachProjectCount);
+      for (const projectCtx of selectedProjects) {
         const pdfAttachment = await createProjectAttachmentFromBuffer(
-          record.projectId,
-          `seed-${seedRunId.slice(0, 8)}-project-${record.projectId}.pdf`,
-          buildPdfBuffer(seedRunId, record.projectId),
+          projectCtx.projectId,
+          `seed-${seedRunId.slice(0, 8)}-project-${projectCtx.projectId}.pdf`,
+          buildPdfBuffer(seedRunId, projectCtx.projectId),
         );
         created.attachments += 1;
         await demoSeedRepository.addSeedRunEntity(seedRunId, "project_attachment", pdfAttachment.id);
 
         const docxAttachment = await createProjectAttachmentFromBuffer(
-          record.projectId,
-          `seed-${seedRunId.slice(0, 8)}-project-${record.projectId}.docx`,
-          buildDocxLikeBuffer(seedRunId, record.projectId),
+          projectCtx.projectId,
+          `seed-${seedRunId.slice(0, 8)}-project-${projectCtx.projectId}.docx`,
+          buildDocxLikeBuffer(seedRunId, projectCtx.projectId),
         );
         created.attachments += 1;
         await demoSeedRepository.addSeedRunEntity(seedRunId, "project_attachment", docxAttachment.id);
