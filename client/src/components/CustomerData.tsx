@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
-import { User, Phone, MapPin } from "lucide-react";
+import { User, Phone, MapPin, Mail } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
@@ -31,6 +31,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     firstName: "",
     lastName: "",
     company: "",
+    email: "",
     phone: "",
     addressLine1: "",
     addressLine2: "",
@@ -95,6 +96,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         firstName: customer.firstName || "",
         lastName: customer.lastName || "",
         company: customer.company || "",
+        email: customer.email || "",
         phone: customer.phone || "",
         addressLine1: customer.addressLine1 || "",
         addressLine2: customer.addressLine2 || "",
@@ -139,6 +141,16 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         title: "Fehler", 
         description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Vorname, Nachname, Telefon).", 
         variant: "destructive" 
+      });
+      throw new Error("validation");
+    }
+
+    const trimmedEmail = formData.email.trim();
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast({
+        title: "Fehler",
+        description: "Bitte geben Sie eine gueltige E-Mail-Adresse ein.",
+        variant: "destructive",
       });
       throw new Error("validation");
     }
@@ -260,6 +272,19 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     data-testid="input-phone"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" data-testid="label-email" className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    E-Mail
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    data-testid="input-email"
                   />
                 </div>
               </div>

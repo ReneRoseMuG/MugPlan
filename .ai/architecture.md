@@ -960,6 +960,115 @@ Folgende Punkte sind bewusst als Follow-up gekennzeichnet:
 
 Diese Punkte sind architekturell anschlussfähig, aber nicht Teil des aktuellen Scopes.
 
+---
+
+# Teil F - Architektur-Erweiterung FT (20): Demo Seed/Purge mit Sauna-CSV und Template-Settings
+
+Dieser Teil dokumentiert den Architekturstand fuer Demo-Daten-Erzeugung und rueckstandsfreie Loeschung. Fokus ist ein strikt isolierter Admin-Use-Case, der keine regulaere Fachlogik ersetzt.
+
+## F1. Zielbild und Scope-Grenze
+
+FT (20) fuehrt einen dedizierten Seed-Run-Mechanismus ein:
+
+- reproduzierbare Demo-Daten-Erzeugung
+- vollstaendige physische Loeschung aller erzeugten Daten
+- Trennung vom normalen Archivierungsmodell
+
+Wichtige Scope-Grenze: Seed/Purge ist ein separater Admin-Pfad. Regulaere Create/Update/Archive-Flows fuer Kunden, Projekte, Mitarbeiter und Termine bleiben fachlich unveraendert.
+
+## F2. Persistenzmodell fuer Seed-Runs
+
+Die Rueckverfolgbarkeit jedes Seed-Laufs wird ueber zwei Tabellen umgesetzt:
+
+- `seed_run`
+- `seed_run_entity`
+
+`seed_run_entity` mappt pro erzeugtem Datensatz:
+
+- `seed_run_id`
+- `entity_type`
+- `entity_id`
+
+Die Purge-Logik arbeitet ausschliesslich ueber dieses Mapping. Es gibt keine heuristische Ruecksuche ueber Namen oder Zeitstempel.
+
+## F3. Datenmodell-Anbindung und Fachkopplung
+
+Die Seederzeugung koppelt Projekte an Sauna-Modell-CSV-Daten:
+
+- Quelle: `.ai/Demodaten` (Fallback auf `.ai/demodata` im Loader)
+- Pflichtdatei: `fasssauna_modelle.csv`
+- Optionale Dateien:
+  - `fasssauna_ofenmodelle.csv`
+  - `fasssauna_modelle_ofen_mapping.csv`
+
+Fachregel im Seed:
+
+- `1 Projekt = genau 1 Montage-Termin` (projektgebunden)
+- zusaetzliche Rekla-Termine sind optional, aber ebenfalls projektgebunden
+
+## F4. Terminarchitektur im Seed-Kontext
+
+Die Terminverteilung ist deterministisch und seedbasiert:
+
+- Montage ueber Seed-Fenster `60..90` Tage
+- Rekla nach Montage mit Delay `14..42` Tage
+- Wochenenden werden fuer Seed-Termine ausgeschlossen
+- Mitarbeiterbelegung wird pro Kalendertag kollisionsfrei gehalten
+
+Rekla-Termine erben die Tour des zugehoerigen Montage-Termins. Damit bleibt die Tour-Logik im Projektkontext konsistent.
+
+## F5. Template-Architektur ueber Settings
+
+Textschablonen fuer Projekt und Termine werden als Settings-Keys gefuehrt und serverseitig aufgeloest:
+
+- `templates.project.title`
+- `templates.project.description`
+- `templates.appointment.mount.title`
+- `templates.appointment.intraday.rekl.title`
+
+Die Resolver-Wahrheit bleibt serverseitig. Wenn keine wirksamen Werte aufloesbar sind, greifen Registry-Defaults. Platzhalter werden ueber eine Whitelist validiert.
+
+## F6. API-Oberflaeche und Schichtschnitt
+
+Die Seed-Funktion ist contract-first und folgt der Standardkette Route -> Controller -> Service -> Repository:
+
+- `POST /api/admin/demo-seed-runs`
+- `GET /api/admin/demo-seed-runs`
+- `DELETE /api/admin/demo-seed-runs/:seedRunId`
+
+Purge ist idempotent. Ein zweiter Delete auf dieselbe `seedRunId` liefert einen stabilen No-Op-Zustand.
+
+## F7. Purge-Vollstaendigkeit als Architektur-Invariante
+
+Purge entfernt:
+
+- fachliche Hauptobjekte (z. B. Projekte, Termine, Kunden, Mitarbeiter)
+- Join-Objekte (z. B. Termin-Mitarbeiter, Projekt-Status)
+- Attachment-Metadaten
+- physische Dateien im Storage
+- Seed-Run-Mapping und Seed-Run-Datensatz
+
+Die Reihenfolge ist FK-sicher und nicht an Archivierungsregeln gekoppelt.
+
+## F8. Frontend-Integration
+
+Die Admin-Seite `DemoDataPage` ist in die bestehende Navigation eingebunden und nutzt React Query:
+
+- Mutation fuer Seed
+- Mutation fuer Purge
+- Run-Liste ueber Query
+- globale Invalidation nach Seed/Purge
+
+Damit bleiben Kalender, Projektlisten und Stammdatenlisten konsistent mit dem Server-Iststand.
+
+## F9. Architekturelle Betriebsregel fuer Rollout
+
+Seed-Tabellen werden gezielt ueber die dedizierte Migration ausgerollt:
+
+- `migrations/2026-02-07_demo_seed_runs.sql`
+
+Kein globales Schema-Sync als Pflichtschritt fuer diesen Use-Case. Dadurch werden unbeabsichtigte Nebeneffekte auf nicht betroffene Tabellen vermieden.
+
 
 
 

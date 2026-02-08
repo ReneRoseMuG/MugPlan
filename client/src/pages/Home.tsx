@@ -17,13 +17,14 @@ import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
+import { DemoDataPage } from "@/components/DemoDataPage";
 import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
 
 type HomeProps = {
   onLogout: () => void;
@@ -134,12 +135,12 @@ export default function Home({ onLogout }: HomeProps) {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Ãœbersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Ãœbersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Ãœbersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Ãœbersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
-          {view !== 'customer' && view !== 'customerList' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'employeeWeekly' && view !== 'project' && view !== 'projectList' && view !== 'appointment' && view !== 'noteTemplates' && view !== 'projectStatus' && view !== 'helpTexts' && view !== 'settings' && (
+          {view !== 'customer' && view !== 'customerList' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'employeeWeekly' && view !== 'project' && view !== 'projectList' && view !== 'appointment' && view !== 'noteTemplates' && view !== 'projectStatus' && view !== 'helpTexts' && view !== 'settings' && view !== 'demoData' && (
             <div className="flex items-center gap-2 bg-border rounded-md p-1">
               <button
                 onClick={prev}
@@ -262,6 +263,8 @@ export default function Home({ onLogout }: HomeProps) {
             <HelpTextsPage />
           ) : view === 'settings' ? (
             <SettingsPage />
+          ) : view === 'demoData' ? (
+            <DemoDataPage />
           ) : isCalendarView ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               {/* Kalenderansicht benÃ¶tigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}

@@ -632,3 +632,199 @@ Mögliche Folgearbeiten außerhalb des aktuellen Scopes:
 - feinere Rechteprüfung pro Attachment-Domäne.
 
 
+
+---
+
+# 9. FT (20) Demo Seed/Purge - Implementierungsleitfaden (Ist-Stand)
+
+Dieser Abschnitt dokumentiert die konkrete Umsetzung fuer Demo-Seeding mit Seed-Run-Tracking, Sauna-CSV-Kopplung, Template-Rendering und idempotentem Purge.
+
+## 9.1 Zielbild von FT (20)
+
+FT (20) liefert einen isolierten Admin-Use-Case fuer:
+
+- reproduzierbare Demo-Daten
+- nachvollziehbare Seed-Runs
+- vollstaendige physische Loeschung inkl. Dateien
+
+Regulaere Fachlogik wird nicht ersetzt. Seed/Purge bleibt ein separater technischer Pfad.
+
+## 9.2 Relevante Dateien (Backend)
+
+### 9.2.1 Contract und Schema
+
+- `shared/routes.ts`
+  - Contract-Bereich `api.demoSeed.*`
+- `shared/schema.ts`
+  - `seed_run`
+  - `seed_run_entity`
+
+### 9.2.2 Route/Controller/Service/Repository
+
+- `server/routes/demoSeedRoutes.ts`
+- `server/controllers/demoSeedController.ts`
+- `server/services/demoSeedService.ts`
+- `server/repositories/demoSeedRepository.ts`
+
+### 9.2.3 Seed-Helfer
+
+- `server/services/demoDataFiller.ts` (Faker-basiertes Stammdaten-Filling)
+- `server/seed/csvLoader.ts` (Sauna-CSV Loader)
+- `server/seed/types.ts`
+- `server/lib/templateRender.ts`
+
+## 9.3 Relevante Dateien (Frontend)
+
+- `client/src/components/DemoDataPage.tsx`
+- `client/src/pages/Home.tsx` (Einbindung)
+
+Die Seite steuert Seed-Konfiguration, zeigt Summary/Warnings und listet vorhandene Seed-Runs fuer Purge.
+
+## 9.4 Migration und DB-Rollout
+
+Seed-Tracking wird ueber dedizierte SQL-Migration ausgerollt:
+
+- `migrations/2026-02-07_demo_seed_runs.sql`
+
+Die Migration ist idempotent (`CREATE TABLE IF NOT EXISTS`), damit wiederholte Ausfuehrungen stabil sind.
+
+Hinweis fuer Betrieb: Fuer diesen Scope keine globale `db:push`-Pflicht, sondern gezielter Rollout der Seed-Migration.
+
+## 9.5 Seederzeugung im Detail
+
+### 9.5.1 Determinismus
+
+Der Seeder nutzt einen Seed je Seed-Run:
+
+- explizit ueber `randomSeed` oder
+- abgeleitet aus `seedRunId`
+
+Damit sind Datenverteilungen reproduzierbar.
+
+### 9.5.2 Stammdaten
+
+Mitarbeiter und Kunden werden mit Faker (DE) erzeugt. E-Mail-Schemata sind indexbasiert, damit Unique-Kollisionen im Demo-Kontext vermieden werden.
+
+### 9.5.3 Sauna-CSV und Projektaufbau
+
+Pro gewaehltem Sauna-Modell wird ein Projekt erstellt. CSV-Quelle:
+
+- primaer `.ai/Demodaten`
+- fallback `.ai/demodata`
+
+Pflichtdatei:
+
+- `fasssauna_modelle.csv`
+
+Optionale Dateien:
+
+- `fasssauna_ofenmodelle.csv`
+- `fasssauna_modelle_ofen_mapping.csv`
+
+Wenn optionale Dateien fehlen, bleibt Seed lauffaehig und meldet Warnungen im Summary.
+
+### 9.5.4 Termine
+
+Montage:
+
+- genau ein projektgebundener Termin pro Projekt
+- deterministisch im Fenster `seedWindowDaysMin..seedWindowDaysMax`
+
+Rekla:
+
+- optional zusaetzlich, ebenfalls projektgebunden
+- Delay nach Montage: `reklDelayDaysMin..reklDelayDaysMax`
+- gleiche Tour wie Montage
+- Ofenkonsistenz ueber denselben Seed-Kontext
+
+Mitarbeiterzuweisung wird im Seeder kollisionsfrei pro Kalendertag verwaltet.
+
+## 9.6 Template-Settings
+
+Verwendete Keys:
+
+- `templates.project.title`
+- `templates.project.description`
+- `templates.appointment.mount.title`
+- `templates.appointment.intraday.rekl.title`
+
+Aufloesung erfolgt ueber `userSettingsService.getResolvedSettingsForUser(...)`.
+
+Fallback:
+
+- Bei nicht aufloesbaren User-Settings greifen feste Defaults im Seeder.
+
+`templateRender` setzt Platzhalter auf Basis Whitelist um und entfernt leere Bullet-Zeilen deterministisch.
+
+## 9.7 Seed-Run Mapping und Purge
+
+Alle erzeugten IDs werden in `seed_run_entity` erfasst. Verwendete Entitaetstypen umfassen u. a.:
+
+- `employee`
+- `customer`
+- `project`
+- `appointment_mount`
+- `appointment_rekl`
+- `project_attachment`
+- `team`
+- `tour`
+
+Purge arbeitet in FK-sicherer Reihenfolge und entfernt danach Mapping + `seed_run`.
+
+Purge ist idempotent:
+
+- erster Aufruf loescht Daten
+- zweiter Aufruf liefert `noOp: true`
+
+## 9.8 Attachments im Seed
+
+Projektanhaenge werden ueber den bestehenden Attachment-Service erzeugt. Dabei werden:
+
+- DB-Metadaten persistiert
+- Dateien im Storage abgelegt
+- IDs im Seed-Run-Mapping registriert
+
+Beim Purge werden zuerst Dateien (mit ENOENT-Toleranz), danach zugehoerige DB-Records geloescht.
+
+## 9.9 API-Vertrag und Responses
+
+### 9.9.1 Create
+
+`POST /api/admin/demo-seed-runs` liefert:
+
+- `seedRunId`
+- `createdAt`
+- `requested`
+- `created`
+- `reductions`
+- `warnings`
+
+### 9.9.2 List
+
+`GET /api/admin/demo-seed-runs` liefert historische Runs inkl. gespeicherter Summary.
+
+### 9.9.3 Purge
+
+`DELETE /api/admin/demo-seed-runs/:seedRunId` liefert:
+
+- geloeschte Counts je Entitaetsgruppe
+- `noOp` fuer idempotente Wiederholung
+
+## 9.10 Verifikation und Scripts
+
+Neue Scripts:
+
+- `script/test-template-render.ts`
+- `script/verify-demo-seed.ts`
+
+NPM-Kommandos:
+
+- `npm run test:template-render`
+- `npm run verify:demo-seed`
+
+Zusammen mit `npm run check` bilden sie den technischen Minimalnachweis fuer FT (20).
+
+## 9.11 Bekannte Betriebsnotizen
+
+- Bei bestimmten DB-Setups kann mysql2 eine Warnung zu `ssl-mode` ausgeben; das beeinflusst die erfolgreiche Seed/Purge-Ausfuehrung nicht.
+- Seed-Runs sind absichtlich additiv. Bereinigung erfolgt explizit ueber Purge-Endpunkt oder Verifikationsscript.

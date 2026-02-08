@@ -1,4 +1,4 @@
-import { mysqlTable, text, int, date, time, boolean, datetime, bigint, primaryKey, varchar, timestamp, json, uniqueIndex } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, time, boolean, datetime, bigint, primaryKey, varchar, timestamp, json, uniqueIndex, index } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations, sql } from "drizzle-orm";
@@ -11,6 +11,7 @@ export const customers = mysqlTable("customer", {
   lastName: varchar("last_name", { length: 255 }).notNull(),
   fullName: varchar("full_name", { length: 255 }).notNull(),
   company: varchar("company", { length: 255 }),
+  email: varchar("email", { length: 255 }),
   phone: varchar("phone", { length: 255 }).notNull(),
   addressLine1: varchar("address_line1", { length: 255 }),
   addressLine2: varchar("address_line2", { length: 255 }),
@@ -21,12 +22,24 @@ export const customers = mysqlTable("customer", {
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
+const customerEmailSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value !== "string") return value;
+    const normalized = value.trim();
+    return normalized.length === 0 ? null : normalized;
+  },
+  z.string().email().nullable().optional(),
+);
+
 export const insertCustomerSchema = createInsertSchema(customers).omit({ 
   id: true, 
   createdAt: true, 
   updatedAt: true,
   isActive: true,
   fullName: true,
+}).extend({
+  email: customerEmailSchema,
 });
 
 export const updateCustomerSchema = z.object({
@@ -34,6 +47,7 @@ export const updateCustomerSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   company: z.string().nullable().optional(),
+  email: customerEmailSchema,
   phone: z.string().optional(),
   addressLine1: z.string().nullable().optional(),
   addressLine2: z.string().nullable().optional(),
@@ -413,6 +427,33 @@ export const updateHelpTextSchema = createInsertSchema(helpTexts).omit({
 export type HelpText = typeof helpTexts.$inferSelect;
 export type InsertHelpText = z.infer<typeof insertHelpTextSchema>;
 export type UpdateHelpText = z.infer<typeof updateHelpTextSchema>;
+
+export const seedRuns = mysqlTable("seed_run", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  configJson: json("config_json").$type<unknown>().notNull(),
+  summaryJson: json("summary_json").$type<unknown>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const seedRunEntities = mysqlTable(
+  "seed_run_entity",
+  {
+    seedRunId: varchar("seed_run_id", { length: 36 })
+      .notNull()
+      .references(() => seedRuns.id, { onDelete: "cascade" }),
+    entityType: varchar("entity_type", { length: 64 }).notNull(),
+    entityId: bigint("entity_id", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.seedRunId, table.entityType, table.entityId] }),
+    bySeedRun: index("seed_run_entity_seed_run_idx").on(table.seedRunId),
+    byEntity: index("seed_run_entity_entity_idx").on(table.entityType, table.entityId),
+  }),
+);
+
+export type SeedRun = typeof seedRuns.$inferSelect;
+export type SeedRunEntity = typeof seedRunEntities.$inferSelect;
 
 export const userSettingsValue = mysqlTable(
   "user_settings_value",

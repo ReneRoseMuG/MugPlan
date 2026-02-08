@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { User, Phone, MapPin, Building2, Pencil } from "lucide-react";
+import { User, Phone, MapPin, Building2, Pencil, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { FilteredCardListLayout } from "@/components/ui/filtered-card-list-layout";
@@ -134,6 +134,12 @@ export function CustomerListView({
                 <Phone className="w-3 h-3 text-slate-400" />
                 <span>{customer.phone}</span>
               </div>
+              {customer.email && (
+                <div className="flex items-center gap-2">
+                  <Mail className="w-3 h-3 text-slate-400" />
+                  <span>{customer.email}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <MapPin className="w-3 h-3 text-slate-400" />
                 <span>{customer.postalCode} {customer.city}</span>

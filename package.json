@@ -10,9 +10,12 @@
     "start": "NODE_ENV=production node --env-file=.env dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "db:seed:roles": "tsx script/seed-roles.ts"
+    "db:seed:roles": "tsx script/seed-roles.ts",
+    "test:template-render": "tsx script/test-template-render.ts",
+    "verify:demo-seed": "tsx script/verify-demo-seed.ts"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.9.0",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@radix-ui/react-accordion": "^1.2.4",

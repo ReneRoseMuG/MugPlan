@@ -1,7 +1,7 @@
 # Planung – Projekt-Status-Filter
 
 ## Bestätigung Pflichtlektüre
-Ich habe `docs/architecture.md` und `docs/rules.md` vollständig gelesen. Relevante Leitplanken für diesen Auftrag in eigenen Worten:
+Ich habe `.ai/architecture.md` und `.ai/rules.md` vollständig gelesen. Relevante Leitplanken für diesen Auftrag in eigenen Worten:
 - Die Änderung bleibt minimal-invasiv, ohne kosmetische Refactorings oder neue Strukturen außerhalb des Auftrags.
 - Architektur folgt der bestehenden Schichtung (UI/View, Controller/Service/Repository). Persistenzlogik bleibt in Repositories, UI bleibt ohne Fachlogik.
 - Keine neuen Dependencies, keine Build-/Tooling-/Konfigurationsänderungen.
