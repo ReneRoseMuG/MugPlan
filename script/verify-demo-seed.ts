@@ -26,7 +26,7 @@ async function main() {
   const config = {
     employees: 12,
     customers: 8,
-    projects: 8,
+    projects: 20,
     appointmentsPerProject: 1,
     generateAttachments: true,
     randomSeed: 424242,
@@ -49,6 +49,23 @@ async function main() {
   });
 
   try {
+    assert.equal(
+      summary.created.projects,
+      config.projects,
+      "created project count must match requested projects",
+    );
+    const warningText = summary.warnings.join(" ").toLowerCase();
+    assert.equal(
+      warningText.includes("csv nur"),
+      false,
+      "summary warnings must not mention csv project cap",
+    );
+    assert.equal(
+      warningText.includes("wiederver"),
+      false,
+      "summary warnings must not mention model reuse",
+    );
+
     const entities = await db
       .select({
         entityType: seedRunEntities.entityType,
