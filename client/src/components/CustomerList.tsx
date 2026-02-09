@@ -3,7 +3,7 @@ import { User, Phone, MapPin, Building2, Pencil, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { FilteredCardListLayout } from "@/components/ui/filtered-card-list-layout";
-import { SearchFilterInput } from "@/components/ui/search-filter-input";
+import { CustomerFilterPanel } from "@/components/ui/filter-panels/customer-filter-panel";
 import { defaultHeaderColor } from "@/lib/colors";
 import { applyCustomerFilters, defaultCustomerFilters } from "@/lib/customer-filters";
 import { useQuery } from "@tanstack/react-query";
@@ -74,25 +74,15 @@ export function CustomerListView({
         </p>
       }
       filters={(
-        <>
-          <SearchFilterInput
-            id="customer-filter-last-name"
-            label="Nachname"
-            value={filters.lastName}
-            onChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
-            onClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
-            className="flex-1"
-          />
-          <SearchFilterInput
-            id="customer-filter-number"
-            label="Kundennummer"
-            value={filters.customerNumber}
-            onChange={(value) => setFilters((prev) => ({ ...prev, customerNumber: value }))}
-            onClear={() => setFilters((prev) => ({ ...prev, customerNumber: "" }))}
-            numericOnly
-            className="flex-1"
-          />
-        </>
+        <CustomerFilterPanel
+          title="Kundenfilter"
+          customerLastName={filters.lastName}
+          onCustomerLastNameChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
+          onCustomerLastNameClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
+          customerNumber={filters.customerNumber}
+          onCustomerNumberChange={(value) => setFilters((prev) => ({ ...prev, customerNumber: value }))}
+          onCustomerNumberClear={() => setFilters((prev) => ({ ...prev, customerNumber: "" }))}
+        />
       )}
     >
       {filteredCustomers.map(customer => {

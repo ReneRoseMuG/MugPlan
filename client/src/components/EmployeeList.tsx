@@ -3,10 +3,10 @@ import { Users, Route, Power, PowerOff, Phone, Mail, Pencil } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FilteredCardListLayout } from "@/components/ui/filtered-card-list-layout";
+import { EmployeeFilterPanel } from "@/components/ui/filter-panels/employee-filter-panel";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { EntityCard } from "@/components/ui/entity-card";
-import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-filters";
 import { useQuery } from "@tanstack/react-query";
 import type { Employee, Team, Tour } from "@shared/schema";
@@ -114,13 +114,11 @@ export function EmployeeListView({
         </p>
       }
       filters={(
-        <SearchFilterInput
-          id="employee-filter-last-name"
-          label="Nachname"
-          value={filters.lastName}
-          onChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
-          onClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
-          className="flex-1"
+        <EmployeeFilterPanel
+          title="Mitarbeiterfilter"
+          employeeLastName={filters.lastName}
+          onEmployeeLastNameChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
+          onEmployeeLastNameClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
         />
       )}
     >
