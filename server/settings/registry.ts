@@ -108,6 +108,32 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 100,
   },
+  calendarWeekScrollRange: {
+    key: "calendarWeekScrollRange",
+    label: "Scrollbereich Wochen",
+    description: "Anzahl zusaetzlicher Wochen im horizontalen Kalender-Scrollbereich.",
+    type: "number",
+    defaultValue: 4,
+    min: 0,
+    max: 12,
+    integer: true,
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12,
+  },
+  calendarMonthScrollRange: {
+    key: "calendarMonthScrollRange",
+    label: "Scrollbereich Monate",
+    description: "Anzahl zusaetzlicher Monate im horizontalen Kalender-Scrollbereich.",
+    type: "number",
+    defaultValue: 3,
+    min: 0,
+    max: 12,
+    integer: true,
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12,
+  },
   templatesProjectTitle: {
     key: "templates.project.title",
     label: "Template Projekt-Titel",

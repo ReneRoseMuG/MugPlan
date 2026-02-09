@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDays,
+  addMonths,
   differenceInCalendarDays,
   endOfMonth,
   endOfWeek,
@@ -12,6 +13,7 @@ import {
   parseISO,
   startOfMonth,
   startOfWeek,
+  subMonths,
 } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,10 +32,13 @@ import {
   getAppointmentSortValue,
 } from "@/lib/calendar-utils";
 import { CalendarAppointmentCompactBar } from "./CalendarAppointmentCompactBar";
+import type { CalendarNavCommand } from "@/pages/Home";
 
 type CalendarMonthViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
+  navCommand?: CalendarNavCommand;
+  onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string) => void;
   onOpenAppointment?: (appointmentId: number) => void;
 };
@@ -44,15 +49,29 @@ type WeekLaneItem = {
   endIndex: number;
 };
 
+type MonthRenderData = {
+  monthStart: Date;
+  weeks: Date[][];
+  weekLanes: WeekLaneItem[][][];
+};
+
 const logPrefix = "[calendar-month]";
+const scrollDebounceMs = 120;
 
 export function CalendarMonthView({
   currentDate,
   employeeFilterId,
+  navCommand,
+  onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
 }: CalendarMonthViewProps) {
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
+  const [stripStartMonth, setStripStartMonth] = useState(startOfMonth(currentDate));
+  const [visibleIndex, setVisibleIndex] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(
@@ -60,93 +79,215 @@ export function CalendarMonthView({
     [],
   );
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
+  const monthScrollRangeSetting = useSetting("calendarMonthScrollRange");
   const isAdmin = userRole === "ADMIN";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
+  const extraMonthCount =
+    typeof monthScrollRangeSetting === "number" && Number.isInteger(monthScrollRangeSetting) && monthScrollRangeSetting >= 0
+      ? Math.min(monthScrollRangeSetting, 12)
+      : 3;
   const dayWeights = useMemo(() => getDayWeights(weekendColumnPercent), [weekendColumnPercent]);
   const dayGridTemplate = useMemo(() => buildDayGridTemplate(dayWeights), [dayWeights]);
   const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
   const totalDayWeight = useMemo(() => sumWeights(dayWeights, 0, dayWeights.length), [dayWeights]);
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart, { weekStartsOn: 1, locale: de });
-  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1, locale: de });
+  const monthStarts = useMemo(
+    () => Array.from({ length: extraMonthCount + 1 }, (_, index) => startOfMonth(addMonths(stripStartMonth, index))),
+    [extraMonthCount, stripStartMonth],
+  );
 
-  const fromDate = format(startDate, "yyyy-MM-dd");
-  const toDate = format(endDate, "yyyy-MM-dd");
+  const stripFromDate = format(startOfWeek(monthStarts[0], { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
+  const stripToDate = format(
+    endOfWeek(endOfMonth(monthStarts[monthStarts.length - 1]), { weekStartsOn: 1, locale: de }),
+    "yyyy-MM-dd",
+  );
 
   const { data: appointments = [] } = useCalendarAppointments({
-    fromDate,
-    toDate,
+    fromDate: stripFromDate,
+    toDate: stripToDate,
     employeeId: employeeFilterId ?? undefined,
     userRole,
   });
 
   useEffect(() => {
     console.info(`${logPrefix} render`, {
-      fromDate,
-      toDate,
+      fromDate: stripFromDate,
+      toDate: stripToDate,
       employeeId: employeeFilterId ?? null,
       count: appointments.length,
     });
-  }, [appointments.length, employeeFilterId, fromDate, toDate]);
+  }, [appointments.length, employeeFilterId, stripFromDate, stripToDate]);
 
-  const weeks = useMemo(() => {
-    const days = [];
-    let current = startDate;
-    while (current <= endDate) {
-      days.push(current);
-      current = addDays(current, 1);
+  useEffect(() => {
+    const targetMonthStart = startOfMonth(currentDate);
+    const visibleMonthStart = startOfMonth(addMonths(stripStartMonth, visibleIndex));
+    if (!isSameDay(targetMonthStart, visibleMonthStart)) {
+      setStripStartMonth(targetMonthStart);
+      setVisibleIndex(0);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ left: 0, behavior: "auto" });
+      }
     }
-    const chunks: Date[][] = [];
-    for (let i = 0; i < days.length; i += 7) {
-      chunks.push(days.slice(i, i + 7));
+  }, [currentDate, stripStartMonth, visibleIndex]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const updateWidth = () => {
+      setViewportWidth(container.clientWidth);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!onVisibleDateChange) return;
+    const visibleMonthStart = startOfMonth(addMonths(stripStartMonth, visibleIndex));
+    onVisibleDateChange(visibleMonthStart);
+  }, [onVisibleDateChange, stripStartMonth, visibleIndex]);
+
+  const scrollToIndex = (index: number, behavior: ScrollBehavior) => {
+    if (!scrollContainerRef.current || viewportWidth <= 0) return;
+    scrollContainerRef.current.scrollTo({ left: index * viewportWidth, behavior });
+  };
+
+  const syncVisibleIndexFromScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container || viewportWidth <= 0) return;
+
+    const maxIndex = Math.max(0, extraMonthCount);
+    const nextIndex = Math.max(0, Math.min(maxIndex, Math.round(container.scrollLeft / viewportWidth)));
+
+    if (nextIndex !== visibleIndex) {
+      setVisibleIndex(nextIndex);
     }
-    return chunks;
-  }, [startDate, endDate]);
 
-  const weekLanes = useMemo(() => {
-    return weeks.map((week) => {
-      const weekStart = week[0];
-      const weekEnd = week[6];
-      const weekAppointments = appointments
-        .filter((appointment) => {
-          const start = parseISO(appointment.startDate);
-          const end = parseISO(getAppointmentEndDate(appointment));
-          return start <= weekEnd && end >= weekStart;
-        })
-        .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
+    const targetLeft = nextIndex * viewportWidth;
+    if (Math.abs(container.scrollLeft - targetLeft) > 1) {
+      container.scrollTo({ left: targetLeft, behavior: "smooth" });
+    }
+  };
 
-      const lanes: WeekLaneItem[][] = [];
+  const handleStripScroll = () => {
+    if (scrollTimerRef.current) {
+      clearTimeout(scrollTimerRef.current);
+    }
+    scrollTimerRef.current = setTimeout(() => {
+      syncVisibleIndexFromScroll();
+    }, scrollDebounceMs);
+  };
 
-      weekAppointments.forEach((appointment) => {
-        const startIndex = Math.max(0, differenceInCalendarDays(parseISO(appointment.startDate), weekStart));
-        const endIndex = Math.min(6, differenceInCalendarDays(parseISO(getAppointmentEndDate(appointment)), weekStart));
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
 
-        let laneIndex = lanes.findIndex((lane) =>
-          lane.every((item) => endIndex < item.startIndex || startIndex > item.endIndex),
-        );
+  useEffect(() => {
+    if (!navCommand) return;
 
-        if (laneIndex === -1) {
-          laneIndex = lanes.length;
-          lanes.push([]);
-        }
+    if (navCommand.direction === "next") {
+      if (visibleIndex < extraMonthCount) {
+        const nextIndex = visibleIndex + 1;
+        setVisibleIndex(nextIndex);
+        scrollToIndex(nextIndex, "smooth");
+      } else {
+        setStripStartMonth((prev) => startOfMonth(addMonths(prev, 1)));
+      }
+      return;
+    }
 
-        lanes[laneIndex].push({
-          appointmentId: appointment.id,
-          startIndex,
-          endIndex,
+    if (visibleIndex > 0) {
+      const nextIndex = visibleIndex - 1;
+      setVisibleIndex(nextIndex);
+      scrollToIndex(nextIndex, "smooth");
+    } else {
+      setStripStartMonth((prev) => startOfMonth(subMonths(prev, 1)));
+    }
+  }, [extraMonthCount, navCommand, visibleIndex, viewportWidth]);
+
+  useEffect(() => {
+    if (scrollContainerRef.current && viewportWidth > 0) {
+      scrollContainerRef.current.scrollTo({ left: visibleIndex * viewportWidth, behavior: "auto" });
+    }
+  }, [stripStartMonth, visibleIndex, viewportWidth]);
+
+  const appointmentsById = useMemo(() => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)), [appointments]);
+
+  const months = useMemo<MonthRenderData[]>(() => {
+    return monthStarts.map((monthStart) => {
+      const monthEnd = endOfMonth(monthStart);
+      const startDate = startOfWeek(monthStart, { weekStartsOn: 1, locale: de });
+      const endDate = endOfWeek(monthEnd, { weekStartsOn: 1, locale: de });
+
+      const days: Date[] = [];
+      let cursor = startDate;
+      while (cursor <= endDate) {
+        days.push(cursor);
+        cursor = addDays(cursor, 1);
+      }
+
+      const weeks: Date[][] = [];
+      for (let i = 0; i < days.length; i += 7) {
+        weeks.push(days.slice(i, i + 7));
+      }
+
+      const weekLanes = weeks.map((week) => {
+        const weekStart = week[0];
+        const weekEnd = week[6];
+        const weekAppointments = appointments
+          .filter((appointment) => {
+            const start = parseISO(appointment.startDate);
+            const end = parseISO(getAppointmentEndDate(appointment));
+            return start <= weekEnd && end >= weekStart;
+          })
+          .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
+
+        const lanes: WeekLaneItem[][] = [];
+
+        weekAppointments.forEach((appointment) => {
+          const startIndex = Math.max(0, differenceInCalendarDays(parseISO(appointment.startDate), weekStart));
+          const endIndex = Math.min(6, differenceInCalendarDays(parseISO(getAppointmentEndDate(appointment)), weekStart));
+
+          let laneIndex = lanes.findIndex((lane) =>
+            lane.every((item) => endIndex < item.startIndex || startIndex > item.endIndex),
+          );
+
+          if (laneIndex === -1) {
+            laneIndex = lanes.length;
+            lanes.push([]);
+          }
+
+          lanes[laneIndex].push({
+            appointmentId: appointment.id,
+            startIndex,
+            endIndex,
+          });
         });
+
+        lanes.forEach((lane) => lane.sort((a, b) => a.startIndex - b.startIndex));
+
+        return lanes;
       });
 
-      lanes.forEach((lane) => lane.sort((a, b) => a.startIndex - b.startIndex));
-
-      return lanes;
+      return {
+        monthStart,
+        weeks,
+        weekLanes,
+      };
     });
-  }, [appointments, weeks]);
+  }, [appointments, monthStarts]);
 
   const handleAppointmentClick = (appointmentId: number) => {
-    const appointment = appointments.find((item) => item.id === appointmentId);
+    const appointment = appointmentsById.get(appointmentId);
     if (!appointment) return;
     if (appointment.isLocked && !isAdmin) {
       console.info(`${logPrefix} open blocked`, { appointmentId });
@@ -180,7 +321,7 @@ export function CalendarMonthView({
     const appointmentId = Number(event.dataTransfer.getData("text/plain"));
     if (!appointmentId) return;
 
-    const appointment = appointments.find((item) => item.id === appointmentId);
+    const appointment = appointmentsById.get(appointmentId);
     if (!appointment) return;
 
     const today = new Date();
@@ -278,120 +419,148 @@ export function CalendarMonthView({
     return { leftPercent, widthPercent };
   };
 
+  const visibleMonthStart = startOfMonth(addMonths(stripStartMonth, visibleIndex));
+
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
-      <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
-        <div className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider border-r border-border/30">
-          KW
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-bold text-primary">{format(visibleMonthStart, "MMMM yyyy", { locale: de })}</span>
         </div>
-        {weekDays.map((day) => (
-          <div
-            key={day}
-            className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider"
-          >
-            {day}
-          </div>
-        ))}
       </div>
 
-      <div className="flex-1 flex flex-col">
-        {weeks.map((week, weekIdx) => {
-          const laneGroups = weekLanes[weekIdx] ?? [];
-          return (
-            <div key={weekIdx} className="grid" style={{ gridTemplateColumns: monthRowTemplate }}>
-              <div className="flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
-                {getISOWeek(week[0])}
-              </div>
-              {week.map((day, dayIdx) => {
-                const isCurrentMonth = isSameMonth(day, monthStart);
-                const isTodayDate = isToday(day);
-                const dayKey = format(day, "yyyy-MM-dd");
-
-                return (
-                  <div
-                    key={day.toString()}
-                    className={`
-                      relative border-r border-b border-border/30 p-1 min-h-[72px]
-                      transition-colors duration-200
-                      ${!isCurrentMonth ? "bg-muted/10 text-muted-foreground/40" : "bg-white text-foreground hover:bg-slate-50"}
-                      ${dayIdx === 6 ? "border-r-0" : ""}
-                    `}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => handleDrop(event, day)}
-                    data-testid={`calendar-day-${dayKey}`}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <button
-                        onClick={() => onNewAppointment?.(dayKey)}
-                        className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                        data-testid={`button-new-appointment-${dayKey}`}
-                      >
-                        <span className="text-sm font-bold">+</span>
-                      </button>
-                      <span
-                        className={`
-                          flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
-                          ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
-                        `}
-                      >
-                        {format(day, "d")}
-                      </span>
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory"
+        onScroll={handleStripScroll}
+      >
+        <div className="flex h-full">
+          {months.map(({ monthStart, weeks, weekLanes }) => {
+            const monthKey = format(monthStart, "yyyy-MM-dd");
+            return (
+              <section
+                key={monthKey}
+                className="w-full min-w-full h-full snap-start border-r border-border/30 last:border-r-0"
+              >
+                <div className="h-full flex flex-col">
+                  <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
+                    <div className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider border-r border-border/30">
+                      KW
                     </div>
+                    {weekDays.map((day) => (
+                      <div
+                        key={`${monthKey}-${day}`}
+                        className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider"
+                      >
+                        {day}
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
 
-              <div className="border-r border-b border-border/30 bg-muted/20" />
-              <div className="col-span-7 border-b border-border/30 bg-white px-1 py-1">
-                <div className="space-y-0.5">
-                  {laneGroups.length === 0 && <div className="h-6" style={{ backgroundColor: "transparent" }} />}
-                  {laneGroups.map((lane, laneIndex) => (
-                    <div key={`${weekIdx}-${laneIndex}`} className="relative h-6">
-                      {lane.map((laneItem) => {
-                        const appointment = appointments.find((item) => item.id === laneItem.appointmentId);
-                        if (!appointment) return null;
+                  <div className="flex-1 flex flex-col overflow-y-auto">
+                    {weeks.map((week, weekIdx) => {
+                      const laneGroups = weekLanes[weekIdx] ?? [];
+                      return (
+                        <div key={`${monthKey}-${weekIdx}`} className="grid" style={{ gridTemplateColumns: monthRowTemplate }}>
+                          <div className="flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
+                            {getISOWeek(week[0])}
+                          </div>
+                          {week.map((day, dayIdx) => {
+                            const isCurrentMonth = isSameMonth(day, monthStart);
+                            const isTodayDate = isToday(day);
+                            const dayKey = format(day, "yyyy-MM-dd");
 
-                        const { leftPercent, widthPercent } = getLaneItemPosition(
-                          laneItem.startIndex,
-                          laneItem.endIndex,
-                        );
-                        const weekStartDay = week[laneItem.startIndex];
-                        const weekEndDay = week[laneItem.endIndex];
-                        if (!weekStartDay || !weekEndDay) return null;
+                            return (
+                              <div
+                                key={day.toString()}
+                                className={`
+                                  relative border-r border-b border-border/30 p-1 min-h-[72px]
+                                  transition-colors duration-200
+                                  ${!isCurrentMonth ? "bg-muted/10 text-muted-foreground/40" : "bg-white text-foreground hover:bg-slate-50"}
+                                  ${dayIdx === 6 ? "border-r-0" : ""}
+                                `}
+                                onDragOver={(event) => event.preventDefault()}
+                                onDrop={(event) => handleDrop(event, day)}
+                                data-testid={`calendar-day-${dayKey}`}
+                              >
+                                <div className="flex justify-between items-start mb-1">
+                                  <button
+                                    onClick={() => onNewAppointment?.(dayKey)}
+                                    className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                                    data-testid={`button-new-appointment-${dayKey}`}
+                                  >
+                                    <span className="text-sm font-bold">+</span>
+                                  </button>
+                                  <span
+                                    className={`
+                                      flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
+                                      ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
+                                    `}
+                                  >
+                                    {format(day, "d")}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
 
-                        return (
-                          <CalendarAppointmentCompactBar
-                            key={`${appointment.id}-${weekIdx}-${laneIndex}`}
-                            appointment={appointment}
-                            isFirstDay={isSameDay(weekStartDay, parseISO(appointment.startDate))}
-                            isLastDay={isSameDay(weekEndDay, parseISO(getAppointmentEndDate(appointment)))}
-                            showPopover={true}
-                            positionStyle={{
-                              position: "absolute",
-                              left: `${leftPercent}%`,
-                              width: `${widthPercent}%`,
-                              top: 0,
-                              zIndex: draggedAppointmentId === appointment.id ? 30 : 10,
-                            }}
-                            isLocked={appointment.isLocked && !isAdmin}
-                            isDragging={draggedAppointmentId === appointment.id}
-                            onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                            onDragStart={
-                              appointment.isLocked && !isAdmin
-                                ? undefined
-                                : (event) => handleDragStart(event, appointment.id)
-                            }
-                            onDragEnd={handleDragEnd}
-                          />
-                        );
-                      })}
-                    </div>
-                  ))}
+                          <div className="border-r border-b border-border/30 bg-muted/20" />
+                          <div className="col-span-7 border-b border-border/30 bg-white px-1 py-1">
+                            <div className="space-y-0.5">
+                              {laneGroups.length === 0 && <div className="h-6" style={{ backgroundColor: "transparent" }} />}
+                              {laneGroups.map((lane, laneIndex) => (
+                                <div key={`${monthKey}-${weekIdx}-${laneIndex}`} className="relative h-6">
+                                  {lane.map((laneItem) => {
+                                    const appointment = appointmentsById.get(laneItem.appointmentId);
+                                    if (!appointment) return null;
+
+                                    const { leftPercent, widthPercent } = getLaneItemPosition(
+                                      laneItem.startIndex,
+                                      laneItem.endIndex,
+                                    );
+                                    const weekStartDay = week[laneItem.startIndex];
+                                    const weekEndDay = week[laneItem.endIndex];
+                                    if (!weekStartDay || !weekEndDay) return null;
+
+                                    return (
+                                      <CalendarAppointmentCompactBar
+                                        key={`${appointment.id}-${monthKey}-${weekIdx}-${laneIndex}`}
+                                        appointment={appointment}
+                                        isFirstDay={isSameDay(weekStartDay, parseISO(appointment.startDate))}
+                                        isLastDay={isSameDay(weekEndDay, parseISO(getAppointmentEndDate(appointment)))}
+                                        showPopover={true}
+                                        positionStyle={{
+                                          position: "absolute",
+                                          left: `${leftPercent}%`,
+                                          width: `${widthPercent}%`,
+                                          top: 0,
+                                          zIndex: draggedAppointmentId === appointment.id ? 30 : 10,
+                                        }}
+                                        isLocked={appointment.isLocked && !isAdmin}
+                                        isDragging={draggedAppointmentId === appointment.id}
+                                        onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                        onDragStart={
+                                          appointment.isLocked && !isAdmin
+                                            ? undefined
+                                            : (event) => handleDragStart(event, appointment.id)
+                                        }
+                                        onDragEnd={handleDragEnd}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            </div>
-          );
-        })}
+              </section>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

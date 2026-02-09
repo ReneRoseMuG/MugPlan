@@ -2,14 +2,19 @@ import { useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
 
 export type UserSettingKey =
+  // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
   | "attachmentPreviewSize"
   | "attachmentStoragePath"
-  | "calendarWeekendColumnPercent";
+  | "calendarWeekendColumnPercent"
+  | "calendarWeekScrollRange"
+  | "calendarMonthScrollRange";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
   attachmentStoragePath: string;
   calendarWeekendColumnPercent: number;
+  calendarWeekScrollRange: number;
+  calendarMonthScrollRange: number;
 };
 
 export function useSettings() {

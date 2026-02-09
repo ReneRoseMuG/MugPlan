@@ -18,13 +18,17 @@ import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
-import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
+import { addMonths, subMonths, format } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
+export type CalendarNavCommand = {
+  id: number;
+  direction: "next" | "prev";
+};
 
 type HomeProps = {
   onLogout: () => void;
@@ -39,6 +43,10 @@ export default function Home({ onLogout }: HomeProps) {
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
   const [calendarEmployeeFilterId, setCalendarEmployeeFilterId] = useState<number | null>(null);
   const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
+  const [weekVisibleDate, setWeekVisibleDate] = useState(new Date());
+  const [monthVisibleDate, setMonthVisibleDate] = useState(new Date());
+  const [weekNavCommand, setWeekNavCommand] = useState<CalendarNavCommand | undefined>(undefined);
+  const [monthNavCommand, setMonthNavCommand] = useState<CalendarNavCommand | undefined>(undefined);
   const [appointmentContext, setAppointmentContext] = useState<{
     initialDate?: string;
     projectId?: number;
@@ -48,31 +56,58 @@ export default function Home({ onLogout }: HomeProps) {
 
   // Handlers for navigation
   const next = () => {
-    if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
-    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    if (view === 'month') {
+      setMonthNavCommand((prev) => ({ id: (prev?.id ?? 0) + 1, direction: "next" }));
+      return;
+    }
+    if (view === 'week') {
+      setWeekNavCommand((prev) => ({ id: (prev?.id ?? 0) + 1, direction: "next" }));
+      return;
+    }
     if (view === 'year') setCurrentDate(addMonths(currentDate, 12));
   };
   
   const prev = () => {
-    if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
-    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    if (view === 'month') {
+      setMonthNavCommand((prevCommand) => ({ id: (prevCommand?.id ?? 0) + 1, direction: "prev" }));
+      return;
+    }
+    if (view === 'week') {
+      setWeekNavCommand((prevCommand) => ({ id: (prevCommand?.id ?? 0) + 1, direction: "prev" }));
+      return;
+    }
     if (view === 'year') setCurrentDate(subMonths(currentDate, 12));
   };
 
   const handleViewChange = (newView: ViewType) => {
     console.info("[navigation] view change", { from: view, to: newView });
+    if (newView === "week") {
+      setWeekVisibleDate(currentDate);
+    } else if (newView === "month") {
+      setMonthVisibleDate(currentDate);
+    }
     setView(newView);
   };
 
 
   const isCalendarView = view === 'month' || view === 'week' || view === 'year';
 
-  const renderCalendarContent = () => {
+  const renderCalendarContent = (mode: "main" | "dialog") => {
+    const isMain = mode === "main";
     if (view === 'week') {
       return (
         <WeekGrid
-          currentDate={currentDate}
+          currentDate={weekVisibleDate}
           employeeFilterId={calendarEmployeeFilterId}
+          navCommand={isMain ? weekNavCommand : undefined}
+          onVisibleDateChange={
+            isMain
+              ? (date) => {
+                  setWeekVisibleDate(date);
+                  setCurrentDate(date);
+                }
+              : undefined
+          }
           onNewAppointment={(date) => {
             console.info("[calendar] new appointment", { date, view: "week" });
             setAppointmentContext({ initialDate: date });
@@ -106,8 +141,17 @@ export default function Home({ onLogout }: HomeProps) {
 
     return (
       <CalendarGrid
-        currentDate={currentDate}
+        currentDate={monthVisibleDate}
         employeeFilterId={calendarEmployeeFilterId}
+        navCommand={isMain ? monthNavCommand : undefined}
+        onVisibleDateChange={
+          isMain
+            ? (date) => {
+                setMonthVisibleDate(date);
+                setCurrentDate(date);
+              }
+            : undefined
+        }
         onNewAppointment={(date) => {
           console.info("[calendar] new appointment", { date, view: "month" });
           setAppointmentContext({ initialDate: date });
@@ -120,6 +164,8 @@ export default function Home({ onLogout }: HomeProps) {
       />
     );
   };
+
+  const calendarTitleDate = view === "week" ? weekVisibleDate : view === "month" ? monthVisibleDate : currentDate;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
@@ -135,7 +181,7 @@ export default function Home({ onLogout }: HomeProps) {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Ãœbersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Ãœbersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(currentDate, "yyyy") : format(currentDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Ãœbersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Ãœbersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
@@ -268,7 +314,7 @@ export default function Home({ onLogout }: HomeProps) {
           ) : isCalendarView ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
               {/* Kalenderansicht benÃ¶tigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
-              {renderCalendarContent()}
+              {renderCalendarContent("main")}
             </div>
           ) : null}
         </div>
@@ -281,7 +327,7 @@ export default function Home({ onLogout }: HomeProps) {
             <DialogHeader>
               <DialogTitle>Kalenderansicht</DialogTitle>
             </DialogHeader>
-            <div className="h-full">{renderCalendarContent()}</div>
+            <div className="h-full">{renderCalendarContent("dialog")}</div>
           </DialogContent>
         </Dialog>
       )}
