@@ -10,7 +10,7 @@ import { defaultHeaderColor } from "@/lib/colors";
 import { applyProjectFilters, buildProjectFilterQueryParams, defaultProjectFilters } from "@/lib/project-filters";
 import { useQuery } from "@tanstack/react-query";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
-import type { ProjectFilters } from "@/lib/project-filters";
+import type { ProjectFilters, ProjectScope } from "@/lib/project-filters";
 
 interface ProjectListProps {
   onCancel?: () => void;
@@ -31,6 +31,8 @@ interface ProjectListViewProps extends ProjectListProps {
   customers: Customer[];
   projectStatuses: ProjectStatus[];
   filters: ProjectFilters;
+  projectScope: ProjectScope;
+  onProjectScopeChange: (scope: ProjectScope) => void;
   onFiltersChange: Dispatch<SetStateAction<ProjectFilters>>;
   isLoading?: boolean;
 }
@@ -40,6 +42,8 @@ export function ProjectListView({
   customers,
   projectStatuses,
   filters,
+  projectScope,
+  onProjectScopeChange,
   onFiltersChange,
   isLoading = false,
   onCancel,
@@ -125,6 +129,8 @@ export function ProjectListView({
             ...prev,
             statusIds: prev.statusIds.filter((id) => id !== statusId),
           }))}
+          projectScope={projectScope}
+          onProjectScopeChange={onProjectScopeChange}
         />
       )}
     >
@@ -193,7 +199,11 @@ export function ProjectListView({
 
 export default function ProjectList(props: ProjectListProps) {
   const [filters, setFilters] = useState(defaultProjectFilters);
-  const projectQueryParams = useMemo(() => buildProjectFilterQueryParams(filters), [filters]);
+  const [projectScope, setProjectScope] = useState<ProjectScope>("upcoming");
+  const projectQueryParams = useMemo(
+    () => buildProjectFilterQueryParams(filters, projectScope),
+    [filters, projectScope],
+  );
   const projectQueryKey = useMemo(
     () => (projectQueryParams ? `/api/projects?${projectQueryParams}` : "/api/projects"),
     [projectQueryParams],
@@ -218,6 +228,8 @@ export default function ProjectList(props: ProjectListProps) {
       customers={customers}
       projectStatuses={projectStatuses}
       filters={filters}
+      projectScope={projectScope}
+      onProjectScopeChange={setProjectScope}
       onFiltersChange={setFilters}
       isLoading={projectsLoading}
     />

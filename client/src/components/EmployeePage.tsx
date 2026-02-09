@@ -51,8 +51,8 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   });
 
   const { data: allEmployees = [] } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { active: "all" }],
-    queryFn: () => fetch("/api/employees?active=all").then((response) => response.json()),
+    queryKey: ["/api/employees", { scope: "all" }],
+    queryFn: () => fetch("/api/employees?scope=all").then((response) => response.json()),
   });
 
   const invalidateEmployees = () => {

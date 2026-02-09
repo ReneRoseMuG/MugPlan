@@ -6,13 +6,11 @@ import { handleZodError } from "./validation";
 
 export async function listEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const activeParam = req.query.active as string | undefined;
-    let filter: "active" | "inactive" | "all" = "active";
-    if (activeParam === "false") filter = "inactive";
-    if (activeParam === "all") filter = "all";
-    const employees = await employeesService.listEmployees(filter);
+    const { scope } = api.employees.list.input.parse(req.query);
+    const employees = await employeesService.listEmployees(scope);
     res.json(employees);
   } catch (err) {
+    if (handleZodError(err, res)) return;
     next(err);
   }
 }

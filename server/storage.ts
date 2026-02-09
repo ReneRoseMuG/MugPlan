@@ -89,7 +89,7 @@ export interface IStorage {
   updateHelpText(id: number, data: UpdateHelpText): Promise<{ helpText: HelpText | null; error?: string }>;
   toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null>;
   deleteHelpText(id: number): Promise<void>;
-  getEmployees(filter?: "active" | "inactive" | "all"): Promise<Employee[]>;
+  getEmployees(filter?: "active" | "all"): Promise<Employee[]>;
   getEmployee(id: number): Promise<Employee | null>;
   getEmployeeWithRelations(id: number): Promise<{ employee: Employee; team: Team | null; tour: Tour | null } | null>;
   createEmployee(data: InsertEmployee): Promise<Employee>;
@@ -281,7 +281,7 @@ export class DatabaseStorage implements IStorage {
     await helpTextsService.deleteHelpText(id);
   }
 
-  async getEmployees(filter: "active" | "inactive" | "all" = "active"): Promise<Employee[]> {
+  async getEmployees(filter: "active" | "all" = "active"): Promise<Employee[]> {
     return employeesService.listEmployees(filter);
   }
 

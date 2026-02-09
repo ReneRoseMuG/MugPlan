@@ -5,6 +5,8 @@ export interface ProjectFilters {
   statusIds: number[];
 }
 
+export type ProjectScope = "upcoming" | "noAppointments";
+
 export const defaultProjectFilters: ProjectFilters = {
   title: "",
   statusIds: [],
@@ -27,8 +29,12 @@ export function applyProjectFilters(
   });
 }
 
-export function buildProjectFilterQueryParams(filters: ProjectFilters): string {
+export function buildProjectFilterQueryParams(
+  filters: ProjectFilters,
+  scope: ProjectScope,
+): string {
   const params = new URLSearchParams();
+  params.set("scope", scope);
 
   if (filters.statusIds.length > 0) {
     params.set("statusIds", filters.statusIds.join(","));

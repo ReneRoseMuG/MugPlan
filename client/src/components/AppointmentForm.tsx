@@ -137,8 +137,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   });
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { active: "all" }],
-    queryFn: () => fetchJson<Employee[]>("/api/employees?active=all"),
+    queryKey: ["/api/employees", { scope: "all" }],
+    queryFn: () => fetchJson<Employee[]>("/api/employees?scope=all"),
   });
 
   const { data: appointmentDetail, isLoading: appointmentLoading } = useQuery<AppointmentDetail>({

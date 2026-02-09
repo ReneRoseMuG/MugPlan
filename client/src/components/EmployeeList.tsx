@@ -26,6 +26,8 @@ interface EmployeeListViewProps {
   mode?: "list" | "picker";
   selectedEmployeeId?: number | null;
   title?: string;
+  employeeScope?: "active" | "all";
+  onEmployeeScopeChange?: (scope: "active" | "all") => void;
 }
 
 type EmployeeListProps = Omit<EmployeeListViewProps, "employees" | "teams" | "tours" | "isLoading">;
@@ -45,6 +47,8 @@ export function EmployeeListView({
   mode = "list",
   selectedEmployeeId = null,
   title,
+  employeeScope,
+  onEmployeeScopeChange,
 }: EmployeeListViewProps) {
   const [filters, setFilters] = useState(defaultEmployeeFilters);
   const employeesForBadgePreview = allEmployeesForBadgePreview ?? employees;
@@ -119,6 +123,8 @@ export function EmployeeListView({
           employeeLastName={filters.lastName}
           onEmployeeLastNameChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
           onEmployeeLastNameClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
+          employeeScope={employeeScope}
+          onEmployeeScopeChange={onEmployeeScopeChange}
         />
       )}
     >
@@ -231,9 +237,11 @@ export function EmployeeListView({
 }
 
 export function EmployeeList(props: EmployeeListProps) {
+  const [employeeScope, setEmployeeScope] = useState<"active" | "all">("active");
+
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { active: "all" }],
-    queryFn: () => fetch("/api/employees?active=all").then((response) => response.json()),
+    queryKey: ["/api/employees", { scope: employeeScope }],
+    queryFn: () => fetch(`/api/employees?scope=${employeeScope}`).then((response) => response.json()),
   });
 
   const { data: tours = [] } = useQuery<Tour[]>({
@@ -251,6 +259,8 @@ export function EmployeeList(props: EmployeeListProps) {
       teams={teams}
       tours={tours}
       isLoading={isLoading}
+      employeeScope={employeeScope}
+      onEmployeeScopeChange={setEmployeeScope}
     />
   );
 }

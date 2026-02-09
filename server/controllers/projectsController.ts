@@ -5,22 +5,32 @@ import { handleZodError } from "./validation";
 
 export async function listProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const listInput = api.projects.list.input.parse(req.query);
     const filter = req.query.filter as "active" | "inactive" | "all" | undefined;
     const customerIdParam = req.query.customerId as string | undefined;
     const statusIds = parseStatusIds(req.query.statusIds);
+    const scope = listInput.scope;
+
     if (customerIdParam) {
       const customerId = Number(customerIdParam);
       if (Number.isNaN(customerId)) {
-        res.status(400).json({ message: "UngÃ¼ltige customerId" });
+        res.status(400).json({ message: "Ungültige customerId" });
         return;
       }
-      const projects = await projectsService.listProjectsByCustomer(customerId, filter || "all", statusIds);
+      const projects = await projectsService.listProjectsByCustomer(
+        customerId,
+        filter || "all",
+        statusIds,
+        scope,
+      );
       res.json(projects);
       return;
     }
-    const projects = await projectsService.listProjects(filter || "all", statusIds);
+
+    const projects = await projectsService.listProjects(filter || "all", statusIds, scope);
     res.json(projects);
   } catch (err) {
+    if (handleZodError(err, res)) return;
     next(err);
   }
 }

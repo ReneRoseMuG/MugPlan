@@ -426,6 +426,9 @@ export const api = {
     list: {
       method: 'GET' as const,
       path: '/api/employees',
+      input: z.object({
+        scope: z.enum(["active", "all"]).default("active"),
+      }).strict(),
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
       },
@@ -611,6 +614,19 @@ export const api = {
     list: {
       method: 'GET' as const,
       path: '/api/projects',
+      input: z.object({
+        filter: z.enum(["active", "inactive", "all"]).optional(),
+        customerId: z.union([z.string(), z.number()]).optional(),
+        statusIds: z
+          .union([
+            z.string(),
+            z.number(),
+            z.array(z.string()),
+            z.array(z.number()),
+          ])
+          .optional(),
+        scope: z.enum(["upcoming", "noAppointments"]).default("upcoming"),
+      }),
       responses: {
         200: z.array(z.custom<typeof projects.$inferSelect>()),
       },

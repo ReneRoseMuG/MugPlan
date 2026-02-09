@@ -3,8 +3,8 @@ import * as employeesRepository from "../repositories/employeesRepository";
 import * as teamsRepository from "../repositories/teamsRepository";
 import * as toursRepository from "../repositories/toursRepository";
 
-export async function listEmployees(filter: "active" | "inactive" | "all" = "active"): Promise<Employee[]> {
-  return employeesRepository.getEmployees(filter);
+export async function listEmployees(scope: "active" | "all" = "active"): Promise<Employee[]> {
+  return employeesRepository.getEmployees(scope);
 }
 
 export async function getEmployeeWithRelations(

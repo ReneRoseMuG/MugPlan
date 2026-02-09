@@ -1,6 +1,7 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  appointments,
   customers,
   projectAttachments,
   projectNotes,
@@ -12,10 +13,41 @@ import {
   type UpdateProject,
   type InsertProjectAttachment,
 } from "@shared/schema";
+import type { ProjectScope } from "../services/projectsService";
+
+const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Berlin",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function getBerlinTodayDate(): Date {
+  const berlinToday = berlinFormatter.format(new Date());
+  return new Date(`${berlinToday}T00:00:00`);
+}
+
+function buildScopeCondition(scope: ProjectScope) {
+  if (scope === "noAppointments") {
+    return sql`not exists (
+      select 1
+      from ${appointments}
+      where ${appointments.projectId} = ${projects.id}
+    )`;
+  }
+
+  return sql`exists (
+    select 1
+    from ${appointments}
+    where ${appointments.projectId} = ${projects.id}
+      and ${gte(appointments.startDate, getBerlinTodayDate())}
+  )`;
+}
 
 export async function getProjects(
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
+  scope: ProjectScope = "upcoming",
 ): Promise<Project[]> {
   const conditions = [];
   if (filter === "active") {
@@ -33,6 +65,7 @@ export async function getProjects(
         and ${projectProjectStatus.projectStatusId} in (${statusIdList})
     )`);
   }
+  conditions.push(buildScopeCondition(scope));
 
   const query = conditions.length > 0
     ? db.select().from(projects).where(and(...conditions))
@@ -45,6 +78,7 @@ export async function getProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
+  scope: ProjectScope = "upcoming",
 ): Promise<Project[]> {
   const conditions = [eq(projects.customerId, customerId)];
   if (filter === "active") {
@@ -62,6 +96,7 @@ export async function getProjectsByCustomer(
         and ${projectProjectStatus.projectStatusId} in (${statusIdList})
     )`);
   }
+  conditions.push(buildScopeCondition(scope));
   return db
     .select()
     .from(projects)
