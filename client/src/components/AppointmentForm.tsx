@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar, Clock, FolderKanban, Plus, Route, Users } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import {
   PROJECT_APPOINTMENTS_ALL_FROM_DATE,
+  getBerlinTodayDateString,
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
 
@@ -107,6 +108,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
     employeeIds: number[];
   } | null>(null);
   const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [userRole] = useState(() =>
@@ -114,6 +116,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   );
   const isAdmin = userRole === "ADMIN";
   const isEditing = Boolean(appointmentId);
+  const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
   const projectAppointmentsFromDate = PROJECT_APPOINTMENTS_ALL_FROM_DATE;
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
@@ -301,6 +304,76 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
 
     await persistAppointment();
   };
+
+  const deleteAppointmentMutation = useMutation({
+    mutationFn: async ({ appointmentId: targetAppointmentId }: { appointmentId: number; projectId: number | null }) => {
+      console.info(`${logPrefix} delete request`, { appointmentId: targetAppointmentId });
+      const response = await fetch(`/api/appointments/${targetAppointmentId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "x-user-role": userRole,
+        },
+      });
+      console.info(`${logPrefix} delete response`, { appointmentId: targetAppointmentId, status: response.status });
+      if (!response.ok) {
+        const rawBody = await response.text();
+        const trimmedBody = rawBody.trim();
+        let message: string | undefined;
+        if (
+          trimmedBody &&
+          ((trimmedBody.startsWith("{") && trimmedBody.endsWith("}")) ||
+            (trimmedBody.startsWith("[") && trimmedBody.endsWith("]")))
+        ) {
+          try {
+            const payload = JSON.parse(trimmedBody) as { message?: unknown };
+            if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+              message = payload.message;
+            }
+          } catch {
+            // Ignore parse errors and use fallback message below.
+          }
+        }
+        const error = new Error(message ?? (response.statusText || "Löschen fehlgeschlagen")) as Error & { status?: number };
+        error.status = response.status;
+        throw error;
+      }
+      return targetAppointmentId;
+    },
+    onSuccess: async (_deletedAppointmentId, variables) => {
+      const projectIdForInvalidation = variables.projectId;
+      if (projectIdForInvalidation) {
+        const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+          projectId: projectIdForInvalidation,
+          fromDate: projectAppointmentsUpcomingFromDate,
+          userRole,
+        });
+        const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+          projectId: projectIdForInvalidation,
+          fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
+          userRole,
+        });
+        await queryClient.invalidateQueries({ queryKey: upcomingAppointmentsQueryKey });
+        await queryClient.invalidateQueries({ queryKey: allAppointmentsQueryKey });
+      }
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      toast({ title: "Termin gelöscht" });
+      onSaved?.();
+    },
+    onError: (error) => {
+      const status = (error as Error & { status?: number }).status;
+      if (status === 403) {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Keine Berechtigung oder Termin gesperrt.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
+      toast({ title: "Fehler", description: message, variant: "destructive" });
+    },
+  });
 
   const persistAppointment = async () => {
     if (!selectedProjectId) return;
@@ -642,6 +715,20 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
         </div>
       </div>
 
+      {isEditing && appointmentId && (
+        <div className="mt-8">
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => setDeleteConfirmOpen(true)}
+            disabled={isLocked || deleteAppointmentMutation.isPending}
+            data-testid="button-delete-appointment"
+          >
+            Termin löschen
+          </Button>
+        </div>
+      )}
+
       <Dialog open={projectPickerOpen} onOpenChange={setProjectPickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
           <ProjectList
@@ -715,6 +802,30 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
               }}
             >
               Trotzdem speichern
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termin löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dieser Termin wird dauerhaft gelöscht und kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground border border-destructive-border hover:bg-destructive/90"
+              disabled={deleteAppointmentMutation.isPending || !appointmentId}
+              onClick={() => {
+                if (!appointmentId) return;
+                deleteAppointmentMutation.mutate({ appointmentId, projectId: selectedProjectId });
+              }}
+            >
+              {deleteAppointmentMutation.isPending ? "Termin löschen..." : "Termin löschen"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
