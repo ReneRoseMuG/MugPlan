@@ -3,7 +3,7 @@ export type CanonicalRoleKey = "LESER" | "DISPONENT" | "ADMIN";
 export type SettingScopeType = "GLOBAL" | "ROLE" | "USER";
 export type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
 
-type BaseSettingDefinition<TType extends "enum" | "string", TValue> = {
+type BaseSettingDefinition<TType extends "enum" | "string" | "number", TValue> = {
   key: string;
   label: string;
   description: string;
@@ -21,7 +21,13 @@ export type StringSettingDefinition = BaseSettingDefinition<"string", string> & 
   placeholderWhitelist: readonly string[];
 };
 
-export type SettingDefinition = EnumSettingDefinition<string> | StringSettingDefinition;
+export type NumberSettingDefinition = BaseSettingDefinition<"number", number> & {
+  min: number;
+  max: number;
+  integer: boolean;
+};
+
+export type SettingDefinition = EnumSettingDefinition<string> | StringSettingDefinition | NumberSettingDefinition;
 
 const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
@@ -88,6 +94,19 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL"],
     placeholderWhitelist: [],
     validate: (value: unknown): value is string => typeof value === "string" && value.trim().length > 0,
+  },
+  calendarWeekendColumnPercent: {
+    key: "calendarWeekendColumnPercent",
+    label: "Kalender Wochenende Breite (%)",
+    description: "Breite von Samstag/Sonntag relativ zu einem Werktag in Prozent.",
+    type: "number",
+    defaultValue: 33,
+    min: 1,
+    max: 100,
+    integer: true,
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 100,
   },
   templatesProjectTitle: {
     key: "templates.project.title",

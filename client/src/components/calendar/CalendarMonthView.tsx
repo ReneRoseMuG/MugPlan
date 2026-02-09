@@ -16,7 +16,14 @@ import {
 import { de } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useSetting } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import {
+  buildDayGridTemplate,
+  getDayWeights,
+  normalizeWeekendColumnPercent,
+  sumWeights,
+} from "@/lib/calendar-layout";
 import {
   getAppointmentDurationDays,
   getAppointmentEndDate,
@@ -52,7 +59,13 @@ export function CalendarMonthView({
     () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
     [],
   );
+  const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const isAdmin = userRole === "ADMIN";
+  const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
+  const dayWeights = useMemo(() => getDayWeights(weekendColumnPercent), [weekendColumnPercent]);
+  const dayGridTemplate = useMemo(() => buildDayGridTemplate(dayWeights), [dayWeights]);
+  const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
+  const totalDayWeight = useMemo(() => sumWeights(dayWeights, 0, dayWeights.length), [dayWeights]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -256,10 +269,18 @@ export function CalendarMonthView({
   };
 
   const weekDays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const getLaneItemPosition = (startIndex: number, endIndex: number) => {
+    const clampedStart = Math.max(0, Math.min(6, startIndex));
+    const clampedEndExclusive = Math.max(clampedStart + 1, Math.min(7, endIndex + 1));
+    const leftPercent = (sumWeights(dayWeights, 0, clampedStart) / totalDayWeight) * 100;
+    const widthPercent = (sumWeights(dayWeights, clampedStart, clampedEndExclusive) / totalDayWeight) * 100;
+
+    return { leftPercent, widthPercent };
+  };
 
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
-      <div className="grid grid-cols-[50px_repeat(7,1fr)] border-b border-border/40 bg-muted/30">
+      <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
         <div className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider border-r border-border/30">
           KW
         </div>
@@ -276,11 +297,11 @@ export function CalendarMonthView({
       <div className="flex-1 flex flex-col">
         {weeks.map((week, weekIdx) => {
           const laneGroups = weekLanes[weekIdx] ?? [];
-              return (
-                <div key={weekIdx} className="flex-1 grid grid-cols-[50px_repeat(7,1fr)]">
-                  <div className="flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
+          return (
+            <div key={weekIdx} className="grid" style={{ gridTemplateColumns: monthRowTemplate }}>
+              <div className="flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
                 {getISOWeek(week[0])}
-                  </div>
+              </div>
               {week.map((day, dayIdx) => {
                 const isCurrentMonth = isSameMonth(day, monthStart);
                 const isTodayDate = isToday(day);
@@ -290,7 +311,7 @@ export function CalendarMonthView({
                   <div
                     key={day.toString()}
                     className={`
-                      relative border-r border-b border-border/30 p-1 min-h-[90px]
+                      relative border-r border-b border-border/30 p-1 min-h-[72px]
                       transition-colors duration-200
                       ${!isCurrentMonth ? "bg-muted/10 text-muted-foreground/40" : "bg-white text-foreground hover:bg-slate-50"}
                       ${dayIdx === 6 ? "border-r-0" : ""}
@@ -316,52 +337,58 @@ export function CalendarMonthView({
                         {format(day, "d")}
                       </span>
                     </div>
+                  </div>
+                );
+              })}
 
-                    <div className="space-y-0.5">
-                      {laneGroups.length === 0 && (
-                        <div className="h-6" style={{ backgroundColor: "transparent" }} />
-                      )}
-                      {laneGroups.map((lane, laneIndex) => {
-                        const laneItem = lane.find(
-                          (item) => dayIdx >= item.startIndex && dayIdx <= item.endIndex,
-                        );
-                        if (!laneItem) {
-                          return <div key={`${laneIndex}-${dayIdx}`} className="h-6" />;
-                        }
-
-                        if (laneItem.startIndex !== dayIdx) {
-                          return <div key={`${laneIndex}-${dayIdx}`} className="h-6" />;
-                        }
-
+              <div className="border-r border-b border-border/30 bg-muted/20" />
+              <div className="col-span-7 border-b border-border/30 bg-white px-1 py-1">
+                <div className="space-y-0.5">
+                  {laneGroups.length === 0 && <div className="h-6" style={{ backgroundColor: "transparent" }} />}
+                  {laneGroups.map((lane, laneIndex) => (
+                    <div key={`${weekIdx}-${laneIndex}`} className="relative h-6">
+                      {lane.map((laneItem) => {
                         const appointment = appointments.find((item) => item.id === laneItem.appointmentId);
-                        if (!appointment) {
-                          return <div key={`${laneIndex}-${dayIdx}`} className="h-6" />;
-                        }
+                        if (!appointment) return null;
+
+                        const { leftPercent, widthPercent } = getLaneItemPosition(
+                          laneItem.startIndex,
+                          laneItem.endIndex,
+                        );
+                        const weekStartDay = week[laneItem.startIndex];
+                        const weekEndDay = week[laneItem.endIndex];
+                        if (!weekStartDay || !weekEndDay) return null;
 
                         return (
                           <CalendarAppointmentCompactBar
                             key={`${appointment.id}-${weekIdx}-${laneIndex}`}
                             appointment={appointment}
-                            dayIndex={dayIdx}
-                            totalDaysInRow={7}
-                            isFirstDay={isSameDay(day, parseISO(appointment.startDate))}
-                            isLastDay={isSameDay(day, parseISO(getAppointmentEndDate(appointment)))}
-                            spanDays={laneItem.endIndex - laneItem.startIndex + 1}
+                            isFirstDay={isSameDay(weekStartDay, parseISO(appointment.startDate))}
+                            isLastDay={isSameDay(weekEndDay, parseISO(getAppointmentEndDate(appointment)))}
                             showPopover={true}
+                            positionStyle={{
+                              position: "absolute",
+                              left: `${leftPercent}%`,
+                              width: `${widthPercent}%`,
+                              top: 0,
+                              zIndex: draggedAppointmentId === appointment.id ? 30 : 10,
+                            }}
                             isLocked={appointment.isLocked && !isAdmin}
                             isDragging={draggedAppointmentId === appointment.id}
                             onDoubleClick={() => handleAppointmentClick(appointment.id)}
                             onDragStart={
-                              appointment.isLocked && !isAdmin ? undefined : (event) => handleDragStart(event, appointment.id)
+                              appointment.isLocked && !isAdmin
+                                ? undefined
+                                : (event) => handleDragStart(event, appointment.id)
                             }
                             onDragEnd={handleDragEnd}
                           />
                         );
                       })}
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              </div>
             </div>
           );
         })}

@@ -12,7 +12,9 @@ import {
 import { de } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useSetting } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getAppointmentDurationDays, getAppointmentEndDate, getAppointmentSortValue } from "@/lib/calendar-utils";
 import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
 
@@ -44,7 +46,13 @@ export function CalendarWeekView({
     () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
     [],
   );
+  const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const isAdmin = userRole === "ADMIN";
+  const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
+  const dayGridTemplate = useMemo(
+    () => buildDayGridTemplate(getDayWeights(weekendColumnPercent)),
+    [weekendColumnPercent],
+  );
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1, locale: de });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1, locale: de });
@@ -244,7 +252,7 @@ export function CalendarWeekView({
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-7 divide-x divide-border/30">
+      <div className="flex-1 grid divide-x divide-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
         {days.map((day, dayIdx) => {
           const isTodayDate = isToday(day);
           const dayKey = format(day, "yyyy-MM-dd");

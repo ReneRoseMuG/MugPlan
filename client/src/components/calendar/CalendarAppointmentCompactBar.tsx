@@ -5,14 +5,12 @@ import { CalendarAppointmentPopover } from "./CalendarAppointmentPopover";
 
 type CompactBarProps = {
   appointment: CalendarAppointment;
-  dayIndex: number;
-  totalDaysInRow: number;
   isFirstDay: boolean;
   isLastDay: boolean;
-  spanDays: number;
   showPopover?: boolean;
   isLocked?: boolean;
   isDragging?: boolean;
+  positionStyle?: React.CSSProperties;
   onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
@@ -24,14 +22,12 @@ const logPrefix = "[calendar-compact-bar]";
 
 export function CalendarAppointmentCompactBar({
   appointment,
-  dayIndex,
-  totalDaysInRow,
   isFirstDay,
   isLastDay,
-  spanDays,
   showPopover = isFirstDay,
   isLocked,
   isDragging,
+  positionStyle,
   onDoubleClick,
   onDragStart,
   onDragEnd,
@@ -70,7 +66,6 @@ export function CalendarAppointmentCompactBar({
   };
 
   const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
-  const widthPercent = Math.min(spanDays, totalDaysInRow - dayIndex) * 100;
   const textColor = (() => {
     if (!backgroundColor.startsWith("#")) return "#1a1a1a";
     const r = parseInt(backgroundColor.slice(1, 3), 16);
@@ -84,6 +79,7 @@ export function CalendarAppointmentCompactBar({
     <div
       ref={barRef}
       className={`relative ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""}`}
+      style={positionStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onDoubleClick={onDoubleClick}
@@ -103,10 +99,7 @@ export function CalendarAppointmentCompactBar({
           backgroundColor,
           color: textColor,
           borderRadius: isFirstDay && isLastDay ? "4px" : isFirstDay ? "4px 0 0 4px" : isLastDay ? "0 4px 4px 0" : "0",
-          width: spanDays > 1 ? `calc(${widthPercent}% + ${(spanDays - 1) * 2}px)` : "100%",
-          marginRight: spanDays > 1 ? `-${(spanDays - 1) * 100}%` : "0",
-          position: spanDays > 1 ? "relative" : "static",
-          zIndex: spanDays > 1 ? 10 : 1,
+          width: "100%",
         }}
       >
         <span className="truncate max-w-[35%]">#{appointment.customer.customerNumber}</span>

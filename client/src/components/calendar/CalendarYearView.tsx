@@ -262,11 +262,8 @@ export function CalendarYearView({
                         <CalendarAppointmentCompactBar
                           key={`${appointment.id}-${dayKey}`}
                           appointment={appointment}
-                          dayIndex={0}
-                          totalDaysInRow={1}
                           isFirstDay={true}
                           isLastDay={true}
-                          spanDays={1}
                           isLocked={appointment.isLocked && !isAdmin}
                           isDragging={draggedAppointmentId === appointment.id}
                           onDoubleClick={() => handleAppointmentClick(appointment.id)}

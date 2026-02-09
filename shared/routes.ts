@@ -984,7 +984,7 @@ export const api = {
             key: z.string(),
             label: z.string(),
             description: z.string(),
-            type: z.enum(["enum", "string"]),
+            type: z.enum(["enum", "string", "number"]),
             constraints: z.record(z.unknown()),
             allowedScopes: z.array(z.enum(["GLOBAL", "ROLE", "USER"])),
             defaultValue: z.unknown(),
@@ -1016,7 +1016,7 @@ export const api = {
             key: z.string(),
             label: z.string(),
             description: z.string(),
-            type: z.enum(["enum", "string"]),
+            type: z.enum(["enum", "string", "number"]),
             constraints: z.record(z.unknown()),
             allowedScopes: z.array(z.enum(["GLOBAL", "ROLE", "USER"])),
             defaultValue: z.unknown(),
@@ -1082,3 +1082,4 @@ export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
 export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
 export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
+

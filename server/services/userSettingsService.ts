@@ -35,7 +35,7 @@ type ResolvedSettingRow = {
   key: string;
   label: string;
   description: string;
-  type: "enum" | "string";
+  type: "enum" | "string" | "number";
   constraints: Record<string, unknown>;
   allowedScopes: SettingScopeType[];
   defaultValue: unknown;
@@ -192,7 +192,9 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
       type: definition.type,
       constraints: definition.type === "enum"
         ? { options: [...definition.options] }
-        : { placeholderWhitelist: [...definition.placeholderWhitelist] },
+        : definition.type === "string"
+          ? { placeholderWhitelist: [...definition.placeholderWhitelist] }
+          : { min: definition.min, max: definition.max, integer: definition.integer },
       allowedScopes: [...definition.allowedScopes],
       defaultValue: definition.defaultValue,
       globalValue,

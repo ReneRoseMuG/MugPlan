@@ -16,12 +16,14 @@ function stringifyValue(value: unknown): string {
 
 const previewOptions = ["small", "medium", "large"] as const;
 type PreviewSize = (typeof previewOptions)[number];
+const defaultWeekendColumnPercent = 33;
 
 export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
   const storagePathSetting = settingsByKey.get("attachmentStoragePath");
+  const weekendWidthSetting = settingsByKey.get("calendarWeekendColumnPercent");
 
   const resolvedPreviewValue = useMemo(() => {
     const value = previewSetting?.resolvedValue;
@@ -35,12 +37,23 @@ export function SettingsPage() {
     return typeof storagePathSetting?.resolvedValue === "string" ? storagePathSetting.resolvedValue : "server/uploads";
   }, [storagePathSetting?.resolvedValue]);
 
+  const resolvedWeekendColumnPercent = useMemo(() => {
+    const value = weekendWidthSetting?.resolvedValue;
+    if (typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 100) {
+      return value;
+    }
+    return defaultWeekendColumnPercent;
+  }, [weekendWidthSetting?.resolvedValue]);
+
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
   const [storagePathValue, setStoragePathValue] = useState<string>(resolvedStoragePath);
+  const [weekendColumnPercentValue, setWeekendColumnPercentValue] = useState<string>(String(resolvedWeekendColumnPercent));
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [weekendError, setWeekendError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
   const [storageSaved, setStorageSaved] = useState(false);
+  const [weekendSaved, setWeekendSaved] = useState(false);
 
   useEffect(() => {
     setPreviewValue(resolvedPreviewValue);
@@ -49,6 +62,10 @@ export function SettingsPage() {
   useEffect(() => {
     setStoragePathValue(resolvedStoragePath);
   }, [resolvedStoragePath]);
+
+  useEffect(() => {
+    setWeekendColumnPercentValue(String(resolvedWeekendColumnPercent));
+  }, [resolvedWeekendColumnPercent]);
 
   if (isLoading) {
     return (
@@ -103,10 +120,31 @@ export function SettingsPage() {
     }
   };
 
+  const handleSaveWeekendColumnPercent = async () => {
+    setWeekendError(null);
+    setWeekendSaved(false);
+    const parsed = Number(weekendColumnPercentValue);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
+      setWeekendError("Bitte eine ganze Zahl von 1 bis 100 eingeben.");
+      return;
+    }
+
+    try {
+      await setSetting({
+        key: "calendarWeekendColumnPercent",
+        scopeType: "GLOBAL",
+        value: parsed,
+      });
+      setWeekendSaved(true);
+    } catch (error) {
+      setWeekendError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
   return (
     <div className="h-full rounded-lg border-2 border-foreground bg-white p-6" data-testid="settings-landing-page">
       <h3 className="text-xl font-black uppercase tracking-tight text-primary">Einstellungen</h3>
-      <p className="mb-5 mt-1 text-sm text-slate-500">Direkte Bearbeitung von Attachment-Settings.</p>
+      <p className="mb-5 mt-1 text-sm text-slate-500">Direkte Bearbeitung globaler und benutzerspezifischer Settings.</p>
 
       <div className="space-y-4">
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-attachmentPreviewSize">
@@ -155,6 +193,30 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(storagePathSetting?.resolvedValue)} ({storagePathSetting?.resolvedScope ?? "-"})</p>
           {storageSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {storageError && <p className="mt-1 text-xs text-destructive">{storageError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekendColumnPercent">
+          <p className="font-semibold text-slate-900">{weekendWidthSetting?.label ?? "Kalender Wochenende Breite (%)"}</p>
+          <p className="mb-3 text-xs text-slate-500">{weekendWidthSetting?.description ?? "Breite von Samstag/Sonntag relativ zu Werktagen."}</p>
+
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              value={weekendColumnPercentValue}
+              onChange={(event) => setWeekendColumnPercentValue(event.target.value)}
+              data-testid="input-setting-calendarWeekendColumnPercent"
+            />
+            <Button onClick={() => void handleSaveWeekendColumnPercent()} disabled={isSaving} data-testid="button-save-calendarWeekendColumnPercent">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(weekendWidthSetting?.resolvedValue ?? defaultWeekendColumnPercent)} ({weekendWidthSetting?.resolvedScope ?? "-"})</p>
+          {weekendSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {weekendError && <p className="mt-1 text-xs text-destructive">{weekendError}</p>}
         </div>
       </div>
     </div>
