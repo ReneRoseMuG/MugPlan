@@ -950,6 +950,41 @@ export const api = {
       },
     },
   },
+  admin: {
+    resetDatabase: {
+      method: "POST" as const,
+      path: "/api/admin/reset-database",
+      input: z.object({
+        confirmPhrase: z.string().min(1),
+        confirmed: z.boolean(),
+      }),
+      responses: {
+        200: z.object({
+          ok: z.literal(true),
+          deleted: z.object({
+            noteTemplates: z.number(),
+            helpTexts: z.number(),
+            userSettingsValues: z.number(),
+            projects: z.number(),
+            customers: z.number(),
+            employees: z.number(),
+            projectStatuses: z.number(),
+            teams: z.number(),
+            tours: z.number(),
+            notes: z.number(),
+            seedRuns: z.number(),
+            seedRunEntities: z.number(),
+          }),
+          attachments: z.object({
+            filesDeleted: z.number(),
+            filesMissing: z.number(),
+          }),
+          durationMs: z.number(),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
+  },
   userSettings: {
     getResolved: {
       method: 'GET' as const,

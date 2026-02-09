@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import adminRoutes from "./routes/adminRoutes";
 import customerNotesRoutes from "./routes/customerNotesRoutes";
 import customerAttachmentsRoutes from "./routes/customerAttachmentsRoutes";
 import customersRoutes from "./routes/customersRoutes";
@@ -23,6 +24,7 @@ import toursRoutes from "./routes/toursRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+  app.use(adminRoutes);
   app.use(eventsRoutes);
   app.use(appointmentsRoutes);
   app.use(demoSeedRoutes);

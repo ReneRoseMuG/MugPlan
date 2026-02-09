@@ -2,6 +2,17 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -72,7 +83,31 @@ type SeedRunSummary = {
   warnings: string[];
 };
 
+type ResetDatabaseResponse = {
+  ok: true;
+  deleted: {
+    noteTemplates: number;
+    helpTexts: number;
+    userSettingsValues: number;
+    projects: number;
+    customers: number;
+    employees: number;
+    projectStatuses: number;
+    teams: number;
+    tours: number;
+    notes: number;
+    seedRuns: number;
+    seedRunEntities: number;
+  };
+  attachments: {
+    filesDeleted: number;
+    filesMissing: number;
+  };
+  durationMs: number;
+};
+
 export function DemoDataPage() {
+  const { toast } = useToast();
   const [employees, setEmployees] = useState(20);
   const [customers, setCustomers] = useState(10);
   const [projects, setProjects] = useState(30);
@@ -86,6 +121,8 @@ export function DemoDataPage() {
   const [reklShare, setReklShare] = useState(0.33);
   const [locale, setLocale] = useState("de");
   const [lastResult, setLastResult] = useState<SeedRunSummary | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetConfirmPhrase, setResetConfirmPhrase] = useState("");
 
   const { data: runs = [], isLoading } = useQuery<SeedRunListItem[]>({
     queryKey: [api.demoSeed.listRuns.path],
@@ -115,6 +152,33 @@ export function DemoDataPage() {
     },
   });
 
+  const resetDatabaseMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", api.admin.resetDatabase.path, {
+        confirmed: true,
+        confirmPhrase: resetConfirmPhrase,
+      });
+      return (await response.json()) as ResetDatabaseResponse;
+    },
+    onSuccess: (result) => {
+      setLastResult(null);
+      setResetDialogOpen(false);
+      setResetConfirmPhrase("");
+      queryClient.invalidateQueries();
+      toast({
+        title: "Datenbank zurueckgesetzt",
+        description: `Projekte: ${result.deleted.projects}, Kunden: ${result.deleted.customers}, Mitarbeitende: ${result.deleted.employees}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Reset fehlgeschlagen",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const latestRunId = useMemo(() => {
     if (runs.length === 0) return null;
     return runs[runs.length - 1].seedRunId;
@@ -137,6 +201,8 @@ export function DemoDataPage() {
       locale,
     });
   };
+
+  const canConfirmReset = resetConfirmPhrase === "RESET" && !resetDatabaseMutation.isPending;
 
   return (
     <div className="h-full rounded-lg border-2 border-foreground bg-white p-6 overflow-auto">
@@ -205,6 +271,13 @@ export function DemoDataPage() {
         >
           Letzten Run loeschen
         </Button>
+        <Button
+          variant="destructive"
+          disabled={resetDatabaseMutation.isPending}
+          onClick={() => setResetDialogOpen(true)}
+        >
+          Reset Datenbank
+        </Button>
       </div>
 
       {lastResult && (
@@ -249,6 +322,49 @@ export function DemoDataPage() {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={resetDialogOpen}
+        onOpenChange={(open) => {
+          setResetDialogOpen(open);
+          if (!open) {
+            setResetConfirmPhrase("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Datenbank bestaetigen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dieser Vorgang loescht alle Domain-Daten dauerhaft. Tippe <strong>RESET</strong>, um fortzufahren.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reset-confirm-phrase">Bestaetigungsphrase</Label>
+            <Input
+              id="reset-confirm-phrase"
+              value={resetConfirmPhrase}
+              onChange={(event) => setResetConfirmPhrase(event.target.value)}
+              placeholder="RESET"
+              autoComplete="off"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetDatabaseMutation.isPending}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground border border-destructive-border hover:bg-destructive/90"
+              disabled={!canConfirmReset}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!canConfirmReset) return;
+                resetDatabaseMutation.mutate();
+              }}
+            >
+              {resetDatabaseMutation.isPending ? "Reset laeuft..." : "Endgueltig resetten"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
