@@ -1,6 +1,7 @@
 import { Flag, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
+import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getProjectStatusColor } from "@/lib/project-status";
 import type { ProjectStatus } from "@shared/schema";
@@ -24,7 +25,10 @@ export function ProjectStatusFilterInput({
 }: ProjectStatusFilterInputProps) {
   return (
     <div className="flex flex-col gap-2 sm:min-w-[280px]">
-      <span className="text-xs font-semibold text-muted-foreground">Status</span>
+      <div className="flex items-center gap-1">
+        <span className="text-xs font-semibold text-muted-foreground">Status</span>
+        <HelpIcon helpKey="projects.filter.status" size="sm" />
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         {selectedStatuses.length === 0 ? (
           <span className="text-xs text-slate-400">Kein Statusfilter</span>

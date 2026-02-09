@@ -1,4 +1,5 @@
 import { SearchFilterInput } from "@/components/ui/search-filter-input";
+import { HelpIcon } from "@/components/ui/help/help-icon";
 
 interface CustomerNumberFilterInputProps {
   value: string;
@@ -17,6 +18,7 @@ export function CustomerNumberFilterInput({
     <SearchFilterInput
       id="customer-filter-number"
       label="Kundennummer"
+      labelAdornment={<HelpIcon helpKey="customers.filter.number" size="sm" />}
       value={value}
       onChange={onChange}
       onClear={onClear}

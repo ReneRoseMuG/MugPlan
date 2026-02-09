@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { 
-  insertEventSchema, events, 
   insertTourSchema, updateTourSchema, tours, 
   insertTeamSchema, updateTeamSchema, teams,
   insertCustomerSchema, updateCustomerSchema, customers,
@@ -29,32 +28,6 @@ export const errorSchemas = {
 };
 
 export const api = {
-  events: {
-    list: {
-      method: 'GET' as const,
-      path: '/api/events',
-      responses: {
-        200: z.array(z.custom<typeof events.$inferSelect>()),
-      },
-    },
-    create: {
-      method: 'POST' as const,
-      path: '/api/events',
-      input: insertEventSchema,
-      responses: {
-        201: z.custom<typeof events.$inferSelect>(),
-        400: errorSchemas.validation,
-      },
-    },
-    delete: {
-      method: 'DELETE' as const,
-      path: '/api/events/:id',
-      responses: {
-        204: z.void(),
-        404: errorSchemas.notFound,
-      },
-    },
-  },
   appointments: {
     get: {
       method: 'GET' as const,
@@ -1043,9 +1016,6 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
   }
   return url;
 }
-
-export type EventInput = z.infer<typeof api.events.create.input>;
-export type EventResponse = z.infer<typeof api.events.create.responses[201]>;
 
 export type TourInput = z.infer<typeof api.tours.create.input>;
 export type TourUpdateInput = z.infer<typeof api.tours.update.input>;

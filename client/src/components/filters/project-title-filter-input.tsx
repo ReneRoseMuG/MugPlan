@@ -1,4 +1,5 @@
 import { SearchFilterInput } from "@/components/ui/search-filter-input";
+import { HelpIcon } from "@/components/ui/help/help-icon";
 
 interface ProjectTitleFilterInputProps {
   value: string;
@@ -17,6 +18,7 @@ export function ProjectTitleFilterInput({
     <SearchFilterInput
       id="project-filter-title"
       label="Projekttitel"
+      labelAdornment={<HelpIcon helpKey="projects.filter.title" size="sm" />}
       value={value}
       onChange={onChange}
       onClear={onClear}

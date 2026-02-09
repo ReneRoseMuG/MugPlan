@@ -1,5 +1,6 @@
 import { ProjectStatusFilterInput } from "@/components/filters/project-status-filter-input";
 import { ProjectTitleFilterInput } from "@/components/filters/project-title-filter-input";
+import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
@@ -35,8 +36,6 @@ export function ProjectFilterPanel({
   projectScope,
   onProjectScopeChange,
 }: ProjectFilterPanelProps) {
-  const scopeSwitchId = "project-scope-no-appointments";
-
   return (
     <FilterPanel title={title} layout="row">
       <ProjectTitleFilterInput
@@ -45,15 +44,41 @@ export function ProjectFilterPanel({
         onClear={onProjectTitleClear}
         className="flex-1"
       />
-      <div className="flex items-center gap-3 sm:h-9">
-        <Label htmlFor={scopeSwitchId} className="text-xs font-semibold text-muted-foreground">
-          Ohne Termine
-        </Label>
-        <Switch
-          id={scopeSwitchId}
-          checked={projectScope === "noAppointments"}
-          onCheckedChange={(checked) => onProjectScopeChange(checked ? "noAppointments" : "upcoming")}
-        />
+      <div className="flex flex-wrap items-center gap-3 sm:h-9">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Label htmlFor="project-scope-upcoming" className="text-xs font-semibold text-muted-foreground">
+              Aktuelle Projekte
+            </Label>
+            <HelpIcon helpKey="projects.filter.scope.upcoming" size="sm" />
+          </div>
+          <Switch
+            id="project-scope-upcoming"
+            checked={projectScope === "upcoming"}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                onProjectScopeChange("upcoming");
+              }
+            }}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Label htmlFor="project-scope-no-appointments" className="text-xs font-semibold text-muted-foreground">
+              Ohne Termine
+            </Label>
+            <HelpIcon helpKey="projects.filter.scope.noAppointments" size="sm" />
+          </div>
+          <Switch
+            id="project-scope-no-appointments"
+            checked={projectScope === "noAppointments"}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                onProjectScopeChange("noAppointments");
+              }
+            }}
+          />
+        </div>
       </div>
       <ProjectStatusFilterInput
         selectedStatuses={selectedStatuses}

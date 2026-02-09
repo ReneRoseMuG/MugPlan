@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ interface FilterInputProps {
   onClear: () => void;
   placeholder?: string;
   numericOnly?: boolean;
+  labelAdornment?: ReactNode;
   className?: string;
 }
 
@@ -23,6 +25,7 @@ export function FilterInput({
   onClear,
   placeholder,
   numericOnly = false,
+  labelAdornment,
   className,
 }: FilterInputProps) {
   const hasValue = value.trim().length > 0;
@@ -39,9 +42,12 @@ export function FilterInput({
 
   return (
     <div className={cn("space-y-1", className)}>
-      <Label htmlFor={id} className="text-xs uppercase tracking-wide text-slate-500">
-        {label}
-      </Label>
+      <div className="flex items-center gap-1">
+        <Label htmlFor={id} className="text-xs uppercase tracking-wide text-slate-500">
+          {label}
+        </Label>
+        {labelAdornment}
+      </div>
       <div className="relative">
         <Input
           id={id}

@@ -1,11 +1,9 @@
 import type {
   Customer,
   Employee,
-  Event,
   HelpText,
   InsertCustomer,
   InsertEmployee,
-  InsertEvent,
   InsertHelpText,
   CreateNoteInput,
   InsertNote,
@@ -36,7 +34,6 @@ import * as customerNotesService from "./services/customerNotesService";
 import * as customersService from "./services/customersService";
 import * as employeesService from "./services/employeesService";
 import * as employeesRepository from "./repositories/employeesRepository";
-import * as eventsService from "./services/eventsService";
 import * as helpTextsService from "./services/helpTextsService";
 import * as noteTemplatesService from "./services/noteTemplatesService";
 import * as notesService from "./services/notesService";
@@ -50,9 +47,6 @@ import * as tourEmployeesService from "./services/tourEmployeesService";
 import * as toursService from "./services/toursService";
 
 export interface IStorage {
-  getEvents(): Promise<Event[]>;
-  createEvent(event: InsertEvent): Promise<Event>;
-  deleteEvent(id: number): Promise<void>;
   getTours(): Promise<Tour[]>;
   createTour(tour: InsertTour): Promise<Tour>;
   updateTour(id: number, data: UpdateTour): Promise<Tour | null>;
@@ -117,18 +111,6 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getEvents(): Promise<Event[]> {
-    return eventsService.listEvents();
-  }
-
-  async createEvent(event: InsertEvent): Promise<Event> {
-    return eventsService.createEvent(event);
-  }
-
-  async deleteEvent(id: number): Promise<void> {
-    await eventsService.deleteEvent(id);
-  }
-
   async getTours(): Promise<Tour[]> {
     return toursService.listTours();
   }
