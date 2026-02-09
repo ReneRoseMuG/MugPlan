@@ -926,7 +926,11 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     }
 
     for (let i = 0; i < config.customers; i += 1) {
-      const customer = await customersService.createCustomer(filler.nextCustomer(i, seedPrefix));
+      const customerPayload = filler.nextCustomer(i, seedPrefix);
+      const customer = await customersService.createCustomer({
+        ...customerPayload,
+        customerNumber: String(i + 1),
+      });
       customers.push(customer.id);
       created.customers += 1;
       await demoSeedRepository.addSeedRunEntity(seedRunId, "customer", customer.id);
