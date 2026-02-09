@@ -36,7 +36,7 @@ export async function createProjectAttachment(req: Request, res: Response, next:
 
     const originalName = sanitizeFilename(parsed.filename);
     const uniqueName = buildStoredFilename(originalName);
-    const storagePath = writeAttachmentBuffer(uniqueName, parsed.buffer);
+    const storagePath = await writeAttachmentBuffer(uniqueName, parsed.buffer);
 
     const attachmentData: InsertProjectAttachment = {
       projectId,

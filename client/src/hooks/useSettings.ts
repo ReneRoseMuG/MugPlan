@@ -1,10 +1,11 @@
-﻿import { useMemo } from "react";
+import { useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
 
-export type UserSettingKey = "attachmentPreviewSize";
+export type UserSettingKey = "attachmentPreviewSize" | "attachmentStoragePath";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
+  attachmentStoragePath: string;
 };
 
 export function useSettings() {

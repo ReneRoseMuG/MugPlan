@@ -421,7 +421,7 @@ async function createProjectAttachmentFromBuffer(
 ) {
   const safeName = sanitizeFilename(originalName);
   const filename = buildStoredFilename(safeName);
-  const storagePath = writeAttachmentBuffer(filename, buffer);
+  const storagePath = await writeAttachmentBuffer(filename, buffer);
   return projectAttachmentsService.createProjectAttachment({
     projectId,
     filename,

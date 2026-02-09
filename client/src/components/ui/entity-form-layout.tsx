@@ -17,6 +17,7 @@ interface EntityFormLayoutProps {
   saveLabel?: string;
   cancelLabel?: string;
   testIdPrefix?: string;
+  footerActions?: ReactNode;
 }
 
 export function EntityFormLayout({
@@ -32,6 +33,7 @@ export function EntityFormLayout({
   saveLabel = "Speichern",
   cancelLabel = "Abbrechen",
   testIdPrefix = "entity",
+  footerActions,
 }: EntityFormLayoutProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitAction = onSubmit ?? (onSave ? async () => onSave() : undefined);
@@ -87,6 +89,7 @@ export function EntityFormLayout({
                 {cancelLabel}
               </Button>
             )}
+            {footerActions}
             {submitAction && (
               <Button 
                 onClick={handleSubmit} 

@@ -1002,6 +1002,38 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    set: {
+      method: "PATCH" as const,
+      path: "/api/user-settings",
+      input: z.object({
+        key: z.string().min(1),
+        scopeType: z.enum(["GLOBAL", "ROLE", "USER"]),
+        value: z.unknown(),
+      }),
+      responses: {
+        200: z.array(
+          z.object({
+            key: z.string(),
+            label: z.string(),
+            description: z.string(),
+            type: z.enum(["enum", "string"]),
+            constraints: z.record(z.unknown()),
+            allowedScopes: z.array(z.enum(["GLOBAL", "ROLE", "USER"])),
+            defaultValue: z.unknown(),
+            globalValue: z.unknown().optional(),
+            roleValue: z.unknown().optional(),
+            userValue: z.unknown().optional(),
+            resolvedValue: z.unknown(),
+            resolvedScope: z.enum(["USER", "ROLE", "GLOBAL", "DEFAULT"]),
+            roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+            roleKey: z.enum(["LESER", "DISPONENT", "ADMIN"]),
+            updatedAt: z.string().nullable().optional(),
+            updatedBy: z.number().nullable().optional(),
+          }),
+        ),
+        400: errorSchemas.validation,
+      },
+    },
   },
 };
 

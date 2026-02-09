@@ -1,12 +1,12 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { getGlobalAttachmentStoragePath } from "../services/userSettingsService";
 
-export const UPLOAD_DIR = path.resolve(process.cwd(), "server/uploads");
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
-export function ensureUploadDir(): void {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+export async function ensureUploadDir(): Promise<string> {
+  return getGlobalAttachmentStoragePath();
 }
 
 export function sanitizeFilename(name: string): string {
@@ -31,9 +31,9 @@ export function buildStoredFilename(originalName: string): string {
   return `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${extension}`;
 }
 
-export function writeAttachmentBuffer(storedFilename: string, buffer: Buffer): string {
-  ensureUploadDir();
-  const storagePath = path.resolve(UPLOAD_DIR, storedFilename);
+export async function writeAttachmentBuffer(storedFilename: string, buffer: Buffer): Promise<string> {
+  const uploadDir = await ensureUploadDir();
+  const storagePath = path.resolve(uploadDir, storedFilename);
   fs.writeFileSync(storagePath, buffer);
   return storagePath;
 }

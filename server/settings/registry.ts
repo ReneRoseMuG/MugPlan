@@ -75,9 +75,19 @@ export const userSettingsRegistry = {
     type: "enum",
     options: attachmentPreviewSizeOptions,
     defaultValue: "medium",
-    allowedScopes: ["GLOBAL", "ROLE", "USER"],
+    allowedScopes: ["GLOBAL", "USER"],
     validate: (value: unknown): value is AttachmentPreviewSize =>
       typeof value === "string" && attachmentPreviewSizeOptions.includes(value as AttachmentPreviewSize),
+  },
+  attachmentStoragePath: {
+    key: "attachmentStoragePath",
+    label: "Attachment Speicherpfad",
+    description: "Basis-Verzeichnis fuer gespeicherte Attachments.",
+    type: "string",
+    defaultValue: "server/uploads",
+    allowedScopes: ["GLOBAL"],
+    placeholderWhitelist: [],
+    validate: (value: unknown): value is string => typeof value === "string" && value.trim().length > 0,
   },
   templatesProjectTitle: {
     key: "templates.project.title",

@@ -1,4 +1,6 @@
-﻿import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useSettings } from "@/hooks/useSettings";
 
 function stringifyValue(value: unknown): string {
@@ -12,8 +14,41 @@ function stringifyValue(value: unknown): string {
   }
 }
 
+const previewOptions = ["small", "medium", "large"] as const;
+type PreviewSize = (typeof previewOptions)[number];
+
 export function SettingsPage() {
-  const { settings, isLoading, isError, errorMessage, retry } = useSettings();
+  const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
+
+  const previewSetting = settingsByKey.get("attachmentPreviewSize");
+  const storagePathSetting = settingsByKey.get("attachmentStoragePath");
+
+  const resolvedPreviewValue = useMemo(() => {
+    const value = previewSetting?.resolvedValue;
+    if (value === "small" || value === "medium" || value === "large") {
+      return value;
+    }
+    return "medium" as PreviewSize;
+  }, [previewSetting?.resolvedValue]);
+
+  const resolvedStoragePath = useMemo(() => {
+    return typeof storagePathSetting?.resolvedValue === "string" ? storagePathSetting.resolvedValue : "server/uploads";
+  }, [storagePathSetting?.resolvedValue]);
+
+  const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
+  const [storagePathValue, setStoragePathValue] = useState<string>(resolvedStoragePath);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [previewSaved, setPreviewSaved] = useState(false);
+  const [storageSaved, setStorageSaved] = useState(false);
+
+  useEffect(() => {
+    setPreviewValue(resolvedPreviewValue);
+  }, [resolvedPreviewValue]);
+
+  useEffect(() => {
+    setStoragePathValue(resolvedStoragePath);
+  }, [resolvedStoragePath]);
 
   if (isLoading) {
     return (
@@ -38,38 +73,90 @@ export function SettingsPage() {
     );
   }
 
+  const handleSavePreview = async () => {
+    setPreviewError(null);
+    setPreviewSaved(false);
+    try {
+      await setSetting({
+        key: "attachmentPreviewSize",
+        scopeType: "USER",
+        value: previewValue,
+      });
+      setPreviewSaved(true);
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveStoragePath = async () => {
+    setStorageError(null);
+    setStorageSaved(false);
+    try {
+      await setSetting({
+        key: "attachmentStoragePath",
+        scopeType: "GLOBAL",
+        value: storagePathValue,
+      });
+      setStorageSaved(true);
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
   return (
     <div className="h-full rounded-lg border-2 border-foreground bg-white p-6" data-testid="settings-landing-page">
       <h3 className="text-xl font-black uppercase tracking-tight text-primary">Einstellungen</h3>
-      <p className="mb-4 mt-1 text-sm text-slate-500">Read-only Uebersicht der wirksamen Settings.</p>
+      <p className="mb-5 mt-1 text-sm text-slate-500">Direkte Bearbeitung von Attachment-Settings.</p>
 
-      {settings.length === 0 ? (
-        <p className="text-sm text-slate-500">Keine Settings vorhanden.</p>
-      ) : (
-        <div className="space-y-3">
-          {settings.map((setting) => (
-            <div
-              key={setting.key}
-              className="rounded-md border border-slate-200 bg-slate-50 p-3"
-              data-testid={`setting-row-${setting.key}`}
+      <div className="space-y-4">
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-attachmentPreviewSize">
+          <p className="font-semibold text-slate-900">{previewSetting?.label ?? "Datei Vorschau Groesse"}</p>
+          <p className="mb-3 text-xs text-slate-500">{previewSetting?.description ?? "Steuert die Groesse der Dateivorschau."}</p>
+
+          <div className="flex items-center gap-3">
+            <select
+              value={previewValue}
+              onChange={(event) => setPreviewValue(event.target.value as PreviewSize)}
+              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+              data-testid="select-setting-attachmentPreviewSize"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-slate-900">{setting.label}</p>
-                  <p className="text-xs text-slate-500">{setting.description}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-slate-600">Quelle: {setting.resolvedScope}</p>
-                  <p className="text-xs text-slate-500">Rolle: {setting.roleKey}</p>
-                </div>
-              </div>
-              <div className="mt-2 text-sm text-slate-800">
-                <span className="font-medium">Wert:</span> {stringifyValue(setting.resolvedValue)}
-              </div>
-            </div>
-          ))}
+              {previewOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <Button onClick={() => void handleSavePreview()} disabled={isSaving} data-testid="button-save-attachmentPreviewSize">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(previewSetting?.resolvedValue)} ({previewSetting?.resolvedScope ?? "-"})</p>
+          {previewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {previewError && <p className="mt-1 text-xs text-destructive">{previewError}</p>}
         </div>
-      )}
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-attachmentStoragePath">
+          <p className="font-semibold text-slate-900">{storagePathSetting?.label ?? "Attachment Speicherpfad"}</p>
+          <p className="mb-3 text-xs text-slate-500">{storagePathSetting?.description ?? "Basis-Verzeichnis fuer Uploads."}</p>
+
+          <div className="flex items-center gap-3">
+            <Input
+              value={storagePathValue}
+              onChange={(event) => setStoragePathValue(event.target.value)}
+              placeholder="server/uploads"
+              data-testid="input-setting-attachmentStoragePath"
+            />
+            <Button onClick={() => void handleSaveStoragePath()} disabled={isSaving} data-testid="button-save-attachmentStoragePath">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(storagePathSetting?.resolvedValue)} ({storagePathSetting?.resolvedScope ?? "-"})</p>
+          {storageSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {storageError && <p className="mt-1 text-xs text-destructive">{storageError}</p>}
+        </div>
+      </div>
     </div>
   );
 }

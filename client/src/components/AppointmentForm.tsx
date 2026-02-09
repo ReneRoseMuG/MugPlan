@@ -454,6 +454,19 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
       saveLabel={isEditing ? "Speichern" : "Termin erstellen"}
       closeOnSubmitSuccess={false}
       testIdPrefix="appointment"
+      footerActions={
+        isEditing && appointmentId ? (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => setDeleteConfirmOpen(true)}
+            disabled={isLocked || deleteAppointmentMutation.isPending}
+            data-testid="button-delete-appointment"
+          >
+            Termin loeschen
+          </Button>
+        ) : undefined
+      }
     >
       {isLocked && (
         <Alert variant="destructive" className="mb-6">
@@ -464,8 +477,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 gap-6">
-        <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-6">
+        <div className="col-span-2 space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
             <FolderKanban className="w-4 h-4" />
             Projektzuordnung
@@ -715,20 +728,6 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
         </div>
       </div>
 
-      {isEditing && appointmentId && (
-        <div className="mt-8">
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setDeleteConfirmOpen(true)}
-            disabled={isLocked || deleteAppointmentMutation.isPending}
-            data-testid="button-delete-appointment"
-          >
-            Termin löschen
-          </Button>
-        </div>
-      )}
-
       <Dialog open={projectPickerOpen} onOpenChange={setProjectPickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
           <ProjectList
@@ -839,3 +838,5 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
     </EntityFormLayout>
   );
 }
+
+
