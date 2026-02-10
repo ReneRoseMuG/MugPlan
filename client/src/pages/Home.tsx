@@ -18,10 +18,8 @@ import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
-import { addMonths, subMonths, format } from "date-fns";
+import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
@@ -42,11 +40,6 @@ export default function Home({ onLogout }: HomeProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
   const [calendarEmployeeFilterId, setCalendarEmployeeFilterId] = useState<number | null>(null);
-  const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
-  const [weekVisibleDate, setWeekVisibleDate] = useState(new Date());
-  const [monthVisibleDate, setMonthVisibleDate] = useState(new Date());
-  const [weekNavCommand, setWeekNavCommand] = useState<CalendarNavCommand | undefined>(undefined);
-  const [monthNavCommand, setMonthNavCommand] = useState<CalendarNavCommand | undefined>(undefined);
   const [appointmentContext, setAppointmentContext] = useState<{
     initialDate?: string;
     projectId?: number;
@@ -56,58 +49,31 @@ export default function Home({ onLogout }: HomeProps) {
 
   // Handlers for navigation
   const next = () => {
-    if (view === 'month') {
-      setMonthNavCommand((prev) => ({ id: (prev?.id ?? 0) + 1, direction: "next" }));
-      return;
-    }
-    if (view === 'week') {
-      setWeekNavCommand((prev) => ({ id: (prev?.id ?? 0) + 1, direction: "next" }));
-      return;
-    }
+    if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
+    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
     if (view === 'year') setCurrentDate(addMonths(currentDate, 12));
   };
   
   const prev = () => {
-    if (view === 'month') {
-      setMonthNavCommand((prevCommand) => ({ id: (prevCommand?.id ?? 0) + 1, direction: "prev" }));
-      return;
-    }
-    if (view === 'week') {
-      setWeekNavCommand((prevCommand) => ({ id: (prevCommand?.id ?? 0) + 1, direction: "prev" }));
-      return;
-    }
+    if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
+    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
     if (view === 'year') setCurrentDate(subMonths(currentDate, 12));
   };
 
   const handleViewChange = (newView: ViewType) => {
     console.info("[navigation] view change", { from: view, to: newView });
-    if (newView === "week") {
-      setWeekVisibleDate(currentDate);
-    } else if (newView === "month") {
-      setMonthVisibleDate(currentDate);
-    }
     setView(newView);
   };
 
 
   const isCalendarView = view === 'month' || view === 'week' || view === 'year';
 
-  const renderCalendarContent = (mode: "main" | "dialog") => {
-    const isMain = mode === "main";
+  const renderCalendarContent = () => {
     if (view === 'week') {
       return (
         <WeekGrid
-          currentDate={weekVisibleDate}
+          currentDate={currentDate}
           employeeFilterId={calendarEmployeeFilterId}
-          navCommand={isMain ? weekNavCommand : undefined}
-          onVisibleDateChange={
-            isMain
-              ? (date) => {
-                  setWeekVisibleDate(date);
-                  setCurrentDate(date);
-                }
-              : undefined
-          }
           onNewAppointment={(date) => {
             console.info("[calendar] new appointment", { date, view: "week" });
             setAppointmentContext({ initialDate: date });
@@ -141,17 +107,8 @@ export default function Home({ onLogout }: HomeProps) {
 
     return (
       <CalendarGrid
-        currentDate={monthVisibleDate}
+        currentDate={currentDate}
         employeeFilterId={calendarEmployeeFilterId}
-        navCommand={isMain ? monthNavCommand : undefined}
-        onVisibleDateChange={
-          isMain
-            ? (date) => {
-                setMonthVisibleDate(date);
-                setCurrentDate(date);
-              }
-            : undefined
-        }
         onNewAppointment={(date) => {
           console.info("[calendar] new appointment", { date, view: "month" });
           setAppointmentContext({ initialDate: date });
@@ -165,7 +122,7 @@ export default function Home({ onLogout }: HomeProps) {
     );
   };
 
-  const calendarTitleDate = view === "week" ? weekVisibleDate : view === "month" ? monthVisibleDate : currentDate;
+  const calendarTitleDate = currentDate;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
@@ -181,47 +138,14 @@ export default function Home({ onLogout }: HomeProps) {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Ãœbersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Ãœbersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
-          {view !== 'customer' && view !== 'customerList' && view !== 'tours' && view !== 'teams' && view !== 'employees' && view !== 'employeeWeekly' && view !== 'project' && view !== 'projectList' && view !== 'appointment' && view !== 'noteTemplates' && view !== 'projectStatus' && view !== 'helpTexts' && view !== 'settings' && view !== 'demoData' && (
-            <div className="flex items-center gap-2 bg-border rounded-md p-1">
-              <button
-                onClick={prev}
-                className="px-4 py-2 rounded bg-background text-primary font-black hover:bg-primary hover:text-white transition-all active:scale-95"
-                data-testid="button-prev"
-              >
-                <div className="flex items-center gap-2">
-                  <ChevronLeft className="w-5 h-5" />
-                  <span className="text-xs uppercase tracking-tighter">ZurÃ¼ck</span>
-                </div>
-              </button>
-              
-              <button
-                onClick={next}
-                className="px-4 py-2 rounded bg-background text-primary font-black hover:bg-primary hover:text-white transition-all active:scale-95"
-                data-testid="button-next"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase tracking-tighter">Vor</span>
-                  <ChevronRight className="w-5 h-5" />
-                </div>
-              </button>
-            </div>
-          )}
-
           {isCalendarView && (
             <div className="flex items-center gap-3">
               <CalendarEmployeeFilter value={calendarEmployeeFilterId} onChange={setCalendarEmployeeFilterId} />
-              <button
-                onClick={() => setCalendarDialogOpen(true)}
-                className="px-4 py-2 rounded bg-background text-primary font-black hover:bg-primary hover:text-white transition-all active:scale-95"
-                data-testid="button-calendar-dialog"
-              >
-                Dialog Ã¶ffnen
-              </button>
             </div>
           )}
             <Button variant="outline" onClick={onLogout}>
@@ -312,25 +236,40 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === 'demoData' ? (
             <DemoDataPage />
           ) : isCalendarView ? (
-            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground">
+            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground grid grid-cols-[28px_minmax(0,1fr)_28px]">
+              {/* UI-ONLY:
+               * Diese Navigationsfläche triggert ausschließlich die bestehende
+               * Vor/Zurück-Navigation.
+               * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
+               */}
+              <button
+                onClick={prev}
+                className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+                data-testid="button-prev"
+                aria-label="Zurück"
+              >
+                {"<"}
+              </button>
               {/* Kalenderansicht benÃ¶tigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
-              {renderCalendarContent("main")}
+              <div className="min-w-0 h-full overflow-hidden">{renderCalendarContent()}</div>
+              {/* UI-ONLY:
+               * Diese Navigationsfläche triggert ausschließlich die bestehende
+               * Vor/Zurück-Navigation.
+               * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
+               */}
+              <button
+                onClick={next}
+                className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+                data-testid="button-next"
+                aria-label="Vor"
+              >
+                {">"}
+              </button>
             </div>
           ) : null}
         </div>
 
       </main>
-
-      {isCalendarView && (
-        <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
-          <DialogContent className="max-w-[1200px] h-[80vh]">
-            <DialogHeader>
-              <DialogTitle>Kalenderansicht</DialogTitle>
-            </DialogHeader>
-            <div className="h-full">{renderCalendarContent("dialog")}</div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

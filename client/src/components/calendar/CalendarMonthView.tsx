@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import {
   addDays,
   addMonths,
-  differenceInCalendarDays,
   endOfMonth,
   endOfWeek,
   format,
@@ -13,7 +12,6 @@ import {
   parseISO,
   startOfMonth,
   startOfWeek,
-  subMonths,
 } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,7 +22,6 @@ import {
   buildDayGridTemplate,
   getDayWeights,
   normalizeWeekendColumnPercent,
-  sumWeights,
 } from "@/lib/calendar-layout";
 import {
   getAppointmentDurationDays,
@@ -43,35 +40,25 @@ type CalendarMonthViewProps = {
   onOpenAppointment?: (appointmentId: number) => void;
 };
 
-type WeekLaneItem = {
-  appointmentId: number;
-  startIndex: number;
-  endIndex: number;
-};
-
 type MonthRenderData = {
   monthStart: Date;
   weeks: Date[][];
-  weekLanes: WeekLaneItem[][][];
 };
 
 const logPrefix = "[calendar-month]";
-const scrollDebounceMs = 120;
 
 export function CalendarMonthView({
   currentDate,
   employeeFilterId,
-  navCommand,
-  onVisibleDateChange,
+  navCommand: _navCommand,
+  onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
 }: CalendarMonthViewProps) {
+  // FIX-RULE:
+  // Navigation/Sync-Signale werden absichtlich nicht verarbeitet.
+  // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
-  const [stripStartMonth, setStripStartMonth] = useState(startOfMonth(currentDate));
-  const [visibleIndex, setVisibleIndex] = useState(0);
-  const [viewportWidth, setViewportWidth] = useState(0);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(
@@ -86,14 +73,16 @@ export function CalendarMonthView({
     typeof monthScrollRangeSetting === "number" && Number.isInteger(monthScrollRangeSetting) && monthScrollRangeSetting >= 0
       ? Math.min(monthScrollRangeSetting, 12)
       : 3;
+
   const dayWeights = useMemo(() => getDayWeights(weekendColumnPercent), [weekendColumnPercent]);
   const dayGridTemplate = useMemo(() => buildDayGridTemplate(dayWeights), [dayWeights]);
   const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
-  const totalDayWeight = useMemo(() => sumWeights(dayWeights, 0, dayWeights.length), [dayWeights]);
 
+  const baseMonthStart = startOfMonth(currentDate);
+  const scrollResetKey = format(baseMonthStart, "yyyy-MM-dd");
   const monthStarts = useMemo(
-    () => Array.from({ length: extraMonthCount + 1 }, (_, index) => startOfMonth(addMonths(stripStartMonth, index))),
-    [extraMonthCount, stripStartMonth],
+    () => Array.from({ length: extraMonthCount + 1 }, (_, index) => startOfMonth(addMonths(baseMonthStart, index))),
+    [baseMonthStart, extraMonthCount],
   );
 
   const stripFromDate = format(startOfWeek(monthStarts[0], { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
@@ -109,118 +98,10 @@ export function CalendarMonthView({
     userRole,
   });
 
-  useEffect(() => {
-    console.info(`${logPrefix} render`, {
-      fromDate: stripFromDate,
-      toDate: stripToDate,
-      employeeId: employeeFilterId ?? null,
-      count: appointments.length,
-    });
-  }, [appointments.length, employeeFilterId, stripFromDate, stripToDate]);
-
-  useEffect(() => {
-    const targetMonthStart = startOfMonth(currentDate);
-    const visibleMonthStart = startOfMonth(addMonths(stripStartMonth, visibleIndex));
-    if (!isSameDay(targetMonthStart, visibleMonthStart)) {
-      setStripStartMonth(targetMonthStart);
-      setVisibleIndex(0);
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({ left: 0, behavior: "auto" });
-      }
-    }
-  }, [currentDate, stripStartMonth, visibleIndex]);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const updateWidth = () => {
-      setViewportWidth(container.clientWidth);
-    };
-
-    updateWidth();
-
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(container);
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!onVisibleDateChange) return;
-    const visibleMonthStart = startOfMonth(addMonths(stripStartMonth, visibleIndex));
-    onVisibleDateChange(visibleMonthStart);
-  }, [onVisibleDateChange, stripStartMonth, visibleIndex]);
-
-  const scrollToIndex = (index: number, behavior: ScrollBehavior) => {
-    if (!scrollContainerRef.current || viewportWidth <= 0) return;
-    scrollContainerRef.current.scrollTo({ left: index * viewportWidth, behavior });
-  };
-
-  const syncVisibleIndexFromScroll = () => {
-    const container = scrollContainerRef.current;
-    if (!container || viewportWidth <= 0) return;
-
-    const maxIndex = Math.max(0, extraMonthCount);
-    const nextIndex = Math.max(0, Math.min(maxIndex, Math.round(container.scrollLeft / viewportWidth)));
-
-    if (nextIndex !== visibleIndex) {
-      setVisibleIndex(nextIndex);
-    }
-
-    const targetLeft = nextIndex * viewportWidth;
-    if (Math.abs(container.scrollLeft - targetLeft) > 1) {
-      container.scrollTo({ left: targetLeft, behavior: "smooth" });
-    }
-  };
-
-  const handleStripScroll = () => {
-    if (scrollTimerRef.current) {
-      clearTimeout(scrollTimerRef.current);
-    }
-    scrollTimerRef.current = setTimeout(() => {
-      syncVisibleIndexFromScroll();
-    }, scrollDebounceMs);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (scrollTimerRef.current) {
-        clearTimeout(scrollTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!navCommand) return;
-
-    if (navCommand.direction === "next") {
-      if (visibleIndex < extraMonthCount) {
-        const nextIndex = visibleIndex + 1;
-        setVisibleIndex(nextIndex);
-        scrollToIndex(nextIndex, "smooth");
-      } else {
-        setStripStartMonth((prev) => startOfMonth(addMonths(prev, 1)));
-      }
-      return;
-    }
-
-    if (visibleIndex > 0) {
-      const nextIndex = visibleIndex - 1;
-      setVisibleIndex(nextIndex);
-      scrollToIndex(nextIndex, "smooth");
-    } else {
-      setStripStartMonth((prev) => startOfMonth(subMonths(prev, 1)));
-    }
-  }, [extraMonthCount, navCommand, visibleIndex, viewportWidth]);
-
-  useEffect(() => {
-    if (scrollContainerRef.current && viewportWidth > 0) {
-      scrollContainerRef.current.scrollTo({ left: visibleIndex * viewportWidth, behavior: "auto" });
-    }
-  }, [stripStartMonth, visibleIndex, viewportWidth]);
-
-  const appointmentsById = useMemo(() => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)), [appointments]);
+  const appointmentsById = useMemo(
+    () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
+    [appointments],
+  );
 
   const months = useMemo<MonthRenderData[]>(() => {
     return monthStarts.map((monthStart) => {
@@ -240,48 +121,9 @@ export function CalendarMonthView({
         weeks.push(days.slice(i, i + 7));
       }
 
-      const weekLanes = weeks.map((week) => {
-        const weekStart = week[0];
-        const weekEnd = week[6];
-        const weekAppointments = appointments
-          .filter((appointment) => {
-            const start = parseISO(appointment.startDate);
-            const end = parseISO(getAppointmentEndDate(appointment));
-            return start <= weekEnd && end >= weekStart;
-          })
-          .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
-
-        const lanes: WeekLaneItem[][] = [];
-
-        weekAppointments.forEach((appointment) => {
-          const startIndex = Math.max(0, differenceInCalendarDays(parseISO(appointment.startDate), weekStart));
-          const endIndex = Math.min(6, differenceInCalendarDays(parseISO(getAppointmentEndDate(appointment)), weekStart));
-
-          let laneIndex = lanes.findIndex((lane) =>
-            lane.every((item) => endIndex < item.startIndex || startIndex > item.endIndex),
-          );
-
-          if (laneIndex === -1) {
-            laneIndex = lanes.length;
-            lanes.push([]);
-          }
-
-          lanes[laneIndex].push({
-            appointmentId: appointment.id,
-            startIndex,
-            endIndex,
-          });
-        });
-
-        lanes.forEach((lane) => lane.sort((a, b) => a.startIndex - b.startIndex));
-
-        return lanes;
-      });
-
       return {
         monthStart,
         weeks,
-        weekLanes,
       };
     });
   }, [appointments, monthStarts]);
@@ -332,7 +174,7 @@ export function CalendarMonthView({
       console.info(`${logPrefix} drop blocked: past source`, { appointmentId, startDate: appointment.startDate });
       toast({
         title: "Verschieben nicht erlaubt",
-        description: "Vergangene Termine kÃ¶nnen nicht per Drag & Drop verschoben werden.",
+        description: "Vergangene Termine können nicht per Drag & Drop verschoben werden.",
         variant: "destructive",
       });
       setDraggedAppointmentId(null);
@@ -410,73 +252,83 @@ export function CalendarMonthView({
   };
 
   const weekDays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-  const getLaneItemPosition = (startIndex: number, endIndex: number) => {
-    const clampedStart = Math.max(0, Math.min(6, startIndex));
-    const clampedEndExclusive = Math.max(clampedStart + 1, Math.min(7, endIndex + 1));
-    const leftPercent = (sumWeights(dayWeights, 0, clampedStart) / totalDayWeight) * 100;
-    const widthPercent = (sumWeights(dayWeights, clampedStart, clampedEndExclusive) / totalDayWeight) * 100;
-
-    return { leftPercent, widthPercent };
-  };
-
-  const visibleMonthStart = startOfMonth(addMonths(stripStartMonth, visibleIndex));
 
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-primary">{format(visibleMonthStart, "MMMM yyyy", { locale: de })}</span>
+          <span className="text-lg font-bold text-primary">{format(baseMonthStart, "MMMM yyyy", { locale: de })}</span>
         </div>
       </div>
 
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory"
-        onScroll={handleStripScroll}
-      >
+      {/* FIX-RULE:
+       * Scroll ist bewusst passiv.
+       * Keine State-Änderungen, keine Navigation, keine Layout-Korrektur erlaubt.
+       * Jede Kopplung von Scroll und Datum ist hier ausdrücklich verboten.
+       */}
+      {/* FIX-RULE:
+       * Navigation (Vor/Zurück) ändert currentDate in Home.
+       * Der key setzt den Scrollcontainer deterministisch neu auf den linken Rand (0),
+       * ohne Scrollwerte zu lesen oder zu speichern.
+       */}
+      <div key={scrollResetKey} className="flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full">
-          {months.map(({ monthStart, weeks, weekLanes }) => {
+          {months.map(({ monthStart, weeks }) => {
             const monthKey = format(monthStart, "yyyy-MM-dd");
             return (
               <section
                 key={monthKey}
-                className="w-full min-w-full h-full snap-start border-r border-border/30 last:border-r-0"
+                className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
                 <div className="h-full flex flex-col">
                   <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
                     <div className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider border-r border-border/30">
                       KW
                     </div>
-                    {weekDays.map((day) => (
+                    {weekDays.map((day, dayIdx) => (
                       <div
                         key={`${monthKey}-${day}`}
-                        className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider"
+                        className={`py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider ${dayIdx >= 5 ? "bg-slate-200/70" : ""}`}
                       >
                         {day}
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex-1 flex flex-col overflow-y-auto">
+                  <div
+                    className="flex-1 grid overflow-hidden"
+                    style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}
+                  >
                     {weeks.map((week, weekIdx) => {
-                      const laneGroups = weekLanes[weekIdx] ?? [];
                       return (
-                        <div key={`${monthKey}-${weekIdx}`} className="grid" style={{ gridTemplateColumns: monthRowTemplate }}>
-                          <div className="flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
+                        <div
+                          key={`${monthKey}-${weekIdx}`}
+                          className="grid h-full min-h-0"
+                          style={{ gridTemplateColumns: monthRowTemplate }}
+                        >
+                          <div className="h-full min-h-0 flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
                             {getISOWeek(week[0])}
                           </div>
                           {week.map((day, dayIdx) => {
                             const isCurrentMonth = isSameMonth(day, monthStart);
                             const isTodayDate = isToday(day);
+                            const isWeekend = dayIdx >= 5;
                             const dayKey = format(day, "yyyy-MM-dd");
+                            const dayAppointments = appointments
+                              .filter((appointment) => {
+                                const start = parseISO(appointment.startDate);
+                                const end = parseISO(getAppointmentEndDate(appointment));
+                                return start <= day && end >= day;
+                              })
+                              .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
 
                             return (
                               <div
-                                key={day.toString()}
+                                key={dayKey}
                                 className={`
-                                  relative border-r border-b border-border/30 p-1 min-h-[72px]
+                                  relative h-full min-h-0 border-r border-b border-border/30 p-1 min-h-[72px]
                                   transition-colors duration-200
-                                  ${!isCurrentMonth ? "bg-muted/10 text-muted-foreground/40" : "bg-white text-foreground hover:bg-slate-50"}
+                                  ${!isCurrentMonth ? (isWeekend ? "bg-slate-300/30 text-muted-foreground/40" : "bg-muted/10 text-muted-foreground/40") : isWeekend ? "bg-slate-200/40 text-foreground hover:bg-slate-200/60" : "bg-white text-foreground hover:bg-slate-50"}
                                   ${dayIdx === 6 ? "border-r-0" : ""}
                                 `}
                                 onDragOver={(event) => event.preventDefault()}
@@ -500,42 +352,22 @@ export function CalendarMonthView({
                                     {format(day, "d")}
                                   </span>
                                 </div>
-                              </div>
-                            );
-                          })}
-
-                          <div className="border-r border-b border-border/30 bg-muted/20" />
-                          <div className="col-span-7 border-b border-border/30 bg-white px-1 py-1">
-                            <div className="space-y-0.5">
-                              {laneGroups.length === 0 && <div className="h-6" style={{ backgroundColor: "transparent" }} />}
-                              {laneGroups.map((lane, laneIndex) => (
-                                <div key={`${monthKey}-${weekIdx}-${laneIndex}`} className="relative h-6">
-                                  {lane.map((laneItem) => {
-                                    const appointment = appointmentsById.get(laneItem.appointmentId);
-                                    if (!appointment) return null;
-
-                                    const { leftPercent, widthPercent } = getLaneItemPosition(
-                                      laneItem.startIndex,
-                                      laneItem.endIndex,
-                                    );
-                                    const weekStartDay = week[laneItem.startIndex];
-                                    const weekEndDay = week[laneItem.endIndex];
-                                    if (!weekStartDay || !weekEndDay) return null;
-
+                                {/* FIX-MONTH-RENDER:
+                                 * Termine werden hier bewusst **in der Tageszelle** gerendert.
+                                 * Entfernt wurde der frühere globale / wochenübergreifende Stack.
+                                 * Keine neue Logik, keine Scroll-Änderung, keine Navigation.
+                                 */}
+                                <div className="space-y-0.5">
+                                  {dayAppointments.map((appointment) => {
+                                    const appointmentStart = parseISO(appointment.startDate);
+                                    const appointmentEnd = parseISO(getAppointmentEndDate(appointment));
                                     return (
                                       <CalendarAppointmentCompactBar
-                                        key={`${appointment.id}-${monthKey}-${weekIdx}-${laneIndex}`}
+                                        key={`${appointment.id}-${dayKey}`}
                                         appointment={appointment}
-                                        isFirstDay={isSameDay(weekStartDay, parseISO(appointment.startDate))}
-                                        isLastDay={isSameDay(weekEndDay, parseISO(getAppointmentEndDate(appointment)))}
+                                        isFirstDay={isSameDay(day, appointmentStart)}
+                                        isLastDay={isSameDay(day, appointmentEnd)}
                                         showPopover={true}
-                                        positionStyle={{
-                                          position: "absolute",
-                                          left: `${leftPercent}%`,
-                                          width: `${widthPercent}%`,
-                                          top: 0,
-                                          zIndex: draggedAppointmentId === appointment.id ? 30 : 10,
-                                        }}
                                         isLocked={appointment.isLocked && !isAdmin}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         onDoubleClick={() => handleAppointmentClick(appointment.id)}
@@ -549,9 +381,9 @@ export function CalendarMonthView({
                                     );
                                   })}
                                 </div>
-                              ))}
-                            </div>
-                          </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })}
@@ -565,3 +397,4 @@ export function CalendarMonthView({
     </div>
   );
 }
+

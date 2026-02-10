@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import {
   addDays,
   addWeeks,
@@ -6,11 +6,9 @@ import {
   endOfWeek,
   format,
   getISOWeek,
-  isSameDay,
   isToday,
   parseISO,
   startOfWeek,
-  subWeeks,
 } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
@@ -38,22 +36,19 @@ type WeekLaneItem = {
 };
 
 const logPrefix = "[calendar-week]";
-const scrollDebounceMs = 120;
 
 export function CalendarWeekView({
   currentDate,
   employeeFilterId,
-  navCommand,
-  onVisibleDateChange,
+  navCommand: _navCommand,
+  onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
 }: CalendarWeekViewProps) {
+  // FIX-RULE:
+  // Navigation/Sync-Signale werden absichtlich nicht verarbeitet.
+  // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
-  const [stripStartWeek, setStripStartWeek] = useState(startOfWeek(currentDate, { weekStartsOn: 1, locale: de }));
-  const [visibleIndex, setVisibleIndex] = useState(0);
-  const [viewportWidth, setViewportWidth] = useState(0);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(
@@ -69,14 +64,19 @@ export function CalendarWeekView({
     typeof weekScrollRangeSetting === "number" && Number.isInteger(weekScrollRangeSetting) && weekScrollRangeSetting >= 0
       ? Math.min(weekScrollRangeSetting, 12)
       : 4;
+
   const dayGridTemplate = useMemo(
     () => buildDayGridTemplate(getDayWeights(weekendColumnPercent)),
     [weekendColumnPercent],
   );
 
+  const baseWeekStart = startOfWeek(currentDate, { weekStartsOn: 1, locale: de });
+  const baseWeekEnd = endOfWeek(baseWeekStart, { weekStartsOn: 1, locale: de });
+  const scrollResetKey = format(baseWeekStart, "yyyy-MM-dd");
+
   const weekStarts = useMemo(
-    () => Array.from({ length: extraWeekCount + 1 }, (_, index) => addWeeks(stripStartWeek, index)),
-    [extraWeekCount, stripStartWeek],
+    () => Array.from({ length: extraWeekCount + 1 }, (_, index) => addWeeks(baseWeekStart, index)),
+    [baseWeekStart, extraWeekCount],
   );
 
   const stripFromDate = format(weekStarts[0], "yyyy-MM-dd");
@@ -89,118 +89,10 @@ export function CalendarWeekView({
     userRole,
   });
 
-  useEffect(() => {
-    console.info(`${logPrefix} render`, {
-      fromDate: stripFromDate,
-      toDate: stripToDate,
-      employeeId: employeeFilterId ?? null,
-      count: appointments.length,
-    });
-  }, [appointments.length, employeeFilterId, stripFromDate, stripToDate]);
-
-  useEffect(() => {
-    const targetWeekStart = startOfWeek(currentDate, { weekStartsOn: 1, locale: de });
-    const visibleWeekStart = addWeeks(stripStartWeek, visibleIndex);
-    if (!isSameDay(targetWeekStart, visibleWeekStart)) {
-      setStripStartWeek(targetWeekStart);
-      setVisibleIndex(0);
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({ left: 0, behavior: "auto" });
-      }
-    }
-  }, [currentDate, stripStartWeek, visibleIndex]);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const updateWidth = () => {
-      setViewportWidth(container.clientWidth);
-    };
-
-    updateWidth();
-
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(container);
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!onVisibleDateChange) return;
-    const visibleWeekStart = addWeeks(stripStartWeek, visibleIndex);
-    onVisibleDateChange(visibleWeekStart);
-  }, [onVisibleDateChange, stripStartWeek, visibleIndex]);
-
-  const scrollToIndex = (index: number, behavior: ScrollBehavior) => {
-    if (!scrollContainerRef.current || viewportWidth <= 0) return;
-    scrollContainerRef.current.scrollTo({ left: index * viewportWidth, behavior });
-  };
-
-  const syncVisibleIndexFromScroll = () => {
-    const container = scrollContainerRef.current;
-    if (!container || viewportWidth <= 0) return;
-
-    const maxIndex = Math.max(0, extraWeekCount);
-    const nextIndex = Math.max(0, Math.min(maxIndex, Math.round(container.scrollLeft / viewportWidth)));
-
-    if (nextIndex !== visibleIndex) {
-      setVisibleIndex(nextIndex);
-    }
-
-    const targetLeft = nextIndex * viewportWidth;
-    if (Math.abs(container.scrollLeft - targetLeft) > 1) {
-      container.scrollTo({ left: targetLeft, behavior: "smooth" });
-    }
-  };
-
-  const handleStripScroll = () => {
-    if (scrollTimerRef.current) {
-      clearTimeout(scrollTimerRef.current);
-    }
-    scrollTimerRef.current = setTimeout(() => {
-      syncVisibleIndexFromScroll();
-    }, scrollDebounceMs);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (scrollTimerRef.current) {
-        clearTimeout(scrollTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!navCommand) return;
-
-    if (navCommand.direction === "next") {
-      if (visibleIndex < extraWeekCount) {
-        const nextIndex = visibleIndex + 1;
-        setVisibleIndex(nextIndex);
-        scrollToIndex(nextIndex, "smooth");
-      } else {
-        setStripStartWeek((prev) => addWeeks(prev, 1));
-      }
-      return;
-    }
-
-    if (visibleIndex > 0) {
-      const nextIndex = visibleIndex - 1;
-      setVisibleIndex(nextIndex);
-      scrollToIndex(nextIndex, "smooth");
-    } else {
-      setStripStartWeek((prev) => subWeeks(prev, 1));
-    }
-  }, [extraWeekCount, navCommand, visibleIndex, viewportWidth]);
-
-  useEffect(() => {
-    if (scrollContainerRef.current && viewportWidth > 0) {
-      scrollContainerRef.current.scrollTo({ left: visibleIndex * viewportWidth, behavior: "auto" });
-    }
-  }, [stripStartWeek, visibleIndex, viewportWidth]);
-
-  const appointmentsById = useMemo(() => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)), [appointments]);
+  const appointmentsById = useMemo(
+    () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
+    [appointments],
+  );
 
   const lanesByWeekStart = useMemo(() => {
     const map = new Map<string, WeekLaneItem[][]>();
@@ -290,7 +182,7 @@ export function CalendarWeekView({
       console.info(`${logPrefix} drop blocked: past source`, { appointmentId, startDate: appointment.startDate });
       toast({
         title: "Verschieben nicht erlaubt",
-        description: "Vergangene Termine kÃ¶nnen nicht per Drag & Drop verschoben werden.",
+        description: "Vergangene Termine können nicht per Drag & Drop verschoben werden.",
         variant: "destructive",
       });
       setDraggedAppointmentId(null);
@@ -365,25 +257,28 @@ export function CalendarWeekView({
     }
   };
 
-  const visibleWeekStart = addWeeks(stripStartWeek, visibleIndex);
-  const visibleWeekEnd = endOfWeek(visibleWeekStart, { weekStartsOn: 1, locale: de });
-
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-primary">KW {getISOWeek(visibleWeekStart)}</span>
+          <span className="text-lg font-bold text-primary">KW {getISOWeek(baseWeekStart)}</span>
           <span className="text-sm text-muted-foreground">
-            {format(visibleWeekStart, "d. MMMM", { locale: de })} - {format(visibleWeekEnd, "d. MMMM yyyy", { locale: de })}
+            {format(baseWeekStart, "d. MMMM", { locale: de })} - {format(baseWeekEnd, "d. MMMM yyyy", { locale: de })}
           </span>
         </div>
       </div>
 
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory"
-        onScroll={handleStripScroll}
-      >
+      {/* FIX-RULE:
+       * Scroll ist bewusst passiv.
+       * Keine State-Änderungen, keine Navigation, keine Layout-Korrektur erlaubt.
+       * Jede Kopplung von Scroll und Datum ist hier ausdrücklich verboten.
+       */}
+      {/* FIX-RULE:
+       * Navigation (Vor/Zurück) ändert currentDate in Home.
+       * Der key setzt den Scrollcontainer deterministisch neu auf den linken Rand (0),
+       * ohne Scrollwerte zu lesen oder zu speichern.
+       */}
+      <div key={scrollResetKey} className="flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full">
           {weekStarts.map((weekStart) => {
             const weekKey = format(weekStart, "yyyy-MM-dd");
@@ -393,17 +288,18 @@ export function CalendarWeekView({
             return (
               <section
                 key={weekKey}
-                className="w-full min-w-full h-full snap-start border-r border-border/30 last:border-r-0"
+                className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
                 <div className="h-full grid divide-x divide-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
                   {days.map((day, dayIdx) => {
                     const isTodayDate = isToday(day);
+                    const isWeekend = dayIdx >= 5;
                     const dayKey = format(day, "yyyy-MM-dd");
 
                     return (
                       <div
-                        key={day.toString()}
-                        className="flex flex-col min-h-0 overflow-visible"
+                        key={dayKey}
+                        className="flex flex-col min-h-0 overflow-hidden"
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={(event) => handleDrop(event, day)}
                         data-testid={`week-day-${dayKey}`}
@@ -411,7 +307,7 @@ export function CalendarWeekView({
                         <div
                           className={`
                             px-3 py-3 border-b border-border/30 text-center
-                            ${isTodayDate ? "bg-primary/10" : "bg-muted/20"}
+                            ${isTodayDate ? "bg-primary/10" : isWeekend ? "bg-slate-200/70" : "bg-muted/20"}
                           `}
                         >
                           <div className="text-xs font-bold uppercase text-muted-foreground mb-1">
@@ -427,7 +323,7 @@ export function CalendarWeekView({
                           </div>
                         </div>
 
-                        <div className="flex-1 p-2 space-y-2 overflow-auto">
+                        <div className={`flex-1 p-2 space-y-2 overflow-hidden ${isWeekend ? "bg-slate-200/40" : ""}`}>
                           <div className="flex justify-end mb-2">
                             <button
                               onClick={() => onNewAppointment?.(dayKey)}
@@ -475,3 +371,4 @@ export function CalendarWeekView({
     </div>
   );
 }
+
