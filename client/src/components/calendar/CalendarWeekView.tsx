@@ -11,14 +11,16 @@ import {
   startOfWeek,
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getAppointmentDurationDays, getAppointmentEndDate, getAppointmentSortValue } from "@/lib/calendar-utils";
 import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
+import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import type { CalendarNavCommand } from "@/pages/Home";
+import type { Employee, Tour } from "@shared/schema";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -29,10 +31,20 @@ type CalendarWeekViewProps = {
   onOpenAppointment?: (appointmentId: number) => void;
 };
 
-type WeekLaneItem = {
-  appointmentId: number;
-  startIndex: number;
-  endIndex: number;
+type WeekDayBucket = {
+  dayIndex: number;
+  dateKey: string;
+  appointments: number[];
+};
+
+type WeekTourLane = {
+  laneKey: string;
+  label: string;
+  color: string | null;
+  tourId: number | null;
+  members: { id: number; fullName: string }[];
+  dayBuckets: WeekDayBucket[];
+  isCollapsed: boolean;
 };
 
 const logPrefix = "[calendar-week]";
@@ -91,13 +103,44 @@ export function CalendarWeekView({
     userRole,
   });
 
+  const { data: tours = [] } = useQuery<Tour[]>({
+    queryKey: ["/api/tours"],
+  });
+
+  const { data: employees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees", { scope: "active" }],
+    queryFn: () => fetch("/api/employees?scope=active").then((response) => response.json()),
+  });
+
   const appointmentsById = useMemo(
     () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
     [appointments],
   );
 
+  const membersByTourId = useMemo(() => {
+    const map = new Map<number, { id: number; fullName: string }[]>();
+    for (const employee of employees) {
+      if (!employee.tourId) continue;
+      const current = map.get(employee.tourId) ?? [];
+      current.push({ id: employee.id, fullName: employee.fullName });
+      map.set(employee.tourId, current);
+    }
+    map.forEach((members) => {
+      members.sort((a, b) => a.fullName.localeCompare(b.fullName, "de", { sensitivity: "base" }));
+    });
+    return map;
+  }, [employees]);
+
+  const unassignedMembers = useMemo(
+    () => employees
+      .filter((employee) => !employee.tourId)
+      .map((employee) => ({ id: employee.id, fullName: employee.fullName }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName, "de", { sensitivity: "base" })),
+    [employees],
+  );
+
   const lanesByWeekStart = useMemo(() => {
-    const map = new Map<string, WeekLaneItem[][]>();
+    const map = new Map<string, WeekTourLane[]>();
 
     weekStarts.forEach((weekStart) => {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1, locale: de });
@@ -109,34 +152,71 @@ export function CalendarWeekView({
         })
         .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
 
-      const laneGroups: WeekLaneItem[][] = [];
+      const initialLanes: WeekTourLane[] = tours
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }))
+        .map((tour) => ({
+          laneKey: `tour-${tour.id}`,
+          label: tour.name,
+          color: tour.color,
+          tourId: tour.id,
+          members: membersByTourId.get(tour.id) ?? [],
+          dayBuckets: Array.from({ length: 7 }, (_, dayIndex) => ({
+            dayIndex,
+            dateKey: format(addDays(weekStart, dayIndex), "yyyy-MM-dd"),
+            appointments: [],
+          })),
+          isCollapsed: false,
+        }));
 
-      weekAppointments.forEach((appointment) => {
-        const startIndex = Math.max(0, differenceInCalendarDays(parseISO(appointment.startDate), weekStart));
-        const endIndex = Math.min(6, differenceInCalendarDays(parseISO(getAppointmentEndDate(appointment)), weekStart));
+      const unassignedLane: WeekTourLane = {
+        laneKey: "tour-unassigned",
+        label: "Ohne Tour",
+        color: "#64748b",
+        tourId: null,
+        members: unassignedMembers,
+        dayBuckets: Array.from({ length: 7 }, (_, dayIndex) => ({
+          dayIndex,
+          dateKey: format(addDays(weekStart, dayIndex), "yyyy-MM-dd"),
+          appointments: [],
+        })),
+        isCollapsed: false,
+      };
 
-        let laneIndex = laneGroups.findIndex((lane) =>
-          lane.every((item) => endIndex < item.startIndex || startIndex > item.endIndex),
-        );
+      const lanes = [...initialLanes, unassignedLane];
+      const laneByKey = new Map(lanes.map((lane) => [lane.laneKey, lane] as const));
 
-        if (laneIndex === -1) {
-          laneIndex = laneGroups.length;
-          laneGroups.push([]);
+      for (const appointment of weekAppointments) {
+        const appointmentStart = parseISO(appointment.startDate);
+        const appointmentEnd = parseISO(getAppointmentEndDate(appointment));
+        const laneKey = appointment.tourId ? `tour-${appointment.tourId}` : "tour-unassigned";
+        const lane = laneByKey.get(laneKey);
+        if (!lane) continue;
+
+        for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
+          const dayDate = addDays(weekStart, dayIndex);
+          if (dayDate >= appointmentStart && dayDate <= appointmentEnd) {
+            lane.dayBuckets[dayIndex].appointments.push(appointment.id);
+          }
         }
+      }
 
-        laneGroups[laneIndex].push({
-          appointmentId: appointment.id,
-          startIndex,
-          endIndex,
-        });
-      });
+      for (const lane of lanes) {
+        for (const dayBucket of lane.dayBuckets) {
+          dayBucket.appointments.sort((aId, bId) => {
+            const aAppointment = appointmentsById.get(aId);
+            const bAppointment = appointmentsById.get(bId);
+            if (!aAppointment || !bAppointment) return 0;
+            return getAppointmentSortValue(aAppointment).localeCompare(getAppointmentSortValue(bAppointment));
+          });
+        }
+      }
 
-      laneGroups.forEach((lane) => lane.sort((a, b) => a.startIndex - b.startIndex));
-      map.set(format(weekStart, "yyyy-MM-dd"), laneGroups);
+      map.set(format(weekStart, "yyyy-MM-dd"), lanes);
     });
 
     return map;
-  }, [appointments, weekStarts]);
+  }, [appointments, appointmentsById, membersByTourId, tours, unassignedMembers, weekStarts]);
 
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointmentsById.get(appointmentId);
@@ -292,102 +372,124 @@ export function CalendarWeekView({
                 key={weekKey}
                 className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
-                <div className="h-full grid divide-x divide-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
-                  {days.map((day, dayIdx) => {
-                    const isTodayDate = isToday(day);
-                    const isWeekend = dayIdx >= 5;
-                    const dayKey = format(day, "yyyy-MM-dd");
+                <div className="h-full flex flex-col">
+                  <div className="grid divide-x divide-border/30 border-b border-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
+                    {days.map((day, dayIdx) => {
+                      const isTodayDate = isToday(day);
+                      const isWeekend = dayIdx >= 5;
+                      const dayKey = format(day, "yyyy-MM-dd");
 
-                    return (
-                      <div
-                        key={dayKey}
-                        className="flex flex-col min-h-0 overflow-hidden"
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={(event) => handleDrop(event, day)}
-                        data-testid={`week-day-${dayKey}`}
-                      >
-                        <div
-                          className={`
-                            px-3 py-3 border-b border-border/30 text-center
-                            ${isTodayDate ? "bg-primary/10" : isWeekend ? "bg-slate-200/70" : "bg-muted/20"}
-                          `}
-                        >
-                          <div className="text-xs font-bold uppercase text-muted-foreground mb-1">
-                            {format(day, "EEEE", { locale: de })}
-                          </div>
+                      return (
+                        <div key={dayKey} className="flex flex-col min-h-0 overflow-hidden" data-testid={`week-day-header-${dayKey}`}>
                           <div
                             className={`
-                              inline-flex items-center justify-center w-10 h-10 rounded-full text-xl font-extrabold
-                              ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground"}
+                              px-2 py-1.5 text-center
+                              ${isTodayDate ? "bg-primary/10" : isWeekend ? "bg-slate-200/70" : "bg-muted/20"}
                             `}
                           >
-                            {format(day, "d")}
-                          </div>
-                        </div>
-
-                        <div className={`flex-1 p-2 space-y-2 overflow-hidden ${isWeekend ? "bg-slate-200/40" : ""}`}>
-                          <div className="flex justify-end mb-2">
-                            <button
-                              onClick={() => onNewAppointment?.(dayKey)}
-                              className="w-6 h-6 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                              data-testid={`button-new-appointment-week-${dayKey}`}
+                            <div className="text-[10px] font-bold uppercase text-muted-foreground">
+                              {format(day, "EEEE", { locale: de })}
+                            </div>
+                            <div
+                              className={`
+                                mt-0.5 inline-flex items-center justify-center min-w-6 h-6 rounded-full px-1 text-sm font-bold
+                                ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground"}
+                              `}
                             >
-                              <span className="text-lg font-bold">+</span>
-                            </button>
+                              {format(day, "d")}
+                            </div>
                           </div>
-
-                          {weekLanes.map((lane, laneIndex) => {
-                            const laneItem = lane.find((item) => dayIdx >= item.startIndex && dayIdx <= item.endIndex);
-                            if (!laneItem) {
-                              return null;
-                            }
-                            const appointment = appointmentsById.get(laneItem.appointmentId);
-                            if (!appointment) {
-                              return null;
-                            }
-                            const isContinuationSegment = dayIdx > laneItem.startIndex;
-                            const isHighlighted = hoveredAppointmentId === appointment.id;
-                            const isSegmentLocked = appointment.isLocked && !isAdmin;
-                            const canDragSegment = !isSegmentLocked;
-
-                            if (isContinuationSegment) {
-                              return (
-                                <CalendarWeekAppointmentPanel
-                                  key={`${appointment.id}-${laneIndex}-${dayIdx}`}
-                                  appointment={appointment}
-                                  segment="continuation"
-                                  isDragging={draggedAppointmentId === appointment.id}
-                                  isLocked={isSegmentLocked}
-                                  highlighted={isHighlighted}
-                                  onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                  onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
-                                  onDragEnd={canDragSegment ? handleDragEnd : undefined}
-                                  onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
-                                  onMouseLeave={() => setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))}
-                                  testId={`week-appointment-continuation-${appointment.id}-${dayIdx}`}
-                                />
-                              );
-                            }
-
-                            return (
-                              <CalendarWeekAppointmentPanel
-                                key={`${appointment.id}-${laneIndex}-${dayIdx}`}
-                                appointment={appointment}
-                                isDragging={draggedAppointmentId === appointment.id}
-                                isLocked={isSegmentLocked}
-                                highlighted={isHighlighted}
-                                onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
-                                onDragEnd={canDragSegment ? handleDragEnd : undefined}
-                                onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
-                                onMouseLeave={() => setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))}
-                              />
-                            );
-                          })}
                         </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-2 space-y-3">
+                    {weekLanes.map((tourLane) => (
+                      <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10 p-2">
+                        <div className="relative">
+                          <CalendarWeekTourLaneHeaderBar
+                            label={tourLane.label}
+                            color={tourLane.color}
+                            members={tourLane.members}
+                            testId={`week-tour-lane-header-${tourLane.laneKey}`}
+                          />
+                          <div
+                            className="pointer-events-none absolute inset-0 grid"
+                            style={{ gridTemplateColumns: dayGridTemplate }}
+                          >
+                            {tourLane.dayBuckets.map((dayBucket) => (
+                              <div key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`} className="flex items-center justify-end px-1">
+                                <button
+                                  onClick={() => onNewAppointment?.(dayBucket.dateKey)}
+                                  className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none text-white/85 hover:bg-white/15 hover:text-white"
+                                  data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                  title={`Neuer Termin am ${dayBucket.dateKey}`}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {!tourLane.isCollapsed && (
+                          <div
+                            className="mt-1 grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30"
+                            style={{ gridTemplateColumns: dayGridTemplate }}
+                          >
+                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
+                              const day = days[dayIdx];
+                              const isWeekend = dayIdx >= 5;
+
+                              return (
+                                <div
+                                  key={`${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                  className={`h-full p-2 space-y-2 ${isWeekend ? "bg-slate-200/30" : "bg-white/70"}`}
+                                  onDragOver={(event) => event.preventDefault()}
+                                  onDrop={(event) => handleDrop(event, day)}
+                                  data-testid={`week-day-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                >
+                                  {dayBucket.appointments.map((appointmentId, stackIndex) => {
+                                    const appointment = appointmentsById.get(appointmentId);
+                                    if (!appointment) return null;
+
+                                    const appointmentStart = parseISO(appointment.startDate);
+                                    const isContinuationSegment = appointmentStart < day;
+                                    const isHighlighted = hoveredAppointmentId === appointment.id;
+                                    const isSegmentLocked = appointment.isLocked && !isAdmin;
+                                    const canDragSegment = !isSegmentLocked;
+
+                                    return (
+                                      <CalendarWeekAppointmentPanel
+                                        key={`${appointment.id}-${tourLane.laneKey}-${dayIdx}-${stackIndex}`}
+                                        appointment={appointment}
+                                        segment={isContinuationSegment ? "continuation" : "start"}
+                                        isDragging={draggedAppointmentId === appointment.id}
+                                        isLocked={isSegmentLocked}
+                                        highlighted={isHighlighted}
+                                        onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                        onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                        onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                        onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
+                                        onMouseLeave={() =>
+                                          setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
+                                        }
+                                        testId={
+                                          isContinuationSegment
+                                            ? `week-appointment-continuation-${appointment.id}-${dayIdx}`
+                                            : undefined
+                                        }
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               </section>
             );
