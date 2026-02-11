@@ -2,6 +2,7 @@
 import {
   addDays,
   addMonths,
+  differenceInCalendarDays,
   endOfMonth,
   endOfWeek,
   format,
@@ -45,6 +46,12 @@ type MonthRenderData = {
   weeks: Date[][];
 };
 
+type WeekLaneItem = {
+  appointmentId: number;
+  startIndex: number;
+  endIndex: number;
+};
+
 const logPrefix = "[calendar-month]";
 
 export function CalendarMonthView({
@@ -77,6 +84,7 @@ export function CalendarMonthView({
   const dayWeights = useMemo(() => getDayWeights(weekendColumnPercent), [weekendColumnPercent]);
   const dayGridTemplate = useMemo(() => buildDayGridTemplate(dayWeights), [dayWeights]);
   const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
+  const totalDayWeight = useMemo(() => dayWeights.reduce((sum, weight) => sum + weight, 0), [dayWeights]);
 
   const baseMonthStart = startOfMonth(currentDate);
   const scrollResetKey = format(baseMonthStart, "yyyy-MM-dd");
@@ -103,6 +111,15 @@ export function CalendarMonthView({
     () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
     [appointments],
   );
+
+  const getLaneItemPosition = (startIndex: number, endIndex: number) => {
+    const startWeight = dayWeights.slice(0, startIndex).reduce((sum, weight) => sum + weight, 0);
+    const spanWeight = dayWeights.slice(startIndex, endIndex + 1).reduce((sum, weight) => sum + weight, 0);
+    return {
+      left: `${(startWeight / totalDayWeight) * 100}%`,
+      width: `${(spanWeight / totalDayWeight) * 100}%`,
+    };
+  };
 
   const months = useMemo<MonthRenderData[]>(() => {
     return monthStarts.map((monthStart) => {
@@ -301,90 +318,136 @@ export function CalendarMonthView({
                     style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}
                   >
                     {weeks.map((week, weekIdx) => {
+                      const weekStart = week[0];
+                      const weekEnd = week[6];
+                      const weekAppointments = appointments
+                        .filter((appointment) => {
+                          const start = parseISO(appointment.startDate);
+                          const end = parseISO(getAppointmentEndDate(appointment));
+                          return start <= weekEnd && end >= weekStart;
+                        })
+                        .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
+
+                      const laneGroups: WeekLaneItem[][] = [];
+                      weekAppointments.forEach((appointment) => {
+                        const startIndex = Math.max(0, differenceInCalendarDays(parseISO(appointment.startDate), weekStart));
+                        const endIndex = Math.min(6, differenceInCalendarDays(parseISO(getAppointmentEndDate(appointment)), weekStart));
+
+                        let laneIndex = laneGroups.findIndex((lane) =>
+                          lane.every((item) => endIndex < item.startIndex || startIndex > item.endIndex),
+                        );
+
+                        if (laneIndex === -1) {
+                          laneIndex = laneGroups.length;
+                          laneGroups.push([]);
+                        }
+
+                        laneGroups[laneIndex].push({
+                          appointmentId: appointment.id,
+                          startIndex,
+                          endIndex,
+                        });
+                      });
+
+                      laneGroups.forEach((lane) => lane.sort((a, b) => a.startIndex - b.startIndex));
+
                       return (
                         <div
                           key={`${monthKey}-${weekIdx}`}
-                          className="grid h-full min-h-0"
+                          className="grid h-full min-h-0 relative"
                           style={{ gridTemplateColumns: monthRowTemplate }}
                         >
                           <div className="h-full min-h-0 flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
                             {getISOWeek(week[0])}
                           </div>
-                          {week.map((day, dayIdx) => {
-                            const isCurrentMonth = isSameMonth(day, monthStart);
-                            const isTodayDate = isToday(day);
-                            const isWeekend = dayIdx >= 5;
-                            const dayKey = format(day, "yyyy-MM-dd");
-                            const dayAppointments = appointments
-                              .filter((appointment) => {
-                                const start = parseISO(appointment.startDate);
-                                const end = parseISO(getAppointmentEndDate(appointment));
-                                return start <= day && end >= day;
-                              })
-                              .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
+                          <div className="col-span-7 h-full min-h-0 relative grid" style={{ gridTemplateColumns: dayGridTemplate }}>
+                            {week.map((day, dayIdx) => {
+                              const isCurrentMonth = isSameMonth(day, monthStart);
+                              const isTodayDate = isToday(day);
+                              const isWeekend = dayIdx >= 5;
+                              const dayKey = format(day, "yyyy-MM-dd");
 
-                            return (
-                              <div
-                                key={dayKey}
-                                className={`
-                                  relative h-full min-h-0 border-r border-b border-border/30 p-1 min-h-[72px]
-                                  transition-colors duration-200
-                                  ${!isCurrentMonth ? (isWeekend ? "bg-slate-300/30 text-muted-foreground/40" : "bg-muted/10 text-muted-foreground/40") : isWeekend ? "bg-slate-200/40 text-foreground hover:bg-slate-200/60" : "bg-white text-foreground hover:bg-slate-50"}
-                                  ${dayIdx === 6 ? "border-r-0" : ""}
-                                `}
-                                onDragOver={(event) => event.preventDefault()}
-                                onDrop={(event) => handleDrop(event, day)}
-                                data-testid={`calendar-day-${dayKey}`}
-                              >
-                                <div className="flex justify-between items-start mb-1">
-                                  <button
-                                    onClick={() => onNewAppointment?.(dayKey)}
-                                    className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                                    data-testid={`button-new-appointment-${dayKey}`}
-                                  >
-                                    <span className="text-sm font-bold">+</span>
-                                  </button>
-                                  <span
-                                    className={`
-                                      flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
-                                      ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
-                                    `}
-                                  >
-                                    {format(day, "d")}
-                                  </span>
+                              return (
+                                <div
+                                  key={dayKey}
+                                  className={`
+                                    relative h-full min-h-0 border-r border-b border-border/30 p-1 min-h-[72px]
+                                    transition-colors duration-200
+                                    ${!isCurrentMonth ? (isWeekend ? "bg-slate-300/30 text-muted-foreground/40" : "bg-muted/10 text-muted-foreground/40") : isWeekend ? "bg-slate-200/40 text-foreground hover:bg-slate-200/60" : "bg-white text-foreground hover:bg-slate-50"}
+                                    ${dayIdx === 6 ? "border-r-0" : ""}
+                                  `}
+                                  onDragOver={(event) => event.preventDefault()}
+                                  onDrop={(event) => handleDrop(event, day)}
+                                  data-testid={`calendar-day-${dayKey}`}
+                                >
+                                  <div className="flex justify-between items-start mb-1">
+                                    <button
+                                      onClick={() => onNewAppointment?.(dayKey)}
+                                      className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                                      data-testid={`button-new-appointment-${dayKey}`}
+                                    >
+                                      <span className="text-sm font-bold">+</span>
+                                    </button>
+                                    <span
+                                      className={`
+                                        flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
+                                        ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
+                                      `}
+                                    >
+                                      {format(day, "d")}
+                                    </span>
+                                  </div>
                                 </div>
-                                {/* FIX-MONTH-RENDER:
-                                 * Termine werden hier bewusst **in der Tageszelle** gerendert.
-                                 * Entfernt wurde der frühere globale / wochenübergreifende Stack.
-                                 * Keine neue Logik, keine Scroll-Änderung, keine Navigation.
-                                 */}
-                                <div className="space-y-0.5">
-                                  {dayAppointments.map((appointment) => {
+                              );
+                            })}
+
+                            <div className="absolute inset-x-1 top-8 bottom-1 pointer-events-none">
+                              {laneGroups.map((lane, laneIndex) => (
+                                <div
+                                  key={`${monthKey}-${weekIdx}-lane-${laneIndex}`}
+                                  className="absolute inset-x-0"
+                                  style={{ top: `${laneIndex * 26}px` }}
+                                >
+                                  {lane.map((item) => {
+                                    const appointment = appointmentsById.get(item.appointmentId);
+                                    if (!appointment) {
+                                      return null;
+                                    }
+
                                     const appointmentStart = parseISO(appointment.startDate);
                                     const appointmentEnd = parseISO(getAppointmentEndDate(appointment));
+                                    const segmentStart = addDays(weekStart, item.startIndex);
+                                    const segmentEnd = addDays(weekStart, item.endIndex);
+                                    const position = getLaneItemPosition(item.startIndex, item.endIndex);
+
                                     return (
-                                      <CalendarAppointmentCompactBar
-                                        key={`${appointment.id}-${dayKey}`}
-                                        appointment={appointment}
-                                        isFirstDay={isSameDay(day, appointmentStart)}
-                                        isLastDay={isSameDay(day, appointmentEnd)}
-                                        showPopover={true}
-                                        isLocked={appointment.isLocked && !isAdmin}
-                                        isDragging={draggedAppointmentId === appointment.id}
-                                        onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                        onDragStart={
-                                          appointment.isLocked && !isAdmin
-                                            ? undefined
-                                            : (event) => handleDragStart(event, appointment.id)
-                                        }
-                                        onDragEnd={handleDragEnd}
-                                      />
+                                      <div
+                                        key={`${monthKey}-${weekIdx}-${appointment.id}-${item.startIndex}-${item.endIndex}`}
+                                        className="absolute pointer-events-auto"
+                                        style={position}
+                                      >
+                                        <CalendarAppointmentCompactBar
+                                          appointment={appointment}
+                                          isFirstDay={isSameDay(segmentStart, appointmentStart)}
+                                          isLastDay={isSameDay(segmentEnd, appointmentEnd)}
+                                          showPopover={true}
+                                          isLocked={appointment.isLocked && !isAdmin}
+                                          isDragging={draggedAppointmentId === appointment.id}
+                                          onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                          onDragStart={
+                                            appointment.isLocked && !isAdmin
+                                              ? undefined
+                                              : (event) => handleDragStart(event, appointment.id)
+                                          }
+                                          onDragEnd={handleDragEnd}
+                                        />
+                                      </div>
                                     );
                                   })}
                                 </div>
-                              </div>
-                            );
-                          })}
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       );
                     })}

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
-import { CALENDAR_NEUTRAL_COLOR, getAppointmentEndDate, getAppointmentTimeLabel } from "@/lib/calendar-utils";
+import { CALENDAR_NEUTRAL_COLOR, getAppointmentEndDate } from "@/lib/calendar-utils";
 import { CalendarAppointmentPopover } from "./CalendarAppointmentPopover";
 
 type CompactBarProps = {
@@ -39,9 +39,15 @@ export function CalendarAppointmentCompactBar({
   const barRef = useRef<HTMLDivElement>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startTimeLabel = getAppointmentTimeLabel(appointment);
   const endDate = getAppointmentEndDate(appointment);
   const isMultiDay = appointment.startDate !== endDate;
+  const customerNumber = appointment.customer.customerNumber?.trim() || "-";
+  const customerName = appointment.customer.fullName?.trim() || "";
+  const postalCode = appointment.customer.postalCode?.trim() || "-";
+  const leftContent = isMultiDay && customerName
+    ? `K: ${customerNumber} ${customerName}`
+    : `K: ${customerNumber}`;
+  const rightContent = `PLZ: ${postalCode}`;
 
   const handleMouseEnter = () => {
     if (barRef.current) {
@@ -102,12 +108,12 @@ export function CalendarAppointmentCompactBar({
           width: "100%",
         }}
       >
-        <span className="truncate max-w-[35%]">#{appointment.customer.customerNumber}</span>
-        <span className="truncate max-w-[25%]">{appointment.customer.postalCode ?? "PLZ?"}</span>
-        <span className="truncate flex-1">{appointment.projectName}</span>
-        {!isMultiDay && startTimeLabel && (
-          <span className="ml-auto text-[10px] font-bold">{startTimeLabel}</span>
-        )}
+        <span className="inline-flex min-w-0 max-w-[75%] items-center rounded-sm bg-black/10 px-1.5 py-0.5 text-[10px]">
+          <span className="truncate">{leftContent}</span>
+        </span>
+        <span className="ml-auto inline-flex min-w-0 max-w-[35%] items-center justify-end rounded-sm bg-black/10 px-1.5 py-0.5 text-[10px] text-right">
+          <span className="truncate">{rightContent}</span>
+        </span>
       </div>
 
       {showTooltip && showPopover && (

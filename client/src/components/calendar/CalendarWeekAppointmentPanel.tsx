@@ -11,6 +11,7 @@ export function CalendarWeekAppointmentPanel({
   onDragStart,
   onDragEnd,
   isLocked,
+  interactive = true,
 }: {
   appointment: CalendarAppointment;
   onDoubleClick?: () => void;
@@ -18,16 +19,20 @@ export function CalendarWeekAppointmentPanel({
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
   isLocked?: boolean;
+  interactive?: boolean;
 }) {
+  const canDrag = interactive && Boolean(onDragStart);
+  const interactiveClass = interactive
+    ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
+    : "";
+
   return (
     <div
-      className={`rounded-lg border border-slate-200 p-2 shadow-sm transition ${
-        isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md"
-      } ${isDragging ? "opacity-50" : ""}`}
-      onDoubleClick={onDoubleClick}
-      draggable={Boolean(onDragStart)}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      className={`rounded-lg border border-slate-200 p-2 shadow-sm transition ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      onDoubleClick={interactive ? onDoubleClick : undefined}
+      draggable={canDrag}
+      onDragStart={canDrag ? onDragStart : undefined}
+      onDragEnd={canDrag ? onDragEnd : undefined}
       aria-disabled={isLocked}
       data-testid={`week-appointment-panel-${appointment.id}`}
     >

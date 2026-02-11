@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
-import { CalendarAppointmentDetails } from "./CalendarAppointmentDetails";
+import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
 
 export function CalendarAppointmentPopover({
   appointment,
@@ -20,11 +20,11 @@ export function CalendarAppointmentPopover({
 
   return createPortal(
     <div
-      className="fixed z-[9999] w-[360px] bg-white rounded-lg shadow-xl border border-slate-200 p-4 pointer-events-none"
+      className="fixed z-[9999] w-[360px] pointer-events-none"
       style={{ top, left }}
       data-testid={`appointment-popover-${appointment.id}`}
     >
-      <CalendarAppointmentDetails appointment={appointment} variant="popover" />
+      <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
     </div>,
     document.body,
   );
