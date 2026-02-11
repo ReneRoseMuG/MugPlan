@@ -16,6 +16,16 @@ import {
   Plus
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -32,11 +42,28 @@ interface ProjectFormProps {
 export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
+  const invalidateProjectQueries = () => {
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === "string" && key.startsWith("/api/projects");
+      },
+    });
+  };
   
   const [name, setName] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
+
+  const buildFormSnapshot = (input: { name: string; descriptionMd: string; customerId: number | null }) =>
+    JSON.stringify({
+      name: input.name.trim(),
+      descriptionMd: input.descriptionMd,
+      customerId: input.customerId,
+    });
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
     queryKey: ['/api/projects', projectId],
@@ -72,10 +99,37 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       setName(projectData.project.name);
       setDescriptionMd(projectData.project.descriptionMd || "");
       setCustomerId(projectData.project.customerId);
+      setInitialFormSnapshot(
+        buildFormSnapshot({
+          name: projectData.project.name,
+          descriptionMd: projectData.project.descriptionMd || "",
+          customerId: projectData.project.customerId,
+        }),
+      );
+    } else if (!isEditing) {
+      setInitialFormSnapshot(
+        buildFormSnapshot({
+          name: "",
+          descriptionMd: "",
+          customerId: null,
+        }),
+      );
     }
-  }, [projectData]);
+  }, [projectData, isEditing]);
 
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
+  const isFormDirty = buildFormSnapshot({
+    name,
+    descriptionMd,
+    customerId,
+  }) !== initialFormSnapshot;
+  const handleRequestClose = () => {
+    if (isFormDirty) {
+      setCloseConfirmOpen(true);
+      return;
+    }
+    onCancel?.();
+  };
 
   // Create project mutation
   const createMutation = useMutation({
@@ -84,7 +138,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      invalidateProjectQueries();
       toast({ title: "Projekt erstellt" });
     },
     onError: () => {
@@ -99,7 +153,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      invalidateProjectQueries();
       toast({ title: "Projekt gespeichert" });
     },
     onError: () => {
@@ -171,6 +225,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     } else {
       await createMutation.mutateAsync({ name, customerId, descriptionMd: descriptionMd || undefined });
     }
+    setInitialFormSnapshot(buildFormSnapshot({ name, descriptionMd, customerId }));
 
     if (onSaved && onSaved !== onCancel) {
       onSaved();
@@ -189,8 +244,8 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     <EntityFormLayout
       title={isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
       icon={<FolderKanban className="w-6 h-6" />}
-      onClose={onCancel}
-      onCancel={onCancel}
+      onClose={handleRequestClose}
+      onCancel={handleRequestClose}
       onSubmit={handleSubmit}
       saveLabel="Projekt speichern"
       testIdPrefix="project"
@@ -308,6 +363,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
           <CustomerList
             mode="picker"
             selectedCustomerId={customerId}
+            showCloseButton={false}
             onSelectCustomer={(id) => {
               setCustomerId(id);
               setCustomerDialogOpen(false);
@@ -317,6 +373,28 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Änderungen verwerfen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Es gibt ungespeicherte Änderungen. Möchten Sie das Formular wirklich schließen?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Weiter bearbeiten</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setCloseConfirmOpen(false);
+                onCancel?.();
+              }}
+            >
+              Verwerfen und schließen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </EntityFormLayout>
   );

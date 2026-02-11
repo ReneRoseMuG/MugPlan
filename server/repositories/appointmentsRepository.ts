@@ -135,6 +135,41 @@ export async function listAppointmentsByEmployeeFromDate(employeeId: number, fro
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 
+export async function listSidebarAppointmentsByProjectFromDate(projectId: number, fromDate: Date) {
+  console.log(`${logPrefix} list sidebar appointments by project projectId=${projectId} fromDate>=${fromDate}`);
+  return db
+    .select({
+      appointment: appointments,
+      project: projects,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointments)
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(and(eq(appointments.projectId, projectId), gte(appointments.startDate, fromDate)))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
+export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: number, fromDate: Date) {
+  console.log(`${logPrefix} list sidebar appointments by employee employeeId=${employeeId} fromDate>=${fromDate}`);
+  return db
+    .select({
+      appointment: appointments,
+      project: projects,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(and(eq(appointmentEmployees.employeeId, employeeId), gte(appointments.startDate, fromDate)))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
 export async function listAppointmentsForCalendarRange({
   fromDate,
   toDate,

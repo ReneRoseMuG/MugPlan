@@ -134,6 +134,19 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12,
   },
+  cardListColumns: {
+    key: "cardListColumns",
+    label: "Karten Spalten",
+    description: "Steuert die Anzahl der Spalten in Kartenlisten.",
+    type: "number",
+    defaultValue: 4,
+    min: 2,
+    max: 6,
+    integer: true,
+    allowedScopes: ["GLOBAL", "USER"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 6,
+  },
   templatesProjectTitle: {
     key: "templates.project.title",
     label: "Template Projekt-Titel",

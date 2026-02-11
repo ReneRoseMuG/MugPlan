@@ -1,8 +1,10 @@
-import { InfoBadge } from "@/components/ui/info-badge";
+﻿import { InfoBadge } from "@/components/ui/info-badge";
 import { createAppointmentInfoBadgePreview } from "@/components/ui/badge-previews/appointment-info-badge-preview";
+import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { Calendar } from "lucide-react";
 import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 import type { ReactNode } from "react";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 type TerminInfoBadgeMode = "kunde" | "projekt" | "mitarbeiter";
 
@@ -20,6 +22,7 @@ interface TerminInfoBadgeProps {
   employeeName?: string | null;
   icon?: ReactNode;
   color?: string | null;
+  previewAppointment?: CalendarAppointment | null;
   testId?: string;
   size?: "default" | "sm";
   fullWidth?: boolean;
@@ -66,6 +69,7 @@ export function TerminInfoBadge({
   employeeName,
   icon,
   color,
+  previewAppointment,
   testId,
   size = "default",
   fullWidth = false,
@@ -103,7 +107,7 @@ export function TerminInfoBadge({
             <span>{dateLabel}</span>
             {compactSuffix ? (
               <span className="text-xs text-muted-foreground">
-                {durationDays != null ? ` ${compactSuffix}` : ` � ${compactSuffix}`}
+                {durationDays != null ? ` ${compactSuffix}` : ` · ${compactSuffix}`}
               </span>
             ) : null}
           </div>
@@ -136,15 +140,16 @@ export function TerminInfoBadge({
       size={size}
       fullWidth={fullWidth}
       onDoubleClick={onDoubleClick}
-      preview={createAppointmentInfoBadgePreview({
-        startDate,
-        endDate: endDate ?? null,
-        startTimeHour: startTimeHour ?? null,
-        projectName: projectName ?? projectLabel ?? null,
-        customerName: customerName ?? customerLabel ?? null,
-        employeeName: employeeName ?? employeeLabel ?? null,
-      })}
+      preview={previewAppointment
+        ? createAppointmentWeeklyPanelPreview(previewAppointment)
+        : createAppointmentInfoBadgePreview({
+            startDate,
+            endDate: endDate ?? null,
+            startTimeHour: startTimeHour ?? null,
+            projectName: projectName ?? projectLabel ?? null,
+            customerName: customerName ?? customerLabel ?? null,
+            employeeName: employeeName ?? employeeLabel ?? null,
+          })}
     />
   );
 }
-

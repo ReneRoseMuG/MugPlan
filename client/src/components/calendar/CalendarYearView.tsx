@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo } from "react";
 import {
   addDays,
   addMonths,
-  differenceInCalendarDays,
   endOfWeek,
   endOfMonth,
   endOfYear,
@@ -15,7 +14,6 @@ import {
   startOfYear,
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
 import {
@@ -39,9 +37,7 @@ export function CalendarYearView({
   onNewAppointment,
   onOpenAppointment,
 }: CalendarYearViewProps) {
-  const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const userRole = useMemo(
     () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
     [],
@@ -85,121 +81,13 @@ export function CalendarYearView({
       console.info(`${logPrefix} open blocked`, { appointmentId });
       toast({
         title: "Termin ist gesperrt",
-        description: "Nur Admins dürfen vergangene Termine ändern.",
+        description: "Nur Admins d\u00FCrfen vergangene Termine \u00E4ndern.",
         variant: "destructive",
       });
       return;
     }
     console.info(`${logPrefix} open appointment`, { appointmentId });
     onOpenAppointment?.(appointmentId);
-  };
-
-  const handleDragStart = (event: React.DragEvent, appointmentId: number) => {
-    setDraggedAppointmentId(appointmentId);
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", String(appointmentId));
-    console.info(`${logPrefix} drag start`, { appointmentId });
-  };
-
-  const handleDragEnd = () => {
-    if (draggedAppointmentId) {
-      console.info(`${logPrefix} drag end`, { appointmentId: draggedAppointmentId });
-    }
-    setDraggedAppointmentId(null);
-  };
-
-  const handleDrop = async (event: React.DragEvent, targetDate: Date) => {
-    event.preventDefault();
-    const appointmentId = Number(event.dataTransfer.getData("text/plain"));
-    if (!appointmentId) return;
-
-    const appointment = appointments.find((item) => item.id === appointmentId);
-    if (!appointment) return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const appointmentStart = parseISO(appointment.startDate);
-
-    if (appointmentStart < today) {
-      console.info(`${logPrefix} drop blocked: past source`, { appointmentId, startDate: appointment.startDate });
-      toast({
-        title: "Verschieben nicht erlaubt",
-        description: "Vergangene Termine kÃ¶nnen nicht per Drag & Drop verschoben werden.",
-        variant: "destructive",
-      });
-      setDraggedAppointmentId(null);
-      return;
-    }
-
-    if (targetDate < today) {
-      console.info(`${logPrefix} drop blocked: past target`, { appointmentId, targetDate: format(targetDate, "yyyy-MM-dd") });
-      toast({
-        title: "Verschieben nicht erlaubt",
-        description: "Ein Termin kann nicht in die Vergangenheit verschoben werden.",
-        variant: "destructive",
-      });
-      setDraggedAppointmentId(null);
-      return;
-    }
-
-    if (appointment.isLocked && !isAdmin) {
-      console.info(`${logPrefix} drop blocked`, { appointmentId });
-      toast({
-        title: "Termin ist gesperrt",
-        description: "Nur Admins dürfen vergangene Termine ändern.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const durationDays = differenceInCalendarDays(
-      parseISO(getAppointmentEndDate(appointment)),
-      parseISO(appointment.startDate),
-    );
-    const newStartDate = format(targetDate, "yyyy-MM-dd");
-    const newEndDate = durationDays > 0 ? format(addDays(targetDate, durationDays), "yyyy-MM-dd") : null;
-
-    console.info(`${logPrefix} drop`, {
-      appointmentId,
-      fromDate: appointment.startDate,
-      toDate: newStartDate,
-      durationDays,
-    });
-
-    try {
-      const response = await fetch(`/api/appointments/${appointmentId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-role": userRole,
-        },
-        body: JSON.stringify({
-          projectId: appointment.projectId,
-          tourId: appointment.tourId ?? null,
-          startDate: newStartDate,
-          endDate: newEndDate,
-          startTime: appointment.startTime ?? null,
-          employeeIds: appointment.employees.map((employee) => employee.id),
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
-      console.info(`${logPrefix} drop success`, { appointmentId });
-    } catch (err) {
-      console.error(`${logPrefix} drop error`, err);
-      toast({
-        title: "Fehler beim Verschieben",
-        description: err instanceof Error ? err.message : "Unbekannter Fehler",
-        variant: "destructive",
-      });
-    } finally {
-      setDraggedAppointmentId(null);
-    }
   };
 
   return (
@@ -241,8 +129,6 @@ export function CalendarYearView({
                   <div
                     key={dayKey}
                     className={`border border-border/30 rounded-sm p-0.5 min-h-[34px] ${!isCurrentMonth ? "bg-muted/10" : "bg-white"}`}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => handleDrop(event, day)}
                   >
                     <div className="flex items-center justify-between">
                       <button
@@ -266,12 +152,7 @@ export function CalendarYearView({
                           isFirstDay={true}
                           isLastDay={true}
                           isLocked={appointment.isLocked && !isAdmin}
-                          isDragging={draggedAppointmentId === appointment.id}
                           onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                          onDragStart={
-                            appointment.isLocked && !isAdmin ? undefined : (event) => handleDragStart(event, appointment.id)
-                          }
-                          onDragEnd={handleDragEnd}
                         />
                       ))}
                       {hiddenCount > 0 && (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Calendar, Clock, FolderKanban, Plus, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
@@ -109,7 +109,30 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   } | null>(null);
   const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [initialFormSnapshot, setInitialFormSnapshot] = useState<string | null>(null);
+
+  const buildFormSnapshot = (input: {
+    projectId: number | null;
+    tourId: number | null;
+    startDate: string;
+    endDate: string;
+    isEndDateEnabled: boolean;
+    startTimeHour: string;
+    startTimeEnabled: boolean;
+    employeeIds: number[];
+  }) =>
+    JSON.stringify({
+      projectId: input.projectId,
+      tourId: input.tourId,
+      startDate: input.startDate,
+      endDate: input.isEndDateEnabled ? input.endDate : null,
+      isEndDateEnabled: input.isEndDateEnabled,
+      startTimeEnabled: input.startTimeEnabled,
+      startTimeHour: input.startTimeEnabled ? input.startTimeHour : "",
+      employeeIds: [...input.employeeIds].sort((a, b) => a - b),
+    });
 
   const [userRole] = useState(() =>
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
@@ -117,7 +140,32 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
   const isAdmin = userRole === "ADMIN";
   const isEditing = Boolean(appointmentId);
   const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
-  const projectAppointmentsFromDate = PROJECT_APPOINTMENTS_ALL_FROM_DATE;
+  const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {
+    if (projectId) {
+      const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+        projectId,
+        fromDate: projectAppointmentsUpcomingFromDate,
+        userRole,
+      });
+      const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+        projectId,
+        fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
+        userRole,
+      });
+      await queryClient.invalidateQueries({ queryKey: upcomingAppointmentsQueryKey });
+      await queryClient.invalidateQueries({ queryKey: allAppointmentsQueryKey });
+    }
+    await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+    await queryClient.invalidateQueries({
+      predicate: (query) => query.queryKey[0] === "customerAppointments",
+    });
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const firstKey = query.queryKey[0];
+        return typeof firstKey === "string" && firstKey.includes("/current-appointments?");
+      },
+    });
+  };
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects?filter=all"],
@@ -164,8 +212,40 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
     const startHour = appointmentDetail.startTime?.slice(0, 2) ?? "";
     setStartTimeEnabled(Boolean(startHour));
     setStartTimeHour(startHour);
-    setAssignedEmployeeIds(appointmentDetail.employees.map((employee) => employee.id));
+    const initialEmployeeIds = appointmentDetail.employees.map((employee) => employee.id);
+    setAssignedEmployeeIds(initialEmployeeIds);
+    setInitialFormSnapshot(
+      buildFormSnapshot({
+        projectId: appointmentDetail.projectId,
+        tourId: appointmentDetail.tourId ?? null,
+        startDate: appointmentDetail.startDate,
+        endDate: appointmentDetail.endDate ?? appointmentDetail.startDate,
+        isEndDateEnabled: Boolean(appointmentDetail.endDate),
+        startTimeHour: startHour,
+        startTimeEnabled: Boolean(startHour),
+        employeeIds: initialEmployeeIds,
+      }),
+    );
   }, [appointmentDetail]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setInitialFormSnapshot(
+        buildFormSnapshot({
+          projectId: selectedProjectId,
+          tourId: selectedTourId,
+          startDate,
+          endDate,
+          isEndDateEnabled,
+          startTimeHour,
+          startTimeEnabled,
+          employeeIds: assignedEmployeeIds,
+        }),
+      );
+    }
+    // Intentionally only initialize once for create mode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
 
   useEffect(() => {
     if (!isEndDateEnabled) {
@@ -224,6 +304,23 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
 
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
+  const isFormDirty = initialFormSnapshot !== null && buildFormSnapshot({
+    projectId: selectedProjectId,
+    tourId: selectedTourId,
+    startDate,
+    endDate,
+    isEndDateEnabled,
+    startTimeHour,
+    startTimeEnabled,
+    employeeIds: assignedEmployeeIds,
+  }) !== initialFormSnapshot;
+  const handleRequestClose = () => {
+    if (isFormDirty && !isSaving) {
+      setCloseConfirmOpen(true);
+      return;
+    }
+    onCancel?.();
+  };
 
   const addEmployees = (ids: number[]) => {
     setAssignedEmployeeIds((prev) => {
@@ -290,7 +387,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
 
   const submitAppointment = async () => {
     if (isLocked) {
-      toast({ title: "Termin ist gesperrt", description: "Nur Admins dürfen vergangene Termine ändern.", variant: "destructive" });
+      toast({ title: "Termin ist gesperrt", description: "Nur Admins dÃ¼rfen vergangene Termine Ã¤ndern.", variant: "destructive" });
       console.info(`${logPrefix} save blocked: locked appointment`);
       return;
     }
@@ -334,7 +431,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
             // Ignore parse errors and use fallback message below.
           }
         }
-        const error = new Error(message ?? (response.statusText || "Löschen fehlgeschlagen")) as Error & { status?: number };
+        const error = new Error(message ?? (response.statusText || "LÃ¶schen fehlgeschlagen")) as Error & { status?: number };
         error.status = response.status;
         throw error;
       }
@@ -342,35 +439,21 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
     },
     onSuccess: async (_deletedAppointmentId, variables) => {
       const projectIdForInvalidation = variables.projectId;
-      if (projectIdForInvalidation) {
-        const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
-          projectId: projectIdForInvalidation,
-          fromDate: projectAppointmentsUpcomingFromDate,
-          userRole,
-        });
-        const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
-          projectId: projectIdForInvalidation,
-          fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
-          userRole,
-        });
-        await queryClient.invalidateQueries({ queryKey: upcomingAppointmentsQueryKey });
-        await queryClient.invalidateQueries({ queryKey: allAppointmentsQueryKey });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
-      toast({ title: "Termin gelöscht" });
+      await invalidateRelatedAppointmentQueries(projectIdForInvalidation);
+      toast({ title: "Termin gelÃ¶scht" });
       onSaved?.();
     },
     onError: (error) => {
       const status = (error as Error & { status?: number }).status;
       if (status === 403) {
         toast({
-          title: "Löschen nicht möglich",
+          title: "LÃ¶schen nicht mÃ¶glich",
           description: "Keine Berechtigung oder Termin gesperrt.",
           variant: "destructive",
         });
         return;
       }
-      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
+      const message = error instanceof Error ? error.message : "LÃ¶schen fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
     },
   });
@@ -421,19 +504,34 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
         projectId: payload.projectId,
         appointmentId: savedAppointmentId,
       });
-      const appointmentsQueryKey = getProjectAppointmentsQueryKey({
+      const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
         projectId: payload.projectId,
-        fromDate: projectAppointmentsFromDate,
+        fromDate: projectAppointmentsUpcomingFromDate,
+        userRole,
+      });
+      const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+        projectId: payload.projectId,
+        fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
         userRole,
       });
       console.info(`${logPrefix} cache invalidate`, {
-        queryKey: appointmentsQueryKey,
+        upcomingQueryKey: upcomingAppointmentsQueryKey,
+        allQueryKey: allAppointmentsQueryKey,
       });
-      await queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
-      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await invalidateRelatedAppointmentQueries(payload.projectId);
       toast({
         title: isEditing ? "Termin gespeichert" : "Termin erstellt",
       });
+      setInitialFormSnapshot(buildFormSnapshot({
+        projectId: selectedProjectId,
+        tourId: selectedTourId,
+        startDate,
+        endDate,
+        isEndDateEnabled,
+        startTimeHour,
+        startTimeEnabled,
+        employeeIds: assignedEmployeeIds,
+      }));
       onSaved?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
@@ -447,8 +545,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
     <EntityFormLayout
       title={isEditing ? "Termin bearbeiten" : "Neuer Termin"}
       icon={<Calendar className="w-6 h-6" />}
-      onClose={onCancel}
-      onCancel={onCancel}
+      onClose={handleRequestClose}
+      onCancel={handleRequestClose}
       onSubmit={!isLocked ? submitAppointment : undefined}
       isSaving={isSaving}
       saveLabel={isEditing ? "Speichern" : "Termin erstellen"}
@@ -472,7 +570,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
         <Alert variant="destructive" className="mb-6">
           <AlertTitle>Termin gesperrt</AlertTitle>
           <AlertDescription>
-            Ab dem Starttag kann der Termin nur noch von Admins geändert werden.
+            Ab dem Starttag kann der Termin nur noch von Admins geÃ¤ndert werden.
           </AlertDescription>
         </Alert>
       )}
@@ -496,7 +594,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
             />
           ) : (
             <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-              Kein Projekt ausgewählt
+              Kein Projekt ausgewÃ¤hlt
             </div>
           )}
 
@@ -508,7 +606,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
             data-testid="button-select-project"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Projekt auswählen
+            Projekt auswÃ¤hlen
           </Button>
         </div>
 
@@ -552,7 +650,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                     disabled={isLocked}
                     data-testid="button-enable-end-date"
                   >
-                    Enddatum hinzufügen
+                    Enddatum hinzufÃ¼gen
                   </Button>
                 )}
               </div>
@@ -580,7 +678,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                     disabled={isLocked}
                     data-testid="button-enable-start-time"
                   >
-                    Startzeit hinzufügen
+                    Startzeit hinzufÃ¼gen
                   </Button>
                 )}
               </div>
@@ -617,7 +715,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
               />
             ) : (
               <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-                Keine Tour ausgewählt
+                Keine Tour ausgewÃ¤hlt
               </div>
             )}
 
@@ -656,7 +754,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
               />
             ) : (
               <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-                Kunde wird über das Projekt bestimmt
+                Kunde wird Ã¼ber das Projekt bestimmt
               </div>
             )}
           </div>
@@ -714,7 +812,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Mitarbeiter hinzufügen</Label>
+          <Label className="text-xs text-muted-foreground">Mitarbeiter hinzufÃ¼gen</Label>
           <Button
             variant="outline"
             className="w-full"
@@ -723,7 +821,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
             data-testid="button-add-employee"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Mitarbeiter auswählen
+            Mitarbeiter auswÃ¤hlen
           </Button>
         </div>
       </div>
@@ -733,7 +831,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
           <ProjectList
             mode="picker"
             selectedProjectId={selectedProjectId}
-            title="Projekt auswählen"
+            showCloseButton={false}
+            title="Projekt auswÃ¤hlen"
             onSelectProject={handleProjectSelect}
             onCancel={() => setProjectPickerOpen(false)}
           />
@@ -749,7 +848,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
             tours={tours}
             isLoading={employeesLoading}
             mode="picker"
-            title="Mitarbeiter auswählen"
+            showCloseButton={false}
+            title="Mitarbeiter auswÃ¤hlen"
             onSelectEmployee={(employeeId) => {
               addEmployees([employeeId]);
               setEmployeePickerOpen(false);
@@ -762,9 +862,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
       <AlertDialog open={tourConfirmOpen} onOpenChange={setTourConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Mitarbeiterliste zurücksetzen?</AlertDialogTitle>
+            <AlertDialogTitle>Mitarbeiterliste zurÃ¼cksetzen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Beim Ändern der Tour werden die bisherigen Mitarbeiter entfernt und durch die Tour-Mitarbeiter ersetzt.
+              Beim Ã„ndern der Tour werden die bisherigen Mitarbeiter entfernt und durch die Tour-Mitarbeiter ersetzt.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -778,7 +878,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                 setTourConfirmOpen(false);
               }}
             >
-              Tour übernehmen
+              Tour Ã¼bernehmen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -789,7 +889,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
           <AlertDialogHeader>
             <AlertDialogTitle>Ohne Mitarbeiter speichern?</AlertDialogTitle>
             <AlertDialogDescription>
-              Der Termin wird ohne zugewiesene Mitarbeiter gespeichert. Möchten Sie fortfahren?
+              Der Termin wird ohne zugewiesene Mitarbeiter gespeichert. MÃ¶chten Sie fortfahren?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -809,9 +909,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Termin löschen?</AlertDialogTitle>
+            <AlertDialogTitle>Termin lÃ¶schen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Dieser Termin wird dauerhaft gelöscht und kann nicht rückgängig gemacht werden.
+              Dieser Termin wird dauerhaft gelÃ¶scht und kann nicht rÃ¼ckgÃ¤ngig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -824,7 +924,29 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
                 deleteAppointmentMutation.mutate({ appointmentId, projectId: selectedProjectId });
               }}
             >
-              {deleteAppointmentMutation.isPending ? "Termin löschen..." : "Termin löschen"}
+              {deleteAppointmentMutation.isPending ? "Termin lÃ¶schen..." : "Termin lÃ¶schen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Änderungen verwerfen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Es gibt ungespeicherte Änderungen. Möchten Sie das Formular wirklich schließen?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Weiter bearbeiten</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setCloseConfirmOpen(false);
+                onCancel?.();
+              }}
+            >
+              Verwerfen und schließen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -838,5 +960,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, projectId, app
     </EntityFormLayout>
   );
 }
+
+
 
 

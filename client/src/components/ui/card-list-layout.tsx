@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HelpIcon } from "@/components/ui/help/help-icon";
+import { useSetting } from "@/hooks/useSettings";
 import { X, Plus, Loader2 } from "lucide-react";
 
 interface CardListLayoutProps {
@@ -10,6 +11,7 @@ interface CardListLayoutProps {
   children: ReactNode;
   isLoading?: boolean;
   onClose?: () => void;
+  showCloseButton?: boolean;
   closeTestId?: string;
   primaryAction?: {
     label: string;
@@ -37,6 +39,7 @@ export function CardListLayout({
   children,
   isLoading = false,
   onClose,
+  showCloseButton = true,
   closeTestId,
   primaryAction,
   secondaryAction,
@@ -48,9 +51,27 @@ export function CardListLayout({
   bottomBar,
   helpKey,
 }: CardListLayoutProps) {
-  const gridColsClass = gridCols === "2"
-    ? "grid-cols-1 md:grid-cols-2"
-    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+  const preferredCardListColumns = useSetting("cardListColumns");
+  const resolvedDynamicGridCols = (typeof preferredCardListColumns === "number"
+    && Number.isInteger(preferredCardListColumns)
+    && preferredCardListColumns >= 2
+    && preferredCardListColumns <= 6)
+    ? preferredCardListColumns
+    : 4;
+
+  const gridColsClass = (() => {
+    if (gridCols === "2") return "grid-cols-1 md:grid-cols-2";
+
+    const classByCols: Record<number, string> = {
+      2: "grid-cols-1 md:grid-cols-2",
+      3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+      4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+      5: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5",
+      6: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6",
+    };
+
+    return classByCols[resolvedDynamicGridCols] ?? classByCols[4];
+  })();
 
   if (isLoading) {
     return (
@@ -73,7 +94,7 @@ export function CardListLayout({
             </CardTitle>
             {helpKey && <HelpIcon helpKey={helpKey} />}
           </div>
-          {onClose && (
+          {onClose && showCloseButton && (
             <Button size="lg" variant="ghost" onClick={onClose} data-testid={closeTestId}>
               <X className="w-6 h-6" />
             </Button>

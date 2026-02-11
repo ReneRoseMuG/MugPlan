@@ -16,6 +16,7 @@ interface CustomerListProps {
   mode?: "list" | "picker";
   selectedCustomerId?: number | null;
   title?: string;
+  showCloseButton?: boolean;
 }
 
 interface CustomerListViewProps extends CustomerListProps {
@@ -32,6 +33,7 @@ export function CustomerListView({
   mode = "list",
   selectedCustomerId = null,
   title,
+  showCloseButton = true,
 }: CustomerListViewProps) {
   const [filters, setFilters] = useState(defaultCustomerFilters);
 
@@ -54,6 +56,7 @@ export function CustomerListView({
       helpKey="customers"
       isLoading={isLoading}
       onClose={onCancel}
+      showCloseButton={showCloseButton}
       closeTestId="button-close-customers"
       gridTestId="list-customers"
       gridCols="3"
@@ -69,7 +72,7 @@ export function CustomerListView({
       } : undefined}
       isEmpty={filteredCustomers.length === 0}
       emptyState={
-        <p className="text-sm text-slate-400 text-center py-8 col-span-3">
+        <p className="text-sm text-slate-400 text-center py-8 col-span-full">
           Keine Kunden gefunden.
         </p>
       }

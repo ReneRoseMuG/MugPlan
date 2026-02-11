@@ -4,6 +4,11 @@ import * as appointmentsService from "../services/appointmentsService";
 import * as employeesService from "../services/employeesService";
 import { handleZodError } from "./validation";
 
+function isAdminRequest(req: Request) {
+  const role = req.header("x-user-role");
+  return role?.toUpperCase() === "ADMIN";
+}
+
 export async function listEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { scope } = api.employees.list.input.parse(req.query);
@@ -98,7 +103,8 @@ export async function listCurrentAppointments(req: Request, res: Response, next:
       res.status(400).json({ message: "Ungültiges fromDate" });
       return;
     }
-    const appointments = await appointmentsService.listEmployeeAppointments(employeeId, fromDate);
+    const isAdmin = isAdminRequest(req);
+    const appointments = await appointmentsService.listEmployeeAppointments(employeeId, fromDate, isAdmin);
     res.json(appointments);
   } catch (err) {
     next(err);

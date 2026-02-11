@@ -1,23 +1,17 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 import type { Project } from "@shared/schema";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 interface CustomerAppointmentsPanelProps {
   customerId?: number | null;
   customerName?: string | null;
 }
 
-interface ProjectAppointmentSummary {
-  id: number;
-  projectId: number;
-  startDate: string;
-  endDate?: string | null;
-  startTimeHour?: number | null;
-  isLocked: boolean;
-}
+type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
 
 export function CustomerAppointmentsPanel({ customerId }: CustomerAppointmentsPanelProps) {
   const projectsUrl = customerId ? `/api/projects?customerId=${customerId}&filter=all` : null;
@@ -51,14 +45,28 @@ export function CustomerAppointmentsPanel({ customerId }: CustomerAppointmentsPa
 
   const items = useMemo<AppointmentPanelItem[]>(() => {
     const appointmentSource = upcomingAppointmentsQuery.data ?? [];
+    const toHourSort = (value: number | null) => (value == null ? Number.MAX_SAFE_INTEGER : value);
     return appointmentSource
       .map((appointment) => ({
         id: appointment.id,
         startDate: appointment.startDate,
         endDate: appointment.endDate,
         startTimeHour: appointment.startTimeHour,
+        projectName: appointment.projectName ?? null,
+        customerName: appointment.customer.fullName ?? null,
+        previewAppointment: appointment,
       }))
-      .sort((a, b) => (a.startDate > b.startDate ? 1 : a.startDate < b.startDate ? -1 : 0));
+      .sort((a, b) => {
+        if (a.startDate !== b.startDate) {
+          return a.startDate > b.startDate ? 1 : -1;
+        }
+        const aHour = toHourSort(a.startTimeHour ?? null);
+        const bHour = toHourSort(b.startTimeHour ?? null);
+        if (aHour !== bHour) {
+          return aHour - bHour;
+        }
+        return Number(a.id) - Number(b.id);
+      });
   }, [upcomingAppointmentsQuery.data]);
 
   const isLoading = projectsLoading || upcomingAppointmentsQuery.isLoading;

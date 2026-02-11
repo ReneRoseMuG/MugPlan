@@ -54,6 +54,72 @@ function normalizeEmployeeIds(employeeIds?: number[]) {
   return Array.from(new Set(employeeIds ?? [])).filter((id) => Number.isFinite(id));
 }
 
+type SidebarAppointmentRow = Awaited<
+  ReturnType<typeof appointmentsRepository.listSidebarAppointmentsByProjectFromDate>
+>[number];
+
+const buildEmployeesByAppointment = async (appointmentIds: number[]) => {
+  const employeeRows = await appointmentsRepository.getAppointmentEmployeesByAppointmentIds(appointmentIds);
+  const employeesByAppointment = new Map<number, { id: number; fullName: string }[]>();
+  for (const row of employeeRows) {
+    const list = employeesByAppointment.get(row.appointmentId) ?? [];
+    list.push({
+      id: row.employee.id,
+      fullName: row.employee.fullName,
+    });
+    employeesByAppointment.set(row.appointmentId, list);
+  }
+  return employeesByAppointment;
+};
+
+const buildStatusesByProject = async (projectIds: number[]) => {
+  const statusRows = await projectStatusRepository.getProjectStatusesByProjectIds(projectIds);
+  const statusesByProject = new Map<number, { id: number; title: string; color: string }[]>();
+  for (const row of statusRows) {
+    const list = statusesByProject.get(row.projectId) ?? [];
+    list.push({
+      id: row.status.id,
+      title: row.status.title,
+      color: row.status.color,
+    });
+    statusesByProject.set(row.projectId, list);
+  }
+  return statusesByProject;
+};
+
+const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], isAdmin: boolean) => {
+  const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
+  const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const statusesByProject = await buildStatusesByProject(projectIds);
+
+  return rows.map((row) => ({
+    id: row.appointment.id,
+    projectId: row.project.id,
+    projectName: row.project.name,
+    projectDescription: row.project.descriptionMd ?? null,
+    projectStatuses: statusesByProject.get(row.project.id) ?? [],
+    startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+    endDate: toDateOnlyString(row.appointment.endDate),
+    startTime: row.appointment.startTime ?? null,
+    startTimeHour: row.appointment.startTime ? Number(row.appointment.startTime.slice(0, 2)) : null,
+    tourId: row.appointment.tourId ?? null,
+    tourName: row.tour?.name ?? null,
+    tourColor: row.tour?.color ?? null,
+    customer: {
+      id: row.customer.id,
+      customerNumber: row.customer.customerNumber,
+      fullName: row.customer.fullName,
+      addressLine1: row.customer.addressLine1 ?? null,
+      addressLine2: row.customer.addressLine2 ?? null,
+      postalCode: row.customer.postalCode ?? null,
+      city: row.customer.city ?? null,
+    },
+    employees: employeesByAppointment.get(row.appointment.id) ?? [],
+    isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
+  }));
+};
+
 function validateDateRange(startDate: string, endDate?: string | null) {
   if (endDate && endDate < startDate) {
     throw new AppointmentError("Enddatum darf nicht vor dem Startdatum liegen", 400);
@@ -176,23 +242,16 @@ export async function listProjectAppointments(
   }
 
   console.log(`${logPrefix} list appointments projectId=${projectId} fromDate=${effectiveFromDate}`);
-  const appointments = await appointmentsRepository.listAppointmentsByProjectFromDate(
+  const appointments = await appointmentsRepository.listSidebarAppointmentsByProjectFromDate(
     projectId,
     parseDateOnly(effectiveFromDate),
   );
   console.log(`${logPrefix} list appointments result projectId=${projectId} count=${appointments.length}`);
 
-  return appointments.map((appointment) => ({
-    id: appointment.id,
-    projectId: appointment.projectId,
-    startDate: toDateOnlyString(appointment.startDate) ?? "",
-    endDate: toDateOnlyString(appointment.endDate),
-    startTimeHour: appointment.startTime ? Number(appointment.startTime.slice(0, 2)) : null,
-    isLocked: !isAdmin && isStartDateLocked(appointment.startDate),
-  }));
+  return mapSidebarAppointments(appointments, isAdmin);
 }
 
-export async function listEmployeeAppointments(employeeId: number, fromDate: string | undefined) {
+export async function listEmployeeAppointments(employeeId: number, fromDate: string | undefined, isAdmin: boolean) {
   const todayBerlin = getBerlinTodayDateString();
   const effectiveFromDate = fromDate ?? todayBerlin;
 
@@ -203,21 +262,13 @@ export async function listEmployeeAppointments(employeeId: number, fromDate: str
   }
 
   console.log(`${logPrefix} list employee appointments employeeId=${employeeId} fromDate=${effectiveFromDate}`);
-  const appointments = await appointmentsRepository.listAppointmentsByEmployeeFromDate(
+  const appointments = await appointmentsRepository.listSidebarAppointmentsByEmployeeFromDate(
     employeeId,
     parseDateOnly(effectiveFromDate),
   );
   console.log(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
 
-  return appointments.map(({ appointment, projectName, customerName }) => ({
-    id: appointment.id,
-    projectId: appointment.projectId,
-    title: appointment.title ?? projectName,
-    startDate: toDateOnlyString(appointment.startDate) ?? "",
-    endDate: toDateOnlyString(appointment.endDate),
-    startTimeHour: appointment.startTime ? Number(appointment.startTime.slice(0, 2)) : null,
-    customerName,
-  }));
+  return mapSidebarAppointments(appointments, isAdmin);
 }
 
 export async function listCalendarAppointments({
@@ -247,29 +298,8 @@ export async function listCalendarAppointments({
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
 
-  const employeeRows = await appointmentsRepository.getAppointmentEmployeesByAppointmentIds(appointmentIds);
-  const statusRows = await projectStatusRepository.getProjectStatusesByProjectIds(projectIds);
-
-  const employeesByAppointment = new Map<number, { id: number; fullName: string }[]>();
-  for (const row of employeeRows) {
-    const list = employeesByAppointment.get(row.appointmentId) ?? [];
-    list.push({
-      id: row.employee.id,
-      fullName: row.employee.fullName,
-    });
-    employeesByAppointment.set(row.appointmentId, list);
-  }
-
-  const statusesByProject = new Map<number, { id: number; title: string; color: string }[]>();
-  for (const row of statusRows) {
-    const list = statusesByProject.get(row.projectId) ?? [];
-    list.push({
-      id: row.status.id,
-      title: row.status.title,
-      color: row.status.color,
-    });
-    statusesByProject.set(row.projectId, list);
-  }
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const statusesByProject = await buildStatusesByProject(projectIds);
 
   return rows.map((row) => {
     const baseAppointment = {

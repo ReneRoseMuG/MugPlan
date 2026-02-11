@@ -7,7 +7,8 @@ export type UserSettingKey =
   | "attachmentStoragePath"
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
-  | "calendarMonthScrollRange";
+  | "calendarMonthScrollRange"
+  | "cardListColumns";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -15,6 +16,7 @@ type UserSettingValueByKey = {
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
+  cardListColumns: number;
 };
 
 export function useSettings() {
@@ -32,6 +34,13 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
         return value as UserSettingValueByKey[K];
       }
       return 33 as UserSettingValueByKey[K];
+    }
+    if (key === "cardListColumns") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 6) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 4 as UserSettingValueByKey[K];
     }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);

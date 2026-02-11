@@ -99,6 +99,7 @@ export function EmployeeSelectEntityEditDialog({
             employees={availableEmployees}
             teams={[]}
             tours={[]}
+            showCloseButton={false}
             onSelectEmployee={(employeeId) => {
               if (!selectedMembers.includes(employeeId)) {
                 onToggleMember(employeeId);

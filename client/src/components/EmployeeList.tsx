@@ -26,6 +26,7 @@ interface EmployeeListViewProps {
   mode?: "list" | "picker";
   selectedEmployeeId?: number | null;
   title?: string;
+  showCloseButton?: boolean;
   employeeScope?: "active" | "all";
   onEmployeeScopeChange?: (scope: "active" | "all") => void;
 }
@@ -47,6 +48,7 @@ export function EmployeeListView({
   mode = "list",
   selectedEmployeeId = null,
   title,
+  showCloseButton = true,
   employeeScope,
   onEmployeeScopeChange,
 }: EmployeeListViewProps) {
@@ -102,6 +104,7 @@ export function EmployeeListView({
       helpKey="employees"
       isLoading={isLoading}
       onClose={onClose}
+      showCloseButton={showCloseButton}
       closeTestId="button-close-employees"
       gridTestId="list-employees"
       gridCols="3"
@@ -113,7 +116,7 @@ export function EmployeeListView({
       } : undefined}
       isEmpty={filteredEmployees.length === 0}
       emptyState={
-        <p className="text-sm text-slate-400 text-center py-8 col-span-3">
+        <p className="text-sm text-slate-400 text-center py-8 col-span-full">
           Keine Mitarbeiter vorhanden
         </p>
       }

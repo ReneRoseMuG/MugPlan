@@ -62,7 +62,7 @@ export function ProjectStatusListView({
       } : undefined}
       isEmpty={statuses.length === 0}
       emptyState={
-        <p className="text-sm text-slate-400 text-center py-8 col-span-3">
+        <p className="text-sm text-slate-400 text-center py-8 col-span-full">
           Keine Projektstatus vorhanden
         </p>
       }

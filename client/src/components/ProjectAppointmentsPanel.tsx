@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+ï»¿import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
@@ -6,6 +6,7 @@ import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-prov
 import { getBerlinTodayDateString, getProjectAppointmentsQueryKey } from "@/lib/project-appointments";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 interface ProjectAppointmentsPanelProps {
   projectId?: number | null;
@@ -14,14 +15,7 @@ interface ProjectAppointmentsPanelProps {
   onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
 }
 
-interface ProjectAppointmentSummary {
-  id: number;
-  projectId: number;
-  startDate: string;
-  endDate?: string | null;
-  startTimeHour?: number | null;
-  isLocked: boolean;
-}
+type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
 
 const appointmentsLogPrefix = "[ProjectAppointmentsPanel]";
 
@@ -96,34 +90,30 @@ export function ProjectAppointmentsPanel({
         queryKey: upcomingQueryKey,
       });
       queryClient.invalidateQueries({ queryKey: upcomingQueryKey });
-      toast({ title: "Termin gelöscht" });
+      toast({ title: "Termin gelÃ¶scht" });
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
+      const message = error instanceof Error ? error.message : "LÃ¶schen fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
     },
   });
 
   const appointmentSource = upcomingAppointments;
   const items = useMemo<AppointmentPanelItem[]>(() => {
-    return appointmentSource.map((appointment) => {
-      const appointmentBorderColor = appointment.startDate < today
-        ? "#9ca3af"
-        : "#22c55e";
-      return {
-        id: appointment.id,
-        startDate: appointment.startDate,
-        endDate: appointment.endDate,
-        startTimeHour: appointment.startTimeHour,
-        projectName: projectName ?? null,
-        color: appointmentBorderColor,
-        action: "remove",
-        actionDisabled: appointment.isLocked,
-        onRemove: () => deleteAppointmentMutation.mutate(appointment.id),
-        testId: `project-appointment-${appointment.id}`,
-      };
-    });
-  }, [appointmentSource, projectName, today, deleteAppointmentMutation]);
+    return appointmentSource.map((appointment) => ({
+      id: appointment.id,
+      startDate: appointment.startDate,
+      endDate: appointment.endDate,
+      startTimeHour: appointment.startTimeHour,
+      projectName: projectName ?? appointment.projectName ?? null,
+      customerName: appointment.customer.fullName ?? null,
+      previewAppointment: appointment,
+      action: "remove",
+      actionDisabled: appointment.isLocked,
+      onRemove: () => deleteAppointmentMutation.mutate(appointment.id),
+      testId: `project-appointment-${appointment.id}`,
+    }));
+  }, [appointmentSource, projectName, deleteAppointmentMutation]);
 
   const showLockedNote = appointmentSource.some((appointment) => appointment.isLocked);
   const handleOpenAppointment = onOpenAppointment && projectId
@@ -132,7 +122,7 @@ export function ProjectAppointmentsPanel({
   const addAction = isEditing && onOpenAppointment && projectId
     ? {
         onClick: () => onOpenAppointment({ projectId }),
-        ariaLabel: "Termin hinzufügen",
+        ariaLabel: "Termin hinzufÃ¼gen",
         testId: "button-new-appointment-from-project",
       }
     : undefined;
@@ -148,7 +138,7 @@ export function ProjectAppointmentsPanel({
         addAction={addAction}
         onOpenAppointment={handleOpenAppointment}
         emptyStateLabel="Keine Termine ab heute"
-        note={showLockedNote ? "Gesperrte Termine können nur Admins löschen." : null}
+        note={showLockedNote ? "Gesperrte Termine kÃ¶nnen nur Admins lÃ¶schen." : null}
       />
     </BadgeInteractionProvider>
   );

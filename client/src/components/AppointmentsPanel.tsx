@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { TerminInfoBadge } from "@/components/ui/termin-info-badge";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 type AppointmentItemMode = "kunde" | "projekt" | "mitarbeiter";
 
@@ -25,6 +26,7 @@ export interface AppointmentPanelItem {
   employeeName?: string | null;
   icon?: ReactNode;
   color?: string | null;
+  previewAppointment?: CalendarAppointment | null;
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
@@ -98,6 +100,7 @@ export function AppointmentsPanel({
               employeeName={appointment.employeeName}
               icon={appointment.icon}
               color={appointment.color}
+              previewAppointment={appointment.previewAppointment ?? null}
               action={appointment.action}
               onAdd={appointment.onAdd}
               onRemove={appointment.onRemove}

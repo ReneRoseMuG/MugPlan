@@ -19,6 +19,7 @@ interface ProjectListProps {
   mode?: "list" | "picker";
   selectedProjectId?: number | null;
   title?: string;
+  showCloseButton?: boolean;
 }
 
 interface ProjectWithDetails extends Project {
@@ -52,6 +53,7 @@ export function ProjectListView({
   mode = "list",
   selectedProjectId = null,
   title,
+  showCloseButton = true,
 }: ProjectListViewProps) {
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
 
@@ -92,6 +94,7 @@ export function ProjectListView({
       helpKey="projects"
       isLoading={isLoading}
       onClose={onCancel}
+      showCloseButton={showCloseButton}
       closeTestId="button-close-projects"
       gridTestId="list-projects"
       gridCols="3"
@@ -107,7 +110,7 @@ export function ProjectListView({
       } : undefined}
       isEmpty={filteredProjects.length === 0}
       emptyState={
-        <p className="text-sm text-slate-400 text-center py-8 col-span-3">
+        <p className="text-sm text-slate-400 text-center py-8 col-span-full">
           Keine Projekte gefunden.
         </p>
       }

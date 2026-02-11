@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 interface EmployeeAppointmentsPanelProps {
   employeeId?: number | null;
@@ -11,15 +12,7 @@ interface EmployeeAppointmentsPanelProps {
   onOpenEmployeeAppointmentsView?: (employeeId: number) => void;
 }
 
-interface EmployeeAppointmentSummary {
-  id: number;
-  projectId: number;
-  title: string;
-  startDate: string;
-  endDate?: string | null;
-  startTimeHour?: number | null;
-  customerName?: string;
-}
+type EmployeeAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
 
 export function EmployeeAppointmentsPanel({ employeeId, onOpenEmployeeAppointmentsView }: EmployeeAppointmentsPanelProps) {
   const today = getBerlinTodayDateString();
@@ -58,8 +51,9 @@ export function EmployeeAppointmentsPanel({ employeeId, onOpenEmployeeAppointmen
       startDate: appointment.startDate,
       endDate: appointment.endDate ?? null,
       startTimeHour: appointment.startTimeHour ?? null,
-      projectName: appointment.title ?? null,
-      customerName: appointment.customerName ?? null,
+      projectName: appointment.projectName ?? null,
+      customerName: appointment.customer.fullName ?? null,
+      previewAppointment: appointment,
     }));
   }, [limitedAppointments]);
 
@@ -73,7 +67,7 @@ export function EmployeeAppointmentsPanel({ employeeId, onOpenEmployeeAppointmen
       onClick={() => onOpenEmployeeAppointmentsView?.(employeeId as number)}
       data-testid="button-open-employee-appointments-view"
     >
-      Tabelle öffnen
+      Tabelle Ã¶ffnen
     </Button>
   ) : null;
 

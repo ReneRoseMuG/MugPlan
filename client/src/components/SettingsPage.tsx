@@ -19,6 +19,7 @@ type PreviewSize = (typeof previewOptions)[number];
 const defaultWeekendColumnPercent = 33;
 const defaultWeekScrollRange = 4;
 const defaultMonthScrollRange = 3;
+const defaultCardListColumns = 4;
 
 export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
@@ -28,6 +29,7 @@ export function SettingsPage() {
   const weekendWidthSetting = settingsByKey.get("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = settingsByKey.get("calendarWeekScrollRange");
   const monthScrollRangeSetting = settingsByKey.get("calendarMonthScrollRange");
+  const cardListColumnsSetting = settingsByKey.get("cardListColumns");
 
   const resolvedPreviewValue = useMemo(() => {
     const value = previewSetting?.resolvedValue;
@@ -65,21 +67,32 @@ export function SettingsPage() {
     return defaultMonthScrollRange;
   }, [monthScrollRangeSetting?.resolvedValue]);
 
+  const resolvedCardListColumns = useMemo(() => {
+    const value = cardListColumnsSetting?.resolvedValue;
+    if (typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 6) {
+      return value;
+    }
+    return defaultCardListColumns;
+  }, [cardListColumnsSetting?.resolvedValue]);
+
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
   const [storagePathValue, setStoragePathValue] = useState<string>(resolvedStoragePath);
   const [weekendColumnPercentValue, setWeekendColumnPercentValue] = useState<string>(String(resolvedWeekendColumnPercent));
   const [weekScrollRangeValue, setWeekScrollRangeValue] = useState<string>(String(resolvedWeekScrollRange));
   const [monthScrollRangeValue, setMonthScrollRangeValue] = useState<string>(String(resolvedMonthScrollRange));
+  const [cardListColumnsValue, setCardListColumnsValue] = useState<string>(String(resolvedCardListColumns));
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [weekendError, setWeekendError] = useState<string | null>(null);
   const [weekScrollRangeError, setWeekScrollRangeError] = useState<string | null>(null);
   const [monthScrollRangeError, setMonthScrollRangeError] = useState<string | null>(null);
+  const [cardListColumnsError, setCardListColumnsError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
   const [storageSaved, setStorageSaved] = useState(false);
   const [weekendSaved, setWeekendSaved] = useState(false);
   const [weekScrollRangeSaved, setWeekScrollRangeSaved] = useState(false);
   const [monthScrollRangeSaved, setMonthScrollRangeSaved] = useState(false);
+  const [cardListColumnsSaved, setCardListColumnsSaved] = useState(false);
 
   useEffect(() => {
     setPreviewValue(resolvedPreviewValue);
@@ -100,6 +113,10 @@ export function SettingsPage() {
   useEffect(() => {
     setMonthScrollRangeValue(String(resolvedMonthScrollRange));
   }, [resolvedMonthScrollRange]);
+
+  useEffect(() => {
+    setCardListColumnsValue(String(resolvedCardListColumns));
+  }, [resolvedCardListColumns]);
 
   if (isLoading) {
     return (
@@ -217,12 +234,34 @@ export function SettingsPage() {
     }
   };
 
+  const handleSaveCardListColumns = async () => {
+    setCardListColumnsError(null);
+    setCardListColumnsSaved(false);
+    const parsed = Number(cardListColumnsValue);
+    if (!Number.isInteger(parsed) || parsed < 2 || parsed > 6) {
+      setCardListColumnsError("Bitte eine ganze Zahl von 2 bis 6 eingeben.");
+      return;
+    }
+
+    try {
+      await setSetting({
+        key: "cardListColumns",
+        scopeType: "USER",
+        value: parsed,
+      });
+      setCardListColumnsSaved(true);
+    } catch (error) {
+      setCardListColumnsError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
   return (
-    <div className="h-full rounded-lg border-2 border-foreground bg-white p-6" data-testid="settings-landing-page">
+    <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white p-6 flex flex-col" data-testid="settings-landing-page">
       <h3 className="text-xl font-black uppercase tracking-tight text-primary">Einstellungen</h3>
       <p className="mb-5 mt-1 text-sm text-slate-500">Direkte Bearbeitung globaler und benutzerspezifischer Settings.</p>
 
-      <div className="space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+        <div className="space-y-4">
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-attachmentPreviewSize">
           <p className="font-semibold text-slate-900">{previewSetting?.label ?? "Datei Vorschau Groesse"}</p>
           <p className="mb-3 text-xs text-slate-500">{previewSetting?.description ?? "Steuert die Groesse der Dateivorschau."}</p>
@@ -341,6 +380,31 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(monthScrollRangeSetting?.resolvedValue ?? defaultMonthScrollRange)} ({monthScrollRangeSetting?.resolvedScope ?? "-"})</p>
           {monthScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {monthScrollRangeError && <p className="mt-1 text-xs text-destructive">{monthScrollRangeError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-cardListColumns">
+          <p className="font-semibold text-slate-900">{cardListColumnsSetting?.label ?? "Karten Spalten"}</p>
+          <p className="mb-3 text-xs text-slate-500">{cardListColumnsSetting?.description ?? "Anzahl der Spalten in Kartenlisten."}</p>
+
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              min={2}
+              max={6}
+              step={1}
+              value={cardListColumnsValue}
+              onChange={(event) => setCardListColumnsValue(event.target.value)}
+              data-testid="input-setting-cardListColumns"
+            />
+            <Button onClick={() => void handleSaveCardListColumns()} disabled={isSaving} data-testid="button-save-cardListColumns">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(cardListColumnsSetting?.resolvedValue ?? defaultCardListColumns)} ({cardListColumnsSetting?.resolvedScope ?? "-"})</p>
+          {cardListColumnsSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {cardListColumnsError && <p className="mt-1 text-xs text-destructive">{cardListColumnsError}</p>}
+        </div>
         </div>
       </div>
     </div>
