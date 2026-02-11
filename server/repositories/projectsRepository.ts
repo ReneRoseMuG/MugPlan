@@ -28,6 +28,10 @@ function getBerlinTodayDate(): Date {
 }
 
 function buildScopeCondition(scope: ProjectScope) {
+  if (scope === "all") {
+    return undefined;
+  }
+
   if (scope === "noAppointments") {
     return sql`not exists (
       select 1
@@ -65,7 +69,10 @@ export async function getProjects(
         and ${projectProjectStatus.projectStatusId} in (${statusIdList})
     )`);
   }
-  conditions.push(buildScopeCondition(scope));
+  const scopeCondition = buildScopeCondition(scope);
+  if (scopeCondition) {
+    conditions.push(scopeCondition);
+  }
 
   const query = conditions.length > 0
     ? db.select().from(projects).where(and(...conditions))
@@ -96,7 +103,10 @@ export async function getProjectsByCustomer(
         and ${projectProjectStatus.projectStatusId} in (${statusIdList})
     )`);
   }
-  conditions.push(buildScopeCondition(scope));
+  const scopeCondition = buildScopeCondition(scope);
+  if (scopeCondition) {
+    conditions.push(scopeCondition);
+  }
   return db
     .select()
     .from(projects)

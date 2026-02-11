@@ -2,7 +2,7 @@ import type { Customer, InsertProject, Project, UpdateProject } from "@shared/sc
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as projectStatusService from "./projectStatusService";
 
-export type ProjectScope = "upcoming" | "noAppointments";
+export type ProjectScope = "upcoming" | "noAppointments" | "all";
 
 export async function listProjects(
   filter: "active" | "inactive" | "all" = "all",

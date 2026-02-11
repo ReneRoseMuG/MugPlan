@@ -7,7 +7,7 @@ export interface ProjectFilters {
   statusIds: number[];
 }
 
-export type ProjectScope = "upcoming" | "noAppointments";
+export type ProjectScope = "upcoming" | "noAppointments" | "all";
 
 export const defaultProjectFilters: ProjectFilters = {
   title: "",

@@ -71,9 +71,7 @@ export function ProjectFilterPanel({
               id="project-scope-upcoming"
               checked={projectScope === "upcoming"}
               onCheckedChange={(checked) => {
-                if (checked) {
-                  onProjectScopeChange("upcoming");
-                }
+                onProjectScopeChange(checked ? "upcoming" : "all");
               }}
             />
           </div>
@@ -88,9 +86,7 @@ export function ProjectFilterPanel({
               id="project-scope-no-appointments"
               checked={projectScope === "noAppointments"}
               onCheckedChange={(checked) => {
-                if (checked) {
-                  onProjectScopeChange("noAppointments");
-                }
+                onProjectScopeChange(checked ? "noAppointments" : "all");
               }}
             />
           </div>

@@ -640,7 +640,7 @@ export const api = {
             z.array(z.number()),
           ])
           .optional(),
-        scope: z.enum(["upcoming", "noAppointments"]).default("upcoming"),
+        scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
       }),
       responses: {
         200: z.array(z.custom<typeof projects.$inferSelect>()),
