@@ -28,11 +28,12 @@ interface TerminInfoBadgeProps {
   onRemove?: () => void;
   actionDisabled?: boolean;
   onDoubleClick?: () => void;
+  compact?: boolean;
 }
 
-const formatDateLabel = (value: string) => {
+const formatDateLabel = (value: string, compact: boolean) => {
   const parsed = parseISO(value);
-  return isValid(parsed) ? format(parsed, "dd.MM.yy") : value;
+  return isValid(parsed) ? format(parsed, compact ? "dd.MM.yy" : "dd.MM.yy") : value;
 };
 
 const resolveDurationDays = (startDate: string, endDate: string) => {
@@ -48,7 +49,7 @@ const resolveStartHourLabel = (value?: number | null) => {
   const normalized = Number(value);
   if (!Number.isFinite(normalized)) return null;
   const clamped = Math.min(23, Math.max(0, Math.floor(normalized)));
-  return `${String(clamped).padStart(2, "0")}h`;
+  return `${String(clamped).padStart(2, "0")}:00`;
 };
 
 export function TerminInfoBadge({
@@ -73,8 +74,9 @@ export function TerminInfoBadge({
   onRemove,
   actionDisabled = false,
   onDoubleClick,
+  compact = false,
 }: TerminInfoBadgeProps) {
-  const dateLabel = formatDateLabel(startDate);
+  const dateLabel = formatDateLabel(startDate, compact);
   const isMultiDay = Boolean(endDate && endDate !== startDate);
   const durationDays = isMultiDay && endDate ? resolveDurationDays(startDate, endDate) : null;
   const startHourLabel = !isMultiDay ? resolveStartHourLabel(startTimeHour) : null;
@@ -88,27 +90,42 @@ export function TerminInfoBadge({
   })();
 
   const secondaryLine = modeLine?.trim() ? modeLine : null;
+  const compactSuffix = durationDays != null
+    ? `(+${Math.max(0, durationDays - 1)})`
+    : startHourLabel ?? null;
+
   return (
     <InfoBadge
       icon={icon ?? <Calendar className="w-4 h-4" />}
       label={(
-        <div className="flex flex-col leading-tight">
-          <div className={`flex items-center gap-2 ${titleTextClass}`}>
+        compact ? (
+          <div className={`flex items-center gap-1 leading-tight ${titleTextClass}`}>
             <span>{dateLabel}</span>
-            {durationDays ? (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-muted/70 px-1 text-[10px] text-muted-foreground">
-                {durationDays}T
+            {compactSuffix ? (
+              <span className="text-xs text-muted-foreground">
+                {durationDays != null ? ` ${compactSuffix}` : ` · ${compactSuffix}`}
               </span>
-            ) : startHourLabel ? (
-              <span className="text-xs text-muted-foreground">{startHourLabel}</span>
             ) : null}
           </div>
-          {secondaryLine && (
-            <span className="text-xs text-muted-foreground">
-              {secondaryLine}
-            </span>
-          )}
-        </div>
+        ) : (
+          <div className="flex flex-col leading-tight">
+            <div className={`flex items-center gap-2 ${titleTextClass}`}>
+              <span>{dateLabel}</span>
+              {durationDays ? (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-muted/70 px-1 text-[10px] text-muted-foreground">
+                  {durationDays}T
+                </span>
+              ) : startHourLabel ? (
+                <span className="text-xs text-muted-foreground">{startHourLabel}</span>
+              ) : null}
+            </div>
+            {secondaryLine && (
+              <span className="text-xs text-muted-foreground">
+                {secondaryLine}
+              </span>
+            )}
+          </div>
+        )
       )}
       borderColor={color || undefined}
       action={action}
@@ -130,3 +147,4 @@ export function TerminInfoBadge({
     />
   );
 }
+

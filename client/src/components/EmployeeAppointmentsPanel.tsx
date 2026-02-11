@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
-import { PROJECT_APPOINTMENTS_ALL_FROM_DATE, getBerlinTodayDateString } from "@/lib/project-appointments";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 
 interface EmployeeAppointmentsPanelProps {
   employeeId?: number | null;
   employeeName?: string | null;
+  onOpenEmployeeAppointmentsView?: (employeeId: number) => void;
 }
 
 interface EmployeeAppointmentSummary {
@@ -19,51 +21,75 @@ interface EmployeeAppointmentSummary {
   customerName?: string;
 }
 
-export function EmployeeAppointmentsPanel({ employeeId, employeeName }: EmployeeAppointmentsPanelProps) {
-  const [showAll, setShowAll] = useState(false);
+export function EmployeeAppointmentsPanel({ employeeId, onOpenEmployeeAppointmentsView }: EmployeeAppointmentsPanelProps) {
   const today = getBerlinTodayDateString();
   const upcomingFromDate = today;
-  const allFromDate = PROJECT_APPOINTMENTS_ALL_FROM_DATE;
 
   const upcomingUrl = employeeId
     ? `/api/employees/${employeeId}/current-appointments?fromDate=${upcomingFromDate}`
     : null;
-  const allUrl = employeeId ? `/api/employees/${employeeId}/current-appointments?fromDate=${allFromDate}` : null;
+
   const { data: upcomingAppointments = [], isLoading: upcomingLoading } = useQuery<EmployeeAppointmentSummary[]>({
     queryKey: [upcomingUrl ?? ""],
     enabled: !!upcomingUrl,
   });
-  const { data: allAppointments = [], isLoading: allLoading } = useQuery<EmployeeAppointmentSummary[]>({
-    queryKey: [allUrl ?? ""],
-    enabled: !!allUrl && showAll,
-  });
-  const appointmentSource = showAll ? allAppointments : upcomingAppointments;
+
+  const sortedUpcomingAppointments = useMemo(() => {
+    return [...upcomingAppointments].sort((a, b) => {
+      if (a.startDate !== b.startDate) {
+        return a.startDate > b.startDate ? 1 : -1;
+      }
+
+      const aHour = a.startTimeHour ?? Number.MAX_SAFE_INTEGER;
+      const bHour = b.startTimeHour ?? Number.MAX_SAFE_INTEGER;
+      if (aHour !== bHour) {
+        return aHour - bHour;
+      }
+
+      return a.id - b.id;
+    });
+  }, [upcomingAppointments]);
+
+  const limitedAppointments = sortedUpcomingAppointments.slice(0, 5);
 
   const items = useMemo<AppointmentPanelItem[]>(() => {
-    return appointmentSource.map((appointment) => ({
+    return limitedAppointments.map((appointment) => ({
       id: appointment.id,
       startDate: appointment.startDate,
       endDate: appointment.endDate ?? null,
       startTimeHour: appointment.startTimeHour ?? null,
       projectName: appointment.title ?? null,
       customerName: appointment.customerName ?? null,
-      mode: "mitarbeiter",
-      employeeLabel: appointment.customerName
-        ? `${appointment.title} · ${appointment.customerName}`
-        : appointment.title,
-      customerLabel: appointment.customerName ?? null,
     }));
-  }, [appointmentSource]);
+  }, [limitedAppointments]);
+
+  const shouldShowMoreButton = Boolean(
+    employeeId
+      && onOpenEmployeeAppointmentsView
+      && sortedUpcomingAppointments.length > 5,
+  );
+
+  const sidebarFooter = shouldShowMoreButton ? (
+    <Button
+      type="button"
+      variant="outline"
+      className="w-full"
+      onClick={() => onOpenEmployeeAppointmentsView?.(employeeId as number)}
+      data-testid="button-open-employee-appointments-view"
+    >
+      Mehr anzeigen
+    </Button>
+  ) : null;
 
   return (
     <AppointmentsPanel
       title="Termine"
       icon={<Calendar className="w-4 h-4" />}
-      showAll={showAll}
-      onShowAllChange={setShowAll}
+      compact
       items={items}
-      isLoading={showAll ? allLoading : upcomingLoading}
-      emptyStateFilteredLabel="Keine Termine ab heute"
+      isLoading={upcomingLoading}
+      emptyStateLabel="Keine Termine ab heute"
+      sidebarFooter={sidebarFooter}
     />
   );
 }

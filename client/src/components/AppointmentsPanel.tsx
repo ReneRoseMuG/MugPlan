@@ -1,9 +1,6 @@
-import { useId } from "react";
 import type { ReactNode } from "react";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { TerminInfoBadge } from "@/components/ui/termin-info-badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 type AppointmentItemMode = "kunde" | "projekt" | "mitarbeiter";
 
@@ -39,8 +36,7 @@ interface AppointmentsPanelProps {
   title: string;
   icon: ReactNode;
   items: AppointmentPanelItem[];
-  showAll: boolean;
-  onShowAllChange: (showAll: boolean) => void;
+  compact?: boolean;
   isLoading?: boolean;
   helpKey?: string;
   headerActions?: ReactNode;
@@ -49,15 +45,14 @@ interface AppointmentsPanelProps {
   onOpenAppointment?: (appointmentId: number | string) => void;
   note?: ReactNode;
   emptyStateLabel?: string;
-  emptyStateFilteredLabel?: string;
+  sidebarFooter?: ReactNode;
 }
 
 export function AppointmentsPanel({
   title,
   icon,
   items,
-  showAll,
-  onShowAllChange,
+  compact = false,
   isLoading = false,
   helpKey,
   headerActions,
@@ -66,11 +61,9 @@ export function AppointmentsPanel({
   onOpenAppointment,
   note,
   emptyStateLabel,
-  emptyStateFilteredLabel,
+  sidebarFooter,
 }: AppointmentsPanelProps) {
-  const toggleId = useId();
-
-  const emptyLabel = showAll ? emptyStateLabel ?? "Keine Termine vorhanden" : emptyStateFilteredLabel ?? "Keine Termine ab heute";
+  const emptyLabel = emptyStateLabel ?? "Keine Termine ab heute";
   const titleWithCount = `${title} (${items.length})`;
 
   return (
@@ -81,14 +74,7 @@ export function AppointmentsPanel({
       headerActions={headerActions}
       addAction={addAction}
       closeAction={closeAction}
-      footer={(
-        <div className="flex items-center justify-between gap-3">
-          <Label htmlFor={toggleId} className="text-sm text-muted-foreground">
-            Alle Termine
-          </Label>
-          <Switch id={toggleId} checked={showAll} onCheckedChange={onShowAllChange} />
-        </div>
-      )}
+      footer={sidebarFooter}
     >
       <div className="space-y-2">
         {isLoading ? (
@@ -119,6 +105,7 @@ export function AppointmentsPanel({
               testId={appointment.testId}
               onDoubleClick={onOpenAppointment ? () => onOpenAppointment(appointment.id) : undefined}
               fullWidth
+              compact={compact}
             />
           ))
         )}
