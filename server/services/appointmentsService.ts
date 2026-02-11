@@ -224,14 +224,19 @@ export async function listCalendarAppointments({
   fromDate,
   toDate,
   employeeId,
+  detail,
   isAdmin,
 }: {
   fromDate: string;
   toDate: string;
   employeeId?: number | null;
+  detail?: "compact" | "full";
   isAdmin: boolean;
 }) {
-  console.log(`${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
+  const resolvedDetail = detail ?? "compact";
+  console.log(
+    `${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} detail=${resolvedDetail} employeeId=${employeeId ?? "n/a"}`,
+  );
   const rows = await appointmentsRepository.listAppointmentsForCalendarRange({
     fromDate: parseDateOnly(fromDate),
     toDate: parseDateOnly(toDate),
@@ -266,28 +271,50 @@ export async function listCalendarAppointments({
     statusesByProject.set(row.projectId, list);
   }
 
-  return rows.map((row) => ({
-    id: row.appointment.id,
-    projectId: row.project.id,
-    projectName: row.project.name,
-    projectDescription: row.project.descriptionMd ?? null,
-    projectStatuses: statusesByProject.get(row.project.id) ?? [],
-    startDate: toDateOnlyString(row.appointment.startDate) ?? "",
-    endDate: toDateOnlyString(row.appointment.endDate),
-    startTime: row.appointment.startTime ?? null,
-    tourId: row.appointment.tourId ?? null,
-    tourName: row.tour?.name ?? null,
-    tourColor: row.tour?.color ?? null,
-    customer: {
-      id: row.customer.id,
-      customerNumber: row.customer.customerNumber,
-      fullName: row.customer.fullName,
-      postalCode: row.customer.postalCode ?? null,
-      city: row.customer.city ?? null,
-    },
-    employees: employeesByAppointment.get(row.appointment.id) ?? [],
-    isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
-  }));
+  return rows.map((row) => {
+    const baseAppointment = {
+      id: row.appointment.id,
+      projectId: row.project.id,
+      projectName: row.project.name,
+      projectDescription: row.project.descriptionMd ?? null,
+      projectStatuses: statusesByProject.get(row.project.id) ?? [],
+      startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+      endDate: toDateOnlyString(row.appointment.endDate),
+      startTime: row.appointment.startTime ?? null,
+      tourId: row.appointment.tourId ?? null,
+      tourName: row.tour?.name ?? null,
+      tourColor: row.tour?.color ?? null,
+      customer: {
+        id: row.customer.id,
+        customerNumber: row.customer.customerNumber,
+        fullName: row.customer.fullName,
+        postalCode: row.customer.postalCode ?? null,
+        city: row.customer.city ?? null,
+      },
+      employees: employeesByAppointment.get(row.appointment.id) ?? [],
+      isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
+    };
+
+    if (resolvedDetail === "full") {
+      return {
+        ...baseAppointment,
+        project: {
+          id: row.project.id,
+          customerId: row.project.customerId,
+          name: row.project.name,
+          descriptionMd: row.project.descriptionMd ?? null,
+          isActive: row.project.isActive,
+        },
+        customer: {
+          ...baseAppointment.customer,
+          addressLine1: row.customer.addressLine1 ?? null,
+          addressLine2: row.customer.addressLine2 ?? null,
+        },
+      };
+    }
+
+    return baseAppointment;
+  });
 }
 
 export async function deleteAppointment(appointmentId: number, isAdmin: boolean) {

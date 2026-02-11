@@ -5,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
+import { ProjectStatusPanel } from "@/components/ProjectStatusPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CustomerList } from "@/components/CustomerList";
 import { NotesSection } from "@/components/NotesSection";
-import { ProjectStatusSection } from "@/components/ProjectStatusSection";
 import { 
   FolderKanban, 
   UserCircle, 
@@ -276,7 +276,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
             <div className="space-y-6">
               {/* Status - nur bei Bearbeitung */}
               {isEditing && (
-                <ProjectStatusSection
+                <ProjectStatusPanel
                   assignedStatuses={assignedStatuses}
                   availableStatuses={allStatuses}
                   isLoading={statusesLoading}

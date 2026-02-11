@@ -118,6 +118,12 @@ export const api = {
     list: {
       method: "GET" as const,
       path: "/api/calendar/appointments",
+      input: z.object({
+        fromDate: z.string(),
+        toDate: z.string(),
+        employeeId: z.union([z.string(), z.number()]).optional(),
+        detail: z.enum(["compact", "full"]).optional(),
+      }).strict(),
       responses: {
         200: z.array(
           z.object({
@@ -142,9 +148,18 @@ export const api = {
               id: z.number(),
               customerNumber: z.string(),
               fullName: z.string(),
+              addressLine1: z.string().nullable().optional(),
+              addressLine2: z.string().nullable().optional(),
               postalCode: z.string().nullable(),
               city: z.string().nullable(),
             }),
+            project: z.object({
+              id: z.number(),
+              customerId: z.number(),
+              name: z.string(),
+              descriptionMd: z.string().nullable(),
+              isActive: z.boolean(),
+            }).optional(),
             employees: z.array(
               z.object({
                 id: z.number(),

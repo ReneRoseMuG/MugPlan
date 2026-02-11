@@ -57,6 +57,7 @@ export function CalendarYearView({
     fromDate,
     toDate,
     employeeId: employeeFilterId ?? undefined,
+    detail: "compact",
     userRole,
   });
 

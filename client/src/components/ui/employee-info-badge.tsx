@@ -14,6 +14,7 @@ interface EmployeeInfoBadgeProps {
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
+  showPreview?: boolean;
 }
 
 const employeeBackgroundColors = [
@@ -59,6 +60,7 @@ export function EmployeeInfoBadge({
   action,
   onAdd,
   onRemove,
+  showPreview = true,
 }: EmployeeInfoBadgeProps) {
   const resolvedFullName =
     fullName?.trim() ||
@@ -89,11 +91,11 @@ export function EmployeeInfoBadge({
       onRemove={onRemove}
       avatarClassName="text-white border-transparent"
       avatarStyle={{ backgroundColor }}
-      preview={createEmployeeInfoBadgePreview({
+      preview={showPreview ? createEmployeeInfoBadgePreview({
         fullName: resolvedFullName,
         teamName: teamName ?? null,
         tourName: tourName ?? null,
-      })}
+      }) : undefined}
     />
   );
 }

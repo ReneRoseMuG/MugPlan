@@ -95,6 +95,7 @@ export function CalendarMonthView({
     fromDate: stripFromDate,
     toDate: stripToDate,
     employeeId: employeeFilterId ?? undefined,
+    detail: "full",
     userRole,
   });
 

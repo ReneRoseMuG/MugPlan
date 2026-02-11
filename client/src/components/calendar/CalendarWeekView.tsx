@@ -86,6 +86,7 @@ export function CalendarWeekView({
     fromDate: stripFromDate,
     toDate: stripToDate,
     employeeId: employeeFilterId ?? undefined,
+    detail: "full",
     userRole,
   });
 

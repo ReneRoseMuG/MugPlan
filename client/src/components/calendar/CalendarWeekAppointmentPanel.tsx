@@ -1,6 +1,8 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
-import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
-import { CalendarAppointmentDetails } from "./CalendarAppointmentDetails";
+import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
+import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
+import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
+import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
 
 export function CalendarWeekAppointmentPanel({
   appointment,
@@ -17,14 +19,11 @@ export function CalendarWeekAppointmentPanel({
   onDragEnd?: () => void;
   isLocked?: boolean;
 }) {
-  const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
-
   return (
     <div
-      className={`rounded-lg border border-slate-200 p-3 shadow-sm transition ${
+      className={`rounded-lg border border-slate-200 p-2 shadow-sm transition ${
         isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md"
       } ${isDragging ? "opacity-50" : ""}`}
-      style={{ borderLeftColor: backgroundColor, borderLeftWidth: "4px" }}
       onDoubleClick={onDoubleClick}
       draggable={Boolean(onDragStart)}
       onDragStart={onDragStart}
@@ -32,7 +31,25 @@ export function CalendarWeekAppointmentPanel({
       aria-disabled={isLocked}
       data-testid={`week-appointment-panel-${appointment.id}`}
     >
-      <CalendarAppointmentDetails appointment={appointment} variant="panel" />
+      <div className="space-y-1.5">
+        <CalendarWeekAppointmentPanelHeader
+          customerNumber={appointment.customer.customerNumber}
+          postalCode={appointment.customer.postalCode}
+        />
+        <CalendarWeekAppointmentPanelCustomer
+          fullName={appointment.customer.fullName}
+          addressLine1={appointment.customer.addressLine1}
+          addressLine2={appointment.customer.addressLine2}
+          postalCode={appointment.customer.postalCode}
+          city={appointment.customer.city}
+        />
+        <CalendarWeekAppointmentPanelProject
+          projectName={appointment.projectName}
+          projectDescription={appointment.projectDescription}
+          projectStatuses={appointment.projectStatuses}
+        />
+        <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+      </div>
     </div>
   );
 }

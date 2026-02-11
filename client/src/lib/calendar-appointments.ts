@@ -6,6 +6,13 @@ export type CalendarAppointment = {
   projectName: string;
   projectDescription: string | null;
   projectStatuses: { id: number; title: string; color: string }[];
+  project?: {
+    id: number;
+    customerId: number;
+    name: string;
+    descriptionMd: string | null;
+    isActive: boolean;
+  };
   startDate: string;
   endDate: string | null;
   startTime: string | null;
@@ -16,6 +23,8 @@ export type CalendarAppointment = {
     id: number;
     customerNumber: string;
     fullName: string;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
     postalCode: string | null;
     city: string | null;
   };
@@ -41,19 +50,22 @@ export function useCalendarAppointments({
   fromDate,
   toDate,
   employeeId,
+  detail,
   userRole,
 }: {
   fromDate: string;
   toDate: string;
   employeeId?: number | null;
+  detail?: "compact" | "full";
   userRole: string;
 }) {
+  const resolvedDetail = detail ?? "compact";
   return useQuery<CalendarAppointment[]>({
-    queryKey: getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }),
+    queryKey: [...getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }), resolvedDetail],
     queryFn: async () => {
-      const params = new URLSearchParams({ fromDate, toDate });
+      const params = new URLSearchParams({ fromDate, toDate, detail: resolvedDetail });
       if (employeeId) params.set("employeeId", String(employeeId));
-      console.info(`${logPrefix} fetch`, { fromDate, toDate, employeeId: employeeId ?? null });
+      console.info(`${logPrefix} fetch`, { fromDate, toDate, detail: resolvedDetail, employeeId: employeeId ?? null });
       const response = await fetch(`/api/calendar/appointments?${params.toString()}`, {
         headers: {
           "x-user-role": userRole,

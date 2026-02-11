@@ -117,6 +117,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
     const employeeIdParam = typeof req.query.employeeId === "string" ? req.query.employeeId : undefined;
+    const detailParam = typeof req.query.detail === "string" ? req.query.detail : undefined;
 
     if (!fromDate || !toDate) {
       res.status(400).json({ message: "fromDate und toDate sind erforderlich" });
@@ -125,7 +126,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
       console.log(`${logPrefix} list calendar appointments rejected: invalid range ${fromDate}-${toDate}`);
-      res.status(400).json({ message: "UngÃ¼ltiger Datumsbereich" });
+      res.status(400).json({ message: "Ungültiger Datumsbereich" });
       return;
     }
     if (toDate < fromDate) {
@@ -135,16 +136,24 @@ export async function listCalendarAppointments(req: Request, res: Response, next
 
     const employeeId = employeeIdParam ? Number(employeeIdParam) : undefined;
     if (employeeIdParam && Number.isNaN(employeeId)) {
-      res.status(400).json({ message: "UngÃ¼ltige employeeId" });
+      res.status(400).json({ message: "Ungültige employeeId" });
       return;
     }
+    if (detailParam && detailParam !== "compact" && detailParam !== "full") {
+      res.status(400).json({ message: "Ungültiger detail-Parameter" });
+      return;
+    }
+    const detail = detailParam === "full" ? "full" : "compact";
 
     const isAdmin = isAdminRequest(req);
-    console.log(`${logPrefix} list calendar appointments request fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
+    console.log(
+      `${logPrefix} list calendar appointments request fromDate=${fromDate} toDate=${toDate} detail=${detail} employeeId=${employeeId ?? "n/a"}`,
+    );
     const appointments = await appointmentsService.listCalendarAppointments({
       fromDate,
       toDate,
       employeeId,
+      detail,
       isAdmin,
     });
     res.json(appointments);
@@ -152,3 +161,4 @@ export async function listCalendarAppointments(req: Request, res: Response, next
     next(err);
   }
 }
+
