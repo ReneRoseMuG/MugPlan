@@ -228,6 +228,14 @@ Mutationen im Kalenderbereich sind in der Regel Terminverschiebung und Terminbea
 
 Die Lock‑Regel wirkt hier als Interaktionsbremse: Die UI blockiert Drag‑and‑Drop und Edit‑Aktionen, wenn der Termin gesperrt ist und der Nutzer nicht Admin ist. Gleichzeitig muss der Server dieselbe Regel erzwingen.
 
+Im aktuellen Frontend-Renderstand gelten zusätzlich folgende Visualisierungsregeln, die ohne Backend-Änderung umgesetzt sind.
+
+In der Wochenansicht werden Mehrtagestermine nicht mehr als inhaltsgleiche Karten je Tag gespiegelt. Stattdessen zeigt der Starttag die vollständige Karte, Folgetage zeigen ein Fortsetzungssegment ohne sichtbaren Karteninhalt (schraffiert). Alle Segmente eines Termins teilen sich einen gemeinsamen Hover-Highlight-State.
+
+In der Monatsansicht werden Mehrtagestermine über Wochen-Lanes als durchgehende Balkensegmente pro Woche gerendert. Dadurch entsteht keine pro-Tag-Replikation des Balkens, sondern eine lane-basierte Wochengeometrie.
+
+In Monat und Jahr folgt die Termin-Preview der Weekly-Karte: Das Popover nutzt `CalendarWeekAppointmentPanel` im nicht-interaktiven Modus (`interactive={false}`).
+
 ## 9.3 Projektbereich
 
 Der Projektbereich ist der natürliche Ort für projektbezogene Nebenobjekte. Dazu zählen Notizen, Anhänge und Statusinformationen. Das Architekturprinzip ist, dass Nebenobjekte als eigene Entitäten mit eigenen Endpunkten existieren und im Projekt‑Screen als Panel oder Tab integriert werden, statt die Projektentität immer weiter aufzublähen.
@@ -480,7 +488,9 @@ Kalender:
 * Views: `client/src/components/calendar/CalendarMonthView.tsx`, `.../CalendarWeekView.tsx`, `.../CalendarYearView.tsx`.
 * Filter: `client/src/components/calendar/CalendarEmployeeFilter.tsx`.
 * Termin-Bausteine: `client/src/components/calendar/CalendarAppointmentCompactBar.tsx`, `client/src/components/calendar/CalendarWeekAppointmentPanel.tsx`.
-* Details/Popover: `client/src/components/calendar/CalendarAppointmentPopover.tsx`, `client/src/components/calendar/CalendarAppointmentDetails.tsx`.
+* Details/Popover: `client/src/components/calendar/CalendarAppointmentPopover.tsx` (rendert die Weekly-Card `CalendarWeekAppointmentPanel` im read-only Modus).
+* Wochenansicht Mehrtagestermine: `client/src/components/calendar/CalendarWeekView.tsx` rendert Startsegment als volle Karte und Folgesegmente als `segment="continuation"` mit schraffierter Fortsetzungsdarstellung.
+* Monatsansicht Mehrtagestermine: `client/src/components/calendar/CalendarMonthView.tsx` verwendet Wochen-Lanes mit `startIndex`/`endIndex` und positioniert durchgehende Balkensegmente pro Woche.
 
 Panels (Sidebars/Details):
 
@@ -488,6 +498,7 @@ Panels (Sidebars/Details):
 * `client/src/components/CustomerAppointmentsPanel.tsx`.
 * `client/src/components/EmployeeAppointmentsPanel.tsx`.
 * `client/src/components/ProjectAppointmentsPanel.tsx`.
+* `AppointmentsPanel` ist im Ist-Stand upcoming-only (kein Show-All-Toggle); `EmployeeAppointmentsPanel` begrenzt auf 5 Einträge und kann optional eine "Mehr anzeigen"-Aktion über Callback einblenden.
 
 ### C4.2 Frontend – UI-Kompositionsschicht
 

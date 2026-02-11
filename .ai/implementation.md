@@ -78,6 +78,75 @@ Panels werden als klar abgegrenzte Child‑Collections verstanden und folgen dem
 
 Kalenderfeatures sind systemkritisch. Neue kalenderrelevante Daten gehören in die serverseitige Aggregation, damit alle Views konsistent bleiben. Die Views sollen nicht durch zusätzliche parallele Requests auseinanderdriften.
 
+## 3.5 Sidebar Appointment Panels (upcoming-only, compact, employee cap=5)
+
+Der Sidebar-Terminbereich wurde auf ein upcoming-only Pattern vereinheitlicht.
+
+`AppointmentsPanel` rendert im Ist-Stand keinen Show-All-Toggle mehr. Stattdessen ist die Darstellung rein listenbasiert und kann über `compact` sowie `sidebarFooter` gesteuert werden.
+
+`ProjectAppointmentsPanel` und `CustomerAppointmentsPanel` laden nur noch Termine ab heute. Historische Umschaltung (`showAll`) ist in diesen Panels entfernt.
+
+`EmployeeAppointmentsPanel` sortiert upcoming Termine chronologisch, zeigt maximal 5 Einträge und kann bei mehr Treffern einen Footer-Button "Mehr anzeigen" rendern. Der Trigger wird über `onOpenEmployeeAppointmentsView(employeeId)` nach außen delegiert.
+
+Wichtige Dateien:
+
+- `client/src/components/AppointmentsPanel.tsx`
+- `client/src/components/ProjectAppointmentsPanel.tsx`
+- `client/src/components/CustomerAppointmentsPanel.tsx`
+- `client/src/components/EmployeeAppointmentsPanel.tsx`
+- `client/src/components/ui/termin-info-badge.tsx`
+
+## 3.6 Kalender Preview, CompactBar und Mehrtages-Rendering
+
+Monat/Jahr-Preview:
+
+`CalendarAppointmentPopover` rendert die Weekly-Karte `CalendarWeekAppointmentPanel` mit `interactive={false}`. Die Preview ist damit strukturell identisch zur Wochenkarte, aber read-only (kein Drag, kein DoubleClick im Popover).
+
+Wochenansicht Mehrtagestermine:
+
+In `CalendarWeekView` wird der Starttag eines Mehrtagestermins als volle Karte gerendert. Folgetage verwenden `segment="continuation"` in `CalendarWeekAppointmentPanel` und zeigen eine schraffierte Fortsetzung ohne sichtbaren Karteninhalt. Über `hoveredAppointmentId` werden alle Segmente eines Termins gemeinsam hervorgehoben.
+
+Monatsansicht Mehrtagestermine:
+
+`CalendarMonthView` verwendet Week-Lanes mit `startIndex`/`endIndex` und positioniert Balken über lane-basierte Geometrie. Mehrtagestermine werden als durchgehende Segmente pro Woche gezeichnet.
+
+CompactBar-Content-Regeln (Monat/Jahr):
+
+- Ein-Tag: links `K: <Nummer>`, rechts `PLZ: <PLZ>`
+- Mehrtag: links `K: <Nummer> - Name: <FullName>`, rechts `PLZ: <PLZ>`
+- Preview-Popup folgt dem Mauszeiger mit kleinem Offset.
+
+Wichtige Dateien:
+
+- `client/src/components/calendar/CalendarWeekView.tsx`
+- `client/src/components/calendar/CalendarMonthView.tsx`
+- `client/src/components/calendar/CalendarAppointmentCompactBar.tsx`
+- `client/src/components/calendar/CalendarAppointmentPopover.tsx`
+- `client/src/components/calendar/CalendarWeekAppointmentPanel.tsx`
+
+## 3.7 ProjectStatus Panel Pattern
+
+Die Projektstatus-Darstellung im Projektformular läuft über ein domänenspezifisches Pattern:
+
+- Panel-Wrapper: `ProjectStatusPanel`
+- Badge-Wrapper: `ProjectStatusInfoBadge`
+
+Die frühere `ProjectStatusSection` wird im aktuellen Ist-Stand nicht mehr verwendet.
+
+Wichtige Dateien:
+
+- `client/src/components/ProjectStatusPanel.tsx`
+- `client/src/components/ui/project-status-info-badge.tsx`
+- `client/src/components/ProjectForm.tsx`
+
+## 3.8 RichTextEditor: Clipboard-Sanitizing
+
+`RichTextEditor` fängt `onPaste` ab und übernimmt ausschließlich `text/plain`. HTML-Formatierungen aus der Zwischenablage werden nicht in den Editor übernommen.
+
+Wichtige Datei:
+
+- `client/src/components/RichTextEditor.tsx`
+
 ---
 
 # 4. Fehlerbehandlung und Debugging
