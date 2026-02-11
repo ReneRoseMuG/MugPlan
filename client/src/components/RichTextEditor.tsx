@@ -53,6 +53,14 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     }
   };
 
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const plainText = event.clipboardData.getData("text/plain");
+    editorRef.current?.focus();
+    document.execCommand("insertText", false, plainText);
+    handleContentChange();
+  };
+
   const applyColor = (color: string) => {
     execCommand("foreColor", color);
     setColorPickerOpen(false);
@@ -237,6 +245,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         contentEditable
         dir="ltr"
         onInput={handleContentChange}
+        onPaste={handlePaste}
         onBlur={handleContentChange}
         className="min-h-[200px] p-4 focus:outline-none text-sm bg-white dark:bg-slate-900"
         data-placeholder={placeholder}
