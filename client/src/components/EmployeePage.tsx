@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmployeeAppointmentsPanel } from "@/components/EmployeeAppointmentsPanel";
+import { EmployeeAppointmentsTableDialog } from "@/components/EmployeeAppointmentsTableDialog";
 import { EmployeeAttachmentsPanel } from "@/components/EmployeeAttachmentsPanel";
 import { EmployeeList } from "@/components/EmployeeList";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
@@ -23,6 +24,7 @@ interface EmployeePageProps {
   onClose?: () => void;
   onCancel?: () => void;
   onOpenEmployeeWeekly?: (id: number, name: string) => void;
+  onOpenAppointment?: (appointmentId: number) => void;
 }
 
 interface EmployeeFormData {
@@ -32,9 +34,10 @@ interface EmployeeFormData {
   email: string;
 }
 
-export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
+export function EmployeePage({ onClose, onCancel, onOpenAppointment }: EmployeePageProps) {
   const handleClose = onClose || onCancel;
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [employeeAppointmentsTableOpen, setEmployeeAppointmentsTableOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<EmployeeFormData>({
@@ -98,6 +101,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   const handleOpenCreate = () => {
     setSelectedEmployeeId(null);
     setIsCreating(true);
+    setEmployeeAppointmentsTableOpen(false);
     resetForm();
     setDetailDialogOpen(true);
   };
@@ -105,6 +109,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   const handleOpenDetail = (employee: Employee) => {
     setSelectedEmployeeId(employee.id);
     setIsCreating(false);
+    setEmployeeAppointmentsTableOpen(false);
     setFormData({
       firstName: employee.firstName,
       lastName: employee.lastName,
@@ -142,6 +147,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
   const handleCloseDialog = () => {
     setDetailDialogOpen(false);
     setIsCreating(false);
+    setEmployeeAppointmentsTableOpen(false);
     resetForm();
   };
 
@@ -280,6 +286,7 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
               <EmployeeAppointmentsPanel
                 employeeId={selectedEmployeeId}
                 employeeName={displayEmployee?.employee.fullName ?? null}
+                onOpenEmployeeAppointmentsView={() => setEmployeeAppointmentsTableOpen(true)}
               />
               {!isCreating && <EmployeeAttachmentsPanel employeeId={selectedEmployeeId} />}
 
@@ -334,6 +341,16 @@ export function EmployeePage({ onClose, onCancel }: EmployeePageProps) {
           </div>
         </div>
       </EntityEditDialog>
+
+      {employeeAppointmentsTableOpen && selectedEmployeeId ? (
+        <EmployeeAppointmentsTableDialog
+          open={employeeAppointmentsTableOpen}
+          onOpenChange={setEmployeeAppointmentsTableOpen}
+          employeeId={selectedEmployeeId}
+          employeeName={displayEmployee?.employee.fullName ?? null}
+          onOpenAppointment={onOpenAppointment}
+        />
+      ) : null}
     </>
   );
 }

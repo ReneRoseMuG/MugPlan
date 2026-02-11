@@ -63,11 +63,7 @@ export function EmployeeAppointmentsPanel({ employeeId, onOpenEmployeeAppointmen
     }));
   }, [limitedAppointments]);
 
-  const shouldShowMoreButton = Boolean(
-    employeeId
-      && onOpenEmployeeAppointmentsView
-      && sortedUpcomingAppointments.length > 5,
-  );
+  const shouldShowMoreButton = Boolean(employeeId && onOpenEmployeeAppointmentsView);
 
   const sidebarFooter = shouldShowMoreButton ? (
     <Button
@@ -77,7 +73,7 @@ export function EmployeeAppointmentsPanel({ employeeId, onOpenEmployeeAppointmen
       onClick={() => onOpenEmployeeAppointmentsView?.(employeeId as number)}
       data-testid="button-open-employee-appointments-view"
     >
-      Mehr anzeigen
+      Tabelle öffnen
     </Button>
   ) : null;
 

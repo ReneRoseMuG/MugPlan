@@ -179,7 +179,11 @@ export default function Home({ onLogout }: HomeProps) {
             <TeamManagement onCancel={() => setView('month')} />
           ) : view === 'employees' ? (
             <EmployeePage 
-              onCancel={() => setView('month')} 
+              onCancel={() => setView('month')}
+              onOpenAppointment={(appointmentId) => {
+                setAppointmentContext({ appointmentId, returnView: "employees" });
+                setView('appointment');
+              }}
             />
           ) : view === 'employeeWeekly' && selectedEmployee ? (
             <EmployeeWeeklyView 
