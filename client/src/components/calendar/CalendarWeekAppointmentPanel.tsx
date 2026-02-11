@@ -12,6 +12,11 @@ export function CalendarWeekAppointmentPanel({
   onDragEnd,
   isLocked,
   interactive = true,
+  highlighted = false,
+  onMouseEnter,
+  onMouseLeave,
+  segment = "start",
+  testId,
 }: {
   appointment: CalendarAppointment;
   onDoubleClick?: () => void;
@@ -20,23 +25,32 @@ export function CalendarWeekAppointmentPanel({
   onDragEnd?: () => void;
   isLocked?: boolean;
   interactive?: boolean;
+  highlighted?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  segment?: "start" | "continuation";
+  testId?: string;
 }) {
+  const isContinuation = segment === "continuation";
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
     : "";
+  const highlightClass = highlighted ? "border-primary shadow-md ring-1 ring-primary/30" : "border-slate-200";
 
   return (
     <div
-      className={`rounded-lg border border-slate-200 p-2 shadow-sm transition ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`relative overflow-hidden rounded-lg border p-2 shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
       onDragStart={canDrag ? onDragStart : undefined}
       onDragEnd={canDrag ? onDragEnd : undefined}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       aria-disabled={isLocked}
-      data-testid={`week-appointment-panel-${appointment.id}`}
+      data-testid={testId ?? `week-appointment-panel-${appointment.id}`}
     >
-      <div className="space-y-1.5">
+      <div className={`space-y-1.5 ${isContinuation ? "opacity-0 select-none" : ""}`}>
         <CalendarWeekAppointmentPanelHeader
           customerNumber={appointment.customer.customerNumber}
           postalCode={appointment.customer.postalCode}
@@ -55,6 +69,16 @@ export function CalendarWeekAppointmentPanel({
         />
         <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
       </div>
+      {isContinuation && (
+        <div
+          className="absolute inset-0 rounded-lg"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(135deg, rgba(148,163,184,0.15) 0 8px, rgba(148,163,184,0.06) 8px 16px)",
+          }}
+          aria-hidden
+        />
+      )}
     </div>
   );
 }

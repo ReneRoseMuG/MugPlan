@@ -49,6 +49,7 @@ export function CalendarWeekView({
   // Navigation/Sync-Signale werden absichtlich nicht verarbeitet.
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
+  const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(
@@ -344,18 +345,42 @@ export function CalendarWeekView({
                             if (!appointment) {
                               return null;
                             }
+                            const isContinuationSegment = dayIdx > laneItem.startIndex;
+                            const isHighlighted = hoveredAppointmentId === appointment.id;
+                            const isSegmentLocked = appointment.isLocked && !isAdmin;
+                            const canDragSegment = !isSegmentLocked;
+
+                            if (isContinuationSegment) {
+                              return (
+                                <CalendarWeekAppointmentPanel
+                                  key={`${appointment.id}-${laneIndex}-${dayIdx}`}
+                                  appointment={appointment}
+                                  segment="continuation"
+                                  isDragging={draggedAppointmentId === appointment.id}
+                                  isLocked={isSegmentLocked}
+                                  highlighted={isHighlighted}
+                                  onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                  onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                  onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                  onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
+                                  onMouseLeave={() => setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))}
+                                  testId={`week-appointment-continuation-${appointment.id}-${dayIdx}`}
+                                />
+                              );
+                            }
 
                             return (
                               <CalendarWeekAppointmentPanel
                                 key={`${appointment.id}-${laneIndex}-${dayIdx}`}
                                 appointment={appointment}
                                 isDragging={draggedAppointmentId === appointment.id}
-                                isLocked={appointment.isLocked && !isAdmin}
+                                isLocked={isSegmentLocked}
+                                highlighted={isHighlighted}
                                 onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                onDragStart={
-                                  appointment.isLocked && !isAdmin ? undefined : (event) => handleDragStart(event, appointment.id)
-                                }
-                                onDragEnd={handleDragEnd}
+                                onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
+                                onMouseLeave={() => setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))}
                               />
                             );
                           })}
