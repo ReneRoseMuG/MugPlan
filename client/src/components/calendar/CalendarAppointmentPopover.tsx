@@ -24,7 +24,9 @@ export function CalendarAppointmentPopover({
       style={{ top, left }}
       data-testid={`appointment-popover-${appointment.id}`}
     >
-      <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
+      <div className="rounded-lg bg-white p-1">
+        <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
+      </div>
     </div>,
     document.body,
   );

@@ -36,7 +36,6 @@ export function CalendarAppointmentCompactBar({
 }: CompactBarProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const barRef = useRef<HTMLDivElement>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const endDate = getAppointmentEndDate(appointment);
@@ -45,22 +44,27 @@ export function CalendarAppointmentCompactBar({
   const customerName = appointment.customer.fullName?.trim() || "";
   const postalCode = appointment.customer.postalCode?.trim() || "-";
   const leftContent = isMultiDay && customerName
-    ? `K: ${customerNumber} ${customerName}`
+    ? `K: ${customerNumber} - Name: ${customerName}`
     : `K: ${customerNumber}`;
   const rightContent = `PLZ: ${postalCode}`;
 
-  const handleMouseEnter = () => {
-    if (barRef.current) {
-      const rect = barRef.current.getBoundingClientRect();
-      setTooltipPosition({
-        x: rect.right + 10,
-        y: rect.top,
-      });
-    }
+  const updateTooltipPositionFromMouse = (event: React.MouseEvent) => {
+    setTooltipPosition({
+      x: event.clientX + 12,
+      y: event.clientY + 10,
+    });
+  };
+
+  const handleMouseEnter = (event: React.MouseEvent) => {
+    updateTooltipPositionFromMouse(event);
     tooltipTimeoutRef.current = setTimeout(() => {
       setShowTooltip(true);
       console.info(`${logPrefix} popover open`, { appointmentId: appointment.id });
     }, 400);
+  };
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    updateTooltipPositionFromMouse(event);
   };
 
   const handleMouseLeave = () => {
@@ -83,10 +87,10 @@ export function CalendarAppointmentCompactBar({
 
   return (
     <div
-      ref={barRef}
       className={`relative ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""}`}
       style={positionStyle}
       onMouseEnter={handleMouseEnter}
+      onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onDoubleClick={onDoubleClick}
       onDragOver={onDragOver}
@@ -108,10 +112,10 @@ export function CalendarAppointmentCompactBar({
           width: "100%",
         }}
       >
-        <span className="inline-flex min-w-0 max-w-[75%] items-center rounded-sm bg-black/10 px-1.5 py-0.5 text-[10px]">
+        <span className="inline-flex min-w-0 max-w-[75%] items-center text-[10px]">
           <span className="truncate">{leftContent}</span>
         </span>
-        <span className="ml-auto inline-flex min-w-0 max-w-[35%] items-center justify-end rounded-sm bg-black/10 px-1.5 py-0.5 text-[10px] text-right">
+        <span className="ml-auto inline-flex min-w-0 max-w-[35%] items-center justify-end text-[10px] text-right">
           <span className="truncate">{rightContent}</span>
         </span>
       </div>
