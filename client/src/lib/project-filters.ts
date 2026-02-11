@@ -1,7 +1,9 @@
-import type { Project } from "@shared/schema";
+import type { Customer, Project } from "@shared/schema";
 
 export interface ProjectFilters {
   title: string;
+  customerLastName: string;
+  customerNumber: string;
   statusIds: number[];
 }
 
@@ -9,23 +11,36 @@ export type ProjectScope = "upcoming" | "noAppointments";
 
 export const defaultProjectFilters: ProjectFilters = {
   title: "",
+  customerLastName: "",
+  customerNumber: "",
   statusIds: [],
 };
 
 const normalizeText = (value: string) => value.trim().toLowerCase();
+const normalizeNumber = (value: string) => value.trim();
 
 export function applyProjectFilters(
   projects: Project[],
   filters: ProjectFilters,
+  customersById: Map<number, Customer>,
 ): Project[] {
   const normalizedTitle = normalizeText(filters.title);
+  const normalizedCustomerLastName = normalizeText(filters.customerLastName);
+  const normalizedCustomerNumber = normalizeNumber(filters.customerNumber);
 
   return projects.filter((project) => {
-    if (!normalizedTitle) {
-      return true;
-    }
+    const customer = customersById.get(project.customerId);
+    const matchesTitle = normalizedTitle
+      ? (project.name ?? "").toLowerCase().includes(normalizedTitle)
+      : true;
+    const matchesCustomerLastName = normalizedCustomerLastName
+      ? (customer?.lastName ?? "").toLowerCase().includes(normalizedCustomerLastName)
+      : true;
+    const matchesCustomerNumber = normalizedCustomerNumber
+      ? (customer?.customerNumber ?? "").includes(normalizedCustomerNumber)
+      : true;
 
-    return (project.name ?? "").toLowerCase().includes(normalizedTitle);
+    return matchesTitle && matchesCustomerLastName && matchesCustomerNumber;
   });
 }
 

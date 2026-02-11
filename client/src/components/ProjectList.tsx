@@ -56,14 +56,18 @@ export function ProjectListView({
   showCloseButton = true,
 }: ProjectListViewProps) {
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
+  const customersById = useMemo(
+    () => new Map(customers.map((customer) => [customer.id, customer] as const)),
+    [customers],
+  );
 
   const activeProjects = useMemo(
     () => projects.filter((project) => project.isActive),
     [projects],
   );
   const filteredProjects = useMemo(
-    () => applyProjectFilters(activeProjects, filters),
-    [activeProjects, filters],
+    () => applyProjectFilters(activeProjects, filters, customersById),
+    [activeProjects, filters, customersById],
   );
 
   const selectedStatusIds = useMemo(
@@ -120,6 +124,12 @@ export function ProjectListView({
           projectTitle={filters.title}
           onProjectTitleChange={(value) => onFiltersChange((prev) => ({ ...prev, title: value }))}
           onProjectTitleClear={() => onFiltersChange((prev) => ({ ...prev, title: "" }))}
+          customerLastName={filters.customerLastName}
+          onCustomerLastNameChange={(value) => onFiltersChange((prev) => ({ ...prev, customerLastName: value }))}
+          onCustomerLastNameClear={() => onFiltersChange((prev) => ({ ...prev, customerLastName: "" }))}
+          customerNumber={filters.customerNumber}
+          onCustomerNumberChange={(value) => onFiltersChange((prev) => ({ ...prev, customerNumber: value }))}
+          onCustomerNumberClear={() => onFiltersChange((prev) => ({ ...prev, customerNumber: "" }))}
           selectedStatuses={selectedStatuses}
           availableStatuses={availableStatuses}
           statusPickerOpen={statusPickerOpen}
@@ -170,7 +180,7 @@ export function ProjectListView({
               {customer && (
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <User className="w-3 h-3 text-slate-400" />
-                  <span className="font-medium">{customer.fullName}</span>
+                  <span className="font-medium">{customer.fullName} (K: {customer.customerNumber})</span>
                 </div>
               )}
               

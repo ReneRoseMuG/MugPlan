@@ -3,12 +3,14 @@ import type { ReactNode } from "react";
 interface FilterPanelProps {
   title: string;
   layout?: "row" | "stack";
+  showTitle?: boolean;
   children: ReactNode;
 }
 
 export function FilterPanel({
   title,
   layout = "row",
+  showTitle = false,
   children,
 }: FilterPanelProps) {
   const layoutClassName = layout === "stack"
@@ -17,7 +19,13 @@ export function FilterPanel({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="sr-only">{title}</span>
+      {showTitle ? (
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </p>
+      ) : (
+        <span className="sr-only">{title}</span>
+      )}
       <div className={layoutClassName}>
         {children}
       </div>
