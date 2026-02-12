@@ -1,4 +1,4 @@
-import { Flag, Plus } from "lucide-react";
+﻿import { Flag, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { HelpIcon } from "@/components/ui/help/help-icon";
@@ -60,9 +60,9 @@ export function ProjectStatusFilterInput({
           </PopoverTrigger>
           <PopoverContent className="w-72 p-3" align="start">
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-muted-foreground">Status hinzufÃ¼gen</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground">Status hinzufügen</h4>
               {availableStatuses.length === 0 ? (
-                <p className="text-xs text-slate-400">Alle Status ausgewÃ¤hlt</p>
+                <p className="text-xs text-slate-400">Alle Status ausgewählt</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {availableStatuses.map((status) => (

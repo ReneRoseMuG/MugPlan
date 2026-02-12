@@ -27,7 +27,7 @@ type CalendarWeekViewProps = {
   employeeFilterId?: number | null;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
-  onNewAppointment?: (date: string) => void;
+  onNewAppointment?: (date: string, options?: { tourId?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number) => void;
 };
 
@@ -421,7 +421,14 @@ export function CalendarWeekView({
                             {tourLane.dayBuckets.map((dayBucket) => (
                               <div key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`} className="flex items-center justify-end px-1">
                                 <button
-                                  onClick={() => onNewAppointment?.(dayBucket.dateKey)}
+                                  onClick={() => {
+                                    console.info(`${logPrefix} new appointment click`, {
+                                      date: dayBucket.dateKey,
+                                      tourId: tourLane.tourId,
+                                      laneKey: tourLane.laneKey,
+                                    });
+                                    onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId });
+                                  }}
                                   className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none text-white/85 hover:bg-white/15 hover:text-white"
                                   data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                   title={`Neuer Termin am ${dayBucket.dateKey}`}

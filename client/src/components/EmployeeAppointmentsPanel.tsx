@@ -67,7 +67,7 @@ export function EmployeeAppointmentsPanel({ employeeId, onOpenEmployeeAppointmen
       onClick={() => onOpenEmployeeAppointmentsView?.(employeeId as number)}
       data-testid="button-open-employee-appointments-view"
     >
-      Tabelle Ã¶ffnen
+      Tabelle öffnen
     </Button>
   ) : null;
 

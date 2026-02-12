@@ -42,6 +42,7 @@ export default function Home({ onLogout }: HomeProps) {
   const [calendarEmployeeFilterId, setCalendarEmployeeFilterId] = useState<number | null>(null);
   const [appointmentContext, setAppointmentContext] = useState<{
     initialDate?: string;
+    initialTourId?: number | null;
     projectId?: number;
     appointmentId?: number;
     returnView?: ViewType;
@@ -74,9 +75,9 @@ export default function Home({ onLogout }: HomeProps) {
         <WeekGrid
           currentDate={currentDate}
           employeeFilterId={calendarEmployeeFilterId}
-          onNewAppointment={(date) => {
-            console.info("[calendar] new appointment", { date, view: "week" });
-            setAppointmentContext({ initialDate: date });
+          onNewAppointment={(date, options) => {
+            console.info("[calendar] new appointment", { date, tourId: options?.tourId ?? null, view: "week" });
+            setAppointmentContext({ initialDate: date, initialTourId: options?.tourId ?? null, returnView: "week" });
             setView('appointment');
           }}
           onOpenAppointment={(appointmentId) => {
@@ -209,6 +210,7 @@ export default function Home({ onLogout }: HomeProps) {
             <AppointmentForm
               appointmentId={appointmentContext?.appointmentId}
               initialDate={appointmentContext?.initialDate}
+              initialTourId={appointmentContext?.initialTourId}
               projectId={appointmentContext?.projectId}
               onCancel={() => {
                 const returnToProject = Boolean(appointmentContext?.projectId);
@@ -254,7 +256,7 @@ export default function Home({ onLogout }: HomeProps) {
               >
                 {"<"}
               </button>
-              {/* Kalenderansicht benÃ¶tigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
+              {/* Kalenderansicht benötigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
               <div className="min-w-0 h-full overflow-hidden">{renderCalendarContent()}</div>
               {/* UI-ONLY:
                * Diese Navigationsfläche triggert ausschließlich die bestehende

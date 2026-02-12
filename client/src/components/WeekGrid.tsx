@@ -6,7 +6,7 @@ interface WeekGridProps {
   employeeFilterId?: number | null;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
-  onNewAppointment?: (date: string) => void;
+  onNewAppointment?: (date: string, options?: { tourId?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number) => void;
 }
 

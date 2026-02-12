@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+ï»¿import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HelpIcon } from "@/components/ui/help/help-icon";
@@ -60,7 +60,7 @@ export function SidebarChildPanel({
                   variant="ghost"
                   onClick={addAction.onClick}
                   disabled={addAction.disabled}
-                  aria-label={addAction.ariaLabel ?? "Element hinzufügen"}
+                  aria-label={addAction.ariaLabel ?? "Element hinzufÃ¼gen"}
                   data-testid={addAction.testId}
                 >
                   <Plus className="w-5 h-5" />
@@ -72,7 +72,7 @@ export function SidebarChildPanel({
                   variant="ghost"
                   onClick={closeAction.onClick}
                   disabled={closeAction.disabled}
-                  aria-label={closeAction.ariaLabel ?? "Panel schließen"}
+                  aria-label={closeAction.ariaLabel ?? "Panel schlieÃŸen"}
                   data-testid={closeAction.testId}
                 >
                   <X className="w-5 h-5" />
