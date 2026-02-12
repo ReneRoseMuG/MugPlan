@@ -152,3 +152,63 @@ Branch: `refactor/listlayout-architecture`
 - Hover preview shows appointment details or fallback text.
 - Double-click opens edit flow.
 - View mode switch does not change project list query key (`/api/projects?...`) and does not trigger a project data reload by mode alone.
+
+## Phase 4: CustomersPage Migration (2026-02-12)
+
+### Migration Scope
+- Migrated only `CustomersPage` (customer list screen) to new list architecture:
+  - `ListLayout`
+  - `BoardView`
+  - `TableView`
+- Other screens were not migrated.
+- Existing picker flows continue to use `CustomerList` unchanged.
+
+### Changed Files
+- `client/src/components/CustomersPage.tsx` (new)
+- `client/src/pages/Home.tsx`
+- `server/settings/registry.ts`
+- `docs/listlayout-tableview-architecture.md`
+- `docs/listlayout-tableview-refactor-log.md`
+
+### Implementation Notes
+- Added dedicated `CustomersPage` and integrated it for `view === "customerList"` in `Home`.
+- Added view mode persistence key `customers.viewMode` (`USER`, default `board`).
+- `CustomersPage` structure:
+  - `ListLayout` shell with `viewModeKey="customers"`
+  - existing `CustomerFilterPanel` in `filterSlot`
+  - `BoardView` with unchanged customer cards and interactions
+  - `TableView` with required sortable columns:
+    - `Kundennummer`
+    - `Name`
+    - `Vorname`
+    - `Relevanter Termin`
+  - plus non-sort columns:
+    - `Telefon`
+    - `E-Mail`
+- Relevant appointment calculation in table rows:
+  1. nearest future appointment
+  2. else latest historical appointment
+  3. else `Keine Termine geplant`
+- Row preview behavior:
+  - shows relevant appointment preview on hover
+  - shows `Keine Termine geplant` when absent
+- Row interaction in table:
+  - double click opens customer edit flow (`onSelectCustomer`)
+  - single click has no action
+
+### Compliance Confirmation
+- Existing layout components were not changed:
+  - `client/src/components/ui/card-list-layout.tsx`
+  - `client/src/components/ui/filtered-card-list-layout.tsx`
+- No adapter/wrapper strategy was introduced.
+- No routing structure changes (existing `customerList` view path retained).
+- No backend endpoint changes.
+- No change to backend appointment-calculation logic.
+
+### Test Points (Phase 4)
+- Board mode keeps previous customer card rendering and behavior.
+- Table mode renders required columns and sorting.
+- Relevant appointment resolution follows required priority rule.
+- Hover preview shows appointment details or fallback text.
+- Double-click opens edit flow.
+- View mode switch does not change customer list query key (`/api/customers`) and does not trigger a customer data reload by mode alone.

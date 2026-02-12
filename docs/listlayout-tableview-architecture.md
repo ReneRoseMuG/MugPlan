@@ -237,3 +237,50 @@ Phase-3 contract for `ProjectsPage`:
   - hover: appointment preview (or `Keine Termine vorhanden.`)
   - double click: open project edit flow
   - single click: no action
+
+## Customers Migration (Phase 4)
+Final integration state for `CustomersPage`:
+
+```tsx
+<ListLayout
+  title="Kunden"
+  icon={<User className="w-5 h-5" />}
+  viewModeKey="customers"
+  filterSlot={<CustomerFilterPanel ... />}
+  viewModeToggle={<CustomersViewModeToggle />}
+  contentSlot={
+    viewMode === "board" ? (
+      <BoardView gridCols="3">{/* existing customer cards */}</BoardView>
+    ) : (
+      <TableView
+        columns={customerColumns}
+        rows={sortedCustomerRows}
+        rowKey={(row) => row.customer.id}
+        onRowDoubleClick={(row) => onSelectCustomer?.(row.customer.id)}
+        rowPreviewRenderer={(row) => <RelevantAppointmentPreview row={row} />}
+      />
+    )
+  }
+/>
+```
+
+Phase-4 contract for `CustomersPage`:
+- View mode persistence uses key `customers.viewMode` in existing settings infrastructure.
+- Default view mode is `board` if no persisted user value exists.
+- Board mode keeps existing customer card rendering and interactions unchanged.
+- Table mode columns:
+  - `Kundennummer` (sortable)
+  - `Name` (sortable)
+  - `Vorname` (sortable)
+  - `Telefon`
+  - `E-Mail`
+  - `Relevanter Termin` (sortable)
+- Relevant appointment resolution:
+  1. nearest future appointment
+  2. otherwise most recent historical appointment
+  3. otherwise `Keine Termine geplant`
+- Default sort: `Kundennummer` ascending.
+- Table interactions:
+  - hover: appointment preview (or `Keine Termine geplant`)
+  - double click: open customer edit flow
+  - single click: no action

@@ -5,7 +5,7 @@ import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarYearView } from "@/components/calendar/CalendarYearView";
 import { CalendarEmployeeFilter } from "@/components/calendar/CalendarEmployeeFilter";
 import { CustomerData } from "@/components/CustomerData";
-import { CustomerList } from "@/components/CustomerList";
+import { CustomersPage } from "@/components/CustomersPage";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
 import { EmployeePage } from "@/components/EmployeePage";
@@ -169,7 +169,7 @@ export default function Home({ onLogout }: HomeProps) {
               }}
             />
           ) : view === 'customerList' ? (
-            <CustomerList 
+            <CustomersPage
               onCancel={() => setView('month')} 
               onNewCustomer={() => { setSelectedCustomerId(null); setView('customer'); }}
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView('customer'); }}
@@ -279,4 +279,3 @@ export default function Home({ onLogout }: HomeProps) {
     </div>
   );
 }
-
