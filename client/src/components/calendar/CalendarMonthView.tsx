@@ -377,7 +377,9 @@ export function CalendarMonthView({
                                     ${dayIdx === 6 ? "border-r-0" : ""}
                                   `}
                                   onDragOver={(event) => event.preventDefault()}
-                                  onDrop={(event) => handleDrop(event, day)}
+                                  onDrop={(event) => {
+                                    void handleDrop(event, day);
+                                  }}
                                   data-testid={`calendar-day-${dayKey}`}
                                 >
                                   <div className="flex justify-between items-start mb-1">

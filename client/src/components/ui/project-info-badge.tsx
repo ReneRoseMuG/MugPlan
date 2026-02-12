@@ -20,7 +20,7 @@ interface ProjectInfoBadgeProps {
 }
 
 export function ProjectInfoBadge({
-  id,
+  id: _id,
   title,
   customerFullName,
   appointmentCount,

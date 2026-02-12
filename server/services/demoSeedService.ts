@@ -208,14 +208,6 @@ function isWeekend(date: Date) {
   return day === 0 || day === 6;
 }
 
-function nextWorkday(date: Date) {
-  const adjusted = new Date(date);
-  while (isWeekend(adjusted)) {
-    adjusted.setDate(adjusted.getDate() + 1);
-  }
-  return adjusted;
-}
-
 function toDateString(date: Date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");

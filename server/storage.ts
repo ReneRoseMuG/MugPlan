@@ -6,7 +6,6 @@ import type {
   InsertEmployee,
   InsertHelpText,
   CreateNoteInput,
-  InsertNote,
   InsertNoteTemplate,
   InsertProject,
   InsertProjectAttachment,

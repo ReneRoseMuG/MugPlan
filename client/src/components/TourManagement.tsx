@@ -1,4 +1,4 @@
-Ôªøimport { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Route, Pencil } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -61,12 +61,12 @@ export function TourManagement({ onCancel }: TourManagementProps) {
   const updateMutation = useMutation({
     mutationFn: async ({ id, color }: { id: number; color: string }) => apiRequest("PATCH", `/api/tours/${id}`, { color }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
     },
   });
 
   const invalidateEmployees = () => {
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey;
         return Array.isArray(key) && key[0] === "/api/employees";
@@ -77,7 +77,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => apiRequest("DELETE", `/api/tours/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
       invalidateEmployees();
     },
   });
@@ -124,7 +124,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
   };
 
   const handleDelete = (tour: TourWithMembers) => {
-    if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich l√∂schen?`)) {
+    if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich lˆschen?`)) {
       deleteMutation.mutate(tour.id);
     }
   };
@@ -151,7 +151,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
               </Button>
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-tours">
-                  Schlie√üen
+                  Schlieﬂen
                 </Button>
               ) : null}
             </div>

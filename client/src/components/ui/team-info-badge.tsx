@@ -16,7 +16,7 @@ interface TeamInfoBadgeProps {
 }
 
 export function TeamInfoBadge({
-  id,
+  id: _id,
   name,
   color,
   members,

@@ -82,7 +82,7 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+void (async () => {
   await registerRoutes(httpServer, app);
 
   app.use(errorHandler);

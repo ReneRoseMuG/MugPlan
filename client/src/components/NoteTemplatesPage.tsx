@@ -91,7 +91,7 @@ export function NoteTemplatesPage() {
       return apiRequest("POST", "/api/note-templates", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
       handleCloseDialog();
     },
   });
@@ -101,7 +101,7 @@ export function NoteTemplatesPage() {
       return apiRequest("PUT", `/api/note-templates/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
       handleCloseDialog();
     },
   });
@@ -111,7 +111,7 @@ export function NoteTemplatesPage() {
       return apiRequest("DELETE", `/api/note-templates/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
     },
   });
 

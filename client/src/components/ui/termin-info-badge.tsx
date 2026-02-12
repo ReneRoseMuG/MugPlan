@@ -56,7 +56,7 @@ const resolveStartHourLabel = (value?: number | null) => {
 };
 
 export function TerminInfoBadge({
-  id,
+  id: _id,
   startDate,
   endDate,
   startTimeHour,

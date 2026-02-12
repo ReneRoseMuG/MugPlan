@@ -99,7 +99,7 @@ export function HelpTextsPage() {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       handleCloseDialog();
       toast({ title: "Hilfetext erstellt" });
     },
@@ -118,7 +118,7 @@ export function HelpTextsPage() {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       handleCloseDialog();
       toast({ title: "Hilfetext aktualisiert" });
     },
@@ -136,7 +136,7 @@ export function HelpTextsPage() {
       return apiRequest("DELETE", `/api/help-texts/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       toast({ title: "Hilfetext geloescht" });
     },
   });

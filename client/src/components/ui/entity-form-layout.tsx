@@ -92,7 +92,9 @@ export function EntityFormLayout({
             {footerActions}
             {submitAction && (
               <Button 
-                onClick={handleSubmit} 
+                onClick={() => {
+                  void handleSubmit();
+                }}
                 disabled={isBusy}
                 data-testid={`button-save-${testIdPrefix}`}
               >

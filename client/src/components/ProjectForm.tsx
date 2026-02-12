@@ -43,7 +43,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const { toast } = useToast();
   const isEditing = !!projectId;
   const invalidateProjectQueries = () => {
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey[0];
         return typeof key === "string" && key.startsWith("/api/projects");
@@ -168,7 +168,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
     },
   });
 
@@ -178,7 +178,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
     },
   });
 
@@ -187,7 +187,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       await apiRequest('DELETE', `/api/projects/${projectId}/notes/${noteId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
     },
   });
 
@@ -197,7 +197,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       await apiRequest('POST', `/api/projects/${projectId}/statuses`, { statusId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
     },
   });
 
@@ -206,7 +206,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       await apiRequest('DELETE', `/api/projects/${projectId}/statuses/${statusId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
     },
   });
 

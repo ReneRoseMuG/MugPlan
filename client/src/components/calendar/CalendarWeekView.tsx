@@ -2,7 +2,6 @@
 import {
   addDays,
   addWeeks,
-  differenceInCalendarDays,
   endOfWeek,
   format,
   getISOWeek,
@@ -453,7 +452,9 @@ export function CalendarWeekView({
                                   key={`${tourLane.laneKey}-${dayBucket.dateKey}`}
                                   className={`h-full p-2 space-y-2 ${isWeekend ? "bg-slate-200/30" : "bg-white/70"}`}
                                   onDragOver={(event) => event.preventDefault()}
-                                  onDrop={(event) => handleDrop(event, day)}
+                                  onDrop={(event) => {
+                                    void handleDrop(event, day);
+                                  }}
                                   data-testid={`week-day-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                 >
                                   {dayBucket.appointments.map((appointmentId, stackIndex) => {
@@ -506,4 +507,3 @@ export function CalendarWeekView({
     </div>
   );
 }
-

@@ -26,7 +26,7 @@ export function ProjectStatusPage() {
       return apiRequest("POST", "/api/project-status", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
       handleCloseDialog();
     },
   });
@@ -36,7 +36,7 @@ export function ProjectStatusPage() {
       return apiRequest("PUT", `/api/project-status/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
       handleCloseDialog();
     },
   });

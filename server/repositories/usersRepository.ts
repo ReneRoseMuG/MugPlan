@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { roles, users } from "@shared/schema";
 import { assertDbRoleCode, type DbRoleCode } from "../settings/registry";

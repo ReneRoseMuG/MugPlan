@@ -6,9 +6,9 @@ import {
   insertNoteSchema, updateNoteSchema, notes,
   insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
   insertProjectSchema, updateProjectSchema, projects,
-  insertProjectAttachmentSchema, projectAttachments,
-  insertCustomerAttachmentSchema, customerAttachments,
-  insertEmployeeAttachmentSchema, employeeAttachments,
+  projectAttachments,
+  customerAttachments,
+  employeeAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts

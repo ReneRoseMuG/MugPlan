@@ -16,7 +16,7 @@ interface TourInfoBadgeProps {
 }
 
 export function TourInfoBadge({
-  id,
+  id: _id,
   name,
   color,
   members,

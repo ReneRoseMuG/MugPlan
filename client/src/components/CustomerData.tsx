@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -57,7 +56,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -70,7 +69,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -82,7 +81,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -112,7 +111,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({ title: "Kunde angelegt", description: "Der Kunde wurde erfolgreich angelegt." });
     },
     onError: (error: Error) => {
@@ -126,8 +125,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
       toast({ title: "Gespeichert", description: "Die Kundendaten wurden erfolgreich aktualisiert." });
     },
     onError: (error: Error) => {

@@ -246,7 +246,6 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       );
     }
     // Intentionally only initialize once for create mode.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing]);
   useEffect(() => {
     if (isEditing) return;
@@ -912,9 +911,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => {
+              onClick={() => {
                 setEmployeeConfirmOpen(false);
-                await persistAppointment();
+                void persistAppointment();
               }}
             >
               Trotzdem speichern

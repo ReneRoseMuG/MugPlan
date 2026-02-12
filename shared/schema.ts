@@ -1,7 +1,6 @@
-import { mysqlTable, text, int, date, time, boolean, datetime, bigint, primaryKey, varchar, timestamp, json, uniqueIndex, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, time, boolean, bigint, primaryKey, varchar, timestamp, json, uniqueIndex, index } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations, sql } from "drizzle-orm";
 
 // Customer - Kundenverwaltung (FT 09)
 export const customers = mysqlTable("customer", {

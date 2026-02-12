@@ -33,7 +33,7 @@ export function CustomerAttachmentsPanel({ customerId }: CustomerAttachmentsPane
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "attachments"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "attachments"] });
       toast({ title: "Dokument hochgeladen" });
     },
     onError: (error) => {

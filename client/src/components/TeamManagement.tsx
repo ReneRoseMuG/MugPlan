@@ -1,4 +1,4 @@
-Ôªøimport { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Users, Pencil } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -59,7 +59,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
   });
 
   const invalidateEmployees = () => {
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey;
         return Array.isArray(key) && key[0] === "/api/employees";
@@ -70,7 +70,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => apiRequest("DELETE", `/api/teams/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       invalidateEmployees();
     },
   });
@@ -80,7 +80,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
       return apiRequest("PATCH", `/api/teams/${id}`, { color });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
     },
   });
 
@@ -126,7 +126,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
   };
 
   const handleDelete = (team: TeamWithMembers) => {
-    if (window.confirm(`Wollen Sie das Team ${team.name} wirklich l√∂schen?`)) {
+    if (window.confirm(`Wollen Sie das Team ${team.name} wirklich lˆschen?`)) {
       deleteMutation.mutate(team.id);
     }
   };
@@ -153,7 +153,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
               </Button>
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-teams">
-                  Schlie√üen
+                  Schlieﬂen
                 </Button>
               ) : null}
             </div>

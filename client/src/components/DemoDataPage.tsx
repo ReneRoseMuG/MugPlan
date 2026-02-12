@@ -135,7 +135,7 @@ export function DemoDataPage() {
     },
     onSuccess: (result) => {
       setLastResult(result);
-      queryClient.invalidateQueries();
+      void queryClient.invalidateQueries();
     },
   });
 
@@ -148,7 +148,7 @@ export function DemoDataPage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries();
+      void queryClient.invalidateQueries();
     },
   });
 
@@ -164,7 +164,7 @@ export function DemoDataPage() {
       setLastResult(null);
       setResetDialogOpen(false);
       setResetConfirmPhrase("");
-      queryClient.invalidateQueries();
+      void queryClient.invalidateQueries();
       toast({
         title: "Datenbank zurueckgesetzt",
         description: `Projekte: ${result.deleted.projects}, Kunden: ${result.deleted.customers}, Mitarbeitende: ${result.deleted.employees}`,
