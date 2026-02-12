@@ -1,10 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Users, Pencil } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
-import { CardListLayout } from "@/components/ui/card-list-layout";
+import { ListLayout } from "@/components/ui/list-layout";
+import { BoardView } from "@/components/ui/board-view";
 import { TeamEditDialog } from "@/components/ui/team-edit-dialog";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
@@ -24,78 +25,73 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
   const [isCreating, setIsCreating] = useState(false);
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery<Team[]>({
-    queryKey: ['/api/teams'],
+    queryKey: ["/api/teams"],
   });
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
-    queryKey: ['/api/employees'],
+    queryKey: ["/api/employees"],
   });
 
   const isLoading = teamsLoading || employeesLoading;
 
   const teamsWithMembers: TeamWithMembers[] = teams.map((team) => ({
     ...team,
-    members: employees.filter(e => e.teamId === team.id),
+    members: employees.filter((employee) => employee.teamId === team.id),
   }));
 
   const getNextTeamName = () => {
     const existingNumbers = teams
-      .map(t => {
-        const match = t.name.match(/^Team (\d+)$/);
+      .map((team) => {
+        const match = team.name.match(/^Team (\d+)$/);
         return match ? parseInt(match[1], 10) : 0;
       })
-      .filter(n => n > 0);
+      .filter((value) => value > 0);
     const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
     return `Team ${maxNumber + 1}`;
   };
 
   const createMutation = useMutation({
-    mutationFn: async ({ color }: { color: string }) => {
-      return apiRequest('POST', '/api/teams', { color });
-    },
+    mutationFn: async ({ color }: { color: string }) => apiRequest("POST", "/api/teams", { color }),
     onSuccess: async (response) => {
-      await queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       return response;
     },
   });
 
   const invalidateEmployees = () => {
-    queryClient.invalidateQueries({ 
+    queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey;
         return Array.isArray(key) && key[0] === "/api/employees";
-      }
+      },
     });
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest('DELETE', `/api/teams/${id}`);
-    },
+    mutationFn: async (id: number) => apiRequest("DELETE", `/api/teams/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       invalidateEmployees();
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, color }: { id: number; color: string }) => {
-      return apiRequest('PATCH', `/api/teams/${id}`, { color });
+      return apiRequest("PATCH", `/api/teams/${id}`, { color });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
     },
   });
 
   const assignMembersMutation = useMutation({
     mutationFn: async ({ teamId, employeeIds }: { teamId: number; employeeIds: number[] }) => {
-      return apiRequest('POST', `/api/teams/${teamId}/employees`, { employeeIds });
+      return apiRequest("POST", `/api/teams/${teamId}/employees`, { employeeIds });
     },
     onSuccess: () => {
       invalidateEmployees();
     },
   });
-
 
   const handleOpenCreate = () => {
     setEditingTeam(null);
@@ -138,82 +134,98 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
   return (
     <>
       <BadgeInteractionProvider value={{ openTeamEdit: handleOpenEditById }}>
-        <CardListLayout
-        title="Teams"
-        icon={<Users className="w-5 h-5" />}
-        helpKey="teams"
-        isLoading={isLoading}
-        onClose={onCancel}
-        closeTestId="button-close-teams"
-        gridTestId="list-teams"
-        gridCols="3"
-        primaryAction={{
-          label: "Neues Team",
-          onClick: handleOpenCreate,
-          isPending: createMutation.isPending,
-          testId: "button-new-team",
-        }}
-        secondaryAction={onCancel ? {
-          label: "Schließen",
-          onClick: onCancel,
-          testId: "button-cancel-teams",
-        } : undefined}
-      >
-        {teamsWithMembers.map((team) => (
-          <ColoredEntityCard
-            key={team.id}
-            title={team.name}
-            icon={<Users className="w-4 h-4" />}
-            borderColor={team.color}
-            onDelete={() => handleDelete(team)}
-            isDeleting={deleteMutation.isPending}
-            testId={`card-team-${team.id}`}
-            onDoubleClick={() => handleOpenEdit(team)}
-            footer={
+        <ListLayout
+          title="Teams"
+          icon={<Users className="w-5 h-5" />}
+          helpKey="teams"
+          isLoading={isLoading}
+          onClose={onCancel}
+          closeTestId="button-close-teams"
+          footerSlot={(
+            <div className="flex items-center justify-between">
               <Button
-                size="icon"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenEdit(team);
-                }}
-                data-testid={`button-edit-team-members-${team.id}`}
+                variant="outline"
+                onClick={handleOpenCreate}
+                disabled={createMutation.isPending}
+                data-testid="button-new-team"
               >
-                <Pencil className="w-4 h-4" />
+                Neues Team
               </Button>
-            }
-          >
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
-              Mitarbeiter
+              {onCancel ? (
+                <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-teams">
+                  Schließen
+                </Button>
+              ) : null}
             </div>
-            <div className="space-y-2">
-              {team.members.map((member) => (
-                <EmployeeInfoBadge
-                  key={member.id}
-                  id={member.id}
-                  firstName={member.firstName}
-                  lastName={member.lastName}
-                  action="none"
-                  size="sm"
-                  fullWidth
-                  testId={`text-team-member-${member.id}`}
-                />
-              ))}
-              {team.members.length === 0 && (
-                <div className="text-sm text-slate-400 italic">
-                  Keine Mitarbeiter zugewiesen
-                </div>
+          )}
+          contentSlot={(
+            <BoardView
+              gridTestId="list-teams"
+              gridCols="3"
+              isEmpty={teamsWithMembers.length === 0}
+              emptyState={(
+                <p className="text-sm text-slate-400 text-center py-8 col-span-full">
+                  Keine Teams vorhanden
+                </p>
               )}
-            </div>
-          </ColoredEntityCard>
-        ))}
-        </CardListLayout>
+            >
+              {teamsWithMembers.map((team) => (
+                <ColoredEntityCard
+                  key={team.id}
+                  title={team.name}
+                  icon={<Users className="w-4 h-4" />}
+                  borderColor={team.color}
+                  onDelete={() => handleDelete(team)}
+                  isDeleting={deleteMutation.isPending}
+                  testId={`card-team-${team.id}`}
+                  onDoubleClick={() => handleOpenEdit(team)}
+                  footer={
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleOpenEdit(team);
+                      }}
+                      data-testid={`button-edit-team-members-${team.id}`}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  }
+                >
+                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+                    Mitarbeiter
+                  </div>
+                  <div className="space-y-2">
+                    {team.members.map((member) => (
+                      <EmployeeInfoBadge
+                        key={member.id}
+                        id={member.id}
+                        firstName={member.firstName}
+                        lastName={member.lastName}
+                        action="none"
+                        size="sm"
+                        fullWidth
+                        testId={`text-team-member-${member.id}`}
+                      />
+                    ))}
+                    {team.members.length === 0 && (
+                      <div className="text-sm text-slate-400 italic">
+                        Keine Mitarbeiter zugewiesen
+                      </div>
+                    )}
+                  </div>
+                </ColoredEntityCard>
+              ))}
+            </BoardView>
+          )}
+        />
       </BadgeInteractionProvider>
 
       <TeamEditDialog
         open={!!editingTeam || isCreating}
         onOpenChange={(open) => !open && handleCloseDialog()}
-        team={editingTeam ? (teamsWithMembers.find(t => t.id === editingTeam.id) || editingTeam) : null}
+        team={editingTeam ? (teamsWithMembers.find((team) => team.id === editingTeam.id) || editingTeam) : null}
         allEmployees={employees}
         onSubmit={handleSubmitTeam}
         isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}

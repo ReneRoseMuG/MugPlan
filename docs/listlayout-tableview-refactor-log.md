@@ -399,3 +399,40 @@ Branch: `refactor/listlayout-architecture`
 - Single click has no action.
 - Dialog list screens render in table-only mode without view-mode toggle.
 - No visual regressions in dialog list structure and interaction flow.
+
+## Phase 8: Legacy Cleanup & Architektur-Finalisierung (2026-02-12)
+
+### Scope
+- Complete removal of legacy CardList architecture.
+- System-wide consolidation on `ListLayout` + `BoardView` + `TableView`.
+
+### Removed Files
+- `client/src/components/ui/card-list-layout.tsx`
+- `client/src/components/ui/filtered-card-list-layout.tsx`
+- `client/src/components/ProjectList.tsx`
+- `client/src/components/CustomerList.tsx`
+- `client/src/components/EmployeeList.tsx`
+- `client/src/components/EmployeePage.tsx`
+- `client/src/components/EmployeeWeeklyView.tsx`
+
+### Migrated/Updated Files
+- `client/src/components/NoteTemplatesPage.tsx`
+- `client/src/components/ProjectStatusList.tsx`
+- `client/src/components/TeamManagement.tsx`
+- `client/src/components/TourManagement.tsx`
+- `client/src/pages/Home.tsx`
+- `docs/listlayout-tableview-architecture.md`
+- `docs/listlayout-tableview-refactor-log.md`
+
+### Validation
+- Project-wide search confirms removal of:
+  - `CardListLayout`
+  - `FilteredCardListLayout`
+  - legacy card-list layout file references
+- `npm run check` passed (encoding + TypeScript).
+
+### Final Confirmation
+- Legacy vollständig entfernt.
+- No adapter/remapping layer exists.
+- Architecture freeze statement:
+  - `ListLayout` (required shell), `BoardView` (only board), `TableView` (only table) are the final enforced list architecture baseline.

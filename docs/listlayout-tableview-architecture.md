@@ -431,3 +431,22 @@ Applied dialog migrations:
   - `EmployeePickerDialogList` (`ListLayout` + `TableView`)
 - Employee appointments dialog:
   - `EmployeeAppointmentsTableDialog` migrated to `ListLayout` + `TableView`
+
+## Final Standard (Phase 8)
+Legacy card-list architecture is removed.
+
+Binding architecture rules:
+- `ListLayout` is the required shell for all list-based screens and list-based dialogs.
+- `BoardView` is the only allowed board/grid representation.
+- `TableView` is the only allowed table representation.
+- `HoverPreview` is the only hover-preview mechanism for list/table preview behavior.
+
+Removed legacy architecture:
+- `card-list-layout.tsx` removed
+- `filtered-card-list-layout.tsx` removed
+- legacy list wrappers based on CardList removed from active code paths
+
+Consolidation status:
+- All migrated list screens use `ListLayout` composition.
+- Dialog list patterns use `ListLayout` + `TableView` in table-only mode.
+- No adapter or remapping layer is used between legacy and new architecture.

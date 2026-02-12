@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { CardListLayout } from "@/components/ui/card-list-layout";
+import { ListLayout } from "@/components/ui/list-layout";
+import { BoardView } from "@/components/ui/board-view";
 import { FileText, Pencil } from "lucide-react";
 import type { NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
@@ -173,36 +174,44 @@ export function NoteTemplatesPage() {
 
   return (
     <>
-      <CardListLayout
+      <ListLayout
         title="Notiz Vorlagen"
         icon={<FileText className="w-5 h-5" />}
         helpKey="note-templates"
         isLoading={isLoading}
-        gridTestId="list-templates"
-        gridCols="2"
-        primaryAction={{
-          label: "Neue Vorlage",
-          onClick: handleOpenCreate,
-          isPending: createMutation.isPending,
-          testId: "button-new-template",
-        }}
-        isEmpty={templates.length === 0}
-        emptyState={
-          <p className="text-sm text-slate-400 text-center py-8 col-span-2">
-            Keine Vorlagen vorhanden
-          </p>
-        }
-      >
-        {templates.map((template) => (
-          <TemplateCard
-            key={template.id}
-            template={template}
-            onEdit={() => handleOpenEdit(template)}
-            onDelete={() => handleDelete(template)}
-            isDeleting={deleteMutation.isPending}
-          />
-        ))}
-      </CardListLayout>
+        footerSlot={(
+          <Button
+            variant="outline"
+            onClick={handleOpenCreate}
+            disabled={createMutation.isPending}
+            data-testid="button-new-template"
+          >
+            Neue Vorlage
+          </Button>
+        )}
+        contentSlot={(
+          <BoardView
+            gridTestId="list-templates"
+            gridCols="2"
+            isEmpty={templates.length === 0}
+            emptyState={(
+              <p className="text-sm text-slate-400 text-center py-8 col-span-2">
+                Keine Vorlagen vorhanden
+              </p>
+            )}
+          >
+            {templates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onEdit={() => handleOpenEdit(template)}
+                onDelete={() => handleDelete(template)}
+                isDeleting={deleteMutation.isPending}
+              />
+            ))}
+          </BoardView>
+        )}
+      />
 
       <ColorSelectEntityEditDialog
         open={dialogOpen}

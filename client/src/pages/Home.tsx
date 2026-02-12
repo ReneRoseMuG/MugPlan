@@ -11,7 +11,6 @@ import { TeamManagement } from "@/components/TeamManagement";
 import { EmployeesPage } from "@/components/EmployeesPage";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
-import { EmployeeWeeklyView } from "@/components/EmployeeWeeklyView";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { AppointmentsListPage } from "@/components/AppointmentsListPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
@@ -23,7 +22,7 @@ import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
 export type CalendarNavCommand = {
   id: number;
   direction: "next" | "prev";
@@ -36,7 +35,6 @@ type HomeProps = {
 export default function Home({ onLogout }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>('month');
-  const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
@@ -140,7 +138,7 @@ export default function Home({ onLogout }: HomeProps) {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'appointmentsList' ? 'Terminliste' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'appointmentsList' ? 'Terminliste' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
@@ -186,13 +184,6 @@ export default function Home({ onLogout }: HomeProps) {
                 setAppointmentContext({ appointmentId, returnView: "employees" });
                 setView('appointment');
               }}
-            />
-          ) : view === 'employeeWeekly' && selectedEmployee ? (
-            <EmployeeWeeklyView 
-              employeeId={selectedEmployee.id}
-              employeeName={selectedEmployee.name}
-              onCancel={() => setView('employees')} 
-              onOpenAppointment={() => setView('appointment')}
             />
           ) : view === 'project' ? (
             <ProjectForm 
