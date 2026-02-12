@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
@@ -12,6 +12,25 @@ import {
 } from "@shared/schema";
 
 const logPrefix = "[appointments-repo]";
+
+export type AppointmentListFilters = {
+  employeeId?: number;
+  projectId?: number;
+  customerId?: number;
+  tourId?: number;
+  dateFrom?: Date;
+  dateTo?: Date;
+  allDayOnly?: boolean;
+  withStartTimeOnly?: boolean;
+  singleEmployeeOnly?: boolean;
+  lockedOnly?: boolean;
+  lockedBeforeDate?: Date;
+};
+
+export type AppointmentListPaging = {
+  page: number;
+  pageSize: number;
+};
 
 async function getAppointmentEmployees(appointmentId: number) {
   const rows = await db
@@ -210,6 +229,96 @@ export async function listAppointmentsForCalendarRange({
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...conditions))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
+function buildAppointmentListConditions(filters: AppointmentListFilters) {
+  const conditions: unknown[] = [];
+
+  if (filters.projectId) {
+    conditions.push(eq(appointments.projectId, filters.projectId));
+  }
+  if (filters.customerId) {
+    conditions.push(eq(projects.customerId, filters.customerId));
+  }
+  if (filters.tourId) {
+    conditions.push(eq(appointments.tourId, filters.tourId));
+  }
+  if (filters.dateFrom) {
+    conditions.push(gte(appointments.startDate, filters.dateFrom));
+  }
+  if (filters.dateTo) {
+    conditions.push(lte(appointments.startDate, filters.dateTo));
+  }
+  if (filters.allDayOnly) {
+    conditions.push(isNull(appointments.startTime));
+  }
+  if (filters.withStartTimeOnly) {
+    conditions.push(isNotNull(appointments.startTime));
+  }
+  if (filters.lockedOnly && filters.lockedBeforeDate) {
+    conditions.push(lte(appointments.startDate, filters.lockedBeforeDate));
+  }
+  if (filters.employeeId) {
+    conditions.push(
+      sql`exists (
+        select 1
+        from ${appointmentEmployees}
+        where ${appointmentEmployees.appointmentId} = ${appointments.id}
+          and ${appointmentEmployees.employeeId} = ${filters.employeeId}
+      )`,
+    );
+  }
+  if (filters.singleEmployeeOnly) {
+    conditions.push(
+      sql`exists (
+        select 1
+        from ${appointmentEmployees}
+        where ${appointmentEmployees.appointmentId} = ${appointments.id}
+        group by ${appointmentEmployees.appointmentId}
+        having count(*) = 1
+      )`,
+    );
+  }
+
+  return conditions;
+}
+
+export async function listAppointmentsForList(
+  filters: AppointmentListFilters,
+  paging: AppointmentListPaging,
+) {
+  const conditions = buildAppointmentListConditions(filters);
+  const whereClause = conditions.length > 0 ? and(...(conditions as Parameters<typeof and>)) : undefined;
+  const offset = (paging.page - 1) * paging.pageSize;
+
+  const [totalResult] = await db
+    .select({ total: sql<number>`count(*)` })
+    .from(appointments)
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(whereClause);
+
+  const rows = await db
+    .select({
+      appointment: appointments,
+      project: projects,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointments)
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(whereClause)
+    .orderBy(desc(appointments.startDate), desc(appointments.startTime), desc(appointments.id))
+    .limit(paging.pageSize)
+    .offset(offset);
+
+  return {
+    rows,
+    total: Number(totalResult?.total ?? 0),
+  };
 }
 
 export async function deleteAppointment(appointmentId: number): Promise<void> {

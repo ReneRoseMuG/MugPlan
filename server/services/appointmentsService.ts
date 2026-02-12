@@ -347,6 +347,95 @@ export async function listCalendarAppointments({
   });
 }
 
+export async function listAppointmentsList(params: {
+  employeeId?: number;
+  projectId?: number;
+  customerId?: number;
+  tourId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  allDayOnly?: boolean;
+  withStartTimeOnly?: boolean;
+  singleEmployeeOnly?: boolean;
+  lockedOnly?: boolean;
+  page: number;
+  pageSize: number;
+  isAdmin: boolean;
+}) {
+  const dateFrom = params.dateFrom ? parseDateOnly(params.dateFrom) : undefined;
+  const dateTo = params.dateTo ? parseDateOnly(params.dateTo) : undefined;
+  if (dateFrom && dateTo && dateTo < dateFrom) {
+    throw new AppointmentError("dateTo darf nicht vor dateFrom liegen", 400);
+  }
+
+  const berlinToday = parseDateOnly(getBerlinTodayDateString());
+
+  const { rows, total } = await appointmentsRepository.listAppointmentsForList(
+    {
+      employeeId: params.employeeId,
+      projectId: params.projectId,
+      customerId: params.customerId,
+      tourId: params.tourId,
+      dateFrom,
+      dateTo,
+      allDayOnly: params.allDayOnly,
+      withStartTimeOnly: params.withStartTimeOnly,
+      singleEmployeeOnly: params.singleEmployeeOnly,
+      lockedOnly: params.lockedOnly,
+      lockedBeforeDate: berlinToday,
+    },
+    {
+      page: params.page,
+      pageSize: params.pageSize,
+    },
+  );
+
+  const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
+  const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const statusesByProject = await buildStatusesByProject(projectIds);
+
+  const items = rows.map((row) => {
+    const rowEmployees = employeesByAppointment.get(row.appointment.id) ?? [];
+    return {
+      id: row.appointment.id,
+      projectId: row.project.id,
+      projectName: row.project.name,
+      projectDescription: row.project.descriptionMd ?? null,
+      projectStatuses: statusesByProject.get(row.project.id) ?? [],
+      startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+      endDate: toDateOnlyString(row.appointment.endDate),
+      startTime: row.appointment.startTime ?? null,
+      startTimeHour: row.appointment.startTime ? Number(row.appointment.startTime.slice(0, 2)) : null,
+      tourId: row.appointment.tourId ?? null,
+      tourName: row.tour?.name ?? null,
+      tourColor: row.tour?.color ?? null,
+      customer: {
+        id: row.customer.id,
+        customerNumber: row.customer.customerNumber,
+        fullName: row.customer.fullName,
+        addressLine1: row.customer.addressLine1 ?? null,
+        addressLine2: row.customer.addressLine2 ?? null,
+        postalCode: row.customer.postalCode ?? null,
+        city: row.customer.city ?? null,
+      },
+      employees: rowEmployees,
+      isLocked: !params.isAdmin && isStartDateLocked(row.appointment.startDate),
+      allDay: row.appointment.startTime == null,
+      singleEmployee: rowEmployees.length === 1,
+    };
+  });
+
+  const totalPages = total === 0 ? 0 : Math.ceil(total / params.pageSize);
+  return {
+    page: params.page,
+    pageSize: params.pageSize,
+    total,
+    totalPages,
+    items,
+  };
+}
+
 export async function deleteAppointment(appointmentId: number, isAdmin: boolean) {
   const existing = await appointmentsRepository.getAppointment(appointmentId);
   if (!existing) return null;

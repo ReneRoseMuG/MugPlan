@@ -335,3 +335,55 @@ Phase-5 contract for `EmployeesPage`:
   - hover: appointment preview (or `Keine Termine geplant`)
   - double click: open employee edit flow
   - single click: no action
+
+## Terminliste Migration (Phase 6, Table-Only Pattern)
+Final integration state for `AppointmentsListPage`:
+
+```tsx
+<ListLayout
+  title="Terminliste"
+  icon={<CalendarDays className="w-5 h-5" />}
+  viewModeKey="appointments"
+  filterSlot={<AppointmentsFilterPanel ... />}
+  contentSlot={
+    <TableView
+      columns={appointmentColumns}
+      rows={sortedRows}
+      rowKey={(row) => row.id}
+      onRowDoubleClick={(row) => onOpenAppointment?.(row.id)}
+      rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row).content}
+    />
+  }
+  footerSlot={<AppointmentsPagination ... />}
+/>
+```
+
+Phase-6 contract for `AppointmentsListPage`:
+- Table-only screen: no board mode, no `viewModeToggle`.
+- New endpoint contract: `GET /api/appointments/list` with filter + pagination query parameters.
+- Filter panel fields:
+  - `Mitarbeiter` (single select)
+  - `Projekt`
+  - `Kunde`
+  - `Tour`
+  - `Datum von`
+  - `Datum bis`
+  - `Ganztag` (boolean)
+  - `Mit Startzeit` (boolean)
+  - `Nur gesperrte` (boolean)
+- Table columns:
+  - `Datum` (not sortable)
+  - `Projekt` (sortable)
+  - `Kunde` (sortable)
+  - `Tour` (sortable)
+  - `Ganztag` (`Ja/Nein`)
+  - `Gesperrt` (`Ja/Nein`)
+- Table interactions:
+  - hover: appointment preview via existing weekly appointment preview component
+  - double click: open appointment edit form
+  - single click: no action
+- Pagination:
+  - default `pageSize = 25`
+  - page switch triggers new backend fetch
+  - any filter change resets page to `1`
+- Internal table-state updates (sort direction/key, hover) do not trigger data fetch.

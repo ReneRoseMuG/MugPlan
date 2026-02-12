@@ -13,6 +13,7 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { EmployeeWeeklyView } from "@/components/EmployeeWeeklyView";
 import { AppointmentForm } from "@/components/AppointmentForm";
+import { AppointmentsListPage } from "@/components/AppointmentsListPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
@@ -22,7 +23,7 @@ import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
 export type CalendarNavCommand = {
   id: number;
   direction: "next" | "prev";
@@ -139,7 +140,7 @@ export default function Home({ onLogout }: HomeProps) {
         <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
           <div className="flex items-center gap-6">
             <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
+              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'appointmentsList' ? 'Terminliste' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
             </h2>
           </div>
 
@@ -223,6 +224,14 @@ export default function Home({ onLogout }: HomeProps) {
                 const returnView = appointmentContext?.returnView ?? 'month';
                 setAppointmentContext(null);
                 setView(returnToProject ? 'project' : returnView);
+              }}
+            />
+          ) : view === 'appointmentsList' ? (
+            <AppointmentsListPage
+              onCancel={() => setView('month')}
+              onOpenAppointment={(appointmentId) => {
+                setAppointmentContext({ appointmentId, returnView: "appointmentsList" });
+                setView('appointment');
               }}
             />
           ) : view === 'projectList' ? (

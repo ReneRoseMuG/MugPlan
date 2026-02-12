@@ -91,7 +91,24 @@ export async function listProjectAppointments(req: Request, res: Response, next:
     next(err);
   }
 }
-
+export async function listAppointmentsList(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const input = api.appointments.list.input.parse(req.query);
+    const isAdmin = isAdminRequest(req);
+    const result = await appointmentsService.listAppointmentsList({
+      ...input,
+      isAdmin,
+    });
+    res.json(result);
+  } catch (err) {
+    if (handleZodError(err, res)) return;
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
 export async function deleteAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const appointmentId = Number(req.params.id);
@@ -161,4 +178,5 @@ export async function listCalendarAppointments(req: Request, res: Response, next
     next(err);
   }
 }
+
 
