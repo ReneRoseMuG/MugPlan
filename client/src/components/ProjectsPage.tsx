@@ -21,7 +21,7 @@ import { de } from "date-fns/locale";
 
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
-type ProjectSortKey = "title" | "customer" | "relevantAppointment";
+type ProjectSortKey = "title" | "customer";
 
 type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
 
@@ -252,17 +252,6 @@ export function ProjectsPage({
         return left.localeCompare(right, "de") * directionMultiplier;
       }
 
-      if (sortKey === "relevantAppointment") {
-        const leftDate = a.relevantAppointment ? toAppointmentDateTime(a.relevantAppointment).getTime() : null;
-        const rightDate = b.relevantAppointment ? toAppointmentDateTime(b.relevantAppointment).getTime() : null;
-
-        if (leftDate == null && rightDate == null) return 0;
-        if (leftDate == null) return 1;
-        if (rightDate == null) return -1;
-
-        return (leftDate - rightDate) * directionMultiplier;
-      }
-
       return a.project.name.localeCompare(b.project.name, "de") * directionMultiplier;
     });
 
@@ -291,7 +280,7 @@ export function ProjectsPage({
       },
       {
         id: "relevantAppointment",
-        header: renderSortHeader("Relevanter Termin", "relevantAppointment"),
+        header: "Relevanter Termin",
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
         minWidth: 220,
         cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,

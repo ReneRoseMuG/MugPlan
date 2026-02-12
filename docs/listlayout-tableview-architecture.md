@@ -150,6 +150,7 @@ const columns: TableViewColumnDef<CustomerRow>[] = [
 - `ListLayout`: `filterSlot`, `viewModeToggle`, `headerActions`, `footerSlot`, `contentClassName`.
 - `BoardView`: `gridCols`, `toolbar`, `containerClassName`, `className`, empty-state handling.
 - `TableView`: `columns` with per-column sizing/alignment/renderers, `density`, `stickyHeader`, `rowClassName`, optional preview.
+- Derived appointment columns rule: `Relevanter Termin`, `Historischer Termin`, etc. are generally not sortable.
 
 ## Expected Contracts Summary
 - `ListLayout` is structure-only shell composition.

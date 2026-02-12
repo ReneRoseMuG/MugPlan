@@ -212,3 +212,31 @@ Branch: `refactor/listlayout-architecture`
 - Hover preview shows appointment details or fallback text.
 - Double-click opens edit flow.
 - View mode switch does not change customer list query key (`/api/customers`) and does not trigger a customer data reload by mode alone.
+
+## Phase 5a: ProjectsPage Table Sort Fix (2026-02-12)
+
+### Scope
+- Only adjusted sorting behavior in `ProjectsPage` table configuration.
+- No structural changes, no migration changes.
+
+### Changed Files
+- `client/src/components/ProjectsPage.tsx`
+- `docs/listlayout-tableview-architecture.md`
+- `docs/listlayout-tableview-refactor-log.md`
+
+### Fix Details
+- Removed `Relevanter Termin` from client-side sort key union and sort branch.
+- Changed `Relevanter Termin` table header to static text (no sort button, no sort indicator).
+- Sorting for other columns (`Titel`, `Kunde`) remains unchanged.
+
+### Compliance Confirmation
+- Existing layout components were not changed:
+  - `client/src/components/ui/card-list-layout.tsx`
+  - `client/src/components/ui/filtered-card-list-layout.tsx`
+- No backend changes, no endpoint changes, no adapter logic.
+- Relevant appointment calculation logic remains unchanged.
+
+### Test Points (Phase 5a)
+- No sort icon shown for `Relevanter Termin`.
+- Sorting still works for other sortable columns.
+- View mode switching behavior unchanged and does not trigger mode-based data reload.
