@@ -91,7 +91,7 @@ export function ProjectsPage({
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
   const [filters, setFilters] = useState<ProjectFilters>(defaultProjectFilters);
-  const [projectScope, setProjectScope] = useState<ProjectScope>("upcoming");
+  const [projectScope, setProjectScope] = useState<ProjectScope>("all");
   const [sortKey, setSortKey] = useState<ProjectSortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");

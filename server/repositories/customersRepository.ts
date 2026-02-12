@@ -23,6 +23,13 @@ export async function getCustomer(id: number): Promise<Customer | null> {
   return customer || null;
 }
 
+export async function listCustomerNumbers(): Promise<string[]> {
+  const rows = await db
+    .select({ customerNumber: customers.customerNumber })
+    .from(customers);
+  return rows.map((row) => row.customerNumber);
+}
+
 export async function createCustomer(data: InsertCustomer & { fullName: string }): Promise<Customer> {
   const result = await db.insert(customers).values(data);
   const insertId = (result as any)[0].insertId;

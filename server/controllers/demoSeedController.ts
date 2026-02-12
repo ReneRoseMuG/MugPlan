@@ -29,6 +29,13 @@ export async function purgeDemoSeedRun(req: Request, res: Response, next: NextFu
     const summary = await demoSeedService.purgeSeedRun(seedRunId);
     res.json(summary);
   } catch (err) {
+    const status = (err as { status?: number })?.status;
+    if (status === 409) {
+      const message = (err as { message?: string })?.message ?? "Konflikt";
+      const dependentRunIds = (err as { dependentRunIds?: string[] })?.dependentRunIds ?? [];
+      res.status(409).json({ message, dependentRunIds });
+      return;
+    }
     next(err);
   }
 }

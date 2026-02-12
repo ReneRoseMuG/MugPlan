@@ -18,12 +18,22 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-type SeedConfig = {
+type SeedRunType = "base" | "appointments" | "legacy";
+
+type BaseSeedConfig = {
+  runType: "base";
   employees: number;
   customers: number;
   projects: number;
-  appointmentsPerProject: number;
   generateAttachments: boolean;
+  randomSeed?: number;
+  locale?: string;
+};
+
+type AppointmentSeedConfig = {
+  runType: "appointments";
+  baseSeedRunId: string;
+  appointmentsPerProject: number;
   randomSeed?: number;
   seedWindowDaysMin?: number;
   seedWindowDaysMax?: number;
@@ -33,7 +43,13 @@ type SeedConfig = {
   locale?: string;
 };
 
+type SeedConfig = BaseSeedConfig | AppointmentSeedConfig;
+
 type SeedSummary = {
+  seedRunId: string;
+  createdAt: string;
+  runType: SeedRunType;
+  baseSeedRunId?: string;
   requested: {
     employees: number;
     customers: number;
@@ -70,17 +86,11 @@ type SeedSummary = {
 type SeedRunListItem = {
   seedRunId: string;
   createdAt: string;
-  config: SeedConfig;
+  runType?: SeedRunType;
+  baseSeedRunId?: string;
+  dependentRunIds?: string[];
+  config: Record<string, unknown>;
   summary: SeedSummary;
-};
-
-type SeedRunSummary = {
-  seedRunId: string;
-  createdAt: string;
-  requested: SeedSummary["requested"];
-  created: SeedSummary["created"];
-  reductions: SeedSummary["reductions"];
-  warnings: string[];
 };
 
 type ResetDatabaseResponse = {
@@ -106,21 +116,40 @@ type ResetDatabaseResponse = {
   durationMs: number;
 };
 
+function runTypeLabel(runType: SeedRunType | undefined) {
+  if (runType === "base") return "Basisdaten";
+  if (runType === "appointments") return "Termine";
+  return "Legacy";
+}
+
+function formatCounts(summary: SeedSummary, runType: SeedRunType | undefined) {
+  if (runType === "appointments") {
+    return `Termine=${summary.created.appointments}, Mount=${summary.created.mountAppointments}, Rekla=${summary.created.reklAppointments} (Projekte stammen aus Basis-Run)`;
+  }
+  return `E=${summary.created.employees}, K=${summary.created.customers}, P=${summary.created.projects}, Termine=${summary.created.appointments}, Mount=${summary.created.mountAppointments}, Rekla=${summary.created.reklAppointments}, Teams=${summary.created.teams}, Touren=${summary.created.tours}, Dateien=${summary.created.attachments}`;
+}
+
 export function DemoDataPage() {
   const { toast } = useToast();
-  const [employees, setEmployees] = useState(20);
-  const [customers, setCustomers] = useState(10);
-  const [projects, setProjects] = useState(30);
+
+  const [baseEmployees, setBaseEmployees] = useState(20);
+  const [baseCustomers, setBaseCustomers] = useState(10);
+  const [baseProjects, setBaseProjects] = useState(30);
+  const [baseGenerateAttachments, setBaseGenerateAttachments] = useState(true);
+  const [baseRandomSeed, setBaseRandomSeed] = useState("");
+  const [baseLocale, setBaseLocale] = useState("de");
+
+  const [appointmentBaseSeedRunId, setAppointmentBaseSeedRunId] = useState("");
   const [appointmentsPerProject, setAppointmentsPerProject] = useState(1);
-  const [generateAttachments, setGenerateAttachments] = useState(true);
-  const [randomSeed, setRandomSeed] = useState("");
+  const [appointmentsRandomSeed, setAppointmentsRandomSeed] = useState("");
   const [seedWindowDaysMin, setSeedWindowDaysMin] = useState(60);
   const [seedWindowDaysMax, setSeedWindowDaysMax] = useState(90);
   const [reklDelayDaysMin, setReklDelayDaysMin] = useState(14);
   const [reklDelayDaysMax, setReklDelayDaysMax] = useState(42);
   const [reklShare, setReklShare] = useState(0.33);
-  const [locale, setLocale] = useState("de");
-  const [lastResult, setLastResult] = useState<SeedRunSummary | null>(null);
+  const [appointmentsLocale, setAppointmentsLocale] = useState("de");
+
+  const [lastResult, setLastResult] = useState<SeedSummary | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetConfirmPhrase, setResetConfirmPhrase] = useState("");
 
@@ -128,14 +157,29 @@ export function DemoDataPage() {
     queryKey: [api.demoSeed.listRuns.path],
   });
 
+  const baseRuns = useMemo(
+    () => runs.filter((run) => (run.runType ?? run.summary.runType) === "base"),
+    [runs],
+  );
+
   const createMutation = useMutation({
     mutationFn: async (config: SeedConfig) => {
       const response = await apiRequest("POST", api.demoSeed.createRun.path, config);
-      return (await response.json()) as SeedRunSummary;
+      return (await response.json()) as SeedSummary;
     },
     onSuccess: (result) => {
       setLastResult(result);
+      if (result.runType === "base") {
+        setAppointmentBaseSeedRunId(result.seedRunId);
+      }
       void queryClient.invalidateQueries();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Seeder fehlgeschlagen",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -149,6 +193,13 @@ export function DemoDataPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Loeschen fehlgeschlagen",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -184,21 +235,40 @@ export function DemoDataPage() {
     return runs[runs.length - 1].seedRunId;
   }, [runs]);
 
-  const submitConfig = () => {
-    const numericSeed = randomSeed.trim() === "" ? undefined : Number(randomSeed);
+  const submitBaseConfig = () => {
+    const numericSeed = baseRandomSeed.trim() === "" ? undefined : Number(baseRandomSeed);
     createMutation.mutate({
-      employees,
-      customers,
-      projects,
+      runType: "base",
+      employees: baseEmployees,
+      customers: baseCustomers,
+      projects: baseProjects,
+      generateAttachments: baseGenerateAttachments,
+      randomSeed: Number.isFinite(numericSeed) ? numericSeed : undefined,
+      locale: baseLocale,
+    });
+  };
+
+  const submitAppointmentsConfig = () => {
+    if (!appointmentBaseSeedRunId) {
+      toast({
+        title: "Basis-Run fehlt",
+        description: "Bitte zuerst einen Basisdaten-Run auswaehlen.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const numericSeed = appointmentsRandomSeed.trim() === "" ? undefined : Number(appointmentsRandomSeed);
+    createMutation.mutate({
+      runType: "appointments",
+      baseSeedRunId: appointmentBaseSeedRunId,
       appointmentsPerProject,
-      generateAttachments,
       randomSeed: Number.isFinite(numericSeed) ? numericSeed : undefined,
       seedWindowDaysMin,
       seedWindowDaysMax,
       reklDelayDaysMin,
       reklDelayDaysMax,
       reklShare,
-      locale,
+      locale: appointmentsLocale,
     });
   };
 
@@ -207,63 +277,96 @@ export function DemoDataPage() {
   return (
     <div className="h-full rounded-lg border-2 border-foreground bg-white p-6 overflow-auto">
       <h3 className="text-xl font-black uppercase tracking-tight text-primary">Demo-Daten</h3>
-      <p className="mt-1 text-sm text-slate-500">Seed-Runs erzeugen und rueckstandsfrei purgen.</p>
+      <p className="mt-1 text-sm text-slate-500">Basisdaten und Termine getrennt seeden und gezielt purgen.</p>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <Label htmlFor="seed-employees">Mitarbeitende</Label>
-          <Input id="seed-employees" type="number" value={employees} onChange={(event) => setEmployees(Number(event.target.value))} />
+      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="rounded-md border border-slate-200 p-4">
+          <h4 className="font-bold text-slate-900">Basisdaten</h4>
+          <p className="text-xs text-slate-500 mt-1">Mitarbeitende, Kunden, Projekte, Teams und Touren.</p>
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <Label htmlFor="seed-base-employees">Mitarbeitende</Label>
+              <Input id="seed-base-employees" type="number" value={baseEmployees} onChange={(event) => setBaseEmployees(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="seed-base-customers">Kunden</Label>
+              <Input id="seed-base-customers" type="number" value={baseCustomers} onChange={(event) => setBaseCustomers(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="seed-base-projects">Projekte</Label>
+              <Input id="seed-base-projects" type="number" value={baseProjects} onChange={(event) => setBaseProjects(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="seed-base-random">Random Seed (optional)</Label>
+              <Input id="seed-base-random" type="number" value={baseRandomSeed} onChange={(event) => setBaseRandomSeed(event.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="seed-base-locale">Locale</Label>
+              <Input id="seed-base-locale" value={baseLocale} onChange={(event) => setBaseLocale(event.target.value)} />
+            </div>
+            <div className="flex items-end gap-3 pb-2">
+              <Switch id="seed-base-attachments" checked={baseGenerateAttachments} onCheckedChange={setBaseGenerateAttachments} />
+              <Label htmlFor="seed-base-attachments">Anhaenge erzeugen</Label>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={submitBaseConfig} disabled={createMutation.isPending}>Basisdaten erzeugen</Button>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="seed-customers">Kunden</Label>
-          <Input id="seed-customers" type="number" value={customers} onChange={(event) => setCustomers(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="seed-projects">Projekte</Label>
-          <Input id="seed-projects" type="number" value={projects} onChange={(event) => setProjects(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="seed-appointments">Legacy Termine je Projekt</Label>
-          <Input id="seed-appointments" type="number" value={appointmentsPerProject} onChange={(event) => setAppointmentsPerProject(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="seed-random-seed">Random Seed (optional)</Label>
-          <Input id="seed-random-seed" type="number" value={randomSeed} onChange={(event) => setRandomSeed(event.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="seed-window-min">Seed Fenster Min (Tage)</Label>
-          <Input id="seed-window-min" type="number" value={seedWindowDaysMin} onChange={(event) => setSeedWindowDaysMin(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="seed-window-max">Seed Fenster Max (Tage)</Label>
-          <Input id="seed-window-max" type="number" value={seedWindowDaysMax} onChange={(event) => setSeedWindowDaysMax(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="rekl-delay-min">Rekla Delay Min (Tage)</Label>
-          <Input id="rekl-delay-min" type="number" value={reklDelayDaysMin} onChange={(event) => setReklDelayDaysMin(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="rekl-delay-max">Rekla Delay Max (Tage)</Label>
-          <Input id="rekl-delay-max" type="number" value={reklDelayDaysMax} onChange={(event) => setReklDelayDaysMax(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="rekl-share">Rekla Anteil (0..1)</Label>
-          <Input id="rekl-share" type="number" step="0.01" min="0" max="1" value={reklShare} onChange={(event) => setReklShare(Number(event.target.value))} />
-        </div>
-        <div>
-          <Label htmlFor="seed-locale">Locale</Label>
-          <Input id="seed-locale" value={locale} onChange={(event) => setLocale(event.target.value)} />
-        </div>
-        <div className="flex items-end gap-3 pb-2">
-          <Switch id="seed-attachments" checked={generateAttachments} onCheckedChange={setGenerateAttachments} />
-          <Label htmlFor="seed-attachments">Anhaenge erzeugen</Label>
+
+        <div className="rounded-md border border-slate-200 p-4">
+          <h4 className="font-bold text-slate-900">Termine</h4>
+          <p className="text-xs text-slate-500 mt-1">Erzeugt nur Termine fuer einen ausgewaehlten Basisdaten-Run.</p>
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label htmlFor="seed-appointments-base">Basis-Run-ID</Label>
+              <Input
+                id="seed-appointments-base"
+                value={appointmentBaseSeedRunId}
+                onChange={(event) => setAppointmentBaseSeedRunId(event.target.value)}
+                placeholder={baseRuns[0]?.seedRunId ?? "Kein Basis-Run vorhanden"}
+              />
+            </div>
+            <div>
+              <Label htmlFor="seed-appointments-per-project">Termine je Projekt</Label>
+              <Input id="seed-appointments-per-project" type="number" value={appointmentsPerProject} onChange={(event) => setAppointmentsPerProject(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="seed-appointments-random">Random Seed (optional)</Label>
+              <Input id="seed-appointments-random" type="number" value={appointmentsRandomSeed} onChange={(event) => setAppointmentsRandomSeed(event.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="seed-window-min">Seed Fenster Min (Tage)</Label>
+              <Input id="seed-window-min" type="number" value={seedWindowDaysMin} onChange={(event) => setSeedWindowDaysMin(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="seed-window-max">Seed Fenster Max (Tage)</Label>
+              <Input id="seed-window-max" type="number" value={seedWindowDaysMax} onChange={(event) => setSeedWindowDaysMax(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="rekl-delay-min">Rekla Delay Min (Tage)</Label>
+              <Input id="rekl-delay-min" type="number" value={reklDelayDaysMin} onChange={(event) => setReklDelayDaysMin(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="rekl-delay-max">Rekla Delay Max (Tage)</Label>
+              <Input id="rekl-delay-max" type="number" value={reklDelayDaysMax} onChange={(event) => setReklDelayDaysMax(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="rekl-share">Rekla Anteil (0..1)</Label>
+              <Input id="rekl-share" type="number" step="0.01" min="0" max="1" value={reklShare} onChange={(event) => setReklShare(Number(event.target.value))} />
+            </div>
+            <div>
+              <Label htmlFor="seed-appointments-locale">Locale</Label>
+              <Input id="seed-appointments-locale" value={appointmentsLocale} onChange={(event) => setAppointmentsLocale(event.target.value)} />
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={submitAppointmentsConfig} disabled={createMutation.isPending || baseRuns.length === 0}>Termine erzeugen</Button>
+          </div>
         </div>
       </div>
 
       <div className="mt-4 flex gap-3">
-        <Button onClick={submitConfig} disabled={createMutation.isPending}>
-          Demo-Daten erzeugen
-        </Button>
         <Button
           variant="destructive"
           disabled={!latestRunId || purgeMutation.isPending}
@@ -283,9 +386,11 @@ export function DemoDataPage() {
       {lastResult && (
         <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">
           <div><strong>Seed-Run:</strong> {lastResult.seedRunId}</div>
+          <div><strong>Typ:</strong> {runTypeLabel(lastResult.runType)}</div>
+          {lastResult.baseSeedRunId && <div><strong>Basis-Run:</strong> {lastResult.baseSeedRunId}</div>}
           <div><strong>Erstellt:</strong> {lastResult.createdAt}</div>
           <div>
-            <strong>Counts:</strong> E={lastResult.created.employees}, K={lastResult.created.customers}, P={lastResult.created.projects}, Termine={lastResult.created.appointments}, Mount={lastResult.created.mountAppointments}, Rekla={lastResult.created.reklAppointments}, Teams={lastResult.created.teams}, Touren={lastResult.created.tours}, Dateien={lastResult.created.attachments}
+            <strong>Counts:</strong> {formatCounts(lastResult, lastResult.runType)}
           </div>
           <div>
             <strong>Reduktionen:</strong> Termine={lastResult.reductions.appointments}, Rekla ohne Ofen={lastResult.reductions.reklMissingOven}, Rekla-Constraints={lastResult.reductions.reklSkippedConstraints}
@@ -304,21 +409,40 @@ export function DemoDataPage() {
           <p className="text-sm text-slate-500 mt-2">Keine Runs vorhanden.</p>
         ) : (
           <div className="mt-2 space-y-2">
-            {runs.map((run) => (
-              <div key={run.seedRunId} className="rounded-md border border-slate-200 p-3">
-                <div className="text-sm">
-                  <strong>{run.seedRunId}</strong> | {run.createdAt}
+            {runs.map((run) => {
+              const effectiveRunType = run.runType ?? run.summary.runType;
+              const dependentRunIds = run.dependentRunIds ?? [];
+              const baseDeleteBlocked = effectiveRunType === "base" && dependentRunIds.length > 0;
+              return (
+                <div key={run.seedRunId} className="rounded-md border border-slate-200 p-3">
+                  <div className="text-sm">
+                    <strong>{run.seedRunId}</strong> | {run.createdAt}
+                  </div>
+                  <div className="text-xs text-slate-700 mt-1">
+                    Typ: {runTypeLabel(effectiveRunType)}
+                    {run.baseSeedRunId ? ` | Basis: ${run.baseSeedRunId}` : ""}
+                  </div>
+                  <div className="text-xs text-slate-600 mt-1">
+                    {formatCounts(run.summary, effectiveRunType)}
+                  </div>
+                  {baseDeleteBlocked && (
+                    <div className="mt-1 text-xs text-amber-700">
+                      Abhaengige Termine-Runs vorhanden: {dependentRunIds.join(", ")}
+                    </div>
+                  )}
+                  <div className="mt-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={purgeMutation.isPending || baseDeleteBlocked}
+                      onClick={() => purgeMutation.mutate(run.seedRunId)}
+                    >
+                      Rueckstandsfrei loeschen
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-xs text-slate-600 mt-1">
-                  E={run.summary.created.employees}, K={run.summary.created.customers}, P={run.summary.created.projects}, Termine={run.summary.created.appointments}, Mount={run.summary.created.mountAppointments}, Rekla={run.summary.created.reklAppointments}, Dateien={run.summary.created.attachments}
-                </div>
-                <div className="mt-2">
-                  <Button variant="destructive" size="sm" disabled={purgeMutation.isPending} onClick={() => purgeMutation.mutate(run.seedRunId)}>
-                    Rueckstandsfrei loeschen
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
