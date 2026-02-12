@@ -66,9 +66,15 @@ Im Service werden Fachregeln durchgesetzt und für Persistenz wird ein Repositor
 
 ## 3.2 Eine neue Liste/Verwaltungsseite hinzufügen
 
-Neue Listen‑Screens sollen die vorhandene Kompositionsschicht nutzen, insbesondere `CardListLayout` oder `FilteredCardListLayout`, und die Entity‑Karten über `EntityCard`‑Pattern integrieren.
+Neue Listen-Screens sollen die verbindliche ListLayout-Kompositionsschicht nutzen:
 
-Formulare und Dialoge werden bevorzugt über die vorhandenen Edit‑Dialog‑Bausteine umgesetzt, statt neue Dialog‑Paradigmen einzuführen.
+- `ListLayout` als Shell
+- `BoardView` für Board/Grid-Darstellung
+- `TableView<T>` für Tabellen-Darstellung
+
+Legacy-Listenlayouts sind kein aktiver Architekturpfad mehr.
+
+Formulare und Dialoge werden bevorzugt über die vorhandenen Edit-Dialog-Bausteine umgesetzt, statt neue Dialog-Paradigmen einzuführen.
 
 ## 3.3 Ein neues Sidepanel im Detail‑Kontext hinzufügen
 
@@ -146,6 +152,90 @@ Wichtige Dateien:
 Wichtige Datei:
 
 - `client/src/components/RichTextEditor.tsx`
+
+## 3.9 List Architecture Playbook
+
+Für neue Listen- oder Verwaltungsseiten gilt folgende Reihenfolge:
+
+1. `ListLayout` als strukturelle Shell anlegen (Titel, Icon, optional `helpKey`, Slots).
+2. Filter in `filterSlot` platzieren; Default ist bottom-docked (`filterPlacement="bottom"`).
+3. Falls beide Darstellungen benötigt werden:
+   - Board via `BoardView`
+   - Tabelle via `TableView`
+   - Umschaltung via `viewModeToggle`.
+4. ViewMode über Settings-Key persistieren (`<screen>.viewMode`) und auf `board` defaulten.
+5. Tabelleninteraktion strikt halten:
+   - Sortierung in der Page
+   - optional `rowPreviewRenderer`
+   - Selektion/Öffnen nur via `onRowDoubleClick`
+   - keine Single-Click-Aktion.
+6. Nach Mutationen relevante Query-Keys invalidieren, keine lokalen Schattenzustände aufbauen.
+
+## 3.10 Table-only Pattern
+
+Table-only wird eingesetzt, wenn kein Board-Mehrwert vorhanden ist oder wenn eine Dialogliste als präziser Auswahldialog dient.
+
+Regeln:
+
+- Kein `viewModeToggle`.
+- `ListLayout` bleibt dennoch der Shell-Standard.
+- `TableView` enthält alle Interaktionen (Hover-Preview, Double-Click-Aktion).
+
+Referenz:
+
+- `client/src/components/AppointmentsListPage.tsx` (table-only Hauptscreen, serverseitiges Paging).
+
+## 3.11 Dialog table-only Pattern
+
+Dialoglisten verwenden dasselbe Architekturmuster wie Hauptscreens, aber table-only:
+
+- `ProjectsPage` mit `tableOnly` im Projektpicker von `AppointmentForm`.
+- `CustomersPage` mit `tableOnly` im Kundenpicker von `ProjectForm`.
+- `EmployeePickerDialogList` als dedizierter Dialogscreen (`ListLayout` + `TableView`).
+- `EmployeeAppointmentsTableDialog` als table-only Terminliste im Employee-Kontext.
+
+Interaktionsvertrag:
+
+- Hover zeigt Preview (`rowPreviewRenderer`).
+- Double-Click selektiert/öffnet.
+- Single-Click bleibt ohne Aktion.
+
+## 3.12 ListLayout-Dateilandkarte (Ist-Stand)
+
+Kernkomponenten:
+
+- `client/src/components/ui/list-layout.tsx`
+- `client/src/components/ui/board-view.tsx`
+- `client/src/components/ui/table-view.tsx`
+- `client/src/components/ui/hover-preview.tsx`
+
+Listenscreens:
+
+- `client/src/components/HelpTextsPage.tsx`
+- `client/src/components/ProjectsPage.tsx`
+- `client/src/components/CustomersPage.tsx`
+- `client/src/components/EmployeesPage.tsx`
+- `client/src/components/NoteTemplatesPage.tsx`
+- `client/src/components/ProjectStatusList.tsx`
+- `client/src/components/TeamManagement.tsx`
+- `client/src/components/TourManagement.tsx`
+- `client/src/components/AppointmentsListPage.tsx`
+
+Dialoglisten:
+
+- `client/src/components/EmployeePickerDialogList.tsx`
+- `client/src/components/EmployeeAppointmentsTableDialog.tsx`
+
+## 3.13 Verifikations-Checkliste für Doku-Konsistenz
+
+Nach Änderungen an Listenarchitektur oder Navigation:
+
+1. Legacy-Referenzen suchen:
+   - alte ListLayout-Symbole und gelöschte Listenscreen-Pfade
+2. In `.ai/architecture.md` und `.ai/implementation.md` nur aktive Architekturpfade dokumentieren.
+3. Screen-Matrix gegen `client/src/pages/Home.tsx` und `client/src/components/Sidebar.tsx` gegenprüfen.
+4. Listenschnittstellen gegen `list-layout.tsx`, `board-view.tsx`, `table-view.tsx` verifizieren.
+5. Terminliste-Fluss gegen `shared/routes.ts` (`GET /api/appointments/list`) sowie Controller/Service/Repository abgleichen.
 
 ---
 
@@ -275,7 +365,14 @@ Diese Konventionen sind nicht optional, sondern stabiler Teil des Datenmodells.
 
 ### 7.4.3 Registry-Beispiel und Default-Herkunft
 
-Der aktuell geführte Registry-Key ist `attachmentPreviewSize` mit Wertebereich `small|medium|large` und Default `medium`.
+Wichtige produktive Registry-Keys im aktuellen Stand:
+
+- `attachmentPreviewSize` (`small|medium|large`, Default `medium`)
+- `cardListColumns` (Board-Spalten, 2..6)
+- `helptexts.viewMode` (`board|table`)
+- `projects.viewMode` (`board|table`)
+- `customers.viewMode` (`board|table`)
+- `employees.viewMode` (`board|table`)
 
 Wenn für einen Scope kein persistierter Wert in `user_settings_value` vorliegt (oder kein gültiger Kandidat aufgelöst werden kann), stammt der wirksame Default aus der Settings-Registry (`DEFAULT` in der Resolver-Reihenfolge), nicht aus einer impliziten DB-Vorgabe.
 
@@ -475,7 +572,7 @@ Dabei wurden drei technische und fachliche Leitentscheidungen umgesetzt:
 - `client/src/components/EmployeeAttachmentsPanel.tsx` (Wrapper)
 - `client/src/components/ui/attachment-info-badge.tsx` (no-remove bei fehlendem Handler)
 - `client/src/components/CustomerData.tsx` (Integration)
-- `client/src/components/EmployeePage.tsx` (Integration)
+- `client/src/components/EmployeesPage.tsx` (Integration)
 
 ## 8.4 Persistenzmodell im Detail
 

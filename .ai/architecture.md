@@ -303,6 +303,7 @@ Im Projekt-Dump sind die folgenden Endpunktgruppen nachweisbar (inkl. HTTP-Metho
 ### C1.1 Calendar / Appointments
 
 * `GET /api/calendar/appointments` (Range-Query; Query: `fromDate`, `toDate`, optional `employeeId`).
+* `GET /api/appointments/list` (Terminliste; Filter + Paging).
 * `GET /api/appointments/:id`.
 * `POST /api/appointments`.
 * `PATCH /api/appointments/:id`.
@@ -472,15 +473,24 @@ Diese Landkarte ist kein vollständiges Verzeichnis, sondern ein Navigationskomp
 
 Die Screens liegen überwiegend unter `client/src/components/*` und nutzen Layout-/Kompositionskomponenten unter `client/src/components/ui/*`.
 
-Listen- und Verwaltungsseiten (aus der FT(17)-Dokumentation):
+Listen- und Verwaltungsseiten (Ist-Stand):
 
-* Kundenliste: `client/src/components/CustomerList.tsx` (verwendet `FilteredCardListLayout`).
-* Projektliste: `client/src/components/ProjectList.tsx` (verwendet `FilteredCardListLayout`).
-* Mitarbeiterliste: `client/src/components/EmployeeList.tsx` (verwendet `FilteredCardListLayout`).
-* Hilfetexte: `client/src/components/HelpTextsPage.tsx` (verwendet `CardListLayout`).
-* Notizvorlagen: `client/src/components/NoteTemplatesPage.tsx` (verwendet `CardListLayout`).
-* Teams: `client/src/components/TeamManagement.tsx` (verwendet `CardListLayout`).
-* Touren: `client/src/components/TourManagement.tsx` (verwendet `CardListLayout`).
+* `client/src/components/HelpTextsPage.tsx` (Board + Tabelle, ViewMode persistiert).
+* `client/src/components/ProjectsPage.tsx` (Board + Tabelle, ViewMode persistiert, `tableOnly`-Modus für Picker).
+* `client/src/components/CustomersPage.tsx` (Board + Tabelle, ViewMode persistiert, `tableOnly`-Modus für Picker).
+* `client/src/components/EmployeesPage.tsx` (Board + Tabelle, ViewMode persistiert).
+* `client/src/components/NoteTemplatesPage.tsx` (Board-only).
+* `client/src/components/ProjectStatusList.tsx` (Board-only über `ProjectStatusListView`).
+* `client/src/components/TeamManagement.tsx` (Board-only).
+* `client/src/components/TourManagement.tsx` (Board-only).
+* `client/src/components/AppointmentsListPage.tsx` (Tabelle-only; eigener Navigationspunkt "Terminliste").
+
+Dialog-/Picker-Listen:
+
+* `client/src/components/EmployeePickerDialogList.tsx` (`ListLayout` + `TableView`).
+* `client/src/components/EmployeeAppointmentsTableDialog.tsx` (`ListLayout` + `TableView`).
+* `client/src/components/AppointmentForm.tsx` nutzt `ProjectsPage` mit `tableOnly`.
+* `client/src/components/ProjectForm.tsx` nutzt `CustomersPage` mit `tableOnly`.
 
 Kalender:
 
@@ -502,8 +512,10 @@ Panels (Sidebars/Details):
 
 ### C4.2 Frontend – UI-Kompositionsschicht
 
-* `client/src/components/ui/card-list-layout.tsx`.
-* `client/src/components/ui/filtered-card-list-layout.tsx`.
+* `client/src/components/ui/list-layout.tsx`.
+* `client/src/components/ui/board-view.tsx`.
+* `client/src/components/ui/table-view.tsx`.
+* `client/src/components/ui/hover-preview.tsx` (Row-Hover-Preview für Tabellen).
 * `client/src/components/ui/entity-card.tsx` und Wrapper `client/src/components/ui/colored-entity-card.tsx`.
 * Dialog-Kette für Editing/Selection: `client/src/components/ui/entity-edit-dialog.tsx`, `.../color-select-entity-edit-dialog.tsx`, `.../employee-select-entity-edit-dialog.tsx`.
 * Filter-Baustein: `client/src/components/ui/search-filter-input.tsx`.
@@ -567,9 +579,17 @@ Als belastbarer Ist‑Stand gelten folgende „Navigationspunkte → Screen‑Ko
 
 Der Home‑Bereich rendert den Kalender und bindet den globalen Mitarbeiterfilter ein. Die drei Kalenderansichten bestehen aus `CalendarMonthView`, `CalendarWeekView` und `CalendarYearView`, und der Filter ist `CalendarEmployeeFilter`.
 
-Die Listen‑ und Verwaltungsseiten bauen sich über `CardListLayout` oder `FilteredCardListLayout` auf. Direkt auf `CardListLayout` basieren die Screens `HelpTextsPage`, `NoteTemplatesPage`, `TeamManagement` und `TourManagement`. Indirekt über `FilteredCardListLayout` laufen `CustomerList`, `ProjectList` und `EmployeeList`.
+Die Listen- und Verwaltungsseiten basieren verbindlich auf `ListLayout` als Shell. Board-Ansichten werden ausschließlich über `BoardView` gerendert, Tabellenansichten ausschließlich über `TableView`.
 
-Für Detailseiten existieren eigenständige Seitenkomponenten wie eine Mitarbeiter‑Detailseite (`EmployeePage`) und projektbezogene Screens, in denen Sidepanels als Child‑Collections angezeigt werden.
+Detailseiten werden über Form-Screens und Sidepanels umgesetzt (`ProjectForm`, `CustomerData`, `AppointmentForm`), nicht über eine eigenständige Mitarbeiter-Detailseite.
+
+Navigationspunkte im Home-/Sidebar-Flow:
+
+* Kalender: `month`, `week`, `year`.
+* Terminliste: `appointmentsList`.
+* Projektplanung: `projectList`, `project`, `customerList`, `customer`.
+* Mitarbeiterverwaltung: `employees`, `teams`, `tours`.
+* Administration: `noteTemplates`, `projectStatus`, `helpTexts`, `settings`, `demoData`.
 
 Für neues Routing ist die Leitplanke, dass ein neuer Screen nicht „irgendwo“ gerendert wird, sondern als eigener Navigationspunkt mit klarer Route und konsistentem Layoutmuster eingeführt wird.
 
@@ -617,6 +637,83 @@ Für neue Kalenderfeatures gilt die Leitplanke, dass zusätzliche darstellungsre
 
 ---
 
+## C10. Frontend-Baseline: ListLayout-Architektur (verbindlich)
+
+`ListLayout` ist die verpflichtende Shell für Listen- und table-only Screens. Die Komponente definiert Header, optionalen Filter-Slot, Content-Slot und optionalen Footer-Slot.
+
+Öffentliche Frontend-Typen/Interfaces:
+
+* `ListLayoutProps`
+* `BoardViewProps`
+* `TableViewColumnDef<T>`
+* `TableViewProps<T>`
+
+Architekturvertrag `ListLayout`:
+
+* `contentSlot` ist verpflichtend.
+* `filterPlacement` steuert die Position des `filterSlot` (`top` oder `bottom`), Default ist `bottom`.
+* `viewModeToggle` sitzt im Header-Aktionsbereich.
+* `viewModeKey` ist der stabile Identifikator für view-spezifische Kontexte.
+* Loading-State wird zentral im Shell-Wrapper gerendert.
+
+`BoardView` ist der einzige Board/Grid-Renderer:
+
+* Dynamische Spalten werden über das Setting `cardListColumns` (2..6) aufgelöst.
+* `gridCols="2"` erzwingt den zweispaltigen Sonderfall.
+* Empty-State und Toolbar sind strukturierte Slots.
+
+`TableView<T>` ist der einzige Tabellen-Renderer:
+
+* Typisierte Spalten über `TableViewColumnDef<T>`.
+* Kein `onRowClick`; Interaktion ausschließlich über `onRowDoubleClick`.
+* Optionales Hover-Preview über `rowPreviewRenderer` (intern via `HoverPreview`).
+* Empty-State, Sticky-Header und Dichteverhalten sind Teil des generischen Vertrags.
+
+Screen-Matrix (Ist-Stand):
+
+* Board + Tabelle (mit persistiertem ViewMode): `HelpTextsPage`, `ProjectsPage`, `CustomersPage`, `EmployeesPage`.
+* Board-only: `NoteTemplatesPage`, `TeamManagement`, `TourManagement`, `ProjectStatusList`.
+* Tabelle-only: `AppointmentsListPage`, `EmployeePickerDialogList`, `EmployeeAppointmentsTableDialog`.
+
+Persistierte ViewModes (Settings-Keys):
+
+* `helptexts.viewMode`
+* `projects.viewMode`
+* `customers.viewMode`
+* `employees.viewMode`
+
+Legacy-Status:
+
+* Es gibt keine aktive CardList-Architektur mehr.
+* Es existiert keine Adapter-/Remapping-Schicht zwischen alt und neu.
+
+---
+
+## C11. Terminliste: Datenfluss und Schichtschnitt
+
+Die Terminliste ist ein table-only End-to-End-Flow mit Contract-First-Schnitt:
+
+* Contract: `api.appointments.list` in `shared/routes.ts`.
+* Route: `GET /api/appointments/list` in `server/routes/appointmentsRoutes.ts`.
+* Controller: `appointmentsController.listAppointmentsList`.
+* Service: `appointmentsService.listAppointmentsList`.
+* Repository: `appointmentsRepository.listAppointmentsForList`.
+* Frontend-Screen: `client/src/components/AppointmentsListPage.tsx`.
+
+Filter-/Paging-Modell:
+
+* Filter: `employeeId`, `projectId`, `customerId`, `tourId`, `dateFrom`, `dateTo`, `allDayOnly`, `withStartTimeOnly`, `singleEmployeeOnly`, `lockedOnly`.
+* Paging: `page` (Default 1), `pageSize` (Default 25).
+* Frontend setzt bei jeder Filteränderung die Seite deterministisch auf `1` zurück.
+
+Konsistenzmodell:
+
+* Backend liefert serverseitig paginiertes Ergebnis (`items`, `total`, `totalPages`).
+* Frontend-Sortierung für sichtbare Tabellen-Spalten erfolgt UI-seitig auf der jeweiligen Seite.
+* Row-Hover-Preview nutzt die bestehende Weekly-Preview-Komponente.
+
+---
+
 # Teil D - Architektur-Erweiterung FT (18): User Settings mit Scopes GLOBAL/ROLE/USER
 
 Dieser Teil dokumentiert den nachträglich eingeführten Architekturstand für FT (18). Er ist bewusst explizit, weil das Feature mehrere Querschnittsaspekte berührt: Contract-First API, Scope-Auflösung, Rollenkanonisierung, Persistenzstrategie und Frontend-State-Modell.
@@ -640,7 +737,13 @@ Ein Setting ist ein Registry-definiertes Artefakt mit:
 - Anzeige-Metadaten,
 - erlaubten Scopes (`allowedScopes`).
 
-Das erste produktiv geführte Setting ist `attachmentPreviewSize` (Enum: `small|medium|large`, Default `medium`).
+Für die ListLayout-Architektur sind insbesondere folgende produktive Keys relevant:
+
+* `cardListColumns` (Board-Spaltensteuerung).
+* `helptexts.viewMode`.
+* `projects.viewMode`.
+* `customers.viewMode`.
+* `employees.viewMode`.
 
 ## D3. Scope-Modell und deterministische Auflösung
 
