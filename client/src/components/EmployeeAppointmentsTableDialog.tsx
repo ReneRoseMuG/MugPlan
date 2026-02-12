@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useMemo } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CalendarWeekAppointmentPanel } from "@/components/calendar/CalendarWeekAppointmentPanel";
+import { HoverPreview } from "@/components/ui/hover-preview";
 import {
   Table,
   TableBody,
@@ -10,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCalendarAppointments, type CalendarAppointment } from "@/lib/calendar-appointments";
-import { CalendarAppointmentPopover } from "@/components/calendar/CalendarAppointmentPopover";
 
 const ALL_APPOINTMENTS_FROM_DATE = "1900-01-01";
 const ALL_APPOINTMENTS_TO_DATE = "2100-12-31";
@@ -49,9 +50,6 @@ export function EmployeeAppointmentsTableDialog({
   employeeName,
   onOpenAppointment,
 }: EmployeeAppointmentsTableDialogProps) {
-  const [hoveredAppointment, setHoveredAppointment] = useState<CalendarAppointment | null>(null);
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userRole = useMemo(
     () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
     [],
@@ -80,36 +78,6 @@ export function EmployeeAppointmentsTableDialog({
       return b.id - a.id;
     });
   }, [appointments]);
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleRowMouseEnter = (appointment: CalendarAppointment, event: MouseEvent<HTMLTableRowElement>) => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    setHoverPosition({ x: event.clientX + 12, y: event.clientY + 10 });
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredAppointment(appointment);
-    }, 320);
-  };
-
-  const handleRowMouseMove = (event: MouseEvent<HTMLTableRowElement>) => {
-    setHoverPosition({ x: event.clientX + 12, y: event.clientY + 10 });
-  };
-
-  const handleRowMouseLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    setHoveredAppointment(null);
-  };
 
   const handleOpenAppointment = (appointmentId: number) => {
     onOpenChange(false);
@@ -151,32 +119,42 @@ export function EmployeeAppointmentsTableDialog({
                   </TableRow>
                 ) : (
                   sortedAppointments.map((appointment) => (
-                    <TableRow
+                    <HoverPreview
                       key={appointment.id}
-                      onMouseEnter={(event) => handleRowMouseEnter(appointment, event)}
-                      onMouseMove={handleRowMouseMove}
-                      onMouseLeave={handleRowMouseLeave}
-                      onDoubleClick={() => handleOpenAppointment(appointment.id)}
-                      className="cursor-default"
-                      data-testid={`employee-appointments-row-${appointment.id}`}
+                      preview={(
+                        <div className="rounded-lg bg-white p-1">
+                          <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
+                        </div>
+                      )}
+                      mode="cursor"
+                      openDelay={320}
+                      closeDelay={0}
+                      maxWidth={360}
+                      maxHeight={320}
+                      cursorOffsetX={12}
+                      cursorOffsetY={10}
+                      className="z-[9999] w-[360px] pointer-events-none"
+                      contentClassName="pointer-events-none"
                     >
-                      <TableCell>
-                        {formatDateLabel(appointment.startDate)} - {formatStartTimeLabel(appointment.startTime)}
-                      </TableCell>
-                      <TableCell>{appointment.customer.customerNumber}</TableCell>
-                      <TableCell>{appointment.customer.fullName}</TableCell>
-                      <TableCell>{appointment.projectName}</TableCell>
-                    </TableRow>
+                      <TableRow
+                        onDoubleClick={() => handleOpenAppointment(appointment.id)}
+                        className="cursor-default"
+                        data-testid={`employee-appointments-row-${appointment.id}`}
+                      >
+                        <TableCell>
+                          {formatDateLabel(appointment.startDate)} - {formatStartTimeLabel(appointment.startTime)}
+                        </TableCell>
+                        <TableCell>{appointment.customer.customerNumber}</TableCell>
+                        <TableCell>{appointment.customer.fullName}</TableCell>
+                        <TableCell>{appointment.projectName}</TableCell>
+                      </TableRow>
+                    </HoverPreview>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
         </div>
-
-        {hoveredAppointment ? (
-          <CalendarAppointmentPopover appointment={hoveredAppointment} position={hoverPosition} />
-        ) : null}
       </DialogContent>
     </Dialog>
   );

@@ -95,3 +95,23 @@ Jede Preview-Datei kapselt:
 - DOC/DOCX: Inline über Office-Embed (`iframe`)
 - TXT: Textvorschau per `fetch` + `<pre>`
 - Sonstige Formate: Fallback-Hinweis + Öffnen/Download
+
+## Preview-System (HoverPreview)
+
+Datei: `client/src/components/ui/hover-preview.tsx`
+
+`HoverPreview` ist die generische, domain-neutrale technische Basis fuer Hover-Previews.
+Die Komponente kapselt:
+
+1. Trigger-Handling (`mouseenter` / `mouseleave`)
+2. Lifecycle inkl. Delay-System (`openDelay`, `closeDelay`)
+3. Positionierung (anchored und cursor-basiert)
+4. Rendering via Portal (robust gegen Overflow/Scroll)
+
+Aktuelle Nutzung:
+
+- `InfoBadge` nutzt `HoverPreview` intern fuer Badge-Previews.
+- Kalender-Termin-Previews (Compact Bars) nutzen `HoverPreview` im Cursor-Modus.
+- Kalender-Tour-Lane-Header-Preview nutzt `HoverPreview` im Cursor-Modus.
+
+Damit verwenden Badge- und Kalender-Previews dasselbe technische Preview-Subsystem.
