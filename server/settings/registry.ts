@@ -1,4 +1,4 @@
-﻿export type DbRoleCode = "READER" | "DISPATCHER" | "ADMIN";
+export type DbRoleCode = "READER" | "DISPATCHER" | "ADMIN";
 export type CanonicalRoleKey = "LESER" | "DISPONENT" | "ADMIN";
 export type SettingScopeType = "GLOBAL" | "ROLE" | "USER";
 export type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
@@ -31,6 +31,8 @@ export type SettingDefinition = EnumSettingDefinition<string> | StringSettingDef
 
 const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
+const listViewModeOptions = ["board", "table"] as const;
+type ListViewMode = (typeof listViewModeOptions)[number];
 
 const templateAllowedKeys = [
   "sauna_model_name",
@@ -146,6 +148,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL", "USER"],
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 6,
+  },
+  helptextsViewMode: {
+    key: "helptexts.viewMode",
+    label: "Hilfetexte Ansicht",
+    description: "Steuert den Ansichtsmodus der Hilfetexte (Board oder Tabelle).",
+    type: "enum",
+    options: listViewModeOptions,
+    defaultValue: "board",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is ListViewMode =>
+      typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
   },
   templatesProjectTitle: {
     key: "templates.project.title",
