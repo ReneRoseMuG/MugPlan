@@ -194,3 +194,46 @@ Phase-2 contract for `HelpTextsPage`:
   - hover: preview content (or missing-content message)
   - double click: open edit dialog
   - single click: no action
+
+## Projects Migration (Phase 3)
+Final integration state for `ProjectsPage`:
+
+```tsx
+<ListLayout
+  title="Projekte"
+  icon={<FolderKanban className="w-5 h-5" />}
+  viewModeKey="projects"
+  filterSlot={<ProjectFilterPanel ... />}
+  viewModeToggle={<ProjectsViewModeToggle />}
+  contentSlot={
+    viewMode === "board" ? (
+      <BoardView gridCols="3">{/* existing project cards */}</BoardView>
+    ) : (
+      <TableView
+        columns={projectColumns}
+        rows={sortedProjectRows}
+        rowKey={(row) => row.project.id}
+        onRowDoubleClick={(row) => onSelectProject?.(row.project.id)}
+        rowPreviewRenderer={(row) => <RelevantAppointmentPreview row={row} />}
+      />
+    )
+  }
+/>
+```
+
+Phase-3 contract for `ProjectsPage`:
+- View mode persistence uses key `projects.viewMode` in existing settings infrastructure.
+- Default view mode is `board` if no persisted user value exists.
+- Board mode keeps existing project card rendering and interactions unchanged.
+- Table mode columns:
+  - `Titel` (sortable)
+  - `Kunde` (sortable)
+  - `Relevanter Termin` (sortable)
+- Relevant appointment resolution:
+  1. nearest future appointment (if available)
+  2. otherwise most recent historical appointment
+  3. otherwise `—`
+- Table interactions:
+  - hover: appointment preview (or `Keine Termine vorhanden.`)
+  - double click: open project edit flow
+  - single click: no action

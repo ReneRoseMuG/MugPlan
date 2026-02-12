@@ -96,3 +96,59 @@ Branch: `refactor/listlayout-architecture`
 - Hover preview renders formatted content or missing-content message.
 - Double-click on table row opens edit dialog.
 - View mode toggle persists and does not trigger help-text query key changes.
+
+## Phase 3: ProjectsPage Migration (2026-02-12)
+
+### Migration Scope
+- Migrated only `ProjectsPage` (project list screen) to new list architecture:
+  - `ListLayout`
+  - `BoardView`
+  - `TableView`
+- Other screens were not migrated.
+- Existing picker flows continue to use `ProjectList` unchanged.
+
+### Changed Files
+- `client/src/components/ProjectsPage.tsx` (new)
+- `client/src/pages/Home.tsx`
+- `server/settings/registry.ts`
+- `docs/listlayout-tableview-architecture.md`
+- `docs/listlayout-tableview-refactor-log.md`
+
+### Implementation Notes
+- Added dedicated `ProjectsPage` and integrated it for `view === "projectList"` in `Home`.
+- Added view mode persistence key `projects.viewMode` (`USER`, default `board`).
+- `ProjectsPage` structure:
+  - `ListLayout` shell with `viewModeKey="projects"`
+  - existing `ProjectFilterPanel` in `filterSlot`
+  - `BoardView` with unchanged project cards and interactions
+  - `TableView` with required sortable columns:
+    - `Titel`
+    - `Kunde`
+    - `Relevanter Termin`
+- Relevant appointment calculation in table rows:
+  1. nearest future appointment
+  2. else latest historical appointment
+  3. else `—`
+- Row preview behavior:
+  - shows relevant appointment preview on hover
+  - shows `Keine Termine vorhanden.` when absent
+- Row interaction in table:
+  - double click opens project edit flow (`onSelectProject`)
+  - single click has no action
+
+### Compliance Confirmation
+- Existing layout components were not changed:
+  - `client/src/components/ui/card-list-layout.tsx`
+  - `client/src/components/ui/filtered-card-list-layout.tsx`
+- No adapter/wrapper strategy was introduced.
+- No routing structure changes (existing `projectList` view path retained).
+- No backend endpoint changes.
+- No change to backend relevant-appointment logic.
+
+### Test Points (Phase 3)
+- Board mode keeps previous project card rendering and behavior.
+- Table mode renders required columns and sorting.
+- Relevant appointment resolution follows required priority rule.
+- Hover preview shows appointment details or fallback text.
+- Double-click opens edit flow.
+- View mode switch does not change project list query key (`/api/projects?...`) and does not trigger a project data reload by mode alone.

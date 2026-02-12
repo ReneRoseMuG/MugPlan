@@ -10,7 +10,7 @@ import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
 import { EmployeePage } from "@/components/EmployeePage";
 import { ProjectForm } from "@/components/ProjectForm";
-import ProjectList from "@/components/ProjectList";
+import { ProjectsPage } from "@/components/ProjectsPage";
 import { EmployeeWeeklyView } from "@/components/EmployeeWeeklyView";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
@@ -226,7 +226,7 @@ export default function Home({ onLogout }: HomeProps) {
               }}
             />
           ) : view === 'projectList' ? (
-            <ProjectList 
+            <ProjectsPage
               onCancel={() => setView('month')} 
               onNewProject={() => { setSelectedProjectId(null); setProjectReturnView('projectList'); setView('project'); }}
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView('projectList'); setView('project'); }}
@@ -279,5 +279,4 @@ export default function Home({ onLogout }: HomeProps) {
     </div>
   );
 }
-
 
