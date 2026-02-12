@@ -11,8 +11,9 @@ import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { HelpTextsFilterPanel } from "@/components/ui/filter-panels/help-texts-filter-panel";
 import { useSettings } from "@/hooks/useSettings";
-import { HelpCircle, Pencil, Search, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { HelpCircle, Pencil, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { HelpText } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -260,19 +261,6 @@ export function HelpTextsPage() {
     [sortDirection, sortKey],
   );
 
-  const filterPanel = (
-    <div className="relative">
-      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-      <Input
-        placeholder="Suchen (Schluessel oder Titel)..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="pl-8 h-8 w-64"
-        data-testid="input-search-helptexts"
-      />
-    </div>
-  );
-
   return (
     <>
       <ListLayout
@@ -280,7 +268,12 @@ export function HelpTextsPage() {
         icon={<HelpCircle className="w-5 h-5" />}
         viewModeKey={viewModeKey}
         isLoading={isLoading}
-        filterSlot={filterPanel}
+        filterSlot={(
+          <HelpTextsFilterPanel
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+          />
+        )}
         viewModeToggle={
           <ToggleGroup
             type="single"

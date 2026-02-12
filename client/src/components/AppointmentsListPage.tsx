@@ -5,11 +5,10 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { ListLayout } from "@/components/ui/list-layout";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
-import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import {
+  AppointmentsFilterPanel,
+  type AppointmentListFilters,
+} from "@/components/ui/filter-panels/appointments-filter-panel";
 import { Button } from "@/components/ui/button";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -31,18 +30,6 @@ type AppointmentListResponse = {
 
 type AppointmentSortKey = "project" | "customer" | "tour";
 type SortDirection = "asc" | "desc";
-
-type AppointmentListFilters = {
-  employeeId?: number;
-  projectId?: number;
-  customerId?: number;
-  tourId?: number;
-  dateFrom?: string;
-  dateTo?: string;
-  allDayOnly: boolean;
-  withStartTimeOnly: boolean;
-  lockedOnly: boolean;
-};
 
 interface AppointmentsListPageProps {
   onCancel?: () => void;
@@ -239,138 +226,14 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
       onClose={onCancel}
       closeTestId="button-close-appointments-list"
       filterSlot={
-        <div className="flex flex-col gap-4">
-          <FilterPanel title="Terminfilter" layout="row">
-            <div className="flex min-w-[180px] flex-col gap-1">
-              <Label className="text-xs">Mitarbeiter</Label>
-              <Select
-                value={filters.employeeId ? String(filters.employeeId) : "all"}
-                onValueChange={(value) => setFilterAndResetPage({ employeeId: value === "all" ? undefined : Number(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Mitarbeiter" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Mitarbeiter</SelectItem>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={String(employee.id)}>
-                      {employee.fullName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex min-w-[180px] flex-col gap-1">
-              <Label className="text-xs">Projekt</Label>
-              <Select
-                value={filters.projectId ? String(filters.projectId) : "all"}
-                onValueChange={(value) => setFilterAndResetPage({ projectId: value === "all" ? undefined : Number(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Projekte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Projekte</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={String(project.id)}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex min-w-[180px] flex-col gap-1">
-              <Label className="text-xs">Kunde</Label>
-              <Select
-                value={filters.customerId ? String(filters.customerId) : "all"}
-                onValueChange={(value) => setFilterAndResetPage({ customerId: value === "all" ? undefined : Number(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Kunden" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Kunden</SelectItem>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={String(customer.id)}>
-                      {customer.fullName} (K: {customer.customerNumber})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex min-w-[150px] flex-col gap-1">
-              <Label className="text-xs">Tour</Label>
-              <Select
-                value={filters.tourId ? String(filters.tourId) : "all"}
-                onValueChange={(value) => setFilterAndResetPage({ tourId: value === "all" ? undefined : Number(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Touren" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Touren</SelectItem>
-                  {tours.map((tour) => (
-                    <SelectItem key={tour.id} value={String(tour.id)}>
-                      {tour.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </FilterPanel>
-
-          <FilterPanel title="Datums- und Statusfilter" layout="row">
-            <div className="flex min-w-[160px] flex-col gap-1">
-              <Label htmlFor="appointments-date-from" className="text-xs">Datum von</Label>
-              <Input
-                id="appointments-date-from"
-                type="date"
-                value={filters.dateFrom ?? ""}
-                onChange={(event) => setFilterAndResetPage({ dateFrom: event.target.value || undefined })}
-              />
-            </div>
-
-            <div className="flex min-w-[160px] flex-col gap-1">
-              <Label htmlFor="appointments-date-to" className="text-xs">Datum bis</Label>
-              <Input
-                id="appointments-date-to"
-                type="date"
-                value={filters.dateTo ?? ""}
-                onChange={(event) => setFilterAndResetPage({ dateTo: event.target.value || undefined })}
-              />
-            </div>
-
-            <div className="flex min-w-[140px] flex-col gap-1">
-              <Label htmlFor="appointments-all-day-only" className="text-xs min-h-5">Ganztag</Label>
-              <Switch
-                id="appointments-all-day-only"
-                checked={filters.allDayOnly}
-                onCheckedChange={(checked) => setFilterAndResetPage({ allDayOnly: checked })}
-              />
-            </div>
-
-            <div className="flex min-w-[170px] flex-col gap-1">
-              <Label htmlFor="appointments-with-start-time-only" className="text-xs min-h-5">Mit Startzeit</Label>
-              <Switch
-                id="appointments-with-start-time-only"
-                checked={filters.withStartTimeOnly}
-                onCheckedChange={(checked) => setFilterAndResetPage({ withStartTimeOnly: checked })}
-              />
-            </div>
-
-            <div className="flex min-w-[160px] flex-col gap-1">
-              <Label htmlFor="appointments-locked-only" className="text-xs min-h-5">Nur gesperrte</Label>
-              <Switch
-                id="appointments-locked-only"
-                checked={filters.lockedOnly}
-                onCheckedChange={(checked) => setFilterAndResetPage({ lockedOnly: checked })}
-              />
-            </div>
-          </FilterPanel>
-        </div>
+        <AppointmentsFilterPanel
+          filters={filters}
+          onChange={setFilterAndResetPage}
+          employees={employees}
+          projects={projects}
+          customers={customers}
+          tours={tours}
+        />
       }
       footerSlot={
         <div className="flex items-center justify-between gap-4">

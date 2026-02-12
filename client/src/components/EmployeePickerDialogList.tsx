@@ -3,9 +3,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Users } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
-import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { EmployeePickerFilterPanel } from "@/components/ui/filter-panels/employee-picker-filter-panel";
 import { createEmployeeInfoBadgePreview } from "@/components/ui/badge-previews/employee-info-badge-preview";
 
 type SortDirection = "asc" | "desc";
@@ -140,17 +138,10 @@ export function EmployeePickerDialogList({
       onClose={onClose}
       showCloseButton={false}
       filterSlot={(
-        <FilterPanel title="Mitarbeiterfilter" layout="row">
-          <div className="flex min-w-[260px] flex-col gap-1">
-            <Label htmlFor="employee-picker-name-filter" className="text-xs">Name</Label>
-            <Input
-              id="employee-picker-name-filter"
-              value={nameFilter}
-              onChange={(event) => setNameFilter(event.target.value)}
-              placeholder="Nach Name filtern..."
-            />
-          </div>
-        </FilterPanel>
+        <EmployeePickerFilterPanel
+          nameFilter={nameFilter}
+          onNameFilterChange={setNameFilter}
+        />
       )}
       contentSlot={(
         <TableView

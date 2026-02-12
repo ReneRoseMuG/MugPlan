@@ -3,8 +3,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarYearView } from "@/components/calendar/CalendarYearView";
-import { CalendarEmployeeFilter } from "@/components/calendar/CalendarEmployeeFilter";
-import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
+import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { CustomerData } from "@/components/CustomerData";
 import { CustomersPage } from "@/components/CustomersPage";
 import { TourManagement } from "@/components/TourManagement";
@@ -20,7 +19,6 @@ import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
 import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
-import { Label } from "@/components/ui/label";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
 export type CalendarNavCommand = {
@@ -247,15 +245,10 @@ export default function Home({ onLogout }: HomeProps) {
                 </button>
               </div>
               <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
-                <FilterPanel title="Kalenderfilter" layout="row">
-                  <div className="flex min-w-[220px] flex-col gap-1">
-                    <Label className="text-xs">Mitarbeiter</Label>
-                    <CalendarEmployeeFilter
-                      value={calendarEmployeeFilterId}
-                      onChange={setCalendarEmployeeFilterId}
-                    />
-                  </div>
-                </FilterPanel>
+                <CalendarFilterPanel
+                  employeeId={calendarEmployeeFilterId}
+                  onEmployeeIdChange={setCalendarEmployeeFilterId}
+                />
               </div>
             </div>
           ) : null}
