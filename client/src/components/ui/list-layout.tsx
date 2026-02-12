@@ -11,6 +11,7 @@ export interface ListLayoutProps {
   viewModeKey?: string;
   contentSlot: ReactNode;
   filterSlot?: ReactNode;
+  filterPlacement?: "top" | "bottom";
   viewModeToggle?: ReactNode;
   headerActions?: ReactNode;
   footerSlot?: ReactNode;
@@ -29,6 +30,7 @@ export function ListLayout({
   viewModeKey,
   contentSlot,
   filterSlot,
+  filterPlacement = "bottom",
   viewModeToggle,
   headerActions,
   footerSlot,
@@ -77,13 +79,19 @@ export function ListLayout({
         </div>
       </CardHeader>
 
-      {filterSlot && (
+      {filterSlot && filterPlacement === "top" && (
         <div className="flex-shrink-0 border-b border-border px-6 py-4 bg-card">
           {filterSlot}
         </div>
       )}
 
       <div className={cn("flex-1 min-h-0", contentClassName)}>{contentSlot}</div>
+
+      {filterSlot && filterPlacement === "bottom" && (
+        <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+          {filterSlot}
+        </div>
+      )}
 
       {footerSlot && (
         <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">

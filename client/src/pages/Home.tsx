@@ -4,6 +4,7 @@ import { CalendarGrid } from "@/components/CalendarGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarYearView } from "@/components/calendar/CalendarYearView";
 import { CalendarEmployeeFilter } from "@/components/calendar/CalendarEmployeeFilter";
+import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import { CustomerData } from "@/components/CustomerData";
 import { CustomersPage } from "@/components/CustomersPage";
 import { TourManagement } from "@/components/TourManagement";
@@ -18,9 +19,8 @@ import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
-import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
-import { de } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
+import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
+import { Label } from "@/components/ui/label";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
 export type CalendarNavCommand = {
@@ -122,38 +122,15 @@ export default function Home({ onLogout }: HomeProps) {
     );
   };
 
-  const calendarTitleDate = currentDate;
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
       {/* Left Sidebar - 20% Width */}
       <aside className="w-[20%] h-full flex-shrink-0 z-10 relative">
-        <Sidebar onViewChange={handleViewChange} currentView={view} />
+        <Sidebar onViewChange={handleViewChange} onLogout={onLogout} currentView={view} />
       </aside>
 
       {/* Main Content - 80% Width */}
       <main className="w-[80%] h-full flex flex-col relative">
-        
-        {/* Header / Navigation Bar */}
-        <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
-          <div className="flex items-center gap-6">
-            <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'appointmentsList' ? 'Terminliste' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-          {isCalendarView && (
-            <div className="flex items-center gap-3">
-              <CalendarEmployeeFilter value={calendarEmployeeFilterId} onChange={setCalendarEmployeeFilterId} />
-            </div>
-          )}
-            <Button variant="outline" onClick={onLogout}>
-              Logout
-            </Button>
-          </div>
-        </header>
-
         {/* Content Area */}
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
           {view === 'customer' ? (
@@ -169,17 +146,15 @@ export default function Home({ onLogout }: HomeProps) {
             />
           ) : view === 'customerList' ? (
             <CustomersPage
-              onCancel={() => setView('month')} 
               onNewCustomer={() => { setSelectedCustomerId(null); setView('customer'); }}
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView('customer'); }}
             />
           ) : view === 'tours' ? (
-            <TourManagement onCancel={() => setView('month')} />
+            <TourManagement />
           ) : view === 'teams' ? (
-            <TeamManagement onCancel={() => setView('month')} />
+            <TeamManagement />
           ) : view === 'employees' ? (
             <EmployeesPage
-              onCancel={() => setView('month')}
               onOpenAppointment={(appointmentId) => {
                 setAppointmentContext({ appointmentId, returnView: "employees" });
                 setView('appointment');
@@ -219,7 +194,6 @@ export default function Home({ onLogout }: HomeProps) {
             />
           ) : view === 'appointmentsList' ? (
             <AppointmentsListPage
-              onCancel={() => setView('month')}
               onOpenAppointment={(appointmentId) => {
                 setAppointmentContext({ appointmentId, returnView: "appointmentsList" });
                 setView('appointment');
@@ -227,7 +201,6 @@ export default function Home({ onLogout }: HomeProps) {
             />
           ) : view === 'projectList' ? (
             <ProjectsPage
-              onCancel={() => setView('month')} 
               onNewProject={() => { setSelectedProjectId(null); setProjectReturnView('projectList'); setView('project'); }}
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView('projectList'); setView('project'); }}
             />
@@ -242,35 +215,48 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === 'demoData' ? (
             <DemoDataPage />
           ) : isCalendarView ? (
-            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground grid grid-cols-[28px_minmax(0,1fr)_28px]">
-              {/* UI-ONLY:
-               * Diese Navigationsfläche triggert ausschließlich die bestehende
-               * Vor/Zurück-Navigation.
-               * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
-               */}
-              <button
-                onClick={prev}
-                className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
-                data-testid="button-prev"
-                aria-label="Zurück"
-              >
-                {"<"}
-              </button>
-              {/* Kalenderansicht benötigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
-              <div className="min-w-0 h-full overflow-hidden">{renderCalendarContent()}</div>
-              {/* UI-ONLY:
-               * Diese Navigationsfläche triggert ausschließlich die bestehende
-               * Vor/Zurück-Navigation.
-               * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
-               */}
-              <button
-                onClick={next}
-                className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
-                data-testid="button-next"
-                aria-label="Vor"
-              >
-                {">"}
-              </button>
+            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground flex flex-col">
+              <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
+                {/* UI-ONLY:
+                 * Diese Navigationsfläche triggert ausschließlich die bestehende
+                 * Vor/Zurück-Navigation.
+                 * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
+                 */}
+                <button
+                  onClick={prev}
+                  className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+                  data-testid="button-prev"
+                  aria-label="Zurück"
+                >
+                  {"<"}
+                </button>
+                {/* Kalenderansicht benötigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
+                <div className="min-w-0 h-full overflow-hidden">{renderCalendarContent()}</div>
+                {/* UI-ONLY:
+                 * Diese Navigationsfläche triggert ausschließlich die bestehende
+                 * Vor/Zurück-Navigation.
+                 * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
+                 */}
+                <button
+                  onClick={next}
+                  className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+                  data-testid="button-next"
+                  aria-label="Vor"
+                >
+                  {">"}
+                </button>
+              </div>
+              <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+                <FilterPanel title="Kalenderfilter" layout="row">
+                  <div className="flex min-w-[220px] flex-col gap-1">
+                    <Label className="text-xs">Mitarbeiter</Label>
+                    <CalendarEmployeeFilter
+                      value={calendarEmployeeFilterId}
+                      onChange={setCalendarEmployeeFilterId}
+                    />
+                  </div>
+                </FilterPanel>
+              </div>
             </div>
           ) : null}
         </div>

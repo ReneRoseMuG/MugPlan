@@ -16,6 +16,7 @@ export interface ListLayoutProps {
   viewModeKey?: string;
   contentSlot: ReactNode;
   filterSlot?: ReactNode;
+  filterPlacement?: "top" | "bottom";
   viewModeToggle?: ReactNode;
   headerActions?: ReactNode;
   footerSlot?: ReactNode;
@@ -30,7 +31,10 @@ export interface ListLayoutProps {
 ```
 
 Contract:
-- Renders a shell with `Header`, optional `FilterSlot`, `ContentSlot`, optional `FooterSlot`.
+- Renders a shell with `Header`, `ContentSlot`, optional `FilterSlot`, optional `FooterSlot`.
+- `filterPlacement` controls where `filterSlot` is rendered:
+  - default: `bottom`
+  - when bottom: filter is rendered above footer
 - `viewModeToggle` is rendered in the header action area (right side).
 - `contentSlot` is required and owns board/table/calendar content.
 - Loading mode renders spinner state and bypasses slot content.
@@ -440,6 +444,7 @@ Binding architecture rules:
 - `BoardView` is the only allowed board/grid representation.
 - `TableView` is the only allowed table representation.
 - `HoverPreview` is the only hover-preview mechanism for list/table preview behavior.
+- `ListLayout` filter standard is bottom-docked (`filterPlacement="bottom"` by default), rendered above `footerSlot`.
 
 Removed legacy architecture:
 - `card-list-layout.tsx` removed

@@ -59,9 +59,9 @@ export function ProjectFilterPanel({
           onClear={onProjectTitleClear}
           className="flex-1"
         />
-        <div className="flex flex-wrap items-center gap-3 sm:h-9">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex min-w-[150px] flex-col gap-1">
+            <div className="flex items-center gap-1 min-h-5">
               <Label htmlFor="project-scope-upcoming" className="text-xs font-semibold text-muted-foreground">
                 Aktuelle Projekte
               </Label>
@@ -75,8 +75,8 @@ export function ProjectFilterPanel({
               }}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
+          <div className="flex min-w-[150px] flex-col gap-1">
+            <div className="flex items-center gap-1 min-h-5">
               <Label htmlFor="project-scope-no-appointments" className="text-xs font-semibold text-muted-foreground">
                 Ohne Termine
               </Label>

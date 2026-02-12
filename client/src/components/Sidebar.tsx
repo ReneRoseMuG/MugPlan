@@ -1,8 +1,9 @@
-import { CalendarDays, CalendarRange, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, HelpCircle, Table2 } from "lucide-react";
+import { CalendarDays, CalendarRange, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, HelpCircle, Table2, LogOut } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 
 interface SidebarProps {
   onViewChange: (view: ViewType) => void;
+  onLogout: () => void;
   currentView?: ViewType;
 }
 
@@ -90,19 +91,16 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
   );
 }
 
-export function Sidebar({ onViewChange, currentView }: SidebarProps) {
+export function Sidebar({ onViewChange, onLogout, currentView }: SidebarProps) {
   return (
     <div className="w-full h-full bg-slate-50 border-r border-border flex flex-col p-4 overflow-y-auto" data-testid="sidebar">
       <div className="mb-6">
         <h1 className="text-xl font-bold font-display text-primary tracking-tight" data-testid="text-app-title">
-          Kalender
+          MuG Plan
         </h1>
-        <p className="text-xs text-slate-500 mt-1 font-medium" data-testid="text-app-subtitle">
-          Persönlicher Planer
-        </p>
       </div>
 
-      <nav className="flex flex-col">
+      <nav className="flex flex-col flex-1">
         <NavGroup title="Terminplanung">
           <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week'} onClick={() => onViewChange('week')} />
           <NavButton icon={Calendar} label="Monatsübersicht" isActive={currentView === 'month'} onClick={() => onViewChange('month')} />
@@ -134,8 +132,13 @@ export function Sidebar({ onViewChange, currentView }: SidebarProps) {
           <NavButton icon={Settings} label="Einstellungen" isActive={currentView === 'settings'} onClick={() => onViewChange('settings')} />
           <NavButton icon={Settings} label="Demo-Daten" isActive={currentView === 'demoData'} onClick={() => onViewChange('demoData')} />
         </NavGroup>
+
+        <div className="mt-auto pt-2">
+          <NavButton icon={LogOut} label="Logout" onClick={onLogout} />
+        </div>
       </nav>
     </div>
   );
 }
+
 

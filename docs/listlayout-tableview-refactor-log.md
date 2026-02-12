@@ -436,3 +436,26 @@ Branch: `refactor/listlayout-architecture`
 - No adapter/remapping layer exists.
 - Architecture freeze statement:
   - `ListLayout` (required shell), `BoardView` (only board), `TableView` (only table) are the final enforced list architecture baseline.
+
+## Phase 8b: Bottom-Docked Filter Alignment (2026-02-12)
+
+### Scope
+- Restored bottom-docked filter behavior in the new `ListLayout` shell.
+- Applied globally via `ListLayout` default behavior.
+
+### Changed Files
+- `client/src/components/ui/list-layout.tsx`
+- `docs/listlayout-tableview-architecture.md`
+- `docs/listlayout-tableview-refactor-log.md`
+
+### Implementation Notes
+- Added `filterPlacement?: "top" | "bottom"` to `ListLayoutProps`.
+- Default is now `bottom`.
+- Bottom render order is:
+  1. `filterSlot`
+  2. `footerSlot`
+- This restores parity with the previous bottom-bar pattern while preserving the new architecture.
+
+### Validation
+- Layout behavior is centralized in `ListLayout`; no per-screen filter rewrites required.
+- No backend, endpoint, routing, or fetch-logic changes.

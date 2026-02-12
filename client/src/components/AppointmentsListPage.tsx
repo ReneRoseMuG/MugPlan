@@ -343,31 +343,31 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
               />
             </div>
 
-            <div className="flex min-w-[140px] items-center gap-2 pt-6">
+            <div className="flex min-w-[140px] flex-col gap-1">
+              <Label htmlFor="appointments-all-day-only" className="text-xs min-h-5">Ganztag</Label>
               <Switch
                 id="appointments-all-day-only"
                 checked={filters.allDayOnly}
                 onCheckedChange={(checked) => setFilterAndResetPage({ allDayOnly: checked })}
               />
-              <Label htmlFor="appointments-all-day-only" className="text-xs">Ganztag</Label>
             </div>
 
-            <div className="flex min-w-[170px] items-center gap-2 pt-6">
+            <div className="flex min-w-[170px] flex-col gap-1">
+              <Label htmlFor="appointments-with-start-time-only" className="text-xs min-h-5">Mit Startzeit</Label>
               <Switch
                 id="appointments-with-start-time-only"
                 checked={filters.withStartTimeOnly}
                 onCheckedChange={(checked) => setFilterAndResetPage({ withStartTimeOnly: checked })}
               />
-              <Label htmlFor="appointments-with-start-time-only" className="text-xs">Mit Startzeit</Label>
             </div>
 
-            <div className="flex min-w-[160px] items-center gap-2 pt-6">
+            <div className="flex min-w-[160px] flex-col gap-1">
+              <Label htmlFor="appointments-locked-only" className="text-xs min-h-5">Nur gesperrte</Label>
               <Switch
                 id="appointments-locked-only"
                 checked={filters.lockedOnly}
                 onCheckedChange={(checked) => setFilterAndResetPage({ lockedOnly: checked })}
               />
-              <Label htmlFor="appointments-locked-only" className="text-xs">Nur gesperrte</Label>
             </div>
           </FilterPanel>
         </div>
