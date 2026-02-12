@@ -7,7 +7,7 @@ import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel"
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
 import { ProjectStatusPanel } from "@/components/ProjectStatusPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { CustomerList } from "@/components/CustomerList";
+import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
 import { 
   FolderKanban, 
@@ -360,10 +360,9 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       {/* Customer Selection Dialog */}
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
-          <CustomerList
-            mode="picker"
-            selectedCustomerId={customerId}
+          <CustomersPage
             showCloseButton={false}
+            tableOnly
             onSelectCustomer={(id) => {
               setCustomerId(id);
               setCustomerDialogOpen(false);

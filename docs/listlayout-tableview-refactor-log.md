@@ -357,3 +357,45 @@ Branch: `refactor/listlayout-architecture`
 - Pagination updates data by page and keeps page size at `25`.
 - Filter changes reset page to `1`.
 - Internal table state changes do not trigger additional data reload.
+
+## Phase 7: Dialog-Migration auf ListLayout-Architektur (2026-02-12)
+
+### Scope
+- Migrated list-based dialogs to `ListLayout` architecture.
+- No adapter/remapping strategy used.
+- No endpoint changes.
+
+### Changed Files
+- `client/src/components/ProjectsPage.tsx`
+- `client/src/components/CustomersPage.tsx`
+- `client/src/components/EmployeePickerDialogList.tsx` (new)
+- `client/src/components/EmployeeAppointmentsTableDialog.tsx`
+- `client/src/components/AppointmentForm.tsx`
+- `client/src/components/ProjectForm.tsx`
+- `client/src/components/ui/employee-select-entity-edit-dialog.tsx`
+- `docs/listlayout-tableview-architecture.md`
+- `docs/listlayout-tableview-refactor-log.md`
+
+### Implementation Notes
+- Added `tableOnly` mode to:
+  - `ProjectsPage`
+  - `CustomersPage`
+- Migrated dialog usage:
+  - Appointment form project picker now uses `ProjectsPage` in `tableOnly` mode.
+  - Project form customer picker now uses `CustomersPage` in `tableOnly` mode.
+  - Team/Tour employee picker dialog now uses dedicated `EmployeePickerDialogList`.
+  - `EmployeeAppointmentsTableDialog` now uses `ListLayout` + `TableView`.
+- Preview behavior in migrated dialogs is unified via `TableView` (`HoverPreview` integration), without custom timer logic in dialog components.
+
+### Compliance Confirmation
+- No dialog uses `CardListLayout` directly after migration.
+- No dialog-specific custom hover timer logic remains in migrated list dialogs.
+- No adapter logic introduced.
+- Existing endpoints unchanged.
+
+### Test Points (Phase 7)
+- MouseOver in dialog tables shows preview.
+- Double-click in dialog rows triggers select/open action.
+- Single click has no action.
+- Dialog list screens render in table-only mode without view-mode toggle.
+- No visual regressions in dialog list structure and interaction flow.

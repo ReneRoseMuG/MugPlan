@@ -1,16 +1,10 @@
 import { useMemo } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendarWeekAppointmentPanel } from "@/components/calendar/CalendarWeekAppointmentPanel";
-import { HoverPreview } from "@/components/ui/hover-preview";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CalendarDays } from "lucide-react";
+import { ListLayout } from "@/components/ui/list-layout";
+import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
+import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useCalendarAppointments, type CalendarAppointment } from "@/lib/calendar-appointments";
 
 const ALL_APPOINTMENTS_FROM_DATE = "1900-01-01";
@@ -84,6 +78,41 @@ export function EmployeeAppointmentsTableDialog({
     onOpenAppointment?.(appointmentId);
   };
 
+  const tableColumns = useMemo<TableViewColumnDef<CalendarAppointment>[]>(
+    () => [
+      {
+        id: "appointment",
+        header: "Termin",
+        accessor: (row) => row.startDate,
+        minWidth: 220,
+        cell: ({ row }) => (
+          <span>
+            {formatDateLabel(row.startDate)} - {formatStartTimeLabel(row.startTime)}
+          </span>
+        ),
+      },
+      {
+        id: "customerNumber",
+        header: "Kundennummer",
+        accessor: (row) => row.customer.customerNumber,
+        minWidth: 140,
+      },
+      {
+        id: "customer",
+        header: "Kunde (Fullname)",
+        accessor: (row) => row.customer.fullName,
+        minWidth: 240,
+      },
+      {
+        id: "projectTitle",
+        header: "Projekt Titel",
+        accessor: (row) => row.projectName,
+        minWidth: 240,
+      },
+    ],
+    [],
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-6xl sm:rounded-lg">
@@ -93,66 +122,26 @@ export function EmployeeAppointmentsTableDialog({
               Termine {employeeName ? `- ${employeeName}` : ""} ({sortedAppointments.length})
             </DialogTitle>
           </DialogHeader>
-
-          <div className="flex-1 min-h-0 overflow-auto border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Termin</TableHead>
-                  <TableHead>Kundennummer</TableHead>
-                  <TableHead>Kunde (Fullname)</TableHead>
-                  <TableHead>Projekt Titel</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                      Termine werden geladen...
-                    </TableCell>
-                  </TableRow>
-                ) : sortedAppointments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                      Keine Termine vorhanden
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  sortedAppointments.map((appointment) => (
-                    <HoverPreview
-                      key={appointment.id}
-                      preview={(
-                        <div className="rounded-lg bg-white p-1">
-                          <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
-                        </div>
-                      )}
-                      mode="cursor"
-                      openDelay={320}
-                      closeDelay={0}
-                      maxWidth={360}
-                      maxHeight={320}
-                      cursorOffsetX={12}
-                      cursorOffsetY={10}
-                      className="z-[9999] w-[360px] pointer-events-none"
-                      contentClassName="pointer-events-none"
-                    >
-                      <TableRow
-                        onDoubleClick={() => handleOpenAppointment(appointment.id)}
-                        className="cursor-default"
-                        data-testid={`employee-appointments-row-${appointment.id}`}
-                      >
-                        <TableCell>
-                          {formatDateLabel(appointment.startDate)} - {formatStartTimeLabel(appointment.startTime)}
-                        </TableCell>
-                        <TableCell>{appointment.customer.customerNumber}</TableCell>
-                        <TableCell>{appointment.customer.fullName}</TableCell>
-                        <TableCell>{appointment.projectName}</TableCell>
-                      </TableRow>
-                    </HoverPreview>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="flex-1 min-h-0">
+            <ListLayout
+              title="Termine"
+              icon={<CalendarDays className="w-5 h-5" />}
+              viewModeKey="employeeAppointmentsDialog"
+              isLoading={isLoading}
+              showCloseButton={false}
+              contentSlot={(
+                <TableView
+                  testId="table-employee-appointments-dialog"
+                  columns={tableColumns}
+                  rows={sortedAppointments}
+                  rowKey={(row) => row.id}
+                  onRowDoubleClick={(row) => handleOpenAppointment(row.id)}
+                  rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row).content}
+                  emptyState={<p className="py-4 text-sm text-muted-foreground">Keine Termine vorhanden</p>}
+                  stickyHeader
+                />
+              )}
+            />
           </div>
         </div>
       </DialogContent>

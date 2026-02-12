@@ -31,6 +31,7 @@ interface ProjectsPageProps {
   onSelectProject?: (id: number) => void;
   title?: string;
   showCloseButton?: boolean;
+  tableOnly?: boolean;
 }
 
 function parseViewMode(value: unknown): ViewMode {
@@ -80,13 +81,14 @@ export function ProjectsPage({
   onSelectProject,
   title,
   showCloseButton = true,
+  tableOnly = false,
 }: ProjectsPageProps) {
   const { settingsByKey, setSetting } = useSettings();
   const viewModeKey = "projects";
   const settingsViewModeKey = `${viewModeKey}.viewMode`;
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(resolvedViewMode);
+  const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
   const [filters, setFilters] = useState<ProjectFilters>(defaultProjectFilters);
   const [projectScope, setProjectScope] = useState<ProjectScope>("upcoming");
@@ -96,8 +98,8 @@ export function ProjectsPage({
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
-    setViewMode(resolvedViewMode);
-  }, [resolvedViewMode]);
+    setViewMode(tableOnly ? "table" : resolvedViewMode);
+  }, [resolvedViewMode, tableOnly]);
 
   const projectQueryParams = useMemo(
     () => buildProjectFilterQueryParams(filters, projectScope),
@@ -187,6 +189,7 @@ export function ProjectsPage({
   );
 
   const handleViewModeChange = (next: string) => {
+    if (tableOnly) return;
     if (next !== "board" && next !== "table") return;
     if (next === viewMode) return;
 
@@ -329,7 +332,7 @@ export function ProjectsPage({
           onProjectScopeChange={setProjectScope}
         />
       }
-      viewModeToggle={
+      viewModeToggle={tableOnly ? undefined : (
         <ToggleGroup
           type="single"
           value={viewMode}
@@ -345,7 +348,7 @@ export function ProjectsPage({
             <Table2 className="w-4 h-4" />
           </ToggleGroupItem>
         </ToggleGroup>
-      }
+      )}
       footerSlot={
         <div className="flex justify-between items-center">
           {onNewProject ? (
@@ -368,7 +371,7 @@ export function ProjectsPage({
         </div>
       }
       contentSlot={
-        viewMode === "board" ? (
+        !tableOnly && viewMode === "board" ? (
           <BoardView
             gridTestId="list-projects"
             gridCols="3"

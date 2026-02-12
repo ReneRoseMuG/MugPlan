@@ -30,6 +30,7 @@ interface CustomersPageProps {
   onSelectCustomer?: (id: number) => void;
   title?: string;
   showCloseButton?: boolean;
+  tableOnly?: boolean;
 }
 
 function parseViewMode(value: unknown): ViewMode {
@@ -81,13 +82,14 @@ export function CustomersPage({
   onSelectCustomer,
   title,
   showCloseButton = true,
+  tableOnly = false,
 }: CustomersPageProps) {
   const { settingsByKey, setSetting } = useSettings();
   const viewModeKey = "customers";
   const settingsViewModeKey = `${viewModeKey}.viewMode`;
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(resolvedViewMode);
+  const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
   const [filters, setFilters] = useState(defaultCustomerFilters);
   const [sortKey, setSortKey] = useState<CustomerSortKey>("customerNumber");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -95,8 +97,8 @@ export function CustomersPage({
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
-    setViewMode(resolvedViewMode);
-  }, [resolvedViewMode]);
+    setViewMode(tableOnly ? "table" : resolvedViewMode);
+  }, [resolvedViewMode, tableOnly]);
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -206,6 +208,7 @@ export function CustomersPage({
   }, [customerRows, sortDirection, sortKey]);
 
   const handleViewModeChange = (next: string) => {
+    if (tableOnly) return;
     if (next !== "board" && next !== "table") return;
     if (next === viewMode) return;
 
@@ -312,7 +315,7 @@ export function CustomersPage({
           onCustomerNumberClear={() => setFilters((prev) => ({ ...prev, customerNumber: "" }))}
         />
       }
-      viewModeToggle={
+      viewModeToggle={tableOnly ? undefined : (
         <ToggleGroup
           type="single"
           value={viewMode}
@@ -328,7 +331,7 @@ export function CustomersPage({
             <Table2 className="w-4 h-4" />
           </ToggleGroupItem>
         </ToggleGroup>
-      }
+      )}
       footerSlot={
         <div className="flex justify-between items-center">
           {onNewCustomer ? (
@@ -351,7 +354,7 @@ export function CustomersPage({
         </div>
       }
       contentSlot={
-        viewMode === "board" ? (
+        !tableOnly && viewMode === "board" ? (
           <BoardView
             gridTestId="list-customers"
             gridCols="3"

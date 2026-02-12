@@ -23,8 +23,8 @@ import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { ProjectInfoBadge } from "@/components/ui/project-info-badge";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
-import ProjectList from "@/components/ProjectList";
-import { EmployeeListView } from "@/components/EmployeeList";
+import { ProjectsPage } from "@/components/ProjectsPage";
+import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -849,10 +849,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
       <Dialog open={projectPickerOpen} onOpenChange={setProjectPickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
-          <ProjectList
-            mode="picker"
-            selectedProjectId={selectedProjectId}
+          <ProjectsPage
             showCloseButton={false}
+            tableOnly
             title="Projekt auswählen"
             onSelectProject={handleProjectSelect}
             onCancel={() => setProjectPickerOpen(false)}
@@ -862,14 +861,11 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
       <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
-          <EmployeeListView
+          <EmployeePickerDialogList
             employees={availableEmployees}
-            allEmployeesForBadgePreview={employees}
             teams={teams}
             tours={tours}
             isLoading={employeesLoading}
-            mode="picker"
-            showCloseButton={false}
             title="Mitarbeiter auswählen"
             onSelectEmployee={(employeeId) => {
               addEmployees([employeeId]);
@@ -981,4 +977,3 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     </EntityFormLayout>
   );
 }
-

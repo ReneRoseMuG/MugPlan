@@ -387,3 +387,47 @@ Phase-6 contract for `AppointmentsListPage`:
   - page switch triggers new backend fetch
   - any filter change resets page to `1`
 - Internal table-state updates (sort direction/key, hover) do not trigger data fetch.
+
+## Dialog Pattern (Phase 7)
+List-based dialogs follow the same component architecture and interaction model:
+
+```tsx
+<Dialog>
+  <DialogContent>
+    <ListLayout
+      viewModeKey="dialogKey"
+      filterSlot={<DialogFilterPanel />}
+      contentSlot={
+        <TableView
+          columns={columns}
+          rows={rows}
+          rowKey={(row) => row.id}
+          onRowDoubleClick={(row) => handleSelect(row)}
+          rowPreviewRenderer={(row) => <Preview row={row} />}
+        />
+      }
+    />
+  </DialogContent>
+</Dialog>
+```
+
+Phase-7 dialog contract:
+- Dialog lists use `ListLayout` + `TableView` (no `CardListLayout` usage in dialogs).
+- Dialog lists are table-only:
+  - no board mode
+  - no view-mode toggle UI
+- Unified interaction model:
+  - hover: preview via `rowPreviewRenderer` (`HoverPreview` is handled by `TableView`)
+  - double click: select/open detail/edit
+  - single click: no action
+- No custom hover timers or custom tooltip systems inside list dialogs.
+
+Applied dialog migrations:
+- Appointment form project picker dialog:
+  - `ProjectsPage` in `tableOnly` mode
+- Project form customer picker dialog:
+  - `CustomersPage` in `tableOnly` mode
+- Team/Tour member picker dialog:
+  - `EmployeePickerDialogList` (`ListLayout` + `TableView`)
+- Employee appointments dialog:
+  - `EmployeeAppointmentsTableDialog` migrated to `ListLayout` + `TableView`
