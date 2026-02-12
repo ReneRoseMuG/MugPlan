@@ -182,6 +182,17 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is ListViewMode =>
       typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
   },
+  employeesViewMode: {
+    key: "employees.viewMode",
+    label: "Mitarbeiter Ansicht",
+    description: "Steuert den Ansichtsmodus der Mitarbeiter (Board oder Tabelle).",
+    type: "enum",
+    options: listViewModeOptions,
+    defaultValue: "board",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is ListViewMode =>
+      typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
+  },
   templatesProjectTitle: {
     key: "templates.project.title",
     label: "Template Projekt-Titel",

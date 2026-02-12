@@ -8,7 +8,7 @@ import { CustomerData } from "@/components/CustomerData";
 import { CustomersPage } from "@/components/CustomersPage";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
-import { EmployeePage } from "@/components/EmployeePage";
+import { EmployeesPage } from "@/components/EmployeesPage";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { EmployeeWeeklyView } from "@/components/EmployeeWeeklyView";
@@ -179,7 +179,7 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === 'teams' ? (
             <TeamManagement onCancel={() => setView('month')} />
           ) : view === 'employees' ? (
-            <EmployeePage 
+            <EmployeesPage
               onCancel={() => setView('month')}
               onOpenAppointment={(appointmentId) => {
                 setAppointmentContext({ appointmentId, returnView: "employees" });

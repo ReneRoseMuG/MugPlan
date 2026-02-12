@@ -285,3 +285,53 @@ Phase-4 contract for `CustomersPage`:
   - hover: appointment preview (or `Keine Termine geplant`)
   - double click: open customer edit flow
   - single click: no action
+
+## Employees Migration (Phase 5)
+Final integration state for `EmployeesPage`:
+
+```tsx
+<ListLayout
+  title="Mitarbeiter"
+  icon={<Users className="w-5 h-5" />}
+  viewModeKey="employees"
+  filterSlot={<EmployeeFilterPanel ... />}
+  viewModeToggle={<EmployeesViewModeToggle />}
+  contentSlot={
+    viewMode === "board" ? (
+      <BoardView gridCols="3">{/* existing employee cards */}</BoardView>
+    ) : (
+      <TableView
+        columns={employeeColumns}
+        rows={sortedEmployeeRows}
+        rowKey={(row) => row.employee.id}
+        onRowDoubleClick={(row) => handleOpenDetail(row.employee)}
+        rowPreviewRenderer={(row) => <RelevantAppointmentPreview row={row} />}
+      />
+    )
+  }
+/>
+```
+
+Phase-5 contract for `EmployeesPage`:
+- View mode persistence uses key `employees.viewMode` in existing settings infrastructure.
+- Default view mode is `board` if no persisted user value exists.
+- Board mode keeps existing employee card rendering and interactions unchanged.
+- Table mode columns:
+  - `Name` (sortable)
+  - `Vorname` (sortable)
+  - `Telefon`
+  - `Tour` (sortable)
+  - `Team` (sortable)
+  - `Relevanter Termin` (not sortable)
+  - `Geplante Termine` (counter, not sortable)
+- Relevant appointment resolution:
+  1. nearest future appointment
+  2. otherwise most recent historical appointment
+  3. otherwise `—`
+- Planned appointments counter:
+  - count of future appointments.
+- Default sort: `Name` ascending.
+- Table interactions:
+  - hover: appointment preview (or `Keine Termine geplant`)
+  - double click: open employee edit flow
+  - single click: no action

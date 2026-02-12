@@ -240,3 +240,61 @@ Branch: `refactor/listlayout-architecture`
 - No sort icon shown for `Relevanter Termin`.
 - Sorting still works for other sortable columns.
 - View mode switching behavior unchanged and does not trigger mode-based data reload.
+
+## Phase 5: EmployeesPage Migration (2026-02-12)
+
+### Migration Scope
+- Migrated only `EmployeesPage` (employee screen) to new list architecture:
+  - `ListLayout`
+  - `BoardView`
+  - `TableView`
+- Other screens were not migrated.
+- Existing picker flows continue to use `EmployeeListView` unchanged.
+
+### Changed Files
+- `client/src/components/EmployeesPage.tsx` (new)
+- `client/src/pages/Home.tsx`
+- `server/settings/registry.ts`
+- `docs/listlayout-tableview-architecture.md`
+- `docs/listlayout-tableview-refactor-log.md`
+
+### Implementation Notes
+- Added dedicated `EmployeesPage` and integrated it for `view === "employees"` in `Home`.
+- Added view mode persistence key `employees.viewMode` (`USER`, default `board`).
+- `EmployeesPage` structure:
+  - `ListLayout` shell with `viewModeKey="employees"`
+  - existing `EmployeeFilterPanel` in `filterSlot`
+  - `BoardView` with unchanged employee cards and interactions
+  - `TableView` with required columns:
+    - sortable: `Name`, `Vorname`, `Tour`, `Team`
+    - non-sortable: `Telefon`, `Relevanter Termin`, `Geplante Termine`
+- Relevant appointment calculation in table rows:
+  1. nearest future appointment
+  2. else latest historical appointment
+  3. else `—`
+- Planned appointments counter:
+  - number of future appointments per employee.
+- Row preview behavior:
+  - shows relevant appointment preview on hover
+  - shows `Keine Termine geplant` when absent
+- Row interaction in table:
+  - double click opens employee edit flow
+  - single click has no action
+
+### Compliance Confirmation
+- Existing layout components were not changed:
+  - `client/src/components/ui/card-list-layout.tsx`
+  - `client/src/components/ui/filtered-card-list-layout.tsx`
+- No adapter/wrapper strategy was introduced.
+- No routing structure changes (existing `employees` view path retained).
+- No backend endpoint changes.
+- No backend logic changes.
+
+### Test Points (Phase 5)
+- Board mode keeps previous employee card rendering and behavior.
+- Table mode renders required columns and sorting.
+- Relevant appointment resolution follows required priority rule.
+- Planned appointments counter reflects future-appointment count.
+- Hover preview shows appointment details or fallback text.
+- Double-click opens edit flow.
+- View mode switch does not change employee list query key and does not trigger a mode-based data reload.
