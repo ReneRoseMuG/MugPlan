@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FolderKanban, MapPin, Pencil, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,7 @@ function resolveRelevantAppointment(
 }
 
 function formatAppointmentLabel(appointment: ProjectAppointmentSummary | null): string {
-  if (!appointment) return "—";
+  if (!appointment) return "â€”";
 
   const date = new Date(`${appointment.startDate}T00:00:00`);
   const dateLabel = format(date, "dd.MM.yyyy", { locale: de });
@@ -159,7 +159,6 @@ export function ProjectsPage({
             {
               credentials: "include",
               headers: {
-                "x-user-role": userRole,
               },
             },
           );
@@ -280,7 +279,7 @@ export function ProjectsPage({
         minWidth: 220,
         cell: ({ row }) => (
           <span>
-            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "—"}
+            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "â€”"}
           </span>
         ),
       },
@@ -478,3 +477,4 @@ export function ProjectsPage({
     />
   );
 }
+

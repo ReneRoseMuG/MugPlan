@@ -307,7 +307,6 @@ export function CalendarWeekView({
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-user-role": userRole,
         },
         body: JSON.stringify({
           projectId: appointment.projectId,
@@ -507,3 +506,4 @@ export function CalendarWeekView({
     </div>
   );
 }
+

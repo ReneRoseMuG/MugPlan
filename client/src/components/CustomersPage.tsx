@@ -151,7 +151,6 @@ export function CustomersPage({
             {
               credentials: "include",
               headers: {
-                "x-user-role": userRole,
               },
             },
           );
@@ -445,3 +444,4 @@ export function CustomersPage({
     />
   );
 }
+

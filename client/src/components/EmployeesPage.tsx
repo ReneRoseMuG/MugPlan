@@ -190,7 +190,6 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
             {
               credentials: "include",
               headers: {
-                "x-user-role": userRole,
               },
             },
           );
@@ -820,4 +819,5 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
     </>
   );
 }
+
 

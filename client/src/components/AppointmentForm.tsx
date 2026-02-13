@@ -429,7 +429,6 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         method: "DELETE",
         credentials: "include",
         headers: {
-          "x-user-role": userRole,
         },
       });
       console.info(`${logPrefix} delete response`, { appointmentId: targetAppointmentId, status: response.status });
@@ -508,7 +507,6 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         method,
         headers: {
           "Content-Type": "application/json",
-          "x-user-role": userRole,
         },
         body: JSON.stringify(payload),
         credentials: "include",
@@ -976,3 +974,4 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     </EntityFormLayout>
   );
 }
+

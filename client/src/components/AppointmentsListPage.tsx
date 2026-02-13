@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
@@ -108,7 +108,6 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
       const response = await fetch(`/api/appointments/list?${params.toString()}`, {
         credentials: "include",
         headers: {
-          "x-user-role": userRole,
         },
       });
       if (!response.ok) {
@@ -185,7 +184,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
         header: renderSortHeader("Tour", "tour"),
         accessor: (row) => row.tourName ?? "",
         minWidth: 160,
-        cell: ({ row }) => <span>{row.tourName ?? "—"}</span>,
+        cell: ({ row }) => <span>{row.tourName ?? "â€”"}</span>,
       },
       {
         id: "allDay",
@@ -238,7 +237,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
       footerSlot={
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            {data?.total ?? 0} Einträge · {DEFAULT_PAGE_SIZE} pro Seite
+            {data?.total ?? 0} Eintraege - {DEFAULT_PAGE_SIZE} pro Seite
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -249,7 +248,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
               disabled={!canGoPrev}
               data-testid="button-appointments-page-prev"
             >
-              Zurück
+              Zurueck
             </Button>
             <span className="text-sm text-muted-foreground" data-testid="text-appointments-page-state">
               Seite {totalPages === 0 ? 0 : page} von {totalPages}
@@ -282,3 +281,4 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
     />
   );
 }
+

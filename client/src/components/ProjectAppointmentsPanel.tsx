@@ -46,7 +46,6 @@ export function ProjectAppointmentsPanel({
       const response = await fetch(url, {
         credentials: "include",
         headers: {
-          "x-user-role": userRole,
         },
       });
       const payload = await response.json();
@@ -71,7 +70,6 @@ export function ProjectAppointmentsPanel({
         method: "DELETE",
         credentials: "include",
         headers: {
-          "x-user-role": userRole,
         },
       });
       const payload = response.status === 204 ? null : await response.json();
@@ -143,4 +141,5 @@ export function ProjectAppointmentsPanel({
     </BadgeInteractionProvider>
   );
 }
+
 
