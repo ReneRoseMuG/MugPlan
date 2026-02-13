@@ -36,7 +36,7 @@ export async function createAppointment(req: Request, res: Response, next: NextF
   } catch (err) {
     if (handleZodError(err, res)) return;
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json({ message: err.message });
+      res.status(err.status).json({ message: err.message, field: err.code });
       return;
     }
     next(err);
@@ -68,7 +68,7 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
   } catch (err) {
     if (handleZodError(err, res)) return;
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json({ message: err.message });
+      res.status(err.status).json({ message: err.message, field: err.code });
       return;
     }
     next(err);
@@ -122,7 +122,7 @@ export async function listAppointmentsList(req: Request, res: Response, next: Ne
   } catch (err) {
     if (handleZodError(err, res)) return;
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json({ message: err.message });
+      res.status(err.status).json({ message: err.message, field: err.code });
       return;
     }
     next(err);
@@ -147,7 +147,7 @@ export async function deleteAppointment(req: Request, res: Response, next: NextF
     res.status(204).send();
   } catch (err) {
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json({ message: err.message });
+      res.status(err.status).json({ message: err.message, field: err.code });
       return;
     }
     next(err);

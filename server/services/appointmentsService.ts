@@ -15,10 +15,12 @@ const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
 
 class AppointmentError extends Error {
   status: number;
+  code?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -201,7 +203,7 @@ export async function updateAppointment(
 
   if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
     console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403);
+    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "APPOINTMENT_LOCKED");
   }
 
   const project = await ensureProjectExists(data.projectId);
@@ -447,7 +449,7 @@ export async function deleteAppointment(appointmentId: number, roleKey: Canonica
 
   if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
     console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403);
+    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "APPOINTMENT_LOCKED");
   }
 
   console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
