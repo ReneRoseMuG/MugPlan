@@ -13,6 +13,7 @@ import { applyCustomerFilters, defaultCustomerFilters } from "@/lib/customer-fil
 import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
+import { useListFilters } from "@/hooks/useListFilters";
 import type { Customer, Project } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { format } from "date-fns";
@@ -90,7 +91,9 @@ export function CustomersPage({
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
-  const [filters, setFilters] = useState(defaultCustomerFilters);
+  const { filters, setFilter } = useListFilters({
+    initialFilters: defaultCustomerFilters,
+  });
   const [sortKey, setSortKey] = useState<CustomerSortKey>("customerNumber");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -308,11 +311,11 @@ export function CustomersPage({
         <CustomerFilterPanel
           title="Kundenfilter"
           customerLastName={filters.lastName}
-          onCustomerLastNameChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
-          onCustomerLastNameClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
+          onCustomerLastNameChange={(value) => setFilter("lastName", value)}
+          onCustomerLastNameClear={() => setFilter("lastName", "")}
           customerNumber={filters.customerNumber}
-          onCustomerNumberChange={(value) => setFilters((prev) => ({ ...prev, customerNumber: value }))}
-          onCustomerNumberClear={() => setFilters((prev) => ({ ...prev, customerNumber: "" }))}
+          onCustomerNumberChange={(value) => setFilter("customerNumber", value)}
+          onCustomerNumberClear={() => setFilter("customerNumber", "")}
         />
       }
       viewModeToggle={tableOnly ? undefined : (

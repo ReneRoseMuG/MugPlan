@@ -3,13 +3,13 @@ import { useMemo, useState } from "react";
 type QueryPrimitive = string | number | boolean | null | undefined;
 type QueryParamsInput = Record<string, QueryPrimitive>;
 
-interface UseListFiltersOptions<TFilters extends Record<string, unknown>> {
+interface UseListFiltersOptions<TFilters extends object> {
   initialFilters: TFilters;
   initialPage?: number;
   buildQueryParams?: (filters: TFilters, page: number) => QueryParamsInput;
 }
 
-interface UseListFiltersResult<TFilters extends Record<string, unknown>> {
+interface UseListFiltersResult<TFilters extends object> {
   filters: TFilters;
   page: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
@@ -19,7 +19,7 @@ interface UseListFiltersResult<TFilters extends Record<string, unknown>> {
   queryParams: URLSearchParams;
 }
 
-export function useListFilters<TFilters extends Record<string, unknown>>(
+export function useListFilters<TFilters extends object>(
   options: UseListFiltersOptions<TFilters>,
 ): UseListFiltersResult<TFilters> {
   const { initialFilters, initialPage = 1, buildQueryParams } = options;
