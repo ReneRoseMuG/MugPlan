@@ -13,6 +13,7 @@ import { defaultHeaderColor } from "@/lib/colors";
 import { applyProjectFilters, buildProjectFilterQueryParams, defaultProjectFilters } from "@/lib/project-filters";
 import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
 import { useSettings } from "@/hooks/useSettings";
+import { useListFilters } from "@/hooks/useListFilters";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { ProjectFilters, ProjectScope } from "@/lib/project-filters";
@@ -90,7 +91,9 @@ export function ProjectsPage({
 
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
-  const [filters, setFilters] = useState<ProjectFilters>(defaultProjectFilters);
+  const { filters, setFilter } = useListFilters<ProjectFilters>({
+    initialFilters: defaultProjectFilters,
+  });
   const [projectScope, setProjectScope] = useState<ProjectScope>("all");
   const [sortKey, setSortKey] = useState<ProjectSortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -308,26 +311,20 @@ export function ProjectsPage({
         <ProjectFilterPanel
           title="Projektfilter"
           projectTitle={filters.title}
-          onProjectTitleChange={(value) => setFilters((prev) => ({ ...prev, title: value }))}
-          onProjectTitleClear={() => setFilters((prev) => ({ ...prev, title: "" }))}
+          onProjectTitleChange={(value) => setFilter("title", value)}
+          onProjectTitleClear={() => setFilter("title", "")}
           customerLastName={filters.customerLastName}
-          onCustomerLastNameChange={(value) => setFilters((prev) => ({ ...prev, customerLastName: value }))}
-          onCustomerLastNameClear={() => setFilters((prev) => ({ ...prev, customerLastName: "" }))}
+          onCustomerLastNameChange={(value) => setFilter("customerLastName", value)}
+          onCustomerLastNameClear={() => setFilter("customerLastName", "")}
           customerNumber={filters.customerNumber}
-          onCustomerNumberChange={(value) => setFilters((prev) => ({ ...prev, customerNumber: value }))}
-          onCustomerNumberClear={() => setFilters((prev) => ({ ...prev, customerNumber: "" }))}
+          onCustomerNumberChange={(value) => setFilter("customerNumber", value)}
+          onCustomerNumberClear={() => setFilter("customerNumber", "")}
           selectedStatuses={selectedStatuses}
           availableStatuses={availableStatuses}
           statusPickerOpen={statusPickerOpen}
           onStatusPickerOpenChange={setStatusPickerOpen}
-          onAddStatus={(statusId) => setFilters((prev) => ({
-            ...prev,
-            statusIds: [...prev.statusIds, statusId],
-          }))}
-          onRemoveStatus={(statusId) => setFilters((prev) => ({
-            ...prev,
-            statusIds: prev.statusIds.filter((id) => id !== statusId),
-          }))}
+          onAddStatus={(statusId) => setFilter("statusIds", [...filters.statusIds, statusId])}
+          onRemoveStatus={(statusId) => setFilter("statusIds", filters.statusIds.filter((id) => id !== statusId))}
           projectScope={projectScope}
           onProjectScopeChange={setProjectScope}
         />
@@ -481,4 +478,3 @@ export function ProjectsPage({
     />
   );
 }
-
