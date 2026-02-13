@@ -237,6 +237,29 @@ Nach Änderungen an Listenarchitektur oder Navigation:
 4. Listenschnittstellen gegen `list-layout.tsx`, `board-view.tsx`, `table-view.tsx` verifizieren.
 5. Terminliste-Fluss gegen `shared/routes.ts` (`GET /api/appointments/list`) sowie Controller/Service/Repository abgleichen.
 
+## 3.14 Filter-State-API Playbook (`useListFilters`)
+
+Für Listen- und kalendernahe Filterstate-Verwaltung ist `client/src/hooks/useListFilters.ts` der Standard.
+
+Kernvertrag:
+
+1. `filters` hält den typisierten lokalen Filterzustand.
+2. `page` hält den Paginationzustand.
+3. `setFilter(key, value)` setzt deterministisch `page` auf `1`.
+4. `resetFilters()` setzt `filters` auf den Initialzustand und `page` auf `1`.
+5. Optional können `queryParams` über einen Builder abgeleitet werden.
+
+Aktueller Integrationsstand:
+
+* `CustomersPage`, `EmployeesPage`, `ProjectsPage` nutzen `useListFilters`.
+* `Home.tsx` nutzt `useListFilters` für den Kalender-Mitarbeiterfilter.
+* `AppointmentsListPage` bleibt aktuell bewusst beim lokalen Pattern mit identischer Regel `setPage(1)` bei Filteränderung.
+
+Praktische Leitplanke:
+
+* Neue Listen verwenden `setFilter(...)` für Feldupdates.
+* Wenn komplexe Feldtransformationen nötig sind (z. B. Array-Filter), bleibt die Semantik identisch: Ergebnisfilter setzen und Pagination auf `1`.
+
 ---
 
 # 4. Fehlerbehandlung und Debugging
@@ -253,7 +276,7 @@ Zur belastbaren Absicherung der Hard-Rule ist daher eine separate Implementation
 
 ## 4.2 Lock‑ und Rollenprobleme
 
-Wenn Interaktionen im Kalender „nicht gehen“, wird zuerst geprüft, ob der Termin gesperrt ist und welches technische Kontextsignal über den Request mitläuft. Im aktuellen Ist‑Stand wird dafür unter anderem `x-user-role` verwendet; dieses Signal ist nicht autoritativ und kein Rollen‑ oder Berechtigungsmodell. Die UI blockiert entsprechend, und der Server trifft derzeit dieselbe Lock‑Entscheidung auf Basis dieses Signals.
+Wenn Interaktionen im Kalender „nicht gehen“, wird zuerst geprüft, ob der Termin gesperrt ist und welcher Rollenwert im serverseitigen Request-Kontext (`req.userContext.roleKey`) vorliegt. Die UI blockiert Interaktionen clientseitig über das Lock-Flag; der Server erzwingt dieselbe Regel autoritativ.
 
 ## 4.3 Typische Debug‑Reihenfolge
 
@@ -287,22 +310,20 @@ Dieser Abschnitt dokumentiert die konkrete technische Umsetzung von FT (18) in d
 
 ## 7.1 Zielbild von FT (18)
 
-FT (18) liefert eine read-only Settings-Infrastruktur mit:
+FT (18) liefert eine Settings-Infrastruktur mit:
 
 - zentraler Registry,
 - Scope-Auflösung (`GLOBAL`, `ROLE`, `USER`),
 - serverseitiger Auflösung (kein Frontend-Fallback auf Defaults),
-- Contract-First Endpunkt für resolved Settings,
+- Contract-First Endpunkten fuer Resolve und Set,
 - zentralem Frontend-Provider und Landing-Page unter "Einstellungen".
-
-Es gibt bewusst keinen Save-Flow in der UI.
 
 ## 7.2 Relevante Dateien (Backend)
 
 ### Shared Contract und Schema
 
 - `shared/routes.ts`
-  Enthält den neuen Contract `api.userSettings.getResolved`.
+  Enthaelt die Contracts `api.userSettings.getResolved` und `api.userSettings.set`.
 - `shared/schema.ts`
   Enthält:
   - `roles`
@@ -441,13 +462,13 @@ Damit kann die Landing-Page die Herkunft eines Werts anzeigen, ohne Resolverlogi
 
 ### 7.8.2 Landing-Page
 
-`SettingsPage` ist bewusst read-only und zeigt:
+`SettingsPage` zeigt je Key:
 
 - Label
 - wirksamen Wert (`resolvedValue`)
 - Herkunft (`resolvedScope`)
 
-Keine Edit-Felder, keine Save-Aktionen.
+und bietet im Ist-Stand Save-Flows fuer ausgewaehlte Keys (Scope- und Wertevalidierung weiterhin serverseitig).
 
 ## 7.9 Seed und Migration
 
@@ -478,7 +499,7 @@ Aktuell wird für FT (18) `req.userId` übergangsweise über `SETTINGS_USER_ID` 
 
 Die Rollenauflösung selbst bleibt trotzdem DB-basiert (`users -> roles`) und wird nicht aus Frontenddaten abgeleitet. "Serverseitig" bedeutet hier die autoritative Rollenquelle aus der DB, nicht bereits einen vollständig authentifizierten Session-Kontext.
 
-Diese DB-basierte Rollenauflösung ist das autoritative Modell. Eine eventuelle Header-Nutzung in anderen Bereichen ist nicht als Rollen- oder Berechtigungsmodell zu interpretieren, sondern nur als technischer Kontext für Entwicklung und UI-Simulation. Für den aktuellen Kalender-/Terminbereich bedeutet das: Es gibt dort derzeit keine belastbare serverseitige Rollenbegrenzung, solange Rollenentscheidungen auf dem nicht-autoritativen Signal `x-user-role` beruhen.
+Diese DB-basierte Rollenauflösung ist das autoritative Modell. Rollenentscheidungen im Kalender-/Terminbereich erfolgen serverseitig über `req.userContext.roleKey`. Client-Header sind keine Rollenquelle.
 
 ## 7.11 Verifikation von FT (18)
 
@@ -491,8 +512,9 @@ Empfohlene manuelle Prüfpunkte:
 
 1. Menüpunkt "Einstellungen" öffnet Landing-Page.
 2. Endpunkt `GET /api/user-settings/resolved` liefert Payload mit `resolvedScope`.
-3. Bei Fehler zeigt Landing-Page sinnvollen Fehlerzustand mit Retry.
-4. ROLE-Werte greifen nur für die zum User gehörige DB-Rolle.
+3. Endpunkt `PATCH /api/user-settings` persistiert gueltige Werte und liefert aktualisierte resolved Payload.
+4. Bei Fehler zeigt Landing-Page sinnvollen Fehlerzustand mit Retry.
+5. ROLE-Werte greifen nur für die zum User gehörige DB-Rolle.
 
 ## 7.12 Follow-up nach FT (18)
 
@@ -506,7 +528,142 @@ Write-Endpunkte für Settings sollten dieselben Regeln wiederverwenden:
 
 ---
 
-# 8. FT (19) Attachments für Customer/Employee - Implementierungsleitfaden (Ist-Stand)
+# 8. FT (14) User Roles - Implementierungsleitfaden (Ist-Stand)
+
+Dieser Abschnitt dokumentiert die konkrete technische Umsetzung von FT (14): serverseitiger Rollen-Request-Kontext, Lock-Autorisierung, Entfernung der Header-Rollenquelle und minimale Benutzer-/Rollenverwaltung.
+
+## 10.1 Zielbild
+
+FT (14) etabliert ein autoritatives Rollenmodell im Backend ohne Auth-Replattforming:
+
+- Rollenquelle ausschließlich DB (`users -> roles`)
+- Request-Kontext `req.userContext = { userId, roleCode, roleKey }`
+- kein `x-user-role` als Autorisierungsquelle
+- Termin-Lock-Regel serverseitig und deterministisch (`403`, `APPOINTMENT_LOCKED`)
+- minimale Admin-UI fuer Benutzerrollen
+
+## 10.2 Relevante Dateien (Backend)
+
+- `server/middleware/requestUserContext.ts`
+- `server/middleware/resolveUserRole.ts`
+- `server/bootstrap/assertConfiguredSystemUser.ts`
+- `server/routes.ts` (globale API-Middlewarekette)
+- `server/controllers/appointmentsController.ts`
+- `server/services/appointmentsService.ts`
+- `server/controllers/employeesController.ts`
+- `server/repositories/usersRepository.ts`
+- `server/services/usersService.ts`
+- `server/controllers/usersController.ts`
+- `server/routes/usersRoutes.ts`
+- `shared/routes.ts` (Contracts fuer `/api/users`)
+
+## 10.3 Relevante Dateien (Frontend)
+
+- `client/src/components/UsersPage.tsx`
+- `client/src/components/Sidebar.tsx`
+- `client/src/pages/Home.tsx`
+- Header-Entfernung in Termin-/Kalender-/Listenrequests (keine `x-user-role`-Headers mehr)
+
+## 10.4 Middleware- und Startup-Fluss
+
+### 10.4.1 Request-Middleware (API)
+
+In `server/routes.ts` ist die Reihenfolge:
+
+1. `attachRequestUserContext`
+2. `resolveUserRole`
+3. bestehende API-Route-Module
+
+Damit ist `req.userContext` vor jedem API-Handler verfügbar.
+
+### 10.4.2 Startup-Guard
+
+`assertConfiguredSystemUser()` wird vor Route-Registrierung ausgeführt und blockiert den Serverstart, wenn:
+
+- `SETTINGS_USER_ID` fehlt oder ungueltig ist
+- User nicht existiert
+- User inaktiv ist
+- User nicht `ADMIN` ist
+
+## 10.5 Rollenmodell
+
+DB-Rollen:
+
+- `READER`
+- `DISPATCHER`
+- `ADMIN`
+
+Kanonische Rollenkeys im Request-Kontext:
+
+- `LESER`
+- `DISPONENT`
+- `ADMIN`
+
+Mapping erfolgt zentral über `mapDbRoleCodeToCanonicalRole(...)`.
+
+## 10.6 Lock-Autorisierung im Terminbereich
+
+Sperrregel:
+
+- Termin gesperrt + `roleKey !== ADMIN` -> Blockierung
+
+Betroffene Mutationspfade:
+
+- `PATCH /api/appointments/:id`
+- `DELETE /api/appointments/:id`
+
+Fehlerformat:
+
+- HTTP `403`
+- JSON mit `field: "APPOINTMENT_LOCKED"`
+
+## 10.7 Entfernte Header-Abhaengigkeiten
+
+`x-user-role` wurde als Rollenquelle vollständig entfernt:
+
+- keine Auswertung im Backend-Controller
+- keine Setzung in Client-Fetches
+
+Rollenentscheidungen laufen ausschließlich über `req.userContext.roleKey`.
+
+## 10.8 Benutzer-/Rollenverwaltung
+
+Neue Endpunkte:
+
+- `GET /api/users`
+- `PATCH /api/users/:id` mit `{ roleCode }`
+
+Regeln:
+
+- nur `ADMIN` darf Rollen wechseln
+- letzter `ADMIN` darf nicht verloren gehen
+- Self-Demotion des letzten `ADMIN` ist blockiert
+
+UI:
+
+- neuer Screen `UsersPage`
+- genau ein zusätzlicher Sidebar-Eintrag `Benutzerverwaltung`
+
+## 10.9 Verifikation von FT (14)
+
+Technisch geprüft:
+
+- `npm run check`
+- `npm run build`
+
+Manuelle Prüfpunkte:
+
+1. Server startet nur mit gültigem `SETTINGS_USER_ID` auf aktivem ADMIN-User.
+2. `GET /api/users` als Nicht-ADMIN -> `403`.
+3. Rollenwechsel als ADMIN funktioniert.
+4. Demotion des letzten ADMIN wird blockiert.
+5. Gesperrter Termin:
+   - ADMIN darf ändern/löschen
+   - Nicht-ADMIN erhält `403` mit `APPOINTMENT_LOCKED`.
+
+---
+
+# 9. FT (19) Attachments für Customer/Employee - Implementierungsleitfaden (Ist-Stand)
 
 Dieser Abschnitt dokumentiert die technische Umsetzung von FT (19) vollständig und operativ. Fokus ist die reproduzierbare Umsetzung über alle Schichten hinweg mit klarer Semantik für Download und Delete.
 
@@ -801,7 +958,7 @@ Mögliche Folgearbeiten außerhalb des aktuellen Scopes:
 
 ---
 
-# 9. FT (20) Demo Seed/Purge - Implementierungsleitfaden (Ist-Stand)
+# 10. FT (20) Demo Seed/Purge - Implementierungsleitfaden (Ist-Stand)
 
 Dieser Abschnitt dokumentiert die konkrete Umsetzung fuer Demo-Seeding mit Seed-Run-Tracking, Sauna-CSV-Kopplung, Template-Rendering und idempotentem Purge.
 

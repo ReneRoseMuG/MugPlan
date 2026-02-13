@@ -4,12 +4,6 @@
 
 Dieses Dokument beschreibt den Ist‑Stand der MuGPlan‑Architektur so, dass ein fremder Entwickler nach dem Lesen verlässlich entscheiden kann, wo neuer Code hingehört, wie fachliche Regeln abgesichert werden, wie Daten zwischen Frontend und Backend fließen und welche bestehenden Patterns einzuhalten sind.
 
-## Was gerade schiefgelaufen ist
-
-In diesem Canvas‑Modus ist für Tool‑Änderungen nicht der Dateiname entscheidend, sondern das intern „aktive“ Dokument. Obwohl du im UI architecture.md ausgewählt hast, war für die Tool‑Schnittstelle weiterhin implementation.md das aktive Ziel. Deshalb sind meine letzten Änderungen versehentlich dort gelandet. Ich habe implementation.md jetzt ausdrücklich geschlossen und schreibe ab hier nur noch in dieses Architektur‑Dokument.
-
----
-
 # 1. Systemüberblick
 
 ## 1.1 Komponenten
@@ -74,7 +68,7 @@ Ein Termin ist fachlich nur gültig, wenn er einem Projekt zugeordnet ist. Flows
 
 Ein Mitarbeiter darf nicht zeitlich überschneidend mehreren Terminen zugewiesen sein. Diese Hard-Rule bleibt fachlich verbindlich und muss bei Mehrbenutzer-Disposition serverseitig blockierend durchgesetzt werden, weil Client‑Prüfungen allein nicht genügen. Der aktuelle Ist‑Stand ist hierfür jedoch noch nicht zuverlässig verifiziert und die vollständige serverseitige Umsetzung ist nicht eindeutig bestätigt.
 
-Termine gelten ab ihrem Startdatum als gesperrt. Nicht‑Admins dürfen gesperrte Termine nicht verändern; Admins dürfen weiterhin bearbeiten. Diese Regel ist sowohl Teil des API‑Contracts (Lock‑Information) als auch Teil der UI‑Interaktionslogik. Im aktuellen Ist‑Stand des Kalender‑/Terminbereichs wird die serverseitige Unterscheidung Admin/Nicht‑Admin jedoch über das vom Client gesendete Signal `x-user-role` getroffen; das ist kein autoritatives Rollen‑ oder Berechtigungsmodell.
+Termine gelten ab ihrem Startdatum als gesperrt. Nicht‑Admins dürfen gesperrte Termine nicht verändern; Admins dürfen weiterhin bearbeiten. Diese Regel ist sowohl Teil des API‑Contracts (Lock‑Information) als auch Teil der UI‑Interaktionslogik. Im aktuellen Ist‑Stand erfolgt die serverseitige Unterscheidung Admin/Nicht‑Admin über den serverseitig aufgebauten Request‑Kontext `req.userContext.roleKey`.
 
 ---
 
@@ -130,7 +124,7 @@ Fachfehler entstehen, wenn ein Request formal korrekt ist, aber gegen Regeln ver
 
 ## 4.5 Rolleninformation als Request‑Kontext
 
-Das autoritative Rollenmodell ist serverseitig und wird über die Datenbankbeziehungen `users -> roles` abgeleitet. Client‑seitige Header wie `x-user-role` sind keine Rollen‑ oder Autorisierungsquelle. Wenn solche Header im Ist‑Stand verwendet werden, gelten sie ausschließlich als nicht‑autoritatives Dev‑/Simulationssignal; daraus dürfen keine Berechtigungen, keine Freigaben und keine Sicherheitsentscheidungen abgeleitet werden. Eine Ablösung solcher Header erfolgt in einem späteren Schritt, sobald ein belastbarer Authentifizierungs‑ und Identitätskontext etabliert ist.
+Das autoritative Rollenmodell ist serverseitig und wird über die Datenbankbeziehungen `users -> roles` abgeleitet. Der Request‑Kontext wird über `attachRequestUserContext` (liefert `req.userId` aus `SETTINGS_USER_ID`) und `resolveUserRole` (liefert `req.userContext = { userId, roleCode, roleKey }`) aufgebaut. Client‑seitige Header sind keine Rollen‑ oder Autorisierungsquelle.
 
 # 5. Erweiterungspunkte
 
@@ -174,7 +168,7 @@ Kunden, Projekte und Mitarbeiter werden primär archiviert. Features dürfen nic
 
 ## 6.4 Lock‑Regel ist serverseitig durchzusetzen
 
-Die UI darf Locks respektieren und Interaktionen blockieren, aber die Durchsetzung muss serverseitig erfolgen. Andernfalls entstehen Manipulationsmöglichkeiten und schwer reproduzierbare Zustände. Im aktuellen Kalender‑/Termin‑Iststand ist diese Durchsetzung noch nicht belastbar autoritativ, weil die Rolleninformation serverseitig aus dem clientübermittelten Signal `x-user-role` stammt.
+Die UI darf Locks respektieren und Interaktionen blockieren, aber die Durchsetzung muss serverseitig erfolgen. Andernfalls entstehen Manipulationsmöglichkeiten und schwer reproduzierbare Zustände. Im aktuellen Kalender‑/Termin‑Iststand wird diese Durchsetzung serverseitig über `req.userContext.roleKey` erzwungen.
 
 ## 6.5 Kalenderdaten sind ein Aggregat
 
@@ -190,13 +184,13 @@ Panels innerhalb eines Screens sollen über klar definierte Props und Query‑Ho
 
 In der Projektdokumentation ist eine Auffälligkeit im Kalender‑Repository vermerkt, die auf fehlende oder inkonsistente Variablen hindeutet. Weil dieser Pfad sowohl fachlich zentral als auch stark vernetzt ist, ist bei Arbeiten rund um Kalenderdaten der erste Schritt immer, Build und Typecheck in diesem Bereich zu verifizieren, bevor neue Logik ergänzt wird.
 
-## 7.2 Dokumentations‑Lücke: Endpunktliste und Query‑Keys
+## 7.2 Dokumentations‑Lücke: Drift‑Kontrolle zwischen Doku und Code
 
-Der Ist‑Stand der Architektur ist gut beschreibbar, aber für wirklich schnelle Feature‑Arbeit fehlt als nächster Ausbau eine explizite Zuordnung „welcher Screen nutzt welche Endpunkte“ und „welche Query‑Keys gelten als kanonisch“. Diese Lücke sollte im nächsten Schritt geschlossen werden, damit ein Fremdentwickler ohne Code‑Suche zuverlässig mutieren kann.
+Der Ist‑Stand enthält bereits konkrete Endpunkt‑ und Query‑Key‑Zuordnungen. Was weiterhin fehlt, ist eine automatische Drift‑Kontrolle (z. B. CI‑Check), die bei Contract‑Änderungen auf veraltete Stellen in `architecture.md`/`implementation.md` hinweist.
 
 ## 7.3 Rollen- und Auth‑Konzept ist aktuell minimal
 
-Das autoritative Rollenmodell ist serverseitig über `users -> roles` definiert. Request‑Header wie `x-user-role` sind im Ist‑Stand lediglich ein technisches Dev‑/Simulationssignal und kein Berechtigungsmodell. Solange im Kalender‑/Terminbereich Rollenentscheidungen auf diesem Signal beruhen, existiert dort keine belastbare serverseitige Rollenbegrenzung.
+Das autoritative Rollenmodell ist serverseitig über `users -> roles` definiert und wird als `req.userContext` in den API‑Pfad injiziert. Der aktuelle Betriebsmodus nutzt dafür einen konfigurierten System‑User (`SETTINGS_USER_ID`) statt echter Benutzer‑Session. Das ist technisch konsistent, aber kein vollständiges Multi‑User‑Auth‑Modell.
 
 ---
 
@@ -260,6 +254,33 @@ Query‑Keys sind Teil der Architektur, weil sie steuern, welche Teile der UI ko
 
 Für Erweiterungen ist die Leitplanke, neue Query‑Keys nicht ad hoc in Komponenten zu erfinden, sondern in einem zentralen Hook‑Bereich festzulegen, damit alle Stellen dieselbe Semantik teilen.
 
+## 10.3 Kanonische Filter-State-API (`useListFilters`)
+
+Für Listen- und kalendernahe Filterzustände gilt im Ist‑Stand ein einheitliches Muster über `client/src/hooks/useListFilters.ts`.
+
+Der Hook kapselt:
+
+* `filters` als lokalen, typisierten Filterstate,
+* `page` als Pagination-State,
+* `setFilter(key, value)` mit deterministischem `page`‑Reset auf `1`,
+* `resetFilters()` mit Reset von `filters` und `page`,
+* optionale Ableitung von `queryParams`.
+
+Damit ist die Kopplung „Filteränderung => Pagination auf Seite 1“ als Architekturregel zentralisiert statt seitenweise dupliziert.
+
+## 10.4 Integrationsstand der Filter-API
+
+Aktive Integration von `useListFilters`:
+
+* `client/src/components/CustomersPage.tsx`
+* `client/src/components/EmployeesPage.tsx`
+* `client/src/components/ProjectsPage.tsx`
+* `client/src/pages/Home.tsx` (Kalender-Mitarbeiterfilter)
+
+Bewusster Sonderfall:
+
+* `client/src/components/AppointmentsListPage.tsx` nutzt weiterhin lokalen Filter- und Pagination-State mit identischer Regel „Filteränderung setzt Seite auf 1“.
+
 ---
 
 # 11. Ende‑zu‑Ende‑Beispiel: Termin verschieben mit Lock und Fachfehlern
@@ -270,7 +291,7 @@ Die UI startet Drag‑and‑Drop. Aus der Zielposition berechnet sie das neue Da
 
 ## 11.2 Ablauf mit Lock
 
-Vor dem Start des Drags prüft die UI das Lock‑Flag. Wenn der Termin gesperrt ist und der Nutzer kein Admin ist, wird die Interaktion blockiert und es erfolgt keine Mutation. Im aktuellen Ist‑Stand basiert die serverseitige Lock‑Entscheidung dabei auf dem nicht‑autoritativen Signal `x-user-role` und stellt daher noch keine belastbare Berechtigungsprüfung dar.
+Vor dem Start des Drags prüft die UI das Lock‑Flag. Wenn der Termin gesperrt ist und der Nutzer kein Admin ist, wird die Interaktion blockiert und es erfolgt keine Mutation. Der Server erzwingt dieselbe Regel über den Rollenwert aus `req.userContext.roleKey`.
 
 ## 11.3 Ablauf bei Überschneidungsfehler
 
@@ -368,7 +389,7 @@ Im Projekt-Dump sind die folgenden Endpunktgruppen nachweisbar (inkl. HTTP-Metho
 
 ### C1.5 Employees
 
-* `GET /api/employees` (Query `active=false|all` ist im Controller ersichtlich).
+* `GET /api/employees` (Query `scope=active|all`).
 * `GET /api/employees/:id`.
 * `POST /api/employees`.
 * `PUT /api/employees/:id`.
@@ -393,17 +414,17 @@ Im Projekt-Dump sind die folgenden Endpunktgruppen nachweisbar (inkl. HTTP-Metho
 
 * `DELETE /api/tours/:id`.
 
-* `GET /api/team-employees`.
+* `GET /api/teams/:teamId/employees`.
 
-* `POST /api/team-employees/assign`.
+* `POST /api/teams/:teamId/employees`.
 
-* `DELETE /api/team-employees/remove`.
+* `DELETE /api/teams/:teamId/employees/:employeeId`.
 
-* `GET /api/tour-employees`.
+* `GET /api/tours/:tourId/employees`.
 
-* `POST /api/tour-employees/assign`.
+* `POST /api/tours/:tourId/employees`.
 
-* `DELETE /api/tour-employees/remove`.
+* `DELETE /api/tours/:tourId/employees/:employeeId`.
 
 ### C1.7 Project Status und Beziehungen
 
@@ -417,27 +438,26 @@ Im Projekt-Dump sind die folgenden Endpunktgruppen nachweisbar (inkl. HTTP-Metho
 
 * `DELETE /api/project-status/:id`.
 
-* `GET /api/project-status-relations`.
+* `GET /api/projects/:projectId/statuses`.
 
-* `POST /api/project-status-relations/add`.
+* `POST /api/projects/:projectId/statuses`.
 
-* `DELETE /api/project-status-relations/remove`.
+* `DELETE /api/projects/:projectId/statuses/:statusId`.
 
 ### C1.8 Help Texts
 
-* `GET /api/help-texts/key/:helpKey`.
+* `GET /api/help-texts/:helpKey`.
 * `GET /api/help-texts` (Query `query` optional).
-* `GET /api/help-texts/:id`.
+* `GET /api/help-texts/by-id/:id`.
 * `POST /api/help-texts`.
 * `PUT /api/help-texts/:id`.
 * `PATCH /api/help-texts/:id/active`.
 * `DELETE /api/help-texts/:id`.
 
-### C1.9 Events
+### C1.9 Users / Roles
 
-* `GET /api/events`.
-* `POST /api/events`.
-* `DELETE /api/events/:id`.
+* `GET /api/users`.
+* `PATCH /api/users/:id` (Body: `roleCode`).
 
 ## C2. Request-Konventionen
 
@@ -445,9 +465,9 @@ Im Projekt-Dump sind die folgenden Endpunktgruppen nachweisbar (inkl. HTTP-Metho
 
 Für Kalender- und einige Listen-Endpoints wird ein Date-only-Format `YYYY-MM-DD` verwendet. Für den Kalender ist `fromDate`/`toDate` verpflichtend, und `toDate` darf nicht vor `fromDate` liegen.
 
-### C2.2 Rollen-Header (nicht autoritativ)
+### C2.2 Request-User-Kontext (autoritativ)
 
-Der Header `x-user-role` (z. B. `ADMIN`) kann im Ist‑Stand als technisches Dev‑/Simulationssignal auftreten, insbesondere im Kalender‑/Terminfluss. Er ist keine autoritative Rollen‑ oder Autorisierungsquelle; Berechtigungen und Sicherheitsentscheidungen dürfen daraus nicht abgeleitet werden.
+Der autoritative Rollenwert kommt aus `req.userContext.roleKey`. Dieser Kontext wird serverseitig über `attachRequestUserContext` und `resolveUserRole` aufgebaut. Client‑Header sind keine Rollenquelle.
 
 ## C3. React Query: Query Keys und Invalidierung
 
@@ -484,6 +504,7 @@ Listen- und Verwaltungsseiten (Ist-Stand):
 * `client/src/components/TeamManagement.tsx` (Board-only).
 * `client/src/components/TourManagement.tsx` (Board-only).
 * `client/src/components/AppointmentsListPage.tsx` (Tabelle-only; eigener Navigationspunkt "Terminliste").
+* `client/src/components/UsersPage.tsx` (Tabelle/ListLayout fuer Rollenwechsel).
 
 Dialog-/Picker-Listen:
 
@@ -549,7 +570,7 @@ Routes:
 * `server/routes/projectStatusRoutes.ts`, `server/routes/projectStatusRelationsRoutes.ts`.
 * `server/routes/helpTextsRoutes.ts`.
 * `server/routes/noteTemplatesRoutes.ts`, `server/routes/notesRoutes.ts`.
-* `server/routes/eventsRoutes.ts`.
+* `server/routes/usersRoutes.ts`.
 
 Controller/Service/Repository (Beispiel Kalender-Terminfluss, explizit dokumentiert):
 
@@ -577,7 +598,7 @@ MuGPlan nutzt wouter für Routing. In den vorhandenen Dokumenten ist die Screen�
 
 Als belastbarer Ist‑Stand gelten folgende „Navigationspunkte → Screen‑Komponenten“.
 
-Der Home‑Bereich rendert den Kalender und bindet den globalen Mitarbeiterfilter ein. Die drei Kalenderansichten bestehen aus `CalendarMonthView`, `CalendarWeekView` und `CalendarYearView`, und der Filter ist `CalendarEmployeeFilter`.
+Der Home‑Bereich rendert den Kalender und bindet den globalen Mitarbeiterfilter ein. Die drei Kalenderansichten bestehen aus `CalendarMonthView`, `CalendarWeekView` und `CalendarYearView`, und der Filter ist `CalendarEmployeeFilter`. Der Filterzustand wird in `Home.tsx` über `useListFilters` gehalten und als `employeeFilterId` an die Views durchgereicht.
 
 Die Listen- und Verwaltungsseiten basieren verbindlich auf `ListLayout` als Shell. Board-Ansichten werden ausschließlich über `BoardView` gerendert, Tabellenansichten ausschließlich über `TableView`.
 
@@ -589,7 +610,7 @@ Navigationspunkte im Home-/Sidebar-Flow:
 * Terminliste: `appointmentsList`.
 * Projektplanung: `projectList`, `project`, `customerList`, `customer`.
 * Mitarbeiterverwaltung: `employees`, `teams`, `tours`.
-* Administration: `noteTemplates`, `projectStatus`, `helpTexts`, `settings`, `demoData`.
+* Administration: `noteTemplates`, `projectStatus`, `helpTexts`, `users`, `settings`, `demoData`.
 
 Für neues Routing ist die Leitplanke, dass ein neuer Screen nicht „irgendwo“ gerendert wird, sondern als eigener Navigationspunkt mit klarer Route und konsistentem Layoutmuster eingeführt wird.
 
@@ -601,7 +622,7 @@ MuGPlan unterscheidet praktisch drei Fehlerklassen, die im Backend verschieden b
 
 Validierungsfehler entstehen, wenn Request‑Body oder Query nicht dem Zod‑Contract entsprechen. Die zentrale Helper‑Funktion `handleZodError` antwortet in diesem Fall mit HTTP 400 und einem JSON‑Body, der mindestens `message` sowie ein Feld `field` enthält, das aus dem Zod‑Path gebildet wird.
 
-Fachfehler entstehen, wenn der Request formal korrekt ist, aber gegen Regeln verstößt, insbesondere im Terminbereich. Im Appointment‑Controller wird hierfür ein domänenspezifischer Error‑Typ aus dem Service erkannt (AppointmentError) und dann mit dem im Error enthaltenen HTTP‑Status sowie `{ message }` beantwortet. Für die Sperrlogik ist das im Ist‑Stand nachweisbar; für die serverseitige Überschneidungsblockierung bei Mitarbeiterzuweisungen ist der Nachweis im aktuellen Stand nicht eindeutig abgeschlossen.
+Fachfehler entstehen, wenn der Request formal korrekt ist, aber gegen Regeln verstößt, insbesondere im Terminbereich. Im Appointment‑Controller wird hierfür ein domänenspezifischer Error‑Typ aus dem Service erkannt (AppointmentError) und dann mit dem im Error enthaltenen HTTP‑Status sowie `{ message, field? }` beantwortet. Fuer die Sperrlogik ist das maschinenlesbare Feld `APPOINTMENT_LOCKED` im Ist‑Stand nachweisbar; fuer die serverseitige Ueberschneidungsblockierung bei Mitarbeiterzuweisungen ist der Nachweis im aktuellen Stand nicht eindeutig abgeschlossen.
 
 Nicht‑Gefunden‑Fehler sind explizit als 404 mit `{ message }` umgesetzt.
 
@@ -629,7 +650,7 @@ Dieses Vorgehen verhindert Abweichungen zwischen Client‑Erwartung und Server�
 
 Der Kalenderbereich ist der am besten dokumentierte End‑to‑End‑Flow und kann als Referenz dienen, wie MuGPlan neue Features „richtig“ schneidet.
 
-Der Datenfluss beginnt im Home‑Bereich, der `currentDate` und `employeeFilterId` verwaltet und diese Props an die drei Views weiterreicht. Alle Views nutzen denselben Hook `useCalendarAppointments`, der das Range‑Interval an den Endpunkt `/api/calendar/appointments` sendet.
+Der Datenfluss beginnt im Home‑Bereich, der `currentDate` und den Kalenderfilterzustand (`calendarFilters.employeeId`) verwaltet und diese Props an die drei Views weiterreicht. Alle Views nutzen denselben Hook `useCalendarAppointments`, der das Range‑Interval an den Endpunkt `/api/calendar/appointments` sendet.
 
 Auf der Serverseite wird der Request in `appointmentsController.listCalendarAppointments` validiert, im Service aggregiert (`appointmentsService.listCalendarAppointments`) und in Repositories aufgelöst (`appointmentsRepository.*`, `projectStatusRepository.*`). Der Service reichert die Termine um Projekt, Kunde, Tour, Mitarbeiter, Projektstatus und Lock‑Flag an.
 
@@ -702,7 +723,7 @@ Die Terminliste ist ein table-only End-to-End-Flow mit Contract-First-Schnitt:
 
 Filter-/Paging-Modell:
 
-* Filter: `employeeId`, `projectId`, `customerId`, `tourId`, `dateFrom`, `dateTo`, `allDayOnly`, `withStartTimeOnly`, `singleEmployeeOnly`, `lockedOnly`.
+* Filter: `employeeId`, `projectId`, `customerId`, `tourId`, `dateFrom`, `dateTo`, `allDayOnly`, `withStartTimeOnly`, `lockedOnly`.
 * Paging: `page` (Default 1), `pageSize` (Default 25).
 * Frontend setzt bei jeder Filteränderung die Seite deterministisch auf `1` zurück.
 
@@ -720,7 +741,7 @@ Dieser Teil dokumentiert den nachträglich eingeführten Architekturstand für F
 
 ## D1. Zweck und Einordnung im Gesamtsystem
 
-FT (18) führt eine read-only Settings-Infrastruktur ein, deren Primärziel nicht ein sofortiger Edit-Flow ist, sondern ein belastbares Fundament für spätere Schreibpfade und generische Settings-UIs.
+FT (18) fuehrt eine Settings-Infrastruktur ein, deren Primaerziel ein belastbares Fundament fuer serverseitig aufgeloeste und validierte Einstellungen ist.
 
 Die Architekturentscheidung lautet: Settings werden serverseitig aufgelöst und als wirksame Werte inkl. Herkunft geliefert. Das Frontend berechnet keine Defaults, keine Scope-Priorisierung und keine Rollenlogik lokal.
 
@@ -846,13 +867,13 @@ Die Zielarchitektur sieht echten Auth-Kontext vor (`req.userId` aus Auth-Middlew
 
 Wichtig: Trotz Übergang ist die Rollenauflösung für Settings weiterhin autoritativ serverseitig DB-basiert (`users -> roles`) und nicht aus Client-Headern abgeleitet. "Serverseitig" bedeutet hier die autoritative Rollenquelle aus der DB, nicht bereits einen vollständig authentifizierten Session-Kontext.
 
-## D9. Frontend-Architektur für read-only Settings
+## D9. Frontend-Architektur fuer Settings
 
 FT (18) erweitert das Frontend um einen zentralen Server-State-Zugriff:
 
 - `SettingsProvider` als globaler Provider über React Query.
 - `useSettings`/`useSetting` als standardisierte Hook-Oberfläche.
-- `SettingsPage` als read-only Landing-Page.
+- `SettingsPage` als UI fuer Lesen und selektives Schreiben von Settings.
 
 Integration erfolgt über den bestehenden Menüpunkt "Einstellungen" im vorhandenen Home/View-Flow. Es wurde kein paralleler Navigationspfad eingeführt.
 
@@ -1187,12 +1208,83 @@ Kein globales Schema-Sync als Pflichtschritt fuer diesen Use-Case. Dadurch werde
 
 
 
-## Rollenmodell - autoritativ
+## Teil G - Architektur-Erweiterung FT (14): Autoritativer Rollen-Request-Kontext
 
-Der Rollen- und Benutzerkontext wird serverseitig pro API-Request aufgebaut. Grundlage ist ein deterministischer System-User (`SETTINGS_USER_ID`), der in `attachRequestUserContext` gesetzt und in `resolveUserRole` gegen `users -> roles` aufgeloest wird. Der berechnete Kontext liegt in `req.userContext = { userId, roleCode, roleKey }` vor.
+Dieser Teil dokumentiert den Architekturstand nach FT (14). Fokus ist die serverseitige Rollenaufloesung ohne Client-Header als Autorisierungsquelle und ohne Auth-Replattforming.
 
-Client-Header (insbesondere `x-user-role`) sind keine Rollenquelle und werden nicht mehr zur Autorisierung verwendet. Berechtigungsrelevante Entscheidungen erfolgen ausschliesslich im Backend ueber `req.userContext.roleKey`.
+### G1. Zielbild
 
-Die Lock-Regel fuer Termine ist fachlich serverseitig erzwungen: gesperrte Termine duerfen nur mit Rolle `ADMIN` geaendert oder geloescht werden; andere Rollen erhalten einen deterministischen `403` mit maschinenlesbarem Feld `APPOINTMENT_LOCKED`.
+FT (14) fuehrt einen stabilen Rollen-Kontext auf Request-Ebene ein:
 
-Fuer den Betrieb ohne Auth-Framework gilt: der konfigurierte System-User muss existieren, aktiv sein und die Rolle `ADMIN` besitzen. Ist das nicht gegeben, startet der Server nicht.
+- Rollenquelle ausschliesslich DB (`users -> roles`)
+- Request-Kontext `req.userContext = { userId, roleCode, roleKey }`
+- fachliche Autorisierung im Backend auf Basis `req.userContext.roleKey`
+- keine Ableitung von Berechtigungen aus Client-Headern
+
+### G2. Middleware-Kette und Reihenfolge
+
+Die API-Middleware-Reihenfolge ist fest:
+
+1. `attachRequestUserContext`
+2. `resolveUserRole`
+3. Route-Handler
+
+`attachRequestUserContext` liefert den technischen Benutzerkontext (`req.userId`) aus `SETTINGS_USER_ID`.
+
+`resolveUserRole` laedt User und Rolle aus der DB und erzeugt den kanonischen Rollenkey (`LESER`, `DISPONENT`, `ADMIN`) im Request.
+
+### G3. Betriebsmodus ohne Auth-Framework
+
+FT (14) arbeitet bewusst ohne Login-/Session-Replattforming. Stattdessen gilt ein deterministischer System-User:
+
+- `SETTINGS_USER_ID` muss gesetzt und gueltig sein
+- User muss existieren und aktiv sein
+- User muss Rolle `ADMIN` besitzen
+
+Der Start wird serverseitig blockiert, wenn eine dieser Bedingungen nicht erfuellt ist.
+
+### G4. Autorisierung im Terminbereich
+
+Die Lock-Regel wird serverseitig durchgesetzt:
+
+- gesperrter Termin + `roleKey !== ADMIN` -> Blockierung
+- HTTP `403`
+- maschinenlesbares Feld `APPOINTMENT_LOCKED`
+
+Betroffene Mutationspfade:
+
+- `PATCH /api/appointments/:id`
+- `DELETE /api/appointments/:id`
+
+### G5. Entfernte Rollenquellen
+
+Client-Header (insbesondere `x-user-role`) sind keine Rollenquelle mehr.
+
+Konsequenz:
+
+- keine Header-Auswertung in Backend-Controllern
+- keine Header-Setzung in Client-Fetches fuer Rollenentscheidungen
+
+### G6. Benutzer-/Rollenverwaltung (minimal)
+
+FT (14) fuehrt einen minimalen Admin-Pfad fuer Rollenverwaltung ein:
+
+- `GET /api/users`
+- `PATCH /api/users/:id` (`roleCode`)
+
+Schutzregeln:
+
+- nur ADMIN darf Rollen wechseln
+- letzter ADMIN muss erhalten bleiben
+- Self-Demotion des letzten ADMIN ist blockiert
+
+### G7. Schichtgrenzen
+
+FT (14) haelt die Schichtgrenzen explizit ein:
+
+- Middleware: baut Kontext (`req.userId`, `req.userContext`)
+- Controller: parse/transport und Fehlerabbildung
+- Services: fachliche Autorisierung und Durchsetzung
+- Repository: DB-Zugriff fuer Rollen-/Userdaten
+
+Damit bleibt die Autorisierungslogik nicht in UI- oder Repository-Schichten verteilt.
