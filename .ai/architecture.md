@@ -1288,3 +1288,111 @@ FT (14) haelt die Schichtgrenzen explizit ein:
 - Repository: DB-Zugriff fuer Rollen-/Userdaten
 
 Damit bleibt die Autorisierungslogik nicht in UI- oder Repository-Schichten verteilt.
+
+## Teil H - Architektur-Erweiterung FT (21): Dokumentenextraktion in Projekt-/Terminformularen
+
+Dieser Teil dokumentiert die additive Erweiterung fuer KI-gestuetzte Dokumentenextraktion aus PDF-Dateien im Formular-Kontext.
+
+### H1. Zielbild und Scope
+
+FT (21) erweitert ausschliesslich zwei UI-Kontexte:
+
+- Formular "Neues Projekt"
+- Formular "Neuer Termin"
+
+Die Funktion liefert einen editierbaren Vorschlag fuer:
+
+- Kundendaten (bestehendes Kundenschema)
+- Saunamodell als Projekt-Titelvorschlag
+- Artikelliste ohne Preise
+
+FT (21) ist rein additiv:
+
+- keine Aenderung an Domänenmodellen
+- keine Aenderung am Attachment-Modell aus FT (19)
+- keine Aenderung an Rollenlogik oder globalem Layout
+
+### H2. Schichtenkette (Backend)
+
+Die FT21-Verarbeitung folgt der festen Schichtung:
+
+- `documentExtractionRoutes`
+- `documentExtractionController`
+- `documentProcessingService`
+- `documentTextExtractor`
+- `aiExtractionService` (Provider-Interface)
+- `extractionValidator`
+
+Damit bleibt KI-Logik isoliert und ausserhalb bestehender Domänenservices.
+
+### H3. Dokumenten-Pipeline
+
+Die serverseitige Pipeline ist strikt sequenziell:
+
+1. Request empfangen (Multipart, PDF-Datei)
+2. Text aus PDF extrahieren (`documentTextExtractor`)
+3. Strukturierte Extraktion ueber Provider (`aiExtractionService`)
+4. Vollvalidierung und Normalisierung (`extractionValidator`)
+5. Ausgabe semantischer HTML-Artikelliste (`ul`, `li`, `strong`)
+6. Response an UI-Dialog, keine automatische Persistierung
+
+Invarianten:
+
+- kein Rohtext wird persistiert
+- keine Prompt-/Rohtext-Logs
+- KI-Ausgabe wird als untrusted behandelt und strikt validiert
+
+### H4. Provider-Pattern
+
+Die KI-Anbindung ist ueber ein Provider-Interface abstrahiert. Der produktive FT21-Provider ist lokal (Ollama HTTP).
+
+Wichtige Leitplanken:
+
+- keine Modellbindung ausserhalb des Providers
+- kein Repository-/Service-Layer-Zugriff aus der KI-Schicht
+- Provider austauschbar ohne Aenderung der Pipeline-Orchestrierung
+
+### H5. Scope-Logik und Uebernahme-Regeln
+
+#### H5.1 Neues Projekt
+
+Kunde uebernehmen:
+
+- kein Kunde gesetzt: Nachfrage, danach Kundennummer-Resolve
+- Kunde gesetzt: Ersetzungsnachfrage, danach Kundennummer-Resolve
+
+Projekt uebernehmen:
+
+- Titel/Beschreibung leer: direkte Uebernahme
+- Felder befuellt: Warnhinweis vor Ueberschreiben
+- Titel = Saunamodell
+- Beschreibung = semantische HTML-Artikelliste
+
+#### H5.2 Neuer Termin
+
+Kunde uebernehmen:
+
+- nur erlaubt, wenn kein Projekt gewaehlt ist
+- Kundennummer-Resolve wird ausgefuehrt
+- Kunde verbleibt als FT21-Dialogkontext bis zur Projektuebernahme
+
+Projekt uebernehmen:
+
+- nur erlaubt, wenn kein Projekt gewaehlt ist
+- neues Projekt wird erzeugt
+- Titel = Saunamodell
+- Beschreibung = semantische HTML-Artikelliste
+- neues Projekt wird im Termin gesetzt
+- Kunde ergibt sich aus der Projektverknuepfung
+
+### H6. Kundennummer als fuehrender Resolver
+
+Die Kundennummer ist fuer FT21 das primaere und verbindliche Identifikationsmerkmal.
+
+Resolver-Verhalten:
+
+- `none`: neuer Kunde kann angelegt werden
+- `single`: bestehender Kunde wird uebernommen, keine Neuanlage
+- `multiple`: Dateninkonsistenz, Prozessabbruch mit Fehler
+
+Optionaler Name-/Adressabgleich kann ergaenzen, ersetzt aber nie die Kundennummer als fuehrendes Merkmal.

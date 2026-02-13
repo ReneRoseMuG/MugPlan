@@ -1151,3 +1151,118 @@ Zusammen mit `npm run check` bilden sie den technischen Minimalnachweis fuer FT 
 
 - Bei bestimmten DB-Setups kann mysql2 eine Warnung zu `ssl-mode` ausgeben; das beeinflusst die erfolgreiche Seed/Purge-Ausfuehrung nicht.
 - Seed-Runs sind absichtlich additiv. Bereinigung erfolgt explizit ueber Purge-Endpunkt oder Verifikationsscript.
+
+---
+
+# 11. FT (21) Dokumentenextraktion - Implementierungsleitfaden (Ist-Stand)
+
+Dieser Abschnitt dokumentiert die konkrete technische Umsetzung von FT (21) fuer Projekt- und Terminformular.
+
+## 11.1 Neue Endpunkte
+
+Contract-First in `shared/routes.ts`:
+
+- `POST /api/document-extraction/extract`
+- `POST /api/document-extraction/check-customer-duplicate`
+- `POST /api/document-extraction/resolve-customer-by-number`
+
+Routenregistrierung:
+
+- `server/routes/documentExtractionRoutes.ts`
+- zentrale Einbindung in `server/routes.ts`
+
+## 11.2 Neue Services
+
+Neue FT21-Servicekette:
+
+- `server/services/documentProcessingService.ts`
+- `server/services/documentTextExtractor.ts`
+- `server/services/aiExtractionService.ts`
+- `server/services/extractionValidator.ts`
+
+Controller:
+
+- `server/controllers/documentExtractionController.ts`
+
+### 11.2.1 documentTextExtractor
+
+- PDF-Text extraktion aus textbasierten Operatoren (`Tj`, `TJ`)
+- sauberer Abbruch bei nicht extrahierbarem Inhalt
+- keine Persistierung von Dokumentrohtext
+
+### 11.2.2 aiExtractionService
+
+- Provider-Interface fuer KI-Extraktion
+- lokaler Provider: Ollama HTTP
+- keine Repository-Zugriffe in der KI-Schicht
+
+### 11.2.3 extractionValidator
+
+- strikt validierte KI-Ausgabe via Zod
+- Normalisierung der Customer-/Artikelstruktur
+- semantischer HTML-Builder nur mit `ul`, `li`, `strong`
+- keine Inline-Styles, keine Klassen, keine Layout-Markup-Ausgabe
+
+### 11.2.4 documentProcessingService
+
+- orchestriert Extraktionspipeline end-to-end
+- bietet Resolver fuer Kundennummer (`none|single|multiple`)
+
+## 11.3 UI-Integration
+
+Neue UI-Komponenten:
+
+- `client/src/components/DocumentExtractionDropzone.tsx`
+- `client/src/components/DocumentExtractionDialog.tsx`
+
+Integration:
+
+- `client/src/components/ProjectForm.tsx`
+- `client/src/components/AppointmentForm.tsx`
+
+Layout-Leitplanke eingehalten:
+
+- Dropzone nur in linker breiter Spalte
+- Position unter bestehenden Formularfeldern
+- keine Grid-/Sidebar-/globalen CSS-Aenderungen
+
+## 11.4 Validierungsstrategie
+
+Validierungsstufen:
+
+1. Request-Validierung (Scope/Parameter)
+2. Dateivalidierung (PDF, Groesse)
+3. KI-Strukturvalidierung (`422` bei strukturell ungueltiger Ausgabe)
+4. Fachvalidierung Kundennummer-Resolver:
+   - `none`: Neuanlage erlaubt
+   - `single`: bestehender Kunde verwenden
+   - `multiple`: Prozessabbruch (Dateninkonsistenz)
+
+## 11.5 Scope-Logik im Frontend
+
+Projektformular:
+
+- Kundenuebernahme mit Nachfrage/Ersetzungsdialog
+- Kundennummer-Resolver zwingend
+- Projektvorschlag uebernimmt Saunamodell + semantische Artikelliste
+
+Terminformular:
+
+- Kunden-/Projektuebernahme nur ohne bereits gewaehltes Projekt
+- Projektuebernahme erzeugt neues Projekt und setzt es direkt im Terminformular
+- Kunde wird dadurch automatisch ueber Projektbezug wirksam
+
+## 11.6 Regression und Build-Nachweis
+
+Durchgefuehrt:
+
+- `npm run typecheck`
+- `npm run check`
+- `npm run build`
+
+Bestehende Kernbereiche bleiben unveraendert in ihren Datenmodellen:
+
+- Projektformular
+- Terminformular
+- Attachment-Architektur FT (19)
+- Rollenlogik

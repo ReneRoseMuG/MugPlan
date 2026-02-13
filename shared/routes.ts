@@ -27,7 +27,83 @@ export const errorSchemas = {
   }),
 };
 
+const extractionScopeSchema = z.enum(["project_form", "appointment_form"]);
+
+const extractedCustomerSchema = z.object({
+  customerNumber: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  company: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().min(1),
+  addressLine1: z.string().nullable(),
+  addressLine2: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  city: z.string().nullable(),
+});
+
+const extractedArticleItemSchema = z.object({
+  quantity: z.string().min(1),
+  description: z.string().min(1),
+  category: z.string().min(1),
+});
+
+const extractedArticleCategorySchema = z.object({
+  category: z.string().min(1),
+  items: z.array(extractedArticleItemSchema),
+});
+
 export const api = {
+  documentExtraction: {
+    extract: {
+      method: "POST" as const,
+      path: "/api/document-extraction/extract",
+      input: z.object({
+        scope: extractionScopeSchema,
+      }).strict(),
+      responses: {
+        200: z.object({
+          customer: extractedCustomerSchema,
+          saunaModel: z.string().min(1),
+          articleItems: z.array(extractedArticleItemSchema),
+          categorizedItems: z.array(extractedArticleCategorySchema),
+          articleListHtml: z.string().min(1),
+          warnings: z.array(z.string()),
+        }),
+        400: errorSchemas.validation,
+        422: errorSchemas.validation,
+      },
+    },
+    checkCustomerDuplicate: {
+      method: "POST" as const,
+      path: "/api/document-extraction/check-customer-duplicate",
+      input: z.object({
+        customerNumber: z.string().min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          duplicate: z.boolean(),
+          count: z.number().int().min(0),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
+    resolveCustomerByNumber: {
+      method: "POST" as const,
+      path: "/api/document-extraction/resolve-customer-by-number",
+      input: z.object({
+        customerNumber: z.string().min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          resolution: z.enum(["none", "single", "multiple"]),
+          count: z.number().int().min(0),
+          customer: z.custom<typeof customers.$inferSelect>().nullable(),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
+  },
   appointments: {
     list: {
       method: 'GET' as const,

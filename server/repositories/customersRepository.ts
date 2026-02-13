@@ -30,6 +30,13 @@ export async function listCustomerNumbers(): Promise<string[]> {
   return rows.map((row) => row.customerNumber);
 }
 
+export async function getCustomersByCustomerNumber(customerNumber: string): Promise<Customer[]> {
+  return db
+    .select()
+    .from(customers)
+    .where(eq(customers.customerNumber, customerNumber.trim()));
+}
+
 export async function createCustomer(data: InsertCustomer & { fullName: string }): Promise<Customer> {
   const result = await db.insert(customers).values(data);
   const insertId = (result as any)[0].insertId;

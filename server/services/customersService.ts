@@ -9,6 +9,10 @@ export async function getCustomer(id: number): Promise<Customer | null> {
   return customersRepository.getCustomer(id);
 }
 
+export async function getCustomersByCustomerNumber(customerNumber: string): Promise<Customer[]> {
+  return customersRepository.getCustomersByCustomerNumber(customerNumber);
+}
+
 export async function createCustomer(data: InsertCustomer): Promise<Customer> {
   const fullName = `${data.lastName}, ${data.firstName}`;
   return customersRepository.createCustomer({ ...data, fullName });
