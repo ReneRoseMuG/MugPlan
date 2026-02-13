@@ -583,6 +583,49 @@ export const api = {
       },
     },
   },
+  users: {
+    list: {
+      method: "GET" as const,
+      path: "/api/users",
+      responses: {
+        200: z.array(
+          z.object({
+            id: z.number().int().positive(),
+            username: z.string(),
+            email: z.string(),
+            fullName: z.string(),
+            isActive: z.boolean(),
+            roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]).nullable(),
+            roleName: z.string().nullable(),
+          }),
+        ),
+        403: errorSchemas.validation,
+      },
+    },
+    patch: {
+      method: "PATCH" as const,
+      path: "/api/users/:id",
+      input: z.object({
+        roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+      }).strict(),
+      responses: {
+        200: z.array(
+          z.object({
+            id: z.number().int().positive(),
+            username: z.string(),
+            email: z.string(),
+            fullName: z.string(),
+            isActive: z.boolean(),
+            roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]).nullable(),
+            roleName: z.string().nullable(),
+          }),
+        ),
+        400: errorSchemas.validation,
+        403: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   // Tour employees (for Tour/Team management)
   tourEmployees: {
     list: {
@@ -1281,4 +1324,3 @@ export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
 export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
 export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
-

@@ -129,6 +129,7 @@ export function Sidebar({ onViewChange, onLogout, currentView }: SidebarProps) {
           <NavButton icon={FileText} label="Notiz Vorlagen" isActive={currentView === 'noteTemplates'} onClick={() => onViewChange('noteTemplates')} />
           <NavButton icon={ListChecks} label="Projekt Status" isActive={currentView === 'projectStatus'} onClick={() => onViewChange('projectStatus')} />
           <NavButton icon={HelpCircle} label="Hilfetexte" isActive={currentView === 'helpTexts'} onClick={() => onViewChange('helpTexts')} />
+          <NavButton icon={UsersRound} label="Benutzerverwaltung" isActive={currentView === 'users'} onClick={() => onViewChange('users')} />
           <NavButton icon={Settings} label="Einstellungen" isActive={currentView === 'settings'} onClick={() => onViewChange('settings')} />
           <NavButton icon={Settings} label="Demo-Daten" isActive={currentView === 'demoData'} onClick={() => onViewChange('demoData')} />
         </NavGroup>
@@ -140,5 +141,4 @@ export function Sidebar({ onViewChange, onLogout, currentView }: SidebarProps) {
     </div>
   );
 }
-
 

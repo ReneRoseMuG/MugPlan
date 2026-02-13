@@ -18,10 +18,11 @@ import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
+import { UsersPage } from "@/components/UsersPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData' | 'users';
 export type CalendarNavCommand = {
   id: number;
   direction: "next" | "prev";
@@ -215,6 +216,8 @@ export default function Home({ onLogout }: HomeProps) {
             <SettingsPage />
           ) : view === 'demoData' ? (
             <DemoDataPage />
+          ) : view === 'users' ? (
+            <UsersPage />
           ) : isCalendarView ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground flex flex-col">
               <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">

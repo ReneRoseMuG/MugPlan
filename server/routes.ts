@@ -23,6 +23,7 @@ import teamsRoutes from "./routes/teamsRoutes";
 import tourEmployeesRoutes from "./routes/tourEmployeesRoutes";
 import toursRoutes from "./routes/toursRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
+import usersRoutes from "./routes/usersRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   app.use("/api", attachRequestUserContext);
@@ -49,6 +50,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(projectAttachmentsRoutes);
   app.use(projectStatusRelationsRoutes);
   app.use(userSettingsRoutes);
+  app.use(usersRoutes);
 
   return httpServer;
 }
