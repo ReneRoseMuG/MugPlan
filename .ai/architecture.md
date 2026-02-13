@@ -1186,3 +1186,13 @@ Kein globales Schema-Sync als Pflichtschritt fuer diesen Use-Case. Dadurch werde
 
 
 
+
+## Rollenmodell - autoritativ
+
+Der Rollen- und Benutzerkontext wird serverseitig pro API-Request aufgebaut. Grundlage ist ein deterministischer System-User (`SETTINGS_USER_ID`), der in `attachRequestUserContext` gesetzt und in `resolveUserRole` gegen `users -> roles` aufgeloest wird. Der berechnete Kontext liegt in `req.userContext = { userId, roleCode, roleKey }` vor.
+
+Client-Header (insbesondere `x-user-role`) sind keine Rollenquelle und werden nicht mehr zur Autorisierung verwendet. Berechtigungsrelevante Entscheidungen erfolgen ausschliesslich im Backend ueber `req.userContext.roleKey`.
+
+Die Lock-Regel fuer Termine ist fachlich serverseitig erzwungen: gesperrte Termine duerfen nur mit Rolle `ADMIN` geaendert oder geloescht werden; andere Rollen erhalten einen deterministischen `403` mit maschinenlesbarem Feld `APPOINTMENT_LOCKED`.
+
+Fuer den Betrieb ohne Auth-Framework gilt: der konfigurierte System-User muss existieren, aktiv sein und die Rolle `ADMIN` besitzen. Ist das nicht gegeben, startet der Server nicht.
