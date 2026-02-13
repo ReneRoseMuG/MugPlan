@@ -18,6 +18,7 @@ import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
+import { useListFilters } from "@/hooks/useListFilters";
 import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
@@ -36,7 +37,9 @@ export default function Home({ onLogout }: HomeProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
-  const [calendarEmployeeFilterId, setCalendarEmployeeFilterId] = useState<number | null>(null);
+  const { filters: calendarFilters, setFilter: setCalendarFilter } = useListFilters({
+    initialFilters: { employeeId: null as number | null },
+  });
   const [appointmentContext, setAppointmentContext] = useState<{
     initialDate?: string;
     initialTourId?: number | null;
@@ -71,7 +74,7 @@ export default function Home({ onLogout }: HomeProps) {
       return (
         <WeekGrid
           currentDate={currentDate}
-          employeeFilterId={calendarEmployeeFilterId}
+          employeeFilterId={calendarFilters.employeeId}
           onNewAppointment={(date, options) => {
             console.info("[calendar] new appointment", { date, tourId: options?.tourId ?? null, view: "week" });
             setAppointmentContext({ initialDate: date, initialTourId: options?.tourId ?? null, returnView: "week" });
@@ -89,7 +92,7 @@ export default function Home({ onLogout }: HomeProps) {
       return (
         <CalendarYearView
           currentDate={currentDate}
-          employeeFilterId={calendarEmployeeFilterId}
+          employeeFilterId={calendarFilters.employeeId}
           onNewAppointment={(date) => {
             console.info("[calendar] new appointment", { date, view: "year" });
             setAppointmentContext({ initialDate: date });
@@ -106,7 +109,7 @@ export default function Home({ onLogout }: HomeProps) {
     return (
       <CalendarGrid
         currentDate={currentDate}
-        employeeFilterId={calendarEmployeeFilterId}
+        employeeFilterId={calendarFilters.employeeId}
         onNewAppointment={(date) => {
           console.info("[calendar] new appointment", { date, view: "month" });
           setAppointmentContext({ initialDate: date });
@@ -246,8 +249,8 @@ export default function Home({ onLogout }: HomeProps) {
               </div>
               <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
                 <CalendarFilterPanel
-                  employeeId={calendarEmployeeFilterId}
-                  onEmployeeIdChange={setCalendarEmployeeFilterId}
+                  employeeId={calendarFilters.employeeId}
+                  onEmployeeIdChange={(employeeId) => setCalendarFilter("employeeId", employeeId)}
                 />
               </div>
             </div>
