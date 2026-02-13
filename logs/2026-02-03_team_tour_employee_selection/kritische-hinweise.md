@@ -1,3 +1,0 @@
-# Kritische Hinweise
-
-- Keine.
