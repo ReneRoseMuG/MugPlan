@@ -36,6 +36,8 @@ import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-fil
 import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
+import { useListFilters } from "@/hooks/useListFilters";
+
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { Employee, Team, Tour } from "@shared/schema";
@@ -116,7 +118,9 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
 
   const [viewMode, setViewMode] = useState<ViewMode>(resolvedViewMode);
   const [employeeScope, setEmployeeScope] = useState<"active" | "all">("active");
-  const [filters, setFilters] = useState(defaultEmployeeFilters);
+  const { filters, setFilter } = useListFilters({
+    initialFilters: defaultEmployeeFilters,
+  });
   const [sortKey, setSortKey] = useState<EmployeeSortKey>("lastName");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -496,8 +500,8 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
           <EmployeeFilterPanel
             title="Mitarbeiterfilter"
             employeeLastName={filters.lastName}
-            onEmployeeLastNameChange={(value) => setFilters((prev) => ({ ...prev, lastName: value }))}
-            onEmployeeLastNameClear={() => setFilters((prev) => ({ ...prev, lastName: "" }))}
+            onEmployeeLastNameChange={(value) => setFilter("lastName", value)}
+            onEmployeeLastNameClear={() => setFilter("lastName", "")}
             employeeScope={employeeScope}
             onEmployeeScopeChange={setEmployeeScope}
           />
