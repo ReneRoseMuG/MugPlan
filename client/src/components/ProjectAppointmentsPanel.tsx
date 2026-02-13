@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+ï»¿import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
@@ -90,10 +90,10 @@ export function ProjectAppointmentsPanel({
         queryKey: upcomingQueryKey,
       });
       void queryClient.invalidateQueries({ queryKey: upcomingQueryKey });
-      toast({ title: "Termin gelöscht" });
+      toast({ title: "Termin gelÃ¶scht" });
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
+      const message = error instanceof Error ? error.message : "LÃ¶schen fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
     },
   });
@@ -122,7 +122,7 @@ export function ProjectAppointmentsPanel({
   const addAction = isEditing && onOpenAppointment && projectId
     ? {
         onClick: () => onOpenAppointment({ projectId }),
-        ariaLabel: "Termin hinzufügen",
+        ariaLabel: "Termin hinzufÃ¼gen",
         testId: "button-new-appointment-from-project",
       }
     : undefined;
@@ -138,8 +138,9 @@ export function ProjectAppointmentsPanel({
         addAction={addAction}
         onOpenAppointment={handleOpenAppointment}
         emptyStateLabel="Keine Termine ab heute"
-        note={showLockedNote ? "Gesperrte Termine können nur Admins löschen." : null}
+        note={showLockedNote ? "Gesperrte Termine kÃ¶nnen nur Admins lÃ¶schen." : null}
       />
     </BadgeInteractionProvider>
   );
 }
+

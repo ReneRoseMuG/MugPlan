@@ -4,9 +4,8 @@ import * as appointmentsService from "../services/appointmentsService";
 import * as employeesService from "../services/employeesService";
 import { handleZodError } from "./validation";
 
-function isAdminRequest(req: Request) {
-  const role = req.header("x-user-role");
-  return role?.toUpperCase() === "ADMIN";
+function getRoleKeyFromRequest(req: Request) {
+  return req.userContext?.roleKey;
 }
 
 export async function listEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -39,7 +38,7 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
     if (req.body.teamId !== undefined || req.body.tourId !== undefined) {
       res.status(400).json({
         message:
-          "team_id und tour_id können nicht über die Mitarbeiter-API gesetzt werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
+          "team_id und tour_id koennen nicht ueber die Mitarbeiter-API gesetzt werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
       });
       return;
     }
@@ -58,7 +57,7 @@ export async function updateEmployee(req: Request, res: Response, next: NextFunc
     if (req.body.teamId !== undefined || req.body.tourId !== undefined) {
       res.status(400).json({
         message:
-          "team_id und tour_id können nicht über die Mitarbeiter-API geändert werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
+          "team_id und tour_id koennen nicht ueber die Mitarbeiter-API geaendert werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
       });
       return;
     }
@@ -95,16 +94,22 @@ export async function listCurrentAppointments(req: Request, res: Response, next:
   try {
     const employeeId = Number(req.params.id);
     if (Number.isNaN(employeeId)) {
-      res.status(400).json({ message: "Ungültige employeeId" });
+      res.status(400).json({ message: "Ungueltige employeeId" });
       return;
     }
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
-      res.status(400).json({ message: "Ungültiges fromDate" });
+      res.status(400).json({ message: "Ungueltiges fromDate" });
       return;
     }
-    const isAdmin = isAdminRequest(req);
-    const appointments = await appointmentsService.listEmployeeAppointments(employeeId, fromDate, isAdmin);
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const appointments = await appointmentsService.listEmployeeAppointments(employeeId, fromDate, roleKey);
     res.json(appointments);
   } catch (err) {
     next(err);

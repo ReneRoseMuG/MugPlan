@@ -1,4 +1,4 @@
-import { useState } from "react";
+Ôªøimport { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Route, Pencil } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -124,7 +124,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
   };
 
   const handleDelete = (tour: TourWithMembers) => {
-    if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich lˆschen?`)) {
+    if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich l√∂schen?`)) {
       deleteMutation.mutate(tour.id);
     }
   };
@@ -151,7 +151,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
               </Button>
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-tours">
-                  Schlieﬂen
+                  Schlie√üen
                 </Button>
               ) : null}
             </div>
@@ -234,3 +234,4 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     </>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Users,
@@ -95,7 +95,7 @@ function resolveRelevantAppointment(
 }
 
 function formatAppointmentLabel(appointment: EmployeeAppointmentSummary | null): string {
-  if (!appointment) return "�";
+  if (!appointment) return "—";
 
   const date = new Date(`${appointment.startDate}T00:00:00`);
   const dateLabel = `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}`;
@@ -820,3 +820,4 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
     </>
   );
 }
+

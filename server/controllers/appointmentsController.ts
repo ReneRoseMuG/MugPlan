@@ -5,9 +5,8 @@ import { handleZodError } from "./validation";
 
 const logPrefix = "[appointments-controller]";
 
-function isAdminRequest(req: Request) {
-  const role = req.header("x-user-role");
-  return role?.toUpperCase() === "ADMIN";
+function getRoleKeyFromRequest(req: Request) {
+  return req.userContext?.roleKey;
 }
 
 export async function getAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -52,9 +51,15 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
       res.status(400).json({ message: "Projekt ist erforderlich" });
       return;
     }
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
     const appointmentId = Number(req.params.id);
-    const isAdmin = isAdminRequest(req);
-    const appointment = await appointmentsService.updateAppointment(appointmentId, input, isAdmin);
+    const appointment = await appointmentsService.updateAppointment(appointmentId, input, roleKey);
     if (!appointment) {
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
@@ -74,30 +79,44 @@ export async function listProjectAppointments(req: Request, res: Response, next:
   try {
     const projectId = Number(req.params.projectId);
     if (Number.isNaN(projectId)) {
-      res.status(400).json({ message: "UngÃ¼ltige projectId" });
+      res.status(400).json({ message: "Ungueltige projectId" });
       return;
     }
+
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
       console.log(`${logPrefix} list project appointments rejected: invalid fromDate=${fromDate}`);
-      res.status(400).json({ message: "UngÃ¼ltiges fromDate" });
+      res.status(400).json({ message: "Ungueltiges fromDate" });
       return;
     }
-    const isAdmin = isAdminRequest(req);
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
     console.log(`${logPrefix} list project appointments request projectId=${projectId} fromDate=${fromDate ?? "n/a"}`);
-    const appointments = await appointmentsService.listProjectAppointments(projectId, fromDate, isAdmin);
+    const appointments = await appointmentsService.listProjectAppointments(projectId, fromDate, roleKey);
     res.json(appointments);
   } catch (err) {
     next(err);
   }
 }
+
 export async function listAppointmentsList(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.list.input.parse(req.query);
-    const isAdmin = isAdminRequest(req);
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
     const result = await appointmentsService.listAppointmentsList({
       ...input,
-      isAdmin,
+      roleKey,
     });
     res.json(result);
   } catch (err) {
@@ -109,12 +128,18 @@ export async function listAppointmentsList(req: Request, res: Response, next: Ne
     next(err);
   }
 }
+
 export async function deleteAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
     const appointmentId = Number(req.params.id);
-    const isAdmin = isAdminRequest(req);
     console.log(`${logPrefix} delete request appointmentId=${appointmentId}`);
-    const appointment = await appointmentsService.deleteAppointment(appointmentId, isAdmin);
+    const appointment = await appointmentsService.deleteAppointment(appointmentId, roleKey);
     if (!appointment) {
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
@@ -143,7 +168,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
       console.log(`${logPrefix} list calendar appointments rejected: invalid range ${fromDate}-${toDate}`);
-      res.status(400).json({ message: "Ungültiger Datumsbereich" });
+      res.status(400).json({ message: "Ungueltiger Datumsbereich" });
       return;
     }
     if (toDate < fromDate) {
@@ -153,16 +178,21 @@ export async function listCalendarAppointments(req: Request, res: Response, next
 
     const employeeId = employeeIdParam ? Number(employeeIdParam) : undefined;
     if (employeeIdParam && Number.isNaN(employeeId)) {
-      res.status(400).json({ message: "Ungültige employeeId" });
+      res.status(400).json({ message: "Ungueltige employeeId" });
       return;
     }
     if (detailParam && detailParam !== "compact" && detailParam !== "full") {
-      res.status(400).json({ message: "Ungültiger detail-Parameter" });
+      res.status(400).json({ message: "Ungueltiger detail-Parameter" });
       return;
     }
     const detail = detailParam === "full" ? "full" : "compact";
 
-    const isAdmin = isAdminRequest(req);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
     console.log(
       `${logPrefix} list calendar appointments request fromDate=${fromDate} toDate=${toDate} detail=${detail} employeeId=${employeeId ?? "n/a"}`,
     );
@@ -171,12 +201,10 @@ export async function listCalendarAppointments(req: Request, res: Response, next
       toDate,
       employeeId,
       detail,
-      isAdmin,
+      roleKey,
     });
     res.json(appointments);
   } catch (err) {
     next(err);
   }
 }
-
-

@@ -2,6 +2,7 @@ import type { InsertAppointment } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
+import type { CanonicalRoleKey } from "../settings/registry";
 
 const logPrefix = "[appointments-service]";
 
@@ -87,7 +88,7 @@ const buildStatusesByProject = async (projectIds: number[]) => {
   return statusesByProject;
 };
 
-const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], isAdmin: boolean) => {
+const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: CanonicalRoleKey) => {
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
@@ -116,7 +117,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], isAdmin: bo
       city: row.customer.city ?? null,
     },
     employees: employeesByAppointment.get(row.appointment.id) ?? [],
-    isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
+    isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
   }));
 };
 
@@ -193,12 +194,12 @@ export async function updateAppointment(
     startTime?: string | null;
     employeeIds?: number[];
   },
-  isAdmin: boolean,
+  roleKey: CanonicalRoleKey,
 ) {
   const existing = await appointmentsRepository.getAppointment(appointmentId);
   if (!existing) return null;
 
-  if (!isAdmin && isStartDateLocked(existing.startDate)) {
+  if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
     console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
     throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403);
   }
@@ -230,7 +231,7 @@ export async function updateAppointment(
 export async function listProjectAppointments(
   projectId: number,
   fromDate: string | undefined,
-  isAdmin: boolean,
+  roleKey: CanonicalRoleKey,
 ) {
   const todayBerlin = getBerlinTodayDateString();
   const effectiveFromDate = fromDate ?? todayBerlin;
@@ -248,10 +249,14 @@ export async function listProjectAppointments(
   );
   console.log(`${logPrefix} list appointments result projectId=${projectId} count=${appointments.length}`);
 
-  return mapSidebarAppointments(appointments, isAdmin);
+  return mapSidebarAppointments(appointments, roleKey);
 }
 
-export async function listEmployeeAppointments(employeeId: number, fromDate: string | undefined, isAdmin: boolean) {
+export async function listEmployeeAppointments(
+  employeeId: number,
+  fromDate: string | undefined,
+  roleKey: CanonicalRoleKey,
+) {
   const todayBerlin = getBerlinTodayDateString();
   const effectiveFromDate = fromDate ?? todayBerlin;
 
@@ -268,7 +273,7 @@ export async function listEmployeeAppointments(employeeId: number, fromDate: str
   );
   console.log(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
 
-  return mapSidebarAppointments(appointments, isAdmin);
+  return mapSidebarAppointments(appointments, roleKey);
 }
 
 export async function listCalendarAppointments({
@@ -276,13 +281,13 @@ export async function listCalendarAppointments({
   toDate,
   employeeId,
   detail,
-  isAdmin,
+  roleKey,
 }: {
   fromDate: string;
   toDate: string;
   employeeId?: number | null;
   detail?: "compact" | "full";
-  isAdmin: boolean;
+  roleKey: CanonicalRoleKey;
 }) {
   const resolvedDetail = detail ?? "compact";
   console.log(
@@ -322,7 +327,7 @@ export async function listCalendarAppointments({
         city: row.customer.city ?? null,
       },
       employees: employeesByAppointment.get(row.appointment.id) ?? [],
-      isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
+      isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
     };
 
     if (resolvedDetail === "full") {
@@ -360,7 +365,7 @@ export async function listAppointmentsList(params: {
   lockedOnly?: boolean;
   page: number;
   pageSize: number;
-  isAdmin: boolean;
+  roleKey: CanonicalRoleKey;
 }) {
   const dateFrom = params.dateFrom ? parseDateOnly(params.dateFrom) : undefined;
   const dateTo = params.dateTo ? parseDateOnly(params.dateTo) : undefined;
@@ -420,7 +425,7 @@ export async function listAppointmentsList(params: {
         city: row.customer.city ?? null,
       },
       employees: rowEmployees,
-      isLocked: !params.isAdmin && isStartDateLocked(row.appointment.startDate),
+      isLocked: params.roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
       allDay: row.appointment.startTime == null,
       singleEmployee: rowEmployees.length === 1,
     };
@@ -436,11 +441,11 @@ export async function listAppointmentsList(params: {
   };
 }
 
-export async function deleteAppointment(appointmentId: number, isAdmin: boolean) {
+export async function deleteAppointment(appointmentId: number, roleKey: CanonicalRoleKey) {
   const existing = await appointmentsRepository.getAppointment(appointmentId);
   if (!existing) return null;
 
-  if (!isAdmin && isStartDateLocked(existing.startDate)) {
+  if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
     console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
     throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403);
   }

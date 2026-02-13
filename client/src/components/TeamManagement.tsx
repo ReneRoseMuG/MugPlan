@@ -1,4 +1,4 @@
-import { useState } from "react";
+Ôªøimport { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Users, Pencil } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -126,7 +126,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
   };
 
   const handleDelete = (team: TeamWithMembers) => {
-    if (window.confirm(`Wollen Sie das Team ${team.name} wirklich lˆschen?`)) {
+    if (window.confirm(`Wollen Sie das Team ${team.name} wirklich l√∂schen?`)) {
       deleteMutation.mutate(team.id);
     }
   };
@@ -153,7 +153,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
               </Button>
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-teams">
-                  Schlieﬂen
+                  Schlie√üen
                 </Button>
               ) : null}
             </div>
@@ -236,3 +236,4 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     </>
   );
 }
+

@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import { attachRequestUserContext } from "./middleware/requestUserContext";
+import { resolveUserRole } from "./middleware/resolveUserRole";
 import adminRoutes from "./routes/adminRoutes";
 import customerNotesRoutes from "./routes/customerNotesRoutes";
 import customerAttachmentsRoutes from "./routes/customerAttachmentsRoutes";
@@ -23,6 +25,9 @@ import toursRoutes from "./routes/toursRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+  app.use("/api", attachRequestUserContext);
+  app.use("/api", resolveUserRole);
+
   app.use(adminRoutes);
   app.use(appointmentsRoutes);
   app.use(demoSeedRoutes);

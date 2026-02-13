@@ -6,6 +6,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { errorHandler } from "./middleware/errorHandler";
+import { assertConfiguredSystemUser } from "./bootstrap/assertConfiguredSystemUser";
 
 const app = express();
 const httpServer = createServer(app);
@@ -83,6 +84,7 @@ app.use((req, res, next) => {
 });
 
 void (async () => {
+  await assertConfiguredSystemUser();
   await registerRoutes(httpServer, app);
 
   app.use(errorHandler);
