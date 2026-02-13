@@ -2725,505 +2725,325 @@ Dieses Feature ist bewusst kein Fachfeature, sondern eine technische und gestalt
 
 ## Fachliche Beschreibung
 
-## 1. Einordnung im Gesamtsystem
+### UI-Komponenten-Dokumentation
 
-FT (17) beschreibt die UI-Kompositionsschicht der Anwendung. Diese Schicht ist kein Fachfeature, keine Domänendefinition und keine technische Infrastrukturkomponente, sondern eine bewusst eingeführte Struktur- und Ordnungsinstanz innerhalb des Frontends.
+#### 1. Ziel und Lesart
 
-Ziel dieser Schicht ist es, wiederkehrende Layout- und Darstellungsmuster verbindlich zu definieren. Neue Screens sollen nicht „frei komponiert“ werden, sondern sich aus stabilen, dokumentierten Bausteinen zusammensetzen. Dadurch werden visuelle Drift, Duplikation, inkonsistente Bedienmuster und schwer kontrollierbare Refactorings vermieden.
+Dieses Dokument ist als technische Lesedokumentation aufgebaut, nicht als Datei-Inventar.
 
-Die Kompositionsschicht übernimmt keine Fachlogik. Sie kennt keine Geschäftsregeln, keine Validierungen, keine Persistenz und keine API-Endpunkte. Sie stellt ausschließlich Struktur, Slots und standardisierte Interaktionsmuster bereit. Fachlogik verbleibt in Feature-Screens oder fachnahen Hooks.
+Es beschreibt:
 
----
+- welche UI-Komponenten es gibt,
+- wo sie in der GUI sichtbar sind,
+- wie Wrapper, Ableitungen und Basiskomponenten zusammenarbeiten.
 
-## 2. Grundprinzipien der Kompositionsschicht
+#### 2. GUI-Landkarte
 
-Die Kompositionsschicht folgt klaren architektonischen Leitlinien.
+#### Hauptnavigation
 
-Erstens gilt das Prinzip „Struktur vor Fachlogik“. Kompositionskomponenten stellen Layout-Rahmen und klar definierte Slots bereit, erzwingen jedoch keine inhaltlichen Entscheidungen.
+Die Anwendung ist in der linken Sidebar nach Funktionsbereichen gegliedert:
 
-Zweitens werden wiederkehrende Muster über Wrapper gelöst, nicht über Sonderfälle in Basiskomponenten. Wenn zwei Screens dieselbe strukturelle Idee umsetzen, entsteht ein dedizierter Wrapper.
+- Terminplanung: Wochen-, Monats-, Jahresansicht und Terminliste
+- Projektplanung: Projekte und Kunden
+- Mitarbeiterverwaltung: Mitarbeiter, Teams, Touren
+- Administration: Notizvorlagen, Projektstatus, Hilfetexte, Benutzer, Einstellungen, Demo-Daten
 
-Drittens entstehen neue Kompositionskomponenten nur bei echter Wiederverwendung oder bei absehbarer Standardisierung. Einmalige UI-Hilfskonstruktionen gehören nicht in diese Schicht.
+#### Arbeitsfläche rechts
 
-Viertens erfolgt Erweiterung durch Spezialisierung. Statt Basiskomponenten durch immer mehr optionale Props aufzuweichen, werden klar benannte Ableitungen geschaffen.
+Die rechte Hauptfläche zeigt je nach Navigation:
 
-Fünftens werden Farb- und Layoutlogiken zentralisiert. Farbakzente, Avatar-Logiken oder Statusfarben dürfen nicht in einzelnen Screens neu berechnet werden.
+- Listenansichten (Board/Tabelle),
+- Detail-Formulare,
+- Dialoge für Auswahl oder Bearbeitung,
+- Kalenderansichten mit Bottom-Filterbereich.
 
-Sechstens ist Vorschau- und Overlay-Logik entkoppelt. Badge-Darstellung und Popover-Verhalten sind getrennt implementiert.
+#### 3. Architektur in einem Satz
 
-Diese Prinzipien stellen sicher, dass die UI strukturell stabil bleibt, auch wenn Fachfeatures wachsen.
+`ListLayout` bildet den wiederkehrenden Seitenrahmen; innerhalb davon wechseln `BoardView` und `TableView`, während fachliche Badges auf `InfoBadge` aufbauen und Vorschauen über `HoverPreview` anzeigen.
 
----
+#### 4. Komponenten mit GUI-Kontext
 
-## 3. Layout-Ebene (Seitenrahmen)
+#### 4.1 Layout- und Seitenstruktur
 
-### 3.1 CardListLayout
+#### `ListLayout`
 
-`CardListLayout` ist das zentrale Seitenlayout für kartenbasierte Listenansichten. Es definiert einen konsistenten Rahmen aus Header, optionalen Aktionen, Content-Grid und optionaler Bottom-Bar.
+**Kurztext:** Strukturkomponente für fast alle Listenbildschirme. Sie ordnet Kopfbereich, Inhaltsfläche, Filterbereich und Fußbereich einheitlich an.
 
-Der Header kann ein Icon, einen Titel sowie optional einen Hilfe-Button über `helpKey` enthalten. Die Integration der Hilfetexte erfolgt systemweit über denselben Mechanismus (React Query auf `/api/help-texts`). Dadurch ist sichergestellt, dass Hilfetexte nicht ad hoc in Screens eingebaut werden.
+**Wo sichtbar:** Kundenliste, Projektliste, Mitarbeiterliste, Terminliste, Hilfetexte, Notizvorlagen, Projektstatus sowie Dialoglisten (z. B. Mitarbeiterauswahl).
 
-Das Content-Grid stellt eine strukturierte Fläche für Karten oder Listen bereit, ohne deren konkrete Ausgestaltung vorzugeben.
+#### `BoardView`
 
-Direkt genutzt wird `CardListLayout` in Seiten wie HelpTexts, NoteTemplates, Teams und Tours. Indirekt wird es über `FilteredCardListLayout` in Customer-, Project- und Employee-Listen verwendet.
+**Kurztext:** Kartenraster für visuelle Übersichten. Eignet sich für „auf einen Blick“-Szenarien mit kompakten Karten.
 
----
+**Wo sichtbar:** Board-Modus in Kunden, Projekten, Mitarbeitern, Hilfetexten, Notizvorlagen, Teams, Touren und Projektstatus.
 
-### 3.2 FilteredCardListLayout
+#### `TableView`
 
-`FilteredCardListLayout` ist ein spezialisierter Wrapper über `CardListLayout`. Er belegt die `bottomBar` und rendert dort eine standardisierte Filtersektion.
+**Kurztext:** Tabellarische Ansicht für dichte Daten, Sortierung und zielsichere Auswahl per Doppelklick.
 
-Ziel dieser Komponente ist es, Filterleisten nicht individuell pro Screen zu gestalten, sondern strukturell zu vereinheitlichen. Die eigentlichen Filter-Controls werden über Slots eingefügt, die Layout-Logik bleibt jedoch zentral.
+**Wo sichtbar:** Tabellenmodus in Kunden, Projekten, Mitarbeitern, Hilfetexten; standardmäßig in der Terminliste und in Dialoglisten.
 
-Die Ableitung lautet:
+#### 4.2 Karten, Form-Rahmen und Dialograhmen
 
-FilteredCardListLayout → CardListLayout
+#### `EntityCard`
 
----
+**Kurztext:** Einheitliche Karte für Board-Ansichten mit Titelbereich, Inhalt und optionalen Aktionen/Footer.
 
-### 3.3 EntityFormLayout
+**Wo sichtbar:** Karten in Kunden-, Projekt- und Mitarbeiter-Boards.
 
-`EntityFormLayout` ist das Gegenstück zu `CardListLayout` für Formularseiten. Während Listen eine gridbasierte Struktur benötigen, brauchen Formulare einen klar definierten Rahmen mit Header, Inhaltsbereich und konsistentem Action-Footer.
+#### `EntityFormLayout`
 
-Die Komponente kapselt:
+**Kurztext:** Formularrahmen für große Detail- und Bearbeitungsseiten mit klarer Aktionsleiste.
 
-- den Card-Rahmen,
-- das Scroll- und Breitenverhalten,
-- die Titel- und Icon-Darstellung,
-- einen standardisierten Speichern/Abbrechen-Bereich,
-- optional einen asynchronen Submit-Flow mit automatischem Schließen.
+**Wo sichtbar:** Projektformular und Terminformular.
 
-Dadurch wird vermieden, dass jede Formularseite eigene Footer-Strukturen oder Button-Anordnungen implementiert.
+#### `EntityEditDialog`
 
----
+**Kurztext:** Dialograhmen für fokussierte Bearbeitung innerhalb einer Liste ohne Seitenwechsel.
 
-## 4. Karten-Ebene (Entity-Darstellung)
+**Wo sichtbar:** Mitarbeiter-Detaildialog in der Mitarbeiterverwaltung.
 
-Die Karten-Ebene definiert die visuelle Darstellung von Domänenobjekten in Listenansichten. Ziel ist eine einheitliche Struktur, damit Kunden-, Projekt-, Mitarbeiter- und Stammdatenlisten nicht visuell auseinanderlaufen.
+#### 4.3 Filterkomponenten
 
-### 4.1 EntityCard
+#### `FilterPanel`
 
-`EntityCard` ist die strukturelle Basiskomponente für kartenbasierte Listenobjekte und liegt in `client/src/components/ui/entity-card.tsx`.
+**Kurztext:** Technische Basiskomponente für Filter-Container mit konsistenter Typografie und Layout.
 
-Sie definiert:
+**Wo sichtbar:** Als Grundlage in allen spezialisierten Filterleisten.
 
-- Kopfbereich (Titel + optionale Actions)
-- Content-Bereich
-- optionale Footer-Zone
-- konsistente Abstände und Hover-Zustände
+#### `CustomerFilterPanel`
 
-`EntityCard` enthält keinerlei Farblogik. Sie ist bewusst neutral gehalten, damit visuelle Differenzierung ausschließlich über Wrapper erfolgt.
+**Kurztext:** Filter für Name und Kundennummer zur schnellen Eingrenzung.
 
-Direkte Verwendung in Screens:
+**Wo sichtbar:** Unterer Filterbereich der Kundenliste.
 
-- `CustomerList.tsx`
-- `ProjectList.tsx`
-- `EmployeeList.tsx`
-- `HelpTextsPage.tsx`
+#### `ProjectFilterPanel`
 
-### 4.2 ColoredEntityCard
+**Kurztext:** Mehrteiliges Filterpanel für Projekttitel, Kundenbezug, Statusauswahl und Scope.
 
-`ColoredEntityCard` ist der definierte Wrapper über `EntityCard` und liegt in `client/src/components/ui/colored-entity-card.tsx`.
+**Wo sichtbar:** Unterer Filterbereich der Projektliste.
 
-Er übersetzt `borderColor` in eine linke visuelle Markierung (`borderLeftWidth` + `borderLeftColor`) und delegiert ansonsten vollständig an `EntityCard`.
+#### `EmployeeFilterPanel`
 
-Ableitungskette:
+**Kurztext:** Filter für Mitarbeitername plus Umschaltung aktiv/alle.
 
-`ColoredEntityCard` → `EntityCard`
+**Wo sichtbar:** Unterer Filterbereich der Mitarbeiterliste.
 
-Verwendung in Screens:
+#### `AppointmentsFilterPanel`
 
-- `TourManagement.tsx`
-- `TeamManagement.tsx`
-- `NoteTemplatesPage.tsx`
-- `ProjectStatusList.tsx`
+**Kurztext:** Umfangreicher Filter für Terminliste (Mitarbeiter, Projekt, Kunde, Tour, Datum, Statusflags).
 
-### Erweiterungsregel
+**Wo sichtbar:** Unterer Filterbereich der Terminliste.
 
-Neue Entity-Darstellungen dürfen keine eigene Kartenstruktur bauen. Wenn eine visuelle Differenzierung benötigt wird, ist ein Wrapper über `EntityCard` zu erstellen.
+#### `CalendarFilterPanel`
 
----
+**Kurztext:** Schlanker Kalenderfilter für Mitarbeiterselektion.
 
-### 4.2 ColoredEntityCard
+**Wo sichtbar:** Fußbereich in Monats-, Wochen- und Jahreskalender.
 
-`ColoredEntityCard` ist ein Wrapper über `EntityCard`. Seine einzige Aufgabe besteht darin, die Farblogik explizit als `borderColor`-Prop anzubieten und diese intern korrekt an `EntityCard` weiterzugeben.
+#### 4.4 Badge-System (Wrapper und Ableitungen)
 
-Die Ableitung lautet:
+#### `InfoBadge` (Basis)
 
-ColoredEntityCard → EntityCard
+**Kurztext:** Neutrale Badge-Basis mit optionaler Hover-Vorschau und Add/Remove-Aktion.
 
-Dadurch bleibt die Basiskarte frei von Farbspezialisierung, während farbcodierte Entities (z. B. Teams oder Tours) konsistent dargestellt werden.
+**Wo sichtbar:** Nicht direkt fachlich, sondern als Fundament aller fachlichen Info-Badges.
 
----
+#### `PersonInfoBadge` und `ColoredInfoBadge` (generische Wrapper)
 
-## 5. Badge-System (Kompakt-Darstellung)
+**Kurztext:** `PersonInfoBadge` standardisiert Darstellung für Personen; `ColoredInfoBadge` kapselt farbcodierte Fachobjekte.
 
-Das Badge-System bildet die zweite zentrale UI-Schicht neben den Karten. Während Karten primär Listen repräsentieren, dienen Badges der kompakten Darstellung einzelner referenzierter Objekte innerhalb von Formularen, Panels und Sidebars.
+**Wo sichtbar:** Indirekt in Kunden-, Mitarbeiter-, Team-, Tour- und Statusdarstellungen.
 
-### 5.1 InfoBadge (Basisschicht)
+#### Fachliche Badges
 
-`InfoBadge` liegt in `client/src/components/ui/info-badge.tsx` und ist die fachneutrale Basiskomponente für kompakte Darstellungen mit optionaler Action (`add`, `remove`, `close`).
+- `CustomerInfoBadge`: Kunde im Terminformular und in projektnahen Kontexten.
+- `EmployeeInfoBadge`: Mitarbeiter in Terminformular, Team- und Tourverwaltung sowie Auswahl-/Editdialogen.
+- `ProjectInfoBadge`: Projektbezug im Terminformular.
+- `TeamInfoBadge`: Teamzuordnung in Mitarbeiterkarten und Mitarbeiterdetail.
+- `TourInfoBadge`: Tourzuordnung in Mitarbeiterkarten, Mitarbeiterdetail und Terminbezug.
+- `ProjectStatusInfoBadge`: Projektstatus in projektbezogenen Panels und Kalender-Teilansichten.
+- `TerminInfoBadge`: Terminzusammenfassung in Termin-Panels.
+- `AttachmentInfoBadge`: Dateianhänge in Attachment-Panels.
 
-Sie unterstützt:
+#### Preview-Ableitungen (`create...Preview`, `...Preview`)
 
-- Icon links
-- beliebigen ReactNode als Label
-- optionale Action-Spalte rechts
-- `size="default" | "sm"`
-- `fullWidth`
-- linke farbliche Border über `borderColor`
-- optionale Preview-Integration über `preview`
+**Kurztext:** Jeder fachliche Badge kann eine typisierte Vorschau erzeugen, ohne die Basis zu überladen.
 
-`InfoBadge` enthält bewusst keine ContextMenu- oder Fetch-Logik.
+**Wo sichtbar:** Hover-Vorschauen bei Badges und Terminzeilen, z. B. Termin-Wochenpanel-Preview in Tabellen.
 
-### 5.2 Generische Wrapper
+#### 4.5 Formulare und fachliche Panel-Komponenten
 
-### ColoredInfoBadge
+#### `AppointmentForm`
 
-Wrapper über `InfoBadge`, der `color` nach `borderColor` mappt.
+**Kurztext:** Zentrales Terminformular für Neu- und Bearbeitung mit Projekt-, Tour- und Mitarbeiterbezug.
 
-Ableitung:
+**Wo sichtbar:** Hauptarbeitsfläche bei Terminbearbeitung.
 
-`ColoredInfoBadge` → `InfoBadge`
+**GUI-Rolle:** kombiniert Badge-Informationen, Datums-/Zeitfelder, Auswahl-Dialoge und Konfliktbestätigungen.
 
-Verwendung u. a. in:
+#### `ProjectForm`
 
-- `AppointmentForm.tsx`
-- `EmployeePage.tsx`
-- `ProjectStatusSection.tsx`
-- `ProjectList.tsx`
+**Kurztext:** Projektformular mit Stammdaten, Kundenzuordnung, Notizen, Status und angehängten Bereichen.
 
-### PersonInfoBadge
+**Wo sichtbar:** Hauptarbeitsfläche bei Projekterstellung und Projektbearbeitung.
 
-`PersonInfoBadge` generiert Avatar + Zeilenlayout für Personen und delegiert an `InfoBadge`.
+**GUI-Rolle:** fungiert als fachliches Hub für Termine, Status und Anhänge eines Projekts.
 
-Ableitung:
+#### `CustomerData`
 
-`PersonInfoBadge` → `InfoBadge`
+**Kurztext:** Kundenstammdaten-Formular mit eingebetteten Zusatzpanels.
 
-### 5.3 Fachliche Spezialisierungen
+**Wo sichtbar:** Hauptarbeitsfläche in der Kunden-Detailansicht.
 
-### CustomerInfoBadge
+**GUI-Rolle:** vereint Kundenfelder, Terminbezug und Dateianhänge in einer Bearbeitungsansicht.
 
-Delegiert an `PersonInfoBadge`, ergänzt Kundennummer und Telefon.
+#### `ProjectAppointmentsPanel`, `CustomerAppointmentsPanel`, `EmployeeAppointmentsPanel`
 
-Ableitung:
+**Kurztext:** Kontext-Panels für Terminbezug innerhalb eines Fachobjekts.
 
-`CustomerInfoBadge` → `PersonInfoBadge` → `InfoBadge`
+**Wo sichtbar:** In den jeweiligen Detailformularen/-dialogen rechts oder im unteren Abschnitt.
 
-### EmployeeInfoBadge
+#### `ProjectAttachmentsPanel`, `CustomerAttachmentsPanel`, `EmployeeAttachmentsPanel`
 
-Analog zu `CustomerInfoBadge`, mit mitarbeiterspezifischen Zeilen.
+**Kurztext:** Dateibezogene Panels für Upload, Anzeige und Zugriff auf verknüpfte Dokumente.
 
-### ProjectInfoBadge
+**Wo sichtbar:** In den jeweiligen Detailformularen oder Detaildialogen.
 
-Darstellung projektbezogener Kerndaten mit Preview auf Projekt-Detail.
+#### 4.6 Dialoglisten und Picker
 
-### TerminInfoBadge
+#### `EmployeePickerDialogList`
 
-`TerminInfoBadge` ist der standardisierte Listeneintrag für Terminreferenzen in Sidebars.
+**Kurztext:** Tabellarischer Auswahldialog für Mitarbeiter mit Filter und Preview.
 
-Er kapselt:
+**Wo sichtbar:** Im Terminformular und in Edit-Dialogen mit Mitarbeiterzuweisung.
 
-- kompakte Datumsdarstellung
-- Titel
-- optionale Tour-Farbmarkierung
-- Preview-Integration über Termin-Detailtemplate
+#### `EmployeeAppointmentsTableDialog`
 
-Ableitung:
+**Kurztext:** Tabellenfokussierter Termin-Dialog im Mitarbeiterkontext.
 
-`TerminInfoBadge` → `ColoredInfoBadge` → `InfoBadge`
+**Wo sichtbar:** Aus dem Mitarbeiter-Detaildialog heraus öffnend.
 
-### AttachmentInfoBadge
+#### 5. Zusammenhänge (Wrapper, Ableitungen, Komposition)
 
-`AttachmentInfoBadge` ist die spezialisierte Badge-Darstellung für Dokumente.
+#### Badge-Kompositionsketten
 
-Er kapselt:
+- `TeamInfoBadge -> ColoredInfoBadge -> InfoBadge`
+- `TourInfoBadge -> ColoredInfoBadge -> InfoBadge`
+- `CustomerInfoBadge -> PersonInfoBadge -> InfoBadge`
+- `EmployeeInfoBadge -> PersonInfoBadge -> InfoBadge`
+- `ProjectInfoBadge -> InfoBadge`
+- `TerminInfoBadge -> InfoBadge`
+- `AttachmentInfoBadge -> InfoBadge`
 
-- Dateityp-Icon
-- Dateiname
-- optionale Remove-Action (nur wenn API erlaubt)
-- Preview/Download-Integration
+#### Preview-Ketten
 
-Ableitung:
+- `TeamInfoBadge -> createTeamInfoBadgePreview -> TeamInfoBadgePreview`
+- `TourInfoBadge -> createTourInfoBadgePreview -> TourInfoBadgePreview`
+- `CustomerInfoBadge -> createCustomerInfoBadgePreview -> CustomerInfoBadgePreview`
+- `EmployeeInfoBadge -> createEmployeeInfoBadgePreview -> EmployeeInfoBadgePreview`
+- `ProjectInfoBadge -> createProjectInfoBadgePreview -> ProjectInfoBadgePreview`
+- `TerminInfoBadge -> createAppointmentInfoBadgePreview -> AppointmentInfoBadgePreview`
+- `AttachmentInfoBadge -> createAttachmentInfoBadgePreview -> AttachmentInfoBadgePreview`
 
-`AttachmentInfoBadge` → `InfoBadge`
+#### Listenkomposition
 
-### TeamInfoBadge / TourInfoBadge
+- Seite/Dialog -> `ListLayout`
+- Inhaltsmodus -> `BoardView` oder `TableView`
+- Detailverdichtung -> Hover-Preview über `rowPreviewRenderer` oder Badge-Preview
 
-Spezialisierte Wrapper mit Farblogik.
+#### 6. Public API-Dokumentationsstandard
 
----
+Für jede Komponente wird dokumentiert:
 
-### 5.2 ColoredInfoBadge
+- `Props` inkl. Pflichtfeldern und Defaults
+- ausgehende Events/Callbacks (`on*`)
+- Slots/Children bzw. Renderbereiche
+- Weitergabe, Einschränkung oder Erweiterung bei Wrappern
 
-`ColoredInfoBadge` ist der einfachste Wrapper über `InfoBadge`. Er übersetzt eine `color`-Prop in eine linke Farbborder.
+Bei Ableitungen wird die Differenz zur Basiskomponente tabellarisch erfasst:
 
-Ableitung:
+- Merkmal
+- Basisverhalten
+- Verhalten der Ableitung
+- Grund der Abweichung
 
-ColoredInfoBadge → InfoBadge
+#### 7. A11y-, Theming- und Responsive-Hinweise
 
----
+Pro Komponente werden verpflichtend beschrieben:
 
-### 5.3 PersonInfoBadge
+- semantische Struktur und Tastaturbedienung,
+- verwendete Design-Tokens/Utility-Klassen,
+- Verhalten auf schmalen Breiten (Umbruch, Scroll, Sticky Header, Grid-Wechsel).
 
-`PersonInfoBadge` ist eine fachlich neutrale Spezialisierung für Personen. Es erzeugt Avatar-Initialen aus Vor- und Nachnamen (mit Fallback) und unterstützt mehrzeilige Detaildarstellungen.
+#### 8. Best Practices und Anti-Patterns
 
-Ableitung:
+#### Best Practices
 
-PersonInfoBadge → InfoBadge
+- Fachwissen in Wrappern kapseln, Basiskomponenten technisch halten.
+- Ein Preview-Typ pro Fachobjekt, klar benannt und wiederverwendbar.
+- In Listen nur einen Interaktionspfad pro Aktion (z. B. Doppelklick zum Öffnen).
 
----
+#### Anti-Patterns
 
-### 5.4 Fachliche Badge-Spezialisierungen
+- Fachregeln direkt in `ListLayout`, `TableView` oder `InfoBadge`.
+- Uneinheitliche Filterposition zwischen vergleichbaren Listen.
+- Mehrere konkurrierende Vorschau-Mechanismen für denselben Datentyp.
 
-Die fachlichen Spezialisierungen kapseln wiederkehrende Anzeige- und Farblogiken.
+#### 9. Migration und Deprecation
 
-CustomerInfoBadge
+Wenn Komponenten ersetzt werden, wird immer dokumentiert:
 
-Ableitung: CustomerInfoBadge → PersonInfoBadge → InfoBadge
+- Altkomponente und Nachfolger,
+- API-Unterschiede,
+- Migrationshinweis für Aufrufer,
+- Lifecycle-Status (`aktiv`, `deprecated`, `experimentell`).
 
-Stellt Kundennummer, Telefon und deterministische Avatarfarbe dar.
+Bekannte abgeschlossene Altstruktur:
 
-EmployeeInfoBadge
+- früheres `badgeType`/`badgeData`-Pattern entfernt
+- zentrale Registry für Badge-Previews entfernt
 
-Ableitung: EmployeeInfoBadge → PersonInfoBadge → InfoBadge
+#### 10. Pflegeprozess
 
-Stellt Team- und Tour-Informationen sowie Avatarfarbe dar.
+Dokumentationsupdate ist Pflicht bei:
 
-ProjectInfoBadge
+- neuer Komponente,
+- API-Änderung,
+- neuer Wrapper- oder Ableitungskette,
+- Deprecation/Entfernung.
 
-Ableitung: ProjectInfoBadge → InfoBadge
+Arbeitsreihenfolge:
 
-Zeigt projektbezogene Kompaktinformationen wie Kundenzuordnung oder Terminanzahl.
+1. Komponentenporträt aktualisieren.
+2. GUI-Kontext prüfen und ergänzen.
+3. Zusammenhangslisten (Komposition/Preview) nachziehen.
+4. Lifecycle-Status setzen.
 
-ProjectStatusInfoBadge
+#### 11. Template für neue Komponentenporträts
 
-Ableitung: ProjectStatusInfoBadge → ColoredInfoBadge → InfoBadge
-
-Visualisiert Projektstatus mit definierter Farblogik.
-
-TerminInfoBadge
-
-Ableitung: TerminInfoBadge → InfoBadge
-
-Zeigt Datum, Mehrtages-Kennzeichnung und kontextabhängige Sekundärzeile.
-
-AttachmentInfoBadge
-
-Ableitung: AttachmentInfoBadge → InfoBadge
-
-Kapselt Dateiname, Typ-Icon und Preview-Verhalten.
-
-TeamInfoBadge und TourInfoBadge
-
-Ableitung: TeamInfoBadge/TourInfoBadge → ColoredInfoBadge → InfoBadge
-
-Visualisieren Teams und Tours mit konsistenter Farblogik.
-
----
-
-## 6. Preview-System
-
-Das Preview-System ist bewusst von der Badge-Struktur getrennt. Während `InfoBadge` ausschließlich die kompakte Darstellung kapselt, übernimmt das Preview-System die Overlay- und Detailanzeige.
-
-Alle Preview-Komponenten liegen im Ordner `client/src/components/ui/badge-previews/`.
-
-Jede Preview-Datei kapselt drei klar getrennte Aspekte:
-
-1. Den visuellen Preview-Inhalt (z. B. Detailstruktur für Termin, Projekt, Attachment).
-2. Typ-spezifische Popover-Optionen (Position, Delay, maximale Breite/Höhe).
-3. Einen `create...Preview(...)`Helper, der die Konfiguration standardisiert erzeugt.
-
-### Verbindliche Regel
-
-Ein Badge darf keine eigene Popover-Logik enthalten.
-
-Wenn für eine neue Badge-Art ein Overlay benötigt wird:
-
-1. Es wird eine dedizierte Preview-Komponente erstellt.
-2. Es wird ein `createXPreview`Helper definiert.
-3. Der Badge erhält ausschließlich das erzeugte Preview-Objekt.
-
-Dadurch bleibt:
-
-- die Badge-Struktur stabil,
-- das Overlay austauschbar,
-- die Konfiguration zentral wartbar.
-
-Preview-Komponenten dürfen keine Fetch-Logik enthalten. Sie arbeiten ausschließlich mit übergebenen Daten.
-
----
-
-## 8. Kalender-Komposition
-
-Die Kalenderstruktur folgt einer klaren Ebenentrennung. Erweiterungen müssen diese Ebenen respektieren.
-
-### 8.1 Strukturebene
-
-Wrapper wie `CalendarGrid` und `WeekGrid` definieren das Layoutraster. Sie enthalten keine Terminlogik.
-
-### 8.2 View-Ebene
-
-`CalendarMonthView`, `CalendarWeekView` und `CalendarYearView` orchestrieren die Darstellung einer Zeiteinheit. Sie erhalten Daten über gemeinsame Hooks und delegieren die visuelle Darstellung einzelner Termine.
-
-Views enthalten keine Detailtemplates.
-
-### 8.3 Terminvisualisierung
-
-`CalendarAppointmentCompactBar` wird in Monats- und Jahresdarstellung verwendet.
-
-`CalendarWeekAppointmentPanel` wird in der Wochenansicht verwendet.
-
-Beide Komponenten sind rein visuell. Sie berechnen keine Fachregeln.
-
-### 8.4 Zentrales Detailtemplate
-
-`CalendarAppointmentDetails` ist die einzige zulässige Detaildarstellung für Termine.
-
-Verbindliche Regel:
-
-Es darf kein alternatives Detail-Template für Termine eingeführt werden. Änderungen an der Termin-Detaildarstellung erfolgen ausschließlich in `CalendarAppointmentDetails`.
-
-### 8.5 Overlay-Ebene
-
-`CalendarAppointmentPopover` kapselt die Einbettung von `CalendarAppointmentDetails` in ein Overlay.
-
-### 8.6 Kalender-Filter
-
-`CalendarEmployeeFilter` ist die dedizierte Filterkomponente für die Kalenderansichten.
-
-Filterlogik gehört nicht in Views. Neue Kalenderfilter müssen als eigenständige Komponenten ergänzt werden.
-
-### Erweiterungsregel
-
-Wenn neue visuelle Eigenschaften (z. B. Farbbalken, Statusindikatoren) eingeführt werden:
-
-1. Zuerst prüfen, ob sie auf Visualisierungsebene gehören (CompactBar/WeekPanel).
-2. Keine Logik in Grid-Wrapper einbauen.
-3. Keine doppelte Implementierung im Detailtemplate.
-
----
-
-## 9. Dialog- und Edit-Komposition
-
-Die Dialogstruktur folgt einer klaren Vererbungskette.
-
-`EntityEditDialog` bildet die Basisschicht für Create/Edit-Dialoge.
-
-`ColorSelectEntityEditDialog` erweitert diese um Farbauswahl.
-
-`EmployeeSelectEntityEditDialog` erweitert zusätzlich um standardisierte Mitgliederzuweisung.
-
-### Verantwortlichkeiten
-
-- `EntityEditDialog`: Struktur, Submit-Handling, Basis-Layout.
-- `ColorSelectEntityEditDialog`: zentrale Farblogik.
-- `EmployeeSelectEntityEditDialog`: standardisierte Mitarbeiterzuweisung.
-
-### Verbindliche Regel
-
-Neue Dialoge für Teams, Tours oder ähnliche Entities dürfen keine eigene Farblogik implementieren.
-
-Wenn Farbauswahl benötigt wird, muss `ColorSelectEntityEditDialog` verwendet oder erweitert werden.
-
-Wenn Mitgliederzuweisung benötigt wird, muss `EmployeeSelectEntityEditDialog` verwendet oder erweitert werden.
-
-Es dürfen keine parallelen Spezialdialoge entstehen.
-
----
-
-## 10. Filter-Komposition
-
-Die Filter-Komposition strukturiert sämtliche Listenfilter der Anwendung. Ziel ist es, Filter nicht ad hoc in Listenscreens zu verteilen, sondern sie als wiederverwendbare, klar getrennte Bausteine zu behandeln.
-
-Dabei ist strikt zwischen drei Ebenen zu unterscheiden:
-
-1. **Eingabekomponente (UI-Control)** – rein visuelle Eingabe.
-2. **Layout-Hülle (Panel)** – Anordnung und Gruppierung.
-3. **Filterzustand + Logik** – liegt im Screen oder in einem dedizierten Hook.
-
-Kompositionskomponenten enthalten keine eigentliche Filterlogik. Sie kennen weder QueryKeys noch API-Parameter.
-
----
-
-### 10.1 Basisfelder
-
-### FilterInput
-
-Generisches Texteingabefeld mit konsistentem Styling, Clear-Option und optionalem Label. Es kapselt keine Suchlogik, sondern liefert ausschließlich den eingegebenen Wert.
-
-### SearchFilterInput
-
-Spezialisierung für typische Textsuche. Vereinheitlicht Icon, Placeholder-Verhalten und Enter-Handling.
-
-### BooleanToggleFilterInput
-
-Kompakte Toggle-Variante für boolesche Filter (z. B. „aktiv / inaktiv“). Stellt visuell eine Schalterlogik bereit, ohne fachliche Interpretation.
-
-Diese Basisfelder dürfen keine direkten API-Aufrufe enthalten.
-
----
-
-### 10.2 FilterPanel
-
-`FilterPanel` ist die strukturelle Hülle für Filterbereiche. Es definiert ausschließlich die Anordnung der Controls.
-
-Unterstützt werden zwei Layout-Modi:
-
-- `row` – horizontale Anordnung
-- `stack` – vertikale Anordnung
-
-`FilterPanel` enthält keine Filterzustände.
-
----
-
-### 10.3 Domänenspezifische FilterPanels
-
-Für wiederkehrende Filterkombinationen existieren eigene Panels:
-
-- `CustomerFilterPanel`
-- `EmployeeFilterPanel`
-- `ProjectFilterPanel`
-
-Diese Panels bündeln typische Filterfelder (z. B. Name, Nummer, Status, Teamzugehörigkeit) und kapseln deren visuelle Gruppierung.
-
-Wichtig: Auch diese Panels enthalten keine Query-Logik. Sie geben ausschließlich Werte nach außen.
-
----
-
-### 10.4 Filterzustand und Query-Integration
-
-Der tatsächliche Filterzustand wird im jeweiligen Listenscreen gehalten (z. B. `CustomerList`, `ProjectList`, `EmployeeList`). Dort erfolgt:
-
-- Speicherung der Filterwerte im lokalen State,
-- Übergabe an QueryKeys,
-- Ableitung von API-Parametern.
-
-Filter-Komponenten sind rein darstellend und dürfen keine Kenntnis über QueryKeys besitzen.
-
----
-
-### 10.5 Erweiterungsregeln
-
-Wenn ein neuer Filter ergänzt werden soll:
-
-1. Prüfen, ob es sich um ein generisches Eingabemuster handelt (→ neues FilterInput).
-2. Prüfen, ob der Filter nur in einer Domäne relevant ist (→ Erweiterung des domänenspezifischen Panels).
-3. Keine neue Layout-Hülle erzeugen, wenn `FilterPanel` ausreicht.
-4. Keine API-Logik in Filter-Komponenten integrieren.
-
-Ziel ist es, dass alle Listenfilter visuell konsistent bleiben und fachliche Änderungen ausschließlich in Screens oder Hooks stattfinden.
-
----
-
-## 11. Erweiterungsprinzipien
-
-Neue Kompositionskomponenten entstehen nur bei struktureller Wiederverwendung.
-
-Fachlogik gehört nicht in diese Schicht.
-
-Sonderfälle werden durch Spezialisierung oder Wrapper gelöst, nicht durch Erweiterung der Basiskomponenten mit unkontrollierten Props.
+```markdown
+## <Komponentenname>
+- Kategorie: `Basis | Wrapper | Ableitung | Fachkomponente`
+- Status: `aktiv | deprecated | experimentell`
+### Kurzbeschreibung
+<2-4 Sätze mit fachlichem Nutzen>
+### Wo sichtbar in der GUI
+- <Ansicht/Formular/Dialog>
+- <Position im Screen, z. B. Header, Content, Footer, rechter Panelbereich>
+### Public API
+| Element | Typ | Pflicht | Default | Bedeutung |
+|---|---|---|---|---|
+| `<prop oder event>` | `<type>` | `ja/nein` | `<wert>` | `<text>` |
+### Beziehungen
+- Verwendet: <Basis/Helper>
+- Verwendet von: <Screens/Formulare/Wrapper>
+- Ableitungen: <falls vorhanden>
+### Hinweise
+- A11y:
+- Responsiveness:
+- Bekannte Einschränkungen:
+```
 
 ## Regeln & Randbedingungen
 
@@ -3734,3 +3554,272 @@ Letzter Admin soll entfernt werden → System blockiert.
 **Ergebnis**
 
 Die neue Rolle ist gespeichert und wirksam.
+
+# FT (21): KI-gestützte Dokumentenextraktion
+
+## Ziel / Zweck
+
+FT (21) erweitert das System um eine kontextgebundene Dokumentenextraktion zur Unterstützung der Disposition.
+
+Aus einem textbasierten Auftragsdokument (PDF) sollen automatisiert folgende Daten extrahiert werden:
+
+- Kundendaten gemäß bestehendem Kundenschema
+- Saunamodell (als Projekttitel-Vorschlag)
+- Artikelliste (Menge + Beschreibung, mehrzeilig möglich, ohne Preise)
+
+Die extrahierten Daten werden als editierbarer Vorschlag präsentiert und können in das aktuelle Formular (Neues Projekt oder Neuer Termin) übernommen werden.
+
+Das Feature dient ausschließlich der Arbeitserleichterung.
+
+Es ersetzt keine bestehende Validierungs- oder Sicherheitslogik.
+
+## Fachliche Beschreibung
+
+Die Extraktionsfunktion ist ausschließlich in folgenden Kontexten verfügbar:
+
+- Formular **Neues Projekt**
+- Formular **Neuer Termin**
+
+Die Disponentin kann ein PDF in einen definierten Extraktionsbereich ziehen.
+
+Das System:
+
+1. Extrahiert den Text aus dem Dokument.
+2. Segmentiert strukturelle Bereiche (Kunde, Artikelliste, Auftragsblock).
+3. Extrahiert strukturierte Kundendaten.
+4. Extrahiert eine Artikelliste.
+5. Erkennt das Saunamodell.
+6. Kategorisiert die Artikelliste semantisch.
+7. Liefert ein validiertes Ergebnis zurück.
+
+### KI-Zusatzfunktion: Kategorisierung
+
+Die extrahierte Artikelliste wird semantisch gruppiert und sortiert.
+
+Beispielhafte Kategorien:
+
+- Saunatyp
+- Dachvariante
+- Farbe
+- Ofen
+- Fenster
+- Inneneinrichtung
+- Zubehör
+- Sondermaße
+- Einzelteile
+
+Die Kategorisierung darf die ursprünglichen Inhalte nicht verändern.
+
+Bei Unsicherheit bleibt die ursprüngliche Reihenfolge erhalten.
+
+## Präsentation
+
+Nach erfolgreicher Extraktion erscheint ein schwebender Dialog.
+
+### Bereich 1 – Kundendaten
+
+Nachbildung des Kunden-Edit-Formulars mit vorbefüllten Feldern.
+
+Alle Felder sind editierbar.
+
+### Bereich 2 – Projektvorschlag
+
+Titelfeld:
+
+- Vorgefüllt mit erkanntem Saunamodell.
+
+Editorfeld (RTF/HTML-kompatibel):
+
+- Extrahierte, sortierte Artikelliste.
+- Darstellung als strukturierte HTML-Auflistung.
+- Vollständig editierbar.
+
+## Regeln & Randbedingungen
+
+- Die Verarbeitung erfolgt ausschließlich serverseitig.
+- Es werden keine Dokumente oder Texte an externe Dienste übertragen.
+- Das KI-Modell läuft lokal.
+- Dokumenttexte werden nicht persistiert.
+- Prompts und Rohtexte werden nicht geloggt.
+- Die KI-Ausgabe gilt als nicht vertrauenswürdig und wird vollständig validiert.
+- Ungültige oder unvollständige Daten dürfen nicht gespeichert werden.
+- Die Speicherung erfolgt nur nach Benutzerbestätigung.
+- Rollen- und Berechtigungslogik wird serverseitig geprüft.
+- FT (21) verändert das Attachment-Modell aus FT (19) nicht.
+- FT (21) verändert keine bestehenden Domänenmodelle.
+- Das Feature darf keine impliziten Datenänderungen auslösen.
+- Bei strukturell ungeeigneten Dokumenten muss der Prozess sauber abbrechen.
+
+## **Use Cases**
+
+### UC: Dokumentextraktion starten
+
+**Akteur**
+
+Disponent oder Admin
+
+**Ziel**
+
+Ein Attachment analysieren und strukturierte Daten extrahieren.
+
+**Vorbedingungen**
+
+- Ein Attachment existiert.
+- Der Benutzer besitzt ausreichende Berechtigung.
+- Das Dokument ist technisch lesbar.
+
+**Ablauf**
+
+1. Der Benutzer wählt ein Attachment.
+2. Der Benutzer startet die Extraktion.
+3. Das System extrahiert den Text aus dem Dokument.
+4. Das System analysiert den Text über die KI-Schicht.
+5. Das System validiert das Ergebnis.
+6. Das System zeigt die extrahierten Daten als Vorschlag an.
+
+**Alternativen**
+
+- Dokument nicht lesbar → Fehlermeldung.
+- Validierung schlägt fehl → strukturierter Fehlerstatus.
+
+**Ergebnis**
+
+Strukturierter, editierbarer Vorschlag wird angezeigt.
+
+### UC: Extrahierte Daten bestätigen
+
+**Akteur**
+
+Disponent oder Admin
+
+**Ziel**
+
+Extrahierte Daten prüfen, anpassen und übernehmen.
+
+**Vorbedingungen**
+
+- Ein validierter Extraktionsvorschlag liegt vor.
+
+**Ablauf**
+
+1. Benutzer prüft Kundendaten.
+2. Benutzer korrigiert ggf. Felder.
+3. Benutzer prüft Artikelliste.
+4. Benutzer bestätigt Übernahme.
+5. System speichert Daten in den entsprechenden Domänen.
+
+**Alternativen**
+
+- Benutzer bricht ab → keine Speicherung.
+- Validierungsfehler bei Speicherung → Fehlermeldung.
+
+**Ergebnis**
+
+Daten sind persistiert und fachlich korrekt zugeordnet.
+
+### UC: Ungeeignetes Dokument behandeln
+
+**Akteur**
+
+Disponent
+
+**Ziel**
+
+Fehlverarbeitung bei ungeeigneten Dokumenten vermeiden.
+
+**Vorbedingungen**
+
+- Dokument enthält keine strukturierbaren Daten.
+
+**Ablauf**
+
+1. Benutzer startet Extraktion.
+2. System erkennt unzureichende Struktur oder Validierungsfehler.
+3. System bricht mit klarer Meldung ab.
+
+**Ergebnis**
+
+Keine Datenänderung. System bleibt konsistent.
+
+### UC: Kategorisierung schlägt fehl
+
+Wenn die semantische Gruppierung nicht eindeutig möglich ist:
+
+- Artikelliste wird in Originalreihenfolge angezeigt.
+- Keine Blockade des Prozesses.
+
+### UC: Dokumentextraktion im Formular „Neues Projekt“ starten
+
+**Akteur:** Disponent / Admin
+
+**Vorbedingungen:**
+
+- Formular „Neues Projekt“ geöffnet
+- Berechtigung vorhanden
+
+**Ablauf:**
+
+1. Benutzer zieht PDF in Extraktionsbereich.
+2. System verarbeitet Dokument.
+3. Ergebnisdialog erscheint.
+
+**Ergebnis:**
+
+Editierbarer Vorschlag wird angezeigt.
+
+### UC: Dokumentextraktion im Formular „Neuer Termin“ starten
+
+Analog zum Projekt-Kontext, jedoch mit Termin-spezifischen Scope-Regeln.
+
+### UC: Kundendaten übernehmen – Scope Neues Projekt
+
+### Fall A: Kein Kunde ausgewählt
+
+- Nachfrage: „Kunde mit den erkannten Daten neu anlegen?“
+- Duplikatsprüfung erfolgt.
+- Kunde wird angelegt und im Projekt gesetzt.
+
+### Fall B: Kunde bereits ausgewählt
+
+- Nachfrage: „Der aktuell gewählte Kunde wird ersetzt. Fortfahren?“
+- Bei Bestätigung wird Kunde neu angelegt und verknüpft.
+- Bei Abbruch keine Änderung.
+
+### UC: Kundendaten übernehmen – Scope Neuer Termin
+
+**Vorbedingung:**
+
+- Kein Projekt ausgewählt.
+
+Nach Bestätigung:
+
+- Neuer Kunde wird angelegt.
+- Duplikatsprüfung erfolgt.
+- Kunde wird im Terminformular gesetzt.
+
+### UC: Projekt übernehmen – Scope Neues Projekt
+
+### Fall A: Titel/Beschreibung leer
+
+- Titel wird gesetzt.
+- Artikelliste wird als HTML eingefügt.
+
+### Fall B: Felder bereits befüllt
+
+- Warnhinweis vor Überschreiben.
+- Nur bei Bestätigung Übernahme.
+
+### UC: Projekt übernehmen – Scope Neuer Termin
+
+**Vorbedingung:**
+
+- Kein Projekt ausgewählt.
+
+Nach Bestätigung:
+
+1. Neues Projekt wird angelegt.
+2. Titel = erkanntes Saunamodell.
+
+1. Beschreibung = HTML-Artikelliste.
+2. Projekt wird im Termin gesetzt.
+3. Kunde wird automatisch verknüpft.
