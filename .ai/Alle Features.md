@@ -1,8 +1,6 @@
-# mugplan_features.md
+# Alle Features
 
-<!-- Konsolidierte Features aus Kapitel (02) -->
-
-## FT (01): Kalendertermine verwalten
+# FT (01): **Kalendertermine verwalten**
 
 ## Ziel / Zweck
 
@@ -339,7 +337,7 @@ Einen einzelnen Mitarbeiter gezielt einem bestehenden Termin zuweisen.
 
 Der ausgewählte Mitarbeiter ist dem Termin zugewiesen.
 
-## FT (02): Projekte
+# FT (02): Projekte
 
 ## Ziel / Zweck
 
@@ -366,8 +364,9 @@ Termine können ausschließlich **innerhalb eines Projekts** angelegt werden und
 Projekt-Details sind immer **projektweit gültig** und gelten automatisch für alle zugehörigen Termine. Aus Termin- oder Kalenderansichten können Projekt-Details eingesehen, jedoch nicht zwingend dort bearbeitet werden.
 
 EIn Projekt kann mehrere Status Etiketten haben, die über eine n:m Beziehung organisiert werden.
-
 Jedes Projekt besitzt ein **is_active** Flag (Standardwert: TRUE). Aktive Projekte erscheinen in den regulären Ansichten und Auswahllisten. Inaktive (archivierte) Projekte werden aus der täglichen Arbeit ausgeblendet, bleiben aber für historische Auswertungen vollständig erhalten und einsehbar.
+
+In der Projektliste wird standardmäßig nur die für die Disposition relevante Arbeitsmenge angezeigt. Unter „Aktuelle Projekte“ versteht das System Projekte, die mindestens einen Termin besitzen, dessen Startdatum heute oder in der Zukunft liegt. Projekte ohne Termine sind im Standardfall bewusst ausgeblendet, weil sie nicht disponierbar sind. Über eine explizite Umschaltoption kann die Liste stattdessen auf „Projekte ohne Termine“ umgestellt werden; in diesem Modus werden ausschließlich Projekte angezeigt, die keinen Termin besitzen. Zusätzliche Filter wie Titel- oder Statusfilter wirken immer nur auf die jeweils geladene Projektmenge und definieren nicht die Grundmenge.
 
 ## Regeln & Randbedingungen
 
@@ -534,11 +533,9 @@ Notizen sind dem Projekt zugeordnet und verfügbar.
 
 ### **UC: Projektanhänge verwalten**
 
-**Akteur:** RO (01): Disponent 
-
 **Ziel:**
 
-Dokumente zu einem Projekt hinzufügen oder entfernen.
+Dokumente zu einem Projekt hinzufügen und projektbezogene Anhänge einsehen bzw. herunterladen.
 
 **Vorbedingungen:**
 
@@ -547,8 +544,15 @@ Projekt existiert.
 **Ablauf:**
 
 1. Disponent öffnet das Projekt.
-2. Disponent fügt Anhänge hinzu oder entfernt bestehende.
-3. System speichert die Änderungen.
+2. Das System zeigt die Liste der vorhandenen Anhänge an (mit Metadaten wie Dateiname und Zeitstempel, sofern verfügbar).
+3. Disponent fügt einen oder mehrere Anhänge hinzu (Upload).
+4. Das System ordnet die hochgeladenen Dateien dem Projekt zu und speichert die Änderungen.
+5. Disponent kann vorhandene Anhänge öffnen (Preview) oder herunterladen.
+
+**Alternativabläufe:**
+
+- Upload abgebrochen oder Datei ungültig: Das System speichert keinen neuen Anhang und zeigt eine verständliche Fehlermeldung.
+- Anhänge können nicht gelöscht werden: Eine „Entfernen/Löschen“-Aktion wird nicht angeboten.
 
 **Ergebnis:**
 
@@ -610,7 +614,21 @@ Ein deaktiviertes Projekt wieder in die aktive Nutzung aufnehmen.
 
 Das Projekt ist wieder aktiv und erscheint in allen regulären Ansichten und Auswahlfeldern.
 
-## FT (03): Kalenderansichten
+### UC: Projekte anzeigen
+
+**Akteur:** Disponent
+
+**Ziel:** Der Disponent sieht eine für die tägliche Arbeit passende Projektliste und kann bei Bedarf auf Projekte ohne Termine umschalten.
+
+**Vorbedingungen:** Projekte sind im System vorhanden.
+
+**Auslöser:** Der Disponent öffnet die Projektübersicht.
+
+**Ablauf:** Der Disponent öffnet die Projektübersicht. Das System lädt standardmäßig die Projektmenge „Aktuelle Projekte“ und zeigt sie an. Der Disponent kann die Umschaltoption „Ohne Termine“ aktivieren; das System lädt dann ausschließlich Projekte ohne Termine und zeigt diese an. Der Disponent kann zurück auf „Aktuelle Projekte“ umschalten; das System lädt wieder die Standardmenge.
+
+**Ergebnis:** Der Disponent sieht entweder die aktuellen Projekte oder ausschließlich Projekte ohne Termine, jeweils als klar getrennte Mengen.
+
+# FT (03): Kalenderansichten
 
 ## Ziel / Zweck
 
@@ -643,7 +661,7 @@ In Monats- und Jahresansicht wird beim Mouse-Over eines Termins ein Popover ange
 
 Die Kalenderansichten benötigen für die dargestellten Termine Zugriff auf Projekt- und Kundendaten sowie auf die Mitarbeiterzuordnungen. Diese Informationen dürfen serverseitig zusammengeführt oder bei Bedarf nachgeladen werden, solange die Oberfläche ohne spürbare Verzögerung bedienbar bleibt. Mouse-Over darf Details nachladen, muss jedoch pro Termin zwischenspeichern, damit wiederholtes Hovering keine wiederholten Ladevorgänge auslöst.
 
-# Darstellung
+## Darstellung
 
 ## Gesamtkonzept: Einheitliche Logik, verschiedene Render-Modi
 
@@ -657,8 +675,6 @@ Ein Termin ist ein Zeitraum mit **Startdatum** und optional **Enddatum**. Ein Te
 
 Ein Termin kann optional eine **Startzeit** haben. Solche Termine werden als **Intraday-Termine** bezeichnet. Intraday-Termine werden optisch weiterhin wie Ein-Tages-Termine behandelt, d. h. sie sind nicht als „stundenbasierte Zeitleiste“ darzustellen. Die Startzeit wird lediglich als zusätzliche Information im Termin angezeigt und beeinflusst die Sortierung.
 
----
-
 ## Begriffe und Layout-Grundlage
 
 Kalendertage sind innerhalb einer Ansicht in einem Raster angeordnet. Zur Vereinfachung wird die sichtbare Fläche eines einzelnen Kalendertags als **Tag** bezeichnet.
@@ -666,8 +682,6 @@ Kalendertage sind innerhalb einer Ansicht in einem Raster angeordnet. Zur Verein
 Termine werden innerhalb eines Tags nicht übereinander gelegt, sondern vertikal in **Zeilen** organisiert. Diese Zeilen heißen im Folgenden **Lanes** (oder Slots). Eine Lane ist eine reine Organisations- und Positionierungshilfe und ist in der UI nicht als eigene Linie sichtbar.
 
 Die konkrete Höhe einer Lane hängt vom jeweiligen Darstellungsmodus (kompakt oder detailliert) und den verwendeten UI-Komponenten (Schrifthöhen, Padding, etc.) ab.
-
----
 
 ## Lane-System: Ziel und Grundregeln
 
@@ -689,8 +703,6 @@ In der **Wochenansicht** wird die Lane-Struktur pro **Woche** (bzw. pro dargeste
 
 Für jede Tour, die in diesem Abschnitt vorkommt, existiert mindestens eine Lane. Zusätzlich existiert eine Lane für **Termine ohne Tour**, die unterhalb der Tour-Lanes liegt. Damit ergibt sich eine stabile vertikale Grundordnung: „Tour-Lanes oben, tourlose Termine darunter“.
 
----
-
 ## Darstellung eines Termins: Balken über mehrere Tage
 
 Termine werden grundsätzlich als **waagerechte Elemente** dargestellt, die sich über die Tage spannen, die zum Termin gehören.
@@ -702,8 +714,6 @@ Ein Mehrtages-Termin überspannt alle Tage vom Startdatum bis einschließlich En
 Intraday-Termine (mit Startzeit) werden geometrisch wie Ein-Tages-Termine behandelt. Ein Intraday-Termin hat kein abweichendes Enddatum. Der Unterschied besteht lediglich darin, dass die Startzeit angezeigt wird und die Sortierung innerhalb einer Lane beeinflusst wird.
 
 Die Farbe des Termin-Elements folgt der Tourfarbe oder ist neutral, wenn keine Tour zugeordnet ist.
-
----
 
 ## Konflikte innerhalb einer Lane: Mehrere Termine am selben Tag
 
@@ -720,8 +730,6 @@ Bei gleichen Startzeiten wird als Tie-Breaker eine stabile Sortierung verwendet 
 In der Monats- und Jahresansicht wird die erforderliche Höhe pro Reihe so bestimmt, dass alle Stapelungen in dieser Reihe sichtbar sind, oder es wird eine explizit definierte Verdichtungsregel verwendet.
 
 In der Wochenansicht ist eine variable Höhe aufgrund von Detaildarstellung zulässig.
-
----
 
 ## Render-Modi: Kompakt vs. Detailliert
 
@@ -753,15 +761,11 @@ Außerdem müssen die dem Termin **zugewiesenen Mitarbeiter** dargestellt werden
 
 Dieser Modus wird in der **Wochenansicht** genutzt.
 
----
-
 ## Popover bei Mouse-Over
 
 In Monats- und Jahresansicht wird beim Mouse-Over eines Termins ein Popover angezeigt, das die wichtigsten Informationen bündelt. Dieses Popover muss mindestens den Informationsumfang des detaillierten Termin-Panels enthalten und darf dieselben Inhaltsbausteine wiederverwenden, damit keine abweichenden Varianten entstehen.
 
 Die Wochenansicht darf ein identisches Popover ebenfalls verwenden, sofern dies die Bedienbarkeit verbessert. Es dürfen jedoch keine voneinander abweichenden Popover-Varianten entstehen.
-
----
 
 ## Wochenansicht: Detailkarten und Kollabierbarkeit
 
@@ -773,8 +777,6 @@ Die Höhe darf sich verändern, wenn Termin-Panels aufgeklappt werden.
 
 Die Interaktion „Alle aufklappen“ wirkt als globaler Schalter für diesen Render-Modus.
 
----
-
 ## Monatsansicht: Balken und Reihenstabilität
 
 In der Monatsansicht dominiert der kompakte Balkenmodus.
@@ -785,8 +787,6 @@ Die erforderliche Reihenhöhe wird so berechnet, dass die maximal benötigte Slo
 
 Wenn die Zahl der Termine in einer Reihe sehr hoch ist, wird eine explizite Verdichtung verwendet, zum Beispiel „Anzeige nur der ersten N Termine“ und eine Kennzeichnung wie „+X weitere“. Die konkrete Verdichtung muss explizit festgelegt werden, damit das Verhalten deterministisch bleibt.
 
----
-
 ## Jahresansicht: Stark verdichtete Darstellung
 
 In der Jahresansicht ist die Tagesfläche noch kleiner als im Monat.
@@ -796,8 +796,6 @@ Es wird grundsätzlich im kompakten Balkenmodus gerendert.
 Informationen werden maximal reduziert.
 
 Verdichtung ist typischerweise zwingend, wenn viele Termine auftreten.
-
----
 
 ## Drag & Drop: Verschieben von Terminen
 
@@ -833,7 +831,7 @@ Der Benutzer wählt einen Mitarbeiter; das System zeigt dessen Termine im gewäh
 
 Der Benutzer wählt eine Team (oder eine Team-Definition, falls später echte Teams kommen); das System zeigt die zugehörigen Termine im Zeitraum.
 
-## FT (04): Tourenplanung
+# FT (04): Tourenplanung
 
 ## Ziel / Zweck
 
@@ -975,7 +973,7 @@ Der Disponent wählt eine bestehende Tour zur Bearbeitung aus.
 
 Die Tour-Vorlage ist aktualisiert und steht in der neuen Zusammensetzung zur Verfügung.
 
-## FT (05): Mitarbeiterverwaltung
+# FT (05): Mitarbeiterverwaltung
 
 ## Ziel / Zweck
 
@@ -992,6 +990,10 @@ Für jeden Mitarbeiter ist eine Terminübersicht verfügbar. Diese Übersicht ze
 Änderungen an zukünftigen Terminen wirken sich unmittelbar auf die Terminliste eines Mitarbeiters aus. Vergangene Termine sind read-only und dürfen nicht nachträglich verändert werden, um die Stabilität der Einsatzhistorie sicherzustellen.
 
 In der Terminübersicht eines Mitarbeiters sind neben Zeitraum und Bezeichnung des Termins auch die zugehörige Tour sowie der Kunde erkennbar, da Termine diese Informationen referenzieren.
+
+In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.
+
+In der Mitarbeiterliste wird standardmäßig nur die Arbeitsmenge „Aktive Mitarbeiter“ angezeigt. Dadurch werden inaktive Mitarbeiter aus der täglichen Disposition ausgeblendet, bleiben aber weiterhin vollständig im System vorhanden. Über eine explizite Option „Alle“ kann die Liste auf „Aktiv und inaktiv“ umgestellt werden. Der Namensfilter wirkt immer nur auf die jeweils geladene Mitarbeitermenge und definiert nicht die Grundmenge.
 
 ## Regeln & Randbedingungen
 
@@ -1015,6 +1017,7 @@ In der Terminübersicht eines Mitarbeiters sind neben Zeitraum und Bezeichnung d
 - Wird ein Mitarbeiter vor Durchführung eines Termins ersetzt, darf dieser Termin nicht mehr in der Terminliste des abgelösten Mitarbeiters erscheinen.
 - Es dürfen keine widersprüchlichen Zustände entstehen, bei denen ein Mitarbeiter als zugewiesen gilt, ohne dass ein entsprechender Termin existiert.
 - Mitarbeiter existieren unabhängig von Tour-Zugehörigkeit und Team-Zugehörigkeit. Löschungen von Tour oder Team wirken sich nur auf die FK-Eigenschaften des Mitarbeiters aus (Setzen auf NULL).
+- Mitarbeiteranhänge sind mitarbeiterbezogen und unabhängig von Terminen; Anhänge können hinzugefügt und heruntergeladen werden, eine physische Löschung ist nicht vorgesehen.
 
 ## **Use Cases**
 
@@ -1168,7 +1171,45 @@ Einen deaktivierten Mitarbeiter wieder in den aktiven Betrieb aufnehmen.
 
 Der Mitarbeiter ist wieder aktiv und steht für alle Planungsfunktionen zur Verfügung.
 
-## FT (06): Druckfunktionen
+### UC: Mitarbeiteranhänge verwalten
+
+**Akteur:** RO (01): Disponent
+
+**Ziel:**
+
+Der Disponent kann Dokumente zu einem Mitarbeiter hinzufügen und bestehende Dokumente in der Mitarbeiterdetailansicht öffnen oder herunterladen.
+
+**Vorbedingungen:**
+
+Der Mitarbeiter existiert und die Mitarbeiterdetailansicht ist geöffnet.
+
+**Ablauf:**
+
+1. Der Disponent öffnet die Detailansicht eines Mitarbeiters.
+2. Das System zeigt eine Liste der vorhandenen Anhänge des Mitarbeiters an.
+3. Der Disponent fügt einen oder mehrere Anhänge hinzu (Upload).
+4. Das System speichert die Dateien als mitarbeiterbezogene Anhänge und aktualisiert die Liste.
+5. Der Disponent kann einen Anhang öffnen (Preview) oder herunterladen.
+
+**Regeln & Randbedingungen:**
+
+Eine Löschfunktion für Mitarbeiteranhänge wird nicht angeboten, weil es für Mitarbeiteranhänge keinen Delete-Endpunkt gibt und Löschung serverseitig nicht vorgesehen ist.
+
+### UC: Mitarbeiter anzeigen
+
+**Akteur:** Disponent
+
+**Ziel:** Der Disponent sieht standardmäßig nur aktive Mitarbeiter und kann bei Bedarf alle Mitarbeiter anzeigen.
+
+**Vorbedingungen:** Mitarbeiter sind im System vorhanden.
+
+**Auslöser:** Der Disponent öffnet die Mitarbeiterübersicht.
+
+**Ablauf:** Der Disponent öffnet die Mitarbeiterübersicht. Das System lädt standardmäßig nur aktive Mitarbeiter und zeigt sie an. Der Disponent kann die Option „Alle“ aktivieren; das System lädt dann aktive und inaktive Mitarbeiter und zeigt beide an. Der Disponent kann die Option wieder deaktivieren; das System lädt wieder nur aktive Mitarbeiter.
+
+**Ergebnis:** Der Disponent sieht entweder nur aktive Mitarbeiter oder alle Mitarbeiter, ohne dass Daten gelöscht oder verborgen werden.
+
+# FT (06): Druckfunktionen
 
 ## Ziel / Zweck
 
@@ -1298,7 +1339,7 @@ Die Termine eines ausgewählten Mitarbeiters als Druck oder PDF ausgeben.
 
 Die Termine des Mitarbeiters liegen als Druck oder PDF vor.
 
-## FT (07): Fallback-Kalender und Datei
+# FT (07): Fallback-Kalender und Datei
 
 ## Ziel / Zweck
 
@@ -1425,7 +1466,7 @@ Externe Kalender für Teams und den zentralen Planungskalender anbinden.
 
 Teams und Planung verfügen über zugeordnete externe Kalender, die für die Synchronisation bereitstehen.
 
-## FT (09): Kundenverwaltung
+# FT (09): Kundenverwaltung
 
 ## Ziel / Zweck
 
@@ -1437,6 +1478,8 @@ Die Kundenverwaltung ermöglicht das Anlegen, Bearbeiten und Anzeigen von Kunden
 Ein Kunde kann beliebig viele Projekte und damit indirekt beliebig viele Termine besitzen. In der Kundendetailansicht wird eine **Projektliste** angezeigt, die alle dem Kunden zugeordneten Projekte umfasst (z. B. Aufbau, Service, Nachbesserung).
 Kunden dürfen nicht physisch gelöscht werden, sobald sie in Projekten verwendet werden. Stattdessen können sie **deaktiviert/archiviert** werden. Archivierte Kunden bleiben in bestehenden Projekten und in der Historie sichtbar, stehen jedoch **nicht mehr für neue Projekte** zur Auswahl.
 Kunden haben eine **Notizenliste** (0..n). Notizen werden in der Kundendetailansicht als vertikale Kärtchenliste dargestellt und über einen Richtext-Editor verwaltet. Die Verwaltungslogik für Notizen ist in FT (13): Notizverwaltung definiert. Notizen sind **kundenbezogen** und **projektunabhängig**.
+
+In der Kundendetailansicht können dem Kunden zusätzlich Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.
 
 ## Regeln & Randbedingungen
 
@@ -1456,6 +1499,7 @@ Kunden haben eine **Notizenliste** (0..n). Notizen werden in der Kundendetailans
 - Ein Kunde kann 0..n Notizen haben.
 - Notizen werden gemäß FT (13): Notizverwaltung verwaltet.
 - Das Löschen eines Kunden löscht auch alle zugehörigen Notizen (CASCADE über customer_note).
+- Kundenanhänge sind kundenbezogen und unabhängig von Projekten; Anhänge können hinzugefügt und heruntergeladen werden, eine physische Löschung ist nicht vorgesehen.
 
 ## **Use Cases**
 
@@ -1629,7 +1673,31 @@ Einen deaktivierten Kunden wieder in die aktive Nutzung aufnehmen.
 
 Der Kunde ist wieder aktiv und steht für neue Projekte zur Verfügung.
 
-## FT (11): Team Verwaltung
+### UC: Kundenanhänge verwalten
+
+**Akteur:** RO (01): Disponent
+
+**Ziel:**
+
+Der Disponent kann Dokumente zu einem Kunden hinzufügen und bestehende Dokumente in der Kundendetailansicht öffnen oder herunterladen.
+
+**Vorbedingungen:**
+
+Der Kunde existiert und die Kundendetailansicht ist geöffnet.
+
+**Ablauf:**
+
+1. Der Disponent öffnet die Detailansicht eines Kunden.
+2. Das System zeigt eine Liste der vorhandenen Anhänge des Kunden an.
+3. Der Disponent fügt einen oder mehrere Anhänge hinzu (Upload).
+4. Das System speichert die Dateien als kundenbezogene Anhänge und aktualisiert die Liste.
+5. Der Disponent kann einen Anhang öffnen (Preview) oder herunterladen.
+
+**Regeln & Randbedingungen:**
+
+Eine Löschfunktion für Kundenanhänge wird nicht angeboten, weil es für Kundenanhänge keinen Delete-Endpunkt gibt und Löschung serverseitig nicht vorgesehen ist.
+
+# FT (11): Team Verwaltung
 
 ## Ziel / Zweck
 
@@ -1790,7 +1858,7 @@ Der Nutzer wählt ein Team zur Anzeige aus.
 
 Die Zusammensetzung des Teams ist sichtbar.
 
-## FT (12): Dispositionsübersicht
+# FT (12): Dispositionsübersicht
 
 ## Ziel / Zweck
 
@@ -1918,7 +1986,7 @@ Der Disponent erhält eine Übersicht, aus der ersichtlich ist, welche Mitarbeit
 - Die Übersicht trifft keine fachliche Bewertung.
 - Die Anzeige verändert keine Termine, Mitarbeiter oder Touren.
 
-## FT (13): Notizverwaltung
+# FT (13): Notizverwaltung
 
 ## Ziel / Zweck
 
@@ -2325,7 +2393,7 @@ Alle Notizen des Kunden sind sichtbar.
 
 **Ergebnis:** Die Vorlage ist gelöscht. Bereits erstellte Notizen bleiben unverändert.
 
-## FT (14): Benutzer- und Rollenverwaltung
+# FT (14): Benutzer- und Rollenverwaltung
 
 ## Ziel / Zweck
 
@@ -2355,7 +2423,9 @@ Notizen existieren ausschließlich im Kontext eines übergeordneten Objekts (Kun
 
 Leser dürfen keinerlei schreibende Aktionen durchführen. Disponenten dürfen fachlich arbeiten, aber keine systemkritischen Zustände verändern. Admins dürfen alle Aktionen durchführen.
 
-## FT (15): Projekt Status Verwaltung
+## Use Cases
+
+# FT (15): Projekt Status Verwaltung
 
 ## Ziel / Zweck
 
@@ -2373,11 +2443,12 @@ Projektstatus werden in einer eigenen Stammdatentabelle gepflegt und über eine 
 
 Bestimmte Status können als Default-Status definiert sein. Diese sind systemseitig geschützt und dürfen nicht gelöscht werden.
 
-**Regeln & Randbedingungen**
+## **Regeln & Randbedingungen**
 
 - Projektstatus sind zentrale Stammdaten und werden systemweit verwendet.
 - Ein Projekt kann keinen, einen oder mehrere Projektstatus besitzen.
 - Die Zuordnung von Projektstatus zu Projekten erfolgt über eine n:m-Beziehung.
+
 - Projektstatus haben keine direkte technische Wirkung auf Termine oder Kalenderlogik.
 - Projektstatus können aktiviert oder deaktiviert werden.
 - Deaktivierte Status stehen für neue Zuordnungen nicht mehr zur Verfügung, bleiben jedoch aus Gründen der Historie erhalten.
@@ -2478,7 +2549,7 @@ Ergebnis:
 
 Die aktualisierte Statusliste steht allen Projekten zur Verfügung.
 
-## FT (16): Hilfetexte verwalten
+# FT (16): Hilfetexte verwalten
 
 ## Ziel / Zweck
 
@@ -2486,7 +2557,7 @@ Dieses Feature ermöglicht die zentrale Verwaltung von Hilfetexten in der Anwend
 
 ## Fachliche Beschreibung
 
-Ein Hilfetext ist ein eigenständiges, administrierbares Objekt mit eindeutiger Kennung („help_key“), Titel und formatierbarem Inhalt (Markdown). Hilfetexte werden in der UI kontextbezogen über ein Hilfe-Symbol (z. B. „?" oder „i") angezeigt. Die UI übergibt beim Abruf den help_key, das System liefert den passenden Hilfetext zurück.
+Ein Hilfetext ist ein eigenständiges, administrierbares Objekt mit eindeutiger Kennung („help_key“), Titel und formatierbarem Inhalt (Markdown). Hilfetexte werden in der UI kontextbezogen über ein Hilfe-Symbol (z. B. „?“ oder „i“) angezeigt. Die UI übergibt beim Abruf den help_key, das System liefert den passenden Hilfetext zurück.
 
 Hilfetexte sind rein informativ. Sie verändern keine fachlichen Daten (Kunden, Projekte, Termine, Touren etc.) und sind unabhängig von Termin- und Planungslogik. Sie dienen der besseren Bedienbarkeit, der Einarbeitung und der Reduzierung von Rückfragen.
 
@@ -2644,7 +2715,7 @@ Hilfetexte effizient finden, um sie zu pflegen.
 
 Admin kann Hilfetexte schnell auffinden und bearbeiten.
 
-## FT (17): UI Komposition
+# FT (17): UI Komposition
 
 ## Ziel / Zweck
 
@@ -2654,271 +2725,505 @@ Dieses Feature ist bewusst kein Fachfeature, sondern eine technische und gestalt
 
 ## Fachliche Beschreibung
 
-### CardListLayout
+## 1. Einordnung im Gesamtsystem
 
-`CardListLayout` ist das zentrale Seitenlayout für kartenbasierte Listenansichten und stellt den konsistenten Rahmen aus Header, optionalen Aktionen, Content-Grid sowie optionaler Bottom-Bar bereit. Die Komponente lebt in `client/src/components/ui/card-list-layout.tsx` und kapselt zusätzlich die Hilfetext-Integration über `helpKey`, indem sie bei gesetztem `helpKey` einen Hilfe-Button im Header rendert und den Text über React Query (`/api/help-texts`, `helpKey`) lädt.
+FT (17) beschreibt die UI-Kompositionsschicht der Anwendung. Diese Schicht ist kein Fachfeature, keine Domänendefinition und keine technische Infrastrukturkomponente, sondern eine bewusst eingeführte Struktur- und Ordnungsinstanz innerhalb des Frontends.
 
-`CardListLayout` ist eine Basiskomponente ohne eigene Ableitungen im Sinne „extends“, wird aber durch `FilteredCardListLayout` gezielt als Wrapper wiederverwendet, um Filterleisten einheitlich zu gestalten.
+Ziel dieser Schicht ist es, wiederkehrende Layout- und Darstellungsmuster verbindlich zu definieren. Neue Screens sollen nicht „frei komponiert“ werden, sondern sich aus stabilen, dokumentierten Bausteinen zusammensetzen. Dadurch werden visuelle Drift, Duplikation, inkonsistente Bedienmuster und schwer kontrollierbare Refactorings vermieden.
 
-`CardListLayout` wird direkt in folgenden Navigationspunkten verwendet, weil diese Screens die Seite unmittelbar mit diesem Layout aufbauen: `helpTexts` über `client/src/components/HelpTextsPage.tsx`, `noteTemplates` über `client/src/components/NoteTemplatesPage.tsx`, `teams` über `client/src/components/TeamManagement.tsx`, `tours` über `client/src/components/TourManagement.tsx`.
-
-`CardListLayout` wird indirekt in den Listenpunkten `customerList`, `projectList` und `employees` genutzt, weil diese Listen die Wrapper-Komponente `FilteredCardListLayout` verwenden, die wiederum `CardListLayout` rendert.
+Die Kompositionsschicht übernimmt keine Fachlogik. Sie kennt keine Geschäftsregeln, keine Validierungen, keine Persistenz und keine API-Endpunkte. Sie stellt ausschließlich Struktur, Slots und standardisierte Interaktionsmuster bereit. Fachlogik verbleibt in Feature-Screens oder fachnahen Hooks.
 
 ---
 
-### FilteredCardListLayout
+## 2. Grundprinzipien der Kompositionsschicht
 
-`FilteredCardListLayout` ist der standardisierte Wrapper für alle Listenansichten, die eine Filterleiste am unteren Rand haben sollen, und befindet sich in `client/src/components/ui/filtered-card-list-layout.tsx`. Technisch ist es eine dünne Schicht über `CardListLayout`, die dessen `bottomBar` belegt und dort eine einheitliche „Filter“-Sektion inklusive Icon und Layout für die Filtercontrols rendert.
+Die Kompositionsschicht folgt klaren architektonischen Leitlinien.
 
-Die Ableitungskette ist hier eindeutig: `FilteredCardListLayout` → `CardListLayout`.
+Erstens gilt das Prinzip „Struktur vor Fachlogik“. Kompositionskomponenten stellen Layout-Rahmen und klar definierte Slots bereit, erzwingen jedoch keine inhaltlichen Entscheidungen.
 
-`FilteredCardListLayout` wird in folgenden Navigationspunkten genutzt: `customerList` über `client/src/components/CustomerList.tsx`, `projectList` über `client/src/components/ProjectList.tsx` und `employees` über `client/src/components/EmployeeList.tsx` (wobei `EmployeeList` als Unterkomponente in der Mitarbeiter-Seite verwendet wird).
+Zweitens werden wiederkehrende Muster über Wrapper gelöst, nicht über Sonderfälle in Basiskomponenten. Wenn zwei Screens dieselbe strukturelle Idee umsetzen, entsteht ein dedizierter Wrapper.
 
----
+Drittens entstehen neue Kompositionskomponenten nur bei echter Wiederverwendung oder bei absehbarer Standardisierung. Einmalige UI-Hilfskonstruktionen gehören nicht in diese Schicht.
 
-### EntityCard
+Viertens erfolgt Erweiterung durch Spezialisierung. Statt Basiskomponenten durch immer mehr optionale Props aufzuweichen, werden klar benannte Ableitungen geschaffen.
 
-`EntityCard` ist die Basis-Kartenkomponente für die eigentlichen „Entity-Karten“ innerhalb von Listen und Verwaltungsansichten und liegt in `client/src/components/ui/entity-card.tsx`. Sie kapselt den Header mit Titel, optionalem Icon, optionalen Actions und optionalem Delete-Button, den Content-Slot sowie optional einen Footer-Bereich. Zusätzlich unterstützt sie ein linkes Farbakzent-Border-Verhalten, indem sie bei gesetztem `style.borderLeftColor` automatisch eine linke Border aktiviert.
+Fünftens werden Farb- und Layoutlogiken zentralisiert. Farbakzente, Avatar-Logiken oder Statusfarben dürfen nicht in einzelnen Screens neu berechnet werden.
 
-Die wichtigste Ableitung in diesem Projekt ist `ColoredEntityCard`, das als Wrapper die linke Border-Farbe als `borderColor`-Prop anbietet und intern an `EntityCard` durchreicht.
+Sechstens ist Vorschau- und Overlay-Logik entkoppelt. Badge-Darstellung und Popover-Verhalten sind getrennt implementiert.
 
-`EntityCard` wird direkt in folgenden Navigationspunkten verwendet: `customerList` über `client/src/components/CustomerList.tsx`, `projectList` über `client/src/components/ProjectList.tsx`, `employees` über `client/src/components/EmployeeList.tsx`, `helpTexts` über `client/src/components/HelpTextsPage.tsx`.
-
----
-
-### ColoredEntityCard
-
-`ColoredEntityCard` ist der definierte Wrapper über `EntityCard` und lebt in `client/src/components/ui/colored-entity-card.tsx`. Er übersetzt `borderColor` nach `style.borderLeftWidth` und `style.borderLeftColor` und delegiert ansonsten vollständig an `EntityCard`, wodurch Struktur und Verhalten nicht dupliziert werden.
-
-Die Ableitungskette ist: `ColoredEntityCard` → `EntityCard`.
-
-`ColoredEntityCard` wird in folgenden Navigationspunkten genutzt: `tours` über `client/src/components/TourManagement.tsx`, `teams` über `client/src/components/TeamManagement.tsx`, `noteTemplates` über `client/src/components/NoteTemplatesPage.tsx`, `projectStatus` über `client/src/components/ProjectStatusList.tsx` (wobei `ProjectStatusList` als Unterkomponente der Projekt-Status-Seite dient).
+Diese Prinzipien stellen sicher, dass die UI strukturell stabil bleibt, auch wenn Fachfeatures wachsen.
 
 ---
 
-### InfoBadge
+## 3. Layout-Ebene (Seitenrahmen)
 
-`InfoBadge` ist die Basis für kompakte Informations-Badges mit optionaler Add/Remove-Action und liegt in `client/src/components/ui/info-badge.tsx`. Die Komponente rendert ein Badge mit Icon links, einem beliebigen `label`-ReactNode als Inhalt und optional einer Action-Spalte rechts, die je nach `action` bzw. vorhandenen Handlern `+`, `-` oder `X` anzeigt. Zusätzlich unterstützt `InfoBadge` die Varianten `size="default" | "sm"` und `fullWidth`, sowie eine linke farbige Border über `borderColor`.
+### 3.1 CardListLayout
 
-In diesem Snapshot ist `InfoBadge` nicht nur „Basis unter ColoredInfoBadge“, sondern auch die direkte Basis für mehrere fachliche Spezialisierungen, die bewusst als Wrapper/Komposition umgesetzt sind.
+`CardListLayout` ist das zentrale Seitenlayout für kartenbasierte Listenansichten. Es definiert einen konsistenten Rahmen aus Header, optionalen Aktionen, Content-Grid und optionaler Bottom-Bar.
 
-Die wichtigsten Ableitungsketten sind: `ColoredInfoBadge` → `InfoBadge`, `PersonInfoBadge` → `InfoBadge`, `ProjectInfoBadge` → `InfoBadge`, `TerminInfoBadge` → `InfoBadge`, sowie die weiteren personenspezifischen Wrapper `CustomerInfoBadge` → `PersonInfoBadge` → `InfoBadge` und `EmployeeInfoBadge` → `PersonInfoBadge` → `InfoBadge`.
+Der Header kann ein Icon, einen Titel sowie optional einen Hilfe-Button über `helpKey` enthalten. Die Integration der Hilfetexte erfolgt systemweit über denselben Mechanismus (React Query auf `/api/help-texts`). Dadurch ist sichergestellt, dass Hilfetexte nicht ad hoc in Screens eingebaut werden.
 
-`InfoBadge` selbst wird im Projekt überwiegend indirekt genutzt, also über diese Wrapper-Komponenten, und wird daher im FT (17) am sinnvollsten als „stabile Basisschicht“ dokumentiert, während die fachlich sichtbaren Varianten die genannten Wrapper sind.
+Das Content-Grid stellt eine strukturierte Fläche für Karten oder Listen bereit, ohne deren konkrete Ausgestaltung vorzugeben.
+
+Direkt genutzt wird `CardListLayout` in Seiten wie HelpTexts, NoteTemplates, Teams und Tours. Indirekt wird es über `FilteredCardListLayout` in Customer-, Project- und Employee-Listen verwendet.
 
 ---
+
+### 3.2 FilteredCardListLayout
+
+`FilteredCardListLayout` ist ein spezialisierter Wrapper über `CardListLayout`. Er belegt die `bottomBar` und rendert dort eine standardisierte Filtersektion.
+
+Ziel dieser Komponente ist es, Filterleisten nicht individuell pro Screen zu gestalten, sondern strukturell zu vereinheitlichen. Die eigentlichen Filter-Controls werden über Slots eingefügt, die Layout-Logik bleibt jedoch zentral.
+
+Die Ableitung lautet:
+
+FilteredCardListLayout → CardListLayout
+
+---
+
+### 3.3 EntityFormLayout
+
+`EntityFormLayout` ist das Gegenstück zu `CardListLayout` für Formularseiten. Während Listen eine gridbasierte Struktur benötigen, brauchen Formulare einen klar definierten Rahmen mit Header, Inhaltsbereich und konsistentem Action-Footer.
+
+Die Komponente kapselt:
+
+- den Card-Rahmen,
+- das Scroll- und Breitenverhalten,
+- die Titel- und Icon-Darstellung,
+- einen standardisierten Speichern/Abbrechen-Bereich,
+- optional einen asynchronen Submit-Flow mit automatischem Schließen.
+
+Dadurch wird vermieden, dass jede Formularseite eigene Footer-Strukturen oder Button-Anordnungen implementiert.
+
+---
+
+## 4. Karten-Ebene (Entity-Darstellung)
+
+Die Karten-Ebene definiert die visuelle Darstellung von Domänenobjekten in Listenansichten. Ziel ist eine einheitliche Struktur, damit Kunden-, Projekt-, Mitarbeiter- und Stammdatenlisten nicht visuell auseinanderlaufen.
+
+### 4.1 EntityCard
+
+`EntityCard` ist die strukturelle Basiskomponente für kartenbasierte Listenobjekte und liegt in `client/src/components/ui/entity-card.tsx`.
+
+Sie definiert:
+
+- Kopfbereich (Titel + optionale Actions)
+- Content-Bereich
+- optionale Footer-Zone
+- konsistente Abstände und Hover-Zustände
+
+`EntityCard` enthält keinerlei Farblogik. Sie ist bewusst neutral gehalten, damit visuelle Differenzierung ausschließlich über Wrapper erfolgt.
+
+Direkte Verwendung in Screens:
+
+- `CustomerList.tsx`
+- `ProjectList.tsx`
+- `EmployeeList.tsx`
+- `HelpTextsPage.tsx`
+
+### 4.2 ColoredEntityCard
+
+`ColoredEntityCard` ist der definierte Wrapper über `EntityCard` und liegt in `client/src/components/ui/colored-entity-card.tsx`.
+
+Er übersetzt `borderColor` in eine linke visuelle Markierung (`borderLeftWidth` + `borderLeftColor`) und delegiert ansonsten vollständig an `EntityCard`.
+
+Ableitungskette:
+
+`ColoredEntityCard` → `EntityCard`
+
+Verwendung in Screens:
+
+- `TourManagement.tsx`
+- `TeamManagement.tsx`
+- `NoteTemplatesPage.tsx`
+- `ProjectStatusList.tsx`
+
+### Erweiterungsregel
+
+Neue Entity-Darstellungen dürfen keine eigene Kartenstruktur bauen. Wenn eine visuelle Differenzierung benötigt wird, ist ein Wrapper über `EntityCard` zu erstellen.
+
+---
+
+### 4.2 ColoredEntityCard
+
+`ColoredEntityCard` ist ein Wrapper über `EntityCard`. Seine einzige Aufgabe besteht darin, die Farblogik explizit als `borderColor`-Prop anzubieten und diese intern korrekt an `EntityCard` weiterzugeben.
+
+Die Ableitung lautet:
+
+ColoredEntityCard → EntityCard
+
+Dadurch bleibt die Basiskarte frei von Farbspezialisierung, während farbcodierte Entities (z. B. Teams oder Tours) konsistent dargestellt werden.
+
+---
+
+## 5. Badge-System (Kompakt-Darstellung)
+
+Das Badge-System bildet die zweite zentrale UI-Schicht neben den Karten. Während Karten primär Listen repräsentieren, dienen Badges der kompakten Darstellung einzelner referenzierter Objekte innerhalb von Formularen, Panels und Sidebars.
+
+### 5.1 InfoBadge (Basisschicht)
+
+`InfoBadge` liegt in `client/src/components/ui/info-badge.tsx` und ist die fachneutrale Basiskomponente für kompakte Darstellungen mit optionaler Action (`add`, `remove`, `close`).
+
+Sie unterstützt:
+
+- Icon links
+- beliebigen ReactNode als Label
+- optionale Action-Spalte rechts
+- `size="default" | "sm"`
+- `fullWidth`
+- linke farbliche Border über `borderColor`
+- optionale Preview-Integration über `preview`
+
+`InfoBadge` enthält bewusst keine ContextMenu- oder Fetch-Logik.
+
+### 5.2 Generische Wrapper
 
 ### ColoredInfoBadge
 
-`ColoredInfoBadge` ist der einfachste Wrapper über `InfoBadge` und befindet sich in `client/src/components/ui/colored-info-badge.tsx`. Er übersetzt `color` nach `borderColor` und delegiert ansonsten vollständig an `InfoBadge`.
+Wrapper über `InfoBadge`, der `color` nach `borderColor` mappt.
 
-Die Ableitungskette ist: `ColoredInfoBadge` → `InfoBadge`.
+Ableitung:
 
-`ColoredInfoBadge` wird in folgenden Navigationspunkten bzw. Screens verwendet: im Termin-Workflow `appointment` über `client/src/components/AppointmentForm.tsx`, im Mitarbeiterbereich `employees` über `client/src/components/EmployeeList.tsx` und `client/src/components/EmployeePage.tsx`, im Kundenbereich `customer` über `client/src/components/LinkedProjectCard.tsx` (verknüpfte Projekte), sowie im Projektbereich `project` über `client/src/components/ProjectStatusSection.tsx`. Zusätzlich wird `ColoredInfoBadge` in `client/src/components/ProjectList.tsx` genutzt.
+`ColoredInfoBadge` → `InfoBadge`
 
----
+Verwendung u. a. in:
+
+- `AppointmentForm.tsx`
+- `EmployeePage.tsx`
+- `ProjectStatusSection.tsx`
+- `ProjectList.tsx`
 
 ### PersonInfoBadge
 
-`PersonInfoBadge` ist ein fachlich neutraler Wrapper für Personen-Darstellung und liegt in `client/src/components/ui/person-info-badge.tsx`. Er baut auf `InfoBadge` auf, generiert ein Avatar-Icon mit Initialen aus Vor- und Nachnamen (inklusive Fallback aus dem Titel), und rendert darunter optional mehrere Detailzeilen. Dadurch wird Personenanzeige im gesamten Projekt als einheitliches Badge-Pattern umgesetzt.
+`PersonInfoBadge` generiert Avatar + Zeilenlayout für Personen und delegiert an `InfoBadge`.
 
-Die Ableitungskette ist: `PersonInfoBadge` → `InfoBadge`.
+Ableitung:
 
-`PersonInfoBadge` wird in der Regel nicht direkt in den Screens verwendet, sondern über `CustomerInfoBadge` und `EmployeeInfoBadge`, die die visuelle Identität (Farblogik) und die typischen Detailzeilen festlegen.
+`PersonInfoBadge` → `InfoBadge`
 
----
+### 5.3 Fachliche Spezialisierungen
 
 ### CustomerInfoBadge
 
-`CustomerInfoBadge` ist die kundenspezifische Spezialisierung und liegt in `client/src/components/ui/customer-info-badge.tsx`. Sie delegiert an `PersonInfoBadge`, liefert die typischen Zeilen wie Kundennummer und Telefon und erzeugt eine konsistente Farblogik für den Avatar-Rand, die deterministisch auf `id` basiert und andernfalls eine Session-Farbe nutzt.
+Delegiert an `PersonInfoBadge`, ergänzt Kundennummer und Telefon.
 
-Die Ableitungskette ist: `CustomerInfoBadge` → `PersonInfoBadge` → `InfoBadge`.
+Ableitung:
 
-Die Verwendung erfolgt im Projekt indirekt überall dort, wo Kunden als Badge dargestellt werden, wobei im Snapshot die direkte Importverwendung in Screens nicht im Vordergrund steht, sondern als UI-Baustein für Picker- und Kontextdarstellungen gedacht ist.
-
----
+`CustomerInfoBadge` → `PersonInfoBadge` → `InfoBadge`
 
 ### EmployeeInfoBadge
 
-`EmployeeInfoBadge` ist die mitarbeiterspezifische Spezialisierung und liegt in `client/src/components/ui/employee-info-badge.tsx`. Sie delegiert an `PersonInfoBadge`, setzt die typischen Zeilen wie Tour und Team und verwendet eine deterministische bzw. sessionbasierte Hintergrundfarbe für den Avatar.
-
-Die Ableitungskette ist: `EmployeeInfoBadge` → `PersonInfoBadge` → `InfoBadge`.
-
-`EmployeeInfoBadge` wird zentral in `EmployeeSelectEntityEditDialog` verwendet, um ausgewählte Mitglieder als entfernbare Badges darzustellen, und liegt damit funktional im Kontext der Verwaltungsdialoge für Teams/Touren, also indirekt in den Navigationspunkten `teams` und `tours`.
-
----
+Analog zu `CustomerInfoBadge`, mit mitarbeiterspezifischen Zeilen.
 
 ### ProjectInfoBadge
 
-`ProjectInfoBadge` ist eine projektspezifische Spezialisierung auf `InfoBadge` und liegt in `client/src/components/ui/project-info-badge.tsx`. Sie bildet typische Projekt-Kompaktinfos ab, insbesondere Kundenzuordnung und Terminanzahl bzw. frühester Termin, und verwendet dafür ein mehrzeiliges Label.
-
-Die Ableitungskette ist: `ProjectInfoBadge` → `InfoBadge`.
-
-Diese Komponente ist im Snapshot als eigenständiger UI-Baustein vorhanden und eignet sich genau für Situationen wie „Verknüpfte Projekte“ oder projektbezogene Picker, auch wenn der konkrete Screen-Import nicht zwingend in jeder Ansicht direkt erfolgt.
-
----
+Darstellung projektbezogener Kerndaten mit Preview auf Projekt-Detail.
 
 ### TerminInfoBadge
 
-`TerminInfoBadge` ist die terminspezifische Spezialisierung und liegt in `client/src/components/ui/termin-info-badge.tsx`. Sie baut auf `InfoBadge` auf, formatiert das Datum ([`dd.MM](http://dd.MM).yy`), zeigt bei Mehrtages-Terminen eine kleine `nT`-Plakette, und zeigt bei eintägigen Terminen optional eine kompakte Startstundenanzeige. Die sekundäre Zeile wird über `mode` (`kunde`, `projekt`, `mitarbeiter`) gesteuert und rendert jeweils den passenden Kontext-Labeltext.
+`TerminInfoBadge` ist der standardisierte Listeneintrag für Terminreferenzen in Sidebars.
 
-Die Ableitungskette ist: `TerminInfoBadge` → `InfoBadge`.
+Er kapselt:
 
-Diese Komponente ist ein klarer Kandidat für Sidebar- oder Kontextlisten in Termin- und Detailansichten, weil sie Informationsdichte bei geringer Höhe ermöglicht, ohne dass Screens ihre eigene Mini-Kartenlogik erfinden.
+- kompakte Datumsdarstellung
+- Titel
+- optionale Tour-Farbmarkierung
+- Preview-Integration über Termin-Detailtemplate
+
+Ableitung:
+
+`TerminInfoBadge` → `ColoredInfoBadge` → `InfoBadge`
+
+### AttachmentInfoBadge
+
+`AttachmentInfoBadge` ist die spezialisierte Badge-Darstellung für Dokumente.
+
+Er kapselt:
+
+- Dateityp-Icon
+- Dateiname
+- optionale Remove-Action (nur wenn API erlaubt)
+- Preview/Download-Integration
+
+Ableitung:
+
+`AttachmentInfoBadge` → `InfoBadge`
+
+### TeamInfoBadge / TourInfoBadge
+
+Spezialisierte Wrapper mit Farblogik.
 
 ---
 
-### EntityFormLayout
+### 5.2 ColoredInfoBadge
 
-`EntityFormLayout` ist das Standardlayout für Formularseiten und liegt in `client/src/components/ui/entity-form-layout.tsx`. Es kapselt den Card-Rahmen, den Header mit Icon/Titel, das Scroll-/Breitenverhalten sowie den konsistenten Action-Footer mit Speichern/Abbrechen. Zusätzlich kann es über `onSubmit` einen async Submit-Flow abbilden und auf Wunsch nach erfolgreichem Submit automatisch schließen.
+`ColoredInfoBadge` ist der einfachste Wrapper über `InfoBadge`. Er übersetzt eine `color`-Prop in eine linke Farbborder.
 
-Die Komponente wird im Snapshot als zentraler Formularrahmen benutzt und ist damit der formale Gegenpart zu `CardListLayout`, das die Listen-/Übersichtsseiten standardisiert.
+Ableitung:
+
+ColoredInfoBadge → InfoBadge
+
+---
+
+### 5.3 PersonInfoBadge
+
+`PersonInfoBadge` ist eine fachlich neutrale Spezialisierung für Personen. Es erzeugt Avatar-Initialen aus Vor- und Nachnamen (mit Fallback) und unterstützt mehrzeilige Detaildarstellungen.
+
+Ableitung:
+
+PersonInfoBadge → InfoBadge
 
 ---
 
-### EntityEditDialog, ColorSelectEntityEditDialog, EmployeeSelectEntityEditDialog
+### 5.4 Fachliche Badge-Spezialisierungen
 
-`EntityEditDialog` ist die Dialog-Basis für Create/Edit im Modal und liegt in `client/src/components/ui/entity-edit-dialog.tsx`. Es standardisiert Titelzeile, Icon, optionalen Header-Zusatz, Save/Cancel-Handling sowie einen optionalen async Submit-Flow mit Auto-Close-Option.
+Die fachlichen Spezialisierungen kapseln wiederkehrende Anzeige- und Farblogiken.
 
-`ColorSelectEntityEditDialog` liegt in `client/src/components/ui/color-select-entity-edit-dialog.tsx` und erweitert `EntityEditDialog`, indem es oberhalb des Children-Inhalts einen `ColorSelectButton` einhängt. Die Ableitungskette ist: `ColorSelectEntityEditDialog` → `EntityEditDialog`.
+CustomerInfoBadge
 
-`EmployeeSelectEntityEditDialog` liegt in `client/src/components/ui/employee-select-entity-edit-dialog.tsx` und erweitert `ColorSelectEntityEditDialog` um die standardisierte Mitglieder-Zuweisung. Hierzu rendert es eine Liste der bereits ausgewählten Mitarbeiter als `EmployeeInfoBadge` und bietet einen separaten Vollbild-Dialog zur Auswahl über `EmployeeListView` (aus `client/src/components/EmployeeList.tsx`). Die Ableitungskette ist: `EmployeeSelectEntityEditDialog` → `ColorSelectEntityEditDialog` → `EntityEditDialog`.
+Ableitung: CustomerInfoBadge → PersonInfoBadge → InfoBadge
 
-Diese Dialogkette ist für FT (17) besonders wichtig, weil sie die „richtige“ Stelle ist, an der Farblogik und Mitgliederzuweisung zentralisiert werden, statt dass Teams/Touren ihre eigenen Sonderdialoge bauen.
+Stellt Kundennummer, Telefon und deterministische Avatarfarbe dar.
+
+EmployeeInfoBadge
+
+Ableitung: EmployeeInfoBadge → PersonInfoBadge → InfoBadge
+
+Stellt Team- und Tour-Informationen sowie Avatarfarbe dar.
+
+ProjectInfoBadge
+
+Ableitung: ProjectInfoBadge → InfoBadge
+
+Zeigt projektbezogene Kompaktinformationen wie Kundenzuordnung oder Terminanzahl.
+
+ProjectStatusInfoBadge
+
+Ableitung: ProjectStatusInfoBadge → ColoredInfoBadge → InfoBadge
+
+Visualisiert Projektstatus mit definierter Farblogik.
+
+TerminInfoBadge
+
+Ableitung: TerminInfoBadge → InfoBadge
+
+Zeigt Datum, Mehrtages-Kennzeichnung und kontextabhängige Sekundärzeile.
+
+AttachmentInfoBadge
+
+Ableitung: AttachmentInfoBadge → InfoBadge
+
+Kapselt Dateiname, Typ-Icon und Preview-Verhalten.
+
+TeamInfoBadge und TourInfoBadge
+
+Ableitung: TeamInfoBadge/TourInfoBadge → ColoredInfoBadge → InfoBadge
+
+Visualisieren Teams und Tours mit konsistenter Farblogik.
 
 ---
+
+## 6. Preview-System
+
+Das Preview-System ist bewusst von der Badge-Struktur getrennt. Während `InfoBadge` ausschließlich die kompakte Darstellung kapselt, übernimmt das Preview-System die Overlay- und Detailanzeige.
+
+Alle Preview-Komponenten liegen im Ordner `client/src/components/ui/badge-previews/`.
+
+Jede Preview-Datei kapselt drei klar getrennte Aspekte:
+
+1. Den visuellen Preview-Inhalt (z. B. Detailstruktur für Termin, Projekt, Attachment).
+2. Typ-spezifische Popover-Optionen (Position, Delay, maximale Breite/Höhe).
+3. Einen `create...Preview(...)`Helper, der die Konfiguration standardisiert erzeugt.
+
+### Verbindliche Regel
+
+Ein Badge darf keine eigene Popover-Logik enthalten.
+
+Wenn für eine neue Badge-Art ein Overlay benötigt wird:
+
+1. Es wird eine dedizierte Preview-Komponente erstellt.
+2. Es wird ein `createXPreview`Helper definiert.
+3. Der Badge erhält ausschließlich das erzeugte Preview-Objekt.
+
+Dadurch bleibt:
+
+- die Badge-Struktur stabil,
+- das Overlay austauschbar,
+- die Konfiguration zentral wartbar.
+
+Preview-Komponenten dürfen keine Fetch-Logik enthalten. Sie arbeiten ausschließlich mit übergebenen Daten.
+
+---
+
+## 8. Kalender-Komposition
+
+Die Kalenderstruktur folgt einer klaren Ebenentrennung. Erweiterungen müssen diese Ebenen respektieren.
+
+### 8.1 Strukturebene
+
+Wrapper wie `CalendarGrid` und `WeekGrid` definieren das Layoutraster. Sie enthalten keine Terminlogik.
+
+### 8.2 View-Ebene
+
+`CalendarMonthView`, `CalendarWeekView` und `CalendarYearView` orchestrieren die Darstellung einer Zeiteinheit. Sie erhalten Daten über gemeinsame Hooks und delegieren die visuelle Darstellung einzelner Termine.
+
+Views enthalten keine Detailtemplates.
+
+### 8.3 Terminvisualisierung
+
+`CalendarAppointmentCompactBar` wird in Monats- und Jahresdarstellung verwendet.
+
+`CalendarWeekAppointmentPanel` wird in der Wochenansicht verwendet.
+
+Beide Komponenten sind rein visuell. Sie berechnen keine Fachregeln.
+
+### 8.4 Zentrales Detailtemplate
+
+`CalendarAppointmentDetails` ist die einzige zulässige Detaildarstellung für Termine.
+
+Verbindliche Regel:
+
+Es darf kein alternatives Detail-Template für Termine eingeführt werden. Änderungen an der Termin-Detaildarstellung erfolgen ausschließlich in `CalendarAppointmentDetails`.
+
+### 8.5 Overlay-Ebene
+
+`CalendarAppointmentPopover` kapselt die Einbettung von `CalendarAppointmentDetails` in ein Overlay.
+
+### 8.6 Kalender-Filter
+
+`CalendarEmployeeFilter` ist die dedizierte Filterkomponente für die Kalenderansichten.
+
+Filterlogik gehört nicht in Views. Neue Kalenderfilter müssen als eigenständige Komponenten ergänzt werden.
+
+### Erweiterungsregel
+
+Wenn neue visuelle Eigenschaften (z. B. Farbbalken, Statusindikatoren) eingeführt werden:
+
+1. Zuerst prüfen, ob sie auf Visualisierungsebene gehören (CompactBar/WeekPanel).
+2. Keine Logik in Grid-Wrapper einbauen.
+3. Keine doppelte Implementierung im Detailtemplate.
+
+---
+
+## 9. Dialog- und Edit-Komposition
+
+Die Dialogstruktur folgt einer klaren Vererbungskette.
+
+`EntityEditDialog` bildet die Basisschicht für Create/Edit-Dialoge.
+
+`ColorSelectEntityEditDialog` erweitert diese um Farbauswahl.
+
+`EmployeeSelectEntityEditDialog` erweitert zusätzlich um standardisierte Mitgliederzuweisung.
+
+### Verantwortlichkeiten
+
+- `EntityEditDialog`: Struktur, Submit-Handling, Basis-Layout.
+- `ColorSelectEntityEditDialog`: zentrale Farblogik.
+- `EmployeeSelectEntityEditDialog`: standardisierte Mitarbeiterzuweisung.
+
+### Verbindliche Regel
+
+Neue Dialoge für Teams, Tours oder ähnliche Entities dürfen keine eigene Farblogik implementieren.
+
+Wenn Farbauswahl benötigt wird, muss `ColorSelectEntityEditDialog` verwendet oder erweitert werden.
+
+Wenn Mitgliederzuweisung benötigt wird, muss `EmployeeSelectEntityEditDialog` verwendet oder erweitert werden.
+
+Es dürfen keine parallelen Spezialdialoge entstehen.
+
+---
+
+## 10. Filter-Komposition
+
+Die Filter-Komposition strukturiert sämtliche Listenfilter der Anwendung. Ziel ist es, Filter nicht ad hoc in Listenscreens zu verteilen, sondern sie als wiederverwendbare, klar getrennte Bausteine zu behandeln.
+
+Dabei ist strikt zwischen drei Ebenen zu unterscheiden:
+
+1. **Eingabekomponente (UI-Control)** – rein visuelle Eingabe.
+2. **Layout-Hülle (Panel)** – Anordnung und Gruppierung.
+3. **Filterzustand + Logik** – liegt im Screen oder in einem dedizierten Hook.
+
+Kompositionskomponenten enthalten keine eigentliche Filterlogik. Sie kennen weder QueryKeys noch API-Parameter.
+
+---
+
+### 10.1 Basisfelder
+
+### FilterInput
+
+Generisches Texteingabefeld mit konsistentem Styling, Clear-Option und optionalem Label. Es kapselt keine Suchlogik, sondern liefert ausschließlich den eingegebenen Wert.
 
 ### SearchFilterInput
 
-`SearchFilterInput` ist das standardisierte Eingabefeld für Textsuche in Listenfiltern und liegt in `client/src/components/ui/search-filter-input.tsx`. Es ist als Baustein gedacht, damit Filterleisten in `FilteredCardListLayout` in Bedienung und Optik nicht auseinanderlaufen.
+Spezialisierung für typische Textsuche. Vereinheitlicht Icon, Placeholder-Verhalten und Enter-Handling.
 
-## SidebarChildPanel
+### BooleanToggleFilterInput
 
-`SidebarChildPanel` ist die standardisierte Layout- und Kompositionskomponente für rechte Seitenleistenbereiche in Formularen, also für die wiederkehrenden „Child-Collections“ wie verknüpfte Projekte, Termine, Dokumente, Status-Listen und ähnliche Nebeninformationen. Die Komponente dient genau dem Zweck, Header, Action-Zone, Content-Slot und optionalen Footer so zu vereinheitlichen, dass die einzelnen Screens keine eigenen Sidepanel-Strukturen mehr erfinden müssen.
+Kompakte Toggle-Variante für boolesche Filter (z. B. „aktiv / inaktiv“). Stellt visuell eine Schalterlogik bereit, ohne fachliche Interpretation.
 
-`SidebarChildPanel` ist bewusst rein strukturell und enthält keine Fachlogik und keine Datenlogik. Änderungen an den angezeigten Einträgen entstehen ausschließlich dadurch, dass der Parent neue Children rendert und optional `count` aktualisiert, während `SidebarChildPanel` selbst keine Collections verwaltet, keine Mutationen kennt und keine API-Calls ausführt.
+Diese Basisfelder dürfen keine direkten API-Aufrufe enthalten.
 
-Die Komponente orientiert sich am etablierten `.sub-panel`-Pattern, indem sie die Seitenleistenoptik konsistent hält, aber zusätzlich eine klar definierte Header- und Action-Struktur bereitstellt. Sie bietet im Header links Icon und Titel, optional ergänzt um eine Count-Anzeige, und rechts eine feste Action-Zone, die entweder vollständig über einen freien `headerActions`-Slot belegt wird oder über eine einfache Standard-Konfiguration einen Add-Button anbietet. Ein optionaler Footer wird nur gerendert, wenn er explizit befüllt wird, und ist das vorgesehene Ziel für Toggle- oder Filter-Controls, ohne dass dafür Sonderlogik in der Komponente entsteht.
+---
 
-## Abgeleitete Listen auf Basis von SidebarChildPanel
+### 10.2 FilterPanel
 
-Unter „abgeleitete Listen“ ist im Snapshot vor allem das standardisierte Terminlisten-Muster gemeint, das aus einer linearen Ableitungskette besteht und genau dafür sorgt, dass Terminlisten in den Sidebars von Kunde, Projekt und Mitarbeiter überall gleich aussehen, ohne dass Kontextlogik in die Darstellung rutscht.
+`FilterPanel` ist die strukturelle Hülle für Filterbereiche. Es definiert ausschließlich die Anordnung der Controls.
 
-### TerminInfoBadge als Listeneintrag
+Unterstützt werden zwei Layout-Modi:
 
-`TerminInfoBadge` ist der standardisierte Eintragstyp für Terminlisten innerhalb von Sidebars und ist als Spezialisierung auf `InfoBadge` gedacht. Es kapselt die kompakte Datumsdarstellung inklusive Mehrtages-Kennzeichnung und rendert die Sekundärzeile kontextabhängig über `mode` (`kunde`, `projekt`, `mitarbeiter`), damit derselbe Termin in unterschiedlichen Sidebars konsistent erscheinen kann, ohne dass jeder Screen seine eigene Zeilenlogik schreibt.
+- `row` – horizontale Anordnung
+- `stack` – vertikale Anordnung
 
-### AppointmentsPanel als generische Terminliste
+`FilterPanel` enthält keine Filterzustände.
 
-`AppointmentsPanel` ist die rein darstellende Terminlisten-Komponente für Formular-Sidebars. Sie nutzt `SidebarChildPanel` als Hülle, rendert die übergebenen Items als `TerminInfoBadge` und stellt im Footer den Toggle „Alle Termine“ bereit. Die Komponente enthält keine Fetch-Logik und keine Kontextlogik, weil sie weder Query-Keys noch API-Endpunkte kennen darf, sondern ausschließlich ein einheitliches Item-Format erwartet.
+---
 
-Der Toggle „Alle Termine“ ist UI-Verhalten und gehört damit in `AppointmentsPanel`, aber die Frage, ob überhaupt vergangene Termine verfügbar sind, ist eine Kontextentscheidung und gehört in die Wrapper, weil das Panel sonst ein Versprechen („Alle“) geben würde, das der Wrapper nicht einlösen kann.
+### 10.3 Domänenspezifische FilterPanels
 
-### Kontext-Wrapper als abgeleitete Listen
+Für wiederkehrende Filterkombinationen existieren eigene Panels:
 
-Auf `AppointmentsPanel` sitzen kontextspezifische Wrapper, die die jeweilige Ableitung und die Datenbeschaffung kapseln und anschließend nur noch das Panel füttern. Dadurch bleibt der Screen selbst schlank, und Abfrage- und Mappinglogik wird nicht über mehrere Formulare verteilt.
+- `CustomerFilterPanel`
+- `EmployeeFilterPanel`
+- `ProjectFilterPanel`
 
-`ProjectAppointmentsPanel` ist der Wrapper für Terminlisten im Projektformular und darf projektspezifische Regeln kapseln, etwa Sperrlogik oder projektspezifische Labels, ohne dass diese Regeln in die generische Darstellung rutschen.
+Diese Panels bündeln typische Filterfelder (z. B. Name, Nummer, Status, Teamzugehörigkeit) und kapseln deren visuelle Gruppierung.
 
-`CustomerAppointmentsPanel` kapselt die Ableitung „Kunde → Projekte → Termine“ und verhindert damit, dass kundenbezogene Formularseiten projektbezogene Abfragelogik selbst implementieren oder duplizieren.
+Wichtig: Auch diese Panels enthalten keine Query-Logik. Sie geben ausschließlich Werte nach außen.
 
-`EmployeeAppointmentsPanel` kapselt die Ableitung „Mitarbeiter → Terminzuordnungen“ und stellt sicher, dass Einsatzlisten nicht in Dialogen oder Screens mehrfach unterschiedlich implementiert werden.
+---
 
-### Kalender- und Termin-Komponenten
+### 10.4 Filterzustand und Query-Integration
 
-Die Kalenderdarstellung setzt sich aus drei Hauptansichten (Monat, Woche, Jahr) zusammen, die alle denselben Datenhook und dieselben Termin-Bausteine verwenden. Legacy-Wrapper sorgen dafür, dass bestehende Einstiegspunkte stabil bleiben.
+Der tatsächliche Filterzustand wird im jeweiligen Listenscreen gehalten (z. B. `CustomerList`, `ProjectList`, `EmployeeList`). Dort erfolgt:
 
-**CalendarGrid** (`client/src/components/CalendarGrid.tsx`) und **WeekGrid** (`client/src/components/WeekGrid.tsx`) sind reine Wrapper. Sie delegieren an die jeweilige View und reichen Filter sowie Callbacks weiter (`currentDate`, `employeeFilterId`, `onNewAppointment`, `onOpenAppointment`).
+- Speicherung der Filterwerte im lokalen State,
+- Übergabe an QueryKeys,
+- Ableitung von API-Parametern.
 
-**CalendarMonthView** (`client/src/components/calendar/CalendarMonthView.tsx`) bildet das Monatsraster mit Termin-Lanes und Drag & Drop. **CalendarWeekView** (`client/src/components/calendar/CalendarWeekView.tsx`) zeigt eine detailreichere Wochenansicht mit Panel-Karten. **CalendarYearView** (`client/src/components/calendar/CalendarYearView.tsx`) komprimiert Termine in einer 12‑Monats-Übersicht. Alle drei verwenden dieselben Props:
+Filter-Komponenten sind rein darstellend und dürfen keine Kenntnis über QueryKeys besitzen.
 
-- `currentDate`, `employeeFilterId`
-- `onNewAppointment`, `onOpenAppointment`
+---
 
-Der globale Filter ist **CalendarEmployeeFilter** (`client/src/components/calendar/CalendarEmployeeFilter.tsx`). Er lädt aktive Mitarbeiter und ermöglicht die Auswahl „Alle Mitarbeiter“. Props:
+### 10.5 Erweiterungsregeln
 
-- `value` (employeeId oder `null`)
-- `onChange`
+Wenn ein neuer Filter ergänzt werden soll:
 
-Für die eigentliche Terminvisualisierung gibt es zwei Bausteine:
+1. Prüfen, ob es sich um ein generisches Eingabemuster handelt (→ neues FilterInput).
+2. Prüfen, ob der Filter nur in einer Domäne relevant ist (→ Erweiterung des domänenspezifischen Panels).
+3. Keine neue Layout-Hülle erzeugen, wenn `FilterPanel` ausreicht.
+4. Keine API-Logik in Filter-Komponenten integrieren.
 
-**CalendarAppointmentCompactBar** (`client/src/components/calendar/CalendarAppointmentCompactBar.tsx`) ist die kompakte Leiste für Monat/Jahr (mit Popover und DnD).
+Ziel ist es, dass alle Listenfilter visuell konsistent bleiben und fachliche Änderungen ausschließlich in Screens oder Hooks stattfinden.
 
-**CalendarWeekAppointmentPanel** (`client/src/components/calendar/CalendarWeekAppointmentPanel.tsx`) ist die Detailkarte der Wochenansicht.
+---
 
-Termin-Details sind zentralisiert:
+## 11. Erweiterungsprinzipien
 
-**CalendarAppointmentPopover** (`client/src/components/calendar/CalendarAppointmentPopover.tsx`) ist der Overlay-Container,
+Neue Kompositionskomponenten entstehen nur bei struktureller Wiederverwendung.
 
-**CalendarAppointmentDetails** (`client/src/components/calendar/CalendarAppointmentDetails.tsx`) liefert das wiederverwendete Detail-Template (Popover/Panel).
+Fachlogik gehört nicht in diese Schicht.
 
-Für Terminlisten außerhalb der Kalenderansicht gibt es Panels und Badges.
-
-**AppointmentsPanel** (`client/src/components/AppointmentsPanel.tsx`) ist das Standard-Panel mit „Alle Termine“-Toggle, Items, Actions und optionalem Hinweistext.
-
-Kontext-spezifische Panels darauf aufbauend:
-
-- **CustomerAppointmentsPanel** (`client/src/components/CustomerAppointmentsPanel.tsx`) aggregiert Termine über alle Projekte eines Kunden.
-- **EmployeeAppointmentsPanel** (`client/src/components/EmployeeAppointmentsPanel.tsx`) lädt kommende oder alle Termine eines Mitarbeiters.
-- **ProjectAppointmentsPanel** (`client/src/components/ProjectAppointmentsPanel.tsx`) listet Termine im Projekt-Kontext inkl. Lösch- und Sperrlogik.
-
-Die UI für einzelne Einträge ist **TerminInfoBadge** (`client/src/components/ui/termin-info-badge.tsx`), das Datum, Mehrtages-Labels, Startzeit und Kontextzeile darstellt.
-
-Zum Erstellen und Bearbeiten von Terminen dient **AppointmentForm** (`client/src/components/AppointmentForm.tsx`) mit Projekt-/Tour-/Mitarbeiter-Zuordnung, Validierung und Sperrlogik.
-
-### **Typ-spezifische Preview-Komponenten**
-
-Ordner: `client/src/components/ui/badge-previews/`
-
-- appointment-info-badge-preview.tsx
-- attachment-info-badge-preview.tsx
-- customer-info-badge-preview.tsx
-- employee-info-badge-preview.tsx
-- project-info-badge-preview.tsx
-- team-info-badge-preview.tsx
-tour-info-badge-preview.tsx
-
-Jede Preview-Datei kapselt: 
-
-1. den visuellen Preview-Inhalt,
-2. typ-spezifische Popover-Optionen (`openDelayMs`, `side`, `align`, `maxWidth`, `maxHeight`),
-3. einen `create...Preview(...)`-Helper für die Übergabe an `InfoBadge`.
-
-## **Abhängigkeiten**
-
-### **Badge-Kompositionsketten**
-
-- TeamInfoBadge -> ColoredInfoBadge -> InfoBadge
-- TourInfoBadge -> ColoredInfoBadge -> InfoBadge
-- CustomerInfoBadge -> PersonInfoBadge -> InfoBadge
-- EmployeeInfoBadge -> PersonInfoBadge -> InfoBadge
-- ProjectInfoBadge -> InfoBadge
-- TerminInfoBadge -> InfoBadge
-- AttachmentInfoBadge -> InfoBadge
-
-### **Preview-Abhängigkeiten**
-
-- TeamInfoBadge -> createTeamInfoBadgePreview -> TeamInfoBadgePreview
-- TourInfoBadge -> createTourInfoBadgePreview -> TourInfoBadgePreview
-- CustomerInfoBadge -> createCustomerInfoBadgePreview -> CustomerInfoBadgePreview
-- EmployeeInfoBadge -> createEmployeeInfoBadgePreview -> EmployeeInfoBadgePreview
-- ProjectInfoBadge -> createProjectInfoBadgePreview -> ProjectInfoBadgePreview
-- TerminInfoBadge -> createAppointmentInfoBadgePreview -> AppointmentInfoBadgePreview
-- AttachmentInfoBadge -> createAttachmentInfoBadgePreview -> AttachmentInfoBadgePreview
-
-### **Screen-Abhängigkeiten (direkte Nutzung)**
-
-- client/src/components/AppointmentForm.tsx: TeamInfoBadge, TourInfoBadge
-- client/src/components/EmployeeList.tsx: TeamInfoBadge, TourInfoBadge
-- client/src/components/EmployeePage.tsx: TeamInfoBadge, TourInfoBadge
-
-## **Attachment-Preview-Matrix**
-
-- PDF: Inline per `iframe`
-- Bilder: Inline per `img`
-- DOC/DOCX: Inline über Office-Embed (`iframe`)
-- TXT: Textvorschau per `fetch` + `<pre>`
-- Sonstige Formate: Fallback-Hinweis + Öffnen/Download
+Sonderfälle werden durch Spezialisierung oder Wrapper gelöst, nicht durch Erweiterung der Basiskomponenten mit unkontrollierten Props.
 
 ## Regeln & Randbedingungen
 
@@ -2930,19 +3235,19 @@ Hilfetexte werden systemweit über einen `helpKey` angebunden. Wenn ein `helpKey
 
 Neue Kompositionskomponenten werden nur dann eingeführt, wenn sie mindestens zwei echte Wiederholungsfälle vereinheitlichen oder absehbar ein Standardpattern etablieren. Reine „Einmal-Wrapper“ ohne Wiederverwendung sind nicht Teil dieser Schicht.
 
-# FT (18); User Preferences
+# FT (18): User Preferences
 
-# ZIEL / ZWECK
+## ZIEL / ZWECK
 
 Dieses Feature stellt editierbare Einstellungen zu App-Funktionen direkt in der Anwendung bereit. Ziel ist, dass definierte Verhaltensweisen und Parameter ohne Code-Änderungen konfigurierbar sind und die Lösung auch bei wachsender Anzahl und Vielfalt von Einstellungstypen stabil und wartbar bleibt.
 
-### FACHLICHE BESCHREIBUNG
+## FACHLICHE BESCHREIBUNG
 
 Die Anwendung bietet eine zentrale Oberfläche, in der berechtigte Nutzer Einstellungen anzeigen und ändern können. Jede Einstellung ist durch einen eindeutigen Schlüssel identifiziert und besitzt einen fest definierten Datentyp sowie einen Standardwert. Der wirksame Wert ergibt sich aus einem gespeicherten Wert; sofern kein Wert gespeichert ist, gilt der Standardwert.
 
 Die Eingabe und Darstellung in der UI erfolgt generisch anhand des Einstellungstyps. Bool-Einstellungen werden als Schalter bedient, Zahlen als numerische Eingabe und Farben über eine Farbauswahl. Das System ist so gestaltet, dass weitere Typen und neue Einstellungen ergänzt werden können, ohne dass dafür für jede Einstellung eine eigene Persistenzlogik oder ein eigener Screen erforderlich wird.
 
-### REGELN & RANDBEDINGUNGEN
+## REGELN & RANDBEDINGUNGEN
 
 Eine Einstellung darf nur gespeichert werden, wenn der Wert zum definierten Typ passt und die fachlich vorgesehenen Constraints erfüllt. Ungültige Eingaben werden abgelehnt und mit einer verständlichen Fehlermeldung zurückgemeldet.
 
@@ -2952,7 +3257,7 @@ Berechtigungen müssen eindeutig greifen. Normale Nutzer dürfen ausschließlich
 
 Zu Beginn müssen mindestens die Typen Zahl, Bool (Aktivität) und Farbe unterstützt werden. Weitere Typen wie Text, Auswahlwerte (Enum) oder Wertebereiche (Min/Max/Step) sollen später ohne Bruch ergänzt werden können.
 
-# USE CASES
+## USE CASES
 
 ### UC: PERSÖNLICHE EINSTELLUNG ÄNDERN
 
@@ -2993,3 +3298,439 @@ Der Nutzer gibt einen ungültigen Wert ein, dann lehnt das System ab und zeigt e
 **ERGEBNIS**
 
 Der neue Wert ist gespeichert und für den Nutzer wirksam.
+
+# FT (19): Attachments
+
+## Ziel / Zweck
+
+Dieses Feature stellt eine domänenübergreifende Infrastruktur zur Verfügung, um Dateien strukturiert an fachliche Objekte zu binden. Ziel ist es, Upload, Speicherung, Anzeige und Download von Dokumenten einheitlich, sicher und wartbar umzusetzen, ohne die jeweilige Fachdomäne mit technischer Dateilogik zu belasten.
+
+Attachments sind keine fachlichen Kerndaten, sondern ergänzende Dokumente zur Dokumentation, Nachvollziehbarkeit und Kommunikation.
+
+## Fachliche Beschreibung
+
+Ein Attachment ist eine Datei, die eindeutig einem Parent-Objekt zugeordnet ist. Ein Attachment kann nie ohne Parent existieren.
+
+Das System unterstützt Attachments aktuell für folgende Domänen:
+
+- Projekt
+- Kunde
+- Mitarbeiter
+
+Die technische Behandlung ist für alle Domänen identisch. Unterschiede bestehen ausschließlich in der Parent-Zuordnung.
+
+Ein Attachment besitzt Metadaten wie:
+
+- Originaldateiname
+- Persistenter Speichername
+- MIME-Typ
+- Dateigröße
+- Erstellungszeitpunkt
+
+Dateien werden serverseitig gespeichert und über einen gesicherten Download-Endpunkt ausgeliefert. Die UI zeigt Attachments als kompakte Liste mit Vorschau- bzw. Download-Funktion.
+
+Das Öffnen eines Attachments kann je nach Dateityp inline (z. B. PDF, Bild) oder als Download erfolgen. Eine explizite Download-Option ist zusätzlich verfügbar.
+
+Eine physische Löschung von Attachments ist systemweit nicht vorgesehen.
+
+## Regeln & Randbedingungen
+
+### Allgemeine Struktur
+
+- Ein Attachment gehört immer genau einem Parent-Objekt.
+- Ein Attachment kann nie ohne Parent-Zuordnung existieren.
+- Für jede unterstützte Domäne existiert eine eigene Attachment-Tabelle.
+- Die Tabellen sind strukturgleich aufgebaut.
+- Zwischen Parent und Attachment besteht eine referenzielle Integrität (FK).
+
+### Upload
+
+- Upload erfolgt über Multipart-Request.
+- Feldname für die Datei ist systemweit einheitlich.
+- Es gilt eine definierte maximale Dateigröße.
+- Der Originaldateiname wird serverseitig sanitisiert.
+- Der persistente Dateiname wird eindeutig generiert.
+- Metadaten werden in der jeweiligen Attachment-Tabelle gespeichert.
+
+Ungültige Dateien oder Überschreiten der Größenbegrenzung führen zu einem Fehler und werden nicht gespeichert.
+
+### Speicherung
+
+- Dateien werden serverseitig in einem definierten Upload-Verzeichnis gespeichert.
+- Der physische Speicherort wird nicht vom Client bestimmt.
+- Der Storage-Pfad wird als Metadatum gespeichert.
+- Attachments werden nicht versioniert.
+
+### Download
+
+- Download erfolgt ausschließlich über definierte API-Endpunkte.
+- Der Endpunkt liefert:
+    - korrekten MIME-Typ
+    - passende Content-Disposition
+- Für bestimmte Dateitypen (z. B. PDF, Bilder) kann Inline-Anzeige erlaubt sein.
+- Über einen expliziten Parameter kann Download erzwungen werden.
+
+Direkter Zugriff auf das Upload-Verzeichnis ist nicht vorgesehen.
+
+### Löschung
+
+- Eine Löschfunktion für Attachments ist systemweit deaktiviert.
+- Es existiert kein fachlicher Use Case zur physischen Entfernung von Dateien.
+- API-seitig sind Delete-Endpunkte entweder nicht vorhanden oder blockiert.
+- Die Entscheidung zur Nicht-Löschung ist bewusst systemweit einheitlich.
+
+### Sicherheit und Verantwortlichkeit
+
+- Die Parent-Existenz wird vor Speicherung eines Attachments geprüft.
+- Attachments haben keine eigenständigen Berechtigungen, sondern folgen den Berechtigungen ihres Parents.
+- UI-seitige Einschränkungen ersetzen keine serverseitige Prüfung.
+- Der Download erfolgt ausschließlich nach erfolgreicher Identifikation des Attachments.
+
+## Use Cases
+
+### UC: Attachment hochladen
+
+**Akteur**
+
+Disponent
+
+**Ziel**
+
+Eine Datei einem bestehenden Parent-Objekt (z. B. Projekt, Kunde oder Mitarbeiter) hinzufügen.
+
+**Vorbedingungen**
+
+- Das Parent-Objekt existiert.
+- Der Benutzer ist berechtigt, das Parent-Objekt zu bearbeiten.
+- Die Detailansicht des Parent-Objekts ist geöffnet.
+
+**Ablauf**
+
+1. Der Benutzer wählt die Funktion „Attachment hinzufügen“.
+2. Das System öffnet einen Dateiauswahldialog.
+3. Der Benutzer wählt eine Datei aus.
+4. Das System überträgt die Datei per Multipart-Request an den Server.
+5. Das System speichert die Datei im definierten Upload-Verzeichnis.
+6. Das System speichert die Metadaten in der entsprechenden Attachment-Tabelle.
+7. Das System aktualisiert die Attachmentliste in der UI.
+
+**Alternativabläufe**
+
+- Upload wird abgebrochen → Es wird kein Attachment gespeichert.
+- Fehler bei Speicherung → Das System zeigt eine Fehlermeldung und speichert nichts.
+
+**Ergebnis**
+
+Die Datei ist gespeichert und eindeutig dem Parent-Objekt zugeordnet.
+
+### UC: Attachmentliste anzeigen
+
+**Akteur**
+
+Disponent, Leser (rollenabhängig)
+
+**Ziel**
+
+Alle einem Parent-Objekt zugeordneten Attachments einsehen.
+
+**Vorbedingungen**
+
+- Das Parent-Objekt existiert.
+- Der Benutzer besitzt Leserechte.
+
+**Ablauf**
+
+1. Der Benutzer öffnet die Detailansicht des Parent-Objekts.
+2. Das System lädt alle zugeordneten Attachments.
+3. Das System zeigt eine strukturierte Liste mit Dateiname und Metadaten an.
+
+**Alternativabläufe**
+
+- Keine Attachments vorhanden → Das System zeigt eine leere Liste an.
+
+**Ergebnis**
+
+Die vorhandenen Attachments des Parent-Objekts sind sichtbar.
+
+### UC: Attachment öffnen (Inline-Anzeige)
+
+**Akteur**
+
+Disponent, Leser (rollenabhängig)
+
+**Ziel**
+
+Ein Attachment direkt im Browser anzeigen, sofern der Dateityp dies unterstützt.
+
+**Vorbedingungen**
+
+- Das Attachment existiert.
+- Der Benutzer besitzt Leserechte.
+
+**Ablauf**
+
+1. Der Benutzer wählt ein Attachment aus der Liste.
+2. Das System ruft den Download-Endpunkt auf.
+3. Das System liefert die Datei mit korrektem MIME-Typ und Inline-Disposition aus.
+4. Der Browser zeigt die Datei an (z. B. PDF oder Bild).
+
+**Alternativabläufe**
+
+- Dateityp nicht inlinefähig → Das System liefert die Datei als Download.
+
+**Ergebnis**
+
+Das Attachment wird im Browser angezeigt oder entsprechend behandelt.
+
+### UC: Attachment herunterladen
+
+**Akteur**
+
+Disponent, Leser (rollenabhängig)
+
+**Ziel**
+
+Ein Attachment lokal speichern.
+
+**Vorbedingungen**
+
+- Das Attachment existiert.
+- Der Benutzer besitzt Leserechte.
+
+**Ablauf**
+
+1. Der Benutzer wählt die Download-Funktion für ein Attachment.
+2. Das System ruft den Download-Endpunkt mit Download-Parameter auf.
+3. Das System liefert die Datei mit korrekter Content-Disposition „attachment“.
+4. Der Browser startet den Download.
+
+**Alternativabläufe**
+
+- Datei nicht auffindbar → Das System liefert eine Fehlermeldung.
+
+**Ergebnis**
+
+Die Datei wird lokal gespeichert.
+
+### UC: Attachment-Upload validieren (Größe / Typ)
+
+**Akteur**
+
+System
+
+**Ziel**
+
+Sicherstellen, dass nur zulässige Dateien gespeichert werden.
+
+**Vorbedingungen**
+
+- Eine Datei wurde zum Upload übergeben.
+
+**Ablauf**
+
+1. Das System prüft die Dateigröße gegen das definierte Limit.
+2. Das System prüft grundlegende Dateieigenschaften (z. B. MIME-Typ).
+3. Bei gültiger Datei wird der Upload fortgesetzt.
+4. Bei ungültiger Datei wird der Upload abgebrochen.
+
+**Alternativabläufe**
+
+- Datei überschreitet Größenlimit → Das System antwortet mit Fehler.
+- Datei ungültig → Das System speichert nicht und meldet den Fehler.
+
+**Ergebnis**
+
+Nur valide Dateien werden persistiert.
+
+### UC: Attachment einem Parent-Objekt zuordnen
+
+**Akteur**
+
+System
+
+**Ziel**
+
+Ein Attachment eindeutig mit einem bestehenden Parent-Objekt verknüpfen.
+
+**Vorbedingungen**
+
+- Das Parent-Objekt existiert.
+- Die Datei wurde erfolgreich gespeichert.
+
+**Ablauf**
+
+1. Das System prüft die Existenz des Parent-Objekts.
+2. Das System erzeugt einen Attachment-Datensatz mit Parent-ID.
+3. Das System speichert den Datensatz in der domänenspezifischen Attachment-Tabelle.
+
+**Alternativabläufe**
+
+- Parent nicht vorhanden → Speicherung wird abgebrochen.
+
+**Ergebnis**
+
+Das Attachment ist eindeutig und referenziell korrekt dem Parent-Objekt zugeordnet.
+
+# FT (20): Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung
+
+## Ziel / Zweck
+
+Dieses Feature definiert die fachliche Bedeutung der Rollen **Admin**, **Disponent(in)** und **Monteur** innerhalb der Anwendung und regelt, welche Funktionen, Aktionen und Navigationsbereiche rollenspezifisch verfügbar sind.
+
+Ziel ist es, eine klare Verantwortungsstruktur im System zu etablieren, ohne die bestehende Daten- oder Terminlogik zu verändern. Die Zugriffsbeschränkungen betreffen ausschließlich Sichtbarkeit, Bedienbarkeit und serverseitig durchgesetzte Autorisierung.
+
+Die fachliche Sicherheit bleibt stets serverseitig abgesichert (vgl. FT (14)); FT (20) ergänzt diese Grundlage um UI-seitige Steuerung und klare Nutzungsmodelle.
+
+## Fachliche Beschreibung
+
+Jeder Benutzer besitzt genau eine Rolle. Diese Rolle definiert seinen funktionalen Handlungsspielraum im System.
+
+Die Anwendung unterscheidet drei Rollen:
+
+### 1. Admin
+
+Der Admin besitzt systemweite Verantwortung.
+
+Er darf:
+
+- Benutzer verwalten und Rollen ändern
+- Systemnahe Stammdaten verwalten
+- Gesperrte Termine bearbeiten
+- Alle Funktionen der Disposition nutzen
+
+Der Admin ist die höchste Berechtigungsstufe. Es muss stets mindestens ein Admin im System existieren.
+
+### 2. Disponent(in)
+
+Der Disponent ist der operative Hauptnutzer der Anwendung.
+
+Er darf:
+
+- Projekte anlegen, bearbeiten und deaktivieren
+- Termine anlegen, verschieben, bearbeiten und löschen
+- Mitarbeiter zuweisen
+- Touren und Teams verwalten
+- Notizen und Anhänge verwalten
+- Druckfunktionen nutzen
+
+Der Disponent darf keine Benutzerrollen ändern und keine systemweiten Administrationsfunktionen ausführen.
+
+### 3. Monteur
+
+Der Monteur ist ein rein lesender Nutzer.
+
+Er darf:
+
+- Kalenderansichten anzeigen
+- Projekt- und Kundendetails einsehen
+- Eigene und fremde Termine einsehen
+- Dispositionsübersichten lesen
+
+Der Monteur darf keine Daten verändern, anlegen oder löschen.
+
+Die Oberfläche für Monteure ist funktional reduziert und enthält keine aktiven Bearbeitungselemente.
+
+## Grundprinzipien
+
+1. Sicherheit wird serverseitig durchgesetzt.
+2. UI-Sichtbarkeit ist eine Komfortfunktion, keine Sicherheitsmaßnahme.
+3. Die fachliche Datenstruktur bleibt unverändert.
+4. Es wird keine Rechte-Matrix eingeführt.
+5. Rollen wirken ausschließlich auf Funktionsverfügbarkeit, nicht auf Datenmodellierung.
+
+## Regeln & Randbedingungen
+
+- Rollen ändern keine Datenmodelle.
+- Rollen beeinflussen keine Aggregationslogik.
+- Rollen beeinflussen keine Query-Struktur.
+- Rollen verändern keine Termin-Lane-Logik.
+- Navigation wird nicht umstrukturiert, sondern nur ergänzt oder konditional gerendert.
+- Deep-Link-Aufrufe werden serverseitig validiert.
+- Es darf keine clientseitige Autorisierungslogik ohne serverseitige Gegenprüfung existieren.
+- Ein Monteur sieht alle Termine, jedoch ausschließlich im Lesemodus.
+- Der letzte Admin darf nicht entfernt oder herabgestuft werden.
+
+## Use Cases
+
+### UC: Unzulässige Aktion wird blockiert
+
+**Akteur**
+
+Benutzer ohne ausreichende Rolle
+
+**Ziel**
+
+Verhindern einer nicht erlaubten Mutation.
+
+**Vorbedingungen**
+
+Benutzer besitzt nicht die erforderliche Rolle.
+
+**Ablauf**
+
+1. Benutzer versucht geschützte Aktion.
+2. Server prüft Rolle.
+3. Server antwortet mit 403 und maschinenlesbarem Fehlercode.
+
+**Ergebnis**
+
+Keine Datenänderung. System bleibt konsistent.
+
+### UC: Rollenabhängige Navigation anzeigen
+
+**Akteur**
+
+Angemeldeter Benutzer
+
+**Ziel**
+
+Die Navigation zeigt nur die für die Rolle vorgesehenen Bereiche.
+
+**Vorbedingungen**
+
+Der Benutzer ist authentifiziert und besitzt eine Rolle.
+
+**Ablauf**
+
+1. Benutzer öffnet die Anwendung.
+2. Das System bestimmt serverseitig die Rolle.
+3. Die Navigation wird entsprechend gerendert.
+4. Nicht erlaubte Bereiche erscheinen nicht in der Sidebar.
+
+**Alternativen**
+
+Direktaufruf eines nicht erlaubten Bereichs → Server blockiert mit 403.
+
+**Ergebnis**
+
+Die Oberfläche entspricht der funktionalen Rolle des Benutzers.
+
+### UC: Admin verwaltet Benutzerrollen
+
+**Akteur**
+
+Admin
+
+**Ziel**
+
+Benutzerrollen ändern.
+
+**Vorbedingungen**
+
+Der Admin ist angemeldet. Mindestens ein weiterer Admin existiert oder der aktuelle bleibt erhalten.
+
+**Ablauf**
+
+1. Admin öffnet Benutzerverwaltung.
+2. Admin wählt Benutzer.
+3. Admin ändert Rolle.
+4. System validiert: letzter Admin darf nicht entfallen.
+5. System speichert Änderung.
+
+**Alternativen**
+
+Letzter Admin soll entfernt werden → System blockiert.
+
+**Ergebnis**
+
+Die neue Rolle ist gespeichert und wirksam.
