@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { login } from "@/lib/auth";
+import { setupAdmin } from "@/lib/auth";
 
-type LoginProps = {
-  onAuthenticated: () => void;
+type AdminSetupProps = {
+  onCompleted: () => void;
+  onSwitchToLogin: () => void;
 };
 
-export default function Login({ onAuthenticated }: LoginProps) {
+export default function AdminSetup({ onCompleted, onSwitchToLogin }: AdminSetupProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,18 +28,18 @@ export default function Login({ onAuthenticated }: LoginProps) {
 
     setIsSubmitting(true);
     try {
-      await login(normalizedUsername, password);
-      onAuthenticated();
+      await setupAdmin(normalizedUsername, password);
+      onCompleted();
     } catch (submitError) {
-      const code = submitError instanceof Error ? submitError.message : "LOGIN_FAILED";
-      if (code === "INVALID_CREDENTIALS") {
-        setError("Benutzer oder Passwort falsch.");
-      } else if (code === "USER_INACTIVE") {
-        setError("Benutzer ist deaktiviert.");
-      } else if (code === "SETUP_REQUIRED") {
-        setError("Es ist noch kein Admin eingerichtet. Bitte zuerst Admin-Setup ausfuehren.");
+      const code = submitError instanceof Error ? submitError.message : "SETUP_FAILED";
+      if (code === "SETUP_ALREADY_COMPLETED") {
+        onSwitchToLogin();
+        return;
+      }
+      if (code === "VALIDATION_ERROR") {
+        setError("Eingaben sind ungueltig (Passwort mind. 10 Zeichen).");
       } else {
-        setError("Anmeldung fehlgeschlagen.");
+        setError("Admin-Setup fehlgeschlagen.");
       }
     } finally {
       setIsSubmitting(false);
@@ -49,39 +50,37 @@ export default function Login({ onAuthenticated }: LoginProps) {
     <div className="min-h-screen w-full bg-slate-100 flex items-center justify-center px-6">
       <Card className="w-full max-w-md border-2 border-foreground">
         <CardHeader className="pb-3">
-          <CardTitle className="text-3xl font-black tracking-tight text-primary uppercase">MuG Plan</CardTitle>
-          <CardDescription>Bitte melde dich mit deinem Benutzerkonto an.</CardDescription>
+          <CardTitle className="text-3xl font-black tracking-tight text-primary uppercase">Ersteinrichtung</CardTitle>
+          <CardDescription>Es wurde noch kein Admin angelegt. Bitte initialen Admin erstellen.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="login-username">Benutzer</Label>
+              <Label htmlFor="setup-username">Admin Benutzername</Label>
               <Input
-                id="login-username"
+                id="setup-username"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="login-password">Passwort</Label>
+              <Label htmlFor="setup-password">Admin Passwort</Label>
               <Input
-                id="login-password"
+                id="setup-password"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
             </div>
-
             {error && (
               <div className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
               </div>
             )}
-
             <Button className="w-full" type="submit" disabled={isSubmitting}>
-              Anmelden
+              Admin anlegen
             </Button>
           </form>
         </CardContent>

@@ -6,7 +6,8 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { errorHandler } from "./middleware/errorHandler";
-import { assertConfiguredSystemUser } from "./bootstrap/assertConfiguredSystemUser";
+import { ensureSystemRoles } from "./bootstrap/ensureSystemRoles";
+import { getBootstrapState } from "./bootstrap/getBootstrapState";
 
 const app = express();
 const httpServer = createServer(app);
@@ -84,7 +85,8 @@ app.use((req, res, next) => {
 });
 
 void (async () => {
-  await assertConfiguredSystemUser();
+  await ensureSystemRoles();
+  const bootstrapState = await getBootstrapState();
   await registerRoutes(httpServer, app);
 
   app.use(errorHandler);
@@ -119,6 +121,7 @@ void (async () => {
     nodeVersion: process.version,
     envExists,
     port: envPort ?? "undefined",
+    needsAdminSetup: bootstrapState.needsAdminSetup,
   });
 
   process.on("uncaughtException", (err) => {

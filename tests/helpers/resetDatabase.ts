@@ -29,4 +29,16 @@ export async function resetDatabase() {
 
   await connection.query("SET FOREIGN_KEY_CHECKS = 1");
   await connection.end();
+
+  const { ensureSystemRoles } = await import("../../server/bootstrap/ensureSystemRoles");
+  const { getAuthUserByUsername, createAdminUser } = await import("../../server/repositories/usersRepository");
+  const { hashPassword } = await import("../../server/security/passwordHash");
+  await ensureSystemRoles();
+
+  const username = "test-admin";
+  const existing = await getAuthUserByUsername(username);
+  if (!existing) {
+    const passwordHash = await hashPassword("test-admin-password");
+    await createAdminUser({ username, passwordHash });
+  }
 }

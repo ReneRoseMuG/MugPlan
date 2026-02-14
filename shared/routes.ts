@@ -54,6 +54,64 @@ const extractedArticleCategorySchema = z.object({
 });
 
 export const api = {
+  auth: {
+    setupStatus: {
+      method: "GET" as const,
+      path: "/api/auth/setup-status",
+      responses: {
+        200: z.object({
+          needsAdminSetup: z.boolean(),
+        }),
+      },
+    },
+    setupAdmin: {
+      method: "POST" as const,
+      path: "/api/auth/setup-admin",
+      input: z
+        .object({
+          username: z.string().min(1).max(100),
+          password: z.string().min(10).max(255),
+        })
+        .strict(),
+      responses: {
+        201: z.object({
+          userId: z.number().int().positive(),
+          username: z.string(),
+          roleCode: z.literal("ADMIN"),
+        }),
+        409: z.object({ code: z.enum(["SETUP_ALREADY_COMPLETED", "SETUP_REQUIRED"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    login: {
+      method: "POST" as const,
+      path: "/api/auth/login",
+      input: z
+        .object({
+          username: z.string().min(1).max(100),
+          password: z.string().min(1).max(255),
+        })
+        .strict(),
+      responses: {
+        200: z.object({
+          userId: z.number().int().positive(),
+          username: z.string(),
+          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+        }),
+        401: z.object({ code: z.literal("INVALID_CREDENTIALS") }),
+        403: z.object({ code: z.literal("USER_INACTIVE") }),
+        409: z.object({ code: z.literal("SETUP_REQUIRED") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    logout: {
+      method: "POST" as const,
+      path: "/api/auth/logout",
+      responses: {
+        200: z.object({ ok: z.literal(true) }),
+      },
+    },
+  },
   documentExtraction: {
     extract: {
       method: "POST" as const,

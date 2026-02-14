@@ -9,6 +9,14 @@ type UserWithRoleResult = {
   roleCode: DbRoleCode | null;
 };
 
+export type AuthUserRecord = {
+  userId: number;
+  username: string;
+  passwordHash: string;
+  isActive: boolean;
+  roleCode: DbRoleCode | null;
+};
+
 export type UserRoleListRow = {
   id: number;
   username: string;
@@ -154,4 +162,69 @@ export async function countActiveAdmins(excludeUserId?: number): Promise<number>
     .where(whereCondition);
 
   return Number(row?.count ?? 0);
+}
+
+export async function getAuthUserByUsername(username: string): Promise<AuthUserRecord | null> {
+  const normalized = username.trim();
+  if (!normalized) return null;
+
+  const [row] = await db
+    .select({
+      userId: users.id,
+      username: users.username,
+      passwordHash: users.passwordHash,
+      isActive: users.isActive,
+      roleCode: roles.code,
+    })
+    .from(users)
+    .leftJoin(roles, eq(users.roleId, roles.id))
+    .where(eq(users.username, normalized));
+
+  if (!row) return null;
+
+  return {
+    userId: row.userId,
+    username: row.username,
+    passwordHash: row.passwordHash,
+    isActive: row.isActive,
+    roleCode: row.roleCode ? assertDbRoleCode(row.roleCode.toUpperCase()) : null,
+  };
+}
+
+export async function createAdminUser(params: {
+  username: string;
+  passwordHash: string;
+}): Promise<{ id: number; username: string; roleCode: "ADMIN" }> {
+  const adminRoleId = await getRoleIdByCode("ADMIN");
+  if (!adminRoleId) {
+    throw new Error("ADMIN role is missing");
+  }
+
+  const username = params.username.trim();
+  const email = `${username}@local.admin`;
+  const firstName = username;
+  const lastName = "Admin";
+  const fullName = `${username} Admin`;
+
+  const insertResult = await db.insert(users).values({
+    username,
+    email,
+    passwordHash: params.passwordHash,
+    firstName,
+    lastName,
+    fullName,
+    roleId: adminRoleId,
+    isActive: true,
+  });
+
+  const insertedId = Number((insertResult as any)?.[0]?.insertId ?? (insertResult as any)?.insertId ?? 0);
+  if (!Number.isFinite(insertedId) || insertedId <= 0) {
+    throw new Error("Could not determine inserted admin user id");
+  }
+
+  return {
+    id: insertedId,
+    username,
+    roleCode: "ADMIN",
+  };
 }

@@ -488,9 +488,8 @@ async function resolveSeedTemplates(seedRunId: string, locale: string) {
     [TEMPLATE_KEYS.reklTitle]: "Rekl. {oven_name}",
   };
 
-  const configuredUserId = Number(process.env.SETTINGS_USER_ID ?? "1");
   const fallbackUserIds = await usersRepository.listActiveUserIds(10);
-  const candidateUserIds = uniqueNumberList([configuredUserId, 1, ...fallbackUserIds]);
+  const candidateUserIds = uniqueNumberList(fallbackUserIds);
 
   for (const candidateUserId of candidateUserIds) {
     try {

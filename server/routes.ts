@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import type { Server } from "http";
-import { attachRequestUserContext } from "./middleware/requestUserContext";
 import { resolveUserRole } from "./middleware/resolveUserRole";
+import { requireSessionUser, sessionAuth } from "./middleware/sessionAuth";
+import { setupGate } from "./middleware/setupGate";
 import adminRoutes from "./routes/adminRoutes";
 import customerNotesRoutes from "./routes/customerNotesRoutes";
 import customerAttachmentsRoutes from "./routes/customerAttachmentsRoutes";
@@ -25,9 +26,14 @@ import tourEmployeesRoutes from "./routes/tourEmployeesRoutes";
 import toursRoutes from "./routes/toursRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
 import usersRoutes from "./routes/usersRoutes";
+import authRoutes from "./routes/authRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
-  app.use("/api", attachRequestUserContext);
+  app.use("/api", sessionAuth);
+  app.use("/api", setupGate);
+  app.use(authRoutes);
+
+  app.use("/api", requireSessionUser);
   app.use("/api", resolveUserRole);
 
   app.use(adminRoutes);
