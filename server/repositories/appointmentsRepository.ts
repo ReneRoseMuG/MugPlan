@@ -225,24 +225,6 @@ export async function createAppointment(data: InsertAppointment, employeeIds: nu
   });
 }
 
-export async function updateAppointment(
-  appointmentId: number,
-  data: Partial<InsertAppointment>,
-  employeeIds: number[],
-) {
-  return withAppointmentTransaction(async (tx) => {
-    console.log(`${logPrefix} update appointmentId=${appointmentId}`);
-    await tx.update(appointments).set(data).where(eq(appointments.id, appointmentId));
-
-    console.log(`${logPrefix} replace employees for appointmentId=${appointmentId}`);
-    await replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
-
-    const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, appointmentId));
-    const assignedEmployees = await getAppointmentEmployeesTx(tx, appointmentId);
-    return { ...appointment, employees: assignedEmployees };
-  });
-}
-
 export async function listAppointmentsByProjectFromDate(projectId: number, fromDate: Date): Promise<Appointment[]> {
   console.log(`${logPrefix} list appointments projectId=${projectId} fromDate>=${fromDate}`);
   return db
@@ -433,9 +415,4 @@ export async function listAppointmentsForList(
     rows,
     total: Number(totalResult?.total ?? 0),
   };
-}
-
-export async function deleteAppointment(appointmentId: number): Promise<void> {
-  console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
-  await db.delete(appointments).where(eq(appointments.id, appointmentId));
 }
