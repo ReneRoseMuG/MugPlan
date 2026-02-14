@@ -794,6 +794,7 @@ export const api = {
         200: z.array(
           z.object({
             id: z.number().int().positive(),
+            version: z.number().int().min(1),
             username: z.string(),
             email: z.string(),
             fullName: z.string(),
@@ -803,6 +804,37 @@ export const api = {
           }),
         ),
         403: errorSchemas.validation,
+      },
+    },
+    create: {
+      method: "POST" as const,
+      path: "/api/users",
+      input: z
+        .object({
+          username: z.string().min(1).max(100),
+          email: z.string().email(),
+          firstName: z.string().min(1).max(100),
+          lastName: z.string().min(1).max(100),
+          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+          password: z.string().min(10).max(255),
+        })
+        .strict(),
+      responses: {
+        201: z.array(
+          z.object({
+            id: z.number().int().positive(),
+            version: z.number().int().min(1),
+            username: z.string(),
+            email: z.string(),
+            fullName: z.string(),
+            isActive: z.boolean(),
+            roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]).nullable(),
+            roleName: z.string().nullable(),
+          }),
+        ),
+        403: errorSchemas.validation,
+        409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     patch: {
@@ -816,6 +848,7 @@ export const api = {
         200: z.array(
           z.object({
             id: z.number().int().positive(),
+            version: z.number().int().min(1),
             username: z.string(),
             email: z.string(),
             fullName: z.string(),

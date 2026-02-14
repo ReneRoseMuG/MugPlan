@@ -21,7 +21,7 @@ export async function extractFromPdf(params: {
   scope: ExtractionScope;
   fileBuffer: Buffer;
 }): Promise<DocumentExtractionResult> {
-  const extractedText = extractTextFromPdfBuffer(params.fileBuffer);
+  const extractedText = await extractTextFromPdfBuffer(params.fileBuffer);
   const aiResult = await extractionProvider.extractStructuredData({
     scope: params.scope,
     text: extractedText,

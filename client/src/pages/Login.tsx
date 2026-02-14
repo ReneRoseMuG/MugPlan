@@ -50,12 +50,12 @@ export default function Login({ onAuthenticated }: LoginProps) {
       <Card className="w-full max-w-md border-2 border-foreground">
         <CardHeader className="pb-3">
           <CardTitle className="text-3xl font-black tracking-tight text-primary uppercase">MuG Plan</CardTitle>
-          <CardDescription>Bitte melde dich mit deinem Benutzerkonto an.</CardDescription>
+          <CardDescription>Bitte melde dich mit Benutzername oder E-Mail und Passwort an.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="login-username">Benutzer</Label>
+              <Label htmlFor="login-username">Benutzername oder E-Mail</Label>
               <Input
                 id="login-username"
                 value={username}

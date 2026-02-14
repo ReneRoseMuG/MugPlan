@@ -1,12 +1,4 @@
-function decodePdfEscapes(value: string): string {
-  return value
-    .replace(/\\n/g, "\n")
-    .replace(/\\r/g, "\r")
-    .replace(/\\t/g, "\t")
-    .replace(/\\\(/g, "(")
-    .replace(/\\\)/g, ")")
-    .replace(/\\\\/g, "\\");
-}
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 function normalizeWhitespace(value: string): string {
   return value
@@ -16,45 +8,44 @@ function normalizeWhitespace(value: string): string {
     .trim();
 }
 
-function extractStringsFromArrayOperator(value: string): string[] {
-  const matches = value.match(/\((?:\\.|[^\\()])*\)/g);
-  if (!matches) return [];
-  return matches.map((entry) => decodePdfEscapes(entry.slice(1, -1)));
-}
+type TextContentLike = {
+  items: Array<{
+    str?: string;
+    hasEOL?: boolean;
+  }>;
+};
 
-export function extractTextFromPdfBuffer(buffer: Buffer): string {
-  const content = buffer.toString("latin1");
+export async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {
+  const loadingTask = getDocument({
+    data: new Uint8Array(buffer),
+    useWorkerFetch: false,
+    isEvalSupported: false,
+    useSystemFonts: false,
+  } as any);
+
+  const pdf = await loadingTask.promise;
   const parts: string[] = [];
 
-  const tjPattern = /\((?:\\.|[^\\()])*\)\s*Tj/g;
-  let tjMatch: RegExpExecArray | null = tjPattern.exec(content);
-  while (tjMatch) {
-    const raw = tjMatch[0];
-    const start = raw.indexOf("(");
-    const end = raw.lastIndexOf(")");
-    if (start !== -1 && end > start) {
-      const decoded = decodePdfEscapes(raw.slice(start + 1, end));
-      if (decoded.trim().length > 0) {
-        parts.push(decoded);
+  try {
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const textContent = (await page.getTextContent()) as TextContentLike;
+      for (const item of textContent.items) {
+        const text = (item.str ?? "").trim();
+        if (text.length > 0) {
+          parts.push(text);
+        }
+        if (item.hasEOL) {
+          parts.push("\n");
+        }
       }
+      parts.push("\n\n");
     }
-    tjMatch = tjPattern.exec(content);
+  } finally {
+    await loadingTask.destroy();
   }
 
-  const tjArrayPattern = /\[([\s\S]*?)\]\s*TJ/g;
-  let tjArrayMatch: RegExpExecArray | null = tjArrayPattern.exec(content);
-  while (tjArrayMatch) {
-    const group = tjArrayMatch[1];
-    const strings = extractStringsFromArrayOperator(group);
-    for (const value of strings) {
-      if (value.trim().length > 0) {
-        parts.push(value);
-      }
-    }
-    tjArrayMatch = tjArrayPattern.exec(content);
-  }
-
-  const text = normalizeWhitespace(parts.join("\n"));
+  const text = normalizeWhitespace(parts.join(" "));
   if (text.length === 0) {
     throw new Error("Dokument enthält keinen extrahierbaren Text");
   }

@@ -1,11 +1,21 @@
 import type { DbRoleCode } from "../settings/registry";
 import * as usersRepository from "../repositories/usersRepository";
+import { hashPassword } from "../security/passwordHash";
 
 export class UsersError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "BUSINESS_CONFLICT" | "LOCK_VIOLATION" | "VALIDATION_ERROR";
+  code:
+    | "VERSION_CONFLICT"
+    | "NOT_FOUND"
+    | "BUSINESS_CONFLICT"
+    | "LOCK_VIOLATION"
+    | "VALIDATION_ERROR";
 
-  constructor(message: string, status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "BUSINESS_CONFLICT" | "LOCK_VIOLATION" | "VALIDATION_ERROR") {
+  constructor(
+    message: string,
+    status: number,
+    code: "VERSION_CONFLICT" | "NOT_FOUND" | "BUSINESS_CONFLICT" | "LOCK_VIOLATION" | "VALIDATION_ERROR",
+  ) {
     super(message);
     this.status = status;
     this.code = code;
@@ -25,6 +35,52 @@ function requireAdmin(userContext: UserContext): void {
 
 export async function listUsers(userContext: UserContext) {
   requireAdmin(userContext);
+  return usersRepository.listUsersWithRoles();
+}
+
+export async function createUser(
+  userContext: UserContext,
+  input: {
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    roleCode: DbRoleCode;
+    password: string;
+  },
+) {
+  requireAdmin(userContext);
+
+  if (input.password.length < 10) {
+    throw new UsersError("Ungueltiges Passwort", 422, "VALIDATION_ERROR");
+  }
+
+  const username = input.username.trim();
+  const email = input.email.trim();
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  if (!username || !email || !firstName || !lastName) {
+    throw new UsersError("Ungueltige Eingaben", 422, "VALIDATION_ERROR");
+  }
+
+  const passwordHash = await hashPassword(input.password);
+
+  try {
+    await usersRepository.createUser({
+      username,
+      email,
+      firstName,
+      lastName,
+      roleCode: input.roleCode,
+      passwordHash,
+    });
+  } catch (error) {
+    if (error instanceof usersRepository.UsersRepositoryError) {
+      throw new UsersError(error.message, 409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+
   return usersRepository.listUsersWithRoles();
 }
 

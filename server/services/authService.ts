@@ -88,12 +88,12 @@ export async function login(input: { username: string; password: string }): Prom
     throw new AuthError("Setup required", 409, "SETUP_REQUIRED");
   }
 
-  const username = normalizeUsername(input.username);
-  if (!username) {
+  const identifier = normalizeUsername(input.username);
+  if (!identifier) {
     throw new AuthError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
 
-  const user = await usersRepository.getAuthUserByUsername(username);
+  const user = await usersRepository.getAuthUserByIdentifier(identifier);
   if (!user) {
     throw new AuthError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
