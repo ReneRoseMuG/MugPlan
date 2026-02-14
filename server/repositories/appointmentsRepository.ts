@@ -12,6 +12,7 @@ import {
 } from "@shared/schema";
 
 const logPrefix = "[appointments-repo]";
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type AppointmentListFilters = {
   employeeId?: number;
@@ -41,16 +42,17 @@ async function getAppointmentEmployees(appointmentId: number) {
   return rows.map((row) => row.employee);
 }
 
-async function getAppointmentEmployeesTx(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  appointmentId: number,
-) {
+async function getAppointmentEmployeesTx(tx: DbTx, appointmentId: number) {
   const rows = await tx
     .select({ employee: employees })
     .from(appointmentEmployees)
     .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
     .where(eq(appointmentEmployees.appointmentId, appointmentId));
   return rows.map((row) => row.employee);
+}
+
+export async function withAppointmentTransaction<T>(handler: (tx: DbTx) => Promise<T>): Promise<T> {
+  return db.transaction(async (tx) => handler(tx));
 }
 
 export async function getAppointmentEmployeesByAppointmentIds(appointmentIds: number[]) {
@@ -71,6 +73,132 @@ export async function getAppointment(id: number): Promise<Appointment | null> {
   return appointment || null;
 }
 
+export async function getAppointmentTx(tx: DbTx, id: number): Promise<Appointment | null> {
+  const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, id));
+  return appointment || null;
+}
+
+export async function getProjectTx(
+  tx: DbTx,
+  projectId: number,
+): Promise<{ id: number; name: string } | null> {
+  const [project] = await tx
+    .select({
+      id: projects.id,
+      name: projects.name,
+    })
+    .from(projects)
+    .where(eq(projects.id, projectId));
+
+  return project ?? null;
+}
+
+export async function hasEmployeeDateOverlapTx(
+  tx: DbTx,
+  params: {
+    employeeIds: number[];
+    startDate: Date;
+    endDate: Date | null;
+    excludeAppointmentId?: number;
+  },
+): Promise<boolean> {
+  const normalizedEmployeeIds = Array.from(new Set(params.employeeIds));
+  if (normalizedEmployeeIds.length === 0) return false;
+
+  const effectiveEndDate = params.endDate ?? params.startDate;
+  const conditions = [
+    inArray(appointmentEmployees.employeeId, normalizedEmployeeIds),
+    lte(appointments.startDate, effectiveEndDate),
+    gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
+  ];
+
+  if (typeof params.excludeAppointmentId === "number") {
+    conditions.push(sql`${appointments.id} <> ${params.excludeAppointmentId}`);
+  }
+
+  const [row] = await tx
+    .select({ count: sql<number>`count(*)` })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .where(and(...conditions));
+
+  return Number(row?.count ?? 0) > 0;
+}
+
+export async function createAppointmentTx(tx: DbTx, data: InsertAppointment): Promise<number> {
+  const result = await tx.insert(appointments).values(data);
+  return Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId);
+}
+
+export async function replaceAppointmentEmployeesTx(
+  tx: DbTx,
+  appointmentId: number,
+  employeeIds: number[],
+): Promise<void> {
+  await tx.delete(appointmentEmployees).where(eq(appointmentEmployees.appointmentId, appointmentId));
+
+  if (employeeIds.length === 0) return;
+
+  await tx.insert(appointmentEmployees).values(
+    employeeIds.map((employeeId) => ({
+      appointmentId,
+      employeeId,
+    })),
+  );
+}
+
+function getAffectedRows(result: unknown): number {
+  const raw = result as any;
+  return Number(raw?.[0]?.affectedRows ?? raw?.affectedRows ?? 0);
+}
+
+export async function updateAppointmentWithVersionTx(
+  tx: DbTx,
+  params: {
+    appointmentId: number;
+    expectedVersion: number;
+    data: Partial<InsertAppointment>;
+  },
+): Promise<{ kind: "updated" | "version_conflict" }> {
+  const result = await tx.execute(sql`
+    update appointments
+    set
+      project_id = ${params.data.projectId ?? null},
+      tour_id = ${params.data.tourId ?? null},
+      title = ${params.data.title ?? null},
+      description = ${params.data.description ?? null},
+      start_date = ${params.data.startDate ?? null},
+      start_time = ${params.data.startTime ?? null},
+      end_date = ${params.data.endDate ?? null},
+      end_time = ${params.data.endTime ?? null},
+      version = version + 1
+    where id = ${params.appointmentId}
+      and version = ${params.expectedVersion}
+  `);
+
+  return getAffectedRows(result) === 0 ? { kind: "version_conflict" } : { kind: "updated" };
+}
+
+export async function deleteAppointmentWithVersionTx(
+  tx: DbTx,
+  params: { appointmentId: number; expectedVersion: number },
+): Promise<{ kind: "deleted" | "version_conflict" }> {
+  const result = await tx.execute(sql`
+    delete from appointments
+    where id = ${params.appointmentId}
+      and version = ${params.expectedVersion}
+  `);
+
+  return getAffectedRows(result) === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
+}
+
+export async function getAppointmentWithEmployeesTx(tx: DbTx, id: number) {
+  const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, id));
+  if (!appointment) return null;
+  const employeeRows = await getAppointmentEmployeesTx(tx, id);
+  return { ...appointment, employees: employeeRows };
+}
+
 export async function getAppointmentWithEmployees(id: number) {
   const [appointment] = await db.select().from(appointments).where(eq(appointments.id, id));
   if (!appointment) return null;
@@ -79,19 +207,13 @@ export async function getAppointmentWithEmployees(id: number) {
 }
 
 export async function createAppointment(data: InsertAppointment, employeeIds: number[]) {
-  return db.transaction(async (tx) => {
+  return withAppointmentTransaction(async (tx) => {
     console.log(`${logPrefix} create appointment for projectId=${data.projectId}`);
-    const result = await tx.insert(appointments).values(data);
-    const insertId = (result as any)[0].insertId as number;
+    const insertId = await createAppointmentTx(tx, data);
 
     if (employeeIds.length > 0) {
       console.log(`${logPrefix} assign ${employeeIds.length} employees to appointmentId=${insertId}`);
-      await tx.insert(appointmentEmployees).values(
-        employeeIds.map((employeeId) => ({
-          appointmentId: insertId,
-          employeeId,
-        })),
-      );
+      await replaceAppointmentEmployeesTx(tx, insertId, employeeIds);
     } else {
       console.log(`${logPrefix} no employees assigned to appointmentId=${insertId}`);
     }
@@ -108,20 +230,12 @@ export async function updateAppointment(
   data: Partial<InsertAppointment>,
   employeeIds: number[],
 ) {
-  return db.transaction(async (tx) => {
+  return withAppointmentTransaction(async (tx) => {
     console.log(`${logPrefix} update appointmentId=${appointmentId}`);
     await tx.update(appointments).set(data).where(eq(appointments.id, appointmentId));
 
     console.log(`${logPrefix} replace employees for appointmentId=${appointmentId}`);
-    await tx.delete(appointmentEmployees).where(eq(appointmentEmployees.appointmentId, appointmentId));
-    if (employeeIds.length > 0) {
-      await tx.insert(appointmentEmployees).values(
-        employeeIds.map((employeeId) => ({
-          appointmentId,
-          employeeId,
-        })),
-      );
-    }
+    await replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
 
     const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, appointmentId));
     const assignedEmployees = await getAppointmentEmployeesTx(tx, appointmentId);

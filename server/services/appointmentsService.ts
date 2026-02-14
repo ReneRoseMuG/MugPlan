@@ -1,6 +1,5 @@
 import type { InsertAppointment } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
-import * as projectsRepository from "../repositories/projectsRepository";
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 
@@ -15,9 +14,13 @@ const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
 
 class AppointmentError extends Error {
   status: number;
-  code?: string;
+  code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR";
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(
+    message: string,
+    status: number,
+    code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR",
+  ) {
     super(message);
     this.status = status;
     this.code = code;
@@ -31,7 +34,7 @@ function getBerlinTodayDateString(): string {
 function parseDateOnly(input: string): Date {
   const parsed = new Date(`${input}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) {
-    throw new AppointmentError("Ungueltiges Datum", 400);
+    throw new AppointmentError("Ungueltiges Datum", 422, "VALIDATION_ERROR");
   }
   return parsed;
 }
@@ -125,14 +128,17 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
 
 function validateDateRange(startDate: string, endDate?: string | null) {
   if (endDate && endDate < startDate) {
-    throw new AppointmentError("Enddatum darf nicht vor dem Startdatum liegen", 400);
+    throw new AppointmentError("Enddatum darf nicht vor dem Startdatum liegen", 422, "VALIDATION_ERROR");
   }
 }
 
-async function ensureProjectExists(projectId: number) {
-  const project = await projectsRepository.getProject(projectId);
+async function ensureProjectExistsTx(
+  tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
+  projectId: number,
+) {
+  const project = await appointmentsRepository.getProjectTx(tx, projectId);
   if (!project) {
-    throw new AppointmentError("Projekt ist erforderlich", 400);
+    throw new AppointmentError("Projekt ist erforderlich", 422, "VALIDATION_ERROR");
   }
   return project;
 }
@@ -166,29 +172,45 @@ export async function createAppointment(
   },
 ) {
   console.log(`${logPrefix} create request projectId=${data.projectId}`);
-  const project = await ensureProjectExists(data.projectId);
   validateDateRange(data.startDate, data.endDate ?? null);
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
+  const startDate = parseDateOnly(data.startDate);
+  const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
 
-  const appointmentData: InsertAppointment = {
-    projectId: data.projectId,
-    tourId: data.tourId ?? null,
-    title: project.name,
-    description: null,
-    startDate: parseDateOnly(data.startDate),
-    endDate: data.endDate ? parseDateOnly(data.endDate) : null,
-    startTime: data.startTime ?? null,
-    endTime: null,
-  };
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const project = await ensureProjectExistsTx(tx, data.projectId);
+    const hasOverlap = await appointmentsRepository.hasEmployeeDateOverlapTx(tx, {
+      employeeIds,
+      startDate,
+      endDate,
+    });
+    if (hasOverlap) {
+      throw new AppointmentError("Mitarbeiter sind in diesem Zeitraum bereits zugewiesen", 409, "BUSINESS_CONFLICT");
+    }
 
-  console.log(`${logPrefix} persisting appointment with ${employeeIds.length} employees`);
-  return appointmentsRepository.createAppointment(appointmentData, employeeIds);
+    const appointmentData: InsertAppointment = {
+      projectId: data.projectId,
+      tourId: data.tourId ?? null,
+      title: project.name,
+      description: null,
+      startDate,
+      endDate,
+      startTime: data.startTime ?? null,
+      endTime: null,
+    };
+
+    console.log(`${logPrefix} persisting appointment with ${employeeIds.length} employees`);
+    const appointmentId = await appointmentsRepository.createAppointmentTx(tx, appointmentData);
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
+    return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+  });
 }
 
 export async function updateAppointment(
   appointmentId: number,
   data: {
+    version: number;
     projectId: number;
     tourId?: number | null;
     startDate: string;
@@ -198,36 +220,60 @@ export async function updateAppointment(
   },
   roleKey: CanonicalRoleKey,
 ) {
-  const existing = await appointmentsRepository.getAppointment(appointmentId);
-  if (!existing) return null;
-
-  if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
-    console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "APPOINTMENT_LOCKED");
-  }
-
-  const project = await ensureProjectExists(data.projectId);
   validateDateRange(data.startDate, data.endDate ?? null);
-
-  if (existing.tourId !== (data.tourId ?? null)) {
-    console.log(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
-  }
-
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
+  const startDate = parseDateOnly(data.startDate);
+  const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
 
-  const appointmentData: Partial<InsertAppointment> = {
-    projectId: data.projectId,
-    tourId: data.tourId ?? null,
-    title: project.name,
-    description: null,
-    startDate: parseDateOnly(data.startDate),
-    endDate: data.endDate ? parseDateOnly(data.endDate) : null,
-    startTime: data.startTime ?? null,
-    endTime: null,
-  };
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return null;
 
-  console.log(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
-  return appointmentsRepository.updateAppointment(appointmentId, appointmentData, employeeIds);
+    if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
+      console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+      throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+    }
+
+    const project = await ensureProjectExistsTx(tx, data.projectId);
+
+    if (existing.tourId !== (data.tourId ?? null)) {
+      console.log(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
+    }
+
+    const hasOverlap = await appointmentsRepository.hasEmployeeDateOverlapTx(tx, {
+      employeeIds,
+      startDate,
+      endDate,
+      excludeAppointmentId: appointmentId,
+    });
+    if (hasOverlap) {
+      throw new AppointmentError("Mitarbeiter sind in diesem Zeitraum bereits zugewiesen", 409, "BUSINESS_CONFLICT");
+    }
+
+    const appointmentData: Partial<InsertAppointment> = {
+      projectId: data.projectId,
+      tourId: data.tourId ?? null,
+      title: project.name,
+      description: null,
+      startDate,
+      endDate,
+      startTime: data.startTime ?? null,
+      endTime: null,
+    };
+
+    console.log(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
+    const updateResult = await appointmentsRepository.updateAppointmentWithVersionTx(tx, {
+      appointmentId,
+      expectedVersion: data.version,
+      data: appointmentData,
+    });
+    if (updateResult.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    }
+
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
+    return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+  });
 }
 
 export async function listProjectAppointments(
@@ -372,7 +418,7 @@ export async function listAppointmentsList(params: {
   const dateFrom = params.dateFrom ? parseDateOnly(params.dateFrom) : undefined;
   const dateTo = params.dateTo ? parseDateOnly(params.dateTo) : undefined;
   if (dateFrom && dateTo && dateTo < dateFrom) {
-    throw new AppointmentError("dateTo darf nicht vor dateFrom liegen", 400);
+    throw new AppointmentError("dateTo darf nicht vor dateFrom liegen", 422, "VALIDATION_ERROR");
   }
 
   const berlinToday = parseDateOnly(getBerlinTodayDateString());
@@ -443,18 +489,27 @@ export async function listAppointmentsList(params: {
   };
 }
 
-export async function deleteAppointment(appointmentId: number, roleKey: CanonicalRoleKey) {
-  const existing = await appointmentsRepository.getAppointment(appointmentId);
-  if (!existing) return null;
+export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return null;
 
-  if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
-    console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "APPOINTMENT_LOCKED");
-  }
+    if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
+      console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+      throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+    }
 
-  console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
-  await appointmentsRepository.deleteAppointment(appointmentId);
-  return existing;
+    console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
+    const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
+      appointmentId,
+      expectedVersion,
+    });
+    if (result.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    }
+
+    return existing;
+  });
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {

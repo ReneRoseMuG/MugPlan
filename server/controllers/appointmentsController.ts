@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
+import { ZodError } from "zod";
 import * as appointmentsService from "../services/appointmentsService";
 import { handleZodError } from "./validation";
 
@@ -34,9 +35,12 @@ export async function createAppointment(req: Request, res: Response, next: NextF
     const appointment = await appointmentsService.createAppointment(input);
     res.status(201).json(appointment);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json({ message: err.message, field: err.code });
+      res.status(err.status).json({ code: err.code });
       return;
     }
     next(err);
@@ -66,9 +70,12 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
     }
     res.json(appointment);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json({ message: err.message, field: err.code });
+      res.status(err.status).json({ code: err.code });
       return;
     }
     next(err);
@@ -131,6 +138,7 @@ export async function listAppointmentsList(req: Request, res: Response, next: Ne
 
 export async function deleteAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const input = api.appointments.delete.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
       res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
@@ -139,15 +147,19 @@ export async function deleteAppointment(req: Request, res: Response, next: NextF
 
     const appointmentId = Number(req.params.id);
     console.log(`${logPrefix} delete request appointmentId=${appointmentId}`);
-    const appointment = await appointmentsService.deleteAppointment(appointmentId, roleKey);
+    const appointment = await appointmentsService.deleteAppointment(appointmentId, input.version, roleKey);
     if (!appointment) {
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
     }
     res.status(204).send();
   } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json({ message: err.message, field: err.code });
+      res.status(err.status).json({ code: err.code });
       return;
     }
     next(err);
