@@ -355,18 +355,27 @@ export const api = {
     update: {
       method: 'PATCH' as const,
       path: '/api/tours/:id',
-      input: updateTourSchema,
+      input: updateTourSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof tours.$inferSelect>(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     delete: {
       method: 'DELETE' as const,
       path: '/api/tours/:id',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -390,18 +399,27 @@ export const api = {
     update: {
       method: 'PATCH' as const,
       path: '/api/teams/:id',
-      input: updateTeamSchema,
+      input: updateTeamSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof teams.$inferSelect>(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     delete: {
       method: 'DELETE' as const,
       path: '/api/teams/:id',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -433,11 +451,14 @@ export const api = {
     update: {
       method: 'PATCH' as const,
       path: '/api/customers/:id',
-      input: updateCustomerSchema,
+      input: updateCustomerSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof customers.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -462,9 +483,14 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/customers/:customerId/notes/:noteId',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -472,20 +498,28 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/notes/:noteId',
-      input: updateNoteSchema,
+      input: updateNoteSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof notes.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     togglePin: {
       method: 'PATCH' as const,
       path: '/api/notes/:noteId/pin',
-      input: z.object({ isPinned: z.boolean() }),
+      input: z.object({
+        isPinned: z.boolean(),
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof notes.$inferSelect>(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -509,19 +543,27 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/note-templates/:id',
-      input: updateNoteTemplateSchema,
+      input: updateNoteTemplateSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof noteTemplates.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     delete: {
       method: 'DELETE' as const,
       path: '/api/note-templates/:id',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -545,30 +587,41 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/project-status/:id',
-      input: updateProjectStatusSchema,
+      input: updateProjectStatusSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof projectStatus.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     toggleActive: {
       method: 'PATCH' as const,
       path: '/api/project-status/:id/active',
-      input: z.object({ isActive: z.boolean() }),
+      input: z.object({
+        isActive: z.boolean(),
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof projectStatus.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     delete: {
       method: 'DELETE' as const,
       path: '/api/project-status/:id',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -608,20 +661,28 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/employees/:id',
-      input: updateEmployeeSchema,
+      input: updateEmployeeSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof employees.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     toggleActive: {
       method: 'PATCH' as const,
       path: '/api/employees/:id/active',
-      input: z.object({ isActive: z.boolean() }),
+      input: z.object({
+        isActive: z.boolean(),
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof employees.$inferSelect>(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     currentAppointments: {
@@ -691,6 +752,7 @@ export const api = {
       path: "/api/users/:id",
       input: z.object({
         roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+        version: z.number().int().min(1),
       }).strict(),
       responses: {
         200: z.array(
@@ -704,9 +766,10 @@ export const api = {
             roleName: z.string().nullable(),
           }),
         ),
-        400: errorSchemas.validation,
         403: errorSchemas.validation,
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -722,18 +785,31 @@ export const api = {
     remove: {
       method: 'DELETE' as const,
       path: '/api/tours/:tourId/employees/:employeeId',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof employees.$inferSelect>(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     assign: {
       method: 'POST' as const,
       path: '/api/tours/:tourId/employees',
-      input: z.object({ employeeIds: z.array(z.number()) }),
+      input: z.object({
+        items: z.array(
+          z.object({
+            employeeId: z.number().int().positive(),
+            version: z.number().int().min(1),
+          }),
+        ),
+      }),
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -748,18 +824,31 @@ export const api = {
     remove: {
       method: 'DELETE' as const,
       path: '/api/teams/:teamId/employees/:employeeId',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof employees.$inferSelect>(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     assign: {
       method: 'POST' as const,
       path: '/api/teams/:teamId/employees',
-      input: z.object({ employeeIds: z.array(z.number()) }),
+      input: z.object({
+        items: z.array(
+          z.object({
+            employeeId: z.number().int().positive(),
+            version: z.number().int().min(1),
+          }),
+        ),
+      }),
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -804,29 +893,41 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/help-texts/:id',
-      input: updateHelpTextSchema,
+      input: updateHelpTextSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof helpTexts.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
-        409: z.object({ message: z.string() }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     toggleActive: {
       method: 'PATCH' as const,
       path: '/api/help-texts/:id/active',
-      input: z.object({ isActive: z.boolean() }),
+      input: z.object({
+        isActive: z.boolean(),
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof helpTexts.$inferSelect>(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     delete: {
       method: 'DELETE' as const,
       path: '/api/help-texts/:id',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -875,19 +976,27 @@ export const api = {
     update: {
       method: 'PATCH' as const,
       path: '/api/projects/:id',
-      input: updateProjectSchema,
+      input: updateProjectSchema.extend({
+        version: z.number().int().min(1),
+      }),
       responses: {
         200: z.custom<typeof projects.$inferSelect>(),
         404: errorSchemas.notFound,
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     delete: {
       method: 'DELETE' as const,
       path: '/api/projects/:id',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -912,9 +1021,14 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/projects/:projectId/notes/:noteId',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -1016,9 +1130,14 @@ export const api = {
     remove: {
       method: 'DELETE' as const,
       path: '/api/projects/:projectId/statuses/:statusId',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -1334,6 +1453,7 @@ export const api = {
       input: z.object({
         key: z.string().min(1),
         scopeType: z.enum(["GLOBAL", "ROLE", "USER"]),
+        version: z.number().int().min(1),
         value: z.unknown(),
       }),
       responses: {
@@ -1357,7 +1477,8 @@ export const api = {
             updatedBy: z.number().nullable().optional(),
           }),
         ),
-        400: errorSchemas.validation,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },

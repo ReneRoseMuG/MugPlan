@@ -1,6 +1,17 @@
 import type { Customer, InsertCustomer, UpdateCustomer } from "@shared/schema";
 import * as customersRepository from "../repositories/customersRepository";
 
+export class CustomersError extends Error {
+  status: number;
+  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
+
+  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
+    super(code);
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export async function listCustomers(): Promise<Customer[]> {
   return customersRepository.getCustomers();
 }
@@ -18,7 +29,14 @@ export async function createCustomer(data: InsertCustomer): Promise<Customer> {
   return customersRepository.createCustomer({ ...data, fullName });
 }
 
-export async function updateCustomer(id: number, data: UpdateCustomer): Promise<Customer | null> {
+export async function updateCustomer(
+  id: number,
+  data: UpdateCustomer & { version: number },
+): Promise<Customer | null> {
+  if (!Number.isInteger(data.version) || data.version < 1) {
+    throw new CustomersError(422, "VALIDATION_ERROR");
+  }
+
   const existing = await customersRepository.getCustomer(id);
   if (!existing) return null;
 
@@ -29,5 +47,11 @@ export async function updateCustomer(id: number, data: UpdateCustomer): Promise<
     fullName = `${lastName}, ${firstName}`;
   }
 
-  return customersRepository.updateCustomer(id, { ...data, fullName });
+  const result = await customersRepository.updateCustomerWithVersion(id, data.version, { ...data, fullName });
+  if (result.kind === "version_conflict") {
+    const exists = await customersRepository.getCustomer(id);
+    if (!exists) return null;
+    throw new CustomersError(409, "VERSION_CONFLICT");
+  }
+  return result.customer;
 }

@@ -39,22 +39,48 @@ export async function createProjectStatus(data: InsertProjectStatus): Promise<Pr
   return status;
 }
 
-export async function updateProjectStatus(id: number, data: UpdateProjectStatus): Promise<ProjectStatus | null> {
-  await db
-    .update(projectStatus)
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq(projectStatus.id, id));
+export async function updateProjectStatusWithVersion(
+  id: number,
+  expectedVersion: number,
+  data: UpdateProjectStatus,
+): Promise<{ kind: "updated"; status: ProjectStatus } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update project_status
+    set
+      title = coalesce(${data.title ?? null}, title),
+      description = ${data.description ?? null},
+      color = coalesce(${data.color ?? null}, color),
+      sort_order = coalesce(${data.sortOrder ?? null}, sort_order),
+      is_active = coalesce(${data.isActive ?? null}, is_active),
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
   const [status] = await db.select().from(projectStatus).where(eq(projectStatus.id, id));
-  return status || null;
+  return { kind: "updated", status };
 }
 
-export async function toggleProjectStatusActive(id: number, isActive: boolean): Promise<ProjectStatus | null> {
-  await db
-    .update(projectStatus)
-    .set({ isActive, updatedAt: new Date() })
-    .where(eq(projectStatus.id, id));
+export async function toggleProjectStatusActiveWithVersion(
+  id: number,
+  expectedVersion: number,
+  isActive: boolean,
+): Promise<{ kind: "updated"; status: ProjectStatus } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update project_status
+    set
+      is_active = ${isActive},
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
   const [status] = await db.select().from(projectStatus).where(eq(projectStatus.id, id));
-  return status || null;
+  return { kind: "updated", status };
 }
 
 export async function isProjectStatusInUse(id: number): Promise<boolean> {
@@ -65,8 +91,17 @@ export async function isProjectStatusInUse(id: number): Promise<boolean> {
   return (result?.count || 0) > 0;
 }
 
-export async function deleteProjectStatus(id: number): Promise<void> {
-  await db.delete(projectStatus).where(eq(projectStatus.id, id));
+export async function deleteProjectStatusWithVersion(
+  id: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    delete from project_status
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
 }
 
 export async function getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]> {
@@ -102,12 +137,26 @@ export async function addProjectStatus(projectId: number, statusId: number): Pro
   }
 }
 
-export async function removeProjectStatus(projectId: number, statusId: number): Promise<void> {
-  await db
-    .delete(projectProjectStatus)
-    .where(and(eq(projectProjectStatus.projectId, projectId), eq(projectProjectStatus.projectStatusId, statusId)));
+export async function hasProjectStatusRelation(projectId: number, statusId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ projectId: projectProjectStatus.projectId })
+    .from(projectProjectStatus)
+    .where(and(eq(projectProjectStatus.projectId, projectId), eq(projectProjectStatus.projectStatusId, statusId)))
+    .limit(1);
+  return Boolean(row);
 }
 
-export async function removeProjectStatusRelationsForProject(projectId: number): Promise<void> {
-  await db.delete(projectProjectStatus).where(eq(projectProjectStatus.projectId, projectId));
+export async function removeProjectStatusWithVersion(
+  projectId: number,
+  statusId: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    delete from project_project_status
+    where project_id = ${projectId}
+      and project_status_id = ${statusId}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
 }

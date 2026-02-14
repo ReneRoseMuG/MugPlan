@@ -28,7 +28,10 @@ export async function createCustomerNote(
     }
   }
 
-  const note = await notesRepository.createNote(noteData);
-  await notesRepository.addCustomerNoteRelation(customerId, note.id);
-  return note;
+  return notesRepository.withNotesTransaction(async (tx) => {
+    const noteId = await notesRepository.createNoteTx(tx, noteData);
+    await notesRepository.addCustomerNoteRelationTx(tx, customerId, noteId);
+    const note = await notesRepository.getNote(noteId);
+    return note;
+  });
 }

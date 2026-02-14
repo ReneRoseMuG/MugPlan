@@ -137,19 +137,74 @@ export async function createProject(data: InsertProject): Promise<Project> {
   return project;
 }
 
-export async function updateProject(id: number, data: UpdateProject): Promise<Project | null> {
-  await db
-    .update(projects)
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq(projects.id, id));
+export async function updateProjectWithVersion(
+  id: number,
+  expectedVersion: number,
+  data: UpdateProject,
+): Promise<{ kind: "updated"; project: Project } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update project
+    set
+      name = coalesce(${data.name ?? null}, name),
+      customer_id = coalesce(${data.customerId ?? null}, customer_id),
+      description_md = ${data.descriptionMd ?? null},
+      is_active = coalesce(${data.isActive ?? null}, is_active),
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) {
+    return { kind: "version_conflict" };
+  }
+
   const [project] = await db.select().from(projects).where(eq(projects.id, id));
-  return project || null;
+  return { kind: "updated", project };
 }
 
-export async function deleteProject(id: number): Promise<void> {
-  await db.delete(projectNotes).where(eq(projectNotes.projectId, id));
-  await db.delete(projectAttachments).where(eq(projectAttachments.projectId, id));
-  await db.delete(projects).where(eq(projects.id, id));
+export async function deleteProjectWithVersion(
+  id: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+  return db.transaction(async (tx) => {
+    // Acquire a write lock by touching the versioned row first, so dependent deletes
+    // and final delete run against the same validated version snapshot.
+    const versionCheck = await tx.execute(sql`
+      update project
+      set version = version
+      where id = ${id}
+        and version = ${expectedVersion}
+    `);
+    const versionCheckAffectedRows = Number(
+      (versionCheck as any)?.[0]?.affectedRows ?? (versionCheck as any)?.affectedRows ?? 0,
+    );
+    if (versionCheckAffectedRows === 0) {
+      throw new Error("VERSION_CONFLICT");
+    }
+
+    await tx.delete(projectNotes).where(eq(projectNotes.projectId, id));
+    await tx.delete(projectAttachments).where(eq(projectAttachments.projectId, id));
+    await tx.delete(projectProjectStatus).where(eq(projectProjectStatus.projectId, id));
+
+    const result = await tx.execute(sql`
+      delete from project
+      where id = ${id}
+        and version = ${expectedVersion}
+    `);
+
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      throw new Error("VERSION_CONFLICT");
+    }
+    return { kind: "deleted" as const };
+  }).catch((error) => {
+    if (error instanceof Error && error.message === "VERSION_CONFLICT") {
+      return { kind: "version_conflict" as const };
+    }
+    throw error;
+  });
 }
 
 export async function getProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
@@ -176,8 +231,4 @@ export async function createProjectAttachment(data: InsertProjectAttachment): Pr
     .from(projectAttachments)
     .where(eq(projectAttachments.id, insertId));
   return attachment;
-}
-
-export async function deleteProjectAttachment(id: number): Promise<void> {
-  await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
 }

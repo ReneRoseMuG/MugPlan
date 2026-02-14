@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
+import { ZodError } from "zod";
 import * as appointmentsService from "../services/appointmentsService";
 import * as employeesService from "../services/employeesService";
-import { handleZodError } from "./validation";
 
 function getRoleKeyFromRequest(req: Request) {
   return req.userContext?.roleKey;
@@ -14,7 +14,14 @@ export async function listEmployees(req: Request, res: Response, next: NextFunct
     const employees = await employeesService.listEmployees(scope);
     res.json(employees);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof employeesService.EmployeesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }
@@ -46,7 +53,14 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
     const employee = await employeesService.createEmployee(input);
     res.status(201).json(employee);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof employeesService.EmployeesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }
@@ -64,12 +78,15 @@ export async function updateEmployee(req: Request, res: Response, next: NextFunc
     const input = api.employees.update.input.parse(req.body);
     const employee = await employeesService.updateEmployee(id, input);
     if (!employee) {
-      res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
+      res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
     res.json(employee);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     next(err);
   }
 }
@@ -78,14 +95,21 @@ export async function toggleEmployeeActive(req: Request, res: Response, next: Ne
   try {
     const id = Number(req.params.id);
     const input = api.employees.toggleActive.input.parse(req.body);
-    const employee = await employeesService.toggleEmployeeActive(id, input.isActive);
+    const employee = await employeesService.toggleEmployeeActive(id, input.isActive, input.version);
     if (!employee) {
-      res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
+      res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
     res.json(employee);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof employeesService.EmployeesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }

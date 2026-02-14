@@ -124,9 +124,22 @@ export async function getRoleIdByCode(roleCode: DbRoleCode): Promise<number | nu
   return row?.id ?? null;
 }
 
-export async function updateUserRoleById(userId: number, roleId: number): Promise<boolean> {
-  const result = await db.update(users).set({ roleId }).where(eq(users.id, userId));
-  return Number(result[0].affectedRows ?? 0) > 0;
+export async function updateUserRoleByIdWithVersion(
+  userId: number,
+  expectedVersion: number,
+  roleId: number,
+): Promise<{ kind: "updated" } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update users
+    set
+      role_id = ${roleId},
+      updated_at = now(),
+      version = version + 1
+    where id = ${userId}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "updated" };
 }
 
 export async function countActiveAdmins(excludeUserId?: number): Promise<number> {

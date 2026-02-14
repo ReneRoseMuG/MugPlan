@@ -20,6 +20,13 @@ function isMissingTableError(error: unknown): boolean {
   return maybeCode === "ER_NO_SUCH_TABLE" || maybeErrno === 1146;
 }
 
+function isDuplicateKeyError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybeCode = (error as { code?: unknown }).code;
+  const maybeErrno = (error as { errno?: unknown }).errno;
+  return maybeCode === "ER_DUP_ENTRY" || maybeErrno === 1062;
+}
+
 let ensureUserSettingsTablePromise: Promise<void> | null = null;
 
 async function ensureUserSettingsTable(): Promise<void> {
@@ -31,6 +38,7 @@ async function ensureUserSettingsTable(): Promise<void> {
         scope_type VARCHAR(16) NOT NULL,
         scope_id VARCHAR(128) NOT NULL,
         value_json JSON NOT NULL,
+        version INT NOT NULL DEFAULT 1,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         updated_by BIGINT NULL,
         CONSTRAINT user_settings_value_key_scope_unique UNIQUE (setting_key, scope_type, scope_id)
@@ -95,31 +103,84 @@ export async function listSettingCandidates(params: {
   }
 }
 
-export async function upsertSettingValue(params: {
+export async function getSettingValueByScope(params: {
+  settingKey: string;
+  scopeType: SettingScopeType;
+  scopeId: string;
+}): Promise<{ id: number } | null> {
+  const [row] = await db
+    .select({ id: userSettingsValue.id })
+    .from(userSettingsValue)
+    .where(
+      and(
+        eq(userSettingsValue.settingKey, params.settingKey),
+        eq(userSettingsValue.scopeType, params.scopeType),
+        eq(userSettingsValue.scopeId, params.scopeId),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+export async function upsertSettingValueWithVersion(params: {
   settingKey: string;
   scopeType: SettingScopeType;
   scopeId: string;
   valueJson: unknown;
   updatedBy: number;
-}): Promise<void> {
+  expectedVersion: number;
+}): Promise<{ kind: "updated" | "inserted" } | { kind: "version_conflict" }> {
   await ensureUserSettingsTable();
 
-  await db
-    .insert(userSettingsValue)
-    .values({
-      settingKey: params.settingKey,
-      scopeType: params.scopeType,
-      scopeId: params.scopeId,
-      valueJson: params.valueJson,
-      updatedBy: params.updatedBy,
-    })
-    .onDuplicateKeyUpdate({
-      set: {
-        valueJson: params.valueJson,
-        updatedBy: params.updatedBy,
-        updatedAt: new Date(),
-      },
+  try {
+    return await db.transaction(async (tx) => {
+      const updateResult = await tx.execute(sql`
+        update user_settings_value
+        set
+          value_json = ${params.valueJson},
+          updated_by = ${params.updatedBy},
+          updated_at = now(),
+          version = version + 1
+        where setting_key = ${params.settingKey}
+          and scope_type = ${params.scopeType}
+          and scope_id = ${params.scopeId}
+          and version = ${params.expectedVersion}
+      `);
+
+      const updateAffectedRows = Number(
+        (updateResult as any)?.[0]?.affectedRows ?? (updateResult as any)?.affectedRows ?? 0,
+      );
+      if (updateAffectedRows > 0) {
+        return { kind: "updated" as const };
+      }
+
+      if (params.expectedVersion !== 1) {
+        return { kind: "version_conflict" as const };
+      }
+
+      try {
+        await tx.insert(userSettingsValue).values({
+          settingKey: params.settingKey,
+          scopeType: params.scopeType,
+          scopeId: params.scopeId,
+          valueJson: params.valueJson,
+          updatedBy: params.updatedBy,
+        });
+      } catch (error) {
+        if (isDuplicateKeyError(error)) {
+          return { kind: "version_conflict" as const };
+        }
+        throw error;
+      }
+
+      return { kind: "inserted" as const };
     });
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      return { kind: "version_conflict" };
+    }
+    throw error;
+  }
 }
 
 export async function getGlobalSettingValue(settingKey: string): Promise<unknown | undefined> {

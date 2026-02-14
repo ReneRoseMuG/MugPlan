@@ -19,6 +19,7 @@ const attachmentStoragePathSettingKey = "attachmentStoragePath";
 type SetSettingInput = {
   key: string;
   scopeType: SettingScopeType;
+  version: number;
   value?: unknown;
 };
 
@@ -218,6 +219,9 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
   if (input.scopeType === "ROLE") {
     throw new UserSettingsError("ROLE scope nicht verfuegbar, solange Rollenmodell nicht aktiv ist.", 400);
   }
+  if (!Number.isInteger(input.version) || input.version < 1) {
+    throw new UserSettingsError("VALIDATION_ERROR", 422);
+  }
 
   const definition = getSettingDefinitionByKey(input.key);
   if (!definition) {
@@ -241,13 +245,17 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
     throw new UserSettingsError("Ungueltiger Wert fuer Setting", 400);
   }
 
-  await userSettingsRepository.upsertSettingValue({
+  const upsertResult = await userSettingsRepository.upsertSettingValueWithVersion({
     settingKey: definition.key,
     scopeType: input.scopeType,
     scopeId,
     valueJson: valueToPersist,
     updatedBy: userId,
+    expectedVersion: input.version,
   });
+  if (upsertResult.kind === "version_conflict") {
+    throw new UserSettingsError("VERSION_CONFLICT", 409);
+  }
 
   if (definition.key === attachmentStoragePathSettingKey && input.scopeType === "GLOBAL") {
     invalidateGlobalAttachmentStoragePathCache();

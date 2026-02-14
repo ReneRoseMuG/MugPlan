@@ -25,7 +25,10 @@ export async function createProjectNote(
     }
   }
 
-  const note = await notesRepository.createNote(noteData);
-  await notesRepository.addProjectNoteRelation(projectId, note.id);
-  return note;
+  return notesRepository.withNotesTransaction(async (tx) => {
+    const noteId = await notesRepository.createNoteTx(tx, noteData);
+    await notesRepository.addProjectNoteRelationTx(tx, projectId, noteId);
+    const note = await notesRepository.getNote(noteId);
+    return note;
+  });
 }

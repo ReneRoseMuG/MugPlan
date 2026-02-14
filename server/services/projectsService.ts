@@ -1,6 +1,16 @@
 import type { Customer, InsertProject, Project, UpdateProject } from "@shared/schema";
 import * as projectsRepository from "../repositories/projectsRepository";
-import * as projectStatusService from "./projectStatusService";
+
+export class ProjectsError extends Error {
+  status: number;
+  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
+
+  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
+    super(code);
+    this.status = status;
+    this.code = code;
+  }
+}
 
 export type ProjectScope = "upcoming" | "noAppointments" | "all";
 
@@ -35,11 +45,32 @@ export async function createProject(data: InsertProject): Promise<Project> {
   return projectsRepository.createProject(data);
 }
 
-export async function updateProject(id: number, data: UpdateProject): Promise<Project | null> {
-  return projectsRepository.updateProject(id, data);
+export async function updateProject(
+  id: number,
+  data: UpdateProject & { version: number },
+): Promise<Project | null> {
+  if (!Number.isInteger(data.version) || data.version < 1) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const result = await projectsRepository.updateProjectWithVersion(id, data.version, data);
+  if (result.kind === "version_conflict") {
+    const exists = await projectsRepository.getProject(id);
+    if (!exists) return null;
+    throw new ProjectsError(409, "VERSION_CONFLICT");
+  }
+  return result.project;
 }
 
-export async function deleteProject(id: number): Promise<void> {
-  await projectStatusService.removeProjectStatusesForProject(id);
-  await projectsRepository.deleteProject(id);
+export async function deleteProject(id: number, expectedVersion: number): Promise<void> {
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const result = await projectsRepository.deleteProjectWithVersion(id, expectedVersion);
+  if (result.kind === "version_conflict") {
+    const exists = await projectsRepository.getProject(id);
+    if (!exists) {
+      throw new ProjectsError(404, "NOT_FOUND");
+    }
+    throw new ProjectsError(409, "VERSION_CONFLICT");
+  }
 }

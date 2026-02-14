@@ -1,7 +1,7 @@
-import type { Request, Response, NextFunction } from "express";
+ï»¿import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
+import { ZodError } from "zod";
 import * as projectsService from "../services/projectsService";
-import { handleZodError } from "./validation";
 
 export async function listProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -14,7 +14,7 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
     if (customerIdParam) {
       const customerId = Number(customerIdParam);
       if (Number.isNaN(customerId)) {
-        res.status(400).json({ message: "Ungültige customerId" });
+        res.status(400).json({ message: "Ungultige customerId" });
         return;
       }
       const projects = await projectsService.listProjectsByCustomer(
@@ -30,7 +30,10 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
     const projects = await projectsService.listProjects(filter || "all", statusIds, scope);
     res.json(projects);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     next(err);
   }
 }
@@ -54,7 +57,10 @@ export async function createProject(req: Request, res: Response, next: NextFunct
     const project = await projectsService.createProject(input);
     res.status(201).json(project);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     next(err);
   }
 }
@@ -64,27 +70,43 @@ export async function updateProject(req: Request, res: Response, next: NextFunct
     const input = api.projects.update.input.parse(req.body);
     const project = await projectsService.updateProject(Number(req.params.id), input);
     if (!project) {
-      res.status(404).json({ message: "Projekt nicht gefunden" });
+      res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
     res.json(project);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }
 
 export async function deleteProject(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const input = api.projects.delete.input.parse(req.body);
     const projectId = Number(req.params.id);
     const project = await projectsService.getProject(projectId);
     if (!project) {
-      res.status(404).json({ message: "Projekt nicht gefunden" });
+      res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
-    await projectsService.deleteProject(projectId);
+    await projectsService.deleteProject(projectId, input.version);
     res.status(204).send();
   } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }

@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   employeeAttachments,
@@ -36,22 +36,54 @@ export async function createEmployee(data: InsertEmployee & { fullName: string }
   return employee;
 }
 
-export async function updateEmployee(id: number, data: UpdateEmployee & { fullName?: string }): Promise<Employee | null> {
-  await db
-    .update(employees)
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq(employees.id, id));
+export async function updateEmployeeWithVersion(
+  id: number,
+  expectedVersion: number,
+  data: UpdateEmployee & { fullName?: string },
+): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update employee
+    set
+      first_name = coalesce(${data.firstName ?? null}, first_name),
+      last_name = coalesce(${data.lastName ?? null}, last_name),
+      full_name = coalesce(${data.fullName ?? null}, full_name),
+      phone = ${data.phone ?? null},
+      email = ${data.email ?? null},
+      is_active = coalesce(${data.isActive ?? null}, is_active),
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) {
+    return { kind: "version_conflict" };
+  }
+
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
-  return employee || null;
+  return { kind: "updated", employee };
 }
 
-export async function toggleEmployeeActive(id: number, isActive: boolean): Promise<Employee | null> {
-  await db
-    .update(employees)
-    .set({ isActive, updatedAt: new Date() })
-    .where(eq(employees.id, id));
+export async function toggleEmployeeActiveWithVersion(
+  id: number,
+  expectedVersion: number,
+  isActive: boolean,
+): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update employee
+    set
+      is_active = ${isActive},
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
+
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
-  return employee || null;
+  return { kind: "updated", employee };
 }
 
 export async function getEmployeesByTour(tourId: number): Promise<Employee[]> {
@@ -70,6 +102,28 @@ export async function getEmployeesByTeam(teamId: number): Promise<Employee[]> {
     .orderBy(asc(employees.lastName), asc(employees.firstName));
 }
 
+export async function setEmployeeTourWithVersion(
+  employeeId: number,
+  expectedVersion: number,
+  tourId: number | null,
+): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update employee
+    set
+      tour_id = ${tourId},
+      updated_at = now(),
+      version = version + 1
+    where id = ${employeeId}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
+
+  const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
+  return { kind: "updated", employee };
+}
+
+// Technical exception for demo-seed flow (excluded from hardening scope).
 export async function setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {
   await db
     .update(employees)
@@ -79,6 +133,28 @@ export async function setEmployeeTour(employeeId: number, tourId: number | null)
   return employee || null;
 }
 
+export async function setEmployeeTeamWithVersion(
+  employeeId: number,
+  expectedVersion: number,
+  teamId: number | null,
+): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update employee
+    set
+      team_id = ${teamId},
+      updated_at = now(),
+      version = version + 1
+    where id = ${employeeId}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
+
+  const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
+  return { kind: "updated", employee };
+}
+
+// Technical exception for demo-seed flow (excluded from hardening scope).
 export async function setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null> {
   await db
     .update(employees)

@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
+import { ZodError } from "zod";
 import * as projectStatusService from "../services/projectStatusService";
-import { handleZodError } from "./validation";
 
 export async function listProjectStatuses(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -22,7 +22,10 @@ export async function createProjectStatus(req: Request, res: Response, next: Nex
     const status = await projectStatusService.createProjectStatus(input);
     res.status(201).json(status);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     next(err);
   }
 }
@@ -34,15 +37,22 @@ export async function updateProjectStatus(req: Request, res: Response, next: Nex
     const result = await projectStatusService.updateProjectStatus(id, input);
     if (result.error) {
       if (result.error === "Status nicht gefunden") {
-        res.status(404).json({ message: result.error });
+        res.status(404).json({ code: "NOT_FOUND" });
         return;
       }
-      res.status(400).json({ message: result.error });
+      res.status(409).json({ code: "BUSINESS_CONFLICT" });
       return;
     }
     res.json(result.status);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectStatusService.ProjectStatusError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }
@@ -54,36 +64,56 @@ export async function toggleProjectStatusActive(req: Request, res: Response, nex
 
     const existing = await projectStatusService.getProjectStatus(id);
     if (!existing) {
-      res.status(404).json({ message: "Projektstatus nicht gefunden" });
+      res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
     if (existing.isDefault && !input.isActive) {
-      res.status(400).json({ message: "Default-Status kann nicht deaktiviert werden" });
+      res.status(409).json({ code: "BUSINESS_CONFLICT" });
       return;
     }
 
-    const status = await projectStatusService.toggleProjectStatusActive(id, input.isActive);
+    const status = await projectStatusService.toggleProjectStatusActive(id, input.isActive, input.version);
     if (!status) {
-      res.status(404).json({ message: "Projektstatus nicht gefunden" });
+      res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
     res.json(status);
   } catch (err) {
-    if (handleZodError(err, res)) return;
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectStatusService.ProjectStatusError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }
 
 export async function deleteProjectStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const input = api.projectStatus.delete.input.parse(req.body);
     const id = Number(req.params.id);
-    const result = await projectStatusService.deleteProjectStatus(id);
+    const result = await projectStatusService.deleteProjectStatus(id, input.version);
     if (!result.success) {
-      res.status(400).json({ message: result.error });
+      if (result.error === "Status nicht gefunden") {
+        res.status(404).json({ code: "NOT_FOUND" });
+        return;
+      }
+      res.status(409).json({ code: "BUSINESS_CONFLICT" });
       return;
     }
     res.status(204).send();
   } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectStatusService.ProjectStatusError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }
