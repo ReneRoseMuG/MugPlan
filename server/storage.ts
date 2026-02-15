@@ -106,8 +106,8 @@ export interface IStorage {
   getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
   getProjectAttachmentById(id: number): Promise<ProjectAttachment | null>;
   createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment>;
-  getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]>;
-  addProjectStatus(projectId: number, statusId: number): Promise<void>;
+  getProjectStatusesByProject(projectId: number): Promise<Array<{ status: ProjectStatus; relationVersion: number }>>;
+  addProjectStatus(projectId: number, statusId: number, expectedVersion: number): Promise<{ status: ProjectStatus; relationVersion: number }>;
   removeProjectStatus(projectId: number, statusId: number, version: number): Promise<void>;
 }
 
@@ -206,7 +206,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectStatuses(filter: "active" | "inactive" | "all" = "active"): Promise<ProjectStatus[]> {
-    return projectStatusService.listProjectStatuses(filter);
+    return projectStatusService.listProjectStatuses(filter, "ADMIN");
   }
 
   async getProjectStatus(id: number): Promise<ProjectStatus | null> {
@@ -214,22 +214,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProjectStatus(status: InsertProjectStatus): Promise<ProjectStatus> {
-    return projectStatusService.createProjectStatus(status);
+    return projectStatusService.createProjectStatus(status, "ADMIN");
   }
 
   async updateProjectStatus(
     id: number,
     data: UpdateProjectStatus & { version: number },
   ): Promise<{ status: ProjectStatus | null; error?: string }> {
-    return projectStatusService.updateProjectStatus(id, data);
+    return projectStatusService.updateProjectStatus(id, data, "ADMIN");
   }
 
   async toggleProjectStatusActive(id: number, isActive: boolean, version: number): Promise<ProjectStatus | null> {
-    return projectStatusService.toggleProjectStatusActive(id, isActive, version);
+    return projectStatusService.toggleProjectStatusActive(id, isActive, version, "ADMIN");
   }
 
   async deleteProjectStatus(id: number, version: number): Promise<{ success: boolean; error?: string }> {
-    return projectStatusService.deleteProjectStatus(id, version);
+    return projectStatusService.deleteProjectStatus(id, version, "ADMIN");
   }
 
   async isProjectStatusInUse(id: number): Promise<boolean> {
@@ -370,16 +370,16 @@ export class DatabaseStorage implements IStorage {
     return projectAttachmentsRepository.createProjectAttachment(data);
   }
 
-  async getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]> {
+  async getProjectStatusesByProject(projectId: number): Promise<Array<{ status: ProjectStatus; relationVersion: number }>> {
     return projectStatusService.listProjectStatusesByProject(projectId);
   }
 
-  async addProjectStatus(projectId: number, statusId: number): Promise<void> {
-    await projectStatusService.addProjectStatus(projectId, statusId);
+  async addProjectStatus(projectId: number, statusId: number, expectedVersion: number): Promise<{ status: ProjectStatus; relationVersion: number }> {
+    return projectStatusService.addProjectStatus(projectId, statusId, expectedVersion, "DISPONENT");
   }
 
   async removeProjectStatus(projectId: number, statusId: number, version: number): Promise<void> {
-    await projectStatusService.removeProjectStatus(projectId, statusId, version);
+    await projectStatusService.removeProjectStatus(projectId, statusId, version, "DISPONENT");
   }
 }
 

@@ -2,6 +2,12 @@ type SetupStatusResponse = {
   needsAdminSetup: boolean;
 };
 
+type AuthPayload = {
+  userId: number;
+  username: string;
+  roleCode: "READER" | "DISPATCHER" | "ADMIN";
+};
+
 export async function getSetupStatus(): Promise<SetupStatusResponse> {
   const response = await fetch("/api/auth/setup-status", {
     method: "GET",
@@ -28,6 +34,8 @@ export async function login(username: string, password: string): Promise<void> {
     const code = typeof payload?.code === "string" ? payload.code : "LOGIN_FAILED";
     throw new Error(code);
   }
+  const payload = (await response.json()) as AuthPayload;
+  window.localStorage.setItem("userRole", payload.roleCode);
 }
 
 export async function setupAdmin(username: string, password: string): Promise<void> {
@@ -43,6 +51,8 @@ export async function setupAdmin(username: string, password: string): Promise<vo
     const code = typeof payload?.code === "string" ? payload.code : "SETUP_FAILED";
     throw new Error(code);
   }
+  const payload = (await response.json()) as AuthPayload;
+  window.localStorage.setItem("userRole", payload.roleCode);
 }
 
 export async function logout(): Promise<void> {
@@ -54,4 +64,5 @@ export async function logout(): Promise<void> {
   if (!response.ok) {
     throw new Error(`Logout failed: ${response.status}`);
   }
+  window.localStorage.removeItem("userRole");
 }

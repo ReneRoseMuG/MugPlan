@@ -7,13 +7,14 @@ import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flag, ListChecks, Plus } from "lucide-react";
 import type { ProjectStatus } from "@shared/schema";
+import type { ProjectStatusRelationItem } from "@shared/routes";
 
 interface ProjectStatusPanelProps {
-  assignedStatuses: ProjectStatus[];
+  assignedStatuses: ProjectStatusRelationItem[];
   availableStatuses: ProjectStatus[];
   isLoading?: boolean;
   onAdd: (statusId: number) => void;
-  onRemove: (statusId: number) => void;
+  onRemove: (item: ProjectStatusRelationItem) => void;
   title?: string;
 }
 
@@ -27,7 +28,7 @@ export function ProjectStatusPanel({
 }: ProjectStatusPanelProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const assignedIds = new Set(assignedStatuses.map((status) => status.id));
+  const assignedIds = new Set(assignedStatuses.map((item) => item.status.id));
   const unassignedStatuses = availableStatuses.filter((status) => !assignedIds.has(status.id) && status.isActive);
 
   const handleOpenDialog = () => {
@@ -78,14 +79,14 @@ export function ProjectStatusPanel({
             </div>
           ) : (
             <>
-              {assignedStatuses.map((status) => (
+              {assignedStatuses.map((item) => (
                 <ProjectStatusInfoBadge
-                  key={status.id}
-                  status={status}
+                  key={item.status.id}
+                  status={item.status}
                   action="remove"
-                  onRemove={() => onRemove(status.id)}
+                  onRemove={() => onRemove(item)}
                   fullWidth
-                  testId={`status-badge-${status.id}`}
+                  testId={`status-badge-${item.status.id}`}
                 />
               ))}
               {assignedStatuses.length === 0 && (

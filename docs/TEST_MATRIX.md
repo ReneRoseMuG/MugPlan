@@ -12,12 +12,14 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 | [tests/unit/auth/loginIdentifier.test.ts](../tests/unit/auth/loginIdentifier.test.ts) | TBD | Unit | Regeln zur Login-Identifier-Auflösung prüfen | Bestand |
 | [tests/unit/auth/passwordHash.test.ts](../tests/unit/auth/passwordHash.test.ts) | TBD | Unit | Passwort-Hashing und Verifikation prüfen | Bestand |
 | [tests/unit/authorization/roleGuards.test.ts](../tests/unit/authorization/roleGuards.test.ts) | TBD | Unit | Rollenbasierte Zugriffsschutz-Guards validieren | Bestand |
+| [tests/unit/authorization/projectStatusAuthorization.test.ts](../tests/unit/authorization/projectStatusAuthorization.test.ts) | FT15 | Unit | Rollenregeln fuer Projektstatus-Stammdaten und Zuordnungen absichern | Neu |
 | [tests/unit/authorization/userCreate.test.ts](../tests/unit/authorization/userCreate.test.ts) | TBD | Unit | Berechtigungsregeln bei User-Erstellung prüfen | Bestand |
 | [tests/unit/extraction/documentTextExtractor.test.ts](../tests/unit/extraction/documentTextExtractor.test.ts) | TBD | Unit | Kernlogik der Dokument-Textextraktion testen | Bestand |
 | [tests/unit/invariants/attachmentRules.test.ts](../tests/unit/invariants/attachmentRules.test.ts) | TBD | Unit | Invarianten für Attachment-Regeln absichern | Bestand |
 | [tests/unit/invariants/conflictPriority.test.ts](../tests/unit/invariants/conflictPriority.test.ts) | TBD | Unit | Priorisierungslogik bei Konflikten prüfen | Bestand |
 | [tests/unit/invariants/lockingRules.test.ts](../tests/unit/invariants/lockingRules.test.ts) | TBD | Unit | Locking-Regeln und Sperrlogik validieren | Bestand |
 | [tests/unit/invariants/optimisticLocking.test.ts](../tests/unit/invariants/optimisticLocking.test.ts) | TBD | Unit | Optimistic-Locking-Verhalten und Konflikte absichern | Bestand |
+| [tests/unit/invariants/projectStatusAssignmentRules.test.ts](../tests/unit/invariants/projectStatusAssignmentRules.test.ts) | FT15 | Unit | Invarianten fuer aktive/inaktive Status-Zuordnung und Remove-Regeln pruefen | Neu |
 | [tests/unit/invariants/resetDatabaseGuard.test.ts](../tests/unit/invariants/resetDatabaseGuard.test.ts) | TBD | Unit | Schutzregeln für Datenbank-Reset prüfen | Bestand |
 | [tests/unit/seed/demoDataFiller.format.test.ts](../tests/unit/seed/demoDataFiller.format.test.ts) | TBD | Unit | Formatregeln des Demo-Data-Fillers prüfen | Bestand |
 | [tests/unit/seed/demoSeedAssignments.test.ts](../tests/unit/seed/demoSeedAssignments.test.ts) | TBD | Unit | Zuweisungslogik im Demo-Seed absichern | Bestand |
@@ -25,6 +27,10 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 | [tests/unit/settings/userSettingsResolvedMapping.test.ts](../tests/unit/settings/userSettingsResolvedMapping.test.ts) | TBD | Unit | Aufgelöstes Mapping von User-Settings inkl. Hover-Delay-Setting validieren | Erweitert |
 | [tests/unit/ui/appointmentWeeklyPanelPreview.width.test.tsx](../tests/unit/ui/appointmentWeeklyPanelPreview.width.test.tsx) | TBD | Unit | Fallback- und Messwertlogik der Weekly-Preview-Breite prüfen | Neu |
 | [tests/unit/ui/hoverPreview.delaySetting.test.tsx](../tests/unit/ui/hoverPreview.delaySetting.test.tsx) | TBD | Unit | Priorität und Fallback der globalen Hover-Delay-Steuerung absichern | Neu |
+| [tests/unit/ui/projectStatusPage.actions.test.tsx](../tests/unit/ui/projectStatusPage.actions.test.tsx) | FT15 | Unit | Admin-Aktionen fuer Toggle/Delete und Versionierungsverdrahtung absichern | Neu |
+| [tests/unit/ui/projectForm.statusRelationsLocking.test.tsx](../tests/unit/ui/projectForm.statusRelationsLocking.test.tsx) | FT15 | Unit | Relations-Verdrahtung fuer expectedVersion und relationVersion im Projektformular absichern | Neu |
 | [tests/unit/ui/projectsTable.preview.test.tsx](../tests/unit/ui/projectsTable.preview.test.tsx) | TBD | Unit | Standardisierte Weekly-Preview-Verdrahtung in der Projekte-Tabelle absichern | Neu |
 | [tests/unit/ui/tableView.stickyHeader.test.tsx](../tests/unit/ui/tableView.stickyHeader.test.tsx) | TBD | Unit | Sticky-Header-Verhalten der TableView absichern | Bestand |
 | [tests/unit/validation/dtoValidators.test.ts](../tests/unit/validation/dtoValidators.test.ts) | TBD | Unit | DTO-Validierungsregeln und Fehlerfälle prüfen | Bestand |
+| [tests/integration/server/projectStatus.lifecycle.test.ts](../tests/integration/server/projectStatus.lifecycle.test.ts) | FT15 | Integration | Lifecycle-Regeln fuer Update/Toggle/Delete und Loeschschutz verifizieren | Neu |
+| [tests/integration/server/projectStatus.relations.test.ts](../tests/integration/server/projectStatus.relations.test.ts) | FT15 | Integration | Zuordnungsregeln inkl. expectedVersion/relationVersion und VERSION_CONFLICT fuer Add/Delete absichern | Neu |

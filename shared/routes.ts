@@ -631,6 +631,7 @@ export const api = {
       path: '/api/project-status',
       responses: {
         200: z.array(z.custom<typeof projectStatus.$inferSelect>()),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
       },
     },
     create: {
@@ -639,6 +640,7 @@ export const api = {
       input: insertProjectStatusSchema,
       responses: {
         201: z.custom<typeof projectStatus.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         400: errorSchemas.validation,
       },
     },
@@ -650,6 +652,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof projectStatus.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -664,6 +667,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof projectStatus.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -677,6 +681,7 @@ export const api = {
       }),
       responses: {
         204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -1205,17 +1210,32 @@ export const api = {
       method: 'GET' as const,
       path: '/api/projects/:projectId/statuses',
       responses: {
-        200: z.array(z.custom<typeof projectStatus.$inferSelect>()),
+        200: z.array(
+          z.object({
+            status: z.custom<typeof projectStatus.$inferSelect>(),
+            relationVersion: z.number().int().min(1),
+          }),
+        ),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
       },
     },
     add: {
       method: 'POST' as const,
       path: '/api/projects/:projectId/statuses',
-      input: z.object({ statusId: z.number() }),
+      input: z.object({
+        statusId: z.number(),
+        expectedVersion: z.number().int().min(0),
+      }),
       responses: {
-        201: z.void(),
+        201: z.object({
+          status: z.custom<typeof projectStatus.$inferSelect>(),
+          relationVersion: z.number().int().min(1),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "VERSION_CONFLICT"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     remove: {
@@ -1226,6 +1246,7 @@ export const api = {
       }),
       responses: {
         204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -1639,6 +1660,9 @@ export type NoteTemplateResponse = z.infer<typeof api.noteTemplates.create.respo
 export type ProjectStatusInput = z.infer<typeof api.projectStatus.create.input>;
 export type ProjectStatusUpdateInput = z.infer<typeof api.projectStatus.update.input>;
 export type ProjectStatusResponse = z.infer<typeof api.projectStatus.create.responses[201]>;
+export type ProjectStatusRelationItem = z.infer<typeof api.projectStatusRelations.list.responses[200]>[number];
+export type ProjectStatusRelationAddInput = z.infer<typeof api.projectStatusRelations.add.input>;
+export type ProjectStatusRelationDeleteInput = z.infer<typeof api.projectStatusRelations.remove.input>;
 
 export type HelpTextInput = z.infer<typeof api.helpTexts.create.input>;
 export type HelpTextUpdateInput = z.infer<typeof api.helpTexts.update.input>;

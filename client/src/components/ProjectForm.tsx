@@ -36,6 +36,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, Customer, Note, ProjectStatus } from "@shared/schema";
+import type { ProjectStatusRelationItem } from "@shared/routes";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -91,7 +92,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   });
 
   // Fetch project statuses assigned to this project
-  const { data: assignedStatuses = [], isLoading: statusesLoading } = useQuery<ProjectStatus[]>({
+  const { data: assignedStatuses = [], isLoading: statusesLoading } = useQuery<ProjectStatusRelationItem[]>({
     queryKey: ['/api/projects', projectId, 'statuses'],
     enabled: isEditing,
   });
@@ -294,19 +295,31 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   // Status mutations
   const addStatusMutation = useMutation({
     mutationFn: async (statusId: number) => {
-      await apiRequest('POST', `/api/projects/${projectId}/statuses`, { statusId });
+      await apiRequest('POST', `/api/projects/${projectId}/statuses`, { statusId, expectedVersion: 0 });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
+        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
+      }
     },
   });
 
   const removeStatusMutation = useMutation({
-    mutationFn: async (statusId: number) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/statuses/${statusId}`);
+    mutationFn: async (item: ProjectStatusRelationItem) => {
+      await apiRequest('DELETE', `/api/projects/${projectId}/statuses/${item.status.id}`, {
+        version: item.relationVersion,
+      });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
+        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
+      }
     },
   });
 
@@ -503,7 +516,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                   availableStatuses={allStatuses}
                   isLoading={statusesLoading}
                   onAdd={(statusId) => addStatusMutation.mutate(statusId)}
-                  onRemove={(statusId) => removeStatusMutation.mutate(statusId)}
+                  onRemove={(item) => removeStatusMutation.mutate(item)}
                 />
               )}
 

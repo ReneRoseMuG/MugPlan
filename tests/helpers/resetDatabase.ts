@@ -39,6 +39,14 @@ export async function resetDatabase() {
   const existing = await getAuthUserByUsername(username);
   if (!existing) {
     const passwordHash = await hashPassword("test-admin-password");
-    await createAdminUser({ username, passwordHash });
+    try {
+      await createAdminUser({ username, passwordHash });
+    } catch (error) {
+      const mysqlError = error as { code?: string; errno?: number } | null;
+      const isDuplicate = mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062;
+      if (!isDuplicate) {
+        throw error;
+      }
+    }
   }
 }

@@ -1218,11 +1218,11 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
             color: item.color.trim(),
             description: item.description ?? null,
             sortOrder: i,
-          });
+          }, "ADMIN");
           statusIdsForProjectAssignment.push(Number(status.id));
         }
       } else {
-        const statuses = await projectStatusService.listProjectStatuses("active");
+        const statuses = await projectStatusService.listProjectStatuses("active", "ADMIN");
         statusIdsForProjectAssignment = statuses.map((status) => Number(status.id));
         if (statusIdsForProjectAssignment.length === 0) {
           warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
@@ -1260,7 +1260,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           const relationCount = random.int(1, Math.max(1, maxCount));
           const selectedStatusIds = seededShuffle(statusIdsForProjectAssignment, random).slice(0, relationCount);
           for (const statusId of selectedStatusIds) {
-            await projectStatusService.addProjectStatus(project.id, statusId);
+            await projectStatusService.addProjectStatus(project.id, statusId, 0, "ADMIN");
             created.projectStatusRelations += 1;
           }
         }

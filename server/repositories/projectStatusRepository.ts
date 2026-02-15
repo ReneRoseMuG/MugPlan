@@ -8,6 +8,11 @@ import {
   type UpdateProjectStatus,
 } from "@shared/schema";
 
+export type ProjectStatusRelationRow = {
+  status: ProjectStatus;
+  relationVersion: number;
+};
+
 export async function getProjectStatuses(filter: "active" | "inactive" | "all" = "active"): Promise<ProjectStatus[]> {
   if (filter === "all") {
     return db
@@ -104,14 +109,14 @@ export async function deleteProjectStatusWithVersion(
   return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
 }
 
-export async function getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]> {
+export async function getProjectStatusRelationsByProject(projectId: number): Promise<ProjectStatusRelationRow[]> {
   const result = await db
-    .select({ status: projectStatus })
+    .select({ status: projectStatus, relationVersion: projectProjectStatus.version })
     .from(projectProjectStatus)
     .innerJoin(projectStatus, eq(projectProjectStatus.projectStatusId, projectStatus.id))
     .where(eq(projectProjectStatus.projectId, projectId))
     .orderBy(asc(projectStatus.sortOrder), asc(projectStatus.title));
-  return result.map((row) => row.status);
+  return result;
 }
 
 export async function getProjectStatusesByProjectIds(projectIds: number[]) {
@@ -127,14 +132,27 @@ export async function getProjectStatusesByProjectIds(projectIds: number[]) {
     .orderBy(asc(projectProjectStatus.projectId), asc(projectStatus.sortOrder), asc(projectStatus.title));
 }
 
-export async function addProjectStatus(projectId: number, statusId: number): Promise<void> {
-  const existing = await db
-    .select()
+export async function addProjectStatusWithExpectedVersion(
+  projectId: number,
+  statusId: number,
+  expectedVersion: number,
+): Promise<{ kind: "created"; relationVersion: number } | { kind: "version_conflict"; currentVersion: number | null }> {
+  const [existing] = await db
+    .select({ version: projectProjectStatus.version })
     .from(projectProjectStatus)
-    .where(and(eq(projectProjectStatus.projectId, projectId), eq(projectProjectStatus.projectStatusId, statusId)));
-  if (existing.length === 0) {
-    await db.insert(projectProjectStatus).values({ projectId, projectStatusId: statusId });
+    .where(and(eq(projectProjectStatus.projectId, projectId), eq(projectProjectStatus.projectStatusId, statusId)))
+    .limit(1);
+
+  if (existing) {
+    return { kind: "version_conflict", currentVersion: existing.version };
   }
+
+  if (expectedVersion !== 0) {
+    return { kind: "version_conflict", currentVersion: null };
+  }
+
+  await db.insert(projectProjectStatus).values({ projectId, projectStatusId: statusId, version: 1 });
+  return { kind: "created", relationVersion: 1 };
 }
 
 export async function hasProjectStatusRelation(projectId: number, statusId: number): Promise<boolean> {
@@ -150,7 +168,7 @@ export async function removeProjectStatusWithVersion(
   projectId: number,
   statusId: number,
   expectedVersion: number,
-): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+): Promise<{ kind: "deleted" } | { kind: "not_found" } | { kind: "version_conflict" }> {
   const result = await db.execute(sql`
     delete from project_project_status
     where project_id = ${projectId}
@@ -158,5 +176,13 @@ export async function removeProjectStatusWithVersion(
       and version = ${expectedVersion}
   `);
   const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
-  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
+  if (affectedRows > 0) return { kind: "deleted" };
+
+  const [existing] = await db
+    .select({ version: projectProjectStatus.version })
+    .from(projectProjectStatus)
+    .where(and(eq(projectProjectStatus.projectId, projectId), eq(projectProjectStatus.projectStatusId, statusId)))
+    .limit(1);
+  if (!existing) return { kind: "not_found" };
+  return { kind: "version_conflict" };
 }

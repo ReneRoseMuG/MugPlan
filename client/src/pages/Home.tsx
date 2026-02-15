@@ -48,6 +48,8 @@ export default function Home({ onLogout }: HomeProps) {
     appointmentId?: number;
     returnView?: ViewType;
   } | null>(null);
+  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
 
   // Handlers for navigation
   const next = () => {
@@ -128,7 +130,7 @@ export default function Home({ onLogout }: HomeProps) {
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
       {/* Left Sidebar - 20% Width */}
       <aside className="w-[20%] h-full flex-shrink-0 z-10 relative">
-        <Sidebar onViewChange={handleViewChange} onLogout={onLogout} currentView={view} />
+        <Sidebar onViewChange={handleViewChange} onLogout={onLogout} currentView={view} userRole={userRole} />
       </aside>
 
       {/* Main Content - 80% Width */}
@@ -206,17 +208,17 @@ export default function Home({ onLogout }: HomeProps) {
               onNewProject={() => { setSelectedProjectId(null); setProjectReturnView('projectList'); setView('project'); }}
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView('projectList'); setView('project'); }}
             />
-          ) : view === 'noteTemplates' ? (
+          ) : view === 'noteTemplates' && isAdmin ? (
             <NoteTemplatesPage />
-          ) : view === 'projectStatus' ? (
+          ) : view === 'projectStatus' && isAdmin ? (
             <ProjectStatusPage />
-          ) : view === 'helpTexts' ? (
+          ) : view === 'helpTexts' && isAdmin ? (
             <HelpTextsPage />
-          ) : view === 'settings' ? (
+          ) : view === 'settings' && isAdmin ? (
             <SettingsPage />
-          ) : view === 'demoData' ? (
+          ) : view === 'demoData' && isAdmin ? (
             <DemoDataPage />
-          ) : view === 'users' ? (
+          ) : view === 'users' && isAdmin ? (
             <UsersPage />
           ) : isCalendarView ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground flex flex-col">

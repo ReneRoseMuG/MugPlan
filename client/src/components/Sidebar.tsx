@@ -5,6 +5,7 @@ interface SidebarProps {
   onViewChange: (view: ViewType) => void;
   onLogout: () => void;
   currentView?: ViewType;
+  userRole?: string;
 }
 
 function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
@@ -91,7 +92,8 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
   );
 }
 
-export function Sidebar({ onViewChange, onLogout, currentView }: SidebarProps) {
+export function Sidebar({ onViewChange, onLogout, currentView, userRole }: SidebarProps) {
+  const isAdmin = userRole?.toUpperCase() === "ADMIN";
   return (
     <div className="w-full h-full bg-slate-50 border-r border-border flex flex-col p-4 overflow-y-auto" data-testid="sidebar">
       <div className="mb-6">
@@ -125,14 +127,16 @@ export function Sidebar({ onViewChange, onLogout, currentView }: SidebarProps) {
           <NavButton icon={MapPin} label="Touren" isActive={currentView === 'tours'} onClick={() => onViewChange('tours')} />
         </NavGroup>
 
-        <NavGroup title="Administration">
-          <NavButton icon={FileText} label="Notiz Vorlagen" isActive={currentView === 'noteTemplates'} onClick={() => onViewChange('noteTemplates')} />
-          <NavButton icon={ListChecks} label="Projekt Status" isActive={currentView === 'projectStatus'} onClick={() => onViewChange('projectStatus')} />
-          <NavButton icon={HelpCircle} label="Hilfetexte" isActive={currentView === 'helpTexts'} onClick={() => onViewChange('helpTexts')} />
-          <NavButton icon={UsersRound} label="Benutzerverwaltung" isActive={currentView === 'users'} onClick={() => onViewChange('users')} />
-          <NavButton icon={Settings} label="Einstellungen" isActive={currentView === 'settings'} onClick={() => onViewChange('settings')} />
-          <NavButton icon={Settings} label="Demo-Daten" isActive={currentView === 'demoData'} onClick={() => onViewChange('demoData')} />
-        </NavGroup>
+        {isAdmin && (
+          <NavGroup title="Administration">
+            <NavButton icon={FileText} label="Notiz Vorlagen" isActive={currentView === 'noteTemplates'} onClick={() => onViewChange('noteTemplates')} />
+            <NavButton icon={ListChecks} label="Projekt Status" isActive={currentView === 'projectStatus'} onClick={() => onViewChange('projectStatus')} />
+            <NavButton icon={HelpCircle} label="Hilfetexte" isActive={currentView === 'helpTexts'} onClick={() => onViewChange('helpTexts')} />
+            <NavButton icon={UsersRound} label="Benutzerverwaltung" isActive={currentView === 'users'} onClick={() => onViewChange('users')} />
+            <NavButton icon={Settings} label="Einstellungen" isActive={currentView === 'settings'} onClick={() => onViewChange('settings')} />
+            <NavButton icon={Settings} label="Demo-Daten" isActive={currentView === 'demoData'} onClick={() => onViewChange('demoData')} />
+          </NavGroup>
+        )}
 
         <div className="mt-auto pt-2">
           <NavButton icon={LogOut} label="Logout" onClick={onLogout} />
@@ -141,4 +145,3 @@ export function Sidebar({ onViewChange, onLogout, currentView }: SidebarProps) {
     </div>
   );
 }
-
