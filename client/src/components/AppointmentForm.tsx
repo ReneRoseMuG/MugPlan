@@ -18,9 +18,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CustomerInfoBadge } from "@/components/ui/customer-info-badge";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
-import { ProjectInfoBadge } from "@/components/ui/project-info-badge";
+import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
+import { ProjectDetailCard } from "@/components/ui/project-detail-card";
+import { RelationSlot } from "@/components/ui/relation-slot";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { ProjectsPage } from "@/components/ProjectsPage";
@@ -781,37 +782,35 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-            <FolderKanban className="w-4 h-4" />
-            Projektzuordnung
-          </h3>
-
-          {selectedProject ? (
-            <ProjectInfoBadge
-              id={selectedProject.id}
-              title={selectedProject.name}
-              customerFullName={selectedCustomer?.fullName ?? null}
-              action={isLocked ? "none" : "remove"}
-              onRemove={() => setSelectedProjectId(null)}
-              fullWidth
-              testId="badge-project"
-            />
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-              Kein Projekt ausgewählt
-            </div>
-          )}
-
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setProjectPickerOpen(true)}
-            disabled={isLocked}
-            data-testid="button-select-project"
+          <RelationSlot
+            title="Projektzuordnung"
+            icon={<FolderKanban className="w-4 h-4" />}
+            state={isLocked ? "readonly" : selectedProject ? "active" : "empty"}
+            onAdd={isLocked ? undefined : () => setProjectPickerOpen(true)}
+            onRemove={isLocked ? undefined : () => setSelectedProjectId(null)}
+            addLabel="Projekt auswählen"
+            emptyText="Kein Projekt ausgewählt"
+            testId="slot-project-relation"
+            addActionTestId="button-select-project"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Projekt auswählen
-          </Button>
+            {selectedProject ? (
+              <ProjectDetailCard
+                project={selectedProject}
+                customerName={selectedCustomer?.fullName ?? null}
+                testId="badge-project"
+              />
+            ) : null}
+          </RelationSlot>
+
+          <RelationSlot
+            title="Kunde"
+            icon={<Users className="w-4 h-4" />}
+            state="readonly"
+            emptyText="Kunde wird über das Projekt bestimmt"
+            testId="slot-customer-relation"
+          >
+            {selectedCustomer ? <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" /> : null}
+          </RelationSlot>
 
           <DocumentExtractionDropzone
             onFileSelected={runDocumentExtraction}
@@ -946,28 +945,6 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
             </div>
           </div>
 
-          <div className="sub-panel space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Kunde
-            </h3>
-            {selectedCustomer ? (
-              <CustomerInfoBadge
-                id={selectedCustomer.id}
-                firstName={selectedCustomer.firstName}
-                lastName={selectedCustomer.lastName}
-                fullName={selectedCustomer.fullName}
-                customerNumber={selectedCustomer.customerNumber}
-                phone={selectedCustomer.phone}
-                fullWidth
-                testId="badge-customer"
-              />
-            ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-                Kunde wird über das Projekt bestimmt
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

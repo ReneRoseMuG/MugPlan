@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+﻿import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
@@ -15,11 +14,12 @@ import {
 } from "@/components/DocumentExtractionDialog";
 import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
+import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
+import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
   FolderKanban, 
   UserCircle, 
-  FileText, 
-  Plus
+  FileText
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -153,7 +153,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     });
     if (!response.ok) {
       const payload = await response.json().catch(() => null);
-      throw new Error(payload?.message ?? "Kundennummer konnte nicht aufgelöst werden");
+      throw new Error(payload?.message ?? "Kundennummer konnte nicht aufgelÃ¶st werden");
     }
     return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; customer: Customer | null };
   };
@@ -302,7 +302,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onError: (error) => {
       if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
+        toast({ title: "Statusliste wurde zwischenzeitlich geÃ¤ndert, bitte neu laden.", variant: "destructive" });
       }
     },
   });
@@ -318,7 +318,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onError: (error) => {
       if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
+        toast({ title: "Statusliste wurde zwischenzeitlich geÃ¤ndert, bitte neu laden.", variant: "destructive" });
       }
     },
   });
@@ -329,7 +329,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       throw new Error("validation");
     }
     if (!customerId) {
-      toast({ title: "Kunde muss ausgewählt werden", variant: "destructive" });
+      toast({ title: "Kunde muss ausgewÃ¤hlt werden", variant: "destructive" });
       throw new Error("validation");
     }
 
@@ -355,10 +355,10 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       }
 
       if (customerId) {
-        const confirmed = window.confirm("Der aktuell gewählte Kunde wird ersetzt. Fortfahren?");
+        const confirmed = window.confirm("Der aktuell gewÃ¤hlte Kunde wird ersetzt. Fortfahren?");
         if (!confirmed) return;
       } else {
-        const confirmed = window.confirm("Kunde mit den erkannten Daten übernehmen?");
+        const confirmed = window.confirm("Kunde mit den erkannten Daten Ã¼bernehmen?");
         if (!confirmed) return;
       }
 
@@ -369,16 +369,16 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
       if (resolution.resolution === "single" && resolution.customer) {
         setCustomerId(resolution.customer.id);
-        toast({ title: "Bestehender Kunde übernommen" });
+        toast({ title: "Bestehender Kunde Ã¼bernommen" });
         return;
       }
 
       const created = await createCustomerFromDraft(customerDraft);
       setCustomerId(created.id);
-      toast({ title: "Neuer Kunde angelegt und übernommen" });
+      toast({ title: "Neuer Kunde angelegt und Ã¼bernommen" });
     } catch (error) {
       toast({
-        title: "Kunde konnte nicht übernommen werden",
+        title: "Kunde konnte nicht Ã¼bernommen werden",
         description: error instanceof Error ? error.message : "Unbekannter Fehler",
         variant: "destructive",
       });
@@ -392,15 +392,15 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     try {
       const hasExistingValues = name.trim().length > 0 || descriptionMd.trim().length > 0;
       if (hasExistingValues) {
-        const confirmed = window.confirm("Titel oder Beschreibung sind bereits befüllt. Inhalte überschreiben?");
+        const confirmed = window.confirm("Titel oder Beschreibung sind bereits befÃ¼llt. Inhalte Ã¼berschreiben?");
         if (!confirmed) return;
       }
       setName(payload.saunaModel.trim());
       setDescriptionMd(payload.articleListHtml.trim());
-      toast({ title: "Projektvorschlag übernommen" });
+      toast({ title: "Projektvorschlag Ã¼bernommen" });
     } catch (error) {
       toast({
-        title: "Projektvorschlag konnte nicht übernommen werden",
+        title: "Projektvorschlag konnte nicht Ã¼bernommen werden",
         description: error instanceof Error ? error.message : "Unbekannter Fehler",
         variant: "destructive",
       });
@@ -437,7 +437,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                   <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
                   <Input 
                     id="projectName" 
-                    placeholder="z.B. Renovierung Bürogebäude" 
+                    placeholder="z.B. Renovierung BÃ¼rogebÃ¤ude" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     data-testid="input-project-name"
@@ -446,36 +446,20 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <UserCircle className="w-4 h-4" />
-                  Zugeordneter Kunde *
-                </h3>
-                {selectedCustomer ? (
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <UserCircle className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-800 dark:text-slate-200" data-testid="text-customer-name">
-                          {selectedCustomer.fullName}
-                        </p>
-                        {selectedCustomer.company && (
-                          <p className="text-sm text-slate-500" data-testid="text-customer-company">{selectedCustomer.company}</p>
-                        )}
-                        <p className="text-sm text-slate-400" data-testid="text-customer-phone">{selectedCustomer.phone}</p>
-                      </div>
-                      <Button variant="outline" className="ml-auto" onClick={() => setCustomerDialogOpen(true)} data-testid="button-change-customer">
-                        Kunde ändern
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button variant="outline" className="w-full" onClick={() => setCustomerDialogOpen(true)} data-testid="button-select-customer">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Kunde auswählen
-                  </Button>
-                )}
+                <RelationSlot
+                  title="Zugeordneter Kunde *"
+                  icon={<UserCircle className="w-4 h-4" />}
+                  state={selectedCustomer ? "active" : "empty"}
+                  onAdd={() => setCustomerDialogOpen(true)}
+                  onRemove={() => setCustomerId(null)}
+                  addLabel="Kunde auswählen"
+                  emptyText="Kein Kunde ausgewählt"
+                  testId="slot-customer-relation-project"
+                  addActionTestId="button-select-customer"
+                  removeActionTestId="button-change-customer"
+                >
+                  {selectedCustomer ? <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" /> : null}
+                </RelationSlot>
               </div>
 
               <div className="space-y-4">
@@ -559,7 +543,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
               setCustomerDialogOpen(false);
             }}
             onCancel={() => setCustomerDialogOpen(false)}
-            title="Kunde auswählen"
+            title="Kunde auswÃ¤hlen"
           />
         </DialogContent>
       </Dialog>
@@ -567,9 +551,9 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Änderungen verwerfen?</AlertDialogTitle>
+            <AlertDialogTitle>Ã„nderungen verwerfen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Es gibt ungespeicherte Änderungen. Möchten Sie das Formular wirklich schließen?
+              Es gibt ungespeicherte Ã„nderungen. MÃ¶chten Sie das Formular wirklich schlieÃŸen?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -580,7 +564,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 onCancel?.();
               }}
             >
-              Verwerfen und schließen
+              Verwerfen und schlieÃŸen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -589,3 +573,4 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     </EntityFormLayout>
   );
 }
+

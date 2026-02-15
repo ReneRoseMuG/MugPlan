@@ -28,6 +28,9 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 | [tests/unit/ui/appointmentWeeklyPanelPreview.width.test.tsx](../tests/unit/ui/appointmentWeeklyPanelPreview.width.test.tsx) | TBD | Unit | Fallback- und Messwertlogik der Weekly-Preview-Breite prüfen | Neu |
 | [tests/unit/ui/hoverPreview.delaySetting.test.tsx](../tests/unit/ui/hoverPreview.delaySetting.test.tsx) | TBD | Unit | Priorität und Fallback der globalen Hover-Delay-Steuerung absichern | Neu |
 | [tests/unit/ui/projectStatusPage.actions.test.tsx](../tests/unit/ui/projectStatusPage.actions.test.tsx) | FT15 | Unit | Admin-Aktionen fuer Toggle/Delete und Versionierungsverdrahtung absichern | Neu |
+| [tests/unit/ui/relationSlot.actions.test.tsx](../tests/unit/ui/relationSlot.actions.test.tsx) | FT01/FT02 | Unit | Slot-Zustaende und Action-Sichtbarkeit fuer active/empty/readonly absichern | Neu |
+| [tests/unit/ui/projectForm.customerRelationSlot.test.tsx](../tests/unit/ui/projectForm.customerRelationSlot.test.tsx) | FT02 | Unit | Verdrahtung der Projekt-Kunde Relation ueber den neuen Slot inkl. Pflichtvalidierung absichern | Neu |
+| [tests/unit/ui/appointmentForm.relationSlots.test.tsx](../tests/unit/ui/appointmentForm.relationSlots.test.tsx) | FT01 | Unit | Slot-Verdrahtung fuer Termin-Projekt/Kunde inkl. Lock-Readonly-Regel absichern | Neu |
 | [tests/unit/ui/projectForm.statusRelationsLocking.test.tsx](../tests/unit/ui/projectForm.statusRelationsLocking.test.tsx) | FT15 | Unit | Relations-Verdrahtung fuer expectedVersion und relationVersion im Projektformular absichern | Neu |
 | [tests/unit/ui/projectsTable.preview.test.tsx](../tests/unit/ui/projectsTable.preview.test.tsx) | TBD | Unit | Standardisierte Weekly-Preview-Verdrahtung in der Projekte-Tabelle absichern | Neu |
 | [tests/unit/ui/tableView.stickyHeader.test.tsx](../tests/unit/ui/tableView.stickyHeader.test.tsx) | TBD | Unit | Sticky-Header-Verhalten der TableView absichern | Bestand |
