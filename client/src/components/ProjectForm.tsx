@@ -35,6 +35,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatProjectStoredName, parseProjectStoredName } from "@/lib/project-name-format";
 import type { Project, Customer, Note, ProjectStatus } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 
@@ -106,12 +107,13 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   // Initialize form when project data loads
   useEffect(() => {
     if (projectData) {
-      setName(projectData.project.name);
+      const parsedProjectName = parseProjectStoredName(projectData.project.name);
+      setName(parsedProjectName.isolatedProjectName);
       setDescriptionMd(projectData.project.descriptionMd || "");
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
         buildFormSnapshot({
-          name: projectData.project.name,
+          name: parsedProjectName.isolatedProjectName,
           descriptionMd: projectData.project.descriptionMd || "",
           customerId: projectData.project.customerId,
         }),
@@ -128,6 +130,8 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   }, [projectData, isEditing]);
 
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
+  const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
+  const projectNamePreview = formatProjectStoredName(selectedCustomerNumber, name);
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
@@ -332,11 +336,17 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       toast({ title: "Kunde muss ausgewÃ¤hlt werden", variant: "destructive" });
       throw new Error("validation");
     }
+    if (!selectedCustomerNumber) {
+      toast({ title: "Kundennummer des zugeordneten Kunden fehlt", variant: "destructive" });
+      throw new Error("validation");
+    }
+
+    const storedProjectName = formatProjectStoredName(selectedCustomerNumber, name);
 
     if (isEditing) {
-      await updateMutation.mutateAsync({ name, customerId, descriptionMd: descriptionMd || undefined });
+      await updateMutation.mutateAsync({ name: storedProjectName, customerId, descriptionMd: descriptionMd || undefined });
     } else {
-      await createMutation.mutateAsync({ name, customerId, descriptionMd: descriptionMd || undefined });
+      await createMutation.mutateAsync({ name: storedProjectName, customerId, descriptionMd: descriptionMd || undefined });
     }
     setInitialFormSnapshot(buildFormSnapshot({ name, descriptionMd, customerId }));
 
@@ -395,7 +405,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         const confirmed = window.confirm("Titel oder Beschreibung sind bereits befÃ¼llt. Inhalte Ã¼berschreiben?");
         if (!confirmed) return;
       }
-      setName(payload.saunaModel.trim());
+      setName(parseProjectStoredName(payload.saunaModel).isolatedProjectName);
       setDescriptionMd(payload.articleListHtml.trim());
       toast({ title: "Projektvorschlag Ã¼bernommen" });
     } catch (error) {
@@ -417,7 +427,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
   return (
     <EntityFormLayout
-      title={isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
+      title={isEditing ? "Projektdaten bearbeiten" : "Neues Projekt"}
       icon={<FolderKanban className="w-6 h-6" />}
       onClose={handleRequestClose}
       onCancel={handleRequestClose}
@@ -429,19 +439,26 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
         <div className="col-span-2 space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <FolderKanban className="w-4 h-4" />
-                  Projektdaten
-                </h3>
-                <div className="space-y-2">
-                  <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
-                  <Input 
-                    id="projectName" 
-                    placeholder="z.B. Renovierung BÃ¼rogebÃ¤ude" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    data-testid="input-project-name"
-                  />
+                <div className="grid grid-cols-[180px,1fr] gap-4">
+                  <div className="space-y-2">
+                    <Label data-testid="label-project-customer-number">Kunde Nr.</Label>
+                    <div
+                      className="h-10 rounded-md border border-border/50 bg-[hsl(var(--sub-panel-background))] px-3 flex items-center text-sm"
+                      data-testid="text-project-customer-number"
+                    >
+                      {selectedCustomerNumber || "-"}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
+                    <Input 
+                      id="projectName" 
+                      placeholder="z.B. Renovierung BÃ¼rogebÃ¤ude" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      data-testid="input-project-name"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -506,7 +523,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
               <ProjectAppointmentsPanel
                 projectId={projectId}
-                projectName={name}
+                projectName={projectNamePreview}
                 isEditing={isEditing}
                 onOpenAppointment={onOpenAppointment}
               />

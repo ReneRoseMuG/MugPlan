@@ -21,6 +21,7 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 | [tests/unit/invariants/optimisticLocking.test.ts](../tests/unit/invariants/optimisticLocking.test.ts) | TBD | Unit | Optimistic-Locking-Verhalten und Konflikte absichern | Bestand |
 | [tests/unit/invariants/projectStatusAssignmentRules.test.ts](../tests/unit/invariants/projectStatusAssignmentRules.test.ts) | FT15 | Unit | Invarianten fuer aktive/inaktive Status-Zuordnung und Remove-Regeln pruefen | Neu |
 | [tests/unit/invariants/resetDatabaseGuard.test.ts](../tests/unit/invariants/resetDatabaseGuard.test.ts) | TBD | Unit | Schutzregeln für Datenbank-Reset prüfen | Bestand |
+| [tests/unit/lib/projectNameFormat.test.ts](../tests/unit/lib/projectNameFormat.test.ts) | FT02 | Unit | Format-/Parse-Regeln fuer Projektnamen mit Kundennummer-Praefix absichern | Neu |
 | [tests/unit/seed/demoDataFiller.format.test.ts](../tests/unit/seed/demoDataFiller.format.test.ts) | TBD | Unit | Formatregeln des Demo-Data-Fillers prüfen | Bestand |
 | [tests/unit/seed/demoSeedAssignments.test.ts](../tests/unit/seed/demoSeedAssignments.test.ts) | TBD | Unit | Zuweisungslogik im Demo-Seed absichern | Bestand |
 | [tests/unit/settings/settingsProvider.versioning.test.tsx](../tests/unit/settings/settingsProvider.versioning.test.tsx) | TBD | Unit | Versionierungslogik im Settings-Provider prüfen | Bestand |

@@ -35,28 +35,28 @@ export function RelationSlot({
   const canRemove = state === "active" && !!onRemove;
 
   return (
-    <section className="rounded-lg border border-border overflow-hidden" data-testid={testId}>
-      <header className="px-4 py-3 border-b border-border bg-muted/40 flex items-center justify-between gap-3">
+    <section className="sub-panel flex flex-col gap-4" data-testid={testId}>
+      <header className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-muted-foreground shrink-0">{icon}</span>
           <h3 className="text-sm font-bold uppercase tracking-wider text-primary truncate">{title}</h3>
         </div>
-        <div className="flex items-center shrink-0 min-h-8">
+        <div className="flex items-center gap-2 shrink-0 min-h-8">
           {canAdd && (
             <Button
-              size="sm"
-              variant="outline"
+              size="icon"
+              variant="ghost"
               onClick={onAdd}
               data-testid={addActionTestId ?? (testId ? `${testId}-action-add` : undefined)}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              {addLabel}
+              <Plus className="w-4 h-4" />
+              <span className="sr-only">{addLabel}</span>
             </Button>
           )}
           {canRemove && (
             <Button
               size="icon"
-              variant="outline"
+              variant="ghost"
               onClick={onRemove}
               data-testid={removeActionTestId ?? (testId ? `${testId}-action-remove` : undefined)}
             >
@@ -66,15 +66,13 @@ export function RelationSlot({
         </div>
       </header>
 
-      <div className="p-4">
-        {state === "empty" ? (
-          <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-            {emptyText}
-          </div>
-        ) : (
-          children
-        )}
-      </div>
+      {state === "empty" ? (
+        <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+          {emptyText}
+        </div>
+      ) : (
+        children
+      )}
     </section>
   );
 }

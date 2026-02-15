@@ -3,7 +3,7 @@ import type { Project } from "@shared/schema";
 
 export interface ProjectDetailCardProps {
   project: Pick<Project, "name" | "descriptionMd" | "isActive">;
-  customerName?: string | null;
+  projectStatusTitles?: string[];
   testId?: string;
 }
 
@@ -30,17 +30,19 @@ const resolveValue = (value: string | null | undefined) => {
   return trimmed && trimmed.length > 0 ? trimmed : fallbackText;
 };
 
-export function ProjectDetailCard({ project, customerName, testId }: ProjectDetailCardProps) {
+export function ProjectDetailCard({ project, projectStatusTitles = [], testId }: ProjectDetailCardProps) {
+  const statusLine = projectStatusTitles.length > 0 ? projectStatusTitles.join(" | ") : fallbackText;
+
   return (
     <div className="space-y-2" data-testid={testId}>
       <div className="text-sm font-semibold text-foreground" data-testid={testId ? `${testId}-name` : undefined}>
         {resolveValue(project.name)}
       </div>
       <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-muted-foreground">Kunde</dt>
-        <dd>{resolveValue(customerName)}</dd>
-        <dt className="text-muted-foreground">Status</dt>
-        <dd>{project.isActive ? "Aktiv" : "Inaktiv"}</dd>
+        <dt className="text-muted-foreground">Projekt Status</dt>
+        <dd className="whitespace-nowrap overflow-hidden text-ellipsis" title={statusLine}>
+          {statusLine}
+        </dd>
         <dt className="text-muted-foreground">Beschreibung</dt>
         <dd data-testid={testId ? `${testId}-description` : undefined}>
           {resolveDescriptionExcerpt(project.descriptionMd)}

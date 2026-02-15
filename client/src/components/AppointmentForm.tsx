@@ -2,6 +2,7 @@
 import { Calendar, Clock, FolderKanban, Plus, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
+import type { ProjectStatusRelationItem } from "@shared/routes";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,6 +188,12 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
     queryFn: () => fetchJson<Customer[]>("/api/customers"),
+  });
+
+  const { data: selectedProjectStatuses = [] } = useQuery<ProjectStatusRelationItem[]>({
+    queryKey: ["/api/projects", selectedProjectId, "statuses"],
+    queryFn: () => fetchJson<ProjectStatusRelationItem[]>(`/api/projects/${selectedProjectId}/statuses`),
+    enabled: selectedProjectId !== null,
   });
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
@@ -796,7 +803,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
             {selectedProject ? (
               <ProjectDetailCard
                 project={selectedProject}
-                customerName={selectedCustomer?.fullName ?? null}
+                projectStatusTitles={selectedProjectStatuses.map((item) => item.status.title)}
                 testId="badge-project"
               />
             ) : null}
