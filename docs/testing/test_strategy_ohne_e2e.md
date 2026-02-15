@@ -24,6 +24,9 @@
 - `tests/unit/validation/dtoValidators.test.ts`
 - `tests/unit/authorization/userCreate.test.ts` (PKG-08)
 - `tests/unit/auth/loginIdentifier.test.ts` (PKG-08)
+- `tests/unit/settings/settingsProvider.versioning.test.tsx` (PKG-08)
+- `tests/unit/settings/userSettingsResolvedMapping.test.ts` (PKG-08)
+- `tests/unit/ui/tableView.stickyHeader.test.tsx` (PKG-08)
 
 ### P1 Unit
 - `tests/unit/invariants/attachmentRules.test.ts`
@@ -60,3 +63,4 @@
 - `docs/testing/pkg-06_testliste.md`
 - `docs/testing/pkg-07_testliste.md`
 - `docs/testing/pkg-08_testliste.md`
+- `docs/testing/pkg-09_testliste.md`

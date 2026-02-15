@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FolderKanban, MapPin, Pencil, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown, Calendar } from "lucide-react";
+import { FolderKanban, MapPin, Pencil, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityCard } from "@/components/ui/entity-card";
@@ -14,6 +14,7 @@ import { applyProjectFilters, buildProjectFilterQueryParams, defaultProjectFilte
 import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
+import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { ProjectFilters, ProjectScope } from "@/lib/project-filters";
@@ -54,15 +55,11 @@ function resolveRelevantAppointment(
 
   const futureAppointments = appointments.filter((appointment) => appointment.startDate >= berlinToday);
 
-  if (futureAppointments.length > 0) {
-    return [...futureAppointments].sort((a, b) => toAppointmentDateTime(a).getTime() - toAppointmentDateTime(b).getTime())[0] ?? null;
-  }
-
-  return [...appointments].sort((a, b) => toAppointmentDateTime(b).getTime() - toAppointmentDateTime(a).getTime())[0] ?? null;
+  return [...futureAppointments].sort((a, b) => toAppointmentDateTime(a).getTime() - toAppointmentDateTime(b).getTime())[0] ?? null;
 }
 
 function formatAppointmentLabel(appointment: ProjectAppointmentSummary | null): string {
-  if (!appointment) return "â€”";
+  if (!appointment) return "---";
 
   const date = new Date(`${appointment.startDate}T00:00:00`);
   const dateLabel = format(date, "dd.MM.yyyy", { locale: de });
@@ -94,7 +91,7 @@ export function ProjectsPage({
   const { filters, setFilter } = useListFilters<ProjectFilters>({
     initialFilters: defaultProjectFilters,
   });
-  const [projectScope, setProjectScope] = useState<ProjectScope>("all");
+  const [projectScope, setProjectScope] = useState<ProjectScope>("upcoming");
   const [sortKey, setSortKey] = useState<ProjectSortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -285,7 +282,7 @@ export function ProjectsPage({
       },
       {
         id: "relevantAppointment",
-        header: "Relevanter Termin",
+        header: "Nächster Termin",
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
         minWidth: 220,
         cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
@@ -450,24 +447,7 @@ export function ProjectsPage({
                   </div>
                 );
               }
-
-              const relevantDate = formatAppointmentLabel(row.relevantAppointment);
-
-              return (
-                <div className="rounded-md border border-border bg-card p-3 space-y-2 max-w-[420px]">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Calendar className="w-4 h-4" />
-                    Relevanter Termin
-                  </div>
-                  <p className="text-sm">{relevantDate}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Projekt: {row.project.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Kunde: {row.relevantAppointment.customer.fullName}
-                  </p>
-                </div>
-              );
+              return createAppointmentWeeklyPanelPreview(row.relevantAppointment).content;
             }}
             emptyState={<p className="text-sm text-slate-400 py-4">Keine Projekte gefunden.</p>}
             stickyHeader
@@ -477,4 +457,3 @@ export function ProjectsPage({
     />
   );
 }
-

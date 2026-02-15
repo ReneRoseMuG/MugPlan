@@ -53,17 +53,12 @@ function resolveRelevantAppointment(
 
   const futureAppointments = appointments.filter((appointment) => appointment.startDate >= berlinToday);
 
-  if (futureAppointments.length > 0) {
-    return [...futureAppointments]
-      .sort((a, b) => toAppointmentDateTime(a).getTime() - toAppointmentDateTime(b).getTime())[0] ?? null;
-  }
-
-  return [...appointments]
-    .sort((a, b) => toAppointmentDateTime(b).getTime() - toAppointmentDateTime(a).getTime())[0] ?? null;
+  return [...futureAppointments]
+    .sort((a, b) => toAppointmentDateTime(a).getTime() - toAppointmentDateTime(b).getTime())[0] ?? null;
 }
 
 function formatAppointmentLabel(appointment: CustomerAppointmentSummary | null): string {
-  if (!appointment) return "Keine Termine geplant";
+  if (!appointment) return "---";
 
   const date = new Date(`${appointment.startDate}T00:00:00`);
   const dateLabel = format(date, "dd.MM.yyyy", { locale: de });
@@ -285,7 +280,7 @@ export function CustomersPage({
       },
       {
         id: "relevantAppointment",
-        header: renderSortHeader("Relevanter Termin", "relevantAppointment"),
+        header: renderSortHeader("Nächster Termin", "relevantAppointment"),
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
         minWidth: 220,
         cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
@@ -444,4 +439,3 @@ export function CustomersPage({
     />
   );
 }
-

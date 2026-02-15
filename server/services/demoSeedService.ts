@@ -25,6 +25,7 @@ import * as appointmentsRepository from "../repositories/appointmentsRepository"
 import * as projectAttachmentsService from "./projectAttachmentsService";
 import * as demoSeedRepository from "../repositories/demoSeedRepository";
 import * as userSettingsService from "./userSettingsService";
+import { assignEmployeesToGroups } from "./demoSeedAssignments";
 
 const logPrefix = "[demo-seed-service]";
 
@@ -62,6 +63,12 @@ const allowedTemplateKeys = new Set<string>([
 
 type SeedRunType = "base" | "appointments" | "legacy";
 
+type SeedProjectStatusInput = {
+  title: string;
+  color: string;
+  description?: string | null;
+};
+
 type SeedConfig = {
   runType?: SeedRunType;
   baseSeedRunId?: string;
@@ -77,6 +84,7 @@ type SeedConfig = {
   reklDelayDaysMax?: number;
   reklShare?: number;
   locale?: string;
+  projectStatuses?: SeedProjectStatusInput[];
 };
 
 type SeedSummary = {
@@ -269,6 +277,19 @@ function defaults(config: SeedConfig) {
     reklDelayDaysMax: config.reklDelayDaysMax ?? 42,
     reklShare: config.reklShare ?? 0.33,
     locale: config.locale ?? "de",
+    projectStatuses:
+      runType === "base"
+        ? (Array.isArray(config.projectStatuses)
+          ? config.projectStatuses.map((status) => ({
+              title: String(status.title ?? "").trim(),
+              color: String(status.color ?? "").trim(),
+              description:
+                status.description == null || String(status.description).trim().length === 0
+                  ? null
+                  : String(status.description).trim(),
+            }))
+          : [])
+        : [],
     durationWeights: {
       1: 0.55,
       2: 0.30,
@@ -1096,7 +1117,11 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         throw createBadRequestError("Keine gueltigen Projekt-Kontexte aus dem Basis-Run verfuegbar.");
       }
     } else {
-      for (let i = 0; i < 2; i += 1) {
+      if (config.runType === "base" && config.employees < 3) {
+        throw createBadRequestError("Basis-Seed erfordert mindestens 3 Mitarbeitende.");
+      }
+
+      for (let i = 0; i < 3; i += 1) {
         const team = await teamsService.createTeam({ color: random.pick(["#0f766e", "#0369a1", "#be123c", "#4d7c0f"]) });
         teams.push(team.id);
         created.teams += 1;
@@ -1118,11 +1143,38 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         await demoSeedRepository.addSeedRunEntity(seedRunId, "employee", employee.id);
       }
 
-      for (const employeeId of employees) {
-        await employeesRepository.setEmployeeTeam(employeeId, random.pick(teams));
-        const assignedTour = random.pick(tours);
-        await employeesRepository.setEmployeeTour(employeeId, assignedTour);
-        employeeTourById.set(employeeId, assignedTour);
+      if (config.runType === "base") {
+        const teamAssignment = assignEmployeesToGroups({
+          employeeIds: employees,
+          groupIds: teams,
+          minPerGroup: 1,
+          maxPerGroup: 3,
+          randomInt: (min, max) => random.int(min, max),
+        });
+        const tourAssignment = assignEmployeesToGroups({
+          employeeIds: employees,
+          groupIds: tours,
+          minPerGroup: 1,
+          maxPerGroup: 3,
+          randomInt: (min, max) => random.int(min, max),
+        });
+
+        for (const employeeId of employees) {
+          const assignedTeam = teamAssignment.byEmployeeId.get(employeeId) ?? null;
+          await employeesRepository.setEmployeeTeam(employeeId, assignedTeam);
+          const assignedTour = tourAssignment.byEmployeeId.get(employeeId) ?? null;
+          await employeesRepository.setEmployeeTour(employeeId, assignedTour);
+          if (assignedTour != null) {
+            employeeTourById.set(employeeId, assignedTour);
+          }
+        }
+      } else {
+        for (const employeeId of employees) {
+          await employeesRepository.setEmployeeTeam(employeeId, random.pick(teams));
+          const assignedTour = random.pick(tours);
+          await employeesRepository.setEmployeeTour(employeeId, assignedTour);
+          employeeTourById.set(employeeId, assignedTour);
+        }
       }
 
       let nextCustomerNumber = await getNextCustomerNumberStart();
@@ -1148,9 +1200,33 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         ovenIdsByModelId.set(mapping.modelId, list);
       }
 
-      const statuses = await projectStatusService.listProjectStatuses("active");
-      if (statuses.length === 0) {
-        warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
+      let statusIdsForProjectAssignment: number[] = [];
+      if (config.runType === "base") {
+        if (config.projectStatuses.length === 0) {
+          throw createBadRequestError("Mindestens ein Projekt-Status fuer Basis-Seed erforderlich.");
+        }
+        for (let i = 0; i < config.projectStatuses.length; i += 1) {
+          const item = config.projectStatuses[i];
+          if (!item.title || item.title.trim().length === 0) {
+            throw createBadRequestError("Projekt-Status-Titel darf nicht leer sein.");
+          }
+          if (!item.color || item.color.trim().length === 0) {
+            throw createBadRequestError("Projekt-Status-Farbe darf nicht leer sein.");
+          }
+          const status = await projectStatusService.createProjectStatus({
+            title: item.title.trim(),
+            color: item.color.trim(),
+            description: item.description ?? null,
+            sortOrder: i,
+          });
+          statusIdsForProjectAssignment.push(Number(status.id));
+        }
+      } else {
+        const statuses = await projectStatusService.listProjectStatuses("active");
+        statusIdsForProjectAssignment = statuses.map((status) => Number(status.id));
+        if (statusIdsForProjectAssignment.length === 0) {
+          warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
+        }
       }
 
       for (let i = 0; i < projectsToCreate; i += 1) {
@@ -1179,10 +1255,14 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         created.projects += 1;
         await demoSeedRepository.addSeedRunEntity(seedRunId, "project", project.id);
 
-        if (statuses.length > 0) {
-          const statusId = random.pick(statuses).id;
-          await projectStatusService.addProjectStatus(project.id, statusId);
-          created.projectStatusRelations += 1;
+        if (statusIdsForProjectAssignment.length > 0) {
+          const maxCount = Math.min(statusIdsForProjectAssignment.length, config.runType === "base" ? 2 : 1);
+          const relationCount = random.int(1, Math.max(1, maxCount));
+          const selectedStatusIds = seededShuffle(statusIdsForProjectAssignment, random).slice(0, relationCount);
+          for (const statusId of selectedStatusIds) {
+            await projectStatusService.addProjectStatus(project.id, statusId);
+            created.projectStatusRelations += 1;
+          }
         }
 
         projectSeedContexts.push({

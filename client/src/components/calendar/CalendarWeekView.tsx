@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDays,
   addWeeks,
@@ -16,6 +16,7 @@ import { useSetting } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getAppointmentDurationDays, getAppointmentEndDate, getAppointmentSortValue } from "@/lib/calendar-utils";
+import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
 import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import type { CalendarNavCommand } from "@/pages/Home";
@@ -61,6 +62,7 @@ export function CalendarWeekView({
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
+  const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(
@@ -93,6 +95,19 @@ export function CalendarWeekView({
 
   const stripFromDate = format(weekStarts[0], "yyyy-MM-dd");
   const stripToDate = format(endOfWeek(weekStarts[weekStarts.length - 1], { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
+
+  useEffect(() => {
+    const node = firstWeekdayHeaderRef.current;
+    if (!node) return;
+
+    const measure = () => {
+      const widthPx = node.getBoundingClientRect().width;
+      storeWeeklyPreviewWidth(widthPx);
+    };
+
+    const frame = window.requestAnimationFrame(measure);
+    return () => window.cancelAnimationFrame(frame);
+  }, [scrollResetKey]);
 
   const { data: appointments = [] } = useCalendarAppointments({
     fromDate: stripFromDate,
@@ -360,7 +375,7 @@ export function CalendarWeekView({
        */}
       <div key={scrollResetKey} className="flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full">
-          {weekStarts.map((weekStart) => {
+          {weekStarts.map((weekStart, weekIndex) => {
             const weekKey = format(weekStart, "yyyy-MM-dd");
             const weekLanes = lanesByWeekStart.get(weekKey) ?? [];
             const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
@@ -378,7 +393,12 @@ export function CalendarWeekView({
                       const dayKey = format(day, "yyyy-MM-dd");
 
                       return (
-                        <div key={dayKey} className="flex flex-col min-h-0 overflow-hidden" data-testid={`week-day-header-${dayKey}`}>
+                        <div
+                          key={dayKey}
+                          ref={weekIndex === 0 && dayIdx === 0 ? firstWeekdayHeaderRef : undefined}
+                          className="flex flex-col min-h-0 overflow-hidden"
+                          data-testid={`week-day-header-${dayKey}`}
+                        >
                           <div
                             className={`
                               px-2 py-1.5 text-center
@@ -506,4 +526,3 @@ export function CalendarWeekView({
     </div>
   );
 }
-

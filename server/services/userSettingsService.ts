@@ -41,9 +41,13 @@ type ResolvedSettingRow = {
   allowedScopes: SettingScopeType[];
   defaultValue: unknown;
   globalValue?: unknown;
+  globalVersion?: number;
   roleValue?: unknown;
+  roleVersion?: number;
   userValue?: unknown;
+  userVersion?: number;
   resolvedValue: unknown;
+  resolvedVersion?: number;
   resolvedScope: ResolvedScope;
   roleCode: DbRoleCode;
   roleKey: CanonicalRoleKey;
@@ -161,28 +165,35 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
     const userValue = userCandidate && definition.validate(userCandidate.valueJson)
       ? userCandidate.valueJson
       : undefined;
+    const userVersion = userValue !== undefined ? userCandidate?.version : undefined;
     const roleValue = roleCandidate && definition.validate(roleCandidate.valueJson)
       ? roleCandidate.valueJson
       : undefined;
+    const roleVersion = roleValue !== undefined ? roleCandidate?.version : undefined;
     const globalValue = globalCandidate && definition.validate(globalCandidate.valueJson)
       ? globalCandidate.valueJson
       : undefined;
+    const globalVersion = globalValue !== undefined ? globalCandidate?.version : undefined;
 
     let resolvedValue: unknown = definition.defaultValue;
     let resolvedScope: ResolvedScope = "DEFAULT";
+    let resolvedVersion: number | undefined;
     let resolvedMeta: userSettingsRepository.CandidateSettingValue | undefined;
 
     if (userValue !== undefined) {
       resolvedValue = userValue;
       resolvedScope = "USER";
+      resolvedVersion = userVersion;
       resolvedMeta = userCandidate;
     } else if (roleValue !== undefined) {
       resolvedValue = roleValue;
       resolvedScope = "ROLE";
+      resolvedVersion = roleVersion;
       resolvedMeta = roleCandidate;
     } else if (globalValue !== undefined) {
       resolvedValue = globalValue;
       resolvedScope = "GLOBAL";
+      resolvedVersion = globalVersion;
       resolvedMeta = globalCandidate;
     }
 
@@ -199,9 +210,13 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
       allowedScopes: [...definition.allowedScopes],
       defaultValue: definition.defaultValue,
       globalValue,
+      globalVersion,
       roleValue,
+      roleVersion,
       userValue,
+      userVersion,
       resolvedValue,
+      resolvedVersion,
       resolvedScope,
       roleCode: responseRoleCode,
       roleKey: responseRoleKey,

@@ -85,17 +85,12 @@ function resolveRelevantAppointment(
 
   const futureAppointments = appointments.filter((appointment) => appointment.startDate >= berlinToday);
 
-  if (futureAppointments.length > 0) {
-    return [...futureAppointments]
-      .sort((a, b) => toAppointmentDateTime(a).getTime() - toAppointmentDateTime(b).getTime())[0] ?? null;
-  }
-
-  return [...appointments]
-    .sort((a, b) => toAppointmentDateTime(b).getTime() - toAppointmentDateTime(a).getTime())[0] ?? null;
+  return [...futureAppointments]
+    .sort((a, b) => toAppointmentDateTime(a).getTime() - toAppointmentDateTime(b).getTime())[0] ?? null;
 }
 
 function formatAppointmentLabel(appointment: EmployeeAppointmentSummary | null): string {
-  if (!appointment) return "—";
+  if (!appointment) return "---";
 
   const date = new Date(`${appointment.startDate}T00:00:00`);
   const dateLabel = `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}`;
@@ -352,7 +347,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
       },
       {
         id: "relevantAppointment",
-        header: "Relevanter Termin",
+        header: "Nächster Termin",
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
         minWidth: 210,
         cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
@@ -819,5 +814,3 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
     </>
   );
 }
-
-

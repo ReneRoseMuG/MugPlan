@@ -8,6 +8,7 @@ export type UserSettingKey =
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
+  | "hoverPreviewOpenDelayMs"
   | "cardListColumns";
 
 type UserSettingValueByKey = {
@@ -16,6 +17,7 @@ type UserSettingValueByKey = {
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
+  hoverPreviewOpenDelayMs: number;
   cardListColumns: number;
 };
 
@@ -41,6 +43,13 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
         return value as UserSettingValueByKey[K];
       }
       return 4 as UserSettingValueByKey[K];
+    }
+    if (key === "hoverPreviewOpenDelayMs") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 2000) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 380 as UserSettingValueByKey[K];
     }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);

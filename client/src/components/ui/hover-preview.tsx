@@ -1,4 +1,5 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useSetting } from "@/hooks/useSettings";
 import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
 import {
@@ -33,6 +34,29 @@ type HoverPreviewProps = {
 const DEFAULT_OPEN_DELAY = 150;
 const DEFAULT_CLOSE_DELAY = 100;
 
+type ResolveOpenDelayParams = {
+  globalOpenDelayMs: number | undefined;
+  openDelay: number | undefined;
+};
+
+export function resolveOpenDelayMs({ globalOpenDelayMs, openDelay }: ResolveOpenDelayParams): number {
+  if (typeof globalOpenDelayMs === "number" && Number.isFinite(globalOpenDelayMs)) {
+    return Math.max(0, globalOpenDelayMs);
+  }
+  if (typeof openDelay === "number" && Number.isFinite(openDelay)) {
+    return Math.max(0, openDelay);
+  }
+  return DEFAULT_OPEN_DELAY;
+}
+
+function useOptionalHoverPreviewDelaySetting(): number | undefined {
+  try {
+    return useSetting("hoverPreviewOpenDelayMs");
+  } catch {
+    return undefined;
+  }
+}
+
 function composeMouseHandler<T extends ReactMouseEvent>(
   original: ((event: T) => void) | undefined,
   next: (event: T) => void,
@@ -51,7 +75,7 @@ function toMillis(value: number | undefined, fallback: number) {
 export function HoverPreview({
   preview,
   children,
-  openDelay = DEFAULT_OPEN_DELAY,
+  openDelay,
   closeDelay = DEFAULT_CLOSE_DELAY,
   mode = "anchored",
   side = "right",
@@ -65,6 +89,7 @@ export function HoverPreview({
   className,
   contentClassName,
 }: HoverPreviewProps) {
+  const globalOpenDelayMs = useOptionalHoverPreviewDelaySetting();
   const [open, setOpen] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,7 +112,7 @@ export function HoverPreview({
   const scheduleOpen = () => {
     clearCloseTimer();
     clearOpenTimer();
-    const delayMs = toMillis(openDelay, DEFAULT_OPEN_DELAY);
+    const delayMs = resolveOpenDelayMs({ globalOpenDelayMs, openDelay });
     openTimeoutRef.current = setTimeout(() => {
       setOpen(true);
       openTimeoutRef.current = null;

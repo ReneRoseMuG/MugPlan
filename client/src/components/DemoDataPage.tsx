@@ -20,12 +20,23 @@ import { Label } from "@/components/ui/label";
 
 type SeedRunType = "base" | "appointments" | "legacy";
 
+type ProjectStatusSeedForm = {
+  title: string;
+  color: string;
+  description?: string;
+};
+
 type BaseSeedConfig = {
   runType: "base";
   employees: number;
   customers: number;
   projects: number;
   generateAttachments: boolean;
+  projectStatuses: Array<{
+    title: string;
+    color: string;
+    description?: string | null;
+  }>;
   randomSeed?: number;
   locale?: string;
 };
@@ -138,6 +149,11 @@ export function DemoDataPage() {
   const [baseGenerateAttachments, setBaseGenerateAttachments] = useState(true);
   const [baseRandomSeed, setBaseRandomSeed] = useState("");
   const [baseLocale, setBaseLocale] = useState("de");
+  const [baseProjectStatuses, setBaseProjectStatuses] = useState<ProjectStatusSeedForm[]>([
+    { title: "Neu", color: "#2563eb", description: "" },
+    { title: "In Arbeit", color: "#d97706", description: "" },
+    { title: "Erledigt", color: "#16a34a", description: "" },
+  ]);
 
   const [appointmentBaseSeedRunId, setAppointmentBaseSeedRunId] = useState("");
   const [appointmentsPerProject, setAppointmentsPerProject] = useState(1);
@@ -237,12 +253,28 @@ export function DemoDataPage() {
 
   const submitBaseConfig = () => {
     const numericSeed = baseRandomSeed.trim() === "" ? undefined : Number(baseRandomSeed);
+    const normalizedStatuses = baseProjectStatuses
+      .map((status) => ({
+        title: status.title.trim(),
+        color: status.color.trim(),
+        description: status.description?.trim() || null,
+      }))
+      .filter((status) => status.title.length > 0 && status.color.length > 0);
+    if (normalizedStatuses.length === 0) {
+      toast({
+        title: "Projekt-Status fehlt",
+        description: "Bitte mindestens einen gueltigen Projekt-Status hinterlegen.",
+        variant: "destructive",
+      });
+      return;
+    }
     createMutation.mutate({
       runType: "base",
       employees: baseEmployees,
       customers: baseCustomers,
       projects: baseProjects,
       generateAttachments: baseGenerateAttachments,
+      projectStatuses: normalizedStatuses,
       randomSeed: Number.isFinite(numericSeed) ? numericSeed : undefined,
       locale: baseLocale,
     });
@@ -307,6 +339,78 @@ export function DemoDataPage() {
             <div className="flex items-end gap-3 pb-2">
               <Switch id="seed-base-attachments" checked={baseGenerateAttachments} onCheckedChange={setBaseGenerateAttachments} />
               <Label htmlFor="seed-base-attachments">Anhaenge erzeugen</Label>
+            </div>
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label>Projekt-Status</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setBaseProjectStatuses((prev) => [
+                      ...prev,
+                      { title: "", color: "#64748b", description: "" },
+                    ])
+                  }
+                >
+                  + Status
+                </Button>
+              </div>
+              <div className="mt-2 space-y-2">
+                {baseProjectStatuses.map((status, index) => (
+                  <div key={`seed-status-${index}`} className="grid grid-cols-12 gap-2">
+                    <Input
+                      className="col-span-5"
+                      placeholder="Titel"
+                      value={status.title}
+                      onChange={(event) =>
+                        setBaseProjectStatuses((prev) =>
+                          prev.map((row, rowIndex) =>
+                            rowIndex === index ? { ...row, title: event.target.value } : row,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      className="col-span-3"
+                      type="color"
+                      value={status.color}
+                      onChange={(event) =>
+                        setBaseProjectStatuses((prev) =>
+                          prev.map((row, rowIndex) =>
+                            rowIndex === index ? { ...row, color: event.target.value } : row,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      className="col-span-3"
+                      placeholder="Beschreibung (optional)"
+                      value={status.description ?? ""}
+                      onChange={(event) =>
+                        setBaseProjectStatuses((prev) =>
+                          prev.map((row, rowIndex) =>
+                            rowIndex === index ? { ...row, description: event.target.value } : row,
+                          ),
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      className="col-span-1"
+                      variant="destructive"
+                      size="sm"
+                      disabled={baseProjectStatuses.length <= 1}
+                      onClick={() =>
+                        setBaseProjectStatuses((prev) => prev.filter((_, rowIndex) => rowIndex !== index))
+                      }
+                    >
+                      -
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div className="mt-4">

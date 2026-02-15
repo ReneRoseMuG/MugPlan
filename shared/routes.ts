@@ -1297,6 +1297,13 @@ export const api = {
           generateAttachments: z.boolean().default(true),
           randomSeed: z.number().int().optional(),
           locale: z.string().default("de").optional(),
+          projectStatuses: z.array(
+            z.object({
+              title: z.string().trim().min(1),
+              color: z.string().trim().min(1),
+              description: z.string().trim().nullable().optional(),
+            }).strict(),
+          ).min(1),
         }).strict(),
         z.object({
           runType: z.literal("appointments"),
@@ -1323,6 +1330,13 @@ export const api = {
           reklDelayDaysMax: z.number().int().min(1).max(365).default(42).optional(),
           reklShare: z.number().min(0).max(1).default(0.33).optional(),
           locale: z.string().default("de").optional(),
+          projectStatuses: z.array(
+            z.object({
+              title: z.string().trim().min(1),
+              color: z.string().trim().min(1),
+              description: z.string().trim().nullable().optional(),
+            }).strict(),
+          ).optional(),
         }).strict(),
       ]),
       responses: {
@@ -1393,6 +1407,13 @@ export const api = {
               reklDelayDaysMax: z.number().optional(),
               reklShare: z.number().optional(),
               locale: z.string().optional(),
+              projectStatuses: z.array(
+                z.object({
+                  title: z.string(),
+                  color: z.string(),
+                  description: z.string().nullable().optional(),
+                }),
+              ).optional(),
             }),
             summary: z.object({
               seedRunId: z.string().optional(),
@@ -1525,9 +1546,13 @@ export const api = {
             allowedScopes: z.array(z.enum(["GLOBAL", "ROLE", "USER"])),
             defaultValue: z.unknown(),
             globalValue: z.unknown().optional(),
+            globalVersion: z.number().int().min(1).optional(),
             roleValue: z.unknown().optional(),
+            roleVersion: z.number().int().min(1).optional(),
             userValue: z.unknown().optional(),
+            userVersion: z.number().int().min(1).optional(),
             resolvedValue: z.unknown(),
+            resolvedVersion: z.number().int().min(1).optional(),
             resolvedScope: z.enum(["USER", "ROLE", "GLOBAL", "DEFAULT"]),
             roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
             roleKey: z.enum(["LESER", "DISPONENT", "ADMIN"]),
@@ -1558,9 +1583,13 @@ export const api = {
             allowedScopes: z.array(z.enum(["GLOBAL", "ROLE", "USER"])),
             defaultValue: z.unknown(),
             globalValue: z.unknown().optional(),
+            globalVersion: z.number().int().min(1).optional(),
             roleValue: z.unknown().optional(),
+            roleVersion: z.number().int().min(1).optional(),
             userValue: z.unknown().optional(),
+            userVersion: z.number().int().min(1).optional(),
             resolvedValue: z.unknown(),
+            resolvedVersion: z.number().int().min(1).optional(),
             resolvedScope: z.enum(["USER", "ROLE", "GLOBAL", "DEFAULT"]),
             roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
             roleKey: z.enum(["LESER", "DISPONENT", "ADMIN"]),

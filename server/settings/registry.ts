@@ -136,6 +136,19 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12,
   },
+  hoverPreviewOpenDelayMs: {
+    key: "hoverPreviewOpenDelayMs",
+    label: "Hover Vorschau Verzoegerung (ms)",
+    description: "Verzoegerung bis Hover-Previews geoeffnet werden.",
+    type: "number",
+    defaultValue: 380,
+    min: 0,
+    max: 2000,
+    integer: true,
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 2000,
+  },
   cardListColumns: {
     key: "cardListColumns",
     label: "Karten Spalten",

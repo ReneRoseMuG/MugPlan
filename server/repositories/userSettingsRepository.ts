@@ -9,6 +9,7 @@ export type CandidateSettingValue = {
   scopeType: string;
   scopeId: string;
   valueJson: unknown;
+  version: number;
   updatedAt: Date | string | null;
   updatedBy: number | null;
 };
@@ -83,6 +84,7 @@ export async function listSettingCandidates(params: {
         scopeType: userSettingsValue.scopeType,
         scopeId: userSettingsValue.scopeId,
         valueJson: userSettingsValue.valueJson,
+        version: userSettingsValue.version,
         updatedAt: userSettingsValue.updatedAt,
         updatedBy: userSettingsValue.updatedBy,
       })
@@ -131,13 +133,14 @@ export async function upsertSettingValueWithVersion(params: {
   expectedVersion: number;
 }): Promise<{ kind: "updated" | "inserted" } | { kind: "version_conflict" }> {
   await ensureUserSettingsTable();
+  const serializedValueJson = JSON.stringify(params.valueJson);
 
   try {
     return await db.transaction(async (tx) => {
       const updateResult = await tx.execute(sql`
         update user_settings_value
         set
-          value_json = ${params.valueJson},
+          value_json = CAST(${serializedValueJson} AS JSON),
           updated_by = ${params.updatedBy},
           updated_at = now(),
           version = version + 1

@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import {
   Table,
@@ -69,12 +69,16 @@ export function TableView<T>({
   return (
     <div className={cn("h-full overflow-auto p-6", className)} data-testid={testId}>
       <Table className={cn("min-w-full", tableClassName)}>
-        <TableHeader className={stickyHeader ? "sticky top-0 z-10 bg-card" : undefined}>
+        <TableHeader>
           <TableRow>
             {columns.map((column) => (
               <TableHead
                 key={column.id}
-                className={cn(alignmentClass(column.align), column.headerClassName)}
+                className={cn(
+                  alignmentClass(column.align),
+                  stickyHeader && "sticky top-0 z-10 bg-card border-b",
+                  column.headerClassName,
+                )}
                 style={{
                   width: toCssSize(column.width),
                   minWidth: toCssSize(column.minWidth),

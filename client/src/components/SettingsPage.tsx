@@ -19,6 +19,7 @@ type PreviewSize = (typeof previewOptions)[number];
 const defaultWeekendColumnPercent = 33;
 const defaultWeekScrollRange = 4;
 const defaultMonthScrollRange = 3;
+const defaultHoverPreviewOpenDelayMs = 380;
 const defaultCardListColumns = 4;
 
 export function SettingsPage() {
@@ -29,6 +30,7 @@ export function SettingsPage() {
   const weekendWidthSetting = settingsByKey.get("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = settingsByKey.get("calendarWeekScrollRange");
   const monthScrollRangeSetting = settingsByKey.get("calendarMonthScrollRange");
+  const hoverPreviewOpenDelaySetting = settingsByKey.get("hoverPreviewOpenDelayMs");
   const cardListColumnsSetting = settingsByKey.get("cardListColumns");
 
   const resolvedPreviewValue = useMemo(() => {
@@ -67,6 +69,14 @@ export function SettingsPage() {
     return defaultMonthScrollRange;
   }, [monthScrollRangeSetting?.resolvedValue]);
 
+  const resolvedHoverPreviewOpenDelay = useMemo(() => {
+    const value = hoverPreviewOpenDelaySetting?.resolvedValue;
+    if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 2000) {
+      return value;
+    }
+    return defaultHoverPreviewOpenDelayMs;
+  }, [hoverPreviewOpenDelaySetting?.resolvedValue]);
+
   const resolvedCardListColumns = useMemo(() => {
     const value = cardListColumnsSetting?.resolvedValue;
     if (typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 6) {
@@ -80,18 +90,21 @@ export function SettingsPage() {
   const [weekendColumnPercentValue, setWeekendColumnPercentValue] = useState<string>(String(resolvedWeekendColumnPercent));
   const [weekScrollRangeValue, setWeekScrollRangeValue] = useState<string>(String(resolvedWeekScrollRange));
   const [monthScrollRangeValue, setMonthScrollRangeValue] = useState<string>(String(resolvedMonthScrollRange));
+  const [hoverPreviewOpenDelayValue, setHoverPreviewOpenDelayValue] = useState<string>(String(resolvedHoverPreviewOpenDelay));
   const [cardListColumnsValue, setCardListColumnsValue] = useState<string>(String(resolvedCardListColumns));
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [weekendError, setWeekendError] = useState<string | null>(null);
   const [weekScrollRangeError, setWeekScrollRangeError] = useState<string | null>(null);
   const [monthScrollRangeError, setMonthScrollRangeError] = useState<string | null>(null);
+  const [hoverPreviewOpenDelayError, setHoverPreviewOpenDelayError] = useState<string | null>(null);
   const [cardListColumnsError, setCardListColumnsError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
   const [storageSaved, setStorageSaved] = useState(false);
   const [weekendSaved, setWeekendSaved] = useState(false);
   const [weekScrollRangeSaved, setWeekScrollRangeSaved] = useState(false);
   const [monthScrollRangeSaved, setMonthScrollRangeSaved] = useState(false);
+  const [hoverPreviewOpenDelaySaved, setHoverPreviewOpenDelaySaved] = useState(false);
   const [cardListColumnsSaved, setCardListColumnsSaved] = useState(false);
 
   useEffect(() => {
@@ -113,6 +126,10 @@ export function SettingsPage() {
   useEffect(() => {
     setMonthScrollRangeValue(String(resolvedMonthScrollRange));
   }, [resolvedMonthScrollRange]);
+
+  useEffect(() => {
+    setHoverPreviewOpenDelayValue(String(resolvedHoverPreviewOpenDelay));
+  }, [resolvedHoverPreviewOpenDelay]);
 
   useEffect(() => {
     setCardListColumnsValue(String(resolvedCardListColumns));
@@ -231,6 +248,27 @@ export function SettingsPage() {
       setMonthScrollRangeSaved(true);
     } catch (error) {
       setMonthScrollRangeError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveHoverPreviewOpenDelay = async () => {
+    setHoverPreviewOpenDelayError(null);
+    setHoverPreviewOpenDelaySaved(false);
+    const parsed = Number(hoverPreviewOpenDelayValue);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 2000) {
+      setHoverPreviewOpenDelayError("Bitte eine ganze Zahl von 0 bis 2000 eingeben.");
+      return;
+    }
+
+    try {
+      await setSetting({
+        key: "hoverPreviewOpenDelayMs",
+        scopeType: "GLOBAL",
+        value: parsed,
+      });
+      setHoverPreviewOpenDelaySaved(true);
+    } catch (error) {
+      setHoverPreviewOpenDelayError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
 
@@ -380,6 +418,30 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(monthScrollRangeSetting?.resolvedValue ?? defaultMonthScrollRange)} ({monthScrollRangeSetting?.resolvedScope ?? "-"})</p>
           {monthScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {monthScrollRangeError && <p className="mt-1 text-xs text-destructive">{monthScrollRangeError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-hoverPreviewOpenDelayMs">
+          <p className="font-semibold text-slate-900">{hoverPreviewOpenDelaySetting?.label ?? "Hover Vorschau Verzoegerung (ms)"}</p>
+          <p className="mb-3 text-xs text-slate-500">{hoverPreviewOpenDelaySetting?.description ?? "Verzoegerung bis Hover-Previews geoeffnet werden."}</p>
+
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              min={0}
+              max={2000}
+              step={1}
+              value={hoverPreviewOpenDelayValue}
+              onChange={(event) => setHoverPreviewOpenDelayValue(event.target.value)}
+              data-testid="input-setting-hoverPreviewOpenDelayMs"
+            />
+            <Button onClick={() => void handleSaveHoverPreviewOpenDelay()} disabled={isSaving} data-testid="button-save-hoverPreviewOpenDelayMs">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(hoverPreviewOpenDelaySetting?.resolvedValue ?? defaultHoverPreviewOpenDelayMs)} ({hoverPreviewOpenDelaySetting?.resolvedScope ?? "-"})</p>
+          {hoverPreviewOpenDelaySaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {hoverPreviewOpenDelayError && <p className="mt-1 text-xs text-destructive">{hoverPreviewOpenDelayError}</p>}
         </div>
 
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-cardListColumns">
