@@ -2,6 +2,7 @@ import type { Customer, InsertCustomer } from "@shared/schema";
 import { createExtractionProvider, type ExtractionScope } from "./aiExtractionService";
 import { extractTextFromPdfBuffer } from "./documentTextExtractor";
 import { validateAndNormalizeExtraction } from "./extractionValidator";
+import { buildFallbackExtraction } from "./extractionFallback";
 import * as customersService from "./customersService";
 
 export type DocumentExtractionResult = ReturnType<typeof validateAndNormalizeExtraction>;
@@ -22,11 +23,29 @@ export async function extractFromPdf(params: {
   fileBuffer: Buffer;
 }): Promise<DocumentExtractionResult> {
   const extractedText = await extractTextFromPdfBuffer(params.fileBuffer);
-  const aiResult = await extractionProvider.extractStructuredData({
-    scope: params.scope,
-    text: extractedText,
-  });
-  return validateAndNormalizeExtraction(aiResult);
+
+  try {
+    const aiResult = await extractionProvider.extractStructuredData({
+      scope: params.scope,
+      text: extractedText,
+    });
+    try {
+      return validateAndNormalizeExtraction(aiResult);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      return buildFallbackExtraction({
+        sourceText: extractedText,
+        aiResult,
+        reason,
+      });
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return buildFallbackExtraction({
+      sourceText: extractedText,
+      reason,
+    });
+  }
 }
 
 export async function resolveCustomerByNumber(customerNumber: string): Promise<CustomerNumberResolution> {

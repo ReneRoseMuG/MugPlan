@@ -1,3 +1,21 @@
+/**
+ * Test Scope:
+ *
+ * Feature: FT20 - Dokumentextraktion
+ * Use Case: UC DTO-Validierung und Service-Verhalten bei KI-Fehlern
+ *
+ * Abgedeckte Regeln:
+ * - Zod-Validierungsfehler werden korrekt als API-Validierungsantwort abgebildet.
+ * - Extraktionsservice persistiert keine Kunden implizit.
+ * - Bei Provider-/Strukturfehlern wird ein nutzbares Fallback-Ergebnis geliefert.
+ *
+ * Fehlerfaelle:
+ * - Ungueltige DTO-Payload.
+ * - Ungueltige/fehlende KI-Antwort.
+ *
+ * Ziel:
+ * Sicherstellen, dass Validierung und Fallback-Pfad stabil und ohne unerwuenschte Seiteneffekte funktionieren.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
@@ -127,17 +145,18 @@ describe("PKG-04 Validation & DTO: document extraction does not persist implicit
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
 
-  it("does not persist when provider returns invalid JSON error", async () => {
+  it("returns fallback result and does not persist when provider returns invalid JSON error", async () => {
     extractTextFromPdfBufferMock.mockReturnValue("doc text");
     extractStructuredDataMock.mockRejectedValue(new Error("KI-Provider lieferte kein valides JSON"));
 
-    await expect(
-      extractFromPdf({
-        scope: "appointment_form",
-        fileBuffer: Buffer.from("dummy"),
-      }),
-    ).rejects.toThrow("KI-Provider lieferte kein valides JSON");
+    const result = await extractFromPdf({
+      scope: "appointment_form",
+      fileBuffer: Buffer.from("dummy"),
+    });
 
+    expect(result.saunaModel.length).toBeGreaterThan(0);
+    expect(result.articleItems.length).toBeGreaterThan(0);
+    expect(result.warnings.some((warning) => warning.includes("Fallback"))).toBe(true);
     expect(validateAndNormalizeExtractionMock).not.toHaveBeenCalled();
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
