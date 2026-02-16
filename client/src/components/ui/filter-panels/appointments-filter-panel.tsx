@@ -1,4 +1,3 @@
-import { BooleanToggleFilterInput } from "@/components/filters/boolean-toggle-filter-input";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -12,9 +11,6 @@ export type AppointmentListFilters = {
   tourId?: number;
   dateFrom?: string;
   dateTo?: string;
-  allDayOnly: boolean;
-  withStartTimeOnly: boolean;
-  lockedOnly: boolean;
 };
 
 interface AppointmentsFilterPanelProps {
@@ -139,29 +135,6 @@ export function AppointmentsFilterPanel({
           />
         </div>
 
-        <BooleanToggleFilterInput
-          id="appointments-all-day-only"
-          label="Ganztag"
-          checked={filters.allDayOnly}
-          onCheckedChange={(checked) => onChange({ allDayOnly: checked })}
-          className="min-w-[140px]"
-        />
-
-        <BooleanToggleFilterInput
-          id="appointments-with-start-time-only"
-          label="Mit Startzeit"
-          checked={filters.withStartTimeOnly}
-          onCheckedChange={(checked) => onChange({ withStartTimeOnly: checked })}
-          className="min-w-[170px]"
-        />
-
-        <BooleanToggleFilterInput
-          id="appointments-locked-only"
-          label="Nur gesperrte"
-          checked={filters.lockedOnly}
-          onCheckedChange={(checked) => onChange({ lockedOnly: checked })}
-          className="min-w-[160px]"
-        />
       </FilterPanel>
     </div>
   );

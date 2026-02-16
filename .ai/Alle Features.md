@@ -2437,24 +2437,55 @@ Ziel ist eine klar strukturierte, erweiterbare und historientaugliche Statusverw
 
 ## **Fachliche Beschreibung**
 
-Projektstatus sind fachliche Etiketten, die zusätzlich zum Aktiv-Status eines Projekts (is_active) verwendet werden. Ein Projekt kann keinen, einen oder mehrere Projektstatus gleichzeitig besitzen. Die Status haben keinen unmittelbaren Einfluss auf Termine oder Kalenderfunktionen, dienen jedoch der fachlichen Orientierung, Filterung, Auswertung und Kommunikation im Dispositionsprozess.
+Projektstatus sind fachliche Etiketten, die zusätzlich zum Aktiv-Status eines Projekts (`is_active`) verwendet werden. Ein Projekt kann keinen, einen oder mehrere Projektstatus gleichzeitig besitzen. Die Status haben keinen unmittelbaren Einfluss auf Termine oder Kalenderfunktionen, dienen jedoch der fachlichen Orientierung, Filterung, Auswertung und Kommunikation im Dispositionsprozess.
 
-Projektstatus werden in einer eigenen Stammdatentabelle gepflegt und über eine n:m-Beziehung Projekten zugeordnet. Die Pflege der Statusliste erfolgt ausschließlich administrativ. Disponenten nutzen die Status im Rahmen der Projektbearbeitung, können diese jedoch nicht administrieren.
+Projektstatus werden in einer eigenen Stammdatentabelle gepflegt und über eine n:m-Beziehung Projekten zugeordnet.
 
-Bestimmte Status können als Default-Status definiert sein. Diese sind systemseitig geschützt und dürfen nicht gelöscht werden.
+Die Pflege der Statusliste erfolgt ausschließlich administrativ durch die Rolle **Admin**. Disponenten dürfen Projektstatus im Rahmen der Projektbearbeitung auswählen und entfernen, jedoch keine Status anlegen, ändern oder löschen.
+
+Projektstatus besitzen einen Aktiv-Status (`is_active`).
+
+- **Aktive Status** stehen Disponenten zur Auswahl bei neuen oder geänderten Projekten zur Verfügung.
+- **Deaktivierte Status** stehen nicht mehr für neue Zuordnungen zur Verfügung, bleiben jedoch an bestehenden Projekten sichtbar und erhalten.
+
+Ein Projektstatus darf nur dann physisch gelöscht werden, wenn er keinem Projekt mehr zugeordnet ist.
+
+Ist ein Status mindestens einem Projekt zugeordnet, ist eine Löschung nicht zulässig; in diesem Fall kann der Status ausschließlich deaktiviert werden.
+
+Bestimmte Status können als Default-Status definiert sein. Diese sind systemseitig geschützt und dürfen nicht gelöscht werden, unabhängig vom Verwendungszustand.
 
 ## **Regeln & Randbedingungen**
 
 - Projektstatus sind zentrale Stammdaten und werden systemweit verwendet.
 - Ein Projekt kann keinen, einen oder mehrere Projektstatus besitzen.
 - Die Zuordnung von Projektstatus zu Projekten erfolgt über eine n:m-Beziehung.
-
 - Projektstatus haben keine direkte technische Wirkung auf Termine oder Kalenderlogik.
-- Projektstatus können aktiviert oder deaktiviert werden.
-- Deaktivierte Status stehen für neue Zuordnungen nicht mehr zur Verfügung, bleiben jedoch aus Gründen der Historie erhalten.
-- Default-Statuswerte sind geschützt und dürfen nicht gelöscht werden.
-- Die Pflege der Projektstatus ist ausschließlich der Rolle **Admin** vorbehalten.
-- Die Auswahl und Zuordnung von Projektstatus zu Projekten erfolgt im Rahmen der Projektverwaltung (FT 02).
+- Jeder Projektstatus besitzt ein Aktiv-Flag (`is_active`).
+
+### Sichtbarkeit
+
+- **Nur aktive Projektstatus erscheinen in Auswahllisten für Disponenten.**
+- Deaktivierte Projektstatus:
+    - bleiben an bestehenden Projekten sichtbar,
+    - werden in Projekt-Detailansichten weiterhin angezeigt,
+    - erscheinen nicht mehr in Auswahlkomponenten zur Neu-Zuordnung,
+    - sind nicht Bestandteil von Auswahllisten im Dispositionskontext.
+- Disponenten haben keinen Zugriff auf die Stammdatenverwaltung.
+- Admins sehen in der Stammdatenverwaltung sowohl aktive als auch deaktivierte Status.
+- API-Trennregel:
+    - Endpunkte zur Statusauswahl filtern nach `is_active = true`.
+    - Endpunkte zur Projektanzeige liefern alle zugeordneten Status unabhängig vom Aktiv-Flag.
+
+### Löschregeln
+
+- Ein Projektstatus darf nur gelöscht werden, wenn:
+    - er keinem Projekt zugeordnet ist,
+    - und er kein geschützter Default-Status ist.
+- Ist ein Projektstatus mindestens einem Projekt zugeordnet, wird eine Löschung strikt blockiert.
+- Eine blockierte Löschung darf **nicht** automatisch in eine Deaktivierung umgewandelt werden.
+- Default-Statuswerte sind systemgeschützt und nicht löschbar.
+- Die Pflege (Anlegen, Bearbeiten, Aktivieren, Deaktivieren, Löschen) ist ausschließlich der Rolle **Admin** vorbehalten.
+- Disponenten dürfen Status ausschließlich Projekten zuordnen oder von Projekten entfernen.
 
 ## **Use Cases**
 
@@ -2527,27 +2558,175 @@ Der Status ist nicht mehr dem Projekt zugeordnet; andere Status bleiben erhalten
 
 ### **UC: Projektstatus verwalten**
 
-Akteur: RO (03) Admin
+**Akteur:** RO (03) Admin
 
-Ziel:
+**Ziel:**
 
 Projektstatus administrativ pflegen.
 
-Vorbedingungen:
+**Vorbedingungen:**
 
 - Admin ist angemeldet.
 
-Ablauf:
+**Ablauf:**
 
 1. Admin öffnet die Projektstatusverwaltung.
-2. Admin legt neue Status an oder bearbeitet bestehende.
-3. Admin kann Status aktivieren oder deaktivieren.
-4. Default-Status können nicht gelöscht werden.
-5. System speichert die Änderungen.
+2. Admin kann neue Status anlegen.
+3. Admin kann bestehende Status bearbeiten.
+4. Admin kann Status aktivieren oder deaktivieren.
+5. Admin versucht einen Status zu löschen.
+6. Das System prüft:
+    - ob der Status einem Projekt zugeordnet ist,
+    - ob es sich um einen geschützten Default-Status handelt.
+7. Falls keine Zuordnung existiert und kein Schutz greift, löscht das System den Status.
+8. Falls eine Zuordnung existiert oder Schutz greift, blockiert das System die Löschung und zeigt eine verständliche Fehlermeldung an.
+9. System speichert die Änderungen.
 
-Ergebnis:
+**Ergebnis:**
 
-Die aktualisierte Statusliste steht allen Projekten zur Verfügung.
+Die Statusliste ist konsistent gepflegt.
+
+Kein verwendeter oder geschützter Status wurde gelöscht.
+
+### UC: Nicht verwendeten Projektstatus löschen
+
+**Akteur:** RO (03) Admin
+
+**Ziel:**
+
+Einen Projektstatus dauerhaft entfernen, der keinem Projekt zugeordnet ist.
+
+**Vorbedingungen:**
+
+- Admin ist angemeldet.
+- Der Projektstatus existiert.
+- Der Projektstatus ist keinem Projekt zugeordnet.
+- Der Projektstatus ist kein geschützter Default-Status.
+
+**Ablauf:**
+
+1. Admin öffnet die Projektstatusverwaltung.
+2. Admin wählt einen Projektstatus aus.
+3. Admin löst die Löschaktion aus.
+4. System prüft, ob Referenzen zu Projekten existieren.
+5. System prüft, ob der Status als Default geschützt ist.
+6. Beide Prüfungen sind negativ.
+7. System löscht den Projektstatus physisch aus der Stammdatentabelle.
+
+**Ergebnis:**
+
+- Der Projektstatus existiert nicht mehr im System.
+- Er erscheint in keiner Auswahlliste.
+- Historische Projektdaten bleiben unverändert, da keine Zuordnung existierte.
+
+**Testbare Erwartung (Integration/E2E):**
+
+- DELETE-Request liefert Erfolg (z. B. 200 oder 204).
+- Ein nachfolgender GET auf die Statusliste enthält den Status nicht mehr.
+- Datenbank enthält keinen Datensatz mehr mit dieser ID.
+
+### UC: Verwendeten Projektstatus löschen (blockiert)
+
+**Akteur:** RO (03) Admin
+
+**Ziel:**
+
+Sicherstellen, dass ein zugeordnetes Status-Etikett nicht gelöscht werden kann.
+
+**Vorbedingungen:**
+
+- Admin ist angemeldet.
+- Der Projektstatus existiert.
+- Der Projektstatus ist mindestens einem Projekt zugeordnet.
+
+**Ablauf:**
+
+1. Admin öffnet die Projektstatusverwaltung.
+2. Admin wählt einen Projektstatus aus.
+3. Admin löst die Löschaktion aus.
+4. System prüft, ob Referenzen zu Projekten existieren.
+5. System erkennt mindestens eine bestehende Zuordnung.
+6. System blockiert die Löschung.
+7. System gibt eine verständliche Fehlermeldung zurück.
+
+**Ergebnis:**
+
+- Der Projektstatus bleibt unverändert bestehen.
+- Bestehende Projektzuordnungen bleiben erhalten.
+
+**Testbare Erwartung (Integration/E2E):**
+
+- DELETE-Request liefert Fehlerstatus (z. B. 409 Conflict).
+- Fehlermeldung enthält Hinweis auf bestehende Verwendung.
+- Status erscheint weiterhin in der Stammdatenliste.
+- Datenbank enthält unveränderten Datensatz.
+
+### UC: Geschützten Default-Status löschen (blockiert)
+
+**Akteur:** RO (03) Admin
+
+**Ziel:**
+
+Sicherstellen, dass systemgeschützte Default-Status nicht gelöscht werden können.
+
+**Vorbedingungen:**
+
+- Admin ist angemeldet.
+- Der Projektstatus ist als Default-Status markiert.
+
+**Ablauf:**
+
+1. Admin öffnet die Projektstatusverwaltung.
+2. Admin wählt einen Default-Status aus.
+3. Admin löst die Löschaktion aus.
+4. System prüft die Default-Markierung.
+5. System blockiert die Löschung unabhängig vom Verwendungszustand.
+6. System gibt eine verständliche Fehlermeldung zurück.
+
+**Ergebnis:**
+
+- Der Default-Status bleibt im System bestehen.
+- Keine Datenänderung erfolgt.
+
+**Testbare Erwartung (Integration/E2E):**
+
+- DELETE-Request liefert Fehlerstatus (z. B. 403 oder 409).
+- Fehlermeldung verweist auf Schutzstatus.
+- Status ist weiterhin vorhanden.
+
+### UC: Projektstatus deaktivieren
+
+**Akteur:** RO (03) Admin
+
+**Ziel:**
+
+Einen Projektstatus für zukünftige Verwendung sperren, ohne historische Daten zu verändern.
+
+**Vorbedingungen:**
+
+- Admin ist angemeldet.
+- Der Projektstatus existiert.
+
+**Ablauf:**
+
+1. Admin öffnet die Projektstatusverwaltung.
+2. Admin wählt einen aktiven Projektstatus.
+3. Admin setzt den Status auf „deaktiviert“.
+4. System speichert `is_active = false`.
+
+**Ergebnis:**
+
+- Der Status bleibt in der Stammdatentabelle erhalten.
+- Bestehende Projektzuordnungen bleiben unverändert.
+- Der Status ist in Projektdetails weiterhin sichtbar.
+- Der Status erscheint nicht mehr in Auswahlkomponenten für Disponenten.
+
+**Testbare Erwartung (Integration/E2E):**
+
+- PATCH `/project-status/:id/active` liefert Erfolg.
+- GET Statusliste für Admin enthält den Status mit `is_active = false`.
+- GET Statusliste für Disponent enthält diesen Status nicht.
+- Ein Projekt, das diesen Status bereits besitzt, zeigt ihn weiterhin an.
 
 # FT (16): Hilfetexte verwalten
 

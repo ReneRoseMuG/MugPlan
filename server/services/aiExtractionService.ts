@@ -1,3 +1,5 @@
+import { ensureOllamaAvailable } from "../lib/ollamaRuntime";
+
 export type ExtractionScope = "project_form" | "appointment_form";
 
 export type AiExtractionResult = {
@@ -39,6 +41,12 @@ class OllamaExtractionProvider implements ExtractionProvider {
   }
 
   async extractStructuredData(params: { scope: ExtractionScope; text: string }): Promise<AiExtractionResult> {
+    await ensureOllamaAvailable({
+      baseUrl: this.baseUrl,
+      model: this.model,
+      allowStart: true,
+    });
+
     const prompt = [
       "Extrahiere Daten aus einem deutschsprachigen Auftragsdokument.",
       "Antworte strikt als JSON-Objekt ohne Markdown oder Zusatztext.",
@@ -55,21 +63,27 @@ class OllamaExtractionProvider implements ExtractionProvider {
       params.text,
     ].join("\n");
 
-    const response = await fetch(`${this.baseUrl}/api/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: this.model,
-        prompt,
-        stream: false,
-        format: "json",
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/api/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          prompt,
+          stream: false,
+          format: "json",
+        }),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`KI-Provider nicht erreichbar (${this.baseUrl}): ${message}`);
+    }
 
     if (!response.ok) {
-      throw new Error("KI-Provider antwortet nicht erfolgreich");
+      throw new Error(`KI-Provider antwortet nicht erfolgreich (HTTP ${response.status})`);
     }
 
     const payload = (await response.json()) as { response?: unknown };

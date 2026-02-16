@@ -27,6 +27,7 @@ import { resetDatabase } from "../../helpers/resetDatabase";
 
 let app: express.Express;
 const fixturePath = path.resolve(process.cwd(), "tests/fixtures/Gotthardt Anke 163214 AB.pdf");
+const LIVE_AI_TEST_TIMEOUT_MS = 300_000;
 
 beforeAll(async () => {
   app = express();
@@ -67,7 +68,7 @@ describe("FT20 integration: live ai extraction routes", () => {
         expect(Array.isArray(res.body?.categorizedItems)).toBe(true);
         expect(typeof res.body?.articleListHtml).toBe("string");
       });
-  });
+  }, LIVE_AI_TEST_TIMEOUT_MS);
 
   it("extracts via live KI for appointment_form", async () => {
     const agent = await loginAdminAgent();
@@ -84,5 +85,5 @@ describe("FT20 integration: live ai extraction routes", () => {
         expect(Array.isArray(res.body?.articleItems)).toBe(true);
         expect(Array.isArray(res.body?.warnings)).toBe(true);
       });
-  });
+  }, LIVE_AI_TEST_TIMEOUT_MS);
 });

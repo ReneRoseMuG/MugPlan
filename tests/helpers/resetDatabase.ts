@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.test" });
 
+const RESET_DB_LOCK_NAME = "mugplan_test_reset_database_lock";
+const RESET_DB_LOCK_TIMEOUT_SECONDS = 60;
+
 if (process.env.NODE_ENV !== "test") {
   throw new Error("resetDatabase darf nur im Testmodus laufen.");
 }
@@ -17,18 +20,36 @@ export async function resetDatabase() {
     process.env.MYSQL_DATABASE_URL!
   );
 
-  await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+  try {
+    const [lockRows] = await connection.query("SELECT GET_LOCK(?, ?) AS lockStatus", [
+      RESET_DB_LOCK_NAME,
+      RESET_DB_LOCK_TIMEOUT_SECONDS,
+    ]);
+    const lockStatus = (lockRows as Array<{ lockStatus: number | null }>)[0]?.lockStatus ?? null;
+    if (lockStatus !== 1) {
+      throw new Error("resetDatabase lock konnte nicht erworben werden.");
+    }
 
-  const [tables] = await connection.query("SHOW TABLES");
-  const tableKey = Object.keys((tables as any)[0])[0];
+    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
-  for (const row of tables as any[]) {
-    const tableName = row[tableKey];
-    await connection.query(`TRUNCATE TABLE \`${tableName}\``);
+    const [tables] = await connection.query("SHOW TABLES");
+    const tableRows = tables as any[];
+    if (tableRows.length > 0) {
+      const tableKey = Object.keys(tableRows[0])[0];
+      for (const row of tableRows) {
+        const tableName = row[tableKey];
+        await connection.query(`TRUNCATE TABLE \`${tableName}\``);
+      }
+    }
+
+    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+  } finally {
+    try {
+      await connection.query("DO RELEASE_LOCK(?)", [RESET_DB_LOCK_NAME]);
+    } finally {
+      await connection.end();
+    }
   }
-
-  await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-  await connection.end();
 
   const { ensureSystemRoles } = await import("../../server/bootstrap/ensureSystemRoles");
   const { getAuthUserByUsername, createAdminUser } = await import("../../server/repositories/usersRepository");

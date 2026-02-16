@@ -14,6 +14,7 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./tests/setup.env.ts"],
     exclude: ["node_modules", "dist"],
+    fileParallelism: false,
     sequence: {
       concurrent: false
     },

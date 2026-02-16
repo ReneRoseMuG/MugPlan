@@ -65,9 +65,6 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
     tourId: undefined,
     dateFrom: undefined,
     dateTo: undefined,
-    allDayOnly: false,
-    withStartTimeOnly: false,
-    lockedOnly: false,
   });
 
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -101,9 +98,6 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
       if (filters.tourId) params.set("tourId", String(filters.tourId));
       if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
       if (filters.dateTo) params.set("dateTo", filters.dateTo);
-      if (filters.allDayOnly) params.set("allDayOnly", "true");
-      if (filters.withStartTimeOnly) params.set("withStartTimeOnly", "true");
-      if (filters.lockedOnly) params.set("lockedOnly", "true");
 
       const response = await fetch(`/api/appointments/list?${params.toString()}`, {
         credentials: "include",
@@ -194,14 +188,6 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
         width: 110,
         cell: ({ row }) => <span>{row.allDay ? "Ja" : "Nein"}</span>,
       },
-      {
-        id: "isLocked",
-        header: "Gesperrt",
-        accessor: (row) => row.isLocked,
-        align: "center",
-        width: 110,
-        cell: ({ row }) => <span>{row.isLocked ? "Ja" : "Nein"}</span>,
-      },
     ],
     [sortDirection, sortKey],
   );
@@ -281,4 +267,3 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
     />
   );
 }
-
