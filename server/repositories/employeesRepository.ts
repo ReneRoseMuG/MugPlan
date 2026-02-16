@@ -10,17 +10,11 @@ import {
   type UpdateEmployee,
 } from "@shared/schema";
 
-export async function getEmployees(scope: "active" | "all" = "active"): Promise<Employee[]> {
-  if (scope === "all") {
-    return db
-      .select()
-      .from(employees)
-      .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
-  }
+export async function getEmployees(scope: "active" | "inactive" = "active"): Promise<Employee[]> {
   return db
     .select()
     .from(employees)
-    .where(eq(employees.isActive, true))
+    .where(eq(employees.isActive, scope === "active"))
     .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
 }
 

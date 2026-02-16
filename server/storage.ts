@@ -145,11 +145,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCustomers(): Promise<Customer[]> {
-    return customersService.listCustomers();
+    return customersService.listCustomers("ADMIN", "active");
   }
 
   async getCustomer(id: number): Promise<Customer | null> {
-    return customersService.getCustomer(id);
+    return customersService.getCustomer(id, "ADMIN");
   }
 
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
@@ -157,7 +157,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCustomer(id: number, data: UpdateCustomer & { version: number }): Promise<Customer | null> {
-    return customersService.updateCustomer(id, data);
+    return customersService.updateCustomer(id, data, "ADMIN");
   }
 
   async getCustomerNotes(customerId: number): Promise<Note[]> {
@@ -268,18 +268,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmployees(filter: "active" | "all" = "active"): Promise<Employee[]> {
-    return employeesService.listEmployees(filter);
+    if (filter === "all") {
+      const [activeEmployees, inactiveEmployees] = await Promise.all([
+        employeesService.listEmployees("ADMIN", "active"),
+        employeesService.listEmployees("ADMIN", "inactive"),
+      ]);
+      return [...activeEmployees, ...inactiveEmployees];
+    }
+    return employeesService.listEmployees("ADMIN", filter);
   }
 
   async getEmployee(id: number): Promise<Employee | null> {
-    const result = await employeesService.getEmployeeWithRelations(id);
+    const result = await employeesService.getEmployeeWithRelations(id, "ADMIN");
     return result?.employee ?? null;
   }
 
   async getEmployeeWithRelations(
     id: number,
   ): Promise<{ employee: Employee; team: Team | null; tour: Tour | null } | null> {
-    return employeesService.getEmployeeWithRelations(id);
+    return employeesService.getEmployeeWithRelations(id, "ADMIN");
   }
 
   async createEmployee(data: InsertEmployee): Promise<Employee> {
@@ -287,11 +294,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEmployee(id: number, data: UpdateEmployee & { version: number }): Promise<Employee | null> {
-    return employeesService.updateEmployee(id, data);
+    return employeesService.updateEmployee(id, data, "ADMIN");
   }
 
   async toggleEmployeeActive(id: number, isActive: boolean, version: number): Promise<Employee | null> {
-    return employeesService.toggleEmployeeActive(id, isActive, version);
+    return employeesService.toggleEmployeeActive(id, isActive, version, "ADMIN");
   }
 
   async getEmployeesByTour(tourId: number): Promise<Employee[]> {

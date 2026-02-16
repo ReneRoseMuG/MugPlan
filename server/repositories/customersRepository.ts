@@ -10,11 +10,11 @@ import {
   type UpdateCustomer,
 } from "@shared/schema";
 
-export async function getCustomers(): Promise<Customer[]> {
+export async function getCustomers(scope: "active" | "inactive" = "active"): Promise<Customer[]> {
   return db
     .select()
     .from(customers)
-    .where(eq(customers.isActive, true))
+    .where(eq(customers.isActive, scope === "active"))
     .orderBy(customers.id);
 }
 
@@ -59,6 +59,7 @@ export async function updateCustomerWithVersion(
       company = ${data.company ?? null},
       email = ${data.email ?? null},
       phone = coalesce(${data.phone ?? null}, phone),
+      is_active = coalesce(${data.isActive ?? null}, is_active),
       address_line1 = ${data.addressLine1 ?? null},
       address_line2 = ${data.addressLine2 ?? null},
       postal_code = ${data.postalCode ?? null},

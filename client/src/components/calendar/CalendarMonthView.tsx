@@ -238,6 +238,7 @@ export function CalendarMonthView({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          version: appointment.version,
           projectId: appointment.projectId,
           tourId: appointment.tourId ?? null,
           startDate: newStartDate,
@@ -249,6 +250,12 @@ export function CalendarMonthView({
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
+        if (error?.code === "VERSION_CONFLICT") {
+          throw new Error("Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
+        }
+        if (error?.code === "VALIDATION_ERROR") {
+          throw new Error("Termin kann nicht verschoben werden. Bitte neu laden.");
+        }
         throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
       }
 
@@ -462,5 +469,4 @@ export function CalendarMonthView({
     </div>
   );
 }
-
 

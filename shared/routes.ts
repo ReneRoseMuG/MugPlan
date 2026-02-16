@@ -248,6 +248,7 @@ export const api = {
       responses: {
         200: z.object({
           id: z.number(),
+          version: z.number().int().min(1),
           projectId: z.number(),
           tourId: z.number().nullable(),
           title: z.string(),
@@ -349,6 +350,7 @@ export const api = {
         200: z.array(
           z.object({
             id: z.number(),
+            version: z.number().int().min(1),
             projectId: z.number(),
             projectName: z.string(),
             projectDescription: z.string().nullable(),
@@ -485,6 +487,9 @@ export const api = {
     list: {
       method: 'GET' as const,
       path: '/api/customers',
+      input: z.object({
+        scope: z.enum(["active", "inactive"]).default("active"),
+      }).strict(),
       responses: {
         200: z.array(z.custom<typeof customers.$inferSelect>()),
       },
@@ -514,6 +519,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof customers.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -694,7 +700,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/employees',
       input: z.object({
-        scope: z.enum(["active", "all"]).default("active"),
+        scope: z.enum(["active", "inactive"]).default("active"),
       }).strict(),
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
@@ -729,6 +735,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof employees.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -743,6 +750,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof employees.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -754,6 +762,7 @@ export const api = {
       responses: {
         200: z.array(z.object({
           id: z.number(),
+          version: z.number().int().min(1),
           projectId: z.number(),
           projectName: z.string(),
           projectDescription: z.string().nullable(),
@@ -1091,7 +1100,7 @@ export const api = {
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

@@ -37,6 +37,7 @@ import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
+import { useToast } from "@/hooks/use-toast";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -104,21 +105,29 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
   return <ArrowUpDown className="w-3.5 h-3.5" />;
 }
 
+function extractApiCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+  return match?.[1] ?? null;
+}
+
 export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: EmployeesPageProps) {
   const handleClose = onClose || onCancel;
+  const { toast } = useToast();
   const { settingsByKey, setSetting } = useSettings();
   const viewModeKey = "employees";
   const settingsViewModeKey = `${viewModeKey}.viewMode`;
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
   const [viewMode, setViewMode] = useState<ViewMode>(resolvedViewMode);
-  const [employeeScope, setEmployeeScope] = useState<"active" | "all">("active");
+  const [employeeScope, setEmployeeScope] = useState<"active" | "inactive">("active");
   const { filters, setFilter } = useListFilters({
     initialFilters: defaultEmployeeFilters,
   });
   const [sortKey, setSortKey] = useState<EmployeeSortKey>("lastName");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
   const berlinToday = getBerlinTodayDateString();
 
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -136,14 +145,23 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
     setViewMode(resolvedViewMode);
   }, [resolvedViewMode]);
 
+  const effectiveEmployeeScope = isAdmin ? employeeScope : "active";
+
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { scope: employeeScope }],
-    queryFn: () => fetch(`/api/employees?scope=${employeeScope}`).then((response) => response.json()),
+    queryKey: ["/api/employees", { scope: effectiveEmployeeScope }],
+    queryFn: () => fetch(`/api/employees?scope=${effectiveEmployeeScope}`).then((response) => response.json()),
   });
 
-  const { data: allEmployees = [] } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { scope: "all" }],
-    queryFn: () => fetch("/api/employees?scope=all").then((response) => response.json()),
+  const { data: activeEmployees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees", { scope: "active" }],
+    queryFn: () => fetch("/api/employees?scope=active").then((response) => response.json()),
+    enabled: isAdmin,
+  });
+
+  const { data: inactiveEmployees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees", { scope: "inactive" }],
+    queryFn: () => fetch("/api/employees?scope=inactive").then((response) => response.json()),
+    enabled: isAdmin,
   });
 
   const { data: tours = [] } = useQuery<Tour[]>({
@@ -198,6 +216,14 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
     },
     enabled: filteredEmployeeIds.length > 0,
   });
+
+  const allEmployees = useMemo(() => {
+    if (!isAdmin) return employees;
+    const byId = new Map<number, Employee>();
+    for (const employee of activeEmployees) byId.set(employee.id, employee);
+    for (const employee of inactiveEmployees) byId.set(employee.id, employee);
+    return Array.from(byId.values());
+  }, [isAdmin, employees, activeEmployees, inactiveEmployees]);
 
   const teamMembersById = useMemo(() => {
     const result = new Map<number, { id: number; fullName: string }[]>();
@@ -382,20 +408,50 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { firstName?: string; lastName?: string; phone?: string | null; email?: string | null } }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { firstName?: string; lastName?: string; phone?: string | null; email?: string | null; version: number };
+    }) => {
       return apiRequest("PUT", `/api/employees/${id}`, data);
     },
     onSuccess: () => {
       invalidateEmployees();
     },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({ title: "Speichern nicht moeglich", description: "Mitarbeiter wurde zwischenzeitlich geaendert. Bitte neu laden.", variant: "destructive" });
+        return;
+      }
+      if (code === "FORBIDDEN") {
+        toast({ title: "Speichern nicht moeglich", description: "Aenderung nicht erlaubt.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Speichern fehlgeschlagen", variant: "destructive" });
+    },
   });
 
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
-      return apiRequest("PATCH", `/api/employees/${id}/active`, { isActive });
+    mutationFn: async ({ id, isActive, version }: { id: number; isActive: boolean; version: number }) => {
+      return apiRequest("PATCH", `/api/employees/${id}/active`, { isActive, version });
     },
     onSuccess: () => {
       invalidateEmployees();
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({ title: "Aktiv-Status nicht moeglich", description: "Mitarbeiter wurde zwischenzeitlich geaendert. Bitte neu laden.", variant: "destructive" });
+        return;
+      }
+      if (code === "FORBIDDEN") {
+        toast({ title: "Aktiv-Status nicht moeglich", description: "Nur Admin darf den Aktiv-Status aendern.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Aktiv-Status konnte nicht geaendert werden", variant: "destructive" });
     },
   });
 
@@ -437,6 +493,11 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
         email: formData.email.trim() || undefined,
       });
     } else if (selectedEmployeeId) {
+      const version = displayEmployee?.employee.version;
+      if (!Number.isInteger(version) || (version ?? 0) < 1) {
+        throw new Error("validation");
+      }
+      const resolvedVersion = version as number;
       await updateMutation.mutateAsync({
         id: selectedEmployeeId,
         data: {
@@ -444,6 +505,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
           lastName: formData.lastName.trim(),
           phone: formData.phone.trim() || null,
           email: formData.email.trim() || null,
+          version: resolvedVersion,
         },
       });
     }
@@ -457,7 +519,8 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
   };
 
   const handleToggleActive = (employee: Employee) => {
-    toggleActiveMutation.mutate({ id: employee.id, isActive: !employee.isActive });
+    if (!isAdmin) return;
+    toggleActiveMutation.mutate({ id: employee.id, isActive: !employee.isActive, version: employee.version });
   };
 
   const displayEmployee = isCreating ? null : employeeDetails;
@@ -496,8 +559,8 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
             employeeLastName={filters.lastName}
             onEmployeeLastNameChange={(value) => setFilter("lastName", value)}
             onEmployeeLastNameClear={() => setFilter("lastName", "")}
-            employeeScope={employeeScope}
-            onEmployeeScopeChange={setEmployeeScope}
+            employeeScope={isAdmin ? employeeScope : undefined}
+            onEmployeeScopeChange={isAdmin ? setEmployeeScope : undefined}
           />
         }
         viewModeToggle={
@@ -561,9 +624,9 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
                           event.stopPropagation();
                           handleToggleActive(employee);
                         }}
-                        disabled={true}
+                        disabled={!isAdmin}
                         data-testid={`button-toggle-employee-${employee.id}`}
-                        title="Aktivierung nur durch Administrator"
+                        title={isAdmin ? "Aktiv-Status umschalten" : "Aktivierung nur durch Administrator"}
                       >
                         {employee.isActive ? (
                           <PowerOff className="w-4 h-4" />

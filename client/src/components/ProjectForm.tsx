@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
@@ -64,6 +65,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
@@ -132,6 +134,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
   const projectNamePreview = formatProjectStoredName(selectedCustomerNumber, name);
+  const projectVersion = projectData?.project.version;
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
@@ -327,6 +330,47 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
   });
 
+  const deleteProjectMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId) throw new Error("Projekt-ID fehlt");
+      if (!projectVersion) throw new Error("Projektversion fehlt");
+      await apiRequest("DELETE", `/api/projects/${projectId}`, { version: projectVersion });
+    },
+    onSuccess: () => {
+      invalidateProjectQueries();
+      toast({ title: "Projekt geloescht" });
+      if (onSaved && onSaved !== onCancel) {
+        onSaved();
+        return;
+      }
+      onCancel?.();
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "BUSINESS_CONFLICT") {
+        toast({
+          title: "Projekt kann nicht geloescht werden",
+          description: "Projekt kann nicht geloescht werden, weil Termine vorhanden sind.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Projekt wurde zwischenzeitlich geaendert",
+          description: "Bitte neu laden und erneut versuchen.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Projekt konnte nicht geloescht werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
@@ -434,6 +478,16 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       onSubmit={handleSubmit}
       saveLabel="Projekt speichern"
       testIdPrefix="project"
+      footerActions={isEditing ? (
+        <Button
+          variant="destructive"
+          onClick={() => setDeleteConfirmOpen(true)}
+          disabled={deleteProjectMutation.isPending}
+          data-testid="button-delete-project"
+        >
+          {deleteProjectMutation.isPending ? "Projekt loeschen..." : "Projekt loeschen"}
+        </Button>
+      ) : undefined}
     >
       <div className="grid grid-cols-3 gap-6">
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
@@ -586,7 +640,42 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Projekt wirklich loeschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Diese Aktion ist endgueltig. Das Projekt wird nur geloescht, wenn keine Termine zugeordnet sind.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                void deleteProjectMutation.mutateAsync();
+              }}
+              data-testid="button-confirm-delete-project"
+            >
+              Projekt loeschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </EntityFormLayout>
   );
 }
 
+function extractApiCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const start = error.message.indexOf("{");
+  if (start < 0) return null;
+  const jsonPart = error.message.slice(start);
+  try {
+    const payload = JSON.parse(jsonPart) as { code?: unknown };
+    return typeof payload.code === "string" ? payload.code : null;
+  } catch {
+    return null;
+  }
+}

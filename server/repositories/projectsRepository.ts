@@ -167,7 +167,7 @@ export async function updateProjectWithVersion(
 export async function deleteProjectWithVersion(
   id: number,
   expectedVersion: number,
-): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" } | { kind: "business_conflict" }> {
   return db.transaction(async (tx) => {
     // Acquire a write lock by touching the versioned row first, so dependent deletes
     // and final delete run against the same validated version snapshot.
@@ -182,6 +182,15 @@ export async function deleteProjectWithVersion(
     );
     if (versionCheckAffectedRows === 0) {
       throw new Error("VERSION_CONFLICT");
+    }
+
+    const [existingAppointment] = await tx
+      .select({ id: appointments.id })
+      .from(appointments)
+      .where(eq(appointments.projectId, id))
+      .limit(1);
+    if (existingAppointment) {
+      return { kind: "business_conflict" as const };
     }
 
     await tx.delete(projectNotes).where(eq(projectNotes.projectId, id));

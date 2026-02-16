@@ -2,6 +2,7 @@
 
 export type CalendarAppointment = {
   id: number;
+  version: number;
   projectId: number;
   projectName: string;
   projectDescription: string | null;
@@ -79,4 +80,3 @@ export function useCalendarAppointments({
     },
   });
 }
-

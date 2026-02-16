@@ -1,23 +1,32 @@
 import type { Customer, InsertCustomer, UpdateCustomer } from "@shared/schema";
 import * as customersRepository from "../repositories/customersRepository";
+import type { CanonicalRoleKey } from "../settings/registry";
 
 export class CustomersError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
+  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
+  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN") {
     super(code);
     this.status = status;
     this.code = code;
   }
 }
 
-export async function listCustomers(): Promise<Customer[]> {
-  return customersRepository.getCustomers();
+function resolveScope(roleKey: CanonicalRoleKey, requestedScope: "active" | "inactive"): "active" | "inactive" {
+  if (roleKey !== "ADMIN") return "active";
+  return requestedScope;
 }
 
-export async function getCustomer(id: number): Promise<Customer | null> {
-  return customersRepository.getCustomer(id);
+export async function listCustomers(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<Customer[]> {
+  return customersRepository.getCustomers(resolveScope(roleKey, scope));
+}
+
+export async function getCustomer(id: number, roleKey: CanonicalRoleKey): Promise<Customer | null> {
+  const customer = await customersRepository.getCustomer(id);
+  if (!customer) return null;
+  if (roleKey !== "ADMIN" && !customer.isActive) return null;
+  return customer;
 }
 
 export async function getCustomersByCustomerNumber(customerNumber: string): Promise<Customer[]> {
@@ -32,6 +41,7 @@ export async function createCustomer(data: InsertCustomer): Promise<Customer> {
 export async function updateCustomer(
   id: number,
   data: UpdateCustomer & { version: number },
+  roleKey: CanonicalRoleKey,
 ): Promise<Customer | null> {
   if (!Number.isInteger(data.version) || data.version < 1) {
     throw new CustomersError(422, "VALIDATION_ERROR");
@@ -39,6 +49,10 @@ export async function updateCustomer(
 
   const existing = await customersRepository.getCustomer(id);
   if (!existing) return null;
+  if (roleKey !== "ADMIN" && !existing.isActive) return null;
+  if (roleKey !== "ADMIN" && data.isActive !== undefined && data.isActive !== existing.isActive) {
+    throw new CustomersError(403, "FORBIDDEN");
+  }
 
   let fullName = existing.fullName;
   if (data.firstName !== undefined || data.lastName !== undefined) {

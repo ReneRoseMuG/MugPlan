@@ -52,6 +52,7 @@ interface AppointmentFormProps {
 
 interface AppointmentDetail {
   id: number;
+  version: number;
   projectId: number;
   tourId: number | null;
   title: string;
@@ -62,6 +63,8 @@ interface AppointmentDetail {
   endTime: string | null;
   employees: Employee[];
 }
+
+type AppointmentApiError = Error & { status?: number; code?: string };
 
 const logPrefix = "[AppointmentForm]";
 
@@ -75,6 +78,35 @@ const formatHourInput = (value: string) => {
 const buildTimeString = (hourValue: string) => {
   if (!hourValue) return null;
   return `${hourValue}:00:00`;
+};
+
+const buildApiError = (message: string, status?: number, code?: string): AppointmentApiError => {
+  const error = new Error(message) as AppointmentApiError;
+  error.status = status;
+  error.code = code;
+  return error;
+};
+
+const parseErrorPayload = (rawBody: string): { message?: string; code?: string } | null => {
+  const trimmedBody = rawBody.trim();
+  if (
+    !trimmedBody ||
+    !(
+      (trimmedBody.startsWith("{") && trimmedBody.endsWith("}")) ||
+      (trimmedBody.startsWith("[") && trimmedBody.endsWith("]"))
+    )
+  ) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(trimmedBody) as { message?: unknown; code?: unknown };
+    return {
+      message: typeof payload.message === "string" && payload.message.trim().length > 0 ? payload.message : undefined,
+      code: typeof payload.code === "string" ? payload.code : undefined,
+    };
+  } catch {
+    return null;
+  }
 };
 
 const isPastStartDate = (startDate: string) => {
@@ -181,8 +213,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
   };
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects?filter=all"],
-    queryFn: () => fetchJson<Project[]>("/api/projects?filter=all"),
+    queryKey: ["/api/projects?filter=all&scope=all"],
+    queryFn: () => fetchJson<Project[]>("/api/projects?filter=all&scope=all"),
   });
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
@@ -207,14 +239,17 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
   });
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { scope: "all" }],
-    queryFn: () => fetchJson<Employee[]>("/api/employees?scope=all"),
+    queryKey: ["/api/employees", { scope: "active" }],
+    queryFn: () => fetchJson<Employee[]>("/api/employees?scope=active"),
   });
 
   const { data: appointmentDetail, isLoading: appointmentLoading } = useQuery<AppointmentDetail>({
     queryKey: ["/api/appointments", appointmentId],
     queryFn: () => fetchJson<AppointmentDetail>(`/api/appointments/${appointmentId}`),
     enabled: Boolean(appointmentId),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
   });
 
   const isLoading =
@@ -305,11 +340,24 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     [tours, selectedTourId],
   );
 
+  const assignedEmployeesById = useMemo(() => {
+    const map = new Map<number, Employee>();
+    for (const employee of employees) {
+      map.set(employee.id, employee);
+    }
+    for (const employee of appointmentDetail?.employees ?? []) {
+      if (!map.has(employee.id)) {
+        map.set(employee.id, employee);
+      }
+    }
+    return map;
+  }, [employees, appointmentDetail?.employees]);
+
   const assignedEmployees = useMemo(
     () => assignedEmployeeIds
-      .map((id) => employees.find((employee) => employee.id === id))
+      .map((id) => assignedEmployeesById.get(id))
       .filter((employee): employee is Employee => Boolean(employee)),
-    [assignedEmployeeIds, employees],
+    [assignedEmployeeIds, assignedEmployeesById],
   );
 
   const availableEmployees = useMemo(
@@ -618,50 +666,107 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
   const deleteAppointmentMutation = useMutation({
     mutationFn: async ({ appointmentId: targetAppointmentId }: { appointmentId: number; projectId: number | null }) => {
-      console.info(`${logPrefix} delete request`, { appointmentId: targetAppointmentId });
-      const response = await fetch(`/api/appointments/${targetAppointmentId}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-        },
-      });
-      console.info(`${logPrefix} delete response`, { appointmentId: targetAppointmentId, status: response.status });
-      if (!response.ok) {
-        const rawBody = await response.text();
-        const trimmedBody = rawBody.trim();
-        let message: string | undefined;
-        if (
-          trimmedBody &&
-          ((trimmedBody.startsWith("{") && trimmedBody.endsWith("}")) ||
-            (trimmedBody.startsWith("[") && trimmedBody.endsWith("]")))
-        ) {
-          try {
-            const payload = JSON.parse(trimmedBody) as { message?: unknown };
-            if (typeof payload.message === "string" && payload.message.trim().length > 0) {
-              message = payload.message;
-            }
-          } catch {
-            // Ignore parse errors and use fallback message below.
-          }
+      const fetchFreshVersion = async (): Promise<number> => {
+        const detail = await queryClient.fetchQuery({
+          queryKey: ["/api/appointments", targetAppointmentId],
+          queryFn: () => fetchJson<AppointmentDetail>(`/api/appointments/${targetAppointmentId}`),
+          staleTime: 0,
+        });
+        const version = detail?.version;
+        if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+          console.warn(`${logPrefix} delete blocked: missing or invalid fresh version`, {
+            appointmentId: targetAppointmentId,
+            version,
+          });
+          throw buildApiError("Termin kann derzeit nicht geloescht werden. Bitte neu laden.", 422, "VALIDATION_ERROR");
         }
-        const error = new Error(message ?? (response.statusText || "Löschen fehlgeschlagen")) as Error & { status?: number };
-        error.status = response.status;
-        throw error;
+        return version;
+      };
+
+      const requestDelete = async (version: number) => {
+        console.info(`${logPrefix} delete request`, { appointmentId: targetAppointmentId, version });
+        const response = await fetch(`/api/appointments/${targetAppointmentId}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ version }),
+        });
+        console.info(`${logPrefix} delete response`, { appointmentId: targetAppointmentId, status: response.status, version });
+        if (response.ok) return;
+
+        const rawBody = await response.text();
+        const parsed = parseErrorPayload(rawBody);
+        if (parsed?.code === "LOCK_VIOLATION") {
+          throw buildApiError("Termin ist gesperrt.", response.status, "LOCK_VIOLATION");
+        }
+        if (parsed?.code === "VERSION_CONFLICT") {
+          throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
+        }
+        if (parsed?.code === "VALIDATION_ERROR") {
+          throw buildApiError("Ungueltige Loeschdaten (Version). Bitte neu laden.", response.status, "VALIDATION_ERROR");
+        }
+        throw buildApiError(parsed?.message ?? (response.statusText || "Loeschen fehlgeschlagen"), response.status, parsed?.code);
+      };
+
+      try {
+        const freshVersion = await fetchFreshVersion();
+        await requestDelete(freshVersion);
+      } catch (error) {
+        const err = error as AppointmentApiError;
+        if (err.code !== "VERSION_CONFLICT") throw error;
+
+        console.info(`${logPrefix} delete retry after VERSION_CONFLICT`, { appointmentId: targetAppointmentId });
+        const freshVersion = await fetchFreshVersion();
+        try {
+          await requestDelete(freshVersion);
+        } catch (retryError) {
+          const retryErr = retryError as AppointmentApiError;
+          if (retryErr.code === "VERSION_CONFLICT") {
+            throw buildApiError(
+              "Termin wurde parallel geaendert. Bitte Formular neu oeffnen.",
+              retryErr.status,
+              "VERSION_CONFLICT",
+            );
+          }
+          throw retryError;
+        }
       }
+
       return targetAppointmentId;
     },
     onSuccess: async (_deletedAppointmentId, variables) => {
       const projectIdForInvalidation = variables.projectId;
       await invalidateRelatedAppointmentQueries(projectIdForInvalidation);
+      if (appointmentId) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+      }
       toast({ title: "Termin gelöscht" });
       onSaved?.();
     },
     onError: (error) => {
-      const status = (error as Error & { status?: number }).status;
-      if (status === 403) {
+      const err = error as AppointmentApiError;
+      if (err.code === "LOCK_VIOLATION" || err.status === 403) {
         toast({
           title: "Löschen nicht möglich",
-          description: "Keine Berechtigung oder Termin gesperrt.",
+          description: "Termin ist gesperrt.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "VERSION_CONFLICT") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: err.message || "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "VALIDATION_ERROR") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Ungueltige Loeschdaten. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -673,7 +778,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
   const persistAppointment = async () => {
     if (!selectedProjectId) return;
-    const payload = {
+    const basePayload = {
       projectId: selectedProjectId,
       tourId: selectedTourId,
       startDate,
@@ -684,12 +789,29 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
     const method = isEditing ? "PATCH" : "POST";
     const url = isEditing ? `/api/appointments/${appointmentId}` : "/api/appointments";
+    const version = appointmentDetail?.version;
+    if (isEditing && (typeof version !== "number" || !Number.isInteger(version) || version < 1)) {
+      console.warn(`${logPrefix} submit blocked: missing or invalid version`, {
+        appointmentId,
+        version,
+      });
+      toast({
+        title: "Speichern nicht moeglich",
+        description: "Termin kann derzeit nicht gespeichert werden. Bitte neu laden.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const payload = isEditing
+      ? { ...basePayload, version }
+      : basePayload;
 
     console.info(`${logPrefix} submit`, {
       method,
       url,
       projectId: payload.projectId,
       tourId: payload.tourId,
+      version: isEditing ? (payload as { version?: number }).version : undefined,
       employeeCount: payload.employeeIds.length,
       startDate: payload.startDate,
       endDate: payload.endDate,
@@ -731,6 +853,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         allQueryKey: allAppointmentsQueryKey,
       });
       await invalidateRelatedAppointmentQueries(payload.projectId);
+      if (isEditing && appointmentId) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+      }
       toast({
         title: isEditing ? "Termin gespeichert" : "Termin erstellt",
       });
@@ -935,21 +1060,23 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2">
-              {tours.map((tour) => (
-                <TourInfoBadge
-                  key={tour.id}
-                  id={tour.id}
-                  name={tour.name}
-                  color={tour.color}
-                  members={tourMembersById.get(tour.id) ?? []}
-                  action={isLocked ? "none" : "add"}
-                  onAdd={() => handleTourChange(tour.id)}
-                  size="sm"
-                  testId={`badge-tour-select-${tour.id}`}
-                />
-              ))}
-            </div>
+            {!selectedTour && (
+              <div className="flex flex-wrap gap-2">
+                {tours.map((tour) => (
+                  <TourInfoBadge
+                    key={tour.id}
+                    id={tour.id}
+                    name={tour.name}
+                    color={tour.color}
+                    members={tourMembersById.get(tour.id) ?? []}
+                    action={isLocked ? "none" : "add"}
+                    onAdd={() => handleTourChange(tour.id)}
+                    size="sm"
+                    testId={`badge-tour-select-${tour.id}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
@@ -983,8 +1110,19 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
           </div>
         </div>
 
-        <div className="rounded-lg border border-border p-4 bg-slate-50">
-          <Label className="text-xs text-muted-foreground block mb-3">Zugewiesene Mitarbeiter</Label>
+        <div className="rounded-lg border border-border p-4 bg-slate-50 space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Zugewiesene Mitarbeiter</Label>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setEmployeePickerOpen(true)}
+              disabled={isLocked}
+              data-testid="button-add-employee"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {assignedEmployees.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">Keine Mitarbeiter zugewiesen</div>
@@ -1003,20 +1141,6 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
               ))
             )}
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Mitarbeiter hinzufügen</Label>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setEmployeePickerOpen(true)}
-            disabled={isLocked}
-            data-testid="button-add-employee"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Mitarbeiter auswählen
-          </Button>
         </div>
       </div>
 
@@ -1163,4 +1287,3 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     </EntityFormLayout>
   );
 }
-

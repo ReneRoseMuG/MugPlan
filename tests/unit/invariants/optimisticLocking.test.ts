@@ -176,6 +176,12 @@ describe("PKG-01 Invariant: optimistic locking", () => {
     await expect(deleteProject(30, 4)).rejects.toMatchObject({ status: 409, code: "VERSION_CONFLICT" });
   });
 
+  it("project delete returns 409 BUSINESS_CONFLICT when repository reports business_conflict", async () => {
+    projectsRepoMock.deleteProjectWithVersion.mockResolvedValue({ kind: "business_conflict" });
+
+    await expect(deleteProject(30, 4)).rejects.toMatchObject({ status: 409, code: "BUSINESS_CONFLICT" });
+  });
+
   it("note update returns 409 VERSION_CONFLICT when repository reports version_conflict", async () => {
     notesRepoMock.updateNoteWithVersion.mockResolvedValue({ kind: "version_conflict" });
     notesRepoMock.getNote.mockResolvedValue({ id: 40 } as any);

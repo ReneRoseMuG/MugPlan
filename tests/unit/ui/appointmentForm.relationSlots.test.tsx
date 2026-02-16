@@ -6,7 +6,9 @@
  *
  * Abgedeckte Regeln:
  * - Projektrelation im Terminformular nutzt RelationSlot.
+ * - Projektdatenquelle des Formulars nutzt scope=all, damit ausgewaehlte Projekte aus allen Picker-Sichten angezeigt werden.
  * - Lock-Zustand erzwingt readonly fuer den Projekt-Slot.
+ * - Tour-Auswahlbadges werden nur angezeigt, wenn keine Tour zugeordnet ist.
  * - Kunden-Slot ist readonly und links in der Hauptspalte verortet.
  *
  * Fehlerfaelle:
@@ -41,5 +43,14 @@ describe("FT01 appointment form relation slot wiring", () => {
     expect(source).toContain("state=\"readonly\"");
     expect(source).toContain("<CustomerDetailCard customer={selectedCustomer} testId=\"badge-customer\" />");
   });
-});
 
+  it("loads projects with scope=all for stable post-selection rendering", () => {
+    expect(source).toContain("queryKey: [\"/api/projects?filter=all&scope=all\"]");
+    expect(source).toContain("fetchJson<Project[]>(\"/api/projects?filter=all&scope=all\")");
+  });
+
+  it("shows tour selection badges only when no tour is selected", () => {
+    expect(source).toContain("{!selectedTour && (");
+    expect(source).toContain("testId={`badge-tour-select-${tour.id}`}");
+  });
+});

@@ -53,6 +53,7 @@ export const updateCustomerSchema = z.object({
   addressLine2: z.string().nullable().optional(),
   postalCode: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export type Customer = typeof customers.$inferSelect;

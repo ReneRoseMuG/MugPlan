@@ -1,5 +1,6 @@
 import { CustomerNameFilterInput } from "@/components/filters/customer-name-filter-input";
 import { CustomerNumberFilterInput } from "@/components/filters/customer-number-filter-input";
+import { CustomerInactiveScopeFilterInput } from "@/components/filters/customer-inactive-scope-filter-input";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 
 interface CustomerFilterPanelProps {
@@ -10,6 +11,8 @@ interface CustomerFilterPanelProps {
   customerNumber: string;
   onCustomerNumberChange: (value: string) => void;
   onCustomerNumberClear: () => void;
+  customerScope?: "active" | "inactive";
+  onCustomerScopeChange?: (scope: "active" | "inactive") => void;
 }
 
 export function CustomerFilterPanel({
@@ -20,9 +23,18 @@ export function CustomerFilterPanel({
   customerNumber,
   onCustomerNumberChange,
   onCustomerNumberClear,
+  customerScope,
+  onCustomerScopeChange,
 }: CustomerFilterPanelProps) {
   return (
     <FilterPanel title={title} layout="row">
+      {customerScope && onCustomerScopeChange ? (
+        <CustomerInactiveScopeFilterInput
+          customerScope={customerScope}
+          onCustomerScopeChange={onCustomerScopeChange}
+          className="w-full sm:w-auto sm:min-w-32"
+        />
+      ) : null}
       <CustomerNameFilterInput
         value={customerLastName}
         onChange={onCustomerLastNameChange}

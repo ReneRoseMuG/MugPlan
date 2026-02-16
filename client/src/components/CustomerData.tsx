@@ -24,6 +24,8 @@ interface CustomerDataProps {
 
 export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: CustomerDataProps) {
   const { toast } = useToast();
+  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
   
   const [formData, setFormData] = useState({
     customerNumber: "",
@@ -36,6 +38,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     addressLine2: "",
     postalCode: "",
     city: "",
+    isActive: true,
   });
 
   const isEditMode = !!customerId;
@@ -101,9 +104,16 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         addressLine2: customer.addressLine2 || "",
         postalCode: customer.postalCode || "",
         city: customer.city || "",
+        isActive: customer.isActive ?? true,
       });
     }
   }, [customer]);
+
+  const extractErrorCode = (error: unknown): string | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+    return match?.[1] ?? null;
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -121,7 +131,15 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const res = await apiRequest('PATCH', `/api/customers/${customerId}`, data);
+      if (!customer || !Number.isInteger(customer.version) || customer.version < 1) {
+        throw new Error("422: {\"code\":\"VALIDATION_ERROR\"}");
+      }
+      const payload = {
+        ...data,
+        version: customer.version,
+        isActive: isAdmin ? data.isActive : undefined,
+      };
+      const res = await apiRequest('PATCH', `/api/customers/${customerId}`, payload);
       return res.json();
     },
     onSuccess: () => {
@@ -130,6 +148,19 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       toast({ title: "Gespeichert", description: "Die Kundendaten wurden erfolgreich aktualisiert." });
     },
     onError: (error: Error) => {
+      const code = extractErrorCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({ title: "Speichern nicht moeglich", description: "Kunde wurde zwischenzeitlich geaendert. Bitte neu laden.", variant: "destructive" });
+        return;
+      }
+      if (code === "FORBIDDEN") {
+        toast({ title: "Speichern nicht moeglich", description: "Aenderung des Aktiv-Status ist nur fuer Admin erlaubt.", variant: "destructive" });
+        return;
+      }
+      if (code === "VALIDATION_ERROR") {
+        toast({ title: "Speichern nicht moeglich", description: "Ungueltige Kundendaten. Bitte neu laden.", variant: "destructive" });
+        return;
+      }
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
     },
   });
@@ -341,12 +372,13 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                   <div className="flex items-center gap-3">
                     <Checkbox 
                       id="isActive" 
-                      checked={customer?.isActive ?? true} 
-                      disabled
+                      checked={formData.isActive}
+                      disabled={!isAdmin}
+                      onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: checked === true }))}
                       data-testid="checkbox-active" 
                     />
                     <Label htmlFor="isActive" className="text-slate-500" data-testid="label-active">
-                      Kunde ist aktiv (nur lesbar)
+                      Kunde ist aktiv {isAdmin ? "" : "(nur durch Administrator aenderbar)"}
                     </Label>
                   </div>
                 </div>

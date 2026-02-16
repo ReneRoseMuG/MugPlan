@@ -92,28 +92,28 @@ export function CustomersPage({
   const [sortKey, setSortKey] = useState<CustomerSortKey>("customerNumber");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
+  const [customerScope, setCustomerScope] = useState<"active" | "inactive">("active");
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
     setViewMode(tableOnly ? "table" : resolvedViewMode);
   }, [resolvedViewMode, tableOnly]);
 
+  const effectiveCustomerScope = isAdmin ? customerScope : "active";
+
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: ["/api/customers", { scope: effectiveCustomerScope }],
+    queryFn: () => fetch(`/api/customers?scope=${effectiveCustomerScope}`).then((response) => response.json()),
   });
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects?filter=all&scope=all"],
   });
 
-  const activeCustomers = useMemo(
-    () => customers.filter((customer) => customer.isActive),
-    [customers],
-  );
-
   const filteredCustomers = useMemo(
-    () => applyCustomerFilters(activeCustomers, filters),
-    [activeCustomers, filters],
+    () => applyCustomerFilters(customers, filters),
+    [customers, filters],
   );
 
   const filteredCustomerIds = useMemo(
@@ -310,6 +310,8 @@ export function CustomersPage({
           customerNumber={filters.customerNumber}
           onCustomerNumberChange={(value) => setFilter("customerNumber", value)}
           onCustomerNumberClear={() => setFilter("customerNumber", "")}
+          customerScope={isAdmin ? customerScope : undefined}
+          onCustomerScopeChange={isAdmin ? setCustomerScope : undefined}
         />
       }
       viewModeToggle={tableOnly ? undefined : (

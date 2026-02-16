@@ -3,9 +3,9 @@ import * as projectsRepository from "../repositories/projectsRepository";
 
 export class ProjectsError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
+  code: "VERSION_CONFLICT" | "BUSINESS_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
+  constructor(status: number, code: "VERSION_CONFLICT" | "BUSINESS_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
     super(code);
     this.status = status;
     this.code = code;
@@ -72,5 +72,8 @@ export async function deleteProject(id: number, expectedVersion: number): Promis
       throw new ProjectsError(404, "NOT_FOUND");
     }
     throw new ProjectsError(409, "VERSION_CONFLICT");
+  }
+  if (result.kind === "business_conflict") {
+    throw new ProjectsError(409, "BUSINESS_CONFLICT");
   }
 }

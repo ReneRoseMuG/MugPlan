@@ -101,6 +101,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
 
   return rows.map((row) => ({
     id: row.appointment.id,
+    version: row.appointment.version,
     projectId: row.project.id,
     projectName: row.project.name,
     projectDescription: row.project.descriptionMd ?? null,
@@ -149,6 +150,7 @@ export async function getAppointmentDetails(id: number) {
 
   return {
     id: appointment.id,
+    version: appointment.version,
     projectId: appointment.projectId,
     tourId: appointment.tourId ?? null,
     title: appointment.title,
@@ -357,6 +359,7 @@ export async function listCalendarAppointments({
   return rows.map((row) => {
     const baseAppointment = {
       id: row.appointment.id,
+      version: row.appointment.version,
       projectId: row.project.id,
       projectName: row.project.name,
       projectDescription: row.project.descriptionMd ?? null,
