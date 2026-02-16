@@ -453,7 +453,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                     <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
                     <Input 
                       id="projectName" 
-                      placeholder="z.B. Renovierung BÃ¼rogebÃ¤ude" 
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       data-testid="input-project-name"
