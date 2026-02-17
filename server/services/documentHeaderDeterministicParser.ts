@@ -112,8 +112,9 @@ function collectLabelValues(lines: string[]): Record<HeaderField, string[]> {
 
     if (block.length > 1 && blockValues.length === block.length) {
       for (let i = 0; i < block.length; i += 1) {
-        if (block[i].field) {
-          collected[block[i].field].push(blockValues[i]);
+        const field = block[i].field;
+        if (field) {
+          collected[field].push(blockValues[i]);
         }
       }
       index = valueScan;

@@ -14,6 +14,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getAppointmentDurationDays, getAppointmentEndDate, getAppointmentSortValue } from "@/lib/calendar-utils";
 import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
@@ -87,6 +88,7 @@ export function CalendarWeekView({
   const baseWeekStart = startOfWeek(currentDate, { weekStartsOn: 1, locale: de });
   const baseWeekEnd = endOfWeek(baseWeekStart, { weekStartsOn: 1, locale: de });
   const scrollResetKey = format(baseWeekStart, "yyyy-MM-dd");
+  const berlinToday = getBerlinTodayDateString();
 
   const weekStarts = useMemo(
     () => Array.from({ length: extraWeekCount + 1 }, (_, index) => addWeeks(baseWeekStart, index)),
@@ -445,21 +447,23 @@ export function CalendarWeekView({
                           >
                             {tourLane.dayBuckets.map((dayBucket) => (
                               <div key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`} className="flex items-center justify-end px-1">
-                                <button
-                                  onClick={() => {
-                                    console.info(`${logPrefix} new appointment click`, {
-                                      date: dayBucket.dateKey,
-                                      tourId: tourLane.tourId,
-                                      laneKey: tourLane.laneKey,
-                                    });
-                                    onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId });
-                                  }}
-                                  className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none text-white/85 hover:bg-white/15 hover:text-white"
-                                  data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
-                                  title={`Neuer Termin am ${dayBucket.dateKey}`}
-                                >
-                                  +
-                                </button>
+                                {dayBucket.dateKey >= berlinToday ? (
+                                  <button
+                                    onClick={() => {
+                                      console.info(`${logPrefix} new appointment click`, {
+                                        date: dayBucket.dateKey,
+                                        tourId: tourLane.tourId,
+                                        laneKey: tourLane.laneKey,
+                                      });
+                                      onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId });
+                                    }}
+                                    className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none text-white/85 hover:bg-white/15 hover:text-white"
+                                    data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                    title={`Neuer Termin am ${dayBucket.dateKey}`}
+                                  >
+                                    +
+                                  </button>
+                                ) : null}
                               </div>
                             ))}
                           </div>
