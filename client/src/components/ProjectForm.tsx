@@ -270,12 +270,29 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       invalidateProjectQueries();
       toast({ title: "Projekt gespeichert" });
     },
-    onError: () => {
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Fehler beim Speichern", variant: "destructive" });
     },
   });
 
   // Note mutations
+  const getProjectNoteVersion = (noteId: number): number => {
+    const note = projectNotes.find((entry) => entry.id === noteId);
+    if (!note || !Number.isInteger(note.version) || note.version < 1) {
+      throw new Error("422: {\"code\":\"VALIDATION_ERROR\"}");
+    }
+    return note.version;
+  };
+
   const createNoteMutation = useMutation({
     mutationFn: async (data: { title: string; body: string; templateId?: number }) => {
       const res = await apiRequest('POST', `/api/projects/${projectId}/notes`, data);
@@ -287,21 +304,41 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   });
 
   const togglePinMutation = useMutation({
-    mutationFn: async ({ noteId, isPinned }: { noteId: number; isPinned: boolean }) => {
-      const res = await apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned });
+    mutationFn: async ({ noteId, isPinned, version }: { noteId: number; isPinned: boolean; version: number }) => {
+      const res = await apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned, version });
       return res.json();
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
     },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
+    },
   });
 
   const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId: number) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/notes/${noteId}`);
+    mutationFn: async ({ noteId, version }: { noteId: number; version: number }) => {
+      await apiRequest('DELETE', `/api/projects/${projectId}/notes/${noteId}`, { version });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht geloescht werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -586,8 +623,14 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                   notes={projectNotes}
                   isLoading={notesLoading}
                   onAdd={(data) => createNoteMutation.mutate(data)}
-                  onTogglePin={(id, isPinned) => togglePinMutation.mutate({ noteId: id, isPinned })}
-                  onDelete={(noteId) => deleteNoteMutation.mutate(noteId)}
+                  onTogglePin={(id, isPinned) => {
+                    const version = getProjectNoteVersion(id);
+                    togglePinMutation.mutate({ noteId: id, isPinned, version });
+                  }}
+                  onDelete={(noteId) => {
+                    const version = getProjectNoteVersion(noteId);
+                    deleteNoteMutation.mutate({ noteId, version });
+                  }}
                 />
               )}
             </div>

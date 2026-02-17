@@ -10,6 +10,7 @@ import { TourEditDialog } from "@/components/ui/tour-edit-dialog";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
+import { useToast } from "@/hooks/use-toast";
 import type { Tour, Employee } from "@shared/schema";
 
 interface TourWithMembers extends Tour {
@@ -21,6 +22,7 @@ interface TourManagementProps {
 }
 
 export function TourManagement({ onCancel }: TourManagementProps) {
+  const { toast } = useToast();
   const [editingTour, setEditingTour] = useState<TourWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -50,6 +52,12 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     return `Tour ${maxNumber + 1}`;
   };
 
+  const extractApiCode = (error: unknown): string | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+    return match?.[1] ?? null;
+  };
+
   const createMutation = useMutation({
     mutationFn: async ({ color }: { color: string }) => apiRequest("POST", "/api/tours", { color }),
     onSuccess: async (response) => {
@@ -59,9 +67,20 @@ export function TourManagement({ onCancel }: TourManagementProps) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, color }: { id: number; color: string }) => apiRequest("PATCH", `/api/tours/${id}`, { color }),
+    mutationFn: async ({ id, color, version }: { id: number; color: string; version: number }) =>
+      apiRequest("PATCH", `/api/tours/${id}`, { color, version }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Speichern nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -75,19 +94,47 @@ export function TourManagement({ onCancel }: TourManagementProps) {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => apiRequest("DELETE", `/api/tours/${id}`),
+    mutationFn: async ({ id, version }: { id: number; version: number }) =>
+      apiRequest("DELETE", `/api/tours/${id}`, { version }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
       invalidateEmployees();
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const assignMembersMutation = useMutation({
     mutationFn: async ({ tourId, employeeIds }: { tourId: number; employeeIds: number[] }) => {
-      return apiRequest("POST", `/api/tours/${tourId}/employees`, { employeeIds });
+      const items = employeeIds.map((employeeId) => {
+        const employee = employees.find((entry) => entry.id === employeeId);
+        if (!employee || !Number.isInteger(employee.version) || employee.version < 1) {
+          throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing employee version"}');
+        }
+        return { employeeId, version: employee.version };
+      });
+      return apiRequest("POST", `/api/tours/${tourId}/employees`, { items });
     },
     onSuccess: () => {
       invalidateEmployees();
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Zuweisung nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -102,7 +149,11 @@ export function TourManagement({ onCancel }: TourManagementProps) {
       const newTour = await response.json();
       await assignMembersMutation.mutateAsync({ tourId: newTour.id, employeeIds });
     } else {
-      await updateMutation.mutateAsync({ id: tourId, color });
+      const tour = tours.find((entry) => entry.id === tourId);
+      if (!tour || !Number.isInteger(tour.version) || tour.version < 1) {
+        throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing tour version"}');
+      }
+      await updateMutation.mutateAsync({ id: tourId, color, version: tour.version });
       await assignMembersMutation.mutateAsync({ tourId, employeeIds });
     }
   };
@@ -125,7 +176,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
 
   const handleDelete = (tour: TourWithMembers) => {
     if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich löschen?`)) {
-      deleteMutation.mutate(tour.id);
+      deleteMutation.mutate({ id: tour.id, version: tour.version });
     }
   };
 
@@ -234,4 +285,3 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     </>
   );
 }
-

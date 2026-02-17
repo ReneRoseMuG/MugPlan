@@ -33,9 +33,9 @@ export const userSettingsResolvedQueryKey = [api.userSettings.getResolved.path] 
 export function resolveSettingVersion(
   settings: UserSettingsResolvedResponse | undefined,
   input: Pick<SetSettingInput, "key" | "scopeType">,
-): number {
+): number | null {
   const setting = settings?.find((entry) => entry.key === input.key);
-  if (!setting) return 1;
+  if (!setting) return null;
 
   const versionByScope = input.scopeType === "USER"
     ? setting.userVersion
@@ -43,7 +43,7 @@ export function resolveSettingVersion(
       ? setting.roleVersion
       : setting.globalVersion;
 
-  return Number.isInteger(versionByScope) && (versionByScope as number) >= 1 ? (versionByScope as number) : 1;
+  return Number.isInteger(versionByScope) && (versionByScope as number) >= 1 ? (versionByScope as number) : null;
 }
 
 export function isVersionConflictError(error: unknown): boolean {
@@ -63,6 +63,9 @@ export async function setSettingWithVersionRetry(params: {
   refetchSettings: () => Promise<UserSettingsResolvedResponse | undefined>;
 }): Promise<void> {
   const firstVersion = resolveSettingVersion(params.currentSettings, params.input);
+  if (firstVersion === null) {
+    throw new Error("VALIDATION_ERROR: missing current version");
+  }
   try {
     await params.mutate({ ...params.input, version: firstVersion });
     return;
@@ -74,6 +77,9 @@ export async function setSettingWithVersionRetry(params: {
 
   const latestSettings = await params.refetchSettings();
   const retryVersion = resolveSettingVersion(latestSettings, params.input);
+  if (retryVersion === null) {
+    throw new Error("VALIDATION_ERROR: missing refreshed version");
+  }
   await params.mutate({ ...params.input, version: retryVersion });
 }
 

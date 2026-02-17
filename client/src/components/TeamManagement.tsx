@@ -10,6 +10,7 @@ import { TeamEditDialog } from "@/components/ui/team-edit-dialog";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
+import { useToast } from "@/hooks/use-toast";
 import type { Team, Employee } from "@shared/schema";
 
 interface TeamWithMembers extends Team {
@@ -21,6 +22,7 @@ interface TeamManagementProps {
 }
 
 export function TeamManagement({ onCancel }: TeamManagementProps) {
+  const { toast } = useToast();
   const [editingTeam, setEditingTeam] = useState<TeamWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -50,6 +52,12 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     return `Team ${maxNumber + 1}`;
   };
 
+  const extractApiCode = (error: unknown): string | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+    return match?.[1] ?? null;
+  };
+
   const createMutation = useMutation({
     mutationFn: async ({ color }: { color: string }) => apiRequest("POST", "/api/teams", { color }),
     onSuccess: async (response) => {
@@ -68,28 +76,66 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => apiRequest("DELETE", `/api/teams/${id}`),
+    mutationFn: async ({ id, version }: { id: number; version: number }) =>
+      apiRequest("DELETE", `/api/teams/${id}`, { version }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       invalidateEmployees();
     },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, color }: { id: number; color: string }) => {
-      return apiRequest("PATCH", `/api/teams/${id}`, { color });
+    mutationFn: async ({ id, color, version }: { id: number; color: string; version: number }) => {
+      return apiRequest("PATCH", `/api/teams/${id}`, { color, version });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Speichern nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const assignMembersMutation = useMutation({
     mutationFn: async ({ teamId, employeeIds }: { teamId: number; employeeIds: number[] }) => {
-      return apiRequest("POST", `/api/teams/${teamId}/employees`, { employeeIds });
+      const items = employeeIds.map((employeeId) => {
+        const employee = employees.find((entry) => entry.id === employeeId);
+        if (!employee || !Number.isInteger(employee.version) || employee.version < 1) {
+          throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing employee version"}');
+        }
+        return { employeeId, version: employee.version };
+      });
+      return apiRequest("POST", `/api/teams/${teamId}/employees`, { items });
     },
     onSuccess: () => {
       invalidateEmployees();
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Zuweisung nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -104,7 +150,11 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
       const newTeam = await response.json();
       await assignMembersMutation.mutateAsync({ teamId: newTeam.id, employeeIds });
     } else {
-      await updateMutation.mutateAsync({ id: teamId, color });
+      const team = teams.find((entry) => entry.id === teamId);
+      if (!team || !Number.isInteger(team.version) || team.version < 1) {
+        throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing team version"}');
+      }
+      await updateMutation.mutateAsync({ id: teamId, color, version: team.version });
       await assignMembersMutation.mutateAsync({ teamId, employeeIds });
     }
   };
@@ -127,7 +177,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
 
   const handleDelete = (team: TeamWithMembers) => {
     if (window.confirm(`Wollen Sie das Team ${team.name} wirklich löschen?`)) {
-      deleteMutation.mutate(team.id);
+      deleteMutation.mutate({ id: team.id, version: team.version });
     }
   };
 
@@ -236,4 +286,3 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     </>
   );
 }
-

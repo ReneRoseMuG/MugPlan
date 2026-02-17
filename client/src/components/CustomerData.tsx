@@ -66,27 +66,53 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
   });
 
+  const getNoteVersion = (noteId: number): number => {
+    const note = notes.find((entry) => entry.id === noteId);
+    if (!note || !Number.isInteger(note.version) || note.version < 1) {
+      throw new Error("422: {\"code\":\"VALIDATION_ERROR\"}");
+    }
+    return note.version;
+  };
+
   const togglePinMutation = useMutation({
-    mutationFn: async ({ noteId, isPinned }: { noteId: number; isPinned: boolean }) => {
-      const res = await apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned });
+    mutationFn: async ({ noteId, isPinned, version }: { noteId: number; isPinned: boolean; version: number }) => {
+      const res = await apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned, version });
       return res.json();
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
     },
     onError: (error: Error) => {
+      const code = extractErrorCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
     },
   });
 
   const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId: number) => {
-      await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`);
+    mutationFn: async ({ noteId, version }: { noteId: number; version: number }) => {
+      await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`, { version });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
     },
     onError: (error: Error) => {
+      const code = extractErrorCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht geloescht werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
     },
   });
@@ -205,12 +231,14 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   };
 
   const handleTogglePin = (noteId: number, isPinned: boolean) => {
-    togglePinMutation.mutate({ noteId, isPinned });
+    const version = getNoteVersion(noteId);
+    togglePinMutation.mutate({ noteId, isPinned, version });
   };
 
   const handleDeleteNote = (noteId: number) => {
     if (isEditMode && customerId) {
-      deleteNoteMutation.mutate(noteId);
+      const version = getNoteVersion(noteId);
+      deleteNoteMutation.mutate({ noteId, version });
     }
   };
 

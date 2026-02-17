@@ -1,3 +1,18 @@
+/**
+ * Test Scope:
+ *
+ * Feature: FT06 - Batch-Zuweisungen Team
+ * Use Case: UC Batch assign mit Optimistic Locking und Transaktionsschutz
+ *
+ * Abgedeckte Regeln:
+ * - Team-Batch mit einem stale Item rollt komplett zurueck.
+ *
+ * Fehlerfaelle:
+ * - Teilupdates duerfen bei VERSION_CONFLICT nicht persistiert werden.
+ *
+ * Ziel:
+ * Atomizitaet und Datenkonsistenz bei Batch-Zuweisungen absichern.
+ */
 import { beforeEach, describe, expect, it } from "vitest";
 
 import * as employeesService from "../../../server/services/employeesService";

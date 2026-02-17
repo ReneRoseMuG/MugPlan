@@ -61,6 +61,11 @@ export function HelpTextsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<HelpTextSortKey>("helpKey");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const extractApiCode = (error: unknown): string | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+    return match?.[1] ?? null;
+  };
 
   useEffect(() => {
     setViewMode(resolvedViewMode);
@@ -113,7 +118,7 @@ export function HelpTextsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { helpKey?: string; title?: string; body?: string; isActive?: boolean } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { helpKey?: string; title?: string; body?: string; isActive?: boolean; version: number } }) => {
       const response = await apiRequest("PUT", `/api/help-texts/${id}`, data);
       return response;
     },
@@ -123,6 +128,15 @@ export function HelpTextsPage() {
       toast({ title: "Hilfetext aktualisiert" });
     },
     onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         title: "Fehler",
         description: error.message.includes("409") ? "Der Hilfe-Schluessel ist bereits vergeben" : error.message,
@@ -132,12 +146,22 @@ export function HelpTextsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/help-texts/${id}`);
+    mutationFn: async ({ id, version }: { id: number; version: number }) => {
+      return apiRequest("DELETE", `/api/help-texts/${id}`, { version });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       toast({ title: "Hilfetext geloescht" });
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Loeschen nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -174,7 +198,7 @@ export function HelpTextsPage() {
     if (editingHelpText) {
       updateMutation.mutate({
         id: editingHelpText.id,
-        data: { helpKey: formHelpKey, title: formTitle, body: formBody, isActive: formIsActive },
+        data: { helpKey: formHelpKey, title: formTitle, body: formBody, isActive: formIsActive, version: editingHelpText.version },
       });
     } else {
       createMutation.mutate({ helpKey: formHelpKey, title: formTitle, body: formBody, isActive: formIsActive });
@@ -183,7 +207,7 @@ export function HelpTextsPage() {
 
   const handleDelete = (helpText: HelpText) => {
     if (window.confirm(`Wollen Sie den Hilfetext ${helpText.title} wirklich loeschen?`)) {
-      deleteMutation.mutate(helpText.id);
+      deleteMutation.mutate({ id: helpText.id, version: helpText.version });
     }
   };
 

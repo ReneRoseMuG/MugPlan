@@ -13,6 +13,7 @@ import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface TemplateCardProps {
   template: NoteTemplate;
@@ -73,6 +74,7 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
 }
 
 export function NoteTemplatesPage() {
+  const { toast } = useToast();
   const defaultColor = "#94a3b8";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null);
@@ -81,6 +83,11 @@ export function NoteTemplatesPage() {
   const [formColor, setFormColor] = useState(defaultColor);
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const extractApiCode = (error: unknown): string | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+    return match?.[1] ?? null;
+  };
 
   const { data: templates = [], isLoading } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates?active=false"],
@@ -97,21 +104,41 @@ export function NoteTemplatesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean; sortOrder?: number; color?: string } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean; sortOrder?: number; color?: string; version: number } }) => {
       return apiRequest("PUT", `/api/note-templates/${id}`, data);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
       handleCloseDialog();
     },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/note-templates/${id}`);
+    mutationFn: async ({ id, version }: { id: number; version: number }) => {
+      return apiRequest("DELETE", `/api/note-templates/${id}`, { version });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Loeschen nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -159,7 +186,7 @@ export function NoteTemplatesPage() {
     if (editingTemplate) {
       updateMutation.mutate({
         id: editingTemplate.id,
-        data: payload,
+        data: { ...payload, version: editingTemplate.version },
       });
     } else {
       createMutation.mutate(payload);
@@ -168,7 +195,7 @@ export function NoteTemplatesPage() {
 
   const handleDelete = (template: NoteTemplate) => {
     if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich löschen?`)) {
-      deleteMutation.mutate(template.id);
+      deleteMutation.mutate({ id: template.id, version: template.version });
     }
   };
 

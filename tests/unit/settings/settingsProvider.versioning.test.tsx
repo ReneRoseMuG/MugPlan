@@ -1,3 +1,21 @@
+/**
+ * Test Scope:
+ *
+ * Feature: FT08 - User-Settings Versionierung
+ * Use Case: UC Settings speichern mit Optimistic Locking
+ *
+ * Abgedeckte Regeln:
+ * - Scope-Version wird nur aus vorhandenen persisted Versionen aufgeloest.
+ * - Fehlende Scope-Version erzeugt keinen stillen Fallback.
+ * - VERSION_CONFLICT fuehrt zu genau einem Retry mit refetchter Version.
+ *
+ * Fehlerfaelle:
+ * - Fehlende Initialversion blockiert den Schreibversuch.
+ * - Nicht-Konfliktfehler duerfen keinen Retry triggern.
+ *
+ * Ziel:
+ * Sicherstellen, dass Settings-Updates nie ohne valide aktuelle Version geschrieben werden.
+ */
 import { describe, expect, it, vi } from "vitest";
 import type { UserSettingsResolvedResponse } from "@shared/routes";
 import {
@@ -47,7 +65,7 @@ describe("PKG-08 SettingsProvider versioning", () => {
     expect(resolveSettingVersion(settings, { key: "attachmentStoragePath", scopeType: "GLOBAL" })).toBe(3);
   });
 
-  it("falls back to version=1 when no persisted scope value exists", () => {
+  it("returns null when no persisted scope value exists", () => {
     const settings: UserSettingsResolvedResponse = [
       {
         key: "customers.viewMode",
@@ -64,8 +82,8 @@ describe("PKG-08 SettingsProvider versioning", () => {
       },
     ];
 
-    expect(resolveSettingVersion(settings, { key: "customers.viewMode", scopeType: "USER" })).toBe(1);
-    expect(resolveSettingVersion(settings, { key: "unknown", scopeType: "USER" })).toBe(1);
+    expect(resolveSettingVersion(settings, { key: "customers.viewMode", scopeType: "USER" })).toBeNull();
+    expect(resolveSettingVersion(settings, { key: "unknown", scopeType: "USER" })).toBeNull();
   });
 
   it("retries once after VERSION_CONFLICT using refreshed version", async () => {
@@ -130,6 +148,35 @@ describe("PKG-08 SettingsProvider versioning", () => {
       value: "table",
       version: 2,
     });
+  });
+
+  it("does not send fallback version when current scope version is missing", async () => {
+    const mutate = vi.fn();
+
+    await expect(
+      setSettingWithVersionRetry({
+        input: { key: "customers.viewMode", scopeType: "USER", value: "table" },
+        currentSettings: [
+          {
+            key: "customers.viewMode",
+            label: "Kunden Ansicht",
+            description: "desc",
+            type: "enum",
+            constraints: { options: ["board", "table"] },
+            allowedScopes: ["USER"],
+            defaultValue: "board",
+            resolvedValue: "board",
+            resolvedScope: "DEFAULT",
+            roleCode: "ADMIN",
+            roleKey: "ADMIN",
+          },
+        ],
+        mutate,
+        refetchSettings: vi.fn().mockResolvedValue([]),
+      }),
+    ).rejects.toThrow("VALIDATION_ERROR: missing current version");
+
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it("detects VERSION_CONFLICT from error message", () => {
