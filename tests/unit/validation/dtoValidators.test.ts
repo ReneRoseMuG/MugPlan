@@ -1,46 +1,44 @@
-/**
+﻿/**
  * Test Scope:
  *
- * Feature: FT20 - Dokumentextraktion
- * Use Case: UC DTO-Validierung und Service-Verhalten bei KI-Fehlern
+ * Feature: FT21 - Deterministische Dokumentextraktion
+ * Use Case: UC DTO-Validierung und Service-Verhalten ohne KI
  *
  * Abgedeckte Regeln:
  * - Zod-Validierungsfehler werden korrekt als API-Validierungsantwort abgebildet.
  * - Extraktionsservice persistiert keine Kunden implizit.
- * - Bei Provider-/Strukturfehlern wird ein nutzbares Fallback-Ergebnis geliefert.
+ * - Deterministische Parserfehler werden als kontrollierter Fehler propagiert.
  *
  * Fehlerfaelle:
  * - Ungueltige DTO-Payload.
- * - Ungueltige/fehlende KI-Antwort.
+ * - Fehler in Header- oder Artikelparser.
  *
  * Ziel:
- * Sicherstellen, dass Validierung und Fallback-Pfad stabil und ohne unerwuenschte Seiteneffekte funktionieren.
+ * Sicherstellen, dass die FT21-Extraktion stabil ohne KI funktioniert und keine Seiteneffekte erzeugt.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 const {
-  extractStructuredDataMock,
   extractTextFromPdfBufferMock,
-  validateAndNormalizeExtractionMock,
+  parseDocumentHeaderDeterministicallyMock,
+  parseDocumentArticleItemsDeterministicallyMock,
 } = vi.hoisted(() => ({
-  extractStructuredDataMock: vi.fn(),
   extractTextFromPdfBufferMock: vi.fn(),
-  validateAndNormalizeExtractionMock: vi.fn(),
-}));
-
-vi.mock("../../../server/services/aiExtractionService", () => ({
-  createExtractionProvider: () => ({
-    extractStructuredData: extractStructuredDataMock,
-  }),
+  parseDocumentHeaderDeterministicallyMock: vi.fn(),
+  parseDocumentArticleItemsDeterministicallyMock: vi.fn(),
 }));
 
 vi.mock("../../../server/services/documentTextExtractor", () => ({
   extractTextFromPdfBuffer: extractTextFromPdfBufferMock,
 }));
 
-vi.mock("../../../server/services/extractionValidator", () => ({
-  validateAndNormalizeExtraction: validateAndNormalizeExtractionMock,
+vi.mock("../../../server/services/documentHeaderDeterministicParser", () => ({
+  parseDocumentHeaderDeterministically: parseDocumentHeaderDeterministicallyMock,
+}));
+
+vi.mock("../../../server/services/documentArticleDeterministicParser", () => ({
+  parseDocumentArticleItemsDeterministically: parseDocumentArticleItemsDeterministicallyMock,
 }));
 
 vi.mock("../../../server/services/customersService", () => ({
@@ -50,7 +48,10 @@ vi.mock("../../../server/services/customersService", () => ({
 
 import { handleZodError } from "../../../server/controllers/validation";
 import * as customersService from "../../../server/services/customersService";
-import { extractFromPdf } from "../../../server/services/documentProcessingService";
+import {
+  DocumentExtractionDeterministicError,
+  extractFromPdf,
+} from "../../../server/services/documentProcessingService";
 
 const customersServiceMock = vi.mocked(customersService);
 
@@ -93,71 +94,54 @@ describe("PKG-04 Validation & DTO: handleZodError", () => {
   });
 });
 
-describe("PKG-04 Validation & DTO: document extraction does not persist implicitly", () => {
+describe("FT21 Validation & DTO: deterministic extraction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("extractFromPdf returns normalized extraction and never persists customer data", async () => {
-    extractTextFromPdfBufferMock.mockReturnValue("doc text");
-    extractStructuredDataMock.mockResolvedValue({
-      customer: {
-        customerNumber: "K-1",
-        firstName: "Max",
-        lastName: "Mustermann",
-        phone: "0123",
-      },
-      saunaModel: "Model A",
-      articleItems: [],
-      warnings: [],
+    extractTextFromPdfBufferMock.mockResolvedValue("doc text");
+    parseDocumentHeaderDeterministicallyMock.mockReturnValue({
+      orderNumber: "A-1",
+      customerNumber: "K-1",
+      mobile: "0123",
+      firstName: "Max",
+      lastName: "Mustermann",
+      addressLine1: "Musterstrasse 1",
+      postalCode: "12345",
+      city: "Leipzig",
     });
-    validateAndNormalizeExtractionMock.mockReturnValue({
-      customer: {
-        customerNumber: "K-1",
-        firstName: "Max",
-        lastName: "Mustermann",
-        company: null,
-        email: null,
-        phone: "0123",
-        addressLine1: null,
-        addressLine2: null,
-        postalCode: null,
-        city: null,
-      },
-      saunaModel: "Model A",
-      articleItems: [],
-      categorizedItems: [],
-      articleListHtml: "<p>ok</p>",
-      warnings: [],
-    });
+    parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
+      { quantity: "1", description: "Sauna Modell X" },
+    ]);
 
     const result = await extractFromPdf({
       scope: "project_form",
       fileBuffer: Buffer.from("dummy"),
     });
 
-    expect(result).toMatchObject({
-      saunaModel: "Model A",
-    });
-    expect(extractTextFromPdfBufferMock).toHaveBeenCalledOnce();
-    expect(extractStructuredDataMock).toHaveBeenCalledOnce();
-    expect(validateAndNormalizeExtractionMock).toHaveBeenCalledOnce();
+    expect(result.customer.customerNumber).toBe("K-1");
+    expect(result.customer.firstName).toBe("Max");
+    expect(result.customer.phone).toBe("0123");
+    expect(result.saunaModel).toContain("Sauna");
+    expect(result.articleItems).toHaveLength(1);
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
 
-  it("returns fallback result and does not persist when provider returns invalid JSON error", async () => {
-    extractTextFromPdfBufferMock.mockReturnValue("doc text");
-    extractStructuredDataMock.mockRejectedValue(new Error("KI-Provider lieferte kein valides JSON"));
-
-    const result = await extractFromPdf({
-      scope: "appointment_form",
-      fileBuffer: Buffer.from("dummy"),
+  it("throws deterministic extraction error when parser fails", async () => {
+    extractTextFromPdfBufferMock.mockResolvedValue("doc text");
+    parseDocumentHeaderDeterministicallyMock.mockImplementation(() => {
+      throw new Error("Kundennummer fehlt im Dokumentkopf");
     });
 
-    expect(result.saunaModel.length).toBeGreaterThan(0);
-    expect(result.articleItems.length).toBeGreaterThan(0);
-    expect(result.warnings.some((warning) => warning.includes("Fallback"))).toBe(true);
-    expect(validateAndNormalizeExtractionMock).not.toHaveBeenCalled();
+    await expect(
+      extractFromPdf({
+        scope: "appointment_form",
+        fileBuffer: Buffer.from("dummy"),
+      }),
+    ).rejects.toBeInstanceOf(DocumentExtractionDeterministicError);
+
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
 });
+

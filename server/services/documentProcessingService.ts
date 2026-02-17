@@ -1,8 +1,9 @@
-import type { Customer, InsertCustomer } from "@shared/schema";
-import { createExtractionProvider, type ExtractionScope } from "./aiExtractionService";
+﻿import type { Customer, InsertCustomer } from "@shared/schema";
+import type { ExtractionScope } from "./aiExtractionService";
 import { extractTextFromPdfBuffer } from "./documentTextExtractor";
 import { validateAndNormalizeExtraction } from "./extractionValidator";
-import { buildFallbackExtraction } from "./extractionFallback";
+import { parseDocumentHeaderDeterministically } from "./documentHeaderDeterministicParser";
+import { parseDocumentArticleItemsDeterministically } from "./documentArticleDeterministicParser";
 import * as customersService from "./customersService";
 
 export type DocumentExtractionResult = ReturnType<typeof validateAndNormalizeExtraction>;
@@ -12,10 +13,22 @@ export type CustomerNumberResolution =
   | { resolution: "single"; count: 1; customer: Customer }
   | { resolution: "multiple"; count: number; customer: null };
 
-const extractionProvider = createExtractionProvider();
+export class DocumentExtractionDeterministicError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DocumentExtractionDeterministicError";
+  }
+}
 
 function normalizeCustomerNumber(customerNumber: string): string {
   return customerNumber.trim();
+}
+
+function deriveSaunaModel(descriptions: string[]): string {
+  const byKeyword = descriptions.find((description) => /\b(sauna|modell)\b/i.test(description));
+  if (byKeyword) return byKeyword.slice(0, 120);
+  if (descriptions.length > 0) return descriptions[0].slice(0, 120);
+  return "Produktinformationen aus Dokument";
 }
 
 export async function extractFromPdf(params: {
@@ -25,26 +38,33 @@ export async function extractFromPdf(params: {
   const extractedText = await extractTextFromPdfBuffer(params.fileBuffer);
 
   try {
-    const aiResult = await extractionProvider.extractStructuredData({
-      scope: params.scope,
-      text: extractedText,
+    const header = parseDocumentHeaderDeterministically(extractedText);
+    const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
+
+    return validateAndNormalizeExtraction({
+      customer: {
+        customerNumber: header.customerNumber,
+        firstName: header.firstName,
+        lastName: header.lastName,
+        company: null,
+        email: null,
+        phone: header.mobile,
+        addressLine1: header.addressLine1,
+        addressLine2: null,
+        postalCode: header.postalCode,
+        city: header.city,
+      },
+      saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),
+      articleItems: articleItems.map((item) => ({
+        quantity: item.quantity,
+        description: item.description,
+        category: "Dokumentposition",
+      })),
+      warnings: [],
     });
-    try {
-      return validateAndNormalizeExtraction(aiResult);
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      return buildFallbackExtraction({
-        sourceText: extractedText,
-        aiResult,
-        reason,
-      });
-    }
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    return buildFallbackExtraction({
-      sourceText: extractedText,
-      reason,
-    });
+    const message = error instanceof Error ? error.message : String(error);
+    throw new DocumentExtractionDeterministicError(message);
   }
 }
 
@@ -71,3 +91,4 @@ export async function checkCustomerDuplicate(customerNumber: string): Promise<{ 
 export async function createCustomerFromExtractionDraft(customerDraft: InsertCustomer): Promise<Customer> {
   return customersService.createCustomer(customerDraft);
 }
+

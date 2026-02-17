@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+﻿import type { NextFunction, Request, Response } from "express";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { MAX_UPLOAD_BYTES } from "../lib/attachmentFiles";
@@ -50,6 +50,10 @@ export async function extractDocument(req: Request, res: Response, next: NextFun
       });
       return;
     }
+    if (err instanceof documentProcessingService.DocumentExtractionDeterministicError) {
+      res.status(422).json({ message: err.message, field: "file" });
+      return;
+    }
     if (err instanceof Error && err.message.includes("extrahierbaren Text")) {
       res.status(422).json({ message: err.message, field: "file" });
       return;
@@ -79,3 +83,4 @@ export async function resolveCustomerByNumber(req: Request, res: Response, next:
     next(err);
   }
 }
+

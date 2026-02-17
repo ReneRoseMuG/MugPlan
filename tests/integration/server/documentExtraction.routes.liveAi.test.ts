@@ -1,19 +1,19 @@
-/**
+﻿/**
  * Test Scope:
  *
- * Feature: FT20 - Dokumentextraktion
- * Use Case: UC Live-KI Pipeline über API-Routen
+ * Feature: FT21 - Deterministische Dokumentextraktion
+ * Use Case: UC End-to-End Extract-Route mit Fixture-PDF ohne KI
  *
  * Abgedeckte Regeln:
- * - Extract-Route funktioniert mit lokalem Ollama-Provider für project_form.
- * - Extract-Route funktioniert mit lokalem Ollama-Provider für appointment_form.
- * - Antwort erfüllt den strukturellen Vertrag der Extraktions-API.
+ * - Extract-Route funktioniert fuer project_form ohne KI.
+ * - Extract-Route funktioniert fuer appointment_form ohne KI.
+ * - Antwort erfuellt den strukturellen Vertrag der Extraktions-API.
  *
  * Fehlerfaelle:
- * - Nicht erreichbare lokale KI/Modellverfügbarkeit führt zu testrelevantem Fehler.
+ * - Fixture fehlt oder unlesbar -> Test bricht reproduzierbar ab.
  *
  * Ziel:
- * Sicherstellen, dass die reale KI-Integration Bestandteil des Standardtestlaufs ist.
+ * Sicherstellen, dass die produktive Route deterministic und lokal reproduzierbar arbeitet.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -27,7 +27,6 @@ import { resetDatabase } from "../../helpers/resetDatabase";
 
 let app: express.Express;
 const fixturePath = path.resolve(process.cwd(), "tests/fixtures/Gotthardt Anke 163214 AB.pdf");
-const LIVE_AI_TEST_TIMEOUT_MS = 300_000;
 
 beforeAll(async () => {
   app = express();
@@ -51,8 +50,8 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
   return agent;
 }
 
-describe("FT20 integration: live ai extraction routes", () => {
-  it("extracts via live KI for project_form", async () => {
+describe("FT21 integration: deterministic extraction routes", () => {
+  it("extracts deterministically for project_form", async () => {
     const agent = await loginAdminAgent();
     expect(fs.existsSync(fixturePath)).toBe(true);
 
@@ -61,16 +60,15 @@ describe("FT20 integration: live ai extraction routes", () => {
       .attach("file", fixturePath)
       .expect(200)
       .expect((res) => {
-        expect(typeof res.body?.saunaModel).toBe("string");
-        expect(res.body?.saunaModel?.trim().length).toBeGreaterThan(0);
-        expect(typeof res.body?.customer?.customerNumber).toBe("string");
+        expect(res.body?.customer?.customerNumber).toBe("163214");
+        expect(res.body?.customer?.firstName).toBe("Anke");
         expect(Array.isArray(res.body?.articleItems)).toBe(true);
-        expect(Array.isArray(res.body?.categorizedItems)).toBe(true);
+        expect(res.body?.articleItems?.length).toBeGreaterThan(0);
         expect(typeof res.body?.articleListHtml).toBe("string");
       });
-  }, LIVE_AI_TEST_TIMEOUT_MS);
+  });
 
-  it("extracts via live KI for appointment_form", async () => {
+  it("extracts deterministically for appointment_form", async () => {
     const agent = await loginAdminAgent();
     expect(fs.existsSync(fixturePath)).toBe(true);
 
@@ -79,11 +77,11 @@ describe("FT20 integration: live ai extraction routes", () => {
       .attach("file", fixturePath)
       .expect(200)
       .expect((res) => {
-        expect(typeof res.body?.saunaModel).toBe("string");
-        expect(res.body?.saunaModel?.trim().length).toBeGreaterThan(0);
-        expect(typeof res.body?.customer?.customerNumber).toBe("string");
+        expect(res.body?.customer?.customerNumber).toBe("163214");
         expect(Array.isArray(res.body?.articleItems)).toBe(true);
+        expect(Array.isArray(res.body?.categorizedItems)).toBe(true);
         expect(Array.isArray(res.body?.warnings)).toBe(true);
       });
-  }, LIVE_AI_TEST_TIMEOUT_MS);
+  });
 });
+

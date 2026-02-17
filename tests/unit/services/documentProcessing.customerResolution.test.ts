@@ -1,18 +1,18 @@
-/**
+﻿/**
  * Test Scope:
  *
- * Feature: FT20 - Dokumentextraktion
- * Use Case: UC Kundennummer-Auflösung und Duplikatprüfung
+ * Feature: FT21 - Deterministische Dokumentextraktion
+ * Use Case: UC Kundennummer-Aufloesung und Duplikatpruefung
  *
  * Abgedeckte Regeln:
  * - resolveCustomerByNumber liefert none/single/multiple konsistent.
  * - checkCustomerDuplicate spiegelt count korrekt in duplicate wider.
  *
  * Fehlerfaelle:
- * - Leer-/Trim-Eingaben werden normalisiert an den Service übergeben.
+ * - Leer-/Trim-Eingaben werden normalisiert an den Service uebergeben.
  *
  * Ziel:
- * Stabilität der Kundennummer-Auflösung im Extraktionsprozess absichern.
+ * Stabilitaet der Kundennummer-Aufloesung im Extraktionsprozess absichern.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -25,15 +25,9 @@ vi.mock("../../../server/services/customersService", () => ({
   createCustomer: vi.fn(),
 }));
 
-vi.mock("../../../server/services/aiExtractionService", () => ({
-  createExtractionProvider: () => ({
-    extractStructuredData: vi.fn(),
-  }),
-}));
-
 import { checkCustomerDuplicate, resolveCustomerByNumber } from "../../../server/services/documentProcessingService";
 
-describe("FT20 document processing customer resolution", () => {
+describe("FT21 document processing customer resolution", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -81,3 +75,4 @@ describe("FT20 document processing customer resolution", () => {
     expect(noDuplicate).toEqual({ duplicate: false, count: 0 });
   });
 });
+

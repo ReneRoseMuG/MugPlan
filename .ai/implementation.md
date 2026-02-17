@@ -1266,3 +1266,57 @@ Bestehende Kernbereiche bleiben unveraendert in ihren Datenmodellen:
 - Terminformular
 - Attachment-Architektur FT (19)
 - Rollenlogik
+
+## 11.7 Update FT21 (2026-02-17): Deterministische Extraktion ohne KI
+
+### 11.7.1 Ersetzte Servicekette
+
+Aktiver FT21-Pfad in `extractFromPdf`:
+
+- `documentTextExtractor` liest PDF-Text
+- `documentHeaderDeterministicParser` extrahiert Auftrag/Kunde/Mobil und Adressblock
+- `documentArticleDeterministicParser` extrahiert Positionen zwischen Start-/Endmarker
+- `extractionValidator` normiert Struktur, Kategorien und HTML
+
+Der KI-Provider-Aufruf wurde aus dem kritischen Header-/Artikel-Flow entfernt.
+
+### 11.7.2 Neue Parser-Services
+
+- `server/services/documentHeaderDeterministicParser.ts`
+- `server/services/documentArticleDeterministicParser.ts`
+
+Header-Regeln:
+
+- Label-basiert fuer `Auftrag-Nr.`, `Kunden-Nr.`, `Kunden - Mobil`
+- Blockmapping fuer Label-/Werteblock
+- Adressblock positionsbasiert (Anrede optional, Name, Strasse, PLZ/Ort)
+- `Land` wird nicht geparst
+- harte Fehler bei fehlender/mehrfacher Kundennummer
+
+Artikel-Regeln:
+
+- Bereich zwischen `Menge Art.Nr.` und `Gesamtbetrag`
+- neue Position bei Mengenmuster am Zeilenanfang
+- Mehrzeiligkeit bis zur naechsten Mengenzeile
+- Preis-/Steuerzeilen werden verworfen
+- keine leeren Positionen
+
+### 11.7.3 Fehler- und Controller-Mapping
+
+`documentProcessingService` wirft bei Parserfehlern `DocumentExtractionDeterministicError`.
+
+`documentExtractionController` mapped diesen Fehler deterministisch auf `422`.
+
+### 11.7.4 Testanpassungen FT21
+
+Neu:
+
+- `tests/unit/services/documentHeaderDeterministicParser.test.ts`
+- `tests/unit/services/documentArticleDeterministicParser.test.ts`
+
+Umgestellt auf deterministic:
+
+- `tests/integration/extraction/documentExtraction.livePipeline.fixture.test.ts`
+- `tests/integration/server/documentExtraction.routes.liveAi.test.ts`
+- `tests/unit/validation/dtoValidators.test.ts`
+- `tests/unit/services/documentProcessing.customerResolution.test.ts`

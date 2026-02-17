@@ -24,7 +24,7 @@
     "test": "vitest",
     "test:run": "npm run check:ollama && vitest run",
     "test:extraction:mock": "vitest run tests/integration/server/documentExtraction.routes.test.ts tests/unit/validation/extractionValidator.structure.test.ts tests/unit/services/documentProcessing.customerResolution.test.ts tests/unit/ui/projectForm.documentExtractionFlow.test.tsx tests/unit/ui/appointmentForm.documentExtractionFlow.test.tsx tests/unit/extraction/documentTextExtractor.test.ts tests/unit/validation/dtoValidators.test.ts",
-    "test:extraction:live": "npm run check:ollama && vitest run tests/integration/server/documentExtraction.routes.liveAi.test.ts tests/integration/extraction/documentExtraction.livePipeline.fixture.test.ts",
+    "test:extraction:live": "vitest run tests/integration/server/documentExtraction.routes.liveAi.test.ts tests/integration/extraction/documentExtraction.livePipeline.fixture.test.ts",
     "test:extraction": "npm run test:extraction:mock && npm run test:extraction:live",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
@@ -137,3 +137,4 @@
     "bufferutil": "^4.0.8"
   }
 }
+

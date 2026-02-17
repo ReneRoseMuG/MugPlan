@@ -1396,3 +1396,16 @@ Resolver-Verhalten:
 - `multiple`: Dateninkonsistenz, Prozessabbruch mit Fehler
 
 Optionaler Name-/Adressabgleich kann ergaenzen, ersetzt aber nie die Kundennummer als fuehrendes Merkmal.
+
+### H7. Update FT21 (2026-02-17): Deterministischer Extraktionspfad ohne KI
+
+Der kritische FT21-Extraktionspfad fuer Dokumentkopf und Artikelliste ist auf deterministische Parser umgestellt.
+
+Aktive Pipeline:
+
+1. `documentTextExtractor` (PDF-Text)
+2. `documentHeaderDeterministicParser` (Kopf-/Adressblock, Auftrags-/Kunden-/Mobilwerte)
+3. `documentArticleDeterministicParser` (Markerbereich, Mengenzeilen, Mehrzeiligkeit, Preis-/Steuerfilter)
+4. `extractionValidator` (Normierung, Kategorisierung, HTML-Ausgabe)
+
+`aiExtractionService`/Provider bleiben aus Kompatibilitaetsgruenden im Codebestand, werden fuer den FT21-Header-/Artikel-Flow jedoch nicht mehr verwendet.
