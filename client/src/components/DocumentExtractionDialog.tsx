@@ -1,16 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export type ExtractionCustomerDraft = {
   customerNumber: string;
@@ -73,6 +66,17 @@ function toCustomerDraft(value: ExtractionCustomerDraft): ExtractionCustomerDraf
   };
 }
 
+type EditableCustomerFields = {
+  customerNumber: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  postalCode: string;
+  city: string;
+};
+
 export function DocumentExtractionDialog({
   open,
   onOpenChange,
@@ -80,12 +84,12 @@ export function DocumentExtractionDialog({
   isBusy = false,
   disableCustomerApply = false,
   disableProjectApply = false,
-  customerApplyLabel = "Kunde übernehmen",
-  projectApplyLabel = "Projekt übernehmen",
+  customerApplyLabel = "Kundendaten übernehmen",
+  projectApplyLabel = "Projektdaten übernehmen",
   onApplyCustomer,
   onApplyProject,
 }: DocumentExtractionDialogProps) {
-  const [customer, setCustomer] = useState<ExtractionCustomerDraft | null>(null);
+  const [customerFields, setCustomerFields] = useState<EditableCustomerFields | null>(null);
   const [saunaModel, setSaunaModel] = useState("");
   const [articleListHtml, setArticleListHtml] = useState("");
   const [isApplyingCustomer, setIsApplyingCustomer] = useState(false);
@@ -93,29 +97,42 @@ export function DocumentExtractionDialog({
 
   useEffect(() => {
     if (!data) {
-      setCustomer(null);
+      setCustomerFields(null);
       setSaunaModel("");
       setArticleListHtml("");
       return;
     }
-    setCustomer(toCustomerDraft(data.customer));
+    setCustomerFields({
+      customerNumber: data.customer.customerNumber,
+      firstName: data.customer.firstName,
+      lastName: data.customer.lastName,
+      email: data.customer.email,
+      phone: data.customer.phone,
+      addressLine1: data.customer.addressLine1,
+      postalCode: data.customer.postalCode,
+      city: data.customer.city,
+    });
     setSaunaModel(data.saunaModel);
     setArticleListHtml(data.articleListHtml);
   }, [data]);
+
+  const customer = useMemo(() => {
+    if (!customerFields || !data) return null;
+    const fallback = toCustomerDraft(data.customer);
+    return {
+      ...fallback,
+      ...customerFields,
+      company: fallback.company,
+      addressLine2: fallback.addressLine2,
+    };
+  }, [customerFields, data]);
 
   const categorizedPreview = useMemo(() => data?.categorizedItems ?? [], [data]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Dokumentenextraktion</DialogTitle>
-          <DialogDescription>
-            Prüfen Sie die extrahierten Daten und übernehmen Sie Kunde und Projektvorschlag getrennt.
-          </DialogDescription>
-        </DialogHeader>
-
-        {!data || !customer ? (
+        {!data || !customerFields || !customer ? (
           <div className="text-sm text-muted-foreground">Keine Extraktionsdaten vorhanden.</div>
         ) : (
           <div className="space-y-6">
@@ -128,86 +145,71 @@ export function DocumentExtractionDialog({
             ) : null}
 
             <section className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Kundendaten</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Kundennummer</Label>
                   <Input
-                    value={customer.customerNumber}
-                    onChange={(event) => setCustomer({ ...customer, customerNumber: event.target.value })}
+                    value={customerFields.customerNumber}
+                    onChange={(event) => setCustomerFields({ ...customerFields, customerNumber: event.target.value })}
                     data-testid="input-doc-extract-customer-number"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Telefon</Label>
                   <Input
-                    value={customer.phone}
-                    onChange={(event) => setCustomer({ ...customer, phone: event.target.value })}
+                    value={customerFields.phone}
+                    onChange={(event) => setCustomerFields({ ...customerFields, phone: event.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Vorname</Label>
                   <Input
-                    value={customer.firstName}
-                    onChange={(event) => setCustomer({ ...customer, firstName: event.target.value })}
+                    value={customerFields.firstName}
+                    onChange={(event) => setCustomerFields({ ...customerFields, firstName: event.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Nachname</Label>
                   <Input
-                    value={customer.lastName}
-                    onChange={(event) => setCustomer({ ...customer, lastName: event.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Firma</Label>
-                  <Input
-                    value={customer.company}
-                    onChange={(event) => setCustomer({ ...customer, company: event.target.value })}
+                    value={customerFields.lastName}
+                    onChange={(event) => setCustomerFields({ ...customerFields, lastName: event.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>E-Mail</Label>
                   <Input
-                    value={customer.email}
-                    onChange={(event) => setCustomer({ ...customer, email: event.target.value })}
+                    value={customerFields.email}
+                    onChange={(event) => setCustomerFields({ ...customerFields, email: event.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Straße</Label>
                   <Input
-                    value={customer.addressLine1}
-                    onChange={(event) => setCustomer({ ...customer, addressLine1: event.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Adresszusatz</Label>
-                  <Input
-                    value={customer.addressLine2}
-                    onChange={(event) => setCustomer({ ...customer, addressLine2: event.target.value })}
+                    value={customerFields.addressLine1}
+                    onChange={(event) => setCustomerFields({ ...customerFields, addressLine1: event.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>PLZ</Label>
                   <Input
-                    value={customer.postalCode}
-                    onChange={(event) => setCustomer({ ...customer, postalCode: event.target.value })}
+                    value={customerFields.postalCode}
+                    onChange={(event) => setCustomerFields({ ...customerFields, postalCode: event.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Ort</Label>
                   <Input
-                    value={customer.city}
-                    onChange={(event) => setCustomer({ ...customer, city: event.target.value })}
+                    value={customerFields.city}
+                    onChange={(event) => setCustomerFields({ ...customerFields, city: event.target.value })}
                   />
                 </div>
               </div>
             </section>
 
             <section className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Projektvorschlag</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Projektdaten</h3>
               <div className="space-y-1">
-                <Label>Saunamodell (Titelvorschlag)</Label>
+                <Label>Projektname</Label>
                 <Input
                   value={saunaModel}
                   onChange={(event) => setSaunaModel(event.target.value)}
@@ -216,11 +218,10 @@ export function DocumentExtractionDialog({
               </div>
               <div className="space-y-1">
                 <Label>Artikelliste (semantisches HTML)</Label>
-                <Textarea
+                <RichTextEditor
                   value={articleListHtml}
-                  onChange={(event) => setArticleListHtml(event.target.value)}
-                  rows={10}
-                  data-testid="textarea-doc-extract-article-html"
+                  onChange={setArticleListHtml}
+                  className="h-[520px] [&_[data-testid='richtext-editor']]:min-h-[460px] [&_[data-testid='richtext-editor']]:max-h-[460px] [&_[data-testid='richtext-editor']]:overflow-y-auto"
                 />
               </div>
               <div className="rounded-md border border-border bg-slate-50 p-3">
@@ -253,7 +254,6 @@ export function DocumentExtractionDialog({
           </Button>
           <Button
             type="button"
-            variant="secondary"
             disabled={!customer || isBusy || isApplyingCustomer || isApplyingProject || disableCustomerApply}
             onClick={() => {
               if (!customer) return;
