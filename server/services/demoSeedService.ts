@@ -1127,10 +1127,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         throw createBadRequestError("Keine gueltigen Projekt-Kontexte aus dem Basis-Run verfuegbar.");
       }
     } else {
-      if (config.runType === "base" && config.employees < 3) {
-        throw createBadRequestError("Basis-Seed erfordert mindestens 3 Mitarbeitende.");
-      }
-
       for (let i = 0; i < 3; i += 1) {
         const team = await teamsService.createTeam({ color: random.pick(["#0f766e", "#0369a1", "#be123c", "#4d7c0f"]) });
         teams.push(team.id);
@@ -1154,17 +1150,19 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       }
 
       if (config.runType === "base") {
+        const minAssignmentsPerGroup = employees.length >= teams.length ? 1 : 0;
         const teamAssignment = assignEmployeesToGroups({
           employeeIds: employees,
           groupIds: teams,
-          minPerGroup: 1,
+          minPerGroup: minAssignmentsPerGroup,
           maxPerGroup: 3,
           randomInt: (min, max) => random.int(min, max),
         });
+        const minTourAssignmentsPerGroup = employees.length >= tours.length ? 1 : 0;
         const tourAssignment = assignEmployeesToGroups({
           employeeIds: employees,
           groupIds: tours,
-          minPerGroup: 1,
+          minPerGroup: minTourAssignmentsPerGroup,
           maxPerGroup: 3,
           randomInt: (min, max) => random.int(min, max),
         });

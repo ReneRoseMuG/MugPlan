@@ -1325,9 +1325,9 @@ export const api = {
       input: z.union([
         z.object({
           runType: z.literal("base"),
-          employees: z.number().int().min(1).max(500).default(20),
-          customers: z.number().int().min(1).max(500).default(10),
-          projects: z.number().int().min(1).max(1000).default(30),
+          employees: z.number().int().min(0).max(500).default(20),
+          customers: z.number().int().min(0).max(500).default(10),
+          projects: z.number().int().min(0).max(1000).default(30),
           generateAttachments: z.boolean().default(true),
           randomSeed: z.number().int().optional(),
           locale: z.string().default("de").optional(),
@@ -1352,9 +1352,9 @@ export const api = {
           locale: z.string().default("de").optional(),
         }).strict(),
         z.object({
-          employees: z.number().int().min(1).max(500).default(20),
-          customers: z.number().int().min(1).max(500).default(10),
-          projects: z.number().int().min(1).max(1000).default(30),
+          employees: z.number().int().min(0).max(500).default(20),
+          customers: z.number().int().min(0).max(500).default(10),
+          projects: z.number().int().min(0).max(1000).default(30),
           appointmentsPerProject: z.number().int().min(0).max(20).default(1),
           generateAttachments: z.boolean().default(true),
           randomSeed: z.number().int().optional(),
