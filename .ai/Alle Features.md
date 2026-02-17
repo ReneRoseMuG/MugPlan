@@ -336,7 +336,7 @@ Einen einzelnen Mitarbeiter gezielt einem bestehenden Termin zuweisen.
 
 Der ausgewählte Mitarbeiter ist dem Termin zugewiesen.
 
-### Mitarbeiter von einem Termin entfernen
+### UC: Mitarbeiter von einem Termin entfernen
 
 **Akteur:**
 
@@ -366,7 +366,7 @@ Einen einzelnen Mitarbeiter von einem bestehenden Termin entfernen.
 
 Der Mitarbeiter ist nicht mehr dem Termin zugewiesen.
 
-### Projekt einem Termin zuweisen
+### UC: Projekt einem Termin zuweisen
 
 **kteur:**
 
@@ -4026,3 +4026,172 @@ Nach Bestätigung:
 1. Beschreibung = HTML-Artikelliste.
 2. Projekt wird im Termin gesetzt.
 3. Kunde wird automatisch verknüpft.
+
+# FT (22): Termin- und Tourvisualisierung in Maps
+
+## Ziel / Zweck
+
+Dieses Feature erweitert die bestehende Terminplanung um eine **räumliche Visualisierungsebene**. Ziel ist es, Termine und Touren auf einer Kartenansicht darzustellen, um geografische Zusammenhänge, räumliche Ballungen und Tourverteilungen besser erkennen zu können.
+
+Die Kartenansicht dient ausschließlich der visuellen Orientierung und unterstützt die Disposition bei der räumlichen Einschätzung geplanter Einsätze. Sie verändert keine fachlichen Daten und ersetzt keine bestehende Termin- oder Tourlogik.
+
+FT (22) ist ein reines Darstellungs- und Analysefeature.
+
+## Fachliche Beschreibung
+
+Die Kartenansicht stellt Termine als Marker auf einer OpenStreetMap-basierten Karte dar. Grundlage der Positionierung ist die Adresse des dem Termin zugeordneten Kunden.
+
+Die Adresse wird serverseitig zur Laufzeit geokodiert. Die daraus resultierenden Koordinaten werden nicht persistent gespeichert, sondern ausschließlich zur Darstellung verwendet.
+
+Jeder Marker repräsentiert einen Termin im gewählten Zeitraum.
+
+Die Darstellung berücksichtigt bestehende fachliche Beziehungen:
+
+- Termin → Projekt → Kunde → Adresse
+- Termin → Tour → Tourfarbe
+- Termin → Mitarbeiter
+
+Marker übernehmen die Farbe der zugeordneten Tour. Termine ohne Tour werden in einer neutralen Standardfarbe dargestellt.
+
+Mehrere Termine an derselben Adresse können entweder:
+
+- als überlagerte Marker erscheinen oder
+- als visuell zusammengefasster Marker (Cluster) dargestellt werden.
+
+Die Kartenansicht verwendet dieselben Filtermechanismen wie Kalender- und Terminlistenansicht. Es werden ausschließlich die aktuell gefilterten Termine dargestellt.
+
+## Regeln & Randbedingungen
+
+- Die Kartenansicht ist rein lesend.
+- Über die Kartenansicht können keine Termine erstellt, bearbeitet oder gelöscht werden.
+- Es findet keine Routenberechnung statt.
+- Es findet keine Entfernungsberechnung statt.
+- Es findet keine Optimierung oder Bewertung von Touren statt.
+- Geokodierung erfolgt ausschließlich serverseitig.
+- Dokumenttexte oder Kundendaten werden nicht persistent verändert.
+- Fehlgeschlagene Geokodierung führt nicht zu Datenverlust.
+- Termine ohne erfolgreich ermittelbare Koordinaten werden nicht angezeigt oder klar als nicht lokalisierbar gekennzeichnet.
+
+Die Kartenansicht verändert keine bestehenden Features:
+
+- FT (01) Terminverwaltung bleibt unverändert.
+- FT (02) Projekte bleiben unverändert.
+- FT (04) Tourenplanung bleibt unverändert.
+- FT (03) Kalenderansichten bleiben unverändert.
+
+## Darstellung
+
+### Marker
+
+Jeder Termin wird als Marker dargestellt.
+
+Der Marker zeigt im Tooltip oder Popup mindestens:
+
+- Kundennummer
+- Kundenname
+- Postleitzahl
+- Projekttitel
+- Terminzeitraum
+- Zugeordnete Tour
+- Zugeordnete Mitarbeiter
+
+Die Markerfarbe entspricht der Tourfarbe.
+
+Tourlose Termine werden neutral dargestellt.
+
+### Kartensteuerung
+
+Die Karte ist:
+
+- verschiebbar
+- zoombar
+- frei navigierbar
+
+Die initiale Ansicht orientiert sich:
+
+- an der geografischen Mitte der angezeigten Termine oder
+- an einem vordefinierten Standardbereich.
+
+## Use Cases
+
+### UC: Kartenansicht anzeigen
+
+**Akteur:**                           
+
+Disponent, Admin, Monteur (Leserolle)
+
+**Ziel:**
+
+Termine im gewählten Zeitraum räumlich visualisieren.
+
+**Vorbedingungen:**
+
+- Termine existieren.
+- Kunden besitzen gültige Adressen.
+- Benutzer besitzt Leserechte.
+
+**Ablauf:**
+
+1. Benutzer öffnet die Kartenansicht.
+2. System ermittelt die aktuell gefilterten Termine.
+3. System extrahiert die zugehörigen Kundenadressen.
+4. System führt serverseitig eine Geokodierung durch.
+5. System rendert Marker auf der Karte.
+6. Benutzer kann Marker anklicken, um Details einzusehen.
+
+**Alternativabläufe:**
+
+- Adresse nicht geokodierbar → Marker wird nicht angezeigt oder als „nicht lokalisierbar“ markiert.
+- Keine Termine vorhanden → Karte wird ohne Marker angezeigt.
+
+**Ergebnis:**
+
+Die ausgewählten Termine sind räumlich visualisiert.
+
+### UC: Kartenansicht nach Tour filtern
+
+**Akteur:**
+
+Disponent
+
+**Ziel:**
+
+Nur Termine einer bestimmten Tour räumlich anzeigen.
+
+**Vorbedingungen:**
+
+- Touren existieren.
+- Termine sind Touren zugeordnet.
+
+**Ablauf:**
+
+1. Benutzer wählt Tourfilter.
+2. System filtert Termine.
+3. System aktualisiert Marker-Darstellung.
+
+**Ergebnis:**
+
+Nur Termine der gewählten Tour sind sichtbar.
+
+### UC: Marker-Details anzeigen
+
+**Akteur:**
+
+Disponent, Admin, Monteur
+
+**Ziel:**
+
+Detailinformationen zu einem Termin auf der Karte anzeigen.
+
+**Vorbedingungen:**
+
+- Marker existiert.
+
+**Ablauf:**
+
+1. Benutzer klickt Marker.
+2. System zeigt Popup mit Termindetails.
+
+**Ergebnis:**
+
+Benutzer erhält vollständige Terminübersicht im Kartenkontext.

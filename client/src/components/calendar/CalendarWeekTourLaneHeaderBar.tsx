@@ -10,6 +10,9 @@ type CalendarWeekTourLaneHeaderBarProps = {
   label: string;
   color?: string | null;
   members?: TourLaneMember[];
+  isExpanded?: boolean;
+  interactive?: boolean;
+  onClick?: () => void;
   testId?: string;
 };
 
@@ -21,6 +24,9 @@ export function CalendarWeekTourLaneHeaderBar({
   label,
   color,
   members = [],
+  isExpanded = true,
+  interactive = false,
+  onClick,
   testId,
 }: CalendarWeekTourLaneHeaderBarProps) {
   return (
@@ -36,16 +42,21 @@ export function CalendarWeekTourLaneHeaderBar({
       className="w-[360px] max-h-[260px] overflow-y-auto rounded-md border bg-popover p-4 text-popover-foreground shadow-md"
       contentClassName="pointer-events-none"
     >
-      <div
-        className="h-7 w-full rounded-md px-3 text-xs font-semibold uppercase tracking-wide text-white/95 shadow-sm"
+      <button
+        type="button"
+        onClick={interactive ? onClick : undefined}
+        className={`h-7 w-full rounded-md px-3 text-xs font-semibold uppercase tracking-wide text-white/95 shadow-sm ${
+          interactive ? "cursor-pointer" : "cursor-default"
+        }`}
         style={{ backgroundColor: color ?? "#64748b" }}
         data-testid={testId}
+        aria-expanded={isExpanded}
       >
         <div className="flex h-full items-center justify-between gap-2">
           <span className="truncate">{label}</span>
-          <span className="text-[10px] opacity-90">{members.length}</span>
+          <span className="text-[10px] opacity-90">{isExpanded ? "offen" : "zu"} | {members.length}</span>
         </div>
-      </div>
+      </button>
     </HoverPreview>
   );
 }

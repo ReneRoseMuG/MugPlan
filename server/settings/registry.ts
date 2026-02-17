@@ -3,7 +3,7 @@ export type CanonicalRoleKey = "LESER" | "DISPONENT" | "ADMIN";
 export type SettingScopeType = "GLOBAL" | "ROLE" | "USER";
 export type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
 
-type BaseSettingDefinition<TType extends "enum" | "string" | "number", TValue> = {
+type BaseSettingDefinition<TType extends "enum" | "string" | "number" | "boolean", TValue> = {
   key: string;
   label: string;
   description: string;
@@ -27,7 +27,13 @@ export type NumberSettingDefinition = BaseSettingDefinition<"number", number> & 
   integer: boolean;
 };
 
-export type SettingDefinition = EnumSettingDefinition<string> | StringSettingDefinition | NumberSettingDefinition;
+export type BooleanSettingDefinition = BaseSettingDefinition<"boolean", boolean>;
+
+export type SettingDefinition =
+  | EnumSettingDefinition<string>
+  | StringSettingDefinition
+  | NumberSettingDefinition
+  | BooleanSettingDefinition;
 
 const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
@@ -161,6 +167,25 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL", "USER"],
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 6,
+  },
+  calendarWeekLanesIsCollapsed: {
+    key: "calendar.weekLanes.isCollapsed",
+    label: "Wochenansicht Lanes kollabiert",
+    description: "Steuert, ob die Tour-Lanes in der Wochenansicht global kollabiert sind.",
+    type: "boolean",
+    defaultValue: false,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
+  calendarWeekLanesExpandedLaneId: {
+    key: "calendar.weekLanes.expandedLaneId",
+    label: "Wochenansicht expandierte Lane",
+    description: "Speichert die aktuell expandierte Lane-ID fuer den kollabierten Wochenmodus.",
+    type: "string",
+    defaultValue: "",
+    allowedScopes: ["USER"],
+    placeholderWhitelist: [],
+    validate: (value: unknown): value is string => typeof value === "string",
   },
   helptextsViewMode: {
     key: "helptexts.viewMode",

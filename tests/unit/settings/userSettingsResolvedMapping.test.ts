@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - Resolved-Mapping liefert Scope-Versionen und resolvedVersion korrekt.
  * - Neues Global-Setting fuer Hover-Delay wird inkl. Version aufgeloest.
+ * - FT03-Settings fuer boolean/string werden im USER-Scope korrekt aufgeloest.
  *
  * Fehlerfälle:
  * - Keine persistierten Werte: Fallback auf DEFAULT ohne Versionen.
@@ -110,5 +111,49 @@ describe("PKG-08 user settings resolved mapping", () => {
     expect(hoverPreviewDelay?.resolvedValue).toBe(640);
     expect(hoverPreviewDelay?.resolvedScope).toBe("GLOBAL");
     expect(hoverPreviewDelay?.resolvedVersion).toBe(5);
+  });
+
+  it("maps FT03 week lane settings with USER scope and versions", async () => {
+    usersRepoMock.getUserWithRole.mockResolvedValue({
+      id: 1,
+      isActive: true,
+      roleCode: "ADMIN",
+    } as any);
+    settingsRepoMock.listSettingCandidates.mockResolvedValue([
+      {
+        settingKey: "calendar.weekLanes.isCollapsed",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: true,
+        version: 2,
+        updatedAt: new Date("2026-02-17T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+      {
+        settingKey: "calendar.weekLanes.expandedLaneId",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: "tour-42",
+        version: 3,
+        updatedAt: new Date("2026-02-17T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+    ] as any);
+
+    const result = await getResolvedSettingsForUser(1);
+    const collapsedSetting = result.find((entry) => entry.key === "calendar.weekLanes.isCollapsed");
+    const expandedLaneSetting = result.find((entry) => entry.key === "calendar.weekLanes.expandedLaneId");
+
+    expect(collapsedSetting).toBeDefined();
+    expect(collapsedSetting?.type).toBe("boolean");
+    expect(collapsedSetting?.resolvedValue).toBe(true);
+    expect(collapsedSetting?.resolvedScope).toBe("USER");
+    expect(collapsedSetting?.resolvedVersion).toBe(2);
+
+    expect(expandedLaneSetting).toBeDefined();
+    expect(expandedLaneSetting?.type).toBe("string");
+    expect(expandedLaneSetting?.resolvedValue).toBe("tour-42");
+    expect(expandedLaneSetting?.resolvedScope).toBe("USER");
+    expect(expandedLaneSetting?.resolvedVersion).toBe(3);
   });
 });
