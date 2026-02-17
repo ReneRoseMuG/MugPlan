@@ -4,6 +4,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   withAppointmentTransaction: vi.fn(),
   getAppointmentTx: vi.fn(),
   getProjectTx: vi.fn(),
+  getConflictingEmployeesTx: vi.fn(),
   hasEmployeeDateOverlapTx: vi.fn(),
   updateAppointmentWithVersionTx: vi.fn(),
   replaceAppointmentEmployeesTx: vi.fn(),
@@ -68,7 +69,7 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       updatedAt: new Date(),
     } as any);
     appointmentsRepoMock.getProjectTx.mockResolvedValue({ id: 3, name: "P3" });
-    appointmentsRepoMock.hasEmployeeDateOverlapTx.mockResolvedValue(false);
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
     appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
     appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({
@@ -115,7 +116,7 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       updatedAt: new Date(),
     } as any);
     appointmentsRepoMock.getProjectTx.mockResolvedValue({ id: 3, name: "P3" });
-    appointmentsRepoMock.hasEmployeeDateOverlapTx.mockResolvedValue(false);
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "version_conflict" });
 
     await expect(

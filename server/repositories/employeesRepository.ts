@@ -10,6 +10,8 @@ import {
   type UpdateEmployee,
 } from "@shared/schema";
 
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export async function getEmployees(scope: "active" | "inactive" = "active"): Promise<Employee[]> {
   return db
     .select()
@@ -20,6 +22,11 @@ export async function getEmployees(scope: "active" | "inactive" = "active"): Pro
 
 export async function getEmployee(id: number): Promise<Employee | null> {
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+  return employee || null;
+}
+
+export async function getEmployeeTx(tx: DbTx, id: number): Promise<Employee | null> {
+  const [employee] = await tx.select().from(employees).where(eq(employees.id, id));
   return employee || null;
 }
 
@@ -145,6 +152,28 @@ export async function setEmployeeTeamWithVersion(
   if (affectedRows === 0) return { kind: "version_conflict" };
 
   const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
+  return { kind: "updated", employee };
+}
+
+export async function setEmployeeTeamWithVersionTx(
+  tx: DbTx,
+  employeeId: number,
+  expectedVersion: number,
+  teamId: number | null,
+): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
+  const result = await tx.execute(sql`
+    update employee
+    set
+      team_id = ${teamId},
+      updated_at = now(),
+      version = version + 1
+    where id = ${employeeId}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
+
+  const [employee] = await tx.select().from(employees).where(eq(employees.id, employeeId));
   return { kind: "updated", employee };
 }
 

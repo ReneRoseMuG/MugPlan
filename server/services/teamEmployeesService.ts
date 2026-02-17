@@ -40,12 +40,12 @@ export async function assignEmployeesToTeam(
     }
   }
 
-  return db.transaction(async () => {
+  return db.transaction(async (tx) => {
     const results: Employee[] = [];
     for (const item of items) {
-      const updated = await employeesRepository.setEmployeeTeamWithVersion(item.employeeId, item.version, teamId);
+      const updated = await employeesRepository.setEmployeeTeamWithVersionTx(tx, item.employeeId, item.version, teamId);
       if (updated.kind === "version_conflict") {
-        const exists = await employeesRepository.getEmployee(item.employeeId);
+        const exists = await employeesRepository.getEmployeeTx(tx, item.employeeId);
         if (!exists) {
           throw new TeamEmployeesError(404, "NOT_FOUND");
         }

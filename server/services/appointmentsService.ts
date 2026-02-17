@@ -15,15 +15,18 @@ const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
 class AppointmentError extends Error {
   status: number;
   code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR";
+  conflictEmployees?: Array<{ id: number; fullName: string }>;
 
   constructor(
     message: string,
     status: number,
     code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR",
+    options?: { conflictEmployees?: Array<{ id: number; fullName: string }> },
   ) {
     super(message);
     this.status = status;
     this.code = code;
+    this.conflictEmployees = options?.conflictEmployees;
   }
 }
 
@@ -54,6 +57,47 @@ function isStartDateLocked(startDate: Date | string | null | undefined): boolean
   if (!normalizedStartDate) return false;
   const todayBerlin = getBerlinTodayDateString();
   return normalizedStartDate < todayBerlin;
+}
+
+function getBerlinCurrentTimeSeconds(): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Berlin",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  const second = Number(parts.find((part) => part.type === "second")?.value ?? "0");
+  return hour * 3600 + minute * 60 + second;
+}
+
+function parseTimeToSeconds(startTime: string): number | null {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(startTime);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3] ?? "0");
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return null;
+  return hour * 3600 + minute * 60 + second;
+}
+
+function assertNotHistoricalInput(data: { startDate: string; startTime?: string | null }) {
+  if (isStartDateLocked(data.startDate)) {
+    throw new AppointmentError("Datum in der Vergangenheit", 409, "BUSINESS_CONFLICT");
+  }
+  if (!data.startTime) return;
+  if (data.startDate !== getBerlinTodayDateString()) return;
+
+  const inputTimeSeconds = parseTimeToSeconds(data.startTime);
+  if (inputTimeSeconds == null) {
+    throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
+  }
+  if (inputTimeSeconds < getBerlinCurrentTimeSeconds()) {
+    throw new AppointmentError("Startzeit liegt in der Vergangenheit", 409, "VALIDATION_ERROR");
+  }
 }
 
 function normalizeEmployeeIds(employeeIds?: number[]) {
@@ -176,6 +220,7 @@ export async function createAppointment(
 ) {
   console.log(`${logPrefix} create request projectId=${data.projectId}`);
   validateDateRange(data.startDate, data.endDate ?? null);
+  assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
   const startDate = parseDateOnly(data.startDate);
@@ -183,14 +228,13 @@ export async function createAppointment(
 
   return appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const project = await ensureProjectExistsTx(tx, data.projectId);
-    const hasOverlap = await appointmentsRepository.hasEmployeeDateOverlapTx(tx, {
+    const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
       startDate,
       endDate,
     });
-    if (hasOverlap) {
-      throw new AppointmentError("Mitarbeiter sind in diesem Zeitraum bereits zugewiesen", 409, "BUSINESS_CONFLICT");
-    }
+    const conflictEmployeeIds = new Set(conflictEmployees.map((employee) => employee.id));
+    const persistedEmployeeIds = employeeIds.filter((employeeId) => !conflictEmployeeIds.has(employeeId));
 
     const appointmentData: InsertAppointment = {
       projectId: data.projectId,
@@ -203,10 +247,15 @@ export async function createAppointment(
       endTime: null,
     };
 
-    console.log(`${logPrefix} persisting appointment with ${employeeIds.length} employees`);
+    console.log(`${logPrefix} persisting appointment with ${persistedEmployeeIds.length} employees`);
     const appointmentId = await appointmentsRepository.createAppointmentTx(tx, appointmentData);
-    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
-    return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, persistedEmployeeIds);
+    const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    if (!appointment) return null;
+    if (conflictEmployees.length > 0) {
+      return { ...appointment, conflictEmployees };
+    }
+    return appointment;
   });
 }
 
@@ -232,10 +281,15 @@ export async function updateAppointment(
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
 
-    if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
+    if (isStartDateLocked(existing.startDate)) {
+      if (roleKey !== "ADMIN") {
+        console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+        throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+      }
       console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-      throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "BUSINESS_CONFLICT");
     }
+    assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
     const project = await ensureProjectExistsTx(tx, data.projectId);
 
@@ -243,15 +297,14 @@ export async function updateAppointment(
       console.log(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
     }
 
-    const hasOverlap = await appointmentsRepository.hasEmployeeDateOverlapTx(tx, {
+    const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
       startDate,
       endDate,
       excludeAppointmentId: appointmentId,
     });
-    if (hasOverlap) {
-      throw new AppointmentError("Mitarbeiter sind in diesem Zeitraum bereits zugewiesen", 409, "BUSINESS_CONFLICT");
-    }
+    const conflictEmployeeIds = new Set(conflictEmployees.map((employee) => employee.id));
+    const persistedEmployeeIds = employeeIds.filter((employeeId) => !conflictEmployeeIds.has(employeeId));
 
     const appointmentData: Partial<InsertAppointment> = {
       projectId: data.projectId,
@@ -264,7 +317,7 @@ export async function updateAppointment(
       endTime: null,
     };
 
-    console.log(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
+    console.log(`${logPrefix} update appointmentId=${appointmentId} with ${persistedEmployeeIds.length} employees`);
     const updateResult = await appointmentsRepository.updateAppointmentWithVersionTx(tx, {
       appointmentId,
       expectedVersion: data.version,
@@ -274,8 +327,13 @@ export async function updateAppointment(
       throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
     }
 
-    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
-    return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, persistedEmployeeIds);
+    const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    if (!appointment) return null;
+    if (conflictEmployees.length > 0) {
+      return { ...appointment, conflictEmployees };
+    }
+    return appointment;
   });
 }
 

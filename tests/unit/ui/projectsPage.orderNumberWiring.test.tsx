@@ -34,6 +34,7 @@ describe("FT02 projects page order number wiring", () => {
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("header: \"Auftragsnummer\"");
-    expect(source).toContain("Auftragsnr.: {project.orderNumber}");
+    expect(source).toContain("<span className=\"font-semibold\">Auftrag:</span>");
+    expect(source).toContain("project.orderNumber?.trim() || \"-\"");
   });
 });

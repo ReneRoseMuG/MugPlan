@@ -4,6 +4,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   withAppointmentTransaction: vi.fn(),
   getAppointmentTx: vi.fn(),
   getProjectTx: vi.fn(),
+  getConflictingEmployeesTx: vi.fn(),
   hasEmployeeDateOverlapTx: vi.fn(),
   updateAppointmentWithVersionTx: vi.fn(),
   replaceAppointmentEmployeesTx: vi.fn(),
@@ -49,45 +50,50 @@ describe("PKG-01 Invariant: conflict priority", () => {
     });
   });
 
-  it("returns 409 BUSINESS_CONFLICT when overlap exists", async () => {
-    appointmentsRepoMock.hasEmployeeDateOverlapTx.mockResolvedValue(true);
+  it("returns conflictEmployees metadata when overlap exists", async () => {
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([{ id: 1, fullName: "Emp One" }]);
+    appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
+    appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
+    appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 101, projectId: 201, employees: [] } as any);
 
-    await expect(
-      updateAppointment(
-        101,
-        {
-          version: 5,
-          projectId: 201,
-          startDate: "2099-01-10",
-          employeeIds: [1, 2],
-        },
-        "DISPONENT",
-      ),
-    ).rejects.toMatchObject({ status: 409, code: "BUSINESS_CONFLICT" });
+    const result = await updateAppointment(
+      101,
+      {
+        version: 5,
+        projectId: 201,
+        startDate: "2099-01-10",
+        employeeIds: [1, 2],
+      },
+      "DISPONENT",
+    );
+
+    expect(result).toMatchObject({ id: 101, projectId: 201 });
+    expect((result as any).conflictEmployees).toEqual([{ id: 1, fullName: "Emp One" }]);
   });
 
-  it("does not execute version-update path when business conflict already happened", async () => {
-    appointmentsRepoMock.hasEmployeeDateOverlapTx.mockResolvedValue(true);
+  it("executes version-update path and persists only non-conflicting employees", async () => {
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([{ id: 1, fullName: "Emp One" }]);
+    appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
+    appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
+    appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 101, projectId: 201, employees: [] } as any);
 
-    await expect(
-      updateAppointment(
-        101,
-        {
-          version: 5,
-          projectId: 201,
-          startDate: "2099-01-10",
-          employeeIds: [1, 2],
-        },
-        "DISPONENT",
-      ),
-    ).rejects.toBeTruthy();
+    await updateAppointment(
+      101,
+      {
+        version: 5,
+        projectId: 201,
+        startDate: "2099-01-10",
+        employeeIds: [1, 2],
+      },
+      "DISPONENT",
+    );
 
-    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
-    expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).not.toHaveBeenCalled();
+    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).toHaveBeenCalledOnce();
+    expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).toHaveBeenCalledWith(expect.anything(), 101, [2]);
   });
 
-  it("surfaces deterministic appointment error type and code for conflict-priority case", async () => {
-    appointmentsRepoMock.hasEmployeeDateOverlapTx.mockResolvedValue(true);
+  it("still surfaces deterministic VERSION_CONFLICT if optimistic lock fails", async () => {
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([{ id: 1, fullName: "Emp One" }]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "version_conflict" });
 
     let error: unknown;
@@ -107,7 +113,6 @@ describe("PKG-01 Invariant: conflict priority", () => {
     }
 
     expect(isAppointmentError(error)).toBe(true);
-    expect(error).toMatchObject({ status: 409, code: "BUSINESS_CONFLICT" });
-    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
+    expect(error).toMatchObject({ status: 409, code: "VERSION_CONFLICT" });
   });
 });

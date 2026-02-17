@@ -4,6 +4,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   withAppointmentTransaction: vi.fn(),
   getAppointmentTx: vi.fn(),
   getProjectTx: vi.fn(),
+  getConflictingEmployeesTx: vi.fn(),
   hasEmployeeDateOverlapTx: vi.fn(),
   updateAppointmentWithVersionTx: vi.fn(),
   replaceAppointmentEmployeesTx: vi.fn(),
@@ -94,7 +95,7 @@ describe("PKG-02 Invariant: locking rules", () => {
     expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 
-  it("allows admin update on locked appointment and proceeds to optimistic-lock update path", async () => {
+  it("blocks admin update on locked appointment with BUSINESS_CONFLICT", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 203,
       version: 5,
@@ -109,36 +110,19 @@ describe("PKG-02 Invariant: locking rules", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
-    appointmentsRepoMock.getProjectTx.mockResolvedValue({ id: 302, name: "Project 302" });
-    appointmentsRepoMock.hasEmployeeDateOverlapTx.mockResolvedValue(false);
-    appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
-    appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
-    appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({
-      id: 203,
-      version: 6,
-      projectId: 302,
-      title: "Project 302",
-      description: null,
-      startDate: new Date("2000-01-03T00:00:00.000Z"),
-      startTime: null,
-      endDate: null,
-      endTime: null,
-      employees: [],
-    } as any);
-
-    const result = await updateAppointment(
-      203,
-      {
-        version: 5,
-        projectId: 302,
-        startDate: "2000-01-03",
-        employeeIds: [],
-      },
-      "ADMIN",
-    );
-
-    expect(result).toMatchObject({ id: 203, projectId: 302 });
-    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).toHaveBeenCalledOnce();
+    await expect(
+      updateAppointment(
+        203,
+        {
+          version: 5,
+          projectId: 302,
+          startDate: "2000-01-03",
+          employeeIds: [],
+        },
+        "ADMIN",
+      ),
+    ).rejects.toMatchObject({ status: 409, code: "BUSINESS_CONFLICT" });
+    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 
   it("allows admin delete on locked appointment", async () => {

@@ -644,6 +644,31 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       toast({ title: "Enddatum darf nicht vor dem Startdatum liegen", variant: "destructive" });
       return false;
     }
+    const berlinToday = getBerlinTodayDateString();
+    const isPastDateInput = startDate < berlinToday;
+    if (isPastDateInput) {
+      console.info(`${logPrefix} validation blocked: startDate in past`);
+      toast({ title: "Datum in der Vergangenheit", variant: "destructive" });
+      return false;
+    }
+    const currentBerlinHour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Berlin",
+        hour: "2-digit",
+        hour12: false,
+      }).format(new Date()),
+    );
+    const startHour = Number(startTimeHour);
+    const isPastTimeInput =
+      startTimeEnabled &&
+      Number.isFinite(startHour) &&
+      startDate === berlinToday &&
+      startHour < currentBerlinHour;
+    if (isPastTimeInput) {
+      console.info(`${logPrefix} validation blocked: startTime in past`);
+      toast({ title: "Startzeit liegt in der Vergangenheit", variant: "destructive" });
+      return false;
+    }
     return true;
   };
 
@@ -654,6 +679,23 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       return;
     }
     if (!validateForm()) return;
+    const berlinToday = getBerlinTodayDateString();
+    const isPastDateInput = startDate < berlinToday;
+    const startHour = Number(startTimeHour);
+    const currentBerlinHour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Berlin",
+        hour: "2-digit",
+        hour12: false,
+      }).format(new Date()),
+    );
+    const isPastTimeInput =
+      startTimeEnabled &&
+      Number.isFinite(startHour) &&
+      startDate === berlinToday &&
+      startHour < currentBerlinHour;
+    // Kein Save bei historischen Eingaben.
+    if (isPastDateInput || isPastTimeInput) return;
 
     if (assignedEmployeeIds.length === 0) {
       console.info(`${logPrefix} save requires confirmation: no employees`);

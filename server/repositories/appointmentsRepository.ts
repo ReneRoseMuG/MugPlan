@@ -125,6 +125,44 @@ export async function hasEmployeeDateOverlapTx(
   return Number(row?.count ?? 0) > 0;
 }
 
+export async function getConflictingEmployeesTx(
+  tx: DbTx,
+  params: {
+    employeeIds: number[];
+    startDate: Date;
+    endDate: Date | null;
+    excludeAppointmentId?: number;
+  },
+): Promise<Array<{ id: number; fullName: string }>> {
+  const normalizedEmployeeIds = Array.from(new Set(params.employeeIds));
+  if (normalizedEmployeeIds.length === 0) return [];
+
+  const effectiveEndDate = params.endDate ?? params.startDate;
+  const conditions = [
+    inArray(appointmentEmployees.employeeId, normalizedEmployeeIds),
+    lte(appointments.startDate, effectiveEndDate),
+    gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
+  ];
+
+  if (typeof params.excludeAppointmentId === "number") {
+    conditions.push(sql`${appointments.id} <> ${params.excludeAppointmentId}`);
+  }
+
+  const rows = await tx
+    .select({
+      id: employees.id,
+      fullName: employees.fullName,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
+    .where(and(...conditions))
+    .groupBy(employees.id, employees.fullName)
+    .orderBy(asc(employees.id));
+
+  return rows.map((row) => ({ id: row.id, fullName: row.fullName }));
+}
+
 export async function createAppointmentTx(tx: DbTx, data: InsertAppointment): Promise<number> {
   const result = await tx.insert(appointments).values(data);
   return Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId);
