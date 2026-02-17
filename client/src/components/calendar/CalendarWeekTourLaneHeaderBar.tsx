@@ -54,7 +54,6 @@ export function CalendarWeekTourLaneHeaderBar({
       >
         <div className="flex h-full items-center justify-between gap-2">
           <span className="truncate">{label}</span>
-          <span className="text-[10px] opacity-90">{isExpanded ? "offen" : "zu"} | {members.length}</span>
         </div>
       </button>
     </HoverPreview>

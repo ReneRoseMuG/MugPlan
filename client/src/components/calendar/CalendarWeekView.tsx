@@ -532,7 +532,10 @@ export function CalendarWeekView({
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-2 space-y-3">
-                    {weekLanes.map((tourLane) => (
+                    {weekLanes.map((tourLane) => {
+                      const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
+
+                      return (
                       <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10 p-2">
                         <div className="relative">
                           <CalendarWeekTourLaneHeaderBar
@@ -561,8 +564,21 @@ export function CalendarWeekView({
                             className="pointer-events-none absolute inset-0 grid"
                             style={{ gridTemplateColumns: dayGridTemplate }}
                           >
-                            {tourLane.dayBuckets.map((dayBucket) => (
-                              <div key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`} className="flex items-center justify-end px-1">
+                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => (
+                              <div
+                                key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                className="flex items-center justify-between gap-1 px-1"
+                              >
+                                {dayAppointmentCounts[dayIdx] > 0 ? (
+                                  <span
+                                    className="truncate text-[10px] font-semibold text-white/90"
+                                    data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                  >
+                                    ({dayAppointmentCounts[dayIdx]}) Termine
+                                  </span>
+                                ) : (
+                                  <span />
+                                )}
                                 {dayBucket.dateKey >= berlinToday ? (
                                   <button
                                     onClick={() => {
@@ -584,13 +600,19 @@ export function CalendarWeekView({
                             ))}
                           </div>
                         </div>
-                        {!isLaneCollapsed({
-                          isCollapsedMode,
-                          laneKey: tourLane.laneKey,
-                          effectiveExpandedLaneId,
-                        }) && (
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            isLaneCollapsed({
+                              isCollapsedMode,
+                              laneKey: tourLane.laneKey,
+                              effectiveExpandedLaneId,
+                            })
+                              ? "max-h-0 opacity-0 mt-0"
+                              : "max-h-[2200px] opacity-100 mt-1"
+                          }`}
+                        >
                           <div
-                            className="mt-1 grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30"
+                            className="grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30"
                             style={{ gridTemplateColumns: dayGridTemplate }}
                           >
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
@@ -644,9 +666,10 @@ export function CalendarWeekView({
                               );
                             })}
                           </div>
-                        )}
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </section>
