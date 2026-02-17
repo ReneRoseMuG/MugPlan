@@ -7,10 +7,12 @@
  * Abgedeckte Regeln:
  * - ProjectsPage verdrahtet den Auftragsnummer-Filter in das Projektfilterpanel.
  * - Auftragsnummer wird in Tabellen- und Board-Ansicht angezeigt.
+ * - Projektbeschreibung in Board-Karten rendert HTML statt roher Tags.
  *
  * Fehlerfaelle:
  * - Filter ist vorhanden, aber nicht mit State verbunden.
  * - Auftragsnummer erscheint nur in einer der beiden Ansichten.
+ * - HTML-Tags werden in der Projektkarte als Text angezeigt.
  *
  * Ziel:
  * Sicherstellen, dass die Projektliste den neuen Auftragsnummer-Use-Case vollstaendig abdeckt.
@@ -36,5 +38,12 @@ describe("FT02 projects page order number wiring", () => {
     expect(source).toContain("header: \"Auftragsnummer\"");
     expect(source).toContain("<span className=\"font-semibold\">Auftrag:</span>");
     expect(source).toContain("project.orderNumber?.trim() || \"-\"");
+  });
+
+  it("renders project description as html in board cards", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("dangerouslySetInnerHTML={{ __html: project.descriptionMd }}");
   });
 });

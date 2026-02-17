@@ -417,9 +417,10 @@ export function ProjectsPage({
                     </div>
 
                     {project.descriptionMd && (
-                      <div className="text-xs text-slate-500 line-clamp-2 pt-1">
-                        {project.descriptionMd}
-                      </div>
+                      <div
+                        className="text-xs text-slate-500 line-clamp-2 pt-1"
+                        dangerouslySetInnerHTML={{ __html: project.descriptionMd }}
+                      />
                     )}
 
                     {customer && (

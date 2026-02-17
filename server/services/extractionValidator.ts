@@ -6,7 +6,7 @@ const customerDraftSchema = z.object({
   lastName: z.string().trim().min(1),
   company: z.string().trim().nullable().optional(),
   email: z.string().trim().nullable().optional(),
-  phone: z.string().trim().min(1),
+  phone: z.string().trim().nullable().optional(),
   addressLine1: z.string().trim().nullable().optional(),
   addressLine2: z.string().trim().nullable().optional(),
   postalCode: z.string().trim().nullable().optional(),
@@ -21,6 +21,7 @@ const articleItemSchema = z.object({
 
 const aiExtractionOutputSchema = z.object({
   customer: customerDraftSchema,
+  orderNumber: z.string().trim().nullable().optional(),
   saunaModel: z.string().trim().min(1),
   articleItems: z.array(articleItemSchema).min(1),
   warnings: z.array(z.string().trim()).optional(),
@@ -28,6 +29,7 @@ const aiExtractionOutputSchema = z.object({
 
 export type ValidatedExtraction = {
   customer: z.infer<typeof customerDraftSchema>;
+  orderNumber: string | null;
   saunaModel: string;
   articleItems: Array<z.infer<typeof articleItemSchema>>;
   categorizedItems: Array<{
@@ -102,12 +104,13 @@ export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtractio
       lastName: parsed.customer.lastName.trim(),
       company: normalizeOptional(parsed.customer.company),
       email: normalizeOptional(parsed.customer.email),
-      phone: parsed.customer.phone.trim(),
+      phone: normalizeOptional(parsed.customer.phone),
       addressLine1: normalizeOptional(parsed.customer.addressLine1),
       addressLine2: normalizeOptional(parsed.customer.addressLine2),
       postalCode: normalizeOptional(parsed.customer.postalCode),
       city: normalizeOptional(parsed.customer.city),
     },
+    orderNumber: normalizeOptional(parsed.orderNumber),
     saunaModel: parsed.saunaModel.trim(),
     articleItems: normalizedItems,
     categorizedItems,

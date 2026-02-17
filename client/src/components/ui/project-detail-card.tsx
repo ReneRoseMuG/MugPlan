@@ -11,6 +11,7 @@ const fallbackText = "nicht hinterlegt";
 
 const stripMarkdown = (value: string) =>
   value
+    .replace(/<[^>]+>/g, " ")
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`[^`]*`/g, " ")
     .replace(/!\[[^\]]*]\([^)]*\)/g, " ")

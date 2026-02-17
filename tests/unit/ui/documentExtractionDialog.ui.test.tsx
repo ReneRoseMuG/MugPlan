@@ -9,11 +9,11 @@
  * - Felder Firma und Adresszusatz werden weder gerendert noch als editierbarer State geführt.
  * - Projektbereich ist in Projektdaten/Projektname umbenannt.
  * - RichTextEditor wird controlled mit articleListHtml verwendet.
- * - Apply-Payloads behalten das bestehende Shape inkl. unveränderter Feldnamen.
+ * - Apply-Payload fuer Projektuebernahme behaelt das bestehende Shape inkl. unveraenderter Feldnamen.
  *
  * Fehlerfälle:
  * - Regression auf Textarea/HTML-Plaintext-Anzeige.
- * - Unbeabsichtigte Payload-Shape-Änderungen bei onApplyCustomer/onApplyProject.
+ * - Unbeabsichtigte Payload-Shape-Aenderungen bei onApplyProject.
  *
  * Ziel:
  * Sicherstellen, dass der Dialog ausschließlich die geforderte UI-Anpassung umsetzt, ohne Schnittstellenbruch.
@@ -43,6 +43,7 @@ describe("FT21 document extraction dialog ui refactor", () => {
   it("renames project section labels", () => {
     expect(source).toContain(">Projektdaten<");
     expect(source).toContain("<Label>Projektname</Label>");
+    expect(source).toContain("<Label>Auftragsnummer</Label>");
     expect(source).not.toContain(">Projektvorschlag<");
     expect(source).not.toContain("Saunamodell (Titelvorschlag)");
   });
@@ -56,18 +57,16 @@ describe("FT21 document extraction dialog ui refactor", () => {
     expect(source).not.toContain("<Textarea");
   });
 
-  it("keeps payload shapes unchanged for customer and project apply actions", () => {
-    expect(source).toContain("void onApplyCustomer(customer)");
-    expect(source).toContain("void onApplyProject({ saunaModel, articleListHtml, customer })");
+  it("keeps payload shape unchanged for project apply action", () => {
+    expect(source).toContain("void onApplyProject({ saunaModel, orderNumber, articleListHtml, customer })");
     expect(source).toContain("company: fallback.company");
     expect(source).toContain("addressLine2: fallback.addressLine2");
   });
 
-  it("keeps dialog size constraints and separated apply button labels", () => {
+  it("keeps dialog size constraints and project apply button label", () => {
     expect(source).toContain('className="max-w-4xl max-h-[90vh] overflow-y-auto"');
-    expect(source).toContain('customerApplyLabel = "Kundendaten übernehmen"');
     expect(source).toContain('projectApplyLabel = "Projektdaten übernehmen"');
-    expect(source).toContain('data-testid="button-doc-extract-apply-customer"');
     expect(source).toContain('data-testid="button-doc-extract-apply-project"');
+    expect(source).not.toContain('data-testid="button-doc-extract-apply-customer"');
   });
 });

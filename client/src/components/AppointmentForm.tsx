@@ -129,6 +129,7 @@ const fetchJson = async <T,>(url: string) => {
 
 export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId, projectId, appointmentId }: AppointmentFormProps) {
   const { toast } = useToast();
+  const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
   const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [assignedEmployeeIds, setAssignedEmployeeIds] = useState<number[]>([]);
@@ -213,7 +214,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
   };
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects?filter=all&scope=all"],
+    queryKey: projectsQueryKey,
     queryFn: () => fetchJson<Project[]>("/api/projects?filter=all&scope=all"),
   });
 
@@ -507,8 +508,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     if (!customerDraft.customerNumber.trim()) {
       throw new Error("Kundennummer ist erforderlich");
     }
-    if (!customerDraft.firstName.trim() || !customerDraft.lastName.trim() || !customerDraft.phone.trim()) {
-      throw new Error("Vorname, Nachname und Telefon sind erforderlich");
+    if (!customerDraft.firstName.trim() || !customerDraft.lastName.trim()) {
+      throw new Error("Vorname und Nachname sind erforderlich");
     }
 
     const resolution = await resolveCustomerByNumber(customerDraft.customerNumber);
@@ -537,6 +538,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       }
       const extraction = payload as {
         customer: ExtractionCustomerDraft;
+        orderNumber: string | null;
         saunaModel: string;
         articleItems: ExtractionDialogData["articleItems"];
         categorizedItems: ExtractionDialogData["categorizedItems"];
@@ -556,6 +558,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
           postalCode: extraction.customer.postalCode ?? "",
           city: extraction.customer.city ?? "",
         },
+        orderNumber: extraction.orderNumber ?? null,
         saunaModel: extraction.saunaModel ?? "",
         articleItems: extraction.articleItems ?? [],
         categorizedItems: extraction.categorizedItems ?? [],
@@ -575,24 +578,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     }
   };
 
-  const applyExtractedCustomer = async (customerDraft: ExtractionCustomerDraft) => {
-    try {
-      if (selectedProjectId) {
-        throw new Error("Kundenübernahme ist nur möglich, wenn kein Projekt ausgewählt ist.");
-      }
-      await resolveOrCreateCustomerForExtraction(customerDraft);
-      toast({ title: "Kunde geprüft", description: "Die Kundendaten werden bei Projektübernahme verwendet." });
-    } catch (error) {
-      toast({
-        title: "Kunde konnte nicht übernommen werden",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
-        variant: "destructive",
-      });
-    }
-  };
-
   const applyExtractedProject = async (payload: {
     saunaModel: string;
+    orderNumber: string;
     articleListHtml: string;
     customer: ExtractionCustomerDraft;
   }) => {
@@ -610,6 +598,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         },
         body: JSON.stringify({
           name: payload.saunaModel.trim(),
+          orderNumber: payload.orderNumber.trim() || null,
           customerId: resolvedCustomer.id,
           descriptionMd: payload.articleListHtml.trim(),
         }),
@@ -620,7 +609,14 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       }
 
       const createdProject = projectPayload as Project;
-      await queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.setQueryData<Project[]>(projectsQueryKey, (current) => {
+        if (!Array.isArray(current)) return [createdProject];
+        if (current.some((project) => project.id === createdProject.id)) {
+          return current.map((project) => (project.id === createdProject.id ? createdProject : project));
+        }
+        return [createdProject, ...current];
+      });
+      await queryClient.invalidateQueries({ queryKey: projectsQueryKey });
       setSelectedProjectId(createdProject.id);
       toast({ title: "Projekt übernommen", description: "Neues Projekt wurde erzeugt und dem Termin zugeordnet." });
       setDocumentExtractionOpen(false);
@@ -983,7 +979,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
             emptyText="Kunde wird über das Projekt bestimmt"
             testId="slot-customer-relation"
           >
-            {selectedCustomer ? <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" /> : null}
+            {selectedCustomer ? (
+              <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" variant="relationCompact" />
+            ) : null}
           </RelationSlot>
 
           <DocumentExtractionDropzone
@@ -1191,11 +1189,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         onOpenChange={setDocumentExtractionOpen}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
-        disableCustomerApply={Boolean(selectedProjectId)}
         disableProjectApply={Boolean(selectedProjectId)}
-        customerApplyLabel="Kunde übernehmen"
         projectApplyLabel="Projekt übernehmen"
-        onApplyCustomer={applyExtractedCustomer}
         onApplyProject={applyExtractedProject}
       />
 

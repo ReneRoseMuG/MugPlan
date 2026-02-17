@@ -10,7 +10,7 @@ type HeaderField = "orderNumber" | "customerNumber" | "mobile";
 export type DeterministicHeaderExtraction = {
   orderNumber: string | null;
   customerNumber: string;
-  mobile: string;
+  mobile: string | null;
   firstName: string;
   lastName: string;
   addressLine1: string | null;
@@ -207,9 +207,6 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
   }
 
   const mobile = pickSingleValue(labelValues.mobile);
-  if (!mobile) {
-    throw new Error("Mobilnummer fehlt im Dokumentkopf");
-  }
 
   const orderNumber = pickSingleValue(labelValues.orderNumber);
 
@@ -242,7 +239,7 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
     customerNumber: z.string().trim().min(1),
     firstName: z.string().trim().min(1),
     lastName: z.string().trim().min(1),
-    mobile: z.string().trim().min(1),
+    mobile: z.string().trim().nullable(),
   });
 
   requiredSchema.parse(parsed);

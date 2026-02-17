@@ -52,6 +52,27 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.city).toBe("Jessen / Holzdorf");
   });
 
+  it("allows missing mobile number and returns null", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Frau",
+      "Anke Gotthardt",
+      "Haupstrasse 69",
+      "06917 Jessen / Holzdorf",
+      "Deutschland",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "A0218249A",
+      "163214",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.mobile).toBeNull();
+    expect(parsed.orderNumber).toBe("A0218249A");
+    expect(parsed.customerNumber).toBe("163214");
+  });
+
   it("throws when customer number is missing", () => {
     expect(() => parseDocumentHeaderDeterministically(buildSource({ includeCustomerLabel: false }))).toThrow(
       "Kundennummer fehlt",

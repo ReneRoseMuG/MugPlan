@@ -54,6 +54,7 @@ export async function extractFromPdf(params: {
         postalCode: header.postalCode,
         city: header.city,
       },
+      orderNumber: header.orderNumber,
       saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),
       articleItems: articleItems.map((item) => ({
         quantity: item.quantity,

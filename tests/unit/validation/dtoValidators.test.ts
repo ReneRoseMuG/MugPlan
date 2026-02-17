@@ -104,7 +104,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     parseDocumentHeaderDeterministicallyMock.mockReturnValue({
       orderNumber: "A-1",
       customerNumber: "K-1",
-      mobile: "0123",
+      mobile: null,
       firstName: "Max",
       lastName: "Mustermann",
       addressLine1: "Musterstrasse 1",
@@ -122,7 +122,8 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
 
     expect(result.customer.customerNumber).toBe("K-1");
     expect(result.customer.firstName).toBe("Max");
-    expect(result.customer.phone).toBe("0123");
+    expect(result.customer.phone).toBeNull();
+    expect(result.orderNumber).toBe("A-1");
     expect(result.saunaModel).toContain("Sauna");
     expect(result.articleItems).toHaveLength(1);
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();

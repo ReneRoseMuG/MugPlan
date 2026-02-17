@@ -141,43 +141,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const projectNamePreview = formatProjectStoredName(selectedCustomerNumber, name);
   const projectVersion = projectData?.project.version;
 
-  const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
-    customerNumber: customer.customerNumber.trim(),
-    firstName: customer.firstName.trim(),
-    lastName: customer.lastName.trim(),
-    company: customer.company.trim() || null,
-    email: customer.email.trim() || null,
-    phone: customer.phone.trim(),
-    addressLine1: customer.addressLine1.trim() || null,
-    addressLine2: customer.addressLine2.trim() || null,
-    postalCode: customer.postalCode.trim() || null,
-    city: customer.city.trim() || null,
-  });
-
-  const resolveCustomerByNumber = async (customerNumber: string) => {
-    const response = await fetch("/api/document-extraction/resolve-customer-by-number", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ customerNumber: customerNumber.trim() }),
-    });
-    if (!response.ok) {
-      const payload = await response.json().catch(() => null);
-      throw new Error(payload?.message ?? "Kundennummer konnte nicht aufgelÃ¶st werden");
-    }
-    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; customer: Customer | null };
-  };
-
-  const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
-    const payload = mapExtractionCustomerToPayload(customerDraft);
-    const response = await apiRequest("POST", "/api/customers", payload);
-    const created = (await response.json()) as Customer;
-    await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-    return created;
-  };
-
   const runDocumentExtraction = async (file: File) => {
     setDocumentExtractionLoading(true);
     try {
@@ -194,6 +157,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       }
       const extraction = payload as {
         customer: ExtractionCustomerDraft;
+        orderNumber: string | null;
         saunaModel: string;
         articleItems: ExtractionDialogData["articleItems"];
         categorizedItems: ExtractionDialogData["categorizedItems"];
@@ -213,6 +177,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
           postalCode: extraction.customer.postalCode ?? "",
           city: extraction.customer.city ?? "",
         },
+        orderNumber: extraction.orderNumber ?? null,
         saunaModel: extraction.saunaModel ?? "",
         articleItems: extraction.articleItems ?? [],
         categorizedItems: extraction.categorizedItems ?? [],
@@ -458,48 +423,9 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     }
   };
 
-  const applyExtractedCustomer = async (customerDraft: ExtractionCustomerDraft) => {
-    try {
-      if (!customerDraft.customerNumber.trim()) {
-        throw new Error("Kundennummer ist erforderlich");
-      }
-      if (!customerDraft.firstName.trim() || !customerDraft.lastName.trim() || !customerDraft.phone.trim()) {
-        throw new Error("Vorname, Nachname und Telefon sind erforderlich");
-      }
-
-      if (customerId) {
-        const confirmed = window.confirm("Der aktuell gewÃ¤hlte Kunde wird ersetzt. Fortfahren?");
-        if (!confirmed) return;
-      } else {
-        const confirmed = window.confirm("Kunde mit den erkannten Daten Ã¼bernehmen?");
-        if (!confirmed) return;
-      }
-
-      const resolution = await resolveCustomerByNumber(customerDraft.customerNumber);
-      if (resolution.resolution === "multiple") {
-        throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
-      }
-
-      if (resolution.resolution === "single" && resolution.customer) {
-        setCustomerId(resolution.customer.id);
-        toast({ title: "Bestehender Kunde Ã¼bernommen" });
-        return;
-      }
-
-      const created = await createCustomerFromDraft(customerDraft);
-      setCustomerId(created.id);
-      toast({ title: "Neuer Kunde angelegt und Ã¼bernommen" });
-    } catch (error) {
-      toast({
-        title: "Kunde konnte nicht Ã¼bernommen werden",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
-        variant: "destructive",
-      });
-    }
-  };
-
   const applyExtractedProjectSuggestion = async (payload: {
     saunaModel: string;
+    orderNumber: string;
     articleListHtml: string;
   }) => {
     try {
@@ -510,6 +436,20 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       }
       setName(parseProjectStoredName(payload.saunaModel).isolatedProjectName);
       setDescriptionMd(payload.articleListHtml.trim());
+      const extractedOrderNumber = payload.orderNumber.trim();
+      if (extractedOrderNumber.length > 0) {
+        const currentOrderNumber = orderNumber.trim();
+        if (!currentOrderNumber) {
+          setOrderNumber(extractedOrderNumber);
+        } else if (currentOrderNumber !== extractedOrderNumber) {
+          const shouldOverwrite = window.confirm(
+            `Es ist bereits eine abweichende Auftragsnummer gesetzt (${currentOrderNumber}). Mit extrahierter Auftragsnummer (${extractedOrderNumber}) überschreiben?`,
+          );
+          if (shouldOverwrite) {
+            setOrderNumber(extractedOrderNumber);
+          }
+        }
+      }
       toast({ title: "Projektvorschlag Ã¼bernommen" });
     } catch (error) {
       toast({
@@ -670,9 +610,8 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         onOpenChange={setDocumentExtractionOpen}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
-        onApplyCustomer={applyExtractedCustomer}
-        onApplyProject={({ saunaModel, articleListHtml }) =>
-          applyExtractedProjectSuggestion({ saunaModel, articleListHtml })
+        onApplyProject={({ saunaModel, orderNumber, articleListHtml }) =>
+          applyExtractedProjectSuggestion({ saunaModel, orderNumber, articleListHtml })
         }
       />
 

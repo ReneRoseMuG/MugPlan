@@ -34,6 +34,7 @@ describe("FT20 extraction validator structure", () => {
         postalCode: "",
         city: " Leipzig ",
       },
+      orderNumber: "  A0218229A ",
       saunaModel: "  Modell X ",
       articleItems: [{ quantity: " 1x ", description: " Ofen ", category: " Technik " }],
       warnings: [" ", " Hinweis A "],
@@ -45,6 +46,7 @@ describe("FT20 extraction validator structure", () => {
     expect(result.customer.addressLine1).toBeNull();
     expect(result.customer.addressLine2).toBe("Haus B");
     expect(result.customer.city).toBe("Leipzig");
+    expect(result.orderNumber).toBe("A0218229A");
     expect(result.warnings).toEqual(["Hinweis A"]);
   });
 
@@ -54,8 +56,9 @@ describe("FT20 extraction validator structure", () => {
         customerNumber: "2002",
         firstName: "A",
         lastName: "B",
-        phone: "123",
+        phone: null,
       },
+      orderNumber: null,
       saunaModel: "Modell Y",
       articleItems: [
         { quantity: "1", description: "Ofen", category: "Technik" },
@@ -76,7 +79,7 @@ describe("FT20 extraction validator structure", () => {
         customerNumber: "3003",
         firstName: "A",
         lastName: "B",
-        phone: "123",
+        phone: null,
       },
       saunaModel: "Modell Z",
       articleItems: [{ quantity: "<1>", description: "\"Ofen\" & Test", category: "Technik" }],

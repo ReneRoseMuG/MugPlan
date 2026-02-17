@@ -36,8 +36,8 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("data={documentExtractionData}");
   });
 
-  it("wires customer/project apply callbacks", () => {
-    expect(source).toContain("onApplyCustomer={applyExtractedCustomer}");
-    expect(source).toContain("onApplyProject={({ saunaModel, articleListHtml }) =>");
+  it("wires project apply callback", () => {
+    expect(source).toContain("onApplyProject={({ saunaModel, orderNumber, articleListHtml }) =>");
+    expect(source).not.toContain("onApplyCustomer={applyExtractedCustomer}");
   });
 });

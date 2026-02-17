@@ -31,6 +31,7 @@ export type ExtractionCategory = {
 
 export type ExtractionDialogData = {
   customer: ExtractionCustomerDraft;
+  orderNumber: string | null;
   saunaModel: string;
   articleItems: ExtractionArticleItem[];
   categorizedItems: ExtractionCategory[];
@@ -43,12 +44,14 @@ interface DocumentExtractionDialogProps {
   onOpenChange: (open: boolean) => void;
   data: ExtractionDialogData | null;
   isBusy?: boolean;
-  disableCustomerApply?: boolean;
   disableProjectApply?: boolean;
-  customerApplyLabel?: string;
   projectApplyLabel?: string;
-  onApplyCustomer: (customer: ExtractionCustomerDraft) => Promise<void>;
-  onApplyProject: (payload: { saunaModel: string; articleListHtml: string; customer: ExtractionCustomerDraft }) => Promise<void>;
+  onApplyProject: (payload: {
+    saunaModel: string;
+    orderNumber: string;
+    articleListHtml: string;
+    customer: ExtractionCustomerDraft;
+  }) => Promise<void>;
 }
 
 function toCustomerDraft(value: ExtractionCustomerDraft): ExtractionCustomerDraft {
@@ -82,23 +85,21 @@ export function DocumentExtractionDialog({
   onOpenChange,
   data,
   isBusy = false,
-  disableCustomerApply = false,
   disableProjectApply = false,
-  customerApplyLabel = "Kundendaten übernehmen",
   projectApplyLabel = "Projektdaten übernehmen",
-  onApplyCustomer,
   onApplyProject,
 }: DocumentExtractionDialogProps) {
   const [customerFields, setCustomerFields] = useState<EditableCustomerFields | null>(null);
   const [saunaModel, setSaunaModel] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
   const [articleListHtml, setArticleListHtml] = useState("");
-  const [isApplyingCustomer, setIsApplyingCustomer] = useState(false);
   const [isApplyingProject, setIsApplyingProject] = useState(false);
 
   useEffect(() => {
     if (!data) {
       setCustomerFields(null);
       setSaunaModel("");
+      setOrderNumber("");
       setArticleListHtml("");
       return;
     }
@@ -113,6 +114,7 @@ export function DocumentExtractionDialog({
       city: data.customer.city,
     });
     setSaunaModel(data.saunaModel);
+    setOrderNumber(data.orderNumber ?? "");
     setArticleListHtml(data.articleListHtml);
   }, [data]);
 
@@ -217,6 +219,14 @@ export function DocumentExtractionDialog({
                 />
               </div>
               <div className="space-y-1">
+                <Label>Auftragsnummer</Label>
+                <Input
+                  value={orderNumber}
+                  onChange={(event) => setOrderNumber(event.target.value)}
+                  data-testid="input-doc-extract-order-number"
+                />
+              </div>
+              <div className="space-y-1">
                 <Label>Artikelliste (semantisches HTML)</Label>
                 <RichTextEditor
                   value={articleListHtml}
@@ -248,29 +258,17 @@ export function DocumentExtractionDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isBusy || isApplyingCustomer || isApplyingProject}
+            disabled={isBusy || isApplyingProject}
           >
             Schließen
           </Button>
           <Button
             type="button"
-            disabled={!customer || isBusy || isApplyingCustomer || isApplyingProject || disableCustomerApply}
-            onClick={() => {
-              if (!customer) return;
-              setIsApplyingCustomer(true);
-              void onApplyCustomer(customer).finally(() => setIsApplyingCustomer(false));
-            }}
-            data-testid="button-doc-extract-apply-customer"
-          >
-            {isApplyingCustomer ? "Übernehme..." : customerApplyLabel}
-          </Button>
-          <Button
-            type="button"
-            disabled={!customer || isBusy || isApplyingProject || isApplyingCustomer || disableProjectApply}
+            disabled={!customer || isBusy || isApplyingProject || disableProjectApply}
             onClick={() => {
               if (!customer) return;
               setIsApplyingProject(true);
-              void onApplyProject({ saunaModel, articleListHtml, customer }).finally(() => setIsApplyingProject(false));
+              void onApplyProject({ saunaModel, orderNumber, articleListHtml, customer }).finally(() => setIsApplyingProject(false));
             }}
             data-testid="button-doc-extract-apply-project"
           >

@@ -37,10 +37,16 @@ describe("FT20 appointment form document extraction flow wiring", () => {
     expect(source).toContain("data={documentExtractionData}");
   });
 
-  it("wires apply callbacks and disable rules", () => {
-    expect(source).toContain("onApplyCustomer={applyExtractedCustomer}");
+  it("wires project apply callback and disable rule", () => {
     expect(source).toContain("onApplyProject={applyExtractedProject}");
-    expect(source).toContain("disableCustomerApply={Boolean(selectedProjectId)}");
     expect(source).toContain("disableProjectApply={Boolean(selectedProjectId)}");
+    expect(source).not.toContain("onApplyCustomer={applyExtractedCustomer}");
+    expect(source).not.toContain("disableCustomerApply={Boolean(selectedProjectId)}");
+  });
+
+  it("forwards extracted order number and does not require phone", () => {
+    expect(source).toContain("orderNumber: payload.orderNumber.trim() || null");
+    expect(source).toContain("throw new Error(\"Vorname und Nachname sind erforderlich\")");
+    expect(source).not.toContain("Vorname, Nachname und Telefon sind erforderlich");
   });
 });
