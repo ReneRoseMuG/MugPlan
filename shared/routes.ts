@@ -203,6 +203,7 @@ export const api = {
               id: z.number(),
               projectId: z.number(),
               projectName: z.string(),
+              projectOrderNumber: z.string().nullable(),
               projectDescription: z.string().nullable(),
               projectStatuses: z.array(
                 z.object({
@@ -353,6 +354,7 @@ export const api = {
             version: z.number().int().min(1),
             projectId: z.number(),
             projectName: z.string(),
+            projectOrderNumber: z.string().nullable(),
             projectDescription: z.string().nullable(),
             projectStatuses: z.array(
               z.object({
@@ -380,6 +382,7 @@ export const api = {
               id: z.number(),
               customerId: z.number(),
               name: z.string(),
+              orderNumber: z.string().nullable(),
               descriptionMd: z.string().nullable(),
               isActive: z.boolean(),
             }).optional(),
@@ -1146,6 +1149,7 @@ export const api = {
           id: z.number(),
           projectId: z.number(),
           projectName: z.string(),
+          projectOrderNumber: z.string().nullable(),
           projectDescription: z.string().nullable(),
           projectStatuses: z.array(
             z.object({

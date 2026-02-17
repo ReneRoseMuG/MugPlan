@@ -5,12 +5,14 @@ export type CalendarAppointment = {
   version: number;
   projectId: number;
   projectName: string;
+  projectOrderNumber: string | null;
   projectDescription: string | null;
   projectStatuses: { id: number; title: string; color: string }[];
   project?: {
     id: number;
     customerId: number;
     name: string;
+    orderNumber: string | null;
     descriptionMd: string | null;
     isActive: boolean;
   };

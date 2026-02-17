@@ -2,7 +2,7 @@ import React from "react";
 import type { Project } from "@shared/schema";
 
 export interface ProjectDetailCardProps {
-  project: Pick<Project, "name" | "descriptionMd" | "isActive">;
+  project: Pick<Project, "name" | "orderNumber" | "descriptionMd" | "isActive">;
   projectStatusTitles?: string[];
   testId?: string;
 }
@@ -42,6 +42,10 @@ export function ProjectDetailCard({ project, projectStatusTitles = [], testId }:
         <dt className="text-muted-foreground">Projekt Status</dt>
         <dd className="whitespace-nowrap overflow-hidden text-ellipsis" title={statusLine}>
           {statusLine}
+        </dd>
+        <dt className="text-muted-foreground">Auftragsnr.</dt>
+        <dd data-testid={testId ? `${testId}-order-number` : undefined}>
+          {resolveValue(project.orderNumber)}
         </dd>
         <dt className="text-muted-foreground">Beschreibung</dt>
         <dd data-testid={testId ? `${testId}-description` : undefined}>

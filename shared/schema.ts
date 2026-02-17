@@ -194,6 +194,7 @@ export const customerNotes = mysqlTable("customer_note", {
 export const projects = mysqlTable("project", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  orderNumber: varchar("order_number", { length: 255 }),
   customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
   descriptionMd: text("description_md"),
   isActive: boolean("is_active").notNull().default(true),
@@ -211,6 +212,7 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 
 export const updateProjectSchema = z.object({
   name: z.string().optional(),
+  orderNumber: z.string().nullable().optional(),
   customerId: z.number().optional(),
   descriptionMd: z.string().nullable().optional(),
   isActive: z.boolean().optional(),

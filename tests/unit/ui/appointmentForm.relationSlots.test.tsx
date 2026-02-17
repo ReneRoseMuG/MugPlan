@@ -44,6 +44,11 @@ describe("FT01 appointment form relation slot wiring", () => {
     expect(source).toContain("<CustomerDetailCard customer={selectedCustomer} testId=\"badge-customer\" />");
   });
 
+  it("renders project detail card inside project relation slot", () => {
+    expect(source).toContain("<ProjectDetailCard");
+    expect(source).toContain("testId=\"badge-project\"");
+  });
+
   it("loads projects with scope=all for stable post-selection rendering", () => {
     expect(source).toContain("queryKey: [\"/api/projects?filter=all&scope=all\"]");
     expect(source).toContain("fetchJson<Project[]>(\"/api/projects?filter=all&scope=all\")");

@@ -1,5 +1,6 @@
 import { CustomerNameFilterInput } from "@/components/filters/customer-name-filter-input";
 import { CustomerNumberFilterInput } from "@/components/filters/customer-number-filter-input";
+import { ProjectOrderNumberFilterInput } from "@/components/filters/project-order-number-filter-input";
 import { ProjectStatusFilterInput } from "@/components/filters/project-status-filter-input";
 import { ProjectTitleFilterInput } from "@/components/filters/project-title-filter-input";
 import { HelpIcon } from "@/components/ui/help/help-icon";
@@ -20,6 +21,9 @@ interface ProjectFilterPanelProps {
   customerNumber: string;
   onCustomerNumberChange: (value: string) => void;
   onCustomerNumberClear: () => void;
+  orderNumber: string;
+  onOrderNumberChange: (value: string) => void;
+  onOrderNumberClear: () => void;
   selectedStatuses: ProjectStatus[];
   availableStatuses: ProjectStatus[];
   statusPickerOpen: boolean;
@@ -41,6 +45,9 @@ export function ProjectFilterPanel({
   customerNumber,
   onCustomerNumberChange,
   onCustomerNumberClear,
+  orderNumber,
+  onOrderNumberChange,
+  onOrderNumberClear,
   selectedStatuses,
   availableStatuses,
   statusPickerOpen,
@@ -112,6 +119,12 @@ export function ProjectFilterPanel({
           value={customerNumber}
           onChange={onCustomerNumberChange}
           onClear={onCustomerNumberClear}
+          className="flex-1"
+        />
+        <ProjectOrderNumberFilterInput
+          value={orderNumber}
+          onChange={onOrderNumberChange}
+          onClear={onOrderNumberClear}
           className="flex-1"
         />
       </FilterPanel>

@@ -281,6 +281,13 @@ export function ProjectsPage({
         ),
       },
       {
+        id: "orderNumber",
+        header: "Auftragsnummer",
+        accessor: (row) => row.project.orderNumber ?? "",
+        minWidth: 160,
+        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "—"}</span>,
+      },
+      {
         id: "relevantAppointment",
         header: "Nächster Termin",
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
@@ -315,6 +322,9 @@ export function ProjectsPage({
           customerNumber={filters.customerNumber}
           onCustomerNumberChange={(value) => setFilter("customerNumber", value)}
           onCustomerNumberClear={() => setFilter("customerNumber", "")}
+          orderNumber={filters.orderNumber}
+          onOrderNumberChange={(value) => setFilter("orderNumber", value)}
+          onOrderNumberClear={() => setFilter("orderNumber", "")}
           selectedStatuses={selectedStatuses}
           availableStatuses={availableStatuses}
           statusPickerOpen={statusPickerOpen}
@@ -402,23 +412,26 @@ export function ProjectsPage({
                   }
                 >
                   <div className="space-y-2">
-                    {customer && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <User className="w-3 h-3 text-slate-400" />
-                        <span className="font-medium">{customer.fullName} (K: {customer.customerNumber})</span>
-                      </div>
-                    )}
-
-                    {customer?.postalCode && (
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <MapPin className="w-3 h-3 text-slate-400" />
-                        <span>{customer.postalCode} {customer.city}</span>
-                      </div>
-                    )}
+                    <div className="text-xs text-slate-600">
+                      <span className="font-semibold">Auftrag:</span> {project.orderNumber?.trim() || "-"}
+                    </div>
 
                     {project.descriptionMd && (
                       <div className="text-xs text-slate-500 line-clamp-2 pt-1">
                         {project.descriptionMd}
+                      </div>
+                    )}
+
+                    {customer && (
+                      <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <span className="inline-flex items-center gap-1">
+                          <User className="w-3 h-3 text-slate-400" />
+                          <span className="font-medium">{customer.fullName}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-slate-500">
+                          <MapPin className="w-3 h-3 text-slate-400" />
+                          <span>{customer.postalCode ?? "-"}{customer.city ? ` ${customer.city}` : ""}</span>
+                        </span>
                       </div>
                     )}
 

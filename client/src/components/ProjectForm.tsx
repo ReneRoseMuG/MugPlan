@@ -61,6 +61,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   };
   
   const [name, setName] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -71,9 +72,10 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
 
-  const buildFormSnapshot = (input: { name: string; descriptionMd: string; customerId: number | null }) =>
+  const buildFormSnapshot = (input: { name: string; orderNumber: string; descriptionMd: string; customerId: number | null }) =>
     JSON.stringify({
       name: input.name.trim(),
+      orderNumber: input.orderNumber.trim(),
       descriptionMd: input.descriptionMd,
       customerId: input.customerId,
     });
@@ -111,11 +113,13 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     if (projectData) {
       const parsedProjectName = parseProjectStoredName(projectData.project.name);
       setName(parsedProjectName.isolatedProjectName);
+      setOrderNumber(projectData.project.orderNumber ?? "");
       setDescriptionMd(projectData.project.descriptionMd || "");
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: parsedProjectName.isolatedProjectName,
+          orderNumber: projectData.project.orderNumber ?? "",
           descriptionMd: projectData.project.descriptionMd || "",
           customerId: projectData.project.customerId,
         }),
@@ -124,6 +128,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: "",
+          orderNumber: "",
           descriptionMd: "",
           customerId: null,
         }),
@@ -228,6 +233,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   };
   const isFormDirty = buildFormSnapshot({
     name,
+    orderNumber,
     descriptionMd,
     customerId,
   }) !== initialFormSnapshot;
@@ -241,7 +247,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
   // Create project mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; customerId: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { name: string; orderNumber?: string | null; customerId: number; descriptionMd?: string }) => {
       const res = await apiRequest('POST', '/api/projects', data);
       return res.json();
     },
@@ -256,7 +262,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
   // Update project mutation
   const updateMutation = useMutation({
-    mutationFn: async (data: { name?: string; customerId?: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { version: number; name?: string; orderNumber?: string | null; customerId?: number; descriptionMd?: string }) => {
       const res = await apiRequest('PATCH', `/api/projects/${projectId}`, data);
       return res.json();
     },
@@ -386,13 +392,29 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     }
 
     const storedProjectName = formatProjectStoredName(selectedCustomerNumber, name);
+    const normalizedOrderNumber = orderNumber.trim() || null;
 
     if (isEditing) {
-      await updateMutation.mutateAsync({ name: storedProjectName, customerId, descriptionMd: descriptionMd || undefined });
+      if (!projectVersion || !Number.isInteger(projectVersion) || projectVersion < 1) {
+        toast({ title: "Projektversion fehlt, bitte neu laden", variant: "destructive" });
+        throw new Error("validation");
+      }
+      await updateMutation.mutateAsync({
+        version: projectVersion,
+        name: storedProjectName,
+        orderNumber: normalizedOrderNumber,
+        customerId,
+        descriptionMd: descriptionMd || undefined,
+      });
     } else {
-      await createMutation.mutateAsync({ name: storedProjectName, customerId, descriptionMd: descriptionMd || undefined });
+      await createMutation.mutateAsync({
+        name: storedProjectName,
+        orderNumber: normalizedOrderNumber,
+        customerId,
+        descriptionMd: descriptionMd || undefined,
+      });
     }
-    setInitialFormSnapshot(buildFormSnapshot({ name, descriptionMd, customerId }));
+    setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, descriptionMd, customerId }));
 
     if (onSaved && onSaved !== onCancel) {
       onSaved();
@@ -493,7 +515,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
         <div className="col-span-2 space-y-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-[180px,1fr] gap-4">
+                <div className="grid grid-cols-[150px,minmax(260px,1fr),150px] gap-4">
                   <div className="space-y-2">
                     <Label data-testid="label-project-customer-number">Kunde Nr.</Label>
                     <div
@@ -510,6 +532,15 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       data-testid="input-project-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="projectOrderNumber" data-testid="label-project-order-number">Auftragsnummer</Label>
+                    <Input
+                      id="projectOrderNumber"
+                      value={orderNumber}
+                      onChange={(e) => setOrderNumber(e.target.value)}
+                      data-testid="input-project-order-number"
                     />
                   </div>
                 </div>
