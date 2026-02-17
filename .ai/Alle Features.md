@@ -62,7 +62,6 @@ Unabhängig vom Einstiegspunkt gilt:
 **Mitarbeiterzuweisung**
 
 - Einem Termin können **null, ein oder mehrere Mitarbeiter** zugewiesen werden.
-- Es dürfen nur **aktive Mitarbeiter** neuen oder zukünftigen Terminen zugewiesen werden.
 - **Harte Regel (blockierend):**
     
     Ein Mitarbeiter darf im Zeitraum eines Termins **nicht zeitlich überschneidend** mehreren Terminen zugewiesen sein.
@@ -319,7 +318,7 @@ Einen einzelnen Mitarbeiter gezielt einem bestehenden Termin zuweisen.
 **Vorbedingungen:**
 
 - Termin existiert.
-- Mitarbeiter existiert und ist aktiv.
+- Mitarbeiter existiert.
 
 **Ablauf:**
 
@@ -337,6 +336,66 @@ Einen einzelnen Mitarbeiter gezielt einem bestehenden Termin zuweisen.
 
 Der ausgewählte Mitarbeiter ist dem Termin zugewiesen.
 
+### Mitarbeiter von einem Termin entfernen
+
+**Akteur:**
+
+Disponent
+
+**Ziel:**
+
+Einen einzelnen Mitarbeiter von einem bestehenden Termin entfernen.
+
+**Vorbedingungen:**
+
+- Termin existiert.
+- Mindestens ein Mitarbeiter ist dem Termin zugewiesen.
+
+**Ablauf:**
+
+1. Disponent öffnet den Termin.
+2. Disponent wählt einen zugeordneten Mitarbeiter.
+3. Disponent entfernt den Mitarbeiter.
+4. System speichert die Änderung.
+
+**Alternativen:**
+
+- Abbruch → keine Änderung.
+
+**Ergebnis:**
+
+Der Mitarbeiter ist nicht mehr dem Termin zugewiesen.
+
+### Projekt einem Termin zuweisen
+
+**kteur:**
+
+Disponent
+
+**Ziel:**
+
+Einem Termin ein Projekt zuordnen oder die Projektzuordnung ändern.
+
+**Vorbedingungen:**
+
+- Termin existiert.
+- Mindestens ein Projekt existiert.
+
+**Ablauf:**
+
+1. Disponent öffnet den Termin.
+2. Disponent wählt ein Projekt aus.
+3. System speichert die Projektzuordnung.
+
+**Alternativen:**
+
+- Disponent versucht zu speichern ohne Projektzuordnung: System blockiert und zeigt Fehlermeldung "Projekt erforderlich - Termin kann nicht ohne Projektkontext gespeichert werden."
+- Abbruch → keine Änderung.
+
+**Ergebnis:**
+
+Der Termin ist dem Projekt zugeordnet und fachlich gültig. Der Termin zeigt neben der Projekt Zuordnung auch den zum Projekt gehörenden Kunden.
+
 # FT (02): Projekte
 
 ## Ziel / Zweck
@@ -349,7 +408,8 @@ Ein Projekt bildet den fachlichen Rahmen für alle zugehörigen Termine und bün
 
 Ein Projekt repräsentiert einen Auftrag oder Vorgang (z. B. Aufbau, Service, Nachbesserung).
 
-Es ist immer genau **einem Kunden** zugeordnet und besitzt genau **einen Projektstatus** aus einer administrierbaren Statusliste.
+Es ist immer genau **einem Kunden** zugeordnet und besitzt Null, **eine oder mehrere Projektstatus Flaggen** aus einer administrierbaren Statusliste, 
+die über eine n:m Beziehung organisiert werden.
 
 Alle fachlichen Informationen, die **nicht terminspezifisch** sind, werden am Projekt gepflegt:
 
@@ -359,40 +419,24 @@ Alle fachlichen Informationen, die **nicht terminspezifisch** sind, werden am Pr
 
 Ein Projekt kann **ohne Termine** existieren.
 
-Termine können ausschließlich **innerhalb eines Projekts** angelegt werden und dienen nur der zeitlichen Planung. (Termine Können auch im Kalender angelegt werden, wo dann die Projektzuordnung erfolgt.
+Termine können **innerhalb eines Projekts** angelegt werden. Termine Können auch im Kalender angelegt werden, wo dann die Projektzuordnung erfolgt.
 
 Projekt-Details sind immer **projektweit gültig** und gelten automatisch für alle zugehörigen Termine. Aus Termin- oder Kalenderansichten können Projekt-Details eingesehen, jedoch nicht zwingend dort bearbeitet werden.
-
-EIn Projekt kann mehrere Status Etiketten haben, die über eine n:m Beziehung organisiert werden.
-Jedes Projekt besitzt ein **is_active** Flag (Standardwert: TRUE). Aktive Projekte erscheinen in den regulären Ansichten und Auswahllisten. Inaktive (archivierte) Projekte werden aus der täglichen Arbeit ausgeblendet, bleiben aber für historische Auswertungen vollständig erhalten und einsehbar.
 
 In der Projektliste wird standardmäßig nur die für die Disposition relevante Arbeitsmenge angezeigt. Unter „Aktuelle Projekte“ versteht das System Projekte, die mindestens einen Termin besitzen, dessen Startdatum heute oder in der Zukunft liegt. Projekte ohne Termine sind im Standardfall bewusst ausgeblendet, weil sie nicht disponierbar sind. Über eine explizite Umschaltoption kann die Liste stattdessen auf „Projekte ohne Termine“ umgestellt werden; in diesem Modus werden ausschließlich Projekte angezeigt, die keinen Termin besitzen. Zusätzliche Filter wie Titel- oder Statusfilter wirken immer nur auf die jeweils geladene Projektmenge und definieren nicht die Grundmenge.
 
 ## Regeln & Randbedingungen
 
 - Ein Projekt ist immer genau **einem Kunden** zugeordnet.
-- 
-- Jedes Projekt besitzt ein **is_active** Flag (Standardwert: TRUE).
-- **Nur aktive Projekte** (is_active = TRUE):
-    - erscheinen in regulären Projektlisten und Auswahlfeldern,
-    - sind für die Disposition in der täglichen Arbeit sichtbar,
-    - können neuen Terminen zugeordnet werden.
-- **Inaktive Projekte** (is_active = FALSE):
-    - werden physisch nicht gelöscht,
-    - bleiben mit allen Terminen, Notizen und Anhängen erhalten,
-    - sind in historischen Auswertungen und über Direktzugriff einsehbar,
-    - dienen der Nachvollziehbarkeit abgeschlossener Vorgänge,
-    - können reaktiviert werden.
 - Ein Projekt hat einen oder mehrere **Status Flags**.
 - Projektstatus werden in einer **eigenen Stammdatentabelle** gepflegt.
     - Default-Statuswerte sind geschützt und nicht löschbar.
 - Ein Projekt kann ohne Termine existieren.
-- Termine können nur für existierende Projekte angelegt werden.
 - Projekt-Details (Beschreibung, Notizen, Anhänge) gehören **ausschließlich** zum Projekt, nicht zum Termin.
 - Notizen sind optional und frei pflegbar.
 - Anhänge sind optional; ein Projekt kann mehrere Anhänge besitzen.
 - Anhänge sind dauerhaft dem Projekt zugeordnet.
-- Das physische Löschen eines Projekts ist nur zulässig, wenn keine Termine existieren; alternativ wird das Projekt deaktiviert bzw. abgeschlossen.
+- Das physische Löschen eines Projekts ist nur zulässig, wenn keine Termine existieren.
 
 ## **Use Cases**
 
@@ -479,35 +523,12 @@ Projekt existiert.
 **Ablauf:**
 
 1. Disponent öffnet ein Projekt.
-2. Disponent wählt einen neuen Status.
+2. Disponent löscht einen vorhandenen Status und wählt einen neuen oder wählt einen zusätzlichen Status, zu den vorhandenen.
 3. System speichert die Änderung.
 
 **Ergebnis:**
 
 Projekt befindet sich im neuen Status.
-
-### **UC: Projektstatus verwalten**
-
-**Akteur:** RO (03): Admin 
-
-**Ziel:**
-
-Projektstatusliste administrativ pflegen.
-
-**Vorbedingungen:**
-
-Admin ist angemeldet.
-
-**Ablauf:**
-
-1. Admin öffnet die Statusverwaltung.
-2. Admin kann Status anlegen, sortieren und aktivieren/deaktivieren.
-3. Default-Statuswerte können nicht gelöscht werden.
-4. System speichert Änderungen.
-
-**Ergebnis:**
-
-Aktualisierte Statusliste steht Projekten zur Verfügung.
 
 ### **UC: Projektnotizen pflegen**
 
@@ -558,62 +579,6 @@ Projekt existiert.
 
 Anhänge sind korrekt dem Projekt zugeordnet und für alle Termine verfügbar.
 
-### **UC: Projekt deaktivieren / archivieren**
-
-**Akteur:** RO (01): Disponent 
-
-**Ziel:**
-
-Ein Projekt aus der täglichen Arbeit ausblenden, ohne die Historie zu verlieren.
-
-**Vorbedingungen:**
-
-- Das Projekt existiert und ist aktiv (is_active = TRUE).
-
-**Ablauf:**
-
-1. Disponent öffnet ein Projekt.
-2. Disponent wählt „Projekt deaktivieren / archivieren".
-3. Das System zeigt eine Bestätigung an.
-4. Disponent bestätigt die Deaktivierung.
-5. Das System setzt is_active auf FALSE.
-6. Das System speichert die Änderung.
-
-**Alternativabläufe:**
-
-- Abbruch: Keine Änderung, Projekt bleibt aktiv.
-
-**Ergebnis:**
-
-Das Projekt ist deaktiviert und erscheint nicht mehr in regulären Projektlisten und Auswahlfeldern.
-
-Alle Termine, Notizen, Anhänge und Status-Zuordnungen bleiben vollständig erhalten.
-
-Das Projekt ist weiterhin über Direktzugriff und in historischen Auswertungen einsehbar.
-
-### **UC: Projekt reaktivieren**
-
-**Akteur:** RO (01): Disponent
-
-**Ziel:**
-
-Ein deaktiviertes Projekt wieder in die aktive Nutzung aufnehmen.
-
-**Vorbedingungen:**
-
-- Das Projekt existiert und ist deaktiviert (is_active = FALSE).
-
-**Ablauf:**
-
-1. Disponent öffnet ein deaktiviertes Projekt (z.B. über Suche oder historische Ansicht).
-2. Disponent wählt „Projekt reaktivieren".
-3. Das System setzt is_active auf TRUE.
-4. Das System speichert die Änderung.
-
-**Ergebnis:**
-
-Das Projekt ist wieder aktiv und erscheint in allen regulären Ansichten und Auswahlfeldern.
-
 ### UC: Projekte anzeigen
 
 **Akteur:** Disponent
@@ -627,6 +592,37 @@ Das Projekt ist wieder aktiv und erscheint in allen regulären Ansichten und Aus
 **Ablauf:** Der Disponent öffnet die Projektübersicht. Das System lädt standardmäßig die Projektmenge „Aktuelle Projekte“ und zeigt sie an. Der Disponent kann die Umschaltoption „Ohne Termine“ aktivieren; das System lädt dann ausschließlich Projekte ohne Termine und zeigt diese an. Der Disponent kann zurück auf „Aktuelle Projekte“ umschalten; das System lädt wieder die Standardmenge.
 
 **Ergebnis:** Der Disponent sieht entweder die aktuellen Projekte oder ausschließlich Projekte ohne Termine, jeweils als klar getrennte Mengen.
+
+### Projekt Löschen
+
+**Akteur:** RO (01): Disponent
+
+**Ziel:**
+
+Ein Projekt aus dem System entfernen.
+
+**Vorbedingungen:**
+
+- Projekt existiert.
+- Das Projekt besitzt **keine Termine**.
+
+**Ablauf:**
+
+1. Disponent öffnet ein Projekt.
+2. Disponent wählt „Projekt löschen".
+3. Das System prüft, ob das Projekt Termine besitzt.
+4. Ist das Projekt terminlos: Das System zeigt eine Bestätigungsmeldung an.
+5. Disponent bestätigt die Löschung.
+6. Das System löscht das Projekt physisch.
+
+**Alternativabläufe:**
+
+- Das Projekt besitzt Termine: Das System zeigt eine Fehlermeldung an und verhindert die Löschung. Der Disponent muss zunächst alle zugehörigen Termine löschen oder einem anderen Projekt zuordnen.
+- Abbruch: Keine Änderung, Projekt bleibt bestehen.
+
+**Ergebnis:**
+
+Das Projekt und alle zugehörigen Daten (Beschreibung, Notizen, Anhänge) sind gelöscht.
 
 # FT (03): Kalenderansichten
 
@@ -981,37 +977,19 @@ Dieses Feature dient der zentralen Verwaltung von Mitarbeitern als ausführende 
 
 ## Fachliche Beschreibung
 
-Die Mitarbeiterverwaltung stellt Funktionen zum Anlegen, Bearbeiten, Anzeigen und Deaktivieren von Mitarbeitern bereit. Mitarbeiter können unabhängig von Terminen existieren und werden im Rahmen der Terminvergabe optional Terminen zugewiesen. Die Zuweisung selbst erfolgt nicht innerhalb dieses Features, sondern im Kontext der Terminplanung.
-
-Jeder Mitarbeiter besitzt ein Status-Flag **is_active** (Standardwert: TRUE). Nur aktive Mitarbeiter stehen in der Anwendung für Funktionen wie Terminzuweisung, Tour-Zuordnung oder Team-Zuordnung zur Verfügung. Deaktivierte Mitarbeiter bleiben in der Datenbank erhalten und sind ausschließlich in der Mitarbeiterübersicht sichtbar, um ihre vollständige Terminhistorie nachvollziehbar zu halten. Dies gewährleistet, dass jederzeit ersichtlich ist, welcher Mitarbeiter bei welchem Kunden im Einsatz war.
-
+Die Mitarbeiterverwaltung stellt Funktionen zum Anlegen, Bearbeiten und Anzeigen von Mitarbeitern bereit. Mitarbeiter können unabhängig von Terminen existieren und werden im Rahmen der Terminvergabe optional Terminen zugewiesen. Die Zuweisung selbst erfolgt nicht innerhalb dieses Features, sondern im Kontext der Terminplanung.
+Disponenten erhalten serverseitig nur aktive Mitarbeiter und können Mitarbeiter damit nur aus dem aktiven Bestand auswählen. Die Verwaltung von aktiven und inaktiven Mitarbeitern (Deaktivieren, Reaktivieren) ist eine Admin-Funktion und nicht Teil dieser Dokumentation.
 Für jeden Mitarbeiter ist eine Terminübersicht verfügbar. Diese Übersicht zeigt alle Termine, denen der Mitarbeiter aktuell oder in der Vergangenheit zugewiesen war, und bildet damit die Einsatzhistorie des Mitarbeiters ab. Die Terminliste wird ausschließlich aus der Relation zwischen Termin und Mitarbeiter abgeleitet und ist jederzeit vollständig einsehbar.
-
 Änderungen an zukünftigen Terminen wirken sich unmittelbar auf die Terminliste eines Mitarbeiters aus. Vergangene Termine sind read-only und dürfen nicht nachträglich verändert werden, um die Stabilität der Einsatzhistorie sicherzustellen.
-
 In der Terminübersicht eines Mitarbeiters sind neben Zeitraum und Bezeichnung des Termins auch die zugehörige Tour sowie der Kunde erkennbar, da Termine diese Informationen referenzieren.
-
 In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.
-
-In der Mitarbeiterliste wird standardmäßig nur die Arbeitsmenge „Aktive Mitarbeiter“ angezeigt. Dadurch werden inaktive Mitarbeiter aus der täglichen Disposition ausgeblendet, bleiben aber weiterhin vollständig im System vorhanden. Über eine explizite Option „Alle“ kann die Liste auf „Aktiv und inaktiv“ umgestellt werden. Der Namensfilter wirkt immer nur auf die jeweils geladene Mitarbeitermenge und definiert nicht die Grundmenge.
 
 ## Regeln & Randbedingungen
 
 - Mitarbeiter können unabhängig von Terminen existieren.
 - Die Zuweisung eines Mitarbeiters zu einem Termin ist optional.
 - Ein Mitarbeiter kann einem oder mehreren Terminen zugewiesen sein.
-- Jeder Mitarbeiter besitzt ein Status-Flag **is_active** (Standardwert: TRUE).
-- **Nur aktive Mitarbeiter** dürfen:
-    - neuen oder zukünftigen Terminen zugewiesen werden,
-    - Touren zugeordnet werden,
-    - Teams zugeordnet werden,
-    - in Auswahlisten für Planungsfunktionen erscheinen.
-- **Deaktivierte Mitarbeiter**:
-    - werden physisch nicht gelöscht,
-    - bleiben in allen bestehenden Terminen und Relationen sichtbar,
-    - sind ausschließlich in der Mitarbeiterübersicht einsehbar,
-    - dienen der Nachvollziehbarkeit der Einsatzhistorie,
-    - können reaktiviert werden, indem is_active wieder auf TRUE gesetzt wird.
+- Disponenten erhalten serverseitig nur aktive Mitarbeiter zur Auswahl.
 - Die Terminliste eines Mitarbeiters wird ausschließlich aus den aktuellen Termindaten abgeleitet.
 - Vergangene Termine sind read-only und dürfen nicht verändert werden.
 - Wird ein Mitarbeiter vor Durchführung eines Termins ersetzt, darf dieser Termin nicht mehr in der Terminliste des abgelösten Mitarbeiters erscheinen.
@@ -1115,7 +1093,7 @@ Die Terminliste bildet die Einsatzhistorie des Mitarbeiters ab.
 
 ### **UC: Mitarbeiter deaktivieren**
 
-**Akteur:** RO (01): Disponent 
+**Akteur:** Admin
 
 **Ziel**
 
@@ -1150,7 +1128,7 @@ Der Mitarbeiter ist weiterhin in der Mitarbeiterübersicht sichtbar und seine vo
 
 **Akteur**
 
-Disponent
+Admin
 
 **Ziel**
 
@@ -1197,17 +1175,21 @@ Eine Löschfunktion für Mitarbeiteranhänge wird nicht angeboten, weil es für 
 
 ### UC: Mitarbeiter anzeigen
 
-**Akteur:** Disponent
+**Akteur:** Disponent / Admin
 
-**Ziel:** Der Disponent sieht standardmäßig nur aktive Mitarbeiter und kann bei Bedarf alle Mitarbeiter anzeigen.
+**Ziel:** Der Disponent sieht nur aktive Mitarbeiter. Der Admin kann bei Bedarf alle Mitarbeiter anzeigen.
 
 **Vorbedingungen:** Mitarbeiter sind im System vorhanden.
 
-**Auslöser:** Der Disponent öffnet die Mitarbeiterübersicht.
+**Auslöser:** Der Benutzer öffnet die Mitarbeiterübersicht.
 
-**Ablauf:** Der Disponent öffnet die Mitarbeiterübersicht. Das System lädt standardmäßig nur aktive Mitarbeiter und zeigt sie an. Der Disponent kann die Option „Alle“ aktivieren; das System lädt dann aktive und inaktive Mitarbeiter und zeigt beide an. Der Disponent kann die Option wieder deaktivieren; das System lädt wieder nur aktive Mitarbeiter.
+**Ablauf:**
 
-**Ergebnis:** Der Disponent sieht entweder nur aktive Mitarbeiter oder alle Mitarbeiter, ohne dass Daten gelöscht oder verborgen werden.
+*Disponent:* Das System lädt und zeigt nur aktive Mitarbeiter an.
+
+*Admin:* Der Admin öffnet die Mitarbeiterübersicht. Das System lädt standardmäßig nur aktive Mitarbeiter und zeigt sie an. Der Admin kann die Option „Alle" aktivieren; das System lädt dann aktive und inaktive Mitarbeiter und zeigt beide an. Der Admin kann die Option wieder deaktivieren; das System lädt wieder nur aktive Mitarbeiter.
+
+**Ergebnis:** Der Disponent sieht nur aktive Mitarbeiter. Der Admin sieht entweder nur aktive Mitarbeiter oder alle Mitarbeiter, ohne dass Daten gelöscht oder verborgen werden.
 
 # FT (06): Druckfunktionen
 
@@ -1475,8 +1457,11 @@ Dieses Feature stellt die Verwaltung von Kundenstammdaten bereit, damit Termine 
 ## Fachliche Beschreibung
 
 Die Kundenverwaltung ermöglicht das Anlegen, Bearbeiten und Anzeigen von Kunden. Pro Kunde werden Stammdaten gespeichert, insbesondere **Name/Firma**, **Kundennummer**, **Adresse** und **Telefonnummer**.
+
 Ein Kunde kann beliebig viele Projekte und damit indirekt beliebig viele Termine besitzen. In der Kundendetailansicht wird eine **Projektliste** angezeigt, die alle dem Kunden zugeordneten Projekte umfasst (z. B. Aufbau, Service, Nachbesserung).
-Kunden dürfen nicht physisch gelöscht werden, sobald sie in Projekten verwendet werden. Stattdessen können sie **deaktiviert/archiviert** werden. Archivierte Kunden bleiben in bestehenden Projekten und in der Historie sichtbar, stehen jedoch **nicht mehr für neue Projekte** zur Auswahl.
+
+Disponenten erhalten serverseitig nur aktive Kunden und können daher nur aktive Kunden für neue Projekte auswählen. Die Verwaltung von aktiven und inaktiven Kunden (Deaktivieren, Reaktivieren) ist eine Admin-Funktion und nicht Teil dieser Dokumentation für Disponenten.
+
 Kunden haben eine **Notizenliste** (0..n). Notizen werden in der Kundendetailansicht als vertikale Kärtchenliste dargestellt und über einen Richtext-Editor verwaltet. Die Verwaltungslogik für Notizen ist in FT (13): Notizverwaltung definiert. Notizen sind **kundenbezogen** und **projektunabhängig**.
 
 In der Kundendetailansicht können dem Kunden zusätzlich Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.
@@ -1485,11 +1470,7 @@ In der Kundendetailansicht können dem Kunden zusätzlich Dokumente als Anhänge
 
 - Kundendaten (Name, Kundennummer, Adresse, Telefon) werden **zentral** am Kunden gepflegt.
 - Kunden dürfen **nicht gelöscht** werden, wenn sie in Projekten verwendet werden.
-- Jeder Kunde besitzt ein **is_active** Flag (Standardwert: TRUE).
-- Deaktivierte/archivierte Kunden (is_active = FALSE):
-    - bleiben in bestehenden Projekten sichtbar,
-    - erscheinen in der Historie,
-    - dürfen **nicht** mehr für neue Projekte ausgewählt werden.
+- Disponenten erhalten serverseitig nur aktive Kunden und können nur aktive Kunden für neue Projekte auswählen.
 - Pflichtfelder:
     - Kundenname bzw. Firma,
     - Telefonnummer,
@@ -1592,7 +1573,7 @@ Kundendaten, Projektübersicht und Notizen sind sichtbar.
 
 ### **UC: Kunde deaktivieren / archivieren**
 
-**Akteur:** RO (03): Admin 
+**Akteur:** RO (03): Admin
 
 **Ziel**
 
@@ -1605,10 +1586,10 @@ Einen Kunden aus dem aktiven Bestand entfernen, ohne die Historie zu verlieren.
 
 **Ablauf**
 
-1. Der Nutzer öffnet den Kunden.
-2. Der Nutzer wählt „Deaktivieren/Archivieren".
+1. Der Admin öffnet den Kunden.
+2. Der Admin wählt „Deaktivieren/Archivieren".
 3. Das System zeigt eine Bestätigung an.
-4. Der Nutzer bestätigt.
+4. Der Admin bestätigt.
 5. Das System setzt is_active auf FALSE.
 6. Das System speichert die Änderung.
 
@@ -1621,6 +1602,8 @@ Einen Kunden aus dem aktiven Bestand entfernen, ohne die Historie zu verlieren.
 Der Kunde ist deaktiviert (is_active = FALSE), bleibt aber historisch und in Projekten sichtbar.
 
 Alle Projekte, Notizen und zugehörigen Daten bleiben vollständig erhalten.
+
+Der Kunde steht Disponenten nicht mehr für neue Projekte zur Auswahl.
 
 ### **UC: Kundennotizen verwalten**
 
@@ -1651,7 +1634,7 @@ Die fachliche Logik für Notizoperationen ist in FT (13): Notizverwaltung defini
 
 ### **UC: Kunde reaktivieren**
 
-**Akteur:** RO (03): Admin 
+**Akteur:** RO (03): Admin
 
 **Ziel**
 
@@ -1664,14 +1647,14 @@ Einen deaktivierten Kunden wieder in die aktive Nutzung aufnehmen.
 
 **Ablauf**
 
-1. Der Nutzer öffnet einen deaktivierten Kunden (z.B. über Suche oder historische Ansicht).
-2. Der Nutzer wählt „Kunde reaktivieren".
+1. Der Admin öffnet einen deaktivierten Kunden (z.B. über Suche oder historische Ansicht).
+2. Der Admin wählt „Kunde reaktivieren".
 3. Das System setzt is_active auf TRUE.
 4. Das System speichert die Änderung.
 
 **Ergebnis**
 
-Der Kunde ist wieder aktiv und steht für neue Projekte zur Verfügung.
+Der Kunde ist wieder aktiv und steht Disponenten für neue Projekte zur Verfügung.
 
 ### UC: Kundenanhänge verwalten
 
@@ -1696,6 +1679,47 @@ Der Kunde existiert und die Kundendetailansicht ist geöffnet.
 **Regeln & Randbedingungen:**
 
 Eine Löschfunktion für Kundenanhänge wird nicht angeboten, weil es für Kundenanhänge keinen Delete-Endpunkt gibt und Löschung serverseitig nicht vorgesehen ist.
+
+### UC: Kunde anzeigen
+
+**Akteur:** RO (01): Disponent, RO (03): Admin
+
+**Ziel**
+
+Kundendaten einsehen und die zugehörigen Projekte überblicken.
+
+**Vorbedingungen**
+
+- Der Kunde existiert.
+- Der Nutzer besitzt Leserechte.
+
+**Ablauf - Disponent:**
+
+1. Der Disponent öffnet die Kundenliste.
+2. Das System zeigt standardmäßig nur aktive Kunden an.
+3. Der Disponent wählt einen Kunden aus der Liste.
+4. Das System zeigt Stammdaten, eine Projektliste und eine Notizliste an.
+5. Der Disponent kann ein Projekt aus der Liste öffnen (Anzeigen oder Bearbeiten gemäß Rolle).
+
+**Ablauf - Admin:**
+
+1. Der Admin öffnet die Kundenliste.
+2. Das System zeigt standardmäßig nur aktive Kunden an.
+3. Der Admin kann die Option „Alle" aktivieren; das System lädt dann aktive und inaktive Kunden und zeigt beide an.
+4. Der Admin wählt einen Kunden aus der Liste.
+5. Das System zeigt Stammdaten, eine Projektliste und eine Notizliste an.
+6. Der Admin kann ein Projekt aus der Liste öffnen (Anzeigen oder Bearbeiten gemäß Rolle).
+
+**Alternativabläufe**
+
+- Keine Projekte vorhanden: Das System zeigt eine leere Projektliste an.
+- Keine Notizen vorhanden: Das System zeigt eine leere Notizliste an.
+
+**Ergebnis**
+
+Kundendaten, Projektübersicht und Notizen sind sichtbar.
+
+Disponent sieht nur aktive Kunden. Admin kann bei Bedarf auch inaktive Kunden anzeigen.
 
 # FT (11): Team Verwaltung
 
