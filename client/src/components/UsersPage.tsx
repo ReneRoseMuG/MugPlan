@@ -68,7 +68,8 @@ function toRoleSelections(users: UserRow[]) {
 export function UsersPage() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [tableError, setTableError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<Record<number, DbRoleCode>>({});
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -77,13 +78,13 @@ export function UsersPage() {
 
   const loadUsers = async () => {
     setIsLoading(true);
-    setError(null);
+    setTableError(null);
     try {
       const users = await fetchUsers();
       setRows(users);
       setSelectedRoles(toRoleSelections(users));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Benutzer konnten nicht geladen werden");
+      setTableError(loadError instanceof Error ? loadError.message : "Benutzer konnten nicht geladen werden");
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +107,7 @@ export function UsersPage() {
     };
 
     setIsCreating(true);
-    setError(null);
+    setCreateError(null);
     try {
       const response = await fetch("/api/users", {
         method: "POST",
@@ -130,8 +131,9 @@ export function UsersPage() {
       setSelectedRoles(toRoleSelections(users));
       setCreateDialogOpen(false);
       setNewUser(EMPTY_NEW_USER_FORM);
+      setCreateError(null);
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Benutzer konnte nicht angelegt werden.");
+      setCreateError(createError instanceof Error ? createError.message : "Benutzer konnte nicht angelegt werden.");
     } finally {
       setIsCreating(false);
     }
@@ -144,7 +146,7 @@ export function UsersPage() {
     }
 
     setSavingUserId(user.id);
-    setError(null);
+    setTableError(null);
     try {
       const response = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
@@ -166,7 +168,7 @@ export function UsersPage() {
       setRows(users);
       setSelectedRoles(toRoleSelections(users));
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Rollenwechsel fehlgeschlagen");
+      setTableError(saveError instanceof Error ? saveError.message : "Rollenwechsel fehlgeschlagen");
     } finally {
       setSavingUserId(null);
     }
@@ -185,6 +187,7 @@ export function UsersPage() {
             size="sm"
             onClick={() => {
               setNewUser(EMPTY_NEW_USER_FORM);
+              setCreateError(null);
               setCreateDialogOpen(true);
             }}
             data-testid="users-create-open"
@@ -261,9 +264,9 @@ export function UsersPage() {
                 )}
               </TableBody>
             </Table>
-            {error ? (
+            {tableError ? (
               <div className="border-t border-slate-200 px-4 py-3 text-sm text-destructive" data-testid="users-management-error">
-                {error}
+                {tableError}
               </div>
             ) : null}
             <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
@@ -273,42 +276,62 @@ export function UsersPage() {
         }
       />
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) {
+            setCreateError(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-lg" data-testid="users-create-dialog">
           <DialogHeader>
             <DialogTitle>Neuen Benutzer anlegen</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
+            {createError ? (
+              <div
+                className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                data-testid="users-create-error"
+              >
+                {createError}
+              </div>
+            ) : null}
             <div className="space-y-1">
-              <Label htmlFor="new-user-username">Benutzername</Label>
+              <Label htmlFor="new-user-username">Benutzername *</Label>
               <Input
                 id="new-user-username"
+                required
                 value={newUser.username}
                 onChange={(event) => setNewUser((current) => ({ ...current, username: event.target.value }))}
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="new-user-email">E-Mail</Label>
+              <Label htmlFor="new-user-email">E-Mail *</Label>
               <Input
                 id="new-user-email"
                 type="email"
+                required
                 value={newUser.email}
                 onChange={(event) => setNewUser((current) => ({ ...current, email: event.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="new-user-first-name">Vorname</Label>
+                <Label htmlFor="new-user-first-name">Vorname *</Label>
                 <Input
                   id="new-user-first-name"
+                  required
                   value={newUser.firstName}
                   onChange={(event) => setNewUser((current) => ({ ...current, firstName: event.target.value }))}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="new-user-last-name">Nachname</Label>
+                <Label htmlFor="new-user-last-name">Nachname *</Label>
                 <Input
                   id="new-user-last-name"
+                  required
                   value={newUser.lastName}
                   onChange={(event) => setNewUser((current) => ({ ...current, lastName: event.target.value }))}
                 />
@@ -330,18 +353,28 @@ export function UsersPage() {
               </select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="new-user-password">Initialpasswort</Label>
+              <Label htmlFor="new-user-password">Initialpasswort *</Label>
               <Input
                 id="new-user-password"
                 type="password"
+                required
+                minLength={10}
                 value={newUser.password}
                 onChange={(event) => setNewUser((current) => ({ ...current, password: event.target.value }))}
               />
-              <p className="text-xs text-slate-500">Mindestens 10 Zeichen.</p>
+              <p className="text-xs text-slate-500">Pflichtfeld, mindestens 10 Zeichen.</p>
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={isCreating}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setCreateError(null);
+              }}
+              disabled={isCreating}
+            >
               Abbrechen
             </Button>
             <Button type="button" onClick={() => void handleCreateUser()} disabled={isCreating}>
