@@ -48,7 +48,7 @@ export function EntityCard({
       onClick={onClick}
     >
       <div
-        className="px-4 py-2 border-b border-border flex items-center justify-between gap-2"
+        className="px-4 py-1.5 border-b border-border flex items-center justify-between gap-2"
         style={{ backgroundColor: headerColor }}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -75,7 +75,7 @@ export function EntityCard({
       </div>
       <div className="p-4 flex-1">{children}</div>
       {footer && (
-        <div className="px-4 py-2 border-t border-border bg-slate-50 flex items-center justify-end gap-2">
+        <div className="hidden px-4 py-2 border-t border-border bg-slate-50 flex items-center justify-end gap-2">
           {footer}
         </div>
       )}

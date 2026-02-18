@@ -266,7 +266,7 @@ Praktische Leitplanke:
 
 ## 4.1 Validierungsfehler vs. Fachfehler
 
-Validierungsfehler entstehen, wenn Requests nicht dem Contract entsprechen. Diese werden als 400 beantwortet und sollen im Frontend als formale Eingabefehler behandelt werden.
+Validierungsfehler entstehen, wenn Requests nicht dem Contract entsprechen. Im Ist-Stand antworten die meisten Controller mit 422 und `{ code: "VALIDATION_ERROR" }`; einzelne Endpunkte mit `handleZodError` antworten weiterhin mit 400 und `{ message, field }`.
 
 Fachfehler entstehen, wenn Requests formal korrekt sind, aber gegen Regeln verstoßen. Diese werden als explizite Service‑Errors modelliert und mit passendem Statuscode und einer maschinenlesbaren Message beantwortet.
 
@@ -338,7 +338,7 @@ FT (18) liefert eine Settings-Infrastruktur mit:
 - `server/repositories/userSettingsRepository.ts`
 - `server/repositories/usersRepository.ts`
 - `server/settings/registry.ts`
-- `server/middleware/requestUserContext.ts`
+- `server/middleware/sessionAuth.ts`
 - `server/routes.ts` (Route-Registrierung)
 
 ## 7.3 Relevante Dateien (Frontend)
@@ -491,13 +491,15 @@ Enthält Tabellen/Constraints für:
 
 inkl. Rollen-Insert via `ON DUPLICATE KEY UPDATE`.
 
-## 7.10 Betriebshinweise und aktuelle Übergangslösung
+## 7.10 Betriebshinweise und aktueller Auth-Kontext
 
-Der langfristige Zielzustand ist echter Auth-Kontext mit serverseitig ermittelter `userId`.
+Der Ist-Stand nutzt Session-Auth:
 
-Aktuell wird für FT (18) `req.userId` übergangsweise über `SETTINGS_USER_ID` gesetzt (`requestUserContext`). Das ist eine bewusst begrenzte Lösung, um FT (18) ohne parallele Auth-Replattforming-Arbeit auslieferbar und testbar zu machen. Dieser Mechanismus liefert im aktuellen Entwicklungsstand ausschließlich den Identitätsinput und ersetzt keine Authentifizierung und keine Session.
+- `sessionAuth` verwaltet das Session-Cookie.
+- `requireSessionUser` setzt `req.userId` aus der Session.
+- `resolveUserRole` baut daraus `req.userContext`.
 
-Die Rollenauflösung selbst bleibt trotzdem DB-basiert (`users -> roles`) und wird nicht aus Frontenddaten abgeleitet. "Serverseitig" bedeutet hier die autoritative Rollenquelle aus der DB, nicht bereits einen vollständig authentifizierten Session-Kontext.
+Die Rollenauflösung bleibt DB-basiert (`users -> roles`) und wird nicht aus Frontenddaten abgeleitet.
 
 Diese DB-basierte Rollenauflösung ist das autoritative Modell. Rollenentscheidungen im Kalender-/Terminbereich erfolgen serverseitig über `req.userContext.roleKey`. Client-Header sind keine Rollenquelle.
 
@@ -518,7 +520,7 @@ Empfohlene manuelle Prüfpunkte:
 
 ## 7.12 Follow-up nach FT (18)
 
-Wenn Auth-System erweitert wird, sollte zuerst `requestUserContext` durch echte Auth-Middleware ersetzt werden. Der Resolver- und Persistenzkern von FT (18) kann dabei unverändert bleiben, solange `userId` verlässlich aus dem Request-Kontext kommt.
+Wenn das Auth-System erweitert wird (z. B. SSO/OIDC), sollte die bestehende Session-Middleware-Kette erweitert werden, ohne den Resolver- und Persistenzkern von FT (18) zu umgehen. Maßgeblich bleibt, dass `userId` verlässlich aus dem serverseitigen Request-Kontext kommt.
 
 Write-Endpunkte für Settings sollten dieselben Regeln wiederverwenden:
 
@@ -539,14 +541,14 @@ FT (14) etabliert ein autoritatives Rollenmodell im Backend ohne Auth-Replattfor
 - Rollenquelle ausschließlich DB (`users -> roles`)
 - Request-Kontext `req.userContext = { userId, roleCode, roleKey }`
 - kein `x-user-role` als Autorisierungsquelle
-- Termin-Lock-Regel serverseitig und deterministisch (`403`, `APPOINTMENT_LOCKED`)
+- Termin-Lock-Regel serverseitig und deterministisch (`403`, `LOCK_VIOLATION`)
 - minimale Admin-UI fuer Benutzerrollen
 
 ## 10.2 Relevante Dateien (Backend)
 
-- `server/middleware/requestUserContext.ts`
+- `server/middleware/sessionAuth.ts`
 - `server/middleware/resolveUserRole.ts`
-- `server/bootstrap/assertConfiguredSystemUser.ts`
+- `server/middleware/setupGate.ts`
 - `server/routes.ts` (globale API-Middlewarekette)
 - `server/controllers/appointmentsController.ts`
 - `server/services/appointmentsService.ts`
@@ -564,26 +566,34 @@ FT (14) etabliert ein autoritatives Rollenmodell im Backend ohne Auth-Replattfor
 - `client/src/pages/Home.tsx`
 - Header-Entfernung in Termin-/Kalender-/Listenrequests (keine `x-user-role`-Headers mehr)
 
-## 10.4 Middleware- und Startup-Fluss
+## 10.4 Middleware- und Request-Fluss
 
 ### 10.4.1 Request-Middleware (API)
 
 In `server/routes.ts` ist die Reihenfolge:
 
-1. `attachRequestUserContext`
-2. `resolveUserRole`
-3. bestehende API-Route-Module
+1. `sessionAuth`
+2. `setupGate`
+3. `authRoutes`
+4. `requireSessionUser`
+5. `resolveUserRole`
+6. bestehende API-Route-Module
 
 Damit ist `req.userContext` vor jedem API-Handler verfügbar.
 
-### 10.4.2 Startup-Guard
+### 10.4.2 Setup-Guard
 
-`assertConfiguredSystemUser()` wird vor Route-Registrierung ausgeführt und blockiert den Serverstart, wenn:
+`setupGate` blockiert geschützte API-Pfade mit `503 SETUP_REQUIRED`, solange kein initialer Admin eingerichtet ist.
 
-- `SETTINGS_USER_ID` fehlt oder ungueltig ist
-- User nicht existiert
-- User inaktiv ist
-- User nicht `ADMIN` ist
+Setup-/Auth-Endpunkte bleiben währenddessen erreichbar:
+
+- `/api/auth/setup-status`
+- `/api/auth/setup-admin`
+- `/api/auth/login`
+- `/api/auth/quick-login-targets`
+- `/api/auth/quick-login`
+- `/api/auth/logout`
+- `/api/health`
 
 ## 10.5 Rollenmodell
 
@@ -615,7 +625,7 @@ Betroffene Mutationspfade:
 Fehlerformat:
 
 - HTTP `403`
-- JSON mit `field: "APPOINTMENT_LOCKED"`
+- JSON mit `code: "LOCK_VIOLATION"`
 
 ## 10.7 Entfernte Header-Abhaengigkeiten
 
@@ -653,13 +663,13 @@ Technisch geprüft:
 
 Manuelle Prüfpunkte:
 
-1. Server startet nur mit gültigem `SETTINGS_USER_ID` auf aktivem ADMIN-User.
+1. Setup-Status blockiert geschützte API-Pfade bis ein Admin eingerichtet ist.
 2. `GET /api/users` als Nicht-ADMIN -> `403`.
 3. Rollenwechsel als ADMIN funktioniert.
 4. Demotion des letzten ADMIN wird blockiert.
 5. Gesperrter Termin:
    - ADMIN darf ändern/löschen
-   - Nicht-ADMIN erhält `403` mit `APPOINTMENT_LOCKED`.
+   - Nicht-ADMIN erhält `403` mit `LOCK_VIOLATION`.
 
 ---
 
@@ -1320,3 +1330,66 @@ Umgestellt auf deterministic:
 - `tests/integration/server/documentExtraction.routes.liveAi.test.ts`
 - `tests/unit/validation/dtoValidators.test.ts`
 - `tests/unit/services/documentProcessing.customerResolution.test.ts`
+
+---
+
+## Dokumentations-Sync Protokoll (2026-02-18)
+
+- Angepasste Abschnitte:
+  - Auth-/Rollenkontext in FT18/FT14 (`sessionAuth`, `requireSessionUser`, `resolveUserRole`, `setupGate`).
+  - Fehlerbehandlung (`VALIDATION_ERROR`-Statuscodes, Lock-Code `LOCK_VIOLATION`).
+  - Relevante Dateilandkarte in FT14 (Entfernung veralteter `requestUserContext`/`assertConfiguredSystemUser`-Referenzen).
+- Strukturelle Ergänzungen:
+  - Verbindlicher Abschlussabschnitt "Sichtbarkeit von Daten (Rollenabhängige Filter)" mit Schutzregel dauerhaft am Dateiende ergänzt.
+- Festgestellte dokumentierte Abweichungen:
+  - Frühere Doku-Referenzen auf `SETTINGS_USER_ID`/`attachRequestUserContext` waren veraltet und wurden auf den aktuellen Session-Flow korrigiert.
+
+---
+
+## Sichtbarkeit von Daten (Rollenabhängige Filter)
+
+Dieser Abschnitt beschreibt ausschließlich, welche Rollen welche Daten serverseitig erhalten.
+
+Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine Backend-Prüfung.
+
+### Disponent
+
+- erhält nur `is_active = true` bei:
+  - Mitarbeiter
+  - Kunden
+  - Projektstatus
+- sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
+- erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
+
+### Admin
+
+- erhält aktive und inaktive Einträge
+- kann Aktiv-Status ändern
+- kann archivierte Einträge einsehen
+
+### Leser
+
+- erhält ausschließlich lesenden Zugriff
+- keine schreibenden Endpunkte verfügbar
+
+---
+
+## Schutzregel
+
+Dieser Abschnitt ist ein dauerhaft verbindlicher Bestandteil der Implementation-Dokumentation und muss stets am Ende der Datei stehen.
+
+Er darf nicht entfernt, in andere Kapitel verschoben oder in seiner grundsätzlichen Struktur aufgelöst werden.
+
+Er muss jedoch inhaltlich aktuell gehalten werden. Wenn sich serverseitige Sichtbarkeitsregeln, Rollenlogik oder Filtermechanismen ändern, sind diese Änderungen hier präzise und vollständig zu dokumentieren.
+
+Zulässig sind:
+- fachliche Ergänzungen bei neuen Entitäten
+- Anpassungen bestehender Rollenregeln
+- Präzisierungen bei geänderter Filterlogik
+
+Nicht zulässig sind:
+- strukturelle Auflösung des Abschnitts
+- Integration in andere Kapitel
+- Entfernung des Abschnitts
+
+Der Abschnitt dient als autoritative Referenz für serverseitige Sichtbarkeitsregeln im Multi-User-System.

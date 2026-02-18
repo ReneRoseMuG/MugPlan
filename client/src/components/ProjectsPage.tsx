@@ -1,9 +1,10 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FolderKanban, MapPin, Pencil, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { FolderKanban, Pencil, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityCard } from "@/components/ui/entity-card";
+import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
@@ -16,6 +17,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
+import type { ProjectStatusRelationItem } from "@shared/routes";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { ProjectFilters, ProjectScope } from "@/lib/project-filters";
 import { format } from "date-fns";
@@ -166,6 +168,30 @@ export function ProjectsPage({
       );
 
       return new Map<number, ProjectAppointmentSummary[]>(responses);
+    },
+    enabled: filteredProjectIds.length > 0,
+  });
+
+  const { data: projectStatusRelationsByProjectId = new Map<number, ProjectStatusRelationItem[]>() } = useQuery({
+    queryKey: ["projects-page-statuses", filteredProjectIdsKey],
+    queryFn: async () => {
+      const responses = await Promise.all(
+        filteredProjectIds.map(async (projectId) => {
+          const response = await fetch(
+            `/api/projects/${projectId}/statuses`,
+            {
+              credentials: "include",
+              headers: {
+              },
+            },
+          );
+          if (!response.ok) throw new Error("Projektstatus konnten nicht geladen werden");
+          const payload = (await response.json()) as ProjectStatusRelationItem[];
+          return [projectId, payload] as const;
+        }),
+      );
+
+      return new Map<number, ProjectStatusRelationItem[]>(responses);
     },
     enabled: filteredProjectIds.length > 0,
   });
@@ -387,6 +413,7 @@ export function ProjectsPage({
           >
             {filteredProjects.map((project) => {
               const customer = customersById.get(project.customerId);
+              const assignedStatuses = projectStatusRelationsByProjectId.get(project.id) ?? [];
               const handleSelect = () => onSelectProject?.(project.id);
 
               return (
@@ -416,6 +443,21 @@ export function ProjectsPage({
                       <span className="font-semibold">Auftrag:</span> {project.orderNumber?.trim() || "-"}
                     </div>
 
+                    {assignedStatuses.length > 0 && (
+                      <div className="space-y-1" data-testid={`project-status-stack-${project.id}`}>
+                        {assignedStatuses.map((item) => (
+                          <ProjectStatusInfoBadge
+                            key={item.status.id}
+                            status={item.status}
+                            action="none"
+                            size="sm"
+                            fullWidth
+                            testId={`badge-project-status-${project.id}-${item.status.id}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
                     {project.descriptionMd && (
                       <div
                         className="text-xs text-slate-500 line-clamp-2 pt-1"
@@ -428,10 +470,6 @@ export function ProjectsPage({
                         <span className="inline-flex items-center gap-1">
                           <User className="w-3 h-3 text-slate-400" />
                           <span className="font-medium">{customer.fullName}</span>
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-slate-500">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span>{customer.postalCode ?? "-"}{customer.city ? ` ${customer.city}` : ""}</span>
                         </span>
                       </div>
                     )}
