@@ -1,5 +1,5 @@
-﻿import { Flag, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Flag } from "lucide-react";
+import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -48,15 +48,11 @@ export function ProjectStatusFilterInput({
         )}
         <Popover open={isOpen} onOpenChange={onOpenChange}>
           <PopoverTrigger asChild>
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-7 w-7"
+            <PlusActionButton
               disabled={availableStatuses.length === 0}
               data-testid="button-add-project-status-filter"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </Button>
+              aria-label="Status hinzufügen"
+            />
           </PopoverTrigger>
           <PopoverContent className="w-72 p-3" align="start">
             <div className="space-y-2">

@@ -1,6 +1,5 @@
 ﻿import { ReactNode, useState } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ColorSelectEntityEditDialog, ColorSelectEntityEditDialogProps } from "./color-select-entity-edit-dialog";
 import { EmployeeInfoBadge } from "./employee-info-badge";
@@ -49,24 +48,20 @@ export function EmployeeSelectEntityEditDialog({
     >
       {children}
       <div
-        className="border-l-4 border border-border bg-slate-50 dark:bg-slate-900 p-3 space-y-3"
+        className="border-l-4 border border-border bg-slate-50 dark:bg-slate-900 overflow-hidden"
         style={{ borderLeftColor: selectedColor }}
       >
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-slate-50 dark:bg-slate-900">
           <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Mitarbeiter
           </div>
-          <Button
-            size="sm"
-            variant="outline"
+          <PlusActionButton
             onClick={() => setSelectionDialogOpen(true)}
+            aria-label="Mitarbeiter hinzufügen"
             data-testid={`button-add-${entityType}-member`}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Hinzufügen
-          </Button>
+          />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900">
           {selectedMembers.map((memberId) => {
             const employee = allEmployees.find((member) => member.id === memberId);
             if (!employee) return null;
@@ -112,8 +107,6 @@ export function EmployeeSelectEntityEditDialog({
     </ColorSelectEntityEditDialog>
   );
 }
-
-
 
 
 

@@ -1,10 +1,11 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { Calendar, Clock, FolderKanban, Plus, Route, Users } from "lucide-react";
+import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { Button } from "@/components/ui/button";
+import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -1155,15 +1156,11 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         <div className="rounded-lg border border-border p-4 bg-slate-50 space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">Zugewiesene Mitarbeiter</Label>
-            <Button
-              size="icon"
-              variant="ghost"
+            <PlusActionButton
               onClick={() => setEmployeePickerOpen(true)}
               disabled={isLocked}
               data-testid="button-add-employee"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+            />
           </div>
           <div className="flex flex-wrap gap-2">
             {assignedEmployees.length === 0 ? (

@@ -6,11 +6,12 @@
  *
  * Abgedeckte Regeln:
  * - Auswahlaktion liegt in einer Footer-Action-Zone.
- * - Beschriftung "PDF auswählen" ist vorhanden und mit Plus-Button gekoppelt.
+ * - Beschriftung "PDF auswaehlen" ist vorhanden und mit Plus-Button gekoppelt.
+ * - Die Plus-Aktion nutzt den zentralen randlosen PlusActionButton-Standard.
  * - Alter Body-Button mit Textlabel wird nicht mehr gerendert.
  *
  * Fehlerfaelle:
- * - Regression auf altes Layout mit großem Auswahlbutton im Body.
+ * - Regression auf altes Layout mit grossem Auswahlbutton im Body.
  *
  * Ziel:
  * Stabilitaet des neuen Dropzone-Layouts absichern.
@@ -23,10 +24,11 @@ describe("FT21 document extraction dropzone ui", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/DocumentExtractionDropzone.tsx");
   const source = readFileSync(filePath, "utf8");
 
-  it("renders footer action zone with label and plus button", () => {
+  it("renders footer action zone with label and normalized plus button", () => {
     expect(source).toContain("PDF auswählen");
-    expect(source).toContain("<Plus className=\"w-4 h-4\" />");
+    expect(source).toContain("<PlusActionButton");
     expect(source).toContain("border-t border-slate-300/80");
+    expect(source).not.toContain("variant=\"outline\"");
   });
 
   it("keeps hidden file input trigger", () => {

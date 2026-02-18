@@ -1,6 +1,7 @@
 import React, { type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus } from "lucide-react";
+import { Minus } from "lucide-react";
+import { PlusActionButton } from "@/components/ui/plus-action-button";
 
 export type RelationSlotState = "active" | "empty" | "readonly";
 
@@ -43,15 +44,11 @@ export function RelationSlot({
         </div>
         <div className="flex items-center gap-2 shrink-0 min-h-8">
           {canAdd && (
-            <Button
-              size="icon"
-              variant="ghost"
+            <PlusActionButton
               onClick={onAdd}
               data-testid={addActionTestId ?? (testId ? `${testId}-action-add` : undefined)}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="sr-only">{addLabel}</span>
-            </Button>
+              aria-label={addLabel}
+            />
           )}
           {canRemove && (
             <Button

@@ -2,7 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HelpIcon } from "@/components/ui/help/help-icon";
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
+import { PlusActionButton } from "@/components/ui/plus-action-button";
 
 interface SidebarChildPanelAction {
   onClick: () => void;
@@ -55,16 +56,12 @@ export function SidebarChildPanel({
           {headerActions ?? (
             <>
               {addAction && (
-                <Button
-                  size="icon"
-                  variant="ghost"
+                <PlusActionButton
                   onClick={addAction.onClick}
                   disabled={addAction.disabled}
                   aria-label={addAction.ariaLabel ?? "Element hinzufügen"}
                   data-testid={addAction.testId}
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
+                />
               )}
               {closeAction && (
                 <Button

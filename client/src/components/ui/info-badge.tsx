@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { HoverPreview } from "@/components/ui/hover-preview";
-import { Minus, Plus, X } from "lucide-react";
+import { Minus, X } from "lucide-react";
+import { PlusActionButton } from "@/components/ui/plus-action-button";
 import type { MouseEvent, ReactNode } from "react";
 
 export type InfoBadgePreviewOptions = {
@@ -58,8 +59,8 @@ export function InfoBadge({
     : "px-3 py-2 gap-2";
   
   const widthClass = fullWidth ? "w-full" : "inline-flex";
-  const actionColumnClass = size === "sm" ? "w-5" : "w-6";
   const resolvedAction = action ?? (onRemove ? "remove" : "none");
+  const actionColumnClass = resolvedAction === "add" ? "w-7" : (size === "sm" ? "w-5" : "w-6");
   const previewContent = preview?.content ?? null;
   const previewOptions = {
     ...defaultPreviewOptions,
@@ -89,16 +90,11 @@ export function InfoBadge({
       </div>
       <div className={`flex items-center justify-end shrink-0 ${actionColumnClass}`}>
         {resolvedAction === "add" && (
-          <Button
-            size="icon"
-            variant="ghost"
+          <PlusActionButton
             onClick={handleActionClick}
             disabled={actionDisabled}
-            className={size === "sm" ? "h-4 w-4" : "h-5 w-5"}
             data-testid={testId ? `${testId}-add` : undefined}
-          >
-            <Plus className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
-          </Button>
+          />
         )}
         {resolvedAction === "remove" && (
           <Button

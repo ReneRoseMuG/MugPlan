@@ -1,6 +1,6 @@
 ﻿import { useRef, useState } from "react";
-import { FileUp, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FileUp } from "lucide-react";
+import { PlusActionButton } from "@/components/ui/plus-action-button";
 
 interface DocumentExtractionDropzoneProps {
   onFileSelected: (file: File) => void;
@@ -60,17 +60,12 @@ export function DocumentExtractionDropzone({
         <div className="mt-4 -mx-5 -mb-5 px-4 py-2 border-t border-slate-300/80 bg-white/80">
           <div className="flex justify-end items-center gap-2">
             <span className="text-sm text-slate-700">{isProcessing ? "Extraktion läuft..." : "PDF auswählen"}</span>
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
+            <PlusActionButton
               onClick={() => inputRef.current?.click()}
               disabled={disabled || isProcessing}
               data-testid="button-select-document-extraction"
               aria-label="PDF auswählen"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+            />
           </div>
         </div>
       </div>
