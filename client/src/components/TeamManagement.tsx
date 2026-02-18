@@ -8,6 +8,7 @@ import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TeamEditDialog } from "@/components/ui/team-edit-dialog";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
+import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
 import { useToast } from "@/hooks/use-toast";
@@ -243,9 +244,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                     </Button>
                   }
                 >
-                  <div className="text-xs font-medium uppercase tracking-wide leading-tight text-slate-500 mb-1">
-                    Mitarbeiter
-                  </div>
+                  <MembersSectionHeader className="px-0 py-1 mb-1 border-b border-border" />
                   <div className="space-y-2">
                     {team.members.map((member) => (
                       <EmployeeInfoBadge
