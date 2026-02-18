@@ -320,7 +320,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onError: (error) => {
       if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geÃ¤ndert, bitte neu laden.", variant: "destructive" });
+        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
       }
     },
   });
@@ -336,7 +336,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onError: (error) => {
       if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geÃ¤ndert, bitte neu laden.", variant: "destructive" });
+        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
       }
     },
   });
@@ -388,7 +388,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       throw new Error("validation");
     }
     if (!customerId) {
-      toast({ title: "Kunde muss ausgewÃ¤hlt werden", variant: "destructive" });
+      toast({ title: "Kunde muss ausgewählt werden", variant: "destructive" });
       throw new Error("validation");
     }
     if (!selectedCustomerNumber) {
@@ -434,7 +434,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     try {
       const hasExistingValues = name.trim().length > 0 || descriptionMd.trim().length > 0;
       if (hasExistingValues) {
-        const confirmed = window.confirm("Titel oder Beschreibung sind bereits befÃ¼llt. Inhalte Ã¼berschreiben?");
+        const confirmed = window.confirm("Titel oder Beschreibung sind bereits befüllt. Inhalte überschreiben?");
         if (!confirmed) return;
       }
       setName(parseProjectStoredName(payload.saunaModel).isolatedProjectName);
@@ -453,10 +453,10 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
           }
         }
       }
-      toast({ title: "Projektvorschlag Ã¼bernommen" });
+      toast({ title: "Projektvorschlag übernommen" });
     } catch (error) {
       toast({
-        title: "Projektvorschlag konnte nicht Ã¼bernommen werden",
+        title: "Projektvorschlag konnte nicht übernommen werden",
         description: error instanceof Error ? error.message : "Unbekannter Fehler",
         variant: "destructive",
       });
@@ -636,7 +636,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
               setCustomerDialogOpen(false);
             }}
             onCancel={() => setCustomerDialogOpen(false)}
-            title="Kunde auswÃ¤hlen"
+            title="Kunde auswählen"
           />
         </DialogContent>
       </Dialog>
@@ -644,9 +644,9 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ã„nderungen verwerfen?</AlertDialogTitle>
+            <AlertDialogTitle>Änderungen verwerfen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Es gibt ungespeicherte Ã„nderungen. MÃ¶chten Sie das Formular wirklich schlieÃŸen?
+              Es gibt ungespeicherte Änderungen. Möchten Sie das Formular wirklich schließen?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -657,7 +657,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 onCancel?.();
               }}
             >
-              Verwerfen und schlieÃŸen
+              Verwerfen und schließen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

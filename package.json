@@ -8,13 +8,14 @@
     "build": "tsx script/build.ts",
     "start:orig": "NODE_ENV=production node dist/index.cjs",
     "start": "NODE_ENV=production node --env-file=.env dist/index.cjs",
-    "check": "npm run check:encoding:frontend && tsc",
+    "check": "npm run check:encoding && tsc",
     "typecheck": "tsc --noEmit",
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint client/src server shared --ext .ts,.tsx",
     "audit": "npm audit --audit-level=moderate",
     "secrets": "powershell -NoProfile -ExecutionPolicy Bypass -File script/run-gitleaks.ps1 detect --source . --no-git",
     "review": "npm run typecheck && npm run lint && npm run audit && npm run secrets",
-    "check:encoding:frontend": "tsx script/check-frontend-encoding.ts",
+    "check:encoding": "tsx script/check-frontend-encoding.ts",
+    "check:encoding:frontend": "npm run check:encoding",
     "db:push": "drizzle-kit push",
     "db:migrate:project-names": "tsx script/migrate-project-names-with-customer-number.ts",
     "db:seed:roles": "tsx script/seed-roles.ts",
@@ -135,4 +136,3 @@
     "bufferutil": "^4.0.8"
   }
 }
-
