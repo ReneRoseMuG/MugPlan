@@ -3,6 +3,10 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as toursService from "../services/toursService";
 
+function canMutateTours(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function listTours(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tours = await toursService.listTours();
@@ -14,6 +18,10 @@ export async function listTours(_req: Request, res: Response, next: NextFunction
 
 export async function createTour(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTours(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.tours.create.input.parse(req.body);
     const tour = await toursService.createTour(input);
     res.status(201).json(tour);
@@ -28,6 +36,10 @@ export async function createTour(req: Request, res: Response, next: NextFunction
 
 export async function updateTour(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTours(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.tours.update.input.parse(req.body);
     const tour = await toursService.updateTour(Number(req.params.id), input);
     if (!tour) {
@@ -50,6 +62,10 @@ export async function updateTour(req: Request, res: Response, next: NextFunction
 
 export async function deleteTour(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTours(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.tours.delete.input.parse(req.body);
     await toursService.deleteTour(Number(req.params.id), input.version);
     res.status(204).send();

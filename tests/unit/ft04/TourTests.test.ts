@@ -114,10 +114,12 @@ describe("FT04 Unit: TourTests", () => {
     expect(parsed.data).toEqual({ color: "#123123" });
   });
 
-  it("documents that update contract rejects name changes", () => {
+  it("documents that update contract ignores name changes", () => {
     const parsed = api.tours.update.input.safeParse({ color: "#121212", version: 1, name: "Neue Tour" });
 
-    expect(parsed.success).toBe(false);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data).toEqual({ color: "#121212", version: 1 });
   });
 
   it("maps delete conflict to NOT_FOUND when entity no longer exists", async () => {

@@ -413,6 +413,7 @@ export const api = {
       input: insertTourSchema,
       responses: {
         201: z.custom<typeof tours.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         400: errorSchemas.validation,
       },
     },
@@ -424,6 +425,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof tours.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -437,6 +439,7 @@ export const api = {
       }),
       responses: {
         204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
