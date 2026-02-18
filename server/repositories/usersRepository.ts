@@ -35,6 +35,12 @@ export type UserRoleRecord = {
   roleCode: DbRoleCode | null;
 };
 
+export type FirstActiveUserByRole = {
+  userId: number;
+  username: string;
+  roleCode: DbRoleCode;
+};
+
 export class UsersRepositoryError extends Error {
   code: "DUPLICATE_USERNAME" | "DUPLICATE_EMAIL";
 
@@ -90,6 +96,30 @@ export async function listActiveUserIds(limit = 10): Promise<number[]> {
     .limit(limit);
 
   return rows.map((row) => row.id);
+}
+
+export async function getFirstActiveUserByRoleCode(roleCode: DbRoleCode): Promise<FirstActiveUserByRole | null> {
+  const [row] = await db
+    .select({
+      userId: users.id,
+      username: users.username,
+      roleCode: roles.code,
+    })
+    .from(users)
+    .innerJoin(roles, eq(users.roleId, roles.id))
+    .where(and(eq(users.isActive, true), eq(roles.code, roleCode)))
+    .orderBy(users.id)
+    .limit(1);
+
+  if (!row?.roleCode) return null;
+  const normalizedRoleCode = assertDbRoleCode(row.roleCode.toUpperCase());
+  if (!normalizedRoleCode) return null;
+
+  return {
+    userId: row.userId,
+    username: row.username,
+    roleCode: normalizedRoleCode,
+  };
 }
 
 export async function listUsersWithRoles(): Promise<UserRoleListRow[]> {

@@ -9,6 +9,7 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 | [tests/integration/extraction/documentTextExtractor.fixture.test.ts](../tests/integration/extraction/documentTextExtractor.fixture.test.ts) | TBD | Integration | Fixture-basierte Prüfung der Textextraktion | Bestand |
 | [tests/integration/joins/joinReplaceAtomicity.test.ts](../tests/integration/joins/joinReplaceAtomicity.test.ts) | TBD | Integration | Atomare Ersetzung von Join-Daten validieren | Bestand |
 | [tests/unit/auth/loginIdentifier.test.ts](../tests/unit/auth/loginIdentifier.test.ts) | TBD | Unit | Regeln zur Login-Identifier-Auflösung prüfen | Bestand |
+| [tests/unit/auth/quickLogin.test.ts](../tests/unit/auth/quickLogin.test.ts) | FT03 | Unit | Test-only Schnelllogin-Regeln fuer Rollenverfuegbarkeit, Guarding und Fehlercodes absichern | Neu |
 | [tests/unit/auth/passwordHash.test.ts](../tests/unit/auth/passwordHash.test.ts) | TBD | Unit | Passwort-Hashing und Verifikation prüfen | Bestand |
 | [tests/unit/authorization/roleGuards.test.ts](../tests/unit/authorization/roleGuards.test.ts) | TBD | Unit | Rollenbasierte Zugriffsschutz-Guards validieren | Bestand |
 | [tests/unit/authorization/projectStatusAuthorization.test.ts](../tests/unit/authorization/projectStatusAuthorization.test.ts) | FT15 | Unit | Rollenregeln fuer Projektstatus-Stammdaten und Zuordnungen absichern | Neu |

@@ -50,6 +50,38 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
+export async function getQuickLoginTargets(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const payload = await authService.listQuickLoginTargets();
+    res.json(payload);
+  } catch (error) {
+    if (authService.isAuthError(error)) {
+      res.status(error.status).json({ code: error.code });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function quickLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const input = api.auth.quickLogin.input.parse(req.body);
+    const payload = await authService.quickLoginByRole(input);
+    req.session.userId = payload.userId;
+    res.json(payload);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (authService.isAuthError(error)) {
+      res.status(error.status).json({ code: error.code });
+      return;
+    }
+    next(error);
+  }
+}
+
 export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     req.session.destroy((error) => {

@@ -47,6 +47,8 @@ const publicPaths = new Set<string>([
   "/auth/setup-status",
   "/auth/setup-admin",
   "/auth/login",
+  "/auth/quick-login-targets",
+  "/auth/quick-login",
   "/auth/logout",
   "/health",
 ]);

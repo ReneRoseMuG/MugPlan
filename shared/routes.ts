@@ -104,6 +104,42 @@ export const api = {
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
+    quickLoginTargets: {
+      method: "GET" as const,
+      path: "/api/auth/quick-login-targets",
+      responses: {
+        200: z.object({
+          roles: z.array(
+            z.object({
+              roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+              available: z.boolean(),
+              username: z.string().optional(),
+            }),
+          ),
+        }),
+        404: z.object({ code: z.literal("QUICK_LOGIN_DISABLED") }),
+        409: z.object({ code: z.literal("SETUP_REQUIRED") }),
+      },
+    },
+    quickLogin: {
+      method: "POST" as const,
+      path: "/api/auth/quick-login",
+      input: z
+        .object({
+          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+        })
+        .strict(),
+      responses: {
+        200: z.object({
+          userId: z.number().int().positive(),
+          username: z.string(),
+          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+        }),
+        404: z.object({ code: z.enum(["QUICK_LOGIN_DISABLED", "USER_NOT_FOUND_FOR_ROLE"]) }),
+        409: z.object({ code: z.literal("SETUP_REQUIRED") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
     logout: {
       method: "POST" as const,
       path: "/api/auth/logout",
