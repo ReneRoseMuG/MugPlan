@@ -1,8 +1,6 @@
 ﻿import { z } from "zod";
 
 const START_MARKER = "Menge Art.Nr.";
-const SALUTATION_REGEX = /^(frau|herr|familie)\b/i;
-const STREET_REGEX = /\d+[a-zA-Z-\/]*\s*$/;
 const POSTAL_CITY_REGEX = /^(\d{4,5})\s+(.+)$/;
 
 type HeaderField = "orderNumber" | "customerNumber" | "mobile";
@@ -143,30 +141,29 @@ function looksLikeName(value: string): boolean {
 }
 
 function looksLikeStreet(value: string): boolean {
-  return STREET_REGEX.test(value) || /\b(str|strasse|straße|weg|platz|allee|gasse)\b/i.test(value);
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return false;
+  const hasTrailingHouseNumber = /\d+\s*[A-Za-z]?(?:\s*[A-Za-z])?(?:[/-]\d+)?\s*$/.test(trimmed);
+  return hasTrailingHouseNumber || /\b(str|strasse|straße|weg|platz|allee|gasse)\b/i.test(trimmed);
 }
 
-function findAddressBlock(lines: string[]): string[] {
-  for (let i = 0; i < lines.length; i += 1) {
-    if (!SALUTATION_REGEX.test(lines[i])) continue;
-    const name = lines[i + 1] ?? "";
-    const street = lines[i + 2] ?? "";
-    const postalCity = lines[i + 3] ?? "";
-    if (looksLikeName(name) && looksLikeStreet(street) && POSTAL_CITY_REGEX.test(postalCity)) {
-      return lines.slice(i, Math.min(lines.length, i + 5));
-    }
+function findAddressBlock(lines: string[]): { nameLine: string; streetLine: string; postalCityLine: string } | null {
+  for (let postalIndex = 0; postalIndex < lines.length; postalIndex += 1) {
+    const postalCityLine = lines[postalIndex] ?? "";
+    if (!POSTAL_CITY_REGEX.test(postalCityLine)) continue;
+
+    const streetLine = lines[postalIndex - 1] ?? "";
+    const nameLine = lines[postalIndex - 2] ?? "";
+    if (!looksLikeName(nameLine) || !looksLikeStreet(streetLine)) continue;
+
+    return {
+      nameLine,
+      streetLine,
+      postalCityLine,
+    };
   }
 
-  for (let i = 0; i < lines.length; i += 1) {
-    const name = lines[i] ?? "";
-    const street = lines[i + 1] ?? "";
-    const postalCity = lines[i + 2] ?? "";
-    if (looksLikeName(name) && looksLikeStreet(street) && POSTAL_CITY_REGEX.test(postalCity)) {
-      return lines.slice(i, Math.min(lines.length, i + 4));
-    }
-  }
-
-  return [];
+  return null;
 }
 
 function parseName(nameLine: string): { firstName: string; lastName: string } {
@@ -211,18 +208,12 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
   const orderNumber = pickSingleValue(labelValues.orderNumber);
 
   const addressBlock = findAddressBlock(addressRegionLines);
-  if (addressBlock.length === 0) {
-    throw new Error("Adressblock konnte im Dokumentkopf nicht deterministisch erkannt werden");
+  if (!addressBlock) {
+    throw new Error("Adressmuster (Name, Strasse, PLZ Ort) konnte im Dokumentkopf nicht erkannt werden");
   }
-
-  const startsWithSalutation = SALUTATION_REGEX.test(addressBlock[0] ?? "");
-  const nameLine = startsWithSalutation ? addressBlock[1] ?? "" : addressBlock[0] ?? "";
-  const streetLine = startsWithSalutation ? addressBlock[2] ?? "" : addressBlock[1] ?? "";
-  const postalCityLine = startsWithSalutation ? addressBlock[3] ?? "" : addressBlock[2] ?? "";
-
-  const { firstName, lastName } = parseName(nameLine);
-  const street = streetLine.trim();
-  const postalCityMatch = POSTAL_CITY_REGEX.exec(postalCityLine.trim());
+  const { firstName, lastName } = parseName(addressBlock.nameLine);
+  const street = addressBlock.streetLine.trim();
+  const postalCityMatch = POSTAL_CITY_REGEX.exec(addressBlock.postalCityLine.trim());
 
   const parsed = {
     orderNumber,
@@ -245,4 +236,3 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
   requiredSchema.parse(parsed);
   return parsed;
 }
-
