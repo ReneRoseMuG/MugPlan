@@ -26,14 +26,15 @@ describe("FT03 UI: toaster toastDesktopPosition wiring", () => {
 
   it("reads toastDesktopPosition setting and forwards it to ToastViewport", () => {
     expect(toasterSource).toContain('useSetting("toastDesktopPosition")');
-    expect(toasterSource).toContain('<ToastViewport desktopPosition={toastDesktopPosition ?? "bottom-right"} />');
+    expect(toasterSource).toContain('key={toastDesktopPosition ?? "bottom-right"}');
+    expect(toasterSource).toContain('desktopPosition={toastDesktopPosition ?? "bottom-right"}');
   });
 
   it("contains class mapping for all desktop corner positions", () => {
-    expect(toastSource).toContain('"top-left": "sm:left-0 sm:right-auto sm:top-0 sm:bottom-auto"');
-    expect(toastSource).toContain('"top-right": "sm:right-0 sm:left-auto sm:top-0 sm:bottom-auto"');
-    expect(toastSource).toContain('"bottom-left": "sm:left-0 sm:right-auto sm:bottom-0 sm:top-auto"');
-    expect(toastSource).toContain('"bottom-right": "sm:right-0 sm:left-auto sm:bottom-0 sm:top-auto"');
+    expect(toastSource).toContain('"top-left": "sm:top-0 sm:left-0 sm:right-auto sm:bottom-auto sm:w-auto"');
+    expect(toastSource).toContain('"top-right": "sm:top-0 sm:right-0 sm:left-auto sm:bottom-auto sm:w-auto"');
+    expect(toastSource).toContain('"bottom-left": "sm:bottom-0 sm:left-0 sm:right-auto sm:top-auto sm:w-auto"');
+    expect(toastSource).toContain('"bottom-right": "sm:bottom-0 sm:right-0 sm:left-auto sm:top-auto sm:w-auto"');
   });
 
   it("keeps mobile top anchor in viewport base classes", () => {

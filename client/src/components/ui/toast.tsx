@@ -10,10 +10,10 @@ const ToastProvider = ToastPrimitives.Provider
 type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
 const toastDesktopViewportClassByPosition: Record<ToastDesktopPosition, string> = {
-  "top-left": "sm:left-0 sm:right-auto sm:top-0 sm:bottom-auto",
-  "top-right": "sm:right-0 sm:left-auto sm:top-0 sm:bottom-auto",
-  "bottom-left": "sm:left-0 sm:right-auto sm:bottom-0 sm:top-auto",
-  "bottom-right": "sm:right-0 sm:left-auto sm:bottom-0 sm:top-auto",
+  "top-left": "sm:top-0 sm:left-0 sm:right-auto sm:bottom-auto sm:w-auto",
+  "top-right": "sm:top-0 sm:right-0 sm:left-auto sm:bottom-auto sm:w-auto",
+  "bottom-left": "sm:bottom-0 sm:left-0 sm:right-auto sm:top-auto sm:w-auto",
+  "bottom-right": "sm:bottom-0 sm:right-0 sm:left-auto sm:top-auto sm:w-auto",
 }
 
 type ToastViewportProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport> & {

@@ -29,7 +29,10 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport desktopPosition={toastDesktopPosition ?? "bottom-right"} />
+      <ToastViewport
+        key={toastDesktopPosition ?? "bottom-right"}
+        desktopPosition={toastDesktopPosition ?? "bottom-right"}
+      />
     </ToastProvider>
   )
 }
