@@ -39,7 +39,10 @@ export function CalendarWeekAppointmentPanelProject({
         <div className="text-[11px] text-slate-600">Auftragsnr.: {projectOrderNumber}</div>
       )}
       {projectDescription && (
-        <p className="text-[11px] leading-snug text-slate-600 line-clamp-3">{projectDescription}</p>
+        <div
+          className="max-h-16 overflow-hidden text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5"
+          dangerouslySetInnerHTML={{ __html: projectDescription }}
+        />
       )}
     </div>
   );

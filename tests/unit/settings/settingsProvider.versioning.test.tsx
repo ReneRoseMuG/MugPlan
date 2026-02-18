@@ -5,12 +5,12 @@
  * Use Case: UC Settings speichern mit Optimistic Locking
  *
  * Abgedeckte Regeln:
- * - Scope-Version wird nur aus vorhandenen persisted Versionen aufgeloest.
- * - Fehlende Scope-Version erzeugt keinen stillen Fallback.
+ * - Scope-Version wird bevorzugt aus vorhandenen persisted Versionen aufgeloest.
+ * - Fuer erlaubte Scopes ohne persistierten Eintrag wird Erstschreiben mit Version 1 erlaubt.
  * - VERSION_CONFLICT fuehrt zu genau einem Retry mit refetchter Version.
  *
  * Fehlerfaelle:
- * - Fehlende Initialversion blockiert den Schreibversuch.
+ * - Unbekannter Setting-Key blockiert den Schreibversuch weiterhin.
  * - Nicht-Konfliktfehler duerfen keinen Retry triggern.
  *
  * Ziel:
@@ -65,7 +65,7 @@ describe("PKG-08 SettingsProvider versioning", () => {
     expect(resolveSettingVersion(settings, { key: "attachmentStoragePath", scopeType: "GLOBAL" })).toBe(3);
   });
 
-  it("returns null when no persisted scope value exists", () => {
+  it("falls back to version 1 when scope is allowed but no persisted scope value exists", () => {
     const settings: UserSettingsResolvedResponse = [
       {
         key: "customers.viewMode",
@@ -82,7 +82,7 @@ describe("PKG-08 SettingsProvider versioning", () => {
       },
     ];
 
-    expect(resolveSettingVersion(settings, { key: "customers.viewMode", scopeType: "USER" })).toBeNull();
+    expect(resolveSettingVersion(settings, { key: "customers.viewMode", scopeType: "USER" })).toBe(1);
     expect(resolveSettingVersion(settings, { key: "unknown", scopeType: "USER" })).toBeNull();
   });
 
@@ -150,12 +150,45 @@ describe("PKG-08 SettingsProvider versioning", () => {
     });
   });
 
-  it("does not send fallback version when current scope version is missing", async () => {
+  it("sends version 1 when current scope version is missing but scope is allowed", async () => {
+    const mutate = vi.fn().mockResolvedValue(undefined);
+
+    await setSettingWithVersionRetry({
+      input: { key: "customers.viewMode", scopeType: "USER", value: "table" },
+      currentSettings: [
+        {
+          key: "customers.viewMode",
+          label: "Kunden Ansicht",
+          description: "desc",
+          type: "enum",
+          constraints: { options: ["board", "table"] },
+          allowedScopes: ["USER"],
+          defaultValue: "board",
+          resolvedValue: "board",
+          resolvedScope: "DEFAULT",
+          roleCode: "ADMIN",
+          roleKey: "ADMIN",
+        },
+      ],
+      mutate,
+      refetchSettings: vi.fn().mockResolvedValue([]),
+    });
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenNthCalledWith(1, {
+      key: "customers.viewMode",
+      scopeType: "USER",
+      value: "table",
+      version: 1,
+    });
+  });
+
+  it("does not send fallback version when setting is unknown", async () => {
     const mutate = vi.fn();
 
     await expect(
       setSettingWithVersionRetry({
-        input: { key: "customers.viewMode", scopeType: "USER", value: "table" },
+        input: { key: "unknown-setting", scopeType: "USER", value: "table" },
         currentSettings: [
           {
             key: "customers.viewMode",

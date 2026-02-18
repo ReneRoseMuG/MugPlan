@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - Weekly-Panel uebergibt die Projekt-Auftragsnummer in den Projektbereich.
  * - Projektbereich im Weekly-Panel zeigt die Auftragsnummer.
+ * - Projektbeschreibung im Weekly-Panel wird als HTML gerendert.
  * - Fallback-Preview zeigt die Auftragsnummer.
  *
  * Fehlerfaelle:
@@ -32,6 +33,14 @@ describe("FT02 appointment preview order number wiring", () => {
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("Auftragsnr.: {projectOrderNumber}");
+  });
+
+  it("renders weekly project description as HTML", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelProject.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("dangerouslySetInnerHTML={{ __html: projectDescription }}");
+    expect(source).toContain("[&_ul]:list-disc");
   });
 
   it("wires order number into fallback appointment info preview", () => {

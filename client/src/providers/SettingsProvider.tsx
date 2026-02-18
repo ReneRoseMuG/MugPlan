@@ -43,7 +43,15 @@ export function resolveSettingVersion(
       ? setting.roleVersion
       : setting.globalVersion;
 
-  return Number.isInteger(versionByScope) && (versionByScope as number) >= 1 ? (versionByScope as number) : null;
+  if (Number.isInteger(versionByScope) && (versionByScope as number) >= 1) {
+    return versionByScope as number;
+  }
+
+  if (setting.allowedScopes.includes(input.scopeType)) {
+    return 1;
+  }
+
+  return null;
 }
 
 export function isVersionConflictError(error: unknown): boolean {
