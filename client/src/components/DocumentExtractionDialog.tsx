@@ -172,22 +172,6 @@ export function DocumentExtractionDialog({
               <DocumentExtractionCustomerSection
                 value={customerFields}
                 onChange={setCustomerFields}
-                action={
-                  !onApplyData && onApplyCustomer ? (
-                    <Button
-                      type="button"
-                      disabled={!payload || disableActions || disableCustomerApply}
-                      onClick={() => {
-                        if (!payload) return;
-                        setIsApplyingCustomer(true);
-                        void onApplyCustomer({ customer: payload.customer }).finally(() => setIsApplyingCustomer(false));
-                      }}
-                      data-testid="button-doc-extract-apply-customer"
-                    >
-                      {isApplyingCustomer ? "Übernehme..." : customerApplyLabel}
-                    </Button>
-                  ) : undefined
-                }
               />
             ) : null}
 
@@ -199,45 +183,59 @@ export function DocumentExtractionDialog({
                 onSaunaModelChange={setSaunaModel}
                 onOrderNumberChange={setOrderNumber}
                 onArticleListHtmlChange={setArticleListHtml}
-                action={
-                  !onApplyData && onApplyProject ? (
-                    <Button
-                      type="button"
-                      disabled={!payload || disableActions || disableProjectApply}
-                      onClick={() => {
-                        if (!payload) return;
-                        setIsApplyingProject(true);
-                        void onApplyProject(payload).finally(() => setIsApplyingProject(false));
-                      }}
-                      data-testid="button-doc-extract-apply-project"
-                    >
-                      {isApplyingProject ? "Übernehme..." : projectApplyLabel}
-                    </Button>
-                  ) : undefined
-                }
               />
             ) : null}
           </div>
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={disableActions}>
-            Schließen
-          </Button>
-          {onApplyData ? (
-            <Button
-              type="button"
-              disabled={!payload || disableActions || disableProjectApply || disableCustomerApply}
-              onClick={() => {
-                if (!payload) return;
-                setIsApplyingData(true);
-                void onApplyData(payload).finally(() => setIsApplyingData(false));
-              }}
-              data-testid="button-doc-extract-apply-data"
-            >
-              {isApplyingData ? "Übernehme..." : dataApplyLabel}
+          <div className="flex w-full flex-wrap items-center justify-end gap-2">
+              {!onApplyData && onApplyCustomer && showCustomerSection ? (
+                <Button
+                  type="button"
+                  disabled={!payload || disableActions || disableCustomerApply}
+                  onClick={() => {
+                    if (!payload) return;
+                    setIsApplyingCustomer(true);
+                    void onApplyCustomer({ customer: payload.customer }).finally(() => setIsApplyingCustomer(false));
+                  }}
+                  data-testid="button-doc-extract-apply-customer"
+                >
+                  {isApplyingCustomer ? "Übernehme..." : customerApplyLabel}
+                </Button>
+              ) : null}
+              {!onApplyData && onApplyProject && showProjectSection ? (
+                <Button
+                  type="button"
+                  disabled={!payload || disableActions || disableProjectApply}
+                  onClick={() => {
+                    if (!payload) return;
+                    setIsApplyingProject(true);
+                    void onApplyProject(payload).finally(() => setIsApplyingProject(false));
+                  }}
+                  data-testid="button-doc-extract-apply-project"
+                >
+                  {isApplyingProject ? "Übernehme..." : projectApplyLabel}
+                </Button>
+              ) : null}
+              {onApplyData ? (
+                <Button
+                  type="button"
+                  disabled={!payload || disableActions || disableProjectApply || disableCustomerApply}
+                  onClick={() => {
+                    if (!payload) return;
+                    setIsApplyingData(true);
+                    void onApplyData(payload).finally(() => setIsApplyingData(false));
+                  }}
+                  data-testid="button-doc-extract-apply-data"
+                >
+                  {isApplyingData ? "Übernehme..." : dataApplyLabel}
+                </Button>
+              ) : null}
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={disableActions}>
+              Schließen
             </Button>
-          ) : null}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
