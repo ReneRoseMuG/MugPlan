@@ -1325,128 +1325,433 @@ Die Termine des Mitarbeiters liegen als Druck oder PDF vor.
 
 ## Ziel / Zweck
 
-Dieses Feature stellt sicher, dass Planungsinformationen auch bei technischen Störungen, Teilausfällen oder eingeschränkter Systemverfügbarkeit zugänglich bleiben. Dazu werden Termine kontinuierlich in externe Kalender synchronisiert und zusätzlich als dateibasierter Fallback bereitgestellt.
+Sicherstellung der kurzfristigen operativen Handlungsfähigkeit bei Systemausfällen durch automatische, änderungsabhängige Generierung eines Excel-Fallback-Kalenders sowie eines PDF-Dokuments „Anstehende Termine“, inklusive täglichem E-Mail-Versand und administrativer Monitoring-Sicht.
 
 ## Fachliche Beschreibung
 
-Zur Absicherung der Terminplanung werden externe Kalender und Dateiexporte als **read-only Fallbacks** genutzt. Pro Tour steht ein externer Kalender zur Verfügung (z. B. Google Calendar oder Nextcloud Calendar). Zusätzlich existiert ein zentraler Planungskalender. Diese Kalender spiegeln den aktuellen Stand der Terminplanung wider und dienen ausschließlich der Anzeige.
+Das System erzeugt täglich automatisiert ein Fallback-Dokument, sofern seit dem letzten erfolgreichen Export relevante Daten geändert wurden.
 
-Die Synchronisation erfolgt automatisch und nahezu in Echtzeit, sobald Termine in der Anwendung angelegt, geändert oder gelöscht werden. Änderungen dürfen **nicht außerhalb der Anwendung** vorgenommen werden. Externe Kalender sind strikt lesend; Bearbeitungen dort sind nicht vorgesehen.
+Das Fallback besteht aus:
 
-Ergänzend kann eine **Excel-Arbeitsmappe** als dateibasierter Fallback erzeugt werden. Diese stellt eine Momentaufnahme der Terminplanung dar und kann bei Ausfällen oder zur Weitergabe verwendet werden.
+- einem Excel-Dokument mit:
+    - Wochenkalender-Nachbildung,
+    - maximal 3 aktiven Tour-Lanes,
+    - 2 Slots pro Tour und Tag,
+    - einem Bereich „Ohne Tour“,
+    - zwei Zeilen pro Termin (Kundendaten + Projektdaten),
+    - einem Detail-Sheet mit vollständigem Termin-Snapshot,
+    - zusätzlichen Sheets für Projekte, Kunden und Mitarbeiter.
+- einem PDF-Dokument „Anstehende Termine“ für den Zeitraum „heute + 2 Monate“, sortiert nach Datum und Uhrzeit.
 
-Der Zustand der Synchronisation wird überwacht. Fehler oder Verzögerungen werden sichtbar markiert, sodass organisatorische oder technische Maßnahmen eingeleitet werden können.
+Beide Dokumente werden:
+
+- serverseitig gespeichert,
+- per E-Mail versendet,
+- im System protokolliert.
+
+Backups älter als 30 Tage werden automatisch gelöscht.
+
+Logeinträge bleiben dauerhaft erhalten.
+
+Ein Administrator kann vergangene Backups einsehen und herunterladen.
+
+Das Excel-Dokument ist ein Snapshot und ersetzt nicht das produktive System.
+
+Zusätzlich zum Excel-Fallback und PDF-Dokument synchronisiert das System Termine mit einem externen CalDAV-Kalender (Nextcloud).
+
+Die Synchronisation erfolgt:
+
+- event-getrieben bei Terminänderungen,
+- serverseitig,
+- nicht blockierend,
+- ausschließlich vom System zum externen Kalender.
+
+Der externe Kalender dient als zusätzliche Anzeige- und Fallback-Instanz, ist jedoch kein führendes System.
+
+Es wird genau ein externer Kalender verwendet.
+
+Alle Termine werden dort eindeutig als MuGPlan-Termine gekennzeichnet.
 
 ## Regeln & Randbedingungen
 
-- Externe Kalender und Dateien sind **read-only**.
-- Änderungen an Terminen erfolgen ausschließlich in der Anwendung.
-- Synchronisation erfolgt automatisch und nahezu in Echtzeit.
-- Pro Tour existiert genau ein externer Kalender.
-- Zusätzlich existiert ein zentraler Planungskalender.
-- Synchronisationsfehler werden sichtbar markiert.
-- Datei-Exporte stellen **Momentaufnahmen** dar und sind nicht live gekoppelt.
+- Export erfolgt nur bei tatsächlicher Datenänderung.
+- Änderungsprüfung über MAX(updated_at) relevanter Tabellen.
+- Relevante Tabellen: Termine, Projekte, Kunden, Mitarbeiter, Touren.
+- Maximal 3 aktive Touren werden im Kalender dargestellt.
+- Pro Tour und Tag maximal 2 Termine im Raster.
+- Bei Überschreitung wird „+1“ angezeigt.
+- Keine Rücksynchronisation aus Excel.
+- Scheduler läuft täglich um 02:00 Uhr.
+- Migration der Tabelle `backup_log` auf _dev und _test.
+- Backup-Dateien werden 30 Tage gespeichert.
+- Monitoring nur für Admin sichtbar.
+- Keine Änderung bestehender Fachlogik.
+- Keine Änderung bestehender REST-Endpunkte.
+- Es wird genau ein CalDAV-Kalender synchronisiert.
+- Die Synchronisation erfolgt bei:
+    - Termin-Neuanlage,
+    - Terminänderung,
+    - Terminlöschung.
+- Externer Kalender ist nicht führend.
+- Es erfolgt keine Rücksynchronisation.
+- Externe Änderungen werden bei nächster Aktualisierung überschrieben.
+- Jeder Termin besitzt eine stabile externe UID.
+- Die UID darf sich niemals ändern.
+- Synchronisationsfehler dürfen Termin-Speicherung nicht blockieren.
+- Fehler werden protokolliert.
+- Authentifizierung erfolgt über Nextcloud-App-Passwort.
+- Kommunikation erfolgt ausschließlich über HTTPS.
+- CalDAV-Zugangsdaten werden über Umgebungsvariablen konfiguriert.
+
+---
 
 ## **Use Cases**
 
-### **UC: Termine in externe Kalender synchronisieren**
+### UC: Änderungsabhängige Backup-Prüfung
 
-**Akteur**
+Akteur:
 
-Disponent
+System (Scheduler)
 
-**Ziel**
+Ziel:
 
-Termindaten automatisch in externe Kalender übertragen.
+Feststellen, ob ein neues Backup erzeugt werden muss.
 
-**Vorbedingungen**
+Vorbedingungen:
 
-- Externe Kalender sind verbunden.
+- Scheduler wurde gestartet.
+- Tabelle `backup_log` existiert.
 
-**Ablauf**
+Ablauf:
 
-1. Ein Termin wird in der Anwendung erstellt, geändert oder gelöscht.
-2. Das System ermittelt die betroffenen Tourkalender sowie ggf. den zentralen Planungskalender.
-3. Das System überträgt die Änderungen an die externen Kalender.
-4. Das System protokolliert Erfolg oder Fehler der Synchronisation.
+- System liest Zeitpunkt des letzten erfolgreichen Exports.
+- System ermittelt MAX(updated_at) aller relevanten Tabellen.
+- System vergleicht beide Zeitpunkte.
+- Falls keine Änderung vorliegt, wird Lauf als „skipped“ protokolliert.
+- Falls Änderung vorliegt, wird Exportprozess gestartet.
 
-**Ergebnis**
+Alternativen:
 
-Die externen Kalender entsprechen dem aktuellen Stand der Anwendung (nahezu in Echtzeit).
+- Fehler bei Datenbankzugriff → Lauf wird als „error“ protokolliert.
 
-### **UC: Synchronisationsstatus überwachen**
+Ergebnis:
 
-**Akteur**
+Backup wird nur bei tatsächlicher Datenänderung erzeugt.
 
-Disponent
+### UC: Excel-Fallback-Dokument erzeugen
 
-**Ziel**
+Akteur:
 
-Erkennen, ob die Synchronisation zu externen Kalendern ordnungsgemäß funktioniert.
+System
 
-**Vorbedingungen**
+Ziel:
 
-- Externe Kalender sind verbunden.
+Erzeugung eines vollständigen Excel-Fallback-Dokuments.
 
-**Ablauf**
+Vorbedingungen:
 
-1. Das System zeigt den Synchronisationsstatus pro Tourkalender sowie ggf. für den zentralen Planungskalender an.
-2. Bei Fehlern markiert das System betroffene Termine oder Touren als „Synchronisation ausstehend“.
-3. Der Benutzer kann Details einsehen (z. B. letzter erfolgreicher Abgleich, Fehlermeldungskategorie).
+- Änderungsprüfung hat Exportbedarf festgestellt.
 
-**Ergebnis**
+Ablauf:
 
-Synchronisationsprobleme sind sichtbar und können organisatorisch oder technisch behoben werden.
+- System lädt alle relevanten Daten.
+- System erzeugt Kalender-Sheet mit Wochenstruktur.
+- System erzeugt Detail-Sheet mit vollständigem Termin-Snapshot.
+- System erzeugt zusätzliche Sheets (Projekte, Kunden, Mitarbeiter).
+- Datei wird serverseitig gespeichert.
 
-### **UC: Excel-Fallback exportieren**
+Alternativen:
 
-**Akteur**
+- Fehler bei Dateigenerierung → Lauf wird als „error“ protokolliert.
 
-Disponent
+Ergebnis:
 
-**Ziel**
+Excel-Dokument ist persistent gespeichert.
 
-Eine Excel-Arbeitsmappe mit detaillierten Termininformationen als dateibasierten Fallback erzeugen.
+### UC: PDF „Anstehende Termine“ erzeugen
 
-**Vorbedingungen**
+Akteur:
 
-- Termine sind vorhanden.
+System
 
-**Ablauf**
+Ziel:
 
-1. Der Benutzer wählt einen Zeitraum und ggf. Filter (Team, Mitarbeiter).
-2. Der Benutzer startet den Export.
-3. Das System erzeugt eine Excel-Arbeitsmappe mit den Termindaten.
+Erzeugung einer operativen Terminliste für 2 Monate.
 
-**Ergebnis**
+Vorbedingungen:
 
-Die Excel-Datei steht als Fallback-Momentaufnahme zur Verfügung.
+- Exportprozess läuft.
 
-### **UC: Externe Kalender verbinden**
+Ablauf:
 
-**Akteur**
+- System ermittelt Termine im Zeitraum „heute + 2 Monate“.
+- Termine werden nach Datum und Uhrzeit sortiert.
+- PDF wird generiert.
+- Datei wird gespeichert.
 
-Disponent
+Alternativen:
 
-**Ziel**
+- Fehler bei PDF-Erstellung → Lauf wird als „error“ protokolliert.
 
-Externe Kalender für Teams und den zentralen Planungskalender anbinden.
+Ergebnis:
 
-**Vorbedingungen**
+PDF-Dokument ist persistent gespeichert.
 
-- Externe Kalenderkonten oder Server sind verfügbar (z. B. Google oder Nextcloud).
-- Teams existieren.
+### UC: Backup per E-Mail versenden
 
-**Ablauf**
+Akteur:
 
-1. Der Benutzer hinterlegt die Verbindungsdaten (z. B. Konto, Server, Berechtigungen).
-2. Der Benutzer weist jedem Team einen externen Kalender zu.
-3. Der Benutzer legt den zentralen Planungskalender fest.
-4. Das System prüft die Verbindung und speichert die Zuordnung.
+System
 
-**Ergebnis**
+Ziel:
 
-Teams und Planung verfügen über zugeordnete externe Kalender, die für die Synchronisation bereitstehen.
+Versand des Fallback-Dokuments an definierte Empfänger.
+
+Vorbedingungen:
+
+- Excel- und PDF-Dateien wurden erfolgreich erzeugt.
+
+Ablauf:
+
+- System erstellt E-Mail mit Datum im Betreff.
+- Excel- und PDF-Dateien werden angehängt.
+- E-Mail wird versendet.
+- Mailstatus wird im Log gespeichert.
+
+Alternativen:
+
+- Versand schlägt fehl → Mailstatus „failed“, Laufstatus „error“.
+
+Ergebnis:
+
+Empfänger erhalten Backup-Dokumente per E-Mail.
+
+### UC: Backup-Historie einsehen
+
+Akteur:
+
+Administrator
+
+Ziel:
+
+Nachvollziehen aller Backup-Läufe.
+
+Vorbedingungen:
+
+- Administrator ist angemeldet.
+
+Ablauf:
+
+- Admin öffnet Einstellungsbereich.
+- Admin wechselt zum Tab „Backups“.
+- System zeigt tabellarische Liste aller `backup_log`Einträge.
+
+Alternativen:
+
+- Keine Logeinträge vorhanden → Leere Liste.
+
+Ergebnis:
+
+Admin kann Status und Verlauf aller Backups einsehen.
+
+### UC: Backup herunterladen
+
+Akteur:
+
+Administrator
+
+Ziel:
+
+Herunterladen eines gespeicherten Backups.
+
+Vorbedingungen:
+
+- Backup-Datei existiert serverseitig.
+
+Ablauf:
+
+- Admin doppelklickt auf einen Eintrag.
+- System prüft Berechtigung.
+- System liefert Datei über geschützten Endpoint aus.
+
+Alternativen:
+
+- Datei nicht vorhanden → Fehlermeldung anzeigen.
+
+Ergebnis:
+
+Backup-Datei wird lokal gespeichert.
+
+### UC: Alte Backups automatisch löschen
+
+Akteur:
+
+System (Scheduler)
+
+Ziel:
+
+Speicherbereinigung gemäß Retention-Regel.
+
+Vorbedingungen:
+
+- Scheduler-Lauf wird ausgeführt.
+
+Ablauf:
+
+- System prüft gespeicherte Dateien.
+- Dateien älter als 30 Tage werden gelöscht.
+- Löschvorgang wird protokolliert.
+
+Alternativen:
+
+- Datei nicht auffindbar → Fehler protokollieren.
+
+Ergebnis:
+
+Speicher bleibt kontrolliert, Log bleibt erhalten.
+
+### UC: Termin in externen Kalender übertragen
+
+Akteur:
+
+System
+
+Ziel:
+
+Neuen Termin im externen Kalender anlegen.
+
+Vorbedingungen:
+
+- Termin wurde neu erstellt.
+- Externer Kalender ist konfiguriert.
+
+Ablauf:
+
+- System erzeugt Event-Daten aus Termin.
+- System sendet Event an Kalender-API.
+- Externe Event-ID wird gespeichert.
+- Status wird protokolliert.
+
+Alternativen:
+
+- API nicht erreichbar → Fehler wird protokolliert.
+
+Ergebnis:
+
+Termin ist im externen Kalender sichtbar.
+
+### UC: Synchronisationsfehler protokollieren
+
+Akteur:
+
+System
+
+Ziel:
+
+Nachvollziehbarkeit von Synchronisationsproblemen.
+
+Vorbedingungen:
+
+- Fehler bei API-Kommunikation.
+
+Ablauf:
+
+- System speichert Fehlermeldung.
+- Termin bleibt intern unverändert.
+- Optional Retry bei nächstem Lauf.
+
+Alternativen:
+
+Keine.
+
+Ergebnis:
+
+Synchronisationsprobleme sind nachvollziehbar, Fachlogik bleibt stabil.
+
+### UC: Terminänderung im CalDAV-Kalender aktualisieren
+
+Akteur:
+
+System
+
+Ziel:
+
+Externen Kalender an geänderten Termin anpassen.
+
+Vorbedingungen:
+
+- Termin besitzt external_event_id.
+
+Ablauf:
+
+- System erzeugt aktualisierte iCalendar-Daten.
+- System sendet HTTP PUT an bestehende Event-URL.
+- Status wird aktualisiert.
+- Logeintrag wird erstellt.
+
+Alternativen:
+
+- Event extern nicht vorhanden → Event wird neu angelegt.
+
+Ergebnis:
+
+Externer Kalender entspricht internem Stand.
+
+### UC: Termin im CalDAV-Kalender löschen
+
+Akteur:
+
+System
+
+Ziel:
+
+Externes Event entfernen.
+
+Vorbedingungen:
+
+- Termin wird intern gelöscht.
+- external_event_id ist vorhanden.
+
+Ablauf:
+
+- System sendet HTTP DELETE an Event-URL.
+- external_event_id wird entfernt.
+- Logeintrag wird erstellt.
+
+Alternativen:
+
+- Event nicht auffindbar → Fehler protokollieren, intern fortfahren.
+
+Ergebnis:
+
+Termin ist extern nicht mehr sichtbar.
+
+### UC: Synchronisationsfehler protokollieren
+
+Akteur:
+
+System
+
+Ziel:
+
+Nachvollziehbarkeit von Synchronisationsproblemen.
+
+Vorbedingungen:
+
+- Fehler bei CalDAV-Kommunikation.
+
+Ablauf:
+
+- System speichert Fehlermeldung im calendar_sync_log.
+- Termin bleibt intern unverändert.
+
+Alternativen:
+
+Keine.
+
+Ergebnis:
+
+Synchronisationsprobleme sind nachvollziehbar, ohne Fachlogik zu beeinträchtigen.
 
 # FT (09): Kundenverwaltung
 
