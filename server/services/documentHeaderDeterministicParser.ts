@@ -9,8 +9,9 @@ export type DeterministicHeaderExtraction = {
   orderNumber: string | null;
   customerNumber: string;
   mobile: string | null;
-  firstName: string;
-  lastName: string;
+  firstName: string | null;
+  lastName: string | null;
+  company: string | null;
   addressLine1: string | null;
   postalCode: string | null;
   city: string | null;
@@ -133,13 +134,6 @@ function collectLabelValues(lines: string[]): Record<HeaderField, string[]> {
   return collected;
 }
 
-function looksLikeName(value: string): boolean {
-  const tokens = value.split(/\s+/).filter((token) => token.length > 0);
-  if (tokens.length < 2) return false;
-  return /^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß\-]+$/.test(tokens[0]) &&
-    /^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß\-]+$/.test(tokens[tokens.length - 1]);
-}
-
 function looksLikeStreet(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length === 0) return false;
@@ -147,17 +141,19 @@ function looksLikeStreet(value: string): boolean {
   return hasTrailingHouseNumber || /\b(str|strasse|straße|weg|platz|allee|gasse)\b/i.test(trimmed);
 }
 
-function findAddressBlock(lines: string[]): { nameLine: string; streetLine: string; postalCityLine: string } | null {
+function findAddressBlock(
+  lines: string[],
+): { identityLineA: string | null; identityLineB: string | null; streetLine: string; postalCityLine: string } | null {
   for (let postalIndex = 0; postalIndex < lines.length; postalIndex += 1) {
     const postalCityLine = lines[postalIndex] ?? "";
     if (!POSTAL_CITY_REGEX.test(postalCityLine)) continue;
 
     const streetLine = lines[postalIndex - 1] ?? "";
-    const nameLine = lines[postalIndex - 2] ?? "";
-    if (!looksLikeName(nameLine) || !looksLikeStreet(streetLine)) continue;
+    if (!looksLikeStreet(streetLine)) continue;
 
     return {
-      nameLine,
+      identityLineA: lines[postalIndex - 2] ?? null,
+      identityLineB: lines[postalIndex - 3] ?? null,
       streetLine,
       postalCityLine,
     };
@@ -166,15 +162,34 @@ function findAddressBlock(lines: string[]): { nameLine: string; streetLine: stri
   return null;
 }
 
-function parseName(nameLine: string): { firstName: string; lastName: string } {
-  const tokens = nameLine.split(/\s+/).filter((token) => token.length > 0);
-  if (tokens.length < 2) {
-    throw new Error("Vorname/Nachname konnten nicht deterministisch extrahiert werden");
-  }
+function normalizeIdentityLine(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function parsePersonLine(value: string | null): { firstName: string; lastName: string } | null {
+  const normalized = normalizeIdentityLine(value);
+  if (!normalized) return null;
+  if (looksLikeCompany(normalized)) return null;
+
+  const withoutSalutation = normalized.replace(/^(herr|frau|familie)\b[:\s]*/i, "").trim();
+  if (withoutSalutation.length === 0) return null;
+
+  const tokens = withoutSalutation.split(/\s+/).filter((token) => token.length > 0);
+  if (tokens.length < 2) return null;
+  if (!tokens.every((token) => /^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß'`-]*$/.test(token))) return null;
+
   return {
     firstName: tokens[0],
     lastName: tokens.slice(1).join(" "),
   };
+}
+
+function looksLikeCompany(value: string | null): boolean {
+  const normalized = normalizeIdentityLine(value);
+  if (!normalized) return false;
+  return /\b(gmbh|ag|ug|kg|gbr|e\.?k\.?|ohg|mbh|&\s*co)\b/i.test(normalized);
 }
 
 function pickSingleValue(values: string[]): string | null {
@@ -211,7 +226,15 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
   if (!addressBlock) {
     throw new Error("Adressmuster (Name, Strasse, PLZ Ort) konnte im Dokumentkopf nicht erkannt werden");
   }
-  const { firstName, lastName } = parseName(addressBlock.nameLine);
+
+  const personA = parsePersonLine(addressBlock.identityLineA);
+  const personB = parsePersonLine(addressBlock.identityLineB);
+  const person = personA ?? personB;
+
+  const companyA = looksLikeCompany(addressBlock.identityLineA) ? normalizeIdentityLine(addressBlock.identityLineA) : null;
+  const companyB = looksLikeCompany(addressBlock.identityLineB) ? normalizeIdentityLine(addressBlock.identityLineB) : null;
+  const company = companyA ?? companyB;
+
   const street = addressBlock.streetLine.trim();
   const postalCityMatch = POSTAL_CITY_REGEX.exec(addressBlock.postalCityLine.trim());
 
@@ -219,8 +242,9 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
     orderNumber,
     customerNumber: customerNumberCandidates[0],
     mobile,
-    firstName: firstName.trim(),
-    lastName: lastName.trim(),
+    firstName: person?.firstName?.trim() ?? null,
+    lastName: person?.lastName?.trim() ?? null,
+    company,
     addressLine1: street.length > 0 ? street : null,
     postalCode: postalCityMatch?.[1]?.trim() ?? null,
     city: postalCityMatch?.[2]?.trim() ?? null,
@@ -228,8 +252,9 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
 
   const requiredSchema = z.object({
     customerNumber: z.string().trim().min(1),
-    firstName: z.string().trim().min(1),
-    lastName: z.string().trim().min(1),
+    firstName: z.string().trim().nullable(),
+    lastName: z.string().trim().nullable(),
+    company: z.string().trim().nullable(),
     mobile: z.string().trim().nullable(),
   });
 

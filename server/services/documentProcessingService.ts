@@ -46,7 +46,7 @@ export async function extractFromPdf(params: {
         customerNumber: header.customerNumber,
         firstName: header.firstName,
         lastName: header.lastName,
-        company: null,
+        company: header.company,
         email: null,
         phone: header.mobile,
         addressLine1: header.addressLine1,

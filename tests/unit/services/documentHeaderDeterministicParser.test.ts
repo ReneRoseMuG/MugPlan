@@ -7,7 +7,8 @@
  * Abgedeckte Regeln:
  * - Kundennummer und Auftragsnummer werden deterministisch extrahiert.
  * - Mobilnummer bleibt optional und darf als null aufgeloest werden.
- * - WaWi-Adresszeilen (Name, Strasse, PLZ/Ort; Anrede optional) werden deterministisch geparst.
+ * - WaWi-Adresszeilen (Identitaet, Strasse, PLZ/Ort; Anrede optional) werden deterministisch geparst.
+ * - Identitaet wird je nach Muster als Person, Firma oder Person+Firma aufgeloest.
  * - Fehlende oder mehrfache Kundennummer fuehren zu Fehlern.
  *
  * Fehlerfaelle:
@@ -49,6 +50,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.mobile).toBe("0172-8811909");
     expect(parsed.firstName).toBe("Anke");
     expect(parsed.lastName).toBe("Gotthardt");
+    expect(parsed.company).toBeNull();
     expect(parsed.addressLine1).toBe("Haupstrasse 69");
     expect(parsed.postalCode).toBe("06917");
     expect(parsed.city).toBe("Jessen / Holzdorf");
@@ -73,6 +75,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.mobile).toBeNull();
     expect(parsed.orderNumber).toBe("A0218249A");
     expect(parsed.customerNumber).toBe("163214");
+    expect(parsed.company).toBeNull();
   });
 
   it("parses WaWi address lines with spaced house number token", () => {
@@ -96,6 +99,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.customerNumber).toBe("163183");
     expect(parsed.firstName).toBe("Thomas");
     expect(parsed.lastName).toBe("Burgardt");
+    expect(parsed.company).toBeNull();
     expect(parsed.addressLine1).toBe("Gleina 3 a");
     expect(parsed.postalCode).toBe("07586");
     expect(parsed.city).toBe("Bad Köstritz");
@@ -120,9 +124,57 @@ describe("FT21 deterministic header parser", () => {
     const parsed = parseDocumentHeaderDeterministically(source);
     expect(parsed.firstName).toBe("Anke");
     expect(parsed.lastName).toBe("Gotthardt");
+    expect(parsed.company).toBeNull();
     expect(parsed.addressLine1).toBe("Haupstrasse 69");
     expect(parsed.postalCode).toBe("06917");
     expect(parsed.city).toBe("Jessen / Holzdorf");
+  });
+
+  it("parses company-only identity without forcing person names", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "B&E Wohnprojekte GmbH",
+      "Carl-Reuther-Str. 1",
+      "68305 Mannheim",
+      "Deutschland",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "A0218253A",
+      "161979",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.firstName).toBeNull();
+    expect(parsed.lastName).toBeNull();
+    expect(parsed.company).toBe("B&E Wohnprojekte GmbH");
+    expect(parsed.addressLine1).toBe("Carl-Reuther-Str. 1");
+    expect(parsed.postalCode).toBe("68305");
+    expect(parsed.city).toBe("Mannheim");
+  });
+
+  it("parses inline salutation person plus dedicated company line", () => {
+    const source = [
+      "Meisel & Gerken GmbH - Barrier Str. 29 - 28857 Syke",
+      "Herr Lars Bartilla",
+      "Fahrrad Meinhold GmbH",
+      "Hannoversche Straße 164",
+      "30823 Garbsen",
+      "Deutschland",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "BE19322",
+      "163180",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.firstName).toBe("Lars");
+    expect(parsed.lastName).toBe("Bartilla");
+    expect(parsed.company).toBe("Fahrrad Meinhold GmbH");
+    expect(parsed.addressLine1).toBe("Hannoversche Straße 164");
+    expect(parsed.postalCode).toBe("30823");
+    expect(parsed.city).toBe("Garbsen");
   });
 
   it("throws deterministic address-pattern error when street line is missing", () => {

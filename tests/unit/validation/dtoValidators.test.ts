@@ -107,6 +107,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       mobile: null,
       firstName: "Max",
       lastName: "Mustermann",
+      company: "Muster GmbH",
       addressLine1: "Musterstrasse 1",
       postalCode: "12345",
       city: "Leipzig",
@@ -122,6 +123,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
 
     expect(result.customer.customerNumber).toBe("K-1");
     expect(result.customer.firstName).toBe("Max");
+    expect(result.customer.company).toBe("Muster GmbH");
     expect(result.customer.phone).toBeNull();
     expect(result.orderNumber).toBe("A-1");
     expect(result.saunaModel).toContain("Sauna");
@@ -145,4 +147,3 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
 });
-

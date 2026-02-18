@@ -243,7 +243,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                     </Button>
                   }
                 >
-                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+                  <div className="text-xs font-medium uppercase tracking-wide leading-tight text-slate-500 mb-1">
                     Mitarbeiter
                   </div>
                   <div className="space-y-2">
