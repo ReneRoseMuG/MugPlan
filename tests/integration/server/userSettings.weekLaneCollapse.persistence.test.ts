@@ -19,10 +19,9 @@
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { resetDatabase } from "../../helpers/resetDatabase";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 
@@ -45,7 +44,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await resetDatabase();
   userCounter = 1;
 });
 

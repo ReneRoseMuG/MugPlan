@@ -23,11 +23,10 @@
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
-import { beforeAll, beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, beforeAll, afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { resetDatabase } from "../../helpers/resetDatabase";
 import * as documentProcessingService from "../../../server/services/documentProcessingService";
 import * as multipart from "../../../server/lib/multipart";
 import * as customersService from "../../../server/services/customersService";
@@ -45,7 +44,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await resetDatabase();
   customerCounter = 1;
 });
 

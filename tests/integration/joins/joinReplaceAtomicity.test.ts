@@ -1,16 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import * as customersService from "../../../server/services/customersService";
 import * as employeesService from "../../../server/services/employeesService";
 import * as projectsService from "../../../server/services/projectsService";
-import { resetDatabase } from "../../helpers/resetDatabase";
 
 describe("PKG-07 Integration: join replace atomicity", () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
 
   it("keeps join relations unchanged when replacement contains invalid employee id", async () => {
     const customer = await customersService.createCustomer({

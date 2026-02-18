@@ -15,17 +15,13 @@
  * Ziel:
  * Service-Kontrakte fuer Team/Tour-Locking regressionssicher absichern.
  */
-import { beforeEach, describe, expect, it } from "vitest";
-import { resetDatabase } from "../../helpers/resetDatabase";
+import { describe, expect, it } from "vitest";
 import * as teamsRepository from "../../../server/repositories/teamsRepository";
 import * as toursRepository from "../../../server/repositories/toursRepository";
 import * as teamsService from "../../../server/services/teamsService";
 import * as toursService from "../../../server/services/toursService";
 
 describe("FT06/FT07 integration: team/tour versioning contracts", () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
 
   it("returns VERSION_CONFLICT for stale team update/delete", async () => {
     const team = await teamsRepository.createTeam("Team 1", "#1188cc");

@@ -20,12 +20,11 @@
 import express from "express";
 import { createServer } from "http";
 import type { SuperAgentTest } from "supertest";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { resetDatabase } from "../../helpers/resetDatabase";
 import { getBerlinTodayDateString } from "../../../client/src/lib/project-appointments";
 import { db } from "../../../server/db";
 import { appointments } from "@shared/schema";
@@ -48,7 +47,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await resetDatabase();
   resetAppointmentOverlapFixtureCounters();
 });
 

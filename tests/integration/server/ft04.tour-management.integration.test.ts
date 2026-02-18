@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Feature: FT04 - Tourenverwaltung
@@ -20,10 +20,9 @@
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { resetDatabase } from "../../helpers/resetDatabase";
 
 let app: express.Express;
 let employeeCounter = 1;
@@ -38,7 +37,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await resetDatabase();
   employeeCounter = 1;
 });
 

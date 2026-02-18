@@ -13,18 +13,14 @@
  * Ziel:
  * Atomizitaet und Datenkonsistenz bei Batch-Zuweisungen absichern.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import * as employeesService from "../../../server/services/employeesService";
 import * as employeesRepository from "../../../server/repositories/employeesRepository";
 import * as teamEmployeesService from "../../../server/services/teamEmployeesService";
 import * as teamsRepository from "../../../server/repositories/teamsRepository";
-import { resetDatabase } from "../../helpers/resetDatabase";
 
 describe("PKG-06 Integration: batch rollback guarantees", () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
 
   it("rolls back complete batch when one item has stale version (no partial updates)", async () => {
     const team = await teamsRepository.createTeam("Batch Team", "#1188cc");

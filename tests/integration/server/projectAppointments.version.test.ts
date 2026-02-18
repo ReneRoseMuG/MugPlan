@@ -17,10 +17,9 @@
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { resetDatabase } from "../../helpers/resetDatabase";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
@@ -38,7 +37,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await resetDatabase();
   customerCounter = 1;
 });
 
