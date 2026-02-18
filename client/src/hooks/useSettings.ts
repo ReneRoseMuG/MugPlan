@@ -1,10 +1,14 @@
 import { useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
 
+const toastDesktopPositionValues = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+type ToastDesktopPosition = (typeof toastDesktopPositionValues)[number];
+
 export type UserSettingKey =
   // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
   | "attachmentPreviewSize"
   | "attachmentStoragePath"
+  | "toastDesktopPosition"
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
@@ -16,6 +20,7 @@ export type UserSettingKey =
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
   attachmentStoragePath: string;
+  toastDesktopPosition: ToastDesktopPosition;
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
@@ -24,6 +29,13 @@ type UserSettingValueByKey = {
   "calendar.weekLanes.isCollapsed": boolean;
   "calendar.weekLanes.expandedLaneId": string;
 };
+
+export function resolveToastDesktopPosition(value: unknown): ToastDesktopPosition {
+  if (value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right") {
+    return value;
+  }
+  return "bottom-right";
+}
 
 export function useSettings() {
   return useSettingsContext();
@@ -54,6 +66,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
         return value as UserSettingValueByKey[K];
       }
       return 380 as UserSettingValueByKey[K];
+    }
+    if (key === "toastDesktopPosition") {
+      return resolveToastDesktopPosition(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "calendar.weekLanes.isCollapsed") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];

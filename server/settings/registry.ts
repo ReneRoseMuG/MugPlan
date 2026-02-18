@@ -37,6 +37,8 @@ export type SettingDefinition =
 
 const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
+const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
 
@@ -102,6 +104,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL"],
     placeholderWhitelist: [],
     validate: (value: unknown): value is string => typeof value === "string" && value.trim().length > 0,
+  },
+  toastDesktopPosition: {
+    key: "toastDesktopPosition",
+    label: "Toast Position Desktop",
+    description: "Steuert die Position von Info-Popups auf Desktop.",
+    type: "enum",
+    options: toastDesktopPositionOptions,
+    defaultValue: "bottom-right",
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is ToastDesktopPosition =>
+      typeof value === "string" && toastDesktopPositionOptions.includes(value as ToastDesktopPosition),
   },
   calendarWeekendColumnPercent: {
     key: "calendarWeekendColumnPercent",

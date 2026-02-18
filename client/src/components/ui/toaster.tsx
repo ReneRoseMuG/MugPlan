@@ -1,4 +1,5 @@
 import { useToast } from "@/hooks/use-toast"
+import { useSetting } from "@/hooks/useSettings"
 import {
   Toast,
   ToastClose,
@@ -10,6 +11,7 @@ import {
 
 export function Toaster() {
   const { toasts } = useToast()
+  const toastDesktopPosition = useSetting("toastDesktopPosition")
 
   return (
     <ToastProvider>
@@ -27,7 +29,7 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport />
+      <ToastViewport desktopPosition={toastDesktopPosition ?? "bottom-right"} />
     </ToastProvider>
   )
 }

@@ -7,14 +7,28 @@ import { cn } from "@/lib/utils"
 
 const ToastProvider = ToastPrimitives.Provider
 
+type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right"
+
+const toastDesktopViewportClassByPosition: Record<ToastDesktopPosition, string> = {
+  "top-left": "sm:left-0 sm:right-auto sm:top-0 sm:bottom-auto",
+  "top-right": "sm:right-0 sm:left-auto sm:top-0 sm:bottom-auto",
+  "bottom-left": "sm:left-0 sm:right-auto sm:bottom-0 sm:top-auto",
+  "bottom-right": "sm:right-0 sm:left-auto sm:bottom-0 sm:top-auto",
+}
+
+type ToastViewportProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport> & {
+  desktopPosition?: ToastDesktopPosition
+}
+
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
->(({ className, ...props }, ref) => (
+  ToastViewportProps
+>(({ className, desktopPosition = "bottom-right", ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:flex-col md:max-w-[420px]",
+      toastDesktopViewportClassByPosition[desktopPosition],
       className
     )}
     {...props}
@@ -115,6 +129,7 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 
 export {
+  type ToastDesktopPosition,
   type ToastProps,
   type ToastActionElement,
   ToastProvider,

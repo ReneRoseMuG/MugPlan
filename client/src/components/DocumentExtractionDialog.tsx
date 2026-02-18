@@ -119,6 +119,7 @@ export function DocumentExtractionDialog({
       customerNumber: data.customer.customerNumber,
       firstName: data.customer.firstName ?? "",
       lastName: data.customer.lastName ?? "",
+      company: data.customer.company ?? "",
       email: data.customer.email ?? "",
       phone: data.customer.phone ?? "",
       addressLine1: data.customer.addressLine1 ?? "",
@@ -136,7 +137,6 @@ export function DocumentExtractionDialog({
     return {
       ...fallback,
       ...customerFields,
-      company: fallback.company,
       addressLine2: fallback.addressLine2,
     };
   }, [customerFields, data]);

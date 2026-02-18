@@ -5,6 +5,7 @@ export type ExtractionCustomerEditableFields = {
   customerNumber: string;
   firstName: string;
   lastName: string;
+  company: string;
   email: string;
   phone: string;
   addressLine1: string;
@@ -56,6 +57,13 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.lastName}
             onChange={(event) => onChange({ ...value, lastName: event.target.value })}
+          />
+        </div>
+        <div className="space-y-1 col-span-2">
+          <Label>Firma</Label>
+          <Input
+            value={value.company}
+            onChange={(event) => onChange({ ...value, company: event.target.value })}
           />
         </div>
         <div className="space-y-1">

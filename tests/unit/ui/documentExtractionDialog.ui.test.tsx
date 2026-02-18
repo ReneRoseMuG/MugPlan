@@ -51,7 +51,7 @@ describe("FT21 document extraction dialog composable ui", () => {
     expect(source).toContain("orderNumber,");
     expect(source).toContain("articleListHtml,");
     expect(source).toContain("customer,");
-    expect(source).toContain("company: fallback.company");
+    expect(source).toContain("company: data.customer.company ?? \"\"");
     expect(source).toContain("addressLine2: fallback.addressLine2");
   });
 

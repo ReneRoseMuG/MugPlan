@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - Resolved-Mapping liefert Scope-Versionen und resolvedVersion korrekt.
  * - Neues Global-Setting fuer Hover-Delay wird inkl. Version aufgeloest.
+ * - Neues Global-Setting fuer Toast-Desktop-Position wird inkl. Version aufgeloest.
  * - FT03-Settings fuer boolean/string werden im USER-Scope korrekt aufgeloest.
  *
  * Fehlerfälle:
@@ -111,6 +112,34 @@ describe("PKG-08 user settings resolved mapping", () => {
     expect(hoverPreviewDelay?.resolvedValue).toBe(640);
     expect(hoverPreviewDelay?.resolvedScope).toBe("GLOBAL");
     expect(hoverPreviewDelay?.resolvedVersion).toBe(5);
+  });
+
+  it("maps global version and resolved value for toastDesktopPosition", async () => {
+    usersRepoMock.getUserWithRole.mockResolvedValue({
+      id: 1,
+      isActive: true,
+      roleCode: "ADMIN",
+    } as any);
+    settingsRepoMock.listSettingCandidates.mockResolvedValue([
+      {
+        settingKey: "toastDesktopPosition",
+        scopeType: "GLOBAL",
+        scopeId: "global",
+        valueJson: "top-left",
+        version: 6,
+        updatedAt: new Date("2026-02-18T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+    ] as any);
+
+    const result = await getResolvedSettingsForUser(1);
+    const toastPosition = result.find((entry) => entry.key === "toastDesktopPosition");
+
+    expect(toastPosition).toBeDefined();
+    expect(toastPosition?.globalVersion).toBe(6);
+    expect(toastPosition?.resolvedValue).toBe("top-left");
+    expect(toastPosition?.resolvedScope).toBe("GLOBAL");
+    expect(toastPosition?.resolvedVersion).toBe(6);
   });
 
   it("maps FT03 week lane settings with USER scope and versions", async () => {

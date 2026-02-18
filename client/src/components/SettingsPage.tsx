@@ -16,17 +16,21 @@ function stringifyValue(value: unknown): string {
 
 const previewOptions = ["small", "medium", "large"] as const;
 type PreviewSize = (typeof previewOptions)[number];
+const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const defaultWeekendColumnPercent = 33;
 const defaultWeekScrollRange = 4;
 const defaultMonthScrollRange = 3;
 const defaultHoverPreviewOpenDelayMs = 380;
 const defaultCardListColumns = 4;
+const defaultToastDesktopPosition: ToastDesktopPosition = "bottom-right";
 
 export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
   const storagePathSetting = settingsByKey.get("attachmentStoragePath");
+  const toastDesktopPositionSetting = settingsByKey.get("toastDesktopPosition");
   const weekendWidthSetting = settingsByKey.get("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = settingsByKey.get("calendarWeekScrollRange");
   const monthScrollRangeSetting = settingsByKey.get("calendarMonthScrollRange");
@@ -44,6 +48,14 @@ export function SettingsPage() {
   const resolvedStoragePath = useMemo(() => {
     return typeof storagePathSetting?.resolvedValue === "string" ? storagePathSetting.resolvedValue : "server/uploads";
   }, [storagePathSetting?.resolvedValue]);
+
+  const resolvedToastDesktopPosition = useMemo(() => {
+    const value = toastDesktopPositionSetting?.resolvedValue;
+    if (value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right") {
+      return value;
+    }
+    return defaultToastDesktopPosition;
+  }, [toastDesktopPositionSetting?.resolvedValue]);
 
   const resolvedWeekendColumnPercent = useMemo(() => {
     const value = weekendWidthSetting?.resolvedValue;
@@ -87,6 +99,7 @@ export function SettingsPage() {
 
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
   const [storagePathValue, setStoragePathValue] = useState<string>(resolvedStoragePath);
+  const [toastDesktopPositionValue, setToastDesktopPositionValue] = useState<ToastDesktopPosition>(resolvedToastDesktopPosition);
   const [weekendColumnPercentValue, setWeekendColumnPercentValue] = useState<string>(String(resolvedWeekendColumnPercent));
   const [weekScrollRangeValue, setWeekScrollRangeValue] = useState<string>(String(resolvedWeekScrollRange));
   const [monthScrollRangeValue, setMonthScrollRangeValue] = useState<string>(String(resolvedMonthScrollRange));
@@ -94,6 +107,7 @@ export function SettingsPage() {
   const [cardListColumnsValue, setCardListColumnsValue] = useState<string>(String(resolvedCardListColumns));
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [toastDesktopPositionError, setToastDesktopPositionError] = useState<string | null>(null);
   const [weekendError, setWeekendError] = useState<string | null>(null);
   const [weekScrollRangeError, setWeekScrollRangeError] = useState<string | null>(null);
   const [monthScrollRangeError, setMonthScrollRangeError] = useState<string | null>(null);
@@ -101,6 +115,7 @@ export function SettingsPage() {
   const [cardListColumnsError, setCardListColumnsError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
   const [storageSaved, setStorageSaved] = useState(false);
+  const [toastDesktopPositionSaved, setToastDesktopPositionSaved] = useState(false);
   const [weekendSaved, setWeekendSaved] = useState(false);
   const [weekScrollRangeSaved, setWeekScrollRangeSaved] = useState(false);
   const [monthScrollRangeSaved, setMonthScrollRangeSaved] = useState(false);
@@ -114,6 +129,10 @@ export function SettingsPage() {
   useEffect(() => {
     setStoragePathValue(resolvedStoragePath);
   }, [resolvedStoragePath]);
+
+  useEffect(() => {
+    setToastDesktopPositionValue(resolvedToastDesktopPosition);
+  }, [resolvedToastDesktopPosition]);
 
   useEffect(() => {
     setWeekendColumnPercentValue(String(resolvedWeekendColumnPercent));
@@ -185,6 +204,21 @@ export function SettingsPage() {
       setStorageSaved(true);
     } catch (error) {
       setStorageError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveToastDesktopPosition = async () => {
+    setToastDesktopPositionError(null);
+    setToastDesktopPositionSaved(false);
+    try {
+      await setSetting({
+        key: "toastDesktopPosition",
+        scopeType: "GLOBAL",
+        value: toastDesktopPositionValue,
+      });
+      setToastDesktopPositionSaved(true);
+    } catch (error) {
+      setToastDesktopPositionError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
 
@@ -346,6 +380,33 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(storagePathSetting?.resolvedValue)} ({storagePathSetting?.resolvedScope ?? "-"})</p>
           {storageSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {storageError && <p className="mt-1 text-xs text-destructive">{storageError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-toastDesktopPosition">
+          <p className="font-semibold text-slate-900">{toastDesktopPositionSetting?.label ?? "Toast Position Desktop"}</p>
+          <p className="mb-3 text-xs text-slate-500">{toastDesktopPositionSetting?.description ?? "Steuert die Position von Info-Popups auf Desktop."}</p>
+
+          <div className="flex items-center gap-3">
+            <select
+              value={toastDesktopPositionValue}
+              onChange={(event) => setToastDesktopPositionValue(event.target.value as ToastDesktopPosition)}
+              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+              data-testid="select-setting-toastDesktopPosition"
+            >
+              {toastDesktopPositionOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <Button onClick={() => void handleSaveToastDesktopPosition()} disabled={isSaving} data-testid="button-save-toastDesktopPosition">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(toastDesktopPositionSetting?.resolvedValue ?? defaultToastDesktopPosition)} ({toastDesktopPositionSetting?.resolvedScope ?? "-"})</p>
+          {toastDesktopPositionSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {toastDesktopPositionError && <p className="mt-1 text-xs text-destructive">{toastDesktopPositionError}</p>}
         </div>
 
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekendColumnPercent">
