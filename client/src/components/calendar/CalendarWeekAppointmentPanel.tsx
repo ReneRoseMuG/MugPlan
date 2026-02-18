@@ -1,5 +1,7 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import { parseProjectStoredName } from "@/lib/project-name-format";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
+import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
 import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
@@ -16,6 +18,7 @@ export function CalendarWeekAppointmentPanel({
   onMouseEnter,
   onMouseLeave,
   segment = "start",
+  context = "default",
   testId,
 }: {
   appointment: CalendarAppointment;
@@ -29,6 +32,7 @@ export function CalendarWeekAppointmentPanel({
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   segment?: "start" | "continuation";
+  context?: "default" | "week-calendar";
   testId?: string;
 }) {
   const isContinuation = segment === "continuation";
@@ -37,6 +41,9 @@ export function CalendarWeekAppointmentPanel({
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
     : "";
   const highlightClass = highlighted ? "border-primary shadow-md ring-1 ring-primary/30" : "border-slate-200";
+  const resolvedProjectName = context === "week-calendar"
+    ? parseProjectStoredName(appointment.projectName).isolatedProjectName
+    : appointment.projectName;
 
   return (
     <div
@@ -63,12 +70,17 @@ export function CalendarWeekAppointmentPanel({
           city={appointment.customer.city}
         />
         <CalendarWeekAppointmentPanelProject
-          projectName={appointment.projectName}
+          projectName={resolvedProjectName}
           projectOrderNumber={appointment.projectOrderNumber}
           projectDescription={appointment.projectDescription}
           projectStatuses={appointment.projectStatuses}
+          enableFullDescriptionPreview={context === "week-calendar"}
         />
-        <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+        {context === "week-calendar" ? (
+          <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+        ) : (
+          <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+        )}
       </div>
       {isContinuation && (
         <div

@@ -643,6 +643,7 @@ export function CalendarWeekView({
                                       <CalendarWeekAppointmentPanel
                                         key={`${appointment.id}-${tourLane.laneKey}-${dayIdx}-${stackIndex}`}
                                         appointment={appointment}
+                                        context="week-calendar"
                                         segment={isContinuationSegment ? "continuation" : "start"}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
