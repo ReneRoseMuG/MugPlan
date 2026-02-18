@@ -1,6 +1,6 @@
 import { ensureOllamaAvailable } from "../lib/ollamaRuntime";
 
-export type ExtractionScope = "project_form" | "appointment_form";
+export type ExtractionScope = "project_form" | "appointment_form" | "customer_form";
 
 export type AiExtractionResult = {
   customer: {

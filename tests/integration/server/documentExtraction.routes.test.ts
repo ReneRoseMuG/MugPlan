@@ -23,7 +23,7 @@
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
-import { beforeEach, beforeAll, afterEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
@@ -32,7 +32,6 @@ import * as multipart from "../../../server/lib/multipart";
 import * as customersService from "../../../server/services/customersService";
 
 let app: express.Express;
-let customerCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -41,10 +40,6 @@ beforeAll(async () => {
   const httpServer = createServer(app);
   await registerRoutes(httpServer, app);
   app.use(errorHandler);
-});
-
-beforeEach(async () => {
-  customerCounter = 1;
 });
 
 afterEach(() => {
@@ -170,6 +165,38 @@ describe("FT20 integration: document extraction routes", () => {
       });
   });
 
+  it("accepts customer_form scope for extract route", async () => {
+    const agent = await loginAdminAgent();
+    vi.spyOn(documentProcessingService, "extractFromPdf").mockResolvedValueOnce({
+      customer: {
+        customerNumber: "1001",
+        firstName: "Erika",
+        lastName: "Mustermann",
+        company: null,
+        email: null,
+        phone: null,
+        addressLine1: null,
+        addressLine2: null,
+        postalCode: null,
+        city: null,
+      },
+      orderNumber: null,
+      saunaModel: "Sauna Pro",
+      articleItems: [{ quantity: "1x", description: "Ofen", category: "Artikel" }],
+      categorizedItems: [{ category: "Artikel", items: [{ quantity: "1x", description: "Ofen", category: "Artikel" }] }],
+      articleListHtml: "<ul><li>1x Ofen</li></ul>",
+      warnings: [],
+    });
+
+    await agent
+      .post("/api/document-extraction/extract?scope=customer_form")
+      .attach("file", Buffer.from("%PDF-1.4"), { filename: "sample.pdf", contentType: "application/pdf" })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.customer.customerNumber).toBe("1001");
+      });
+  });
+
   it("returns duplicate=false/count=0 for missing customer number", async () => {
     const agent = await loginAdminAgent();
     await agent
@@ -183,7 +210,7 @@ describe("FT20 integration: document extraction routes", () => {
 
   it("returns duplicate=true/count=1 for existing customer number", async () => {
     const agent = await loginAdminAgent();
-    const suffix = customerCounter++;
+    const suffix = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
     await customersService.createCustomer({
       customerNumber: `DUP-${suffix}`,
       firstName: "Test",
@@ -210,7 +237,7 @@ describe("FT20 integration: document extraction routes", () => {
 
   it("returns none/single/multiple in resolve-customer-by-number", async () => {
     const agent = await loginAdminAgent();
-    const suffix = customerCounter++;
+    const suffix = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
     const created = await customersService.createCustomer({
       customerNumber: `RES-${suffix}`,
       firstName: "A",

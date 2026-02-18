@@ -71,18 +71,11 @@ function buildCategorizedItems(
   }));
 }
 
-function buildSemanticArticleHtml(
-  categories: Array<{ category: string; items: Array<z.infer<typeof articleItemSchema>> }>,
-): string {
-  const topLevelItems = categories
-    .map((category) => {
-      const nestedItems = category.items
-        .map((item) => `<li>${escapeHtml(item.quantity)} ${escapeHtml(item.description)}</li>`)
-        .join("");
-      return `<li><strong>${escapeHtml(category.category)}</strong><ul>${nestedItems}</ul></li>`;
-    })
+function buildSemanticArticleHtml(items: Array<z.infer<typeof articleItemSchema>>): string {
+  const listItems = items
+    .map((item) => `<li>${escapeHtml(item.quantity)} ${escapeHtml(item.description)}</li>`)
     .join("");
-  return `<ul>${topLevelItems}</ul>`;
+  return `<ul>${listItems}</ul>`;
 }
 
 export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtraction {
@@ -95,7 +88,7 @@ export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtractio
   }));
 
   const categorizedItems = buildCategorizedItems(normalizedItems);
-  const articleListHtml = buildSemanticArticleHtml(categorizedItems);
+  const articleListHtml = buildSemanticArticleHtml(normalizedItems);
 
   return {
     customer: {

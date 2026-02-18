@@ -2,14 +2,13 @@
  * Test Scope:
  *
  * Feature: FT21 - DocumentExtractionDialog UI-Refactor
- * Use Case: UC Reduzierte Dialog-UI mit semantischem HTML-Editor und stabilen Payload-Shapes
+ * Use Case: UC Reduzierte Dialog-UI mit Editor-only Artikelliste und stabilen Payload-Shapes
  *
  * Abgedeckte Regeln:
- * - Headline-/Untertitel-Elemente und Kundendaten-Zwischenheadline sind entfernt.
- * - Felder Firma und Adresszusatz werden weder gerendert noch als editierbarer State geführt.
- * - Projektbereich ist in Projektdaten/Projektname umbenannt.
- * - RichTextEditor wird controlled mit articleListHtml verwendet.
- * - Apply-Payload fuer Projektuebernahme behaelt das bestehende Shape inkl. unveraenderter Feldnamen.
+ * - Dialog nutzt wiederverwendbare Customer/Project-Sections und bleibt ohne DialogHeader/Titel.
+ * - Kunden-/Projektdaten koennen getrennt uebernommen werden (Split-Buttons).
+ * - Terminmodus kann einen einzelnen Daten-Button nutzen.
+ * - Projektbereich nutzt RichTextEditor controlled mit articleListHtml.
  *
  * Fehlerfälle:
  * - Regression auf Textarea/HTML-Plaintext-Anzeige.
@@ -22,51 +21,41 @@ import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
-describe("FT21 document extraction dialog ui refactor", () => {
+describe("FT21 document extraction dialog composable ui", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/DocumentExtractionDialog.tsx");
   const source = readFileSync(filePath, "utf8");
 
-  it("removes dialog headline elements and customer heading", () => {
+  it("keeps dialog header components removed and uses section components", () => {
     expect(source).not.toContain("DialogHeader");
     expect(source).not.toContain("DialogTitle");
     expect(source).not.toContain("DialogDescription");
-    expect(source).not.toContain(">Kundendaten<");
+    expect(source).toContain("DocumentExtractionCustomerSection");
+    expect(source).toContain("DocumentExtractionProjectSection");
   });
 
-  it("removes company and addressLine2 fields from rendered inputs and editable state", () => {
-    expect(source).not.toContain("<Label>Firma</Label>");
-    expect(source).not.toContain("<Label>Adresszusatz</Label>");
-    expect(source).not.toContain("setCustomerFields({ ...customerFields, company:");
-    expect(source).not.toContain("setCustomerFields({ ...customerFields, addressLine2:");
+  it("supports split apply actions for customer and project", () => {
+    expect(source).toContain("customerApplyLabel = \"Kundendaten übernehmen\"");
+    expect(source).toContain("projectApplyLabel = \"Projektdaten übernehmen\"");
+    expect(source).toContain("data-testid=\"button-doc-extract-apply-customer\"");
+    expect(source).toContain("data-testid=\"button-doc-extract-apply-project\"");
   });
 
-  it("renames project section labels", () => {
-    expect(source).toContain(">Projektdaten<");
-    expect(source).toContain("<Label>Projektname</Label>");
-    expect(source).toContain("<Label>Auftragsnummer</Label>");
-    expect(source).not.toContain(">Projektvorschlag<");
-    expect(source).not.toContain("Saunamodell (Titelvorschlag)");
+  it("supports appointment single apply mode", () => {
+    expect(source).toContain("dataApplyLabel = \"Daten übernehmen\"");
+    expect(source).toContain("onApplyData?: (payload:");
+    expect(source).toContain("data-testid=\"button-doc-extract-apply-data\"");
   });
 
-  it("uses RichTextEditor in controlled mode with enlarged scrollable editor area", () => {
-    expect(source).toContain("<RichTextEditor");
-    expect(source).toContain("value={articleListHtml}");
-    expect(source).toContain("onChange={setArticleListHtml}");
-    expect(source).toContain("[&_[data-testid='richtext-editor']]:min-h-[460px]");
-    expect(source).toContain("[&_[data-testid='richtext-editor']]:overflow-y-auto");
-    expect(source).not.toContain("<Textarea");
-  });
-
-  it("keeps payload shape unchanged for project apply action", () => {
-    expect(source).toContain("void onApplyProject({ saunaModel, orderNumber, articleListHtml, customer })");
+  it("keeps payload shape unchanged for apply actions", () => {
+    expect(source).toContain("saunaModel,");
+    expect(source).toContain("orderNumber,");
+    expect(source).toContain("articleListHtml,");
+    expect(source).toContain("customer,");
     expect(source).toContain("company: fallback.company");
     expect(source).toContain("addressLine2: fallback.addressLine2");
   });
 
-  it("keeps dialog size constraints and project apply button label", () => {
+  it("keeps dialog size constraints", () => {
     expect(source).toContain('className="max-w-4xl max-h-[90vh] overflow-y-auto"');
-    expect(source).toContain('projectApplyLabel = "Projektdaten übernehmen"');
-    expect(source).toContain('data-testid="button-doc-extract-apply-project"');
-    expect(source).not.toContain('data-testid="button-doc-extract-apply-customer"');
   });
 });

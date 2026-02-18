@@ -498,7 +498,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     });
     const json = await response.json().catch(() => null);
     if (!response.ok) {
-      throw new Error(json?.message ?? "Kunde konnte nicht angelegt werden");
+      throw new Error(json?.code === "CUSTOMER_NUMBER_CONFLICT" ? "Kundennummer ist bereits vergeben." : (json?.message ?? "Kunde konnte nicht angelegt werden"));
     }
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
     return json as Customer;
@@ -516,8 +516,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     if (resolution.resolution === "multiple") {
       throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
     }
-    if (resolution.resolution === "single" && resolution.customer) {
-      return resolution.customer;
+    if (resolution.resolution === "single") {
+      throw new Error("Kundennummer ist bereits vergeben.");
     }
     return createCustomerFromDraft(customerDraft);
   };
@@ -984,11 +984,13 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
             ) : null}
           </RelationSlot>
 
-          <DocumentExtractionDropzone
-            onFileSelected={runDocumentExtraction}
-            disabled={isLocked}
-            isProcessing={documentExtractionLoading}
-          />
+          {selectedProjectId === null ? (
+            <DocumentExtractionDropzone
+              onFileSelected={runDocumentExtraction}
+              disabled={isLocked}
+              isProcessing={documentExtractionLoading}
+            />
+          ) : null}
         </div>
 
         <div className="space-y-4">
@@ -1190,8 +1192,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
         disableProjectApply={Boolean(selectedProjectId)}
-        projectApplyLabel="Projekt übernehmen"
-        onApplyProject={applyExtractedProject}
+        dataApplyLabel="Daten übernehmen"
+        onApplyData={applyExtractedProject}
       />
 
       <Dialog open={projectPickerOpen} onOpenChange={setProjectPickerOpen}>

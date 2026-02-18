@@ -144,6 +144,53 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const projectNamePreview = formatProjectStoredName(selectedCustomerNumber, name);
   const projectVersion = projectData?.project.version;
 
+  const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
+    customerNumber: customer.customerNumber.trim(),
+    firstName: customer.firstName.trim(),
+    lastName: customer.lastName.trim(),
+    company: customer.company.trim() || null,
+    email: customer.email.trim() || null,
+    phone: customer.phone.trim(),
+    addressLine1: customer.addressLine1.trim() || null,
+    addressLine2: customer.addressLine2.trim() || null,
+    postalCode: customer.postalCode.trim() || null,
+    city: customer.city.trim() || null,
+  });
+
+  const resolveCustomerByNumber = async (customerNumber: string) => {
+    const response = await fetch("/api/document-extraction/resolve-customer-by-number", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ customerNumber: customerNumber.trim() }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.message ?? "Kundennummer konnte nicht aufgelöst werden");
+    }
+    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; customer: Customer | null };
+  };
+
+  const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
+    const payload = mapExtractionCustomerToPayload(customerDraft);
+    const response = await fetch("/api/customers", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const json = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(json?.code === "CUSTOMER_NUMBER_CONFLICT" ? "Kundennummer ist bereits vergeben." : (json?.message ?? "Kunde konnte nicht angelegt werden"));
+    }
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    return json as Customer;
+  };
+
   const runDocumentExtraction = async (file: File) => {
     setDocumentExtractionLoading(true);
     try {
@@ -463,6 +510,30 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     }
   };
 
+  const applyExtractedCustomerSuggestion = async (payload: { customer: ExtractionCustomerDraft }) => {
+    try {
+      if (customerId) {
+        throw new Error("Kundendaten-Übernahme ist nicht zulässig, da bereits ein Kunde ausgewählt ist.");
+      }
+      if (!payload.customer.customerNumber.trim()) {
+        throw new Error("Kundennummer ist erforderlich.");
+      }
+      const resolution = await resolveCustomerByNumber(payload.customer.customerNumber);
+      if (resolution.resolution !== "none") {
+        throw new Error("Kundennummer ist bereits vergeben.");
+      }
+      const createdCustomer = await createCustomerFromDraft(payload.customer);
+      setCustomerId(createdCustomer.id);
+      toast({ title: "Kundendaten übernommen" });
+    } catch (error) {
+      toast({
+        title: "Kundendaten konnten nicht übernommen werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (projectLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -520,6 +591,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                       id="projectOrderNumber"
                       value={orderNumber}
                       onChange={(e) => setOrderNumber(e.target.value)}
+                      readOnly={isEditing}
                       data-testid="input-project-order-number"
                     />
                   </div>
@@ -555,10 +627,12 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 />
               </div>
 
-              <DocumentExtractionDropzone
-                onFileSelected={runDocumentExtraction}
-                isProcessing={documentExtractionLoading}
-              />
+              {!isEditing ? (
+                <DocumentExtractionDropzone
+                  onFileSelected={runDocumentExtraction}
+                  isProcessing={documentExtractionLoading}
+                />
+              ) : null}
 
               {/* Notizen - nur bei Bearbeitung */}
               {isEditing && (
@@ -620,6 +694,9 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         onOpenChange={setDocumentExtractionOpen}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
+        customerApplyLabel="Kundendaten übernehmen"
+        projectApplyLabel="Projektdaten übernehmen"
+        onApplyCustomer={applyExtractedCustomerSuggestion}
         onApplyProject={({ saunaModel, orderNumber, articleListHtml }) =>
           applyExtractedProjectSuggestion({ saunaModel, orderNumber, articleListHtml })
         }

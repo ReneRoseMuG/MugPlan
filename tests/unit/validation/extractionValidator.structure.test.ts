@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - Optionalfelder werden konsistent normalisiert (leer -> null).
  * - Artikel werden kategorisiert.
- * - HTML-Ausgabe escaped nutzernahe Inhalte.
+ * - HTML-Ausgabe ist flach (eine UL-Ebene) und escaped nutzernahe Inhalte.
  * - Warnings werden getrimmt und leere Werte entfernt.
  *
  * Fehlerfaelle:
@@ -50,7 +50,7 @@ describe("FT20 extraction validator structure", () => {
     expect(result.warnings).toEqual(["Hinweis A"]);
   });
 
-  it("categorizes articles and generates semantic html", () => {
+  it("categorizes articles and generates flat semantic html", () => {
     const result = validateAndNormalizeExtraction({
       customer: {
         customerNumber: "2002",
@@ -70,7 +70,31 @@ describe("FT20 extraction validator structure", () => {
     expect(result.categorizedItems).toHaveLength(1);
     expect(result.categorizedItems[0].category).toBe("Technik");
     expect(result.categorizedItems[0].items).toHaveLength(2);
-    expect(result.articleListHtml).toContain("<ul>");
+    expect(result.articleListHtml).toBe("<ul><li>1 Ofen</li><li>2 Licht</li></ul>");
+    expect(result.articleListHtml).not.toContain("<strong>");
+  });
+
+  it("keeps article html flat across multiple categories", () => {
+    const result = validateAndNormalizeExtraction({
+      customer: {
+        customerNumber: "2100",
+        firstName: "A",
+        lastName: "B",
+        phone: null,
+      },
+      orderNumber: null,
+      saunaModel: "Modell Y2",
+      articleItems: [
+        { quantity: "1", description: "Ofen", category: "Technik" },
+        { quantity: "3", description: "Bank", category: "Holz" },
+      ],
+      warnings: [],
+    });
+
+    expect(result.categorizedItems).toHaveLength(2);
+    expect(result.articleListHtml).toBe("<ul><li>1 Ofen</li><li>3 Bank</li></ul>");
+    expect(result.articleListHtml).not.toContain("<strong>");
+    expect(result.articleListHtml).not.toContain("</ul><ul>");
   });
 
   it("escapes html-sensitive text", () => {

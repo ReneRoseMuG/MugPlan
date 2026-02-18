@@ -4,13 +4,24 @@ import type { CanonicalRoleKey } from "../settings/registry";
 
 export class CustomersError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN";
+  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN" | "CUSTOMER_NUMBER_CONFLICT";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN") {
+  constructor(
+    status: number,
+    code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN" | "CUSTOMER_NUMBER_CONFLICT",
+  ) {
     super(code);
     this.status = status;
     this.code = code;
   }
+}
+
+function isCustomerNumberDuplicateError(error: unknown): boolean {
+  const mysqlError = error as { code?: string; errno?: number; sqlMessage?: string } | null;
+  if (!(mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062)) {
+    return false;
+  }
+  return true;
 }
 
 function resolveScope(roleKey: CanonicalRoleKey, requestedScope: "active" | "inactive"): "active" | "inactive" {
@@ -35,7 +46,14 @@ export async function getCustomersByCustomerNumber(customerNumber: string): Prom
 
 export async function createCustomer(data: InsertCustomer): Promise<Customer> {
   const fullName = `${data.lastName}, ${data.firstName}`;
-  return customersRepository.createCustomer({ ...data, fullName });
+  try {
+    return await customersRepository.createCustomer({ ...data, fullName });
+  } catch (error) {
+    if (isCustomerNumberDuplicateError(error)) {
+      throw new CustomersError(409, "CUSTOMER_NUMBER_CONFLICT");
+    }
+    throw error;
+  }
 }
 
 export async function updateCustomer(

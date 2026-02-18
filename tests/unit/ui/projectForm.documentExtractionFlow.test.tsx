@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Feature: FT20 - Dokumentextraktion
@@ -6,11 +6,12 @@
  *
  * Abgedeckte Regeln:
  * - Upload ruft den Extract-Endpunkt mit project_form auf.
- * - Erfolgsfall öffnet Dialog und übergibt Extraktionsdaten.
- * - Apply-Callbacks sind an Customer/Project-Übernahme verdrahtet.
+ * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
+ * - Apply-Callbacks sind an Customer/Project-Uebernahme verdrahtet.
+ * - Auftragsnummer ist nur bei Bestandsprojekt readOnly und bei neuem Projekt editierbar.
  *
  * Fehlerfaelle:
- * - Fehlende Endpunktverdrahtung würde Upload-/Dialog-Flow brechen.
+ * - Fehlende Endpunktverdrahtung wuerde Upload-/Dialog-Flow brechen.
  *
  * Ziel:
  * Sicherstellen, dass der Projektformular-Flow zur Dokumentextraktion korrekt verdrahtet ist.
@@ -29,6 +30,7 @@ describe("FT20 project form document extraction flow wiring", () => {
   });
 
   it("wires dropzone and dialog state", () => {
+    expect(source).toContain("{!isEditing ? (");
     expect(source).toContain("<DocumentExtractionDropzone");
     expect(source).toContain("onFileSelected={runDocumentExtraction}");
     expect(source).toContain("<DocumentExtractionDialog");
@@ -36,8 +38,14 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("data={documentExtractionData}");
   });
 
-  it("wires project apply callback", () => {
+  it("wires split apply callbacks for customer and project", () => {
+    expect(source).toContain("onApplyCustomer={applyExtractedCustomerSuggestion}");
+    expect(source).toContain("projectApplyLabel=\"Projektdaten");
     expect(source).toContain("onApplyProject={({ saunaModel, orderNumber, articleListHtml }) =>");
-    expect(source).not.toContain("onApplyCustomer={applyExtractedCustomer}");
+  });
+
+  it("keeps order number editable for new project and readonly for existing project", () => {
+    expect(source).toContain("const isEditing = !!projectId;");
+    expect(source).toContain("readOnly={isEditing}");
   });
 });

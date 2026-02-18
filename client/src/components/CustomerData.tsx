@@ -9,6 +9,12 @@ import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
 import { CustomerAttachmentsPanel } from "@/components/CustomerAttachmentsPanel";
+import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
+import {
+  DocumentExtractionDialog,
+  type ExtractionCustomerDraft,
+  type ExtractionDialogData,
+} from "@/components/DocumentExtractionDialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +46,9 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     city: "",
     isActive: true,
   });
+  const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
+  const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
+  const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
 
   const isEditMode = !!customerId;
 
@@ -242,6 +251,111 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     }
   };
 
+  const resolveCustomerByNumber = async (customerNumber: string) => {
+    const response = await fetch("/api/document-extraction/resolve-customer-by-number", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ customerNumber: customerNumber.trim() }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.message ?? "Kundennummer konnte nicht aufgelöst werden");
+    }
+    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; customer: Customer | null };
+  };
+
+  const runDocumentExtractionCustomer = async (file: File) => {
+    setDocumentExtractionLoading(true);
+    try {
+      const multipart = new FormData();
+      multipart.append("file", file);
+      const response = await fetch("/api/document-extraction/extract?scope=customer_form", {
+        method: "POST",
+        credentials: "include",
+        body: multipart,
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Dokumentextraktion fehlgeschlagen");
+      }
+      const extraction = payload as {
+        customer: ExtractionCustomerDraft;
+        orderNumber: string | null;
+        saunaModel: string;
+        articleItems: ExtractionDialogData["articleItems"];
+        categorizedItems: ExtractionDialogData["categorizedItems"];
+        articleListHtml: string;
+        warnings: string[];
+      };
+      setDocumentExtractionData({
+        customer: {
+          customerNumber: extraction.customer.customerNumber ?? "",
+          firstName: extraction.customer.firstName ?? "",
+          lastName: extraction.customer.lastName ?? "",
+          company: extraction.customer.company ?? "",
+          email: extraction.customer.email ?? "",
+          phone: extraction.customer.phone ?? "",
+          addressLine1: extraction.customer.addressLine1 ?? "",
+          addressLine2: extraction.customer.addressLine2 ?? "",
+          postalCode: extraction.customer.postalCode ?? "",
+          city: extraction.customer.city ?? "",
+        },
+        orderNumber: extraction.orderNumber ?? null,
+        saunaModel: extraction.saunaModel ?? "",
+        articleItems: extraction.articleItems ?? [],
+        categorizedItems: extraction.categorizedItems ?? [],
+        articleListHtml: extraction.articleListHtml ?? "",
+        warnings: extraction.warnings ?? [],
+      });
+      setDocumentExtractionOpen(true);
+      toast({ title: "Dokument erfolgreich extrahiert" });
+    } catch (error) {
+      toast({
+        title: "Extraktion fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    } finally {
+      setDocumentExtractionLoading(false);
+    }
+  };
+
+  const applyExtractedCustomerDraft = async ({ customer }: { customer: ExtractionCustomerDraft }) => {
+    try {
+      if (!customer.customerNumber.trim()) {
+        throw new Error("Kundennummer ist erforderlich.");
+      }
+      const resolution = await resolveCustomerByNumber(customer.customerNumber);
+      if (resolution.resolution !== "none") {
+        throw new Error("Kundennummer ist bereits vergeben.");
+      }
+      setFormData((prev) => ({
+        ...prev,
+        customerNumber: customer.customerNumber.trim(),
+        firstName: customer.firstName.trim(),
+        lastName: customer.lastName.trim(),
+        company: customer.company.trim(),
+        email: customer.email.trim(),
+        phone: customer.phone.trim(),
+        addressLine1: customer.addressLine1.trim(),
+        addressLine2: customer.addressLine2.trim(),
+        postalCode: customer.postalCode.trim(),
+        city: customer.city.trim(),
+      }));
+      setDocumentExtractionOpen(false);
+      toast({ title: "Kundendaten übernommen" });
+    } catch (error) {
+      toast({
+        title: "Kundendaten konnten nicht übernommen werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isEditMode && isLoading) {
     return (
       <div className="h-full p-6 overflow-auto">
@@ -283,6 +397,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     id="customerNumber" 
                     value={formData.customerNumber}
                     onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value })}
+                    readOnly={isEditMode}
                     className="max-w-[200px] font-mono"
                     data-testid="input-customernumber"
                   />
@@ -392,6 +507,13 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               </div>
 
+              {!isEditMode ? (
+                <DocumentExtractionDropzone
+                  onFileSelected={runDocumentExtractionCustomer}
+                  isProcessing={documentExtractionLoading}
+                />
+              ) : null}
+
               {isEditMode && (
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
@@ -432,6 +554,16 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           {isEditMode && <CustomerAttachmentsPanel customerId={customerId} />}
         </div>
       </div>
+
+      <DocumentExtractionDialog
+        open={documentExtractionOpen}
+        onOpenChange={setDocumentExtractionOpen}
+        data={documentExtractionData}
+        isBusy={documentExtractionLoading}
+        showProjectSection={false}
+        customerApplyLabel="Kundendaten übernehmen"
+        onApplyCustomer={applyExtractedCustomerDraft}
+      />
     </EntityFormLayout>
   );
 }

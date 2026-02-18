@@ -59,7 +59,7 @@ export async function extractFromPdf(params: {
       articleItems: articleItems.map((item) => ({
         quantity: item.quantity,
         description: item.description,
-        category: "Dokumentposition",
+        category: "Artikel",
       })),
       warnings: [],
     });
@@ -92,4 +92,3 @@ export async function checkCustomerDuplicate(customerNumber: string): Promise<{ 
 export async function createCustomerFromExtractionDraft(customerDraft: InsertCustomer): Promise<Customer> {
   return customersService.createCustomer(customerDraft);
 }
-

@@ -27,7 +27,7 @@ export const errorSchemas = {
   }),
 };
 
-const extractionScopeSchema = z.enum(["project_form", "appointment_form"]);
+const extractionScopeSchema = z.enum(["project_form", "appointment_form", "customer_form"]);
 
 const extractedCustomerSchema = z.object({
   customerNumber: z.string().min(1),
@@ -551,6 +551,7 @@ export const api = {
       input: insertCustomerSchema,
       responses: {
         201: z.custom<typeof customers.$inferSelect>(),
+        409: z.object({ code: z.literal("CUSTOMER_NUMBER_CONFLICT") }),
         400: errorSchemas.validation,
       },
     },

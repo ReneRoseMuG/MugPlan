@@ -30,6 +30,7 @@ describe("FT20 appointment form document extraction flow wiring", () => {
   });
 
   it("wires dropzone and extraction dialog", () => {
+    expect(source).toContain("{selectedProjectId === null ? (");
     expect(source).toContain("<DocumentExtractionDropzone");
     expect(source).toContain("onFileSelected={runDocumentExtraction}");
     expect(source).toContain("<DocumentExtractionDialog");
@@ -37,16 +38,16 @@ describe("FT20 appointment form document extraction flow wiring", () => {
     expect(source).toContain("data={documentExtractionData}");
   });
 
-  it("wires project apply callback and disable rule", () => {
-    expect(source).toContain("onApplyProject={applyExtractedProject}");
+  it("uses single data apply callback with disable rule", () => {
+    expect(source).toContain("onApplyData={applyExtractedProject}");
+    expect(source).toContain("dataApplyLabel=\"Daten übernehmen\"");
     expect(source).toContain("disableProjectApply={Boolean(selectedProjectId)}");
     expect(source).not.toContain("onApplyCustomer={applyExtractedCustomer}");
-    expect(source).not.toContain("disableCustomerApply={Boolean(selectedProjectId)}");
   });
 
-  it("forwards extracted order number and does not require phone", () => {
+  it("forwards extracted order number and blocks duplicate customer numbers", () => {
     expect(source).toContain("orderNumber: payload.orderNumber.trim() || null");
     expect(source).toContain("throw new Error(\"Vorname und Nachname sind erforderlich\")");
-    expect(source).not.toContain("Vorname, Nachname und Telefon sind erforderlich");
+    expect(source).toContain("throw new Error(\"Kundennummer ist bereits vergeben.\")");
   });
 });

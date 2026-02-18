@@ -58,6 +58,10 @@ export async function createCustomer(req: Request, res: Response, next: NextFunc
       res.status(422).json({ code: "VALIDATION_ERROR" });
       return;
     }
+    if (err instanceof customersService.CustomersError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }

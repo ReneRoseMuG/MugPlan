@@ -83,9 +83,9 @@ export function buildFallbackExtraction(params: {
   const articleItems = fallbackLines.map((line) => ({
     quantity: "1",
     description: line,
-    category: "Dokumenttext",
+    category: "Artikel",
   }));
-  const categorizedItems = [{ category: "Dokumenttext", items: articleItems }];
+  const categorizedItems = [{ category: "Artikel", items: articleItems }];
   const articleListHtml = `<ul>${fallbackLines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
 
   return {
