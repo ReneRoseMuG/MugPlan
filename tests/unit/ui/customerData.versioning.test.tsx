@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - PATCH auf Kundendaten sendet verpflichtend die aktuelle Version.
  * - Admin darf isActive im Payload setzen, Nicht-Admin nur readonly.
+ * - Leere Telefonnummer wird nur nach Bestaetigung gespeichert und als "0" persistiert.
  * - VERSION_CONFLICT und FORBIDDEN werden codebasiert gemappt.
  *
  * Fehlerfaelle:
@@ -41,5 +42,12 @@ describe("FT05+ customer data versioning wiring", () => {
     expect(source).toContain("if (code === \"FORBIDDEN\")");
     expect(source).toContain("zwischenzeitlich geaendert");
     expect(source).toContain("nur fuer Admin erlaubt");
+  });
+
+  it("supports empty phone via confirmation fallback to 0 and no mandatory star label", () => {
+    expect(source).toContain("window.confirm(\"Telefon ist leer. Soll trotzdem gespeichert und Telefon auf 0 gesetzt werden?\")");
+    expect(source).toContain("submitData = { ...formData, phone: \"0\" };");
+    expect(source).toContain("setFormData((prev) => ({ ...prev, phone: \"0\" }))");
+    expect(source).toContain("<Label htmlFor=\"phone\" data-testid=\"label-phone\">Telefon</Label>");
   });
 });

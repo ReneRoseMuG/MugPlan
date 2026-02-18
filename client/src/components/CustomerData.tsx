@@ -201,13 +201,24 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   });
 
   const handleSubmit = async () => {
-    if (!formData.customerNumber || !formData.firstName || !formData.lastName || !formData.phone) {
+    if (!formData.customerNumber || !formData.firstName || !formData.lastName) {
       toast({ 
         title: "Fehler", 
-        description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Vorname, Nachname, Telefon).", 
+        description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Vorname, Nachname).", 
         variant: "destructive" 
       });
       throw new Error("validation");
+    }
+
+    const normalizedPhone = formData.phone.trim();
+    let submitData = formData;
+    if (normalizedPhone.length === 0) {
+      const confirmed = window.confirm("Telefon ist leer. Soll trotzdem gespeichert und Telefon auf 0 gesetzt werden?");
+      if (!confirmed) {
+        return;
+      }
+      submitData = { ...formData, phone: "0" };
+      setFormData((prev) => ({ ...prev, phone: "0" }));
     }
 
     const trimmedEmail = formData.email.trim();
@@ -221,9 +232,9 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     }
 
     if (isEditMode) {
-      await updateMutation.mutateAsync(formData);
+      await updateMutation.mutateAsync(submitData);
     } else {
-      await createMutation.mutateAsync(formData);
+      await createMutation.mutateAsync(submitData);
     }
 
     if (onSave && onSave !== onCancel) {
@@ -439,7 +450,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                   Kontakt
                 </h3>
                 <div className="space-y-2">
-                  <Label htmlFor="phone" data-testid="label-phone">Telefon *</Label>
+                  <Label htmlFor="phone" data-testid="label-phone">Telefon</Label>
                   <Input 
                     id="phone" 
                     value={formData.phone}
