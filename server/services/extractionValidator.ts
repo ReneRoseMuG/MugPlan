@@ -2,8 +2,8 @@ import { z } from "zod";
 
 const customerDraftSchema = z.object({
   customerNumber: z.string().trim().min(1),
-  firstName: z.string().trim().min(1),
-  lastName: z.string().trim().min(1),
+  firstName: z.string().trim().nullable().optional(),
+  lastName: z.string().trim().nullable().optional(),
   company: z.string().trim().nullable().optional(),
   email: z.string().trim().nullable().optional(),
   phone: z.string().trim().nullable().optional(),
@@ -93,8 +93,8 @@ export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtractio
   return {
     customer: {
       customerNumber: parsed.customer.customerNumber.trim(),
-      firstName: parsed.customer.firstName.trim(),
-      lastName: parsed.customer.lastName.trim(),
+      firstName: normalizeOptional(parsed.customer.firstName),
+      lastName: normalizeOptional(parsed.customer.lastName),
       company: normalizeOptional(parsed.customer.company),
       email: normalizeOptional(parsed.customer.email),
       phone: normalizeOptional(parsed.customer.phone),

@@ -180,11 +180,11 @@ export function CustomersPage({
 
     rows.sort((a, b) => {
       if (sortKey === "lastName") {
-        return a.customer.lastName.localeCompare(b.customer.lastName, "de") * directionMultiplier;
+        return (a.customer.lastName ?? "").localeCompare(b.customer.lastName ?? "", "de") * directionMultiplier;
       }
 
       if (sortKey === "firstName") {
-        return a.customer.firstName.localeCompare(b.customer.firstName, "de") * directionMultiplier;
+        return (a.customer.firstName ?? "").localeCompare(b.customer.firstName ?? "", "de") * directionMultiplier;
       }
 
       if (sortKey === "relevantAppointment") {
@@ -256,13 +256,13 @@ export function CustomersPage({
       {
         id: "lastName",
         header: renderSortHeader("Name", "lastName"),
-        accessor: (row) => row.customer.lastName,
+        accessor: (row) => row.customer.lastName ?? "",
         minWidth: 150,
       },
       {
         id: "firstName",
         header: renderSortHeader("Vorname", "firstName"),
-        accessor: (row) => row.customer.firstName,
+        accessor: (row) => row.customer.firstName ?? "",
         minWidth: 150,
       },
       {
@@ -370,7 +370,7 @@ export function CustomersPage({
               return (
                 <EntityCard
                   key={customer.id}
-                  title={customer.fullName}
+                  title={customer.fullName ?? "Ohne Name"}
                   icon={<User className="w-4 h-4" />}
                   headerColor={defaultHeaderColor}
                   testId={`customer-card-${customer.id}`}

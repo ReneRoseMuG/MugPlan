@@ -460,15 +460,15 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
-    firstName: customer.firstName.trim(),
-    lastName: customer.lastName.trim(),
-    company: customer.company.trim() || null,
-    email: customer.email.trim() || null,
-    phone: customer.phone.trim(),
-    addressLine1: customer.addressLine1.trim() || null,
-    addressLine2: customer.addressLine2.trim() || null,
-    postalCode: customer.postalCode.trim() || null,
-    city: customer.city.trim() || null,
+    firstName: customer.firstName?.trim() || null,
+    lastName: customer.lastName?.trim() || null,
+    company: customer.company?.trim() || null,
+    email: customer.email?.trim() || null,
+    phone: customer.phone?.trim() || null,
+    addressLine1: customer.addressLine1?.trim() || null,
+    addressLine2: customer.addressLine2?.trim() || null,
+    postalCode: customer.postalCode?.trim() || null,
+    city: customer.city?.trim() || null,
   });
 
   const resolveCustomerByNumber = async (customerNumber: string) => {
@@ -509,10 +509,6 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     if (!customerDraft.customerNumber.trim()) {
       throw new Error("Kundennummer ist erforderlich");
     }
-    if (!customerDraft.firstName.trim() || !customerDraft.lastName.trim()) {
-      throw new Error("Vorname und Nachname sind erforderlich");
-    }
-
     const resolution = await resolveCustomerByNumber(customerDraft.customerNumber);
     if (resolution.resolution === "multiple") {
       throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");

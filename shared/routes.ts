@@ -31,8 +31,8 @@ const extractionScopeSchema = z.enum(["project_form", "appointment_form", "custo
 
 const extractedCustomerSchema = z.object({
   customerNumber: z.string().min(1),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
   company: z.string().nullable(),
   email: z.string().nullable(),
   phone: z.string().nullable(),
@@ -259,7 +259,7 @@ export const api = {
               customer: z.object({
                 id: z.number(),
                 customerNumber: z.string(),
-                fullName: z.string(),
+                fullName: z.string().nullable(),
                 addressLine1: z.string().nullable(),
                 addressLine2: z.string().nullable(),
                 postalCode: z.string().nullable(),
@@ -409,7 +409,7 @@ export const api = {
             customer: z.object({
               id: z.number(),
               customerNumber: z.string(),
-              fullName: z.string(),
+              fullName: z.string().nullable(),
               addressLine1: z.string().nullable().optional(),
               addressLine2: z.string().nullable().optional(),
               postalCode: z.string().nullable(),
@@ -827,7 +827,7 @@ export const api = {
           customer: z.object({
             id: z.number(),
             customerNumber: z.string(),
-            fullName: z.string(),
+            fullName: z.string().nullable(),
             addressLine1: z.string().nullable(),
             addressLine2: z.string().nullable(),
             postalCode: z.string().nullable(),
@@ -1209,7 +1209,7 @@ export const api = {
           customer: z.object({
             id: z.number(),
             customerNumber: z.string(),
-            fullName: z.string(),
+            fullName: z.string().nullable(),
             addressLine1: z.string().nullable(),
             addressLine2: z.string().nullable(),
             postalCode: z.string().nullable(),

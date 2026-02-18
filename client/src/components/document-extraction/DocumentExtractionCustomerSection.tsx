@@ -1,12 +1,16 @@
 import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { ExtractionCustomerDraft } from "@/components/DocumentExtractionDialog";
-
-export type ExtractionCustomerEditableFields = Pick<
-  ExtractionCustomerDraft,
-  "customerNumber" | "firstName" | "lastName" | "email" | "phone" | "addressLine1" | "postalCode" | "city"
->;
+export type ExtractionCustomerEditableFields = {
+  customerNumber: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  postalCode: string;
+  city: string;
+};
 
 interface DocumentExtractionCustomerSectionProps {
   value: ExtractionCustomerEditableFields;

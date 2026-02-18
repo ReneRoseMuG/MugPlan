@@ -9,15 +9,15 @@ import { DocumentExtractionProjectSection } from "@/components/document-extracti
 
 export type ExtractionCustomerDraft = {
   customerNumber: string;
-  firstName: string;
-  lastName: string;
-  company: string;
-  email: string;
-  phone: string;
-  addressLine1: string;
-  addressLine2: string;
-  postalCode: string;
-  city: string;
+  firstName: string | null;
+  lastName: string | null;
+  company: string | null;
+  email: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  postalCode: string | null;
+  city: string | null;
 };
 
 export type ExtractionArticleItem = {
@@ -117,13 +117,13 @@ export function DocumentExtractionDialog({
     }
     setCustomerFields({
       customerNumber: data.customer.customerNumber,
-      firstName: data.customer.firstName,
-      lastName: data.customer.lastName,
-      email: data.customer.email,
-      phone: data.customer.phone,
-      addressLine1: data.customer.addressLine1,
-      postalCode: data.customer.postalCode,
-      city: data.customer.city,
+      firstName: data.customer.firstName ?? "",
+      lastName: data.customer.lastName ?? "",
+      email: data.customer.email ?? "",
+      phone: data.customer.phone ?? "",
+      addressLine1: data.customer.addressLine1 ?? "",
+      postalCode: data.customer.postalCode ?? "",
+      city: data.customer.city ?? "",
     });
     setSaunaModel(data.saunaModel);
     setOrderNumber(data.orderNumber ?? "");

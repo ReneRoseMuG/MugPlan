@@ -47,6 +47,45 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 describe("FT21 integration: customers create duplicate mapping", () => {
+  it("creates customer with only customerNumber and supports patching optional fields to null", async () => {
+    const agent = await loginAdminAgent();
+
+    const createRes = await agent
+      .post("/api/customers")
+      .send({
+        customerNumber: `NULLABLE-${Date.now()}`,
+      })
+      .expect(201);
+
+    expect(createRes.body.customerNumber).toMatch(/^NULLABLE-/);
+    expect(createRes.body.firstName).toBeNull();
+    expect(createRes.body.lastName).toBeNull();
+    expect(createRes.body.fullName).toBeNull();
+    expect(createRes.body.phone).toBeNull();
+
+    const patchRes = await agent
+      .patch(`/api/customers/${createRes.body.id}`)
+      .send({
+        version: createRes.body.version,
+        firstName: null,
+        lastName: null,
+        company: null,
+        phone: null,
+        addressLine1: null,
+        addressLine2: null,
+        postalCode: null,
+        city: null,
+      })
+      .expect(200);
+
+    expect(patchRes.body.firstName).toBeNull();
+    expect(patchRes.body.lastName).toBeNull();
+    expect(patchRes.body.fullName).toBeNull();
+    expect(patchRes.body.company).toBeNull();
+    expect(patchRes.body.phone).toBeNull();
+    expect(patchRes.body.addressLine1).toBeNull();
+  });
+
   it("returns 409 CUSTOMER_NUMBER_CONFLICT when service reports duplicate", async () => {
     const agent = await loginAdminAgent();
     vi.spyOn(customersService, "createCustomer").mockRejectedValueOnce(

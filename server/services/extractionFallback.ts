@@ -49,9 +49,9 @@ function normalizeCustomerDraft(aiResult: Partial<AiExtractionResult> | null, so
   const customerNumberCandidate = String(customer.customerNumber ?? "").trim();
   const customerNumberFromText = sourceText.match(CUSTOMER_NUMBER_REGEX)?.[0] ?? "";
   const customerNumber = customerNumberCandidate || customerNumberFromText || "UNBEKANNT";
-  const firstName = String(customer.firstName ?? "").trim() || "-";
-  const lastName = String(customer.lastName ?? "").trim() || "-";
-  const phone = String(customer.phone ?? "").trim() || "-";
+  const firstName = String(customer.firstName ?? "").trim() || null;
+  const lastName = String(customer.lastName ?? "").trim() || null;
+  const phone = String(customer.phone ?? "").trim() || null;
 
   return {
     customerNumber,

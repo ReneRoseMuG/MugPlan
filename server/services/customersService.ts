@@ -29,6 +29,27 @@ function resolveScope(roleKey: CanonicalRoleKey, requestedScope: "active" | "ina
   return requestedScope;
 }
 
+function normalizeOptionalText(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
+}
+
+function buildCustomerFullName(data: { firstName?: string | null; lastName?: string | null; company?: string | null }): string | null {
+  const firstName = normalizeOptionalText(data.firstName);
+  const lastName = normalizeOptionalText(data.lastName);
+  const company = normalizeOptionalText(data.company);
+
+  if (firstName && lastName) {
+    return `${lastName}, ${firstName}`;
+  }
+  if (lastName) return lastName;
+  if (firstName) return firstName;
+  if (company) return company;
+  return null;
+}
+
 export async function listCustomers(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<Customer[]> {
   return customersRepository.getCustomers(resolveScope(roleKey, scope));
 }
@@ -45,9 +66,21 @@ export async function getCustomersByCustomerNumber(customerNumber: string): Prom
 }
 
 export async function createCustomer(data: InsertCustomer): Promise<Customer> {
-  const fullName = `${data.lastName}, ${data.firstName}`;
+  const normalizedData: InsertCustomer = {
+    ...data,
+    firstName: normalizeOptionalText(data.firstName),
+    lastName: normalizeOptionalText(data.lastName),
+    company: normalizeOptionalText(data.company),
+    email: normalizeOptionalText(data.email),
+    phone: normalizeOptionalText(data.phone),
+    addressLine1: normalizeOptionalText(data.addressLine1),
+    addressLine2: normalizeOptionalText(data.addressLine2),
+    postalCode: normalizeOptionalText(data.postalCode),
+    city: normalizeOptionalText(data.city),
+  };
+  const fullName = buildCustomerFullName(normalizedData);
   try {
-    return await customersRepository.createCustomer({ ...data, fullName });
+    return await customersRepository.createCustomer({ ...normalizedData, fullName });
   } catch (error) {
     if (isCustomerNumberDuplicateError(error)) {
       throw new CustomersError(409, "CUSTOMER_NUMBER_CONFLICT");
@@ -72,14 +105,33 @@ export async function updateCustomer(
     throw new CustomersError(403, "FORBIDDEN");
   }
 
-  let fullName = existing.fullName;
-  if (data.firstName !== undefined || data.lastName !== undefined) {
-    const firstName = data.firstName !== undefined ? data.firstName : existing.firstName;
-    const lastName = data.lastName !== undefined ? data.lastName : existing.lastName;
-    fullName = `${lastName}, ${firstName}`;
-  }
+  const normalizedUpdateData: UpdateCustomer = {
+    ...data,
+    firstName: normalizeOptionalText(data.firstName),
+    lastName: normalizeOptionalText(data.lastName),
+    company: normalizeOptionalText(data.company),
+    email: normalizeOptionalText(data.email),
+    phone: normalizeOptionalText(data.phone),
+    addressLine1: normalizeOptionalText(data.addressLine1),
+    addressLine2: normalizeOptionalText(data.addressLine2),
+    postalCode: normalizeOptionalText(data.postalCode),
+    city: normalizeOptionalText(data.city),
+  };
 
-  const result = await customersRepository.updateCustomerWithVersion(id, data.version, { ...data, fullName });
+  const willUpdateNameParts =
+    normalizedUpdateData.firstName !== undefined ||
+    normalizedUpdateData.lastName !== undefined ||
+    normalizedUpdateData.company !== undefined;
+
+  const fullName = willUpdateNameParts
+    ? buildCustomerFullName({
+        firstName: normalizedUpdateData.firstName !== undefined ? normalizedUpdateData.firstName : existing.firstName,
+        lastName: normalizedUpdateData.lastName !== undefined ? normalizedUpdateData.lastName : existing.lastName,
+        company: normalizedUpdateData.company !== undefined ? normalizedUpdateData.company : existing.company,
+      })
+    : undefined;
+
+  const result = await customersRepository.updateCustomerWithVersion(id, data.version, { ...normalizedUpdateData, fullName });
   if (result.kind === "version_conflict") {
     const exists = await customersRepository.getCustomer(id);
     if (!exists) return null;

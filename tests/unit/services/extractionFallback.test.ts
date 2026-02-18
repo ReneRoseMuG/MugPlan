@@ -6,7 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Preisangaben werden aus dem Produkttext-Fallback entfernt.
- * - Fallback liefert immer verwertbare Pflichtfelder fuer Dialog/Weiterverarbeitung.
+ * - Fallback laesst optionale Kundenfelder null statt Platzhalterwerten.
  *
  * Fehlerfaelle:
  * - KI-Ausgabe ist unvollstaendig oder ungueltig.
@@ -45,6 +45,9 @@ describe("FT20 unit: extraction fallback", () => {
     expect(fallback.articleItems[0].description.length).toBeGreaterThan(0);
     expect(fallback.articleListHtml.length).toBeGreaterThan(0);
     expect(fallback.customer.customerNumber.length).toBeGreaterThan(0);
+    expect(fallback.customer.firstName).toBeNull();
+    expect(fallback.customer.lastName).toBeNull();
+    expect(fallback.customer.phone).toBeNull();
     expect(fallback.warnings.length).toBeGreaterThan(0);
   });
 });

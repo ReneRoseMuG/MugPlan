@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - PATCH auf Kundendaten sendet verpflichtend die aktuelle Version.
  * - Admin darf isActive im Payload setzen, Nicht-Admin nur readonly.
- * - Leere Telefonnummer wird nur nach Bestaetigung gespeichert und als "0" persistiert.
+ * - Nur Kundennummer bleibt Pflichtfeld, optionale Felder werden als null gesendet.
  * - VERSION_CONFLICT und FORBIDDEN werden codebasiert gemappt.
  *
  * Fehlerfaelle:
@@ -44,10 +44,12 @@ describe("FT05+ customer data versioning wiring", () => {
     expect(source).toContain("nur fuer Admin erlaubt");
   });
 
-  it("supports empty phone via confirmation fallback to 0 and no mandatory star label", () => {
-    expect(source).toContain("window.confirm(\"Telefon ist leer. Soll trotzdem gespeichert und Telefon auf 0 gesetzt werden?\")");
-    expect(source).toContain("submitData = { ...formData, phone: \"0\" };");
-    expect(source).toContain("setFormData((prev) => ({ ...prev, phone: \"0\" }))");
+  it("keeps only customer number mandatory and maps optional fields to null payload values", () => {
+    expect(source).toContain("if (!formData.customerNumber.trim())");
+    expect(source).toContain("firstName: normalizeOptionalInput(formData.firstName)");
+    expect(source).toContain("phone: normalizeOptionalInput(formData.phone)");
+    expect(source).toContain("description: \"Bitte fuellen Sie die Kundennummer aus.\"");
+    expect(source).toContain("<Label htmlFor=\"firstName\" data-testid=\"label-firstname\">Vorname</Label>");
     expect(source).toContain("<Label htmlFor=\"phone\" data-testid=\"label-phone\">Telefon</Label>");
   });
 });

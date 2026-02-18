@@ -6,12 +6,12 @@ import { z } from "zod";
 export const customers = mysqlTable("customer", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   customerNumber: varchar("customer_number", { length: 255 }).notNull().unique(),
-  firstName: varchar("first_name", { length: 255 }).notNull(),
-  lastName: varchar("last_name", { length: 255 }).notNull(),
-  fullName: varchar("full_name", { length: 255 }).notNull(),
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  fullName: varchar("full_name", { length: 255 }),
   company: varchar("company", { length: 255 }),
   email: varchar("email", { length: 255 }),
-  phone: varchar("phone", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 255 }),
   addressLine1: varchar("address_line1", { length: 255 }),
   addressLine2: varchar("address_line2", { length: 255 }),
   postalCode: varchar("postal_code", { length: 255 }),
@@ -32,6 +32,24 @@ const customerEmailSchema = z.preprocess(
   z.string().email().nullable().optional(),
 );
 
+const customerRequiredTextSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return value;
+    return value.trim();
+  },
+  z.string().min(1),
+);
+
+const customerOptionalTextSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value !== "string") return value;
+    const normalized = value.trim();
+    return normalized.length === 0 ? null : normalized;
+  },
+  z.string().nullable().optional(),
+);
+
 export const insertCustomerSchema = createInsertSchema(customers).omit({ 
   id: true, 
   createdAt: true, 
@@ -39,20 +57,29 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
   isActive: true,
   fullName: true,
 }).extend({
+  customerNumber: customerRequiredTextSchema,
+  firstName: customerOptionalTextSchema,
+  lastName: customerOptionalTextSchema,
+  company: customerOptionalTextSchema,
   email: customerEmailSchema,
+  phone: customerOptionalTextSchema,
+  addressLine1: customerOptionalTextSchema,
+  addressLine2: customerOptionalTextSchema,
+  postalCode: customerOptionalTextSchema,
+  city: customerOptionalTextSchema,
 });
 
 export const updateCustomerSchema = z.object({
-  customerNumber: z.string().optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  company: z.string().nullable().optional(),
+  customerNumber: customerRequiredTextSchema.optional(),
+  firstName: customerOptionalTextSchema,
+  lastName: customerOptionalTextSchema,
+  company: customerOptionalTextSchema,
   email: customerEmailSchema,
-  phone: z.string().optional(),
-  addressLine1: z.string().nullable().optional(),
-  addressLine2: z.string().nullable().optional(),
-  postalCode: z.string().nullable().optional(),
-  city: z.string().nullable().optional(),
+  phone: customerOptionalTextSchema,
+  addressLine1: customerOptionalTextSchema,
+  addressLine2: customerOptionalTextSchema,
+  postalCode: customerOptionalTextSchema,
+  city: customerOptionalTextSchema,
   isActive: z.boolean().optional(),
 });
 

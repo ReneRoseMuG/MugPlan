@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Optionalfelder werden konsistent normalisiert (leer -> null).
+ * - firstName/lastName sind optional und duerfen null sein.
  * - Artikel werden kategorisiert.
  * - HTML-Ausgabe ist flach (eine UL-Ebene) und escaped nutzernahe Inhalte.
  * - Warnings werden getrimmt und leere Werte entfernt.
@@ -48,6 +49,24 @@ describe("FT20 extraction validator structure", () => {
     expect(result.customer.city).toBe("Leipzig");
     expect(result.orderNumber).toBe("A0218229A");
     expect(result.warnings).toEqual(["Hinweis A"]);
+  });
+
+  it("accepts missing firstName and lastName as nullable fields", () => {
+    const result = validateAndNormalizeExtraction({
+      customer: {
+        customerNumber: "1002",
+        firstName: null,
+        lastName: null,
+        phone: null,
+      },
+      orderNumber: null,
+      saunaModel: "Modell N",
+      articleItems: [{ quantity: "1", description: "Bank", category: "Holz" }],
+      warnings: [],
+    });
+
+    expect(result.customer.firstName).toBeNull();
+    expect(result.customer.lastName).toBeNull();
   });
 
   it("categorizes articles and generates flat semantic html", () => {
@@ -119,9 +138,9 @@ describe("FT20 extraction validator structure", () => {
       validateAndNormalizeExtraction({
         customer: {
           customerNumber: "",
-          firstName: "",
-          lastName: "",
-          phone: "",
+          firstName: null,
+          lastName: null,
+          phone: null,
         },
         saunaModel: "",
         articleItems: [],

@@ -28,6 +28,19 @@ interface CustomerDataProps {
   onOpenProject?: (id: number) => void;
 }
 
+type CustomerSubmitPayload = {
+  customerNumber: string;
+  firstName: string | null;
+  lastName: string | null;
+  company: string | null;
+  email: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  postalCode: string | null;
+  city: string | null;
+};
+
 export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: CustomerDataProps) {
   const { toast } = useToast();
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -51,6 +64,10 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
 
   const isEditMode = !!customerId;
+  const normalizeOptionalInput = (value: string): string | null => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  };
 
   const { data: customer, isLoading } = useQuery<Customer>({
     queryKey: ['/api/customers', customerId],
@@ -151,7 +168,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   };
 
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: CustomerSubmitPayload) => {
       const res = await apiRequest('POST', '/api/customers', data);
       return res.json();
     },
@@ -165,7 +182,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: CustomerSubmitPayload & { isActive: boolean }) => {
       if (!customer || !Number.isInteger(customer.version) || customer.version < 1) {
         throw new Error("422: {\"code\":\"VALIDATION_ERROR\"}");
       }
@@ -201,24 +218,13 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   });
 
   const handleSubmit = async () => {
-    if (!formData.customerNumber || !formData.firstName || !formData.lastName) {
-      toast({ 
-        title: "Fehler", 
-        description: "Bitte füllen Sie alle Pflichtfelder aus (Kundennummer, Vorname, Nachname).", 
-        variant: "destructive" 
+    if (!formData.customerNumber.trim()) {
+      toast({
+        title: "Fehler",
+        description: "Bitte fuellen Sie die Kundennummer aus.",
+        variant: "destructive",
       });
       throw new Error("validation");
-    }
-
-    const normalizedPhone = formData.phone.trim();
-    let submitData = formData;
-    if (normalizedPhone.length === 0) {
-      const confirmed = window.confirm("Telefon ist leer. Soll trotzdem gespeichert und Telefon auf 0 gesetzt werden?");
-      if (!confirmed) {
-        return;
-      }
-      submitData = { ...formData, phone: "0" };
-      setFormData((prev) => ({ ...prev, phone: "0" }));
     }
 
     const trimmedEmail = formData.email.trim();
@@ -230,6 +236,20 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       });
       throw new Error("validation");
     }
+
+    const submitData: CustomerSubmitPayload & { isActive: boolean } = {
+      customerNumber: formData.customerNumber.trim(),
+      firstName: normalizeOptionalInput(formData.firstName),
+      lastName: normalizeOptionalInput(formData.lastName),
+      company: normalizeOptionalInput(formData.company),
+      email: normalizeOptionalInput(formData.email),
+      phone: normalizeOptionalInput(formData.phone),
+      addressLine1: normalizeOptionalInput(formData.addressLine1),
+      addressLine2: normalizeOptionalInput(formData.addressLine2),
+      postalCode: normalizeOptionalInput(formData.postalCode),
+      city: normalizeOptionalInput(formData.city),
+      isActive: formData.isActive,
+    };
 
     if (isEditMode) {
       await updateMutation.mutateAsync(submitData);
@@ -346,15 +366,15 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       setFormData((prev) => ({
         ...prev,
         customerNumber: customer.customerNumber.trim(),
-        firstName: customer.firstName.trim(),
-        lastName: customer.lastName.trim(),
-        company: customer.company.trim(),
-        email: customer.email.trim(),
-        phone: customer.phone.trim(),
-        addressLine1: customer.addressLine1.trim(),
-        addressLine2: customer.addressLine2.trim(),
-        postalCode: customer.postalCode.trim(),
-        city: customer.city.trim(),
+        firstName: (customer.firstName ?? "").trim(),
+        lastName: (customer.lastName ?? "").trim(),
+        company: (customer.company ?? "").trim(),
+        email: (customer.email ?? "").trim(),
+        phone: (customer.phone ?? "").trim(),
+        addressLine1: (customer.addressLine1 ?? "").trim(),
+        addressLine2: (customer.addressLine2 ?? "").trim(),
+        postalCode: (customer.postalCode ?? "").trim(),
+        city: (customer.city ?? "").trim(),
       }));
       setDocumentExtractionOpen(false);
       toast({ title: "Kundendaten übernommen" });
@@ -415,7 +435,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName" data-testid="label-firstname">Vorname *</Label>
+                    <Label htmlFor="firstName" data-testid="label-firstname">Vorname</Label>
                     <Input 
                       id="firstName" 
                       value={formData.firstName}
@@ -424,7 +444,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName" data-testid="label-lastname">Nachname *</Label>
+                    <Label htmlFor="lastName" data-testid="label-lastname">Nachname</Label>
                     <Input 
                       id="lastName" 
                       value={formData.lastName}
@@ -578,3 +598,4 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     </EntityFormLayout>
   );
 }
+

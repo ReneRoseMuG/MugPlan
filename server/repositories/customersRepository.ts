@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   customerAttachments,
@@ -37,7 +37,7 @@ export async function getCustomersByCustomerNumber(customerNumber: string): Prom
     .where(eq(customers.customerNumber, customerNumber.trim()));
 }
 
-export async function createCustomer(data: InsertCustomer & { fullName: string }): Promise<Customer> {
+export async function createCustomer(data: InsertCustomer & { fullName: string | null }): Promise<Customer> {
   const result = await db.insert(customers).values(data);
   const insertId = (result as any)[0].insertId;
   const [customer] = await db.select().from(customers).where(eq(customers.id, insertId));
@@ -47,28 +47,30 @@ export async function createCustomer(data: InsertCustomer & { fullName: string }
 export async function updateCustomerWithVersion(
   id: number,
   expectedVersion: number,
-  data: UpdateCustomer & { fullName?: string },
+  data: UpdateCustomer & { fullName?: string | null },
 ): Promise<{ kind: "updated"; customer: Customer } | { kind: "version_conflict" }> {
-  const result = await db.execute(sql`
-    update customer
-    set
-      customer_number = coalesce(${data.customerNumber ?? null}, customer_number),
-      first_name = coalesce(${data.firstName ?? null}, first_name),
-      last_name = coalesce(${data.lastName ?? null}, last_name),
-      full_name = coalesce(${data.fullName ?? null}, full_name),
-      company = ${data.company ?? null},
-      email = ${data.email ?? null},
-      phone = coalesce(${data.phone ?? null}, phone),
-      is_active = coalesce(${data.isActive ?? null}, is_active),
-      address_line1 = ${data.addressLine1 ?? null},
-      address_line2 = ${data.addressLine2 ?? null},
-      postal_code = ${data.postalCode ?? null},
-      city = ${data.city ?? null},
-      updated_at = now(),
-      version = version + 1
-    where id = ${id}
-      and version = ${expectedVersion}
-  `);
+  const updateData: Record<string, unknown> = {
+    updatedAt: sql`now()`,
+    version: sql`${customers.version} + 1`,
+  };
+
+  if (data.customerNumber !== undefined) updateData.customerNumber = data.customerNumber;
+  if (data.firstName !== undefined) updateData.firstName = data.firstName;
+  if (data.lastName !== undefined) updateData.lastName = data.lastName;
+  if (data.fullName !== undefined) updateData.fullName = data.fullName;
+  if (data.company !== undefined) updateData.company = data.company;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.phone !== undefined) updateData.phone = data.phone;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+  if (data.addressLine1 !== undefined) updateData.addressLine1 = data.addressLine1;
+  if (data.addressLine2 !== undefined) updateData.addressLine2 = data.addressLine2;
+  if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
+  if (data.city !== undefined) updateData.city = data.city;
+
+  const result = await db
+    .update(customers)
+    .set(updateData)
+    .where(and(eq(customers.id, id), eq(customers.version, expectedVersion)));
 
   const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
   if (affectedRows === 0) {
