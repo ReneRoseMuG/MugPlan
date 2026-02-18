@@ -1,4 +1,4 @@
-import { EmployeeAllScopeFilterInput } from "@/components/filters/employee-all-scope-filter-input";
+import { EmployeeInactiveScopeFilterInput } from "@/components/filters/employee-inactive-scope-filter-input";
 import { EmployeeNameFilterInput } from "@/components/filters/employee-name-filter-input";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 
@@ -7,8 +7,8 @@ interface EmployeeFilterPanelProps {
   employeeLastName: string;
   onEmployeeLastNameChange: (value: string) => void;
   onEmployeeLastNameClear: () => void;
-  employeeScope?: "active" | "all";
-  onEmployeeScopeChange?: (scope: "active" | "all") => void;
+  employeeScope?: "active" | "inactive";
+  onEmployeeScopeChange?: (scope: "active" | "inactive") => void;
 }
 
 export function EmployeeFilterPanel({
@@ -22,7 +22,7 @@ export function EmployeeFilterPanel({
   return (
     <FilterPanel title={title} layout="row">
       {employeeScope && onEmployeeScopeChange ? (
-        <EmployeeAllScopeFilterInput
+        <EmployeeInactiveScopeFilterInput
           employeeScope={employeeScope}
           onEmployeeScopeChange={onEmployeeScopeChange}
           className="w-full sm:w-auto sm:min-w-32"

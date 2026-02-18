@@ -4,6 +4,7 @@ export interface ProjectFilters {
   title: string;
   customerLastName: string;
   customerNumber: string;
+  orderNumber: string;
   statusIds: number[];
 }
 
@@ -13,6 +14,7 @@ export const defaultProjectFilters: ProjectFilters = {
   title: "",
   customerLastName: "",
   customerNumber: "",
+  orderNumber: "",
   statusIds: [],
 };
 
@@ -27,6 +29,7 @@ export function applyProjectFilters(
   const normalizedTitle = normalizeText(filters.title);
   const normalizedCustomerLastName = normalizeText(filters.customerLastName);
   const normalizedCustomerNumber = normalizeNumber(filters.customerNumber);
+  const normalizedOrderNumber = normalizeNumber(filters.orderNumber);
 
   return projects.filter((project) => {
     const customer = customersById.get(project.customerId);
@@ -39,8 +42,11 @@ export function applyProjectFilters(
     const matchesCustomerNumber = normalizedCustomerNumber
       ? (customer?.customerNumber ?? "").includes(normalizedCustomerNumber)
       : true;
+    const matchesOrderNumber = normalizedOrderNumber
+      ? (project.orderNumber ?? "").includes(normalizedOrderNumber)
+      : true;
 
-    return matchesTitle && matchesCustomerLastName && matchesCustomerNumber;
+    return matchesTitle && matchesCustomerLastName && matchesCustomerNumber && matchesOrderNumber;
   });
 }
 

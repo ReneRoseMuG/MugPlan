@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { CardListLayout } from "@/components/ui/card-list-layout";
+import { ListLayout } from "@/components/ui/list-layout";
+import { BoardView } from "@/components/ui/board-view";
 import { FileText, Pencil } from "lucide-react";
 import type { NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
@@ -12,6 +13,7 @@ import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface TemplateCardProps {
   template: NoteTemplate;
@@ -72,6 +74,7 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
 }
 
 export function NoteTemplatesPage() {
+  const { toast } = useToast();
   const defaultColor = "#94a3b8";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null);
@@ -80,6 +83,11 @@ export function NoteTemplatesPage() {
   const [formColor, setFormColor] = useState(defaultColor);
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const extractApiCode = (error: unknown): string | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+    return match?.[1] ?? null;
+  };
 
   const { data: templates = [], isLoading } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates?active=false"],
@@ -90,27 +98,47 @@ export function NoteTemplatesPage() {
       return apiRequest("POST", "/api/note-templates", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
       handleCloseDialog();
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean; sortOrder?: number; color?: string } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean; sortOrder?: number; color?: string; version: number } }) => {
       return apiRequest("PUT", `/api/note-templates/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
       handleCloseDialog();
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/note-templates/${id}`);
+    mutationFn: async ({ id, version }: { id: number; version: number }) => {
+      return apiRequest("DELETE", `/api/note-templates/${id}`, { version });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Loeschen nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -158,7 +186,7 @@ export function NoteTemplatesPage() {
     if (editingTemplate) {
       updateMutation.mutate({
         id: editingTemplate.id,
-        data: payload,
+        data: { ...payload, version: editingTemplate.version },
       });
     } else {
       createMutation.mutate(payload);
@@ -167,42 +195,50 @@ export function NoteTemplatesPage() {
 
   const handleDelete = (template: NoteTemplate) => {
     if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich löschen?`)) {
-      deleteMutation.mutate(template.id);
+      deleteMutation.mutate({ id: template.id, version: template.version });
     }
   };
 
   return (
     <>
-      <CardListLayout
+      <ListLayout
         title="Notiz Vorlagen"
         icon={<FileText className="w-5 h-5" />}
         helpKey="note-templates"
         isLoading={isLoading}
-        gridTestId="list-templates"
-        gridCols="2"
-        primaryAction={{
-          label: "Neue Vorlage",
-          onClick: handleOpenCreate,
-          isPending: createMutation.isPending,
-          testId: "button-new-template",
-        }}
-        isEmpty={templates.length === 0}
-        emptyState={
-          <p className="text-sm text-slate-400 text-center py-8 col-span-2">
-            Keine Vorlagen vorhanden
-          </p>
-        }
-      >
-        {templates.map((template) => (
-          <TemplateCard
-            key={template.id}
-            template={template}
-            onEdit={() => handleOpenEdit(template)}
-            onDelete={() => handleDelete(template)}
-            isDeleting={deleteMutation.isPending}
-          />
-        ))}
-      </CardListLayout>
+        footerSlot={(
+          <Button
+            variant="outline"
+            onClick={handleOpenCreate}
+            disabled={createMutation.isPending}
+            data-testid="button-new-template"
+          >
+            Neue Vorlage
+          </Button>
+        )}
+        contentSlot={(
+          <BoardView
+            gridTestId="list-templates"
+            gridCols="2"
+            isEmpty={templates.length === 0}
+            emptyState={(
+              <p className="text-sm text-slate-400 text-center py-8 col-span-2">
+                Keine Vorlagen vorhanden
+              </p>
+            )}
+          >
+            {templates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onEdit={() => handleOpenEdit(template)}
+                onDelete={() => handleDelete(template)}
+                isDeleting={deleteMutation.isPending}
+              />
+            ))}
+          </BoardView>
+        )}
+      />
 
       <ColorSelectEntityEditDialog
         open={dialogOpen}

@@ -8,11 +8,13 @@ type AppointmentStatus = {
 
 export function CalendarWeekAppointmentPanelProject({
   projectName,
+  projectOrderNumber,
   projectDescription,
   projectStatuses,
   showSectionTitle = false,
 }: {
   projectName: string;
+  projectOrderNumber: string | null;
   projectDescription: string | null;
   projectStatuses: AppointmentStatus[];
   showSectionTitle?: boolean;
@@ -33,6 +35,9 @@ export function CalendarWeekAppointmentPanelProject({
         </div>
       )}
       <div className="text-xs font-semibold text-slate-800">{projectName}</div>
+      {projectOrderNumber && (
+        <div className="text-[11px] text-slate-600">Auftragsnr.: {projectOrderNumber}</div>
+      )}
       {projectDescription && (
         <p className="text-[11px] leading-snug text-slate-600 line-clamp-3">{projectDescription}</p>
       )}

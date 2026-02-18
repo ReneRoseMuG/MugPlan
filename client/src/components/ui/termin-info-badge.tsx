@@ -19,6 +19,7 @@ interface TerminInfoBadgeProps {
   employeeLabel?: string | null;
   customerName?: string | null;
   projectName?: string | null;
+  projectOrderNumber?: string | null;
   employeeName?: string | null;
   icon?: ReactNode;
   color?: string | null;
@@ -56,7 +57,7 @@ const resolveStartHourLabel = (value?: number | null) => {
 };
 
 export function TerminInfoBadge({
-  id,
+  id: _id,
   startDate,
   endDate,
   startTimeHour,
@@ -66,6 +67,7 @@ export function TerminInfoBadge({
   employeeLabel,
   customerName,
   projectName,
+  projectOrderNumber,
   employeeName,
   icon,
   color,
@@ -147,6 +149,7 @@ export function TerminInfoBadge({
             endDate: endDate ?? null,
             startTimeHour: startTimeHour ?? null,
             projectName: projectName ?? projectLabel ?? null,
+            projectOrderNumber: projectOrderNumber ?? null,
             customerName: customerName ?? customerLabel ?? null,
             employeeName: employeeName ?? employeeLabel ?? null,
           })}

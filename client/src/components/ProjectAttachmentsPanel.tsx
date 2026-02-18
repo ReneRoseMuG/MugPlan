@@ -35,7 +35,7 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "attachments"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "attachments"] });
       toast({ title: "Dokument hochgeladen" });
     },
     onError: (error) => {

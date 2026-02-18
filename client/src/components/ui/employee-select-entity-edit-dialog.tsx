@@ -1,10 +1,10 @@
-import { ReactNode, useState } from "react";
+﻿import { ReactNode, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ColorSelectEntityEditDialog, ColorSelectEntityEditDialogProps } from "./color-select-entity-edit-dialog";
 import { EmployeeInfoBadge } from "./employee-info-badge";
-import { EmployeeListView } from "@/components/EmployeeList";
+import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import type { Employee } from "@shared/schema";
 
 export interface EmployeeSelectEntityEditDialogProps extends Omit<ColorSelectEntityEditDialogProps, 'children'> {
@@ -94,12 +94,10 @@ export function EmployeeSelectEntityEditDialog({
 
       <Dialog open={selectionDialogOpen} onOpenChange={setSelectionDialogOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
-          <EmployeeListView
-            mode="picker"
+          <EmployeePickerDialogList
             employees={availableEmployees}
             teams={[]}
             tours={[]}
-            showCloseButton={false}
             onSelectEmployee={(employeeId) => {
               if (!selectedMembers.includes(employeeId)) {
                 onToggleMember(employeeId);
@@ -114,3 +112,8 @@ export function EmployeeSelectEntityEditDialog({
     </ColorSelectEntityEditDialog>
   );
 }
+
+
+
+
+

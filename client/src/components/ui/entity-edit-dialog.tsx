@@ -94,7 +94,9 @@ export function EntityEditDialog({
                 {cancelLabel}
               </Button>
               <Button 
-                onClick={handleSave} 
+                onClick={() => {
+                  void handleSave();
+                }}
                 disabled={isBusy || saveDisabled} 
                 data-testid={saveTestId}
               >

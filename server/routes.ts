@@ -1,5 +1,8 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import { resolveUserRole } from "./middleware/resolveUserRole";
+import { requireSessionUser, sessionAuth } from "./middleware/sessionAuth";
+import { setupGate } from "./middleware/setupGate";
 import adminRoutes from "./routes/adminRoutes";
 import customerNotesRoutes from "./routes/customerNotesRoutes";
 import customerAttachmentsRoutes from "./routes/customerAttachmentsRoutes";
@@ -11,6 +14,7 @@ import noteTemplatesRoutes from "./routes/noteTemplatesRoutes";
 import notesRoutes from "./routes/notesRoutes";
 import appointmentsRoutes from "./routes/appointmentsRoutes";
 import demoSeedRoutes from "./routes/demoSeedRoutes";
+import documentExtractionRoutes from "./routes/documentExtractionRoutes";
 import projectAttachmentsRoutes from "./routes/projectAttachmentsRoutes";
 import projectNotesRoutes from "./routes/projectNotesRoutes";
 import projectStatusRelationsRoutes from "./routes/projectStatusRelationsRoutes";
@@ -21,11 +25,21 @@ import teamsRoutes from "./routes/teamsRoutes";
 import tourEmployeesRoutes from "./routes/tourEmployeesRoutes";
 import toursRoutes from "./routes/toursRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
+import usersRoutes from "./routes/usersRoutes";
+import authRoutes from "./routes/authRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+  app.use("/api", sessionAuth);
+  app.use("/api", setupGate);
+  app.use(authRoutes);
+
+  app.use("/api", requireSessionUser);
+  app.use("/api", resolveUserRole);
+
   app.use(adminRoutes);
   app.use(appointmentsRoutes);
   app.use(demoSeedRoutes);
+  app.use(documentExtractionRoutes);
   app.use(toursRoutes);
   app.use(teamsRoutes);
   app.use(customersRoutes);
@@ -44,6 +58,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(projectAttachmentsRoutes);
   app.use(projectStatusRelationsRoutes);
   app.use(userSettingsRoutes);
+  app.use(usersRoutes);
 
   return httpServer;
 }

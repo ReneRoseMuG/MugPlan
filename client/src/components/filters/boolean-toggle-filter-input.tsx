@@ -21,8 +21,8 @@ export function BooleanToggleFilterInput({
   className,
 }: BooleanToggleFilterInputProps) {
   return (
-    <div className={cn("flex items-center justify-between gap-3 rounded-md border px-3 py-2", className)}>
-      <div className="flex items-center gap-1">
+    <div className={cn("flex flex-col gap-1 rounded-md border px-3 py-2", className)}>
+      <div className="flex items-center gap-1 min-h-5">
         <Label htmlFor={id} className="text-xs uppercase tracking-wide text-slate-500">
           {label}
         </Label>

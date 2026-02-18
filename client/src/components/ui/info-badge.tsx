@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { HoverPreview } from "@/components/ui/hover-preview";
 import { Minus, Plus, X } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
 
 export type InfoBadgePreviewOptions = {
   openDelayMs: number;
@@ -54,9 +53,6 @@ export function InfoBadge({
   onDoubleClick,
   preview,
 }: InfoBadgeProps) {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sizeClasses = size === "sm" 
     ? "px-2 py-0.5 text-xs gap-1" 
     : "px-3 py-2 gap-2";
@@ -70,13 +66,6 @@ export function InfoBadge({
     ...preview?.options,
   };
 
-  useEffect(() => {
-    return () => {
-      if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
-      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
-    };
-  }, []);
-
   const handleActionClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (resolvedAction === "add") {
@@ -87,36 +76,12 @@ export function InfoBadge({
     }
   };
   
-  const handleMouseEnter = () => {
-    if (previewContent && previewOptions) {
-      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
-      if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
-      openTimeoutRef.current = setTimeout(() => {
-        setPreviewOpen(true);
-      }, previewOptions.openDelayMs);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (openTimeoutRef.current) {
-      clearTimeout(openTimeoutRef.current);
-      openTimeoutRef.current = null;
-    }
-    if (previewContent) {
-      closeTimeoutRef.current = setTimeout(() => {
-        setPreviewOpen(false);
-      }, 80);
-    }
-  };
-
   const badgeBody = (
     <div 
       className={`info-badge group flex items-center justify-between border border-border bg-muted/50 rounded ${sizeClasses} ${widthClass}`}
       style={borderColor ? { borderLeftWidth: '5px', borderLeftColor: borderColor } : undefined}
       data-testid={testId}
       onDoubleClick={onDoubleClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <div className={`flex items-center flex-1 min-w-0 ${size === "sm" ? "gap-1" : "gap-2"}`}>
         <span className="text-muted-foreground">{icon}</span>
@@ -156,34 +121,22 @@ export function InfoBadge({
   );
 
   const previewWrapper = previewContent && previewOptions ? (
-    <Popover open={previewOpen} onOpenChange={setPreviewOpen}>
-      <PopoverTrigger asChild>
-        {badgeBody}
-      </PopoverTrigger>
-      <PopoverContent
-        side={previewOptions.side}
-        align={previewOptions.align}
-        sideOffset={8}
-        style={{ maxWidth: previewOptions.maxWidth, maxHeight: previewOptions.maxHeight }}
-        className="overflow-y-auto"
-        onMouseEnter={() => {
-          if (closeTimeoutRef.current) {
-            clearTimeout(closeTimeoutRef.current);
-            closeTimeoutRef.current = null;
-          }
-        }}
-        onMouseLeave={() => {
-          setPreviewOpen(false);
-        }}
-      >
-        <div className="space-y-2">
-          {previewContent}
-        </div>
-      </PopoverContent>
-    </Popover>
-  ) : (
-    badgeBody
-  );
+    <HoverPreview
+      preview={previewContent}
+      openDelay={previewOptions.openDelayMs}
+      closeDelay={80}
+      mode="anchored"
+      side={previewOptions.side}
+      align={previewOptions.align}
+      sideOffset={8}
+      maxWidth={previewOptions.maxWidth}
+      maxHeight={previewOptions.maxHeight}
+      className="overflow-y-auto"
+      contentClassName="space-y-2"
+    >
+      {badgeBody}
+    </HoverPreview>
+  ) : badgeBody;
 
   return previewWrapper;
 }

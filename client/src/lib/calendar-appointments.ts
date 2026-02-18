@@ -1,15 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 
 export type CalendarAppointment = {
   id: number;
+  version: number;
   projectId: number;
   projectName: string;
+  projectOrderNumber: string | null;
   projectDescription: string | null;
   projectStatuses: { id: number; title: string; color: string }[];
   project?: {
     id: number;
     customerId: number;
     name: string;
+    orderNumber: string | null;
     descriptionMd: string | null;
     isActive: boolean;
   };
@@ -68,7 +71,6 @@ export function useCalendarAppointments({
       console.info(`${logPrefix} fetch`, { fromDate, toDate, detail: resolvedDetail, employeeId: employeeId ?? null });
       const response = await fetch(`/api/calendar/appointments?${params.toString()}`, {
         headers: {
-          "x-user-role": userRole,
         },
       });
       if (!response.ok) {

@@ -1,19 +1,26 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+﻿import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
 import { ProjectStatusPanel } from "@/components/ProjectStatusPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { CustomerList } from "@/components/CustomerList";
+import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
+import {
+  DocumentExtractionDialog,
+  type ExtractionDialogData,
+  type ExtractionCustomerDraft,
+} from "@/components/DocumentExtractionDialog";
+import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
+import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
+import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
   FolderKanban, 
   UserCircle, 
-  FileText, 
-  Plus
+  FileText
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -29,7 +36,9 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatProjectStoredName, parseProjectStoredName } from "@/lib/project-name-format";
 import type { Project, Customer, Note, ProjectStatus } from "@shared/schema";
+import type { ProjectStatusRelationItem } from "@shared/routes";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -43,7 +52,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const { toast } = useToast();
   const isEditing = !!projectId;
   const invalidateProjectQueries = () => {
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey[0];
         return typeof key === "string" && key.startsWith("/api/projects");
@@ -52,15 +61,21 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   };
   
   const [name, setName] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
+  const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
+  const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
 
-  const buildFormSnapshot = (input: { name: string; descriptionMd: string; customerId: number | null }) =>
+  const buildFormSnapshot = (input: { name: string; orderNumber: string; descriptionMd: string; customerId: number | null }) =>
     JSON.stringify({
       name: input.name.trim(),
+      orderNumber: input.orderNumber.trim(),
       descriptionMd: input.descriptionMd,
       customerId: input.customerId,
     });
@@ -82,7 +97,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   });
 
   // Fetch project statuses assigned to this project
-  const { data: assignedStatuses = [], isLoading: statusesLoading } = useQuery<ProjectStatus[]>({
+  const { data: assignedStatuses = [], isLoading: statusesLoading } = useQuery<ProjectStatusRelationItem[]>({
     queryKey: ['/api/projects', projectId, 'statuses'],
     enabled: isEditing,
   });
@@ -96,12 +111,15 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   // Initialize form when project data loads
   useEffect(() => {
     if (projectData) {
-      setName(projectData.project.name);
+      const parsedProjectName = parseProjectStoredName(projectData.project.name);
+      setName(parsedProjectName.isolatedProjectName);
+      setOrderNumber(projectData.project.orderNumber ?? "");
       setDescriptionMd(projectData.project.descriptionMd || "");
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
         buildFormSnapshot({
-          name: projectData.project.name,
+          name: parsedProjectName.isolatedProjectName,
+          orderNumber: projectData.project.orderNumber ?? "",
           descriptionMd: projectData.project.descriptionMd || "",
           customerId: projectData.project.customerId,
         }),
@@ -110,6 +128,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: "",
+          orderNumber: "",
           descriptionMd: "",
           customerId: null,
         }),
@@ -118,8 +137,68 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   }, [projectData, isEditing]);
 
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
+  const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
+  const projectNamePreview = formatProjectStoredName(selectedCustomerNumber, name);
+  const projectVersion = projectData?.project.version;
+
+  const runDocumentExtraction = async (file: File) => {
+    setDocumentExtractionLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/document-extraction/extract?scope=project_form", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Dokumentextraktion fehlgeschlagen");
+      }
+      const extraction = payload as {
+        customer: ExtractionCustomerDraft;
+        orderNumber: string | null;
+        saunaModel: string;
+        articleItems: ExtractionDialogData["articleItems"];
+        categorizedItems: ExtractionDialogData["categorizedItems"];
+        articleListHtml: string;
+        warnings: string[];
+      };
+      setDocumentExtractionData({
+        customer: {
+          customerNumber: extraction.customer.customerNumber ?? "",
+          firstName: extraction.customer.firstName ?? "",
+          lastName: extraction.customer.lastName ?? "",
+          company: extraction.customer.company ?? "",
+          email: extraction.customer.email ?? "",
+          phone: extraction.customer.phone ?? "",
+          addressLine1: extraction.customer.addressLine1 ?? "",
+          addressLine2: extraction.customer.addressLine2 ?? "",
+          postalCode: extraction.customer.postalCode ?? "",
+          city: extraction.customer.city ?? "",
+        },
+        orderNumber: extraction.orderNumber ?? null,
+        saunaModel: extraction.saunaModel ?? "",
+        articleItems: extraction.articleItems ?? [],
+        categorizedItems: extraction.categorizedItems ?? [],
+        articleListHtml: extraction.articleListHtml ?? "",
+        warnings: extraction.warnings ?? [],
+      });
+      setDocumentExtractionOpen(true);
+      toast({ title: "Dokument erfolgreich extrahiert" });
+    } catch (error) {
+      toast({
+        title: "Extraktion fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    } finally {
+      setDocumentExtractionLoading(false);
+    }
+  };
   const isFormDirty = buildFormSnapshot({
     name,
+    orderNumber,
     descriptionMd,
     customerId,
   }) !== initialFormSnapshot;
@@ -133,7 +212,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
   // Create project mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; customerId: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { name: string; orderNumber?: string | null; customerId: number; descriptionMd?: string }) => {
       const res = await apiRequest('POST', '/api/projects', data);
       return res.json();
     },
@@ -148,7 +227,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
   // Update project mutation
   const updateMutation = useMutation({
-    mutationFn: async (data: { name?: string; customerId?: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { version: number; name?: string; orderNumber?: string | null; customerId?: number; descriptionMd?: string }) => {
       const res = await apiRequest('PATCH', `/api/projects/${projectId}`, data);
       return res.json();
     },
@@ -156,57 +235,147 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       invalidateProjectQueries();
       toast({ title: "Projekt gespeichert" });
     },
-    onError: () => {
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Fehler beim Speichern", variant: "destructive" });
     },
   });
 
   // Note mutations
+  const getProjectNoteVersion = (noteId: number): number => {
+    const note = projectNotes.find((entry) => entry.id === noteId);
+    if (!note || !Number.isInteger(note.version) || note.version < 1) {
+      throw new Error("422: {\"code\":\"VALIDATION_ERROR\"}");
+    }
+    return note.version;
+  };
+
   const createNoteMutation = useMutation({
     mutationFn: async (data: { title: string; body: string; templateId?: number }) => {
       const res = await apiRequest('POST', `/api/projects/${projectId}/notes`, data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
     },
   });
 
   const togglePinMutation = useMutation({
-    mutationFn: async ({ noteId, isPinned }: { noteId: number; isPinned: boolean }) => {
-      const res = await apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned });
+    mutationFn: async ({ noteId, isPinned, version }: { noteId: number; isPinned: boolean; version: number }) => {
+      const res = await apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned, version });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId: number) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/notes/${noteId}`);
+    mutationFn: async ({ noteId, version }: { noteId: number; version: number }) => {
+      await apiRequest('DELETE', `/api/projects/${projectId}/notes/${noteId}`, { version });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht geloescht werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   // Status mutations
   const addStatusMutation = useMutation({
     mutationFn: async (statusId: number) => {
-      await apiRequest('POST', `/api/projects/${projectId}/statuses`, { statusId });
+      await apiRequest('POST', `/api/projects/${projectId}/statuses`, { statusId, expectedVersion: 0 });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
+        toast({ title: "Statusliste wurde zwischenzeitlich geÃ¤ndert, bitte neu laden.", variant: "destructive" });
+      }
     },
   });
 
   const removeStatusMutation = useMutation({
-    mutationFn: async (statusId: number) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/statuses/${statusId}`);
+    mutationFn: async (item: ProjectStatusRelationItem) => {
+      await apiRequest('DELETE', `/api/projects/${projectId}/statuses/${item.status.id}`, {
+        version: item.relationVersion,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
+        toast({ title: "Statusliste wurde zwischenzeitlich geÃ¤ndert, bitte neu laden.", variant: "destructive" });
+      }
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId) throw new Error("Projekt-ID fehlt");
+      if (!projectVersion) throw new Error("Projektversion fehlt");
+      await apiRequest("DELETE", `/api/projects/${projectId}`, { version: projectVersion });
+    },
+    onSuccess: () => {
+      invalidateProjectQueries();
+      toast({ title: "Projekt geloescht" });
+      if (onSaved && onSaved !== onCancel) {
+        onSaved();
+        return;
+      }
+      onCancel?.();
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "BUSINESS_CONFLICT") {
+        toast({
+          title: "Projekt kann nicht geloescht werden",
+          description: "Projekt kann nicht geloescht werden, weil Termine vorhanden sind.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Projekt wurde zwischenzeitlich geaendert",
+          description: "Bitte neu laden und erneut versuchen.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Projekt konnte nicht geloescht werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
     },
   });
 
@@ -216,19 +385,78 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       throw new Error("validation");
     }
     if (!customerId) {
-      toast({ title: "Kunde muss ausgewählt werden", variant: "destructive" });
+      toast({ title: "Kunde muss ausgewÃ¤hlt werden", variant: "destructive" });
+      throw new Error("validation");
+    }
+    if (!selectedCustomerNumber) {
+      toast({ title: "Kundennummer des zugeordneten Kunden fehlt", variant: "destructive" });
       throw new Error("validation");
     }
 
+    const storedProjectName = formatProjectStoredName(selectedCustomerNumber, name);
+    const normalizedOrderNumber = orderNumber.trim() || null;
+
     if (isEditing) {
-      await updateMutation.mutateAsync({ name, customerId, descriptionMd: descriptionMd || undefined });
+      if (!projectVersion || !Number.isInteger(projectVersion) || projectVersion < 1) {
+        toast({ title: "Projektversion fehlt, bitte neu laden", variant: "destructive" });
+        throw new Error("validation");
+      }
+      await updateMutation.mutateAsync({
+        version: projectVersion,
+        name: storedProjectName,
+        orderNumber: normalizedOrderNumber,
+        customerId,
+        descriptionMd: descriptionMd || undefined,
+      });
     } else {
-      await createMutation.mutateAsync({ name, customerId, descriptionMd: descriptionMd || undefined });
+      await createMutation.mutateAsync({
+        name: storedProjectName,
+        orderNumber: normalizedOrderNumber,
+        customerId,
+        descriptionMd: descriptionMd || undefined,
+      });
     }
-    setInitialFormSnapshot(buildFormSnapshot({ name, descriptionMd, customerId }));
+    setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, descriptionMd, customerId }));
 
     if (onSaved && onSaved !== onCancel) {
       onSaved();
+    }
+  };
+
+  const applyExtractedProjectSuggestion = async (payload: {
+    saunaModel: string;
+    orderNumber: string;
+    articleListHtml: string;
+  }) => {
+    try {
+      const hasExistingValues = name.trim().length > 0 || descriptionMd.trim().length > 0;
+      if (hasExistingValues) {
+        const confirmed = window.confirm("Titel oder Beschreibung sind bereits befÃ¼llt. Inhalte Ã¼berschreiben?");
+        if (!confirmed) return;
+      }
+      setName(parseProjectStoredName(payload.saunaModel).isolatedProjectName);
+      setDescriptionMd(payload.articleListHtml.trim());
+      const extractedOrderNumber = payload.orderNumber.trim();
+      if (extractedOrderNumber.length > 0) {
+        const currentOrderNumber = orderNumber.trim();
+        if (!currentOrderNumber) {
+          setOrderNumber(extractedOrderNumber);
+        } else if (currentOrderNumber !== extractedOrderNumber) {
+          const shouldOverwrite = window.confirm(
+            `Es ist bereits eine abweichende Auftragsnummer gesetzt (${currentOrderNumber}). Mit extrahierter Auftragsnummer (${extractedOrderNumber}) überschreiben?`,
+          );
+          if (shouldOverwrite) {
+            setOrderNumber(extractedOrderNumber);
+          }
+        }
+      }
+      toast({ title: "Projektvorschlag Ã¼bernommen" });
+    } catch (error) {
+      toast({
+        title: "Projektvorschlag konnte nicht Ã¼bernommen werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
     }
   };
 
@@ -242,65 +470,74 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
   return (
     <EntityFormLayout
-      title={isEditing ? name || "Projekt bearbeiten" : "Neues Projekt"}
+      title={isEditing ? "Projektdaten bearbeiten" : "Neues Projekt"}
       icon={<FolderKanban className="w-6 h-6" />}
       onClose={handleRequestClose}
       onCancel={handleRequestClose}
       onSubmit={handleSubmit}
       saveLabel="Projekt speichern"
       testIdPrefix="project"
+      footerActions={isEditing ? (
+        <Button
+          variant="destructive"
+          onClick={() => setDeleteConfirmOpen(true)}
+          disabled={deleteProjectMutation.isPending}
+          data-testid="button-delete-project"
+        >
+          {deleteProjectMutation.isPending ? "Projekt loeschen..." : "Projekt loeschen"}
+        </Button>
+      ) : undefined}
     >
       <div className="grid grid-cols-3 gap-6">
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
         <div className="col-span-2 space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <FolderKanban className="w-4 h-4" />
-                  Projektdaten
-                </h3>
-                <div className="space-y-2">
-                  <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
-                  <Input 
-                    id="projectName" 
-                    placeholder="z.B. Renovierung Bürogebäude" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    data-testid="input-project-name"
-                  />
+                <div className="grid grid-cols-[150px,minmax(260px,1fr),150px] gap-4">
+                  <div className="space-y-2">
+                    <Label data-testid="label-project-customer-number">Kunde Nr.</Label>
+                    <div
+                      className="h-10 rounded-md border border-border/50 bg-[hsl(var(--sub-panel-background))] px-3 flex items-center text-sm"
+                      data-testid="text-project-customer-number"
+                    >
+                      {selectedCustomerNumber || "-"}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
+                    <Input 
+                      id="projectName" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      data-testid="input-project-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="projectOrderNumber" data-testid="label-project-order-number">Auftragsnummer</Label>
+                    <Input
+                      id="projectOrderNumber"
+                      value={orderNumber}
+                      onChange={(e) => setOrderNumber(e.target.value)}
+                      data-testid="input-project-order-number"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <UserCircle className="w-4 h-4" />
-                  Zugeordneter Kunde *
-                </h3>
-                {selectedCustomer ? (
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-border">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <UserCircle className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-800 dark:text-slate-200" data-testid="text-customer-name">
-                          {selectedCustomer.fullName}
-                        </p>
-                        {selectedCustomer.company && (
-                          <p className="text-sm text-slate-500" data-testid="text-customer-company">{selectedCustomer.company}</p>
-                        )}
-                        <p className="text-sm text-slate-400" data-testid="text-customer-phone">{selectedCustomer.phone}</p>
-                      </div>
-                      <Button variant="outline" className="ml-auto" onClick={() => setCustomerDialogOpen(true)} data-testid="button-change-customer">
-                        Kunde ändern
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button variant="outline" className="w-full" onClick={() => setCustomerDialogOpen(true)} data-testid="button-select-customer">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Kunde auswählen
-                  </Button>
-                )}
+                <RelationSlot
+                  title="Zugeordneter Kunde *"
+                  icon={<UserCircle className="w-4 h-4" />}
+                  state={selectedCustomer ? "active" : "empty"}
+                  onAdd={() => setCustomerDialogOpen(true)}
+                  onRemove={() => setCustomerId(null)}
+                  addLabel="Kunde auswählen"
+                  emptyText="Kein Kunde ausgewählt"
+                  testId="slot-customer-relation-project"
+                  addActionTestId="button-select-customer"
+                  removeActionTestId="button-change-customer"
+                >
+                  {selectedCustomer ? <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" /> : null}
+                </RelationSlot>
               </div>
 
               <div className="space-y-4">
@@ -315,14 +552,25 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 />
               </div>
 
+              <DocumentExtractionDropzone
+                onFileSelected={runDocumentExtraction}
+                isProcessing={documentExtractionLoading}
+              />
+
               {/* Notizen - nur bei Bearbeitung */}
               {isEditing && (
                 <NotesSection
                   notes={projectNotes}
                   isLoading={notesLoading}
                   onAdd={(data) => createNoteMutation.mutate(data)}
-                  onTogglePin={(id, isPinned) => togglePinMutation.mutate({ noteId: id, isPinned })}
-                  onDelete={(noteId) => deleteNoteMutation.mutate(noteId)}
+                  onTogglePin={(id, isPinned) => {
+                    const version = getProjectNoteVersion(id);
+                    togglePinMutation.mutate({ noteId: id, isPinned, version });
+                  }}
+                  onDelete={(noteId) => {
+                    const version = getProjectNoteVersion(noteId);
+                    deleteNoteMutation.mutate({ noteId, version });
+                  }}
                 />
               )}
             </div>
@@ -336,13 +584,13 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                   availableStatuses={allStatuses}
                   isLoading={statusesLoading}
                   onAdd={(statusId) => addStatusMutation.mutate(statusId)}
-                  onRemove={(statusId) => removeStatusMutation.mutate(statusId)}
+                  onRemove={(item) => removeStatusMutation.mutate(item)}
                 />
               )}
 
               <ProjectAppointmentsPanel
                 projectId={projectId}
-                projectName={name}
+                projectName={projectNamePreview}
                 isEditing={isEditing}
                 onOpenAppointment={onOpenAppointment}
               />
@@ -357,19 +605,28 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
             </div>
       </div>
 
+      <DocumentExtractionDialog
+        open={documentExtractionOpen}
+        onOpenChange={setDocumentExtractionOpen}
+        data={documentExtractionData}
+        isBusy={documentExtractionLoading}
+        onApplyProject={({ saunaModel, orderNumber, articleListHtml }) =>
+          applyExtractedProjectSuggestion({ saunaModel, orderNumber, articleListHtml })
+        }
+      />
+
       {/* Customer Selection Dialog */}
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
-          <CustomerList
-            mode="picker"
-            selectedCustomerId={customerId}
+          <CustomersPage
             showCloseButton={false}
+            tableOnly
             onSelectCustomer={(id) => {
               setCustomerId(id);
               setCustomerDialogOpen(false);
             }}
             onCancel={() => setCustomerDialogOpen(false)}
-            title="Kunde auswählen"
+            title="Kunde auswÃ¤hlen"
           />
         </DialogContent>
       </Dialog>
@@ -377,9 +634,9 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Änderungen verwerfen?</AlertDialogTitle>
+            <AlertDialogTitle>Ã„nderungen verwerfen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Es gibt ungespeicherte Änderungen. Möchten Sie das Formular wirklich schließen?
+              Es gibt ungespeicherte Ã„nderungen. MÃ¶chten Sie das Formular wirklich schlieÃŸen?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -390,7 +647,30 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 onCancel?.();
               }}
             >
-              Verwerfen und schließen
+              Verwerfen und schlieÃŸen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Projekt wirklich loeschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Diese Aktion ist endgueltig. Das Projekt wird nur geloescht, wenn keine Termine zugeordnet sind.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                void deleteProjectMutation.mutateAsync();
+              }}
+              data-testid="button-confirm-delete-project"
+            >
+              Projekt loeschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -398,4 +678,17 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
     </EntityFormLayout>
   );
+}
+
+function extractApiCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const start = error.message.indexOf("{");
+  if (start < 0) return null;
+  const jsonPart = error.message.slice(start);
+  try {
+    const payload = JSON.parse(jsonPart) as { code?: unknown };
+    return typeof payload.code === "string" ? payload.code : null;
+  } catch {
+    return null;
+  }
 }

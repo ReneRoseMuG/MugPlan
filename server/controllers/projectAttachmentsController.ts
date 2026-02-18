@@ -85,7 +85,7 @@ export async function downloadProjectAttachment(req: Request, res: Response, nex
   }
 }
 
-export async function deleteProjectAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function deleteProjectAttachment(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Deletion is intentionally disabled system-wide.
     res.status(405).json({ message: "Attachment deletion is disabled" });

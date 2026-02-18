@@ -6,7 +6,6 @@ import type {
   InsertEmployee,
   InsertHelpText,
   CreateNoteInput,
-  InsertNote,
   InsertNoteTemplate,
   InsertProject,
   InsertProjectAttachment,
@@ -49,65 +48,67 @@ import * as toursService from "./services/toursService";
 export interface IStorage {
   getTours(): Promise<Tour[]>;
   createTour(tour: InsertTour): Promise<Tour>;
-  updateTour(id: number, data: UpdateTour): Promise<Tour | null>;
-  deleteTour(id: number): Promise<void>;
+  updateTour(id: number, data: UpdateTour & { version: number }): Promise<Tour | null>;
+  deleteTour(id: number, version: number): Promise<void>;
   getTeams(): Promise<Team[]>;
   createTeam(team: InsertTeam): Promise<Team>;
-  updateTeam(id: number, data: UpdateTeam): Promise<Team | null>;
-  deleteTeam(id: number): Promise<void>;
+  updateTeam(id: number, data: UpdateTeam & { version: number }): Promise<Team | null>;
+  deleteTeam(id: number, version: number): Promise<void>;
   getCustomers(): Promise<Customer[]>;
   getCustomer(id: number): Promise<Customer | null>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
-  updateCustomer(id: number, data: UpdateCustomer): Promise<Customer | null>;
+  updateCustomer(id: number, data: UpdateCustomer & { version: number }): Promise<Customer | null>;
   getCustomerNotes(customerId: number): Promise<Note[]>;
   createCustomerNote(customerId: number, note: CreateNoteInput & { templateId?: number }): Promise<Note>;
-  updateNote(noteId: number, data: UpdateNote): Promise<Note | null>;
-  toggleNotePin(noteId: number, isPinned: boolean): Promise<Note | null>;
-  deleteNote(noteId: number): Promise<void>;
+  updateNote(noteId: number, data: UpdateNote & { version: number }): Promise<Note | null>;
+  toggleNotePin(noteId: number, isPinned: boolean, version: number): Promise<Note | null>;
+  deleteNote(noteId: number, version: number): Promise<void>;
   getNoteTemplates(activeOnly?: boolean): Promise<NoteTemplate[]>;
   getNoteTemplate(id: number): Promise<NoteTemplate | null>;
   createNoteTemplate(template: InsertNoteTemplate): Promise<NoteTemplate>;
-  updateNoteTemplate(id: number, data: UpdateNoteTemplate): Promise<NoteTemplate | null>;
-  deleteNoteTemplate(id: number): Promise<void>;
+  updateNoteTemplate(id: number, data: UpdateNoteTemplate & { version: number }): Promise<NoteTemplate | null>;
+  deleteNoteTemplate(id: number, version: number): Promise<void>;
   getProjectStatuses(filter?: "active" | "inactive" | "all"): Promise<ProjectStatus[]>;
   getProjectStatus(id: number): Promise<ProjectStatus | null>;
   createProjectStatus(status: InsertProjectStatus): Promise<ProjectStatus>;
-  updateProjectStatus(id: number, data: UpdateProjectStatus): Promise<{ status: ProjectStatus | null; error?: string }>;
-  toggleProjectStatusActive(id: number, isActive: boolean): Promise<ProjectStatus | null>;
-  deleteProjectStatus(id: number): Promise<{ success: boolean; error?: string }>;
+  updateProjectStatus(
+    id: number,
+    data: UpdateProjectStatus & { version: number },
+  ): Promise<{ status: ProjectStatus | null; error?: string }>;
+  toggleProjectStatusActive(id: number, isActive: boolean, version: number): Promise<ProjectStatus | null>;
+  deleteProjectStatus(id: number, version: number): Promise<{ success: boolean; error?: string }>;
   isProjectStatusInUse(id: number): Promise<boolean>;
   getHelpTexts(query?: string): Promise<HelpText[]>;
   getHelpTextById(id: number): Promise<HelpText | null>;
   getHelpTextByKey(helpKey: string): Promise<HelpText | null>;
   createHelpText(data: InsertHelpText): Promise<{ helpText: HelpText | null; error?: string }>;
-  updateHelpText(id: number, data: UpdateHelpText): Promise<{ helpText: HelpText | null; error?: string }>;
-  toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null>;
-  deleteHelpText(id: number): Promise<void>;
+  updateHelpText(id: number, data: UpdateHelpText & { version: number }): Promise<{ helpText: HelpText | null; error?: string }>;
+  toggleHelpTextActive(id: number, isActive: boolean, version: number): Promise<HelpText | null>;
+  deleteHelpText(id: number, version: number): Promise<void>;
   getEmployees(filter?: "active" | "all"): Promise<Employee[]>;
   getEmployee(id: number): Promise<Employee | null>;
   getEmployeeWithRelations(id: number): Promise<{ employee: Employee; team: Team | null; tour: Tour | null } | null>;
   createEmployee(data: InsertEmployee): Promise<Employee>;
-  updateEmployee(id: number, data: UpdateEmployee): Promise<Employee | null>;
-  toggleEmployeeActive(id: number, isActive: boolean): Promise<Employee | null>;
+  updateEmployee(id: number, data: UpdateEmployee & { version: number }): Promise<Employee | null>;
+  toggleEmployeeActive(id: number, isActive: boolean, version: number): Promise<Employee | null>;
   getEmployeesByTour(tourId: number): Promise<Employee[]>;
   getEmployeesByTeam(teamId: number): Promise<Employee[]>;
-  setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null>;
-  setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null>;
+  setEmployeeTour(employeeId: number, tourId: number | null, version: number): Promise<Employee | null>;
+  setEmployeeTeam(employeeId: number, teamId: number | null, version: number): Promise<Employee | null>;
   getProjects(filter?: "active" | "inactive" | "all"): Promise<Project[]>;
   getProject(id: number): Promise<Project | null>;
   getProjectWithCustomer(id: number): Promise<{ project: Project; customer: Customer } | null>;
   createProject(data: InsertProject): Promise<Project>;
-  updateProject(id: number, data: UpdateProject): Promise<Project | null>;
-  deleteProject(id: number): Promise<void>;
+  updateProject(id: number, data: UpdateProject & { version: number }): Promise<Project | null>;
+  deleteProject(id: number, version: number): Promise<void>;
   getProjectNotes(projectId: number): Promise<Note[]>;
   createProjectNote(projectId: number, note: CreateNoteInput & { templateId?: number }): Promise<Note>;
   getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
   getProjectAttachmentById(id: number): Promise<ProjectAttachment | null>;
   createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment>;
-  deleteProjectAttachment(id: number): Promise<void>;
-  getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]>;
-  addProjectStatus(projectId: number, statusId: number): Promise<void>;
-  removeProjectStatus(projectId: number, statusId: number): Promise<void>;
+  getProjectStatusesByProject(projectId: number): Promise<Array<{ status: ProjectStatus; relationVersion: number }>>;
+  addProjectStatus(projectId: number, statusId: number, expectedVersion: number): Promise<{ status: ProjectStatus; relationVersion: number }>;
+  removeProjectStatus(projectId: number, statusId: number, version: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -119,12 +120,12 @@ export class DatabaseStorage implements IStorage {
     return toursService.createTour(tour);
   }
 
-  async updateTour(id: number, data: UpdateTour): Promise<Tour | null> {
+  async updateTour(id: number, data: UpdateTour & { version: number }): Promise<Tour | null> {
     return toursService.updateTour(id, data);
   }
 
-  async deleteTour(id: number): Promise<void> {
-    await toursService.deleteTour(id);
+  async deleteTour(id: number, version: number): Promise<void> {
+    await toursService.deleteTour(id, version);
   }
 
   async getTeams(): Promise<Team[]> {
@@ -135,28 +136,28 @@ export class DatabaseStorage implements IStorage {
     return teamsService.createTeam(team);
   }
 
-  async updateTeam(id: number, data: UpdateTeam): Promise<Team | null> {
+  async updateTeam(id: number, data: UpdateTeam & { version: number }): Promise<Team | null> {
     return teamsService.updateTeam(id, data);
   }
 
-  async deleteTeam(id: number): Promise<void> {
-    await teamsService.deleteTeam(id);
+  async deleteTeam(id: number, version: number): Promise<void> {
+    await teamsService.deleteTeam(id, version);
   }
 
   async getCustomers(): Promise<Customer[]> {
-    return customersService.listCustomers();
+    return customersService.listCustomers("ADMIN", "active");
   }
 
   async getCustomer(id: number): Promise<Customer | null> {
-    return customersService.getCustomer(id);
+    return customersService.getCustomer(id, "ADMIN");
   }
 
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
     return customersService.createCustomer(customer);
   }
 
-  async updateCustomer(id: number, data: UpdateCustomer): Promise<Customer | null> {
-    return customersService.updateCustomer(id, data);
+  async updateCustomer(id: number, data: UpdateCustomer & { version: number }): Promise<Customer | null> {
+    return customersService.updateCustomer(id, data, "ADMIN");
   }
 
   async getCustomerNotes(customerId: number): Promise<Note[]> {
@@ -172,16 +173,16 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateNote(noteId: number, data: UpdateNote): Promise<Note | null> {
+  async updateNote(noteId: number, data: UpdateNote & { version: number }): Promise<Note | null> {
     return notesService.updateNote(noteId, data);
   }
 
-  async toggleNotePin(noteId: number, isPinned: boolean): Promise<Note | null> {
-    return notesService.toggleNotePin(noteId, isPinned);
+  async toggleNotePin(noteId: number, isPinned: boolean, version: number): Promise<Note | null> {
+    return notesService.toggleNotePin(noteId, isPinned, version);
   }
 
-  async deleteNote(noteId: number): Promise<void> {
-    await notesService.deleteNote(noteId);
+  async deleteNote(noteId: number, version: number): Promise<void> {
+    await notesService.deleteNote(noteId, version);
   }
 
   async getNoteTemplates(activeOnly = true): Promise<NoteTemplate[]> {
@@ -196,16 +197,16 @@ export class DatabaseStorage implements IStorage {
     return noteTemplatesService.createNoteTemplate(template);
   }
 
-  async updateNoteTemplate(id: number, data: UpdateNoteTemplate): Promise<NoteTemplate | null> {
+  async updateNoteTemplate(id: number, data: UpdateNoteTemplate & { version: number }): Promise<NoteTemplate | null> {
     return noteTemplatesService.updateNoteTemplate(id, data);
   }
 
-  async deleteNoteTemplate(id: number): Promise<void> {
-    await noteTemplatesService.deleteNoteTemplate(id);
+  async deleteNoteTemplate(id: number, version: number): Promise<void> {
+    await noteTemplatesService.deleteNoteTemplate(id, version);
   }
 
   async getProjectStatuses(filter: "active" | "inactive" | "all" = "active"): Promise<ProjectStatus[]> {
-    return projectStatusService.listProjectStatuses(filter);
+    return projectStatusService.listProjectStatuses(filter, "ADMIN");
   }
 
   async getProjectStatus(id: number): Promise<ProjectStatus | null> {
@@ -213,22 +214,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProjectStatus(status: InsertProjectStatus): Promise<ProjectStatus> {
-    return projectStatusService.createProjectStatus(status);
+    return projectStatusService.createProjectStatus(status, "ADMIN");
   }
 
   async updateProjectStatus(
     id: number,
-    data: UpdateProjectStatus,
+    data: UpdateProjectStatus & { version: number },
   ): Promise<{ status: ProjectStatus | null; error?: string }> {
-    return projectStatusService.updateProjectStatus(id, data);
+    return projectStatusService.updateProjectStatus(id, data, "ADMIN");
   }
 
-  async toggleProjectStatusActive(id: number, isActive: boolean): Promise<ProjectStatus | null> {
-    return projectStatusService.toggleProjectStatusActive(id, isActive);
+  async toggleProjectStatusActive(id: number, isActive: boolean, version: number): Promise<ProjectStatus | null> {
+    return projectStatusService.toggleProjectStatusActive(id, isActive, version, "ADMIN");
   }
 
-  async deleteProjectStatus(id: number): Promise<{ success: boolean; error?: string }> {
-    return projectStatusService.deleteProjectStatus(id);
+  async deleteProjectStatus(id: number, version: number): Promise<{ success: boolean; error?: string }> {
+    return projectStatusService.deleteProjectStatus(id, version, "ADMIN");
   }
 
   async isProjectStatusInUse(id: number): Promise<boolean> {
@@ -251,43 +252,53 @@ export class DatabaseStorage implements IStorage {
     return helpTextsService.createHelpText(data);
   }
 
-  async updateHelpText(id: number, data: UpdateHelpText): Promise<{ helpText: HelpText | null; error?: string }> {
+  async updateHelpText(
+    id: number,
+    data: UpdateHelpText & { version: number },
+  ): Promise<{ helpText: HelpText | null; error?: string }> {
     return helpTextsService.updateHelpText(id, data);
   }
 
-  async toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null> {
-    return helpTextsService.toggleHelpTextActive(id, isActive);
+  async toggleHelpTextActive(id: number, isActive: boolean, version: number): Promise<HelpText | null> {
+    return helpTextsService.toggleHelpTextActive(id, isActive, version);
   }
 
-  async deleteHelpText(id: number): Promise<void> {
-    await helpTextsService.deleteHelpText(id);
+  async deleteHelpText(id: number, version: number): Promise<void> {
+    await helpTextsService.deleteHelpText(id, version);
   }
 
   async getEmployees(filter: "active" | "all" = "active"): Promise<Employee[]> {
-    return employeesService.listEmployees(filter);
+    if (filter === "all") {
+      const [activeEmployees, inactiveEmployees] = await Promise.all([
+        employeesService.listEmployees("ADMIN", "active"),
+        employeesService.listEmployees("ADMIN", "inactive"),
+      ]);
+      return [...activeEmployees, ...inactiveEmployees];
+    }
+    return employeesService.listEmployees("ADMIN", filter);
   }
 
   async getEmployee(id: number): Promise<Employee | null> {
-    const result = await employeesService.getEmployeeWithRelations(id);
+    const result = await employeesService.getEmployeeWithRelations(id, "ADMIN");
     return result?.employee ?? null;
   }
 
   async getEmployeeWithRelations(
     id: number,
   ): Promise<{ employee: Employee; team: Team | null; tour: Tour | null } | null> {
-    return employeesService.getEmployeeWithRelations(id);
+    return employeesService.getEmployeeWithRelations(id, "ADMIN");
   }
 
   async createEmployee(data: InsertEmployee): Promise<Employee> {
     return employeesService.createEmployee(data);
   }
 
-  async updateEmployee(id: number, data: UpdateEmployee): Promise<Employee | null> {
-    return employeesService.updateEmployee(id, data);
+  async updateEmployee(id: number, data: UpdateEmployee & { version: number }): Promise<Employee | null> {
+    return employeesService.updateEmployee(id, data, "ADMIN");
   }
 
-  async toggleEmployeeActive(id: number, isActive: boolean): Promise<Employee | null> {
-    return employeesService.toggleEmployeeActive(id, isActive);
+  async toggleEmployeeActive(id: number, isActive: boolean, version: number): Promise<Employee | null> {
+    return employeesService.toggleEmployeeActive(id, isActive, version, "ADMIN");
   }
 
   async getEmployeesByTour(tourId: number): Promise<Employee[]> {
@@ -298,12 +309,24 @@ export class DatabaseStorage implements IStorage {
     return teamEmployeesService.listEmployeesByTeam(teamId);
   }
 
-  async setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {
-    return employeesRepository.setEmployeeTour(employeeId, tourId);
+  async setEmployeeTour(employeeId: number, tourId: number | null, version: number): Promise<Employee | null> {
+    const result = await employeesRepository.setEmployeeTourWithVersion(employeeId, version, tourId);
+    if (result.kind === "version_conflict") {
+      const exists = await employeesRepository.getEmployee(employeeId);
+      if (!exists) return null;
+      throw new Error("VERSION_CONFLICT");
+    }
+    return result.employee;
   }
 
-  async setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null> {
-    return employeesRepository.setEmployeeTeam(employeeId, teamId);
+  async setEmployeeTeam(employeeId: number, teamId: number | null, version: number): Promise<Employee | null> {
+    const result = await employeesRepository.setEmployeeTeamWithVersion(employeeId, version, teamId);
+    if (result.kind === "version_conflict") {
+      const exists = await employeesRepository.getEmployee(employeeId);
+      if (!exists) return null;
+      throw new Error("VERSION_CONFLICT");
+    }
+    return result.employee;
   }
 
   async getProjects(filter: "active" | "inactive" | "all" = "all"): Promise<Project[]> {
@@ -322,12 +345,12 @@ export class DatabaseStorage implements IStorage {
     return projectsService.createProject(data);
   }
 
-  async updateProject(id: number, data: UpdateProject): Promise<Project | null> {
+  async updateProject(id: number, data: UpdateProject & { version: number }): Promise<Project | null> {
     return projectsService.updateProject(id, data);
   }
 
-  async deleteProject(id: number): Promise<void> {
-    await projectsService.deleteProject(id);
+  async deleteProject(id: number, version: number): Promise<void> {
+    await projectsService.deleteProject(id, version);
   }
 
   async getProjectNotes(projectId: number): Promise<Note[]> {
@@ -354,20 +377,16 @@ export class DatabaseStorage implements IStorage {
     return projectAttachmentsRepository.createProjectAttachment(data);
   }
 
-  async deleteProjectAttachment(id: number): Promise<void> {
-    await projectAttachmentsRepository.deleteProjectAttachment(id);
-  }
-
-  async getProjectStatusesByProject(projectId: number): Promise<ProjectStatus[]> {
+  async getProjectStatusesByProject(projectId: number): Promise<Array<{ status: ProjectStatus; relationVersion: number }>> {
     return projectStatusService.listProjectStatusesByProject(projectId);
   }
 
-  async addProjectStatus(projectId: number, statusId: number): Promise<void> {
-    await projectStatusService.addProjectStatus(projectId, statusId);
+  async addProjectStatus(projectId: number, statusId: number, expectedVersion: number): Promise<{ status: ProjectStatus; relationVersion: number }> {
+    return projectStatusService.addProjectStatus(projectId, statusId, expectedVersion, "DISPONENT");
   }
 
-  async removeProjectStatus(projectId: number, statusId: number): Promise<void> {
-    await projectStatusService.removeProjectStatus(projectId, statusId);
+  async removeProjectStatus(projectId: number, statusId: number, version: number): Promise<void> {
+    await projectStatusService.removeProjectStatus(projectId, statusId, version, "DISPONENT");
   }
 }
 

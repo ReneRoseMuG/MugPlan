@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import {
   buildDayGridTemplate,
   getDayWeights,
@@ -85,6 +86,7 @@ export function CalendarMonthView({
   const dayGridTemplate = useMemo(() => buildDayGridTemplate(dayWeights), [dayWeights]);
   const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
   const totalDayWeight = useMemo(() => dayWeights.reduce((sum, weight) => sum + weight, 0), [dayWeights]);
+  const berlinToday = getBerlinTodayDateString();
 
   const baseMonthStart = startOfMonth(currentDate);
   const scrollResetKey = format(baseMonthStart, "yyyy-MM-dd");
@@ -236,9 +238,9 @@ export function CalendarMonthView({
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-user-role": userRole,
         },
         body: JSON.stringify({
+          version: appointment.version,
           projectId: appointment.projectId,
           tourId: appointment.tourId ?? null,
           startDate: newStartDate,
@@ -250,6 +252,12 @@ export function CalendarMonthView({
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
+        if (error?.code === "VERSION_CONFLICT") {
+          throw new Error("Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
+        }
+        if (error?.code === "VALIDATION_ERROR") {
+          throw new Error("Termin kann nicht verschoben werden. Bitte neu laden.");
+        }
         throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
       }
 
@@ -377,17 +385,23 @@ export function CalendarMonthView({
                                     ${dayIdx === 6 ? "border-r-0" : ""}
                                   `}
                                   onDragOver={(event) => event.preventDefault()}
-                                  onDrop={(event) => handleDrop(event, day)}
+                                  onDrop={(event) => {
+                                    void handleDrop(event, day);
+                                  }}
                                   data-testid={`calendar-day-${dayKey}`}
                                 >
                                   <div className="flex justify-between items-start mb-1">
-                                    <button
-                                      onClick={() => onNewAppointment?.(dayKey)}
-                                      className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                                      data-testid={`button-new-appointment-${dayKey}`}
-                                    >
-                                      <span className="text-sm font-bold">+</span>
-                                    </button>
+                                    {dayKey >= berlinToday ? (
+                                      <button
+                                        onClick={() => onNewAppointment?.(dayKey)}
+                                        className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                                        data-testid={`button-new-appointment-${dayKey}`}
+                                      >
+                                        <span className="text-sm font-bold">+</span>
+                                      </button>
+                                    ) : (
+                                      <span className="w-5 h-5" aria-hidden="true" />
+                                    )}
                                     <span
                                       className={`
                                         flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
@@ -461,4 +475,3 @@ export function CalendarMonthView({
     </div>
   );
 }
-

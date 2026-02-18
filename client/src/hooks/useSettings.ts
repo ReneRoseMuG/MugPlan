@@ -8,7 +8,10 @@ export type UserSettingKey =
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
-  | "cardListColumns";
+  | "hoverPreviewOpenDelayMs"
+  | "cardListColumns"
+  | "calendar.weekLanes.isCollapsed"
+  | "calendar.weekLanes.expandedLaneId";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -16,7 +19,10 @@ type UserSettingValueByKey = {
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
+  hoverPreviewOpenDelayMs: number;
   cardListColumns: number;
+  "calendar.weekLanes.isCollapsed": boolean;
+  "calendar.weekLanes.expandedLaneId": string;
 };
 
 export function useSettings() {
@@ -41,6 +47,19 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
         return value as UserSettingValueByKey[K];
       }
       return 4 as UserSettingValueByKey[K];
+    }
+    if (key === "hoverPreviewOpenDelayMs") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 2000) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 380 as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.weekLanes.isCollapsed") {
+      return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.weekLanes.expandedLaneId") {
+      return (typeof setting?.resolvedValue === "string" ? setting.resolvedValue : "") as UserSettingValueByKey[K];
     }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);

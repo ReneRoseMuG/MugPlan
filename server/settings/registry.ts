@@ -1,9 +1,9 @@
-﻿export type DbRoleCode = "READER" | "DISPATCHER" | "ADMIN";
+export type DbRoleCode = "READER" | "DISPATCHER" | "ADMIN";
 export type CanonicalRoleKey = "LESER" | "DISPONENT" | "ADMIN";
 export type SettingScopeType = "GLOBAL" | "ROLE" | "USER";
 export type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
 
-type BaseSettingDefinition<TType extends "enum" | "string" | "number", TValue> = {
+type BaseSettingDefinition<TType extends "enum" | "string" | "number" | "boolean", TValue> = {
   key: string;
   label: string;
   description: string;
@@ -27,10 +27,18 @@ export type NumberSettingDefinition = BaseSettingDefinition<"number", number> & 
   integer: boolean;
 };
 
-export type SettingDefinition = EnumSettingDefinition<string> | StringSettingDefinition | NumberSettingDefinition;
+export type BooleanSettingDefinition = BaseSettingDefinition<"boolean", boolean>;
+
+export type SettingDefinition =
+  | EnumSettingDefinition<string>
+  | StringSettingDefinition
+  | NumberSettingDefinition
+  | BooleanSettingDefinition;
 
 const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
+const listViewModeOptions = ["board", "table"] as const;
+type ListViewMode = (typeof listViewModeOptions)[number];
 
 const templateAllowedKeys = [
   "sauna_model_name",
@@ -134,6 +142,19 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12,
   },
+  hoverPreviewOpenDelayMs: {
+    key: "hoverPreviewOpenDelayMs",
+    label: "Hover Vorschau Verzoegerung (ms)",
+    description: "Verzoegerung bis Hover-Previews geoeffnet werden.",
+    type: "number",
+    defaultValue: 380,
+    min: 0,
+    max: 2000,
+    integer: true,
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 2000,
+  },
   cardListColumns: {
     key: "cardListColumns",
     label: "Karten Spalten",
@@ -146,6 +167,69 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL", "USER"],
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 6,
+  },
+  calendarWeekLanesIsCollapsed: {
+    key: "calendar.weekLanes.isCollapsed",
+    label: "Wochenansicht Lanes kollabiert",
+    description: "Steuert, ob die Tour-Lanes in der Wochenansicht global kollabiert sind.",
+    type: "boolean",
+    defaultValue: false,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
+  calendarWeekLanesExpandedLaneId: {
+    key: "calendar.weekLanes.expandedLaneId",
+    label: "Wochenansicht expandierte Lane",
+    description: "Speichert die aktuell expandierte Lane-ID fuer den kollabierten Wochenmodus.",
+    type: "string",
+    defaultValue: "",
+    allowedScopes: ["USER"],
+    placeholderWhitelist: [],
+    validate: (value: unknown): value is string => typeof value === "string",
+  },
+  helptextsViewMode: {
+    key: "helptexts.viewMode",
+    label: "Hilfetexte Ansicht",
+    description: "Steuert den Ansichtsmodus der Hilfetexte (Board oder Tabelle).",
+    type: "enum",
+    options: listViewModeOptions,
+    defaultValue: "board",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is ListViewMode =>
+      typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
+  },
+  projectsViewMode: {
+    key: "projects.viewMode",
+    label: "Projekte Ansicht",
+    description: "Steuert den Ansichtsmodus der Projekte (Board oder Tabelle).",
+    type: "enum",
+    options: listViewModeOptions,
+    defaultValue: "board",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is ListViewMode =>
+      typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
+  },
+  customersViewMode: {
+    key: "customers.viewMode",
+    label: "Kunden Ansicht",
+    description: "Steuert den Ansichtsmodus der Kunden (Board oder Tabelle).",
+    type: "enum",
+    options: listViewModeOptions,
+    defaultValue: "board",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is ListViewMode =>
+      typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
+  },
+  employeesViewMode: {
+    key: "employees.viewMode",
+    label: "Mitarbeiter Ansicht",
+    description: "Steuert den Ansichtsmodus der Mitarbeiter (Board oder Tabelle).",
+    type: "enum",
+    options: listViewModeOptions,
+    defaultValue: "board",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is ListViewMode =>
+      typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
   },
   templatesProjectTitle: {
     key: "templates.project.title",

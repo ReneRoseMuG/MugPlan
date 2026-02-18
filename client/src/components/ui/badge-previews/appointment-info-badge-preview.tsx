@@ -7,6 +7,7 @@ type AppointmentInfoBadgePreviewProps = {
   endDate?: string | null;
   startTimeHour?: number | null;
   projectName?: string | null;
+  projectOrderNumber?: string | null;
   customerName?: string | null;
   employeeName?: string | null;
 };
@@ -45,6 +46,7 @@ export function AppointmentInfoBadgePreview({
   endDate,
   startTimeHour,
   projectName,
+  projectOrderNumber,
   customerName,
   employeeName,
 }: AppointmentInfoBadgePreviewProps) {
@@ -71,6 +73,7 @@ export function AppointmentInfoBadgePreview({
       </div>
       <div className="space-y-1 text-xs text-muted-foreground">
         {projectName && <div>Projekt: {projectName}</div>}
+        {projectOrderNumber && <div>Auftragsnr.: {projectOrderNumber}</div>}
         {customerName && <div>Kunde: {customerName}</div>}
         {employeeName && <div>Mitarbeiter: {employeeName}</div>}
       </div>

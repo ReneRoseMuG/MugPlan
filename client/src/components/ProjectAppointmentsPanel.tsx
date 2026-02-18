@@ -16,6 +16,7 @@ interface ProjectAppointmentsPanelProps {
 }
 
 type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
+type AppointmentPanelApiError = Error & { status?: number; code?: string };
 
 const appointmentsLogPrefix = "[ProjectAppointmentsPanel]";
 
@@ -46,7 +47,6 @@ export function ProjectAppointmentsPanel({
       const response = await fetch(url, {
         credentials: "include",
         headers: {
-          "x-user-role": userRole,
         },
       });
       const payload = await response.json();
@@ -65,19 +65,25 @@ export function ProjectAppointmentsPanel({
   });
 
   const deleteAppointmentMutation = useMutation({
-    mutationFn: async (appointmentId: number) => {
-      console.info(`${appointmentsLogPrefix} delete request`, { appointmentId });
+    mutationFn: async ({ appointmentId, version }: { appointmentId: number; version: number }) => {
+      console.info(`${appointmentsLogPrefix} delete request`, { appointmentId, version });
       const response = await fetch(`/api/appointments/${appointmentId}`, {
         method: "DELETE",
         credentials: "include",
         headers: {
-          "x-user-role": userRole,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ version }),
       });
-      const payload = response.status === 204 ? null : await response.json();
-      console.info(`${appointmentsLogPrefix} delete response`, { appointmentId, status: response.status });
+      const payload = response.status === 204 ? null : await response.json().catch(() => null);
+      console.info(`${appointmentsLogPrefix} delete response`, { appointmentId, status: response.status, version });
       if (!response.ok) {
-        throw new Error(payload?.message ?? response.statusText);
+        const code = typeof payload?.code === "string" ? payload.code : undefined;
+        const message = typeof payload?.message === "string" ? payload.message : undefined;
+        const error = new Error(message ?? response.statusText) as AppointmentPanelApiError;
+        error.status = response.status;
+        error.code = code;
+        throw error;
       }
       return appointmentId;
     },
@@ -89,10 +95,27 @@ export function ProjectAppointmentsPanel({
       console.info(`${appointmentsLogPrefix} cache invalidate`, {
         queryKey: upcomingQueryKey,
       });
-      queryClient.invalidateQueries({ queryKey: upcomingQueryKey });
+      void queryClient.invalidateQueries({ queryKey: upcomingQueryKey });
       toast({ title: "Termin gelöscht" });
     },
     onError: (error) => {
+      const err = error as AppointmentPanelApiError;
+      if (err.code === "VERSION_CONFLICT") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "LOCK_VIOLATION" || err.status === 403) {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Termin ist gesperrt.",
+          variant: "destructive",
+        });
+        return;
+      }
       const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
     },
@@ -110,7 +133,7 @@ export function ProjectAppointmentsPanel({
       previewAppointment: appointment,
       action: "remove",
       actionDisabled: appointment.isLocked,
-      onRemove: () => deleteAppointmentMutation.mutate(appointment.id),
+      onRemove: () => deleteAppointmentMutation.mutate({ appointmentId: appointment.id, version: appointment.version }),
       testId: `project-appointment-${appointment.id}`,
     }));
   }, [appointmentSource, projectName, deleteAppointmentMutation]);
@@ -143,3 +166,4 @@ export function ProjectAppointmentsPanel({
     </BadgeInteractionProvider>
   );
 }
+

@@ -1,7 +1,7 @@
 import type { InsertAppointment } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
-import * as projectsRepository from "../repositories/projectsRepository";
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
+import type { CanonicalRoleKey } from "../settings/registry";
 
 const logPrefix = "[appointments-service]";
 
@@ -14,10 +14,19 @@ const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
 
 class AppointmentError extends Error {
   status: number;
+  code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR";
+  conflictEmployees?: Array<{ id: number; fullName: string }>;
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+    code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR",
+    options?: { conflictEmployees?: Array<{ id: number; fullName: string }> },
+  ) {
     super(message);
     this.status = status;
+    this.code = code;
+    this.conflictEmployees = options?.conflictEmployees;
   }
 }
 
@@ -28,7 +37,7 @@ function getBerlinTodayDateString(): string {
 function parseDateOnly(input: string): Date {
   const parsed = new Date(`${input}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) {
-    throw new AppointmentError("Ungueltiges Datum", 400);
+    throw new AppointmentError("Ungueltiges Datum", 422, "VALIDATION_ERROR");
   }
   return parsed;
 }
@@ -48,6 +57,47 @@ function isStartDateLocked(startDate: Date | string | null | undefined): boolean
   if (!normalizedStartDate) return false;
   const todayBerlin = getBerlinTodayDateString();
   return normalizedStartDate < todayBerlin;
+}
+
+function getBerlinCurrentTimeSeconds(): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Berlin",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  const second = Number(parts.find((part) => part.type === "second")?.value ?? "0");
+  return hour * 3600 + minute * 60 + second;
+}
+
+function parseTimeToSeconds(startTime: string): number | null {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(startTime);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3] ?? "0");
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return null;
+  return hour * 3600 + minute * 60 + second;
+}
+
+function assertNotHistoricalInput(data: { startDate: string; startTime?: string | null }) {
+  if (isStartDateLocked(data.startDate)) {
+    throw new AppointmentError("Datum in der Vergangenheit", 409, "BUSINESS_CONFLICT");
+  }
+  if (!data.startTime) return;
+  if (data.startDate !== getBerlinTodayDateString()) return;
+
+  const inputTimeSeconds = parseTimeToSeconds(data.startTime);
+  if (inputTimeSeconds == null) {
+    throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
+  }
+  if (inputTimeSeconds < getBerlinCurrentTimeSeconds()) {
+    throw new AppointmentError("Startzeit liegt in der Vergangenheit", 409, "VALIDATION_ERROR");
+  }
 }
 
 function normalizeEmployeeIds(employeeIds?: number[]) {
@@ -87,7 +137,7 @@ const buildStatusesByProject = async (projectIds: number[]) => {
   return statusesByProject;
 };
 
-const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], isAdmin: boolean) => {
+const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: CanonicalRoleKey) => {
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
@@ -95,8 +145,10 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], isAdmin: bo
 
   return rows.map((row) => ({
     id: row.appointment.id,
+    version: row.appointment.version,
     projectId: row.project.id,
     projectName: row.project.name,
+    projectOrderNumber: row.project.orderNumber ?? null,
     projectDescription: row.project.descriptionMd ?? null,
     projectStatuses: statusesByProject.get(row.project.id) ?? [],
     startDate: toDateOnlyString(row.appointment.startDate) ?? "",
@@ -116,20 +168,23 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], isAdmin: bo
       city: row.customer.city ?? null,
     },
     employees: employeesByAppointment.get(row.appointment.id) ?? [],
-    isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
+    isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
   }));
 };
 
 function validateDateRange(startDate: string, endDate?: string | null) {
   if (endDate && endDate < startDate) {
-    throw new AppointmentError("Enddatum darf nicht vor dem Startdatum liegen", 400);
+    throw new AppointmentError("Enddatum darf nicht vor dem Startdatum liegen", 422, "VALIDATION_ERROR");
   }
 }
 
-async function ensureProjectExists(projectId: number) {
-  const project = await projectsRepository.getProject(projectId);
+async function ensureProjectExistsTx(
+  tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
+  projectId: number,
+) {
+  const project = await appointmentsRepository.getProjectTx(tx, projectId);
   if (!project) {
-    throw new AppointmentError("Projekt ist erforderlich", 400);
+    throw new AppointmentError("Projekt ist erforderlich", 422, "VALIDATION_ERROR");
   }
   return project;
 }
@@ -140,6 +195,7 @@ export async function getAppointmentDetails(id: number) {
 
   return {
     id: appointment.id,
+    version: appointment.version,
     projectId: appointment.projectId,
     tourId: appointment.tourId ?? null,
     title: appointment.title,
@@ -163,29 +219,50 @@ export async function createAppointment(
   },
 ) {
   console.log(`${logPrefix} create request projectId=${data.projectId}`);
-  const project = await ensureProjectExists(data.projectId);
   validateDateRange(data.startDate, data.endDate ?? null);
+  assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
+  const startDate = parseDateOnly(data.startDate);
+  const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
 
-  const appointmentData: InsertAppointment = {
-    projectId: data.projectId,
-    tourId: data.tourId ?? null,
-    title: project.name,
-    description: null,
-    startDate: parseDateOnly(data.startDate),
-    endDate: data.endDate ? parseDateOnly(data.endDate) : null,
-    startTime: data.startTime ?? null,
-    endTime: null,
-  };
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const project = await ensureProjectExistsTx(tx, data.projectId);
+    const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
+      employeeIds,
+      startDate,
+      endDate,
+    });
+    const conflictEmployeeIds = new Set(conflictEmployees.map((employee) => employee.id));
+    const persistedEmployeeIds = employeeIds.filter((employeeId) => !conflictEmployeeIds.has(employeeId));
 
-  console.log(`${logPrefix} persisting appointment with ${employeeIds.length} employees`);
-  return appointmentsRepository.createAppointment(appointmentData, employeeIds);
+    const appointmentData: InsertAppointment = {
+      projectId: data.projectId,
+      tourId: data.tourId ?? null,
+      title: project.name,
+      description: null,
+      startDate,
+      endDate,
+      startTime: data.startTime ?? null,
+      endTime: null,
+    };
+
+    console.log(`${logPrefix} persisting appointment with ${persistedEmployeeIds.length} employees`);
+    const appointmentId = await appointmentsRepository.createAppointmentTx(tx, appointmentData);
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, persistedEmployeeIds);
+    const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    if (!appointment) return null;
+    if (conflictEmployees.length > 0) {
+      return { ...appointment, conflictEmployees };
+    }
+    return appointment;
+  });
 }
 
 export async function updateAppointment(
   appointmentId: number,
   data: {
+    version: number;
     projectId: number;
     tourId?: number | null;
     startDate: string;
@@ -193,44 +270,77 @@ export async function updateAppointment(
     startTime?: string | null;
     employeeIds?: number[];
   },
-  isAdmin: boolean,
+  roleKey: CanonicalRoleKey,
 ) {
-  const existing = await appointmentsRepository.getAppointment(appointmentId);
-  if (!existing) return null;
-
-  if (!isAdmin && isStartDateLocked(existing.startDate)) {
-    console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403);
-  }
-
-  const project = await ensureProjectExists(data.projectId);
   validateDateRange(data.startDate, data.endDate ?? null);
-
-  if (existing.tourId !== (data.tourId ?? null)) {
-    console.log(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
-  }
-
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
+  const startDate = parseDateOnly(data.startDate);
+  const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
 
-  const appointmentData: Partial<InsertAppointment> = {
-    projectId: data.projectId,
-    tourId: data.tourId ?? null,
-    title: project.name,
-    description: null,
-    startDate: parseDateOnly(data.startDate),
-    endDate: data.endDate ? parseDateOnly(data.endDate) : null,
-    startTime: data.startTime ?? null,
-    endTime: null,
-  };
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return null;
 
-  console.log(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
-  return appointmentsRepository.updateAppointment(appointmentId, appointmentData, employeeIds);
+    if (isStartDateLocked(existing.startDate)) {
+      if (roleKey !== "ADMIN") {
+        console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+        throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+      }
+      console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "BUSINESS_CONFLICT");
+    }
+    assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
+
+    const project = await ensureProjectExistsTx(tx, data.projectId);
+
+    if (existing.tourId !== (data.tourId ?? null)) {
+      console.log(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
+    }
+
+    const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
+      employeeIds,
+      startDate,
+      endDate,
+      excludeAppointmentId: appointmentId,
+    });
+    const conflictEmployeeIds = new Set(conflictEmployees.map((employee) => employee.id));
+    const persistedEmployeeIds = employeeIds.filter((employeeId) => !conflictEmployeeIds.has(employeeId));
+
+    const appointmentData: Partial<InsertAppointment> = {
+      projectId: data.projectId,
+      tourId: data.tourId ?? null,
+      title: project.name,
+      description: null,
+      startDate,
+      endDate,
+      startTime: data.startTime ?? null,
+      endTime: null,
+    };
+
+    console.log(`${logPrefix} update appointmentId=${appointmentId} with ${persistedEmployeeIds.length} employees`);
+    const updateResult = await appointmentsRepository.updateAppointmentWithVersionTx(tx, {
+      appointmentId,
+      expectedVersion: data.version,
+      data: appointmentData,
+    });
+    if (updateResult.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    }
+
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, persistedEmployeeIds);
+    const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    if (!appointment) return null;
+    if (conflictEmployees.length > 0) {
+      return { ...appointment, conflictEmployees };
+    }
+    return appointment;
+  });
 }
 
 export async function listProjectAppointments(
   projectId: number,
   fromDate: string | undefined,
-  isAdmin: boolean,
+  roleKey: CanonicalRoleKey,
 ) {
   const todayBerlin = getBerlinTodayDateString();
   const effectiveFromDate = fromDate ?? todayBerlin;
@@ -248,10 +358,14 @@ export async function listProjectAppointments(
   );
   console.log(`${logPrefix} list appointments result projectId=${projectId} count=${appointments.length}`);
 
-  return mapSidebarAppointments(appointments, isAdmin);
+  return mapSidebarAppointments(appointments, roleKey);
 }
 
-export async function listEmployeeAppointments(employeeId: number, fromDate: string | undefined, isAdmin: boolean) {
+export async function listEmployeeAppointments(
+  employeeId: number,
+  fromDate: string | undefined,
+  roleKey: CanonicalRoleKey,
+) {
   const todayBerlin = getBerlinTodayDateString();
   const effectiveFromDate = fromDate ?? todayBerlin;
 
@@ -268,7 +382,7 @@ export async function listEmployeeAppointments(employeeId: number, fromDate: str
   );
   console.log(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
 
-  return mapSidebarAppointments(appointments, isAdmin);
+  return mapSidebarAppointments(appointments, roleKey);
 }
 
 export async function listCalendarAppointments({
@@ -276,13 +390,13 @@ export async function listCalendarAppointments({
   toDate,
   employeeId,
   detail,
-  isAdmin,
+  roleKey,
 }: {
   fromDate: string;
   toDate: string;
   employeeId?: number | null;
   detail?: "compact" | "full";
-  isAdmin: boolean;
+  roleKey: CanonicalRoleKey;
 }) {
   const resolvedDetail = detail ?? "compact";
   console.log(
@@ -304,8 +418,10 @@ export async function listCalendarAppointments({
   return rows.map((row) => {
     const baseAppointment = {
       id: row.appointment.id,
+      version: row.appointment.version,
       projectId: row.project.id,
       projectName: row.project.name,
+      projectOrderNumber: row.project.orderNumber ?? null,
       projectDescription: row.project.descriptionMd ?? null,
       projectStatuses: statusesByProject.get(row.project.id) ?? [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
@@ -322,7 +438,7 @@ export async function listCalendarAppointments({
         city: row.customer.city ?? null,
       },
       employees: employeesByAppointment.get(row.appointment.id) ?? [],
-      isLocked: !isAdmin && isStartDateLocked(row.appointment.startDate),
+      isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
     };
 
     if (resolvedDetail === "full") {
@@ -332,6 +448,7 @@ export async function listCalendarAppointments({
           id: row.project.id,
           customerId: row.project.customerId,
           name: row.project.name,
+          orderNumber: row.project.orderNumber ?? null,
           descriptionMd: row.project.descriptionMd ?? null,
           isActive: row.project.isActive,
         },
@@ -347,18 +464,117 @@ export async function listCalendarAppointments({
   });
 }
 
-export async function deleteAppointment(appointmentId: number, isAdmin: boolean) {
-  const existing = await appointmentsRepository.getAppointment(appointmentId);
-  if (!existing) return null;
-
-  if (!isAdmin && isStartDateLocked(existing.startDate)) {
-    console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-    throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403);
+export async function listAppointmentsList(params: {
+  employeeId?: number;
+  projectId?: number;
+  customerId?: number;
+  tourId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  allDayOnly?: boolean;
+  withStartTimeOnly?: boolean;
+  singleEmployeeOnly?: boolean;
+  lockedOnly?: boolean;
+  page: number;
+  pageSize: number;
+  roleKey: CanonicalRoleKey;
+}) {
+  const dateFrom = params.dateFrom ? parseDateOnly(params.dateFrom) : undefined;
+  const dateTo = params.dateTo ? parseDateOnly(params.dateTo) : undefined;
+  if (dateFrom && dateTo && dateTo < dateFrom) {
+    throw new AppointmentError("dateTo darf nicht vor dateFrom liegen", 422, "VALIDATION_ERROR");
   }
 
-  console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
-  await appointmentsRepository.deleteAppointment(appointmentId);
-  return existing;
+  const berlinToday = parseDateOnly(getBerlinTodayDateString());
+
+  const { rows, total } = await appointmentsRepository.listAppointmentsForList(
+    {
+      employeeId: params.employeeId,
+      projectId: params.projectId,
+      customerId: params.customerId,
+      tourId: params.tourId,
+      dateFrom,
+      dateTo,
+      allDayOnly: params.allDayOnly,
+      withStartTimeOnly: params.withStartTimeOnly,
+      singleEmployeeOnly: params.singleEmployeeOnly,
+      lockedOnly: params.lockedOnly,
+      lockedBeforeDate: berlinToday,
+    },
+    {
+      page: params.page,
+      pageSize: params.pageSize,
+    },
+  );
+
+  const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
+  const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const statusesByProject = await buildStatusesByProject(projectIds);
+
+  const items = rows.map((row) => {
+    const rowEmployees = employeesByAppointment.get(row.appointment.id) ?? [];
+    return {
+      id: row.appointment.id,
+      projectId: row.project.id,
+      projectName: row.project.name,
+      projectOrderNumber: row.project.orderNumber ?? null,
+      projectDescription: row.project.descriptionMd ?? null,
+      projectStatuses: statusesByProject.get(row.project.id) ?? [],
+      startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+      endDate: toDateOnlyString(row.appointment.endDate),
+      startTime: row.appointment.startTime ?? null,
+      startTimeHour: row.appointment.startTime ? Number(row.appointment.startTime.slice(0, 2)) : null,
+      tourId: row.appointment.tourId ?? null,
+      tourName: row.tour?.name ?? null,
+      tourColor: row.tour?.color ?? null,
+      customer: {
+        id: row.customer.id,
+        customerNumber: row.customer.customerNumber,
+        fullName: row.customer.fullName,
+        addressLine1: row.customer.addressLine1 ?? null,
+        addressLine2: row.customer.addressLine2 ?? null,
+        postalCode: row.customer.postalCode ?? null,
+        city: row.customer.city ?? null,
+      },
+      employees: rowEmployees,
+      isLocked: params.roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      allDay: row.appointment.startTime == null,
+      singleEmployee: rowEmployees.length === 1,
+    };
+  });
+
+  const totalPages = total === 0 ? 0 : Math.ceil(total / params.pageSize);
+  return {
+    page: params.page,
+    pageSize: params.pageSize,
+    total,
+    totalPages,
+    items,
+  };
+}
+
+export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return null;
+
+    if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
+      console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+      throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+    }
+
+    console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
+    const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
+      appointmentId,
+      expectedVersion,
+    });
+    if (result.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    }
+
+    return existing;
+  });
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {

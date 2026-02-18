@@ -1,8 +1,7 @@
-﻿import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDays,
   addWeeks,
-  differenceInCalendarDays,
   endOfWeek,
   format,
   getISOWeek,
@@ -13,12 +12,15 @@ import {
 import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useSetting } from "@/hooks/useSettings";
+import { useSetting, useSettings } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getAppointmentDurationDays, getAppointmentEndDate, getAppointmentSortValue } from "@/lib/calendar-utils";
+import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
 import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
+import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import type { CalendarNavCommand } from "@/pages/Home";
 import type { Employee, Tour } from "@shared/schema";
 
@@ -44,7 +46,6 @@ type WeekTourLane = {
   tourId: number | null;
   members: { id: number; fullName: string }[];
   dayBuckets: WeekDayBucket[];
-  isCollapsed: boolean;
 };
 
 const logPrefix = "[calendar-week]";
@@ -62,8 +63,11 @@ export function CalendarWeekView({
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
+  const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
+  const pendingLaneCorrectionRef = useRef<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setSetting } = useSettings();
   const userRole = useMemo(
     () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
     [],
@@ -71,12 +75,16 @@ export function CalendarWeekView({
 
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = useSetting("calendarWeekScrollRange");
+  const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
+  const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const isAdmin = userRole === "ADMIN";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const extraWeekCount =
     typeof weekScrollRangeSetting === "number" && Number.isInteger(weekScrollRangeSetting) && weekScrollRangeSetting >= 0
       ? Math.min(weekScrollRangeSetting, 12)
       : 4;
+  const isCollapsedMode = Boolean(persistedIsCollapsed);
+  const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
 
   const dayGridTemplate = useMemo(
     () => buildDayGridTemplate(getDayWeights(weekendColumnPercent)),
@@ -86,6 +94,7 @@ export function CalendarWeekView({
   const baseWeekStart = startOfWeek(currentDate, { weekStartsOn: 1, locale: de });
   const baseWeekEnd = endOfWeek(baseWeekStart, { weekStartsOn: 1, locale: de });
   const scrollResetKey = format(baseWeekStart, "yyyy-MM-dd");
+  const berlinToday = getBerlinTodayDateString();
 
   const weekStarts = useMemo(
     () => Array.from({ length: extraWeekCount + 1 }, (_, index) => addWeeks(baseWeekStart, index)),
@@ -94,6 +103,19 @@ export function CalendarWeekView({
 
   const stripFromDate = format(weekStarts[0], "yyyy-MM-dd");
   const stripToDate = format(endOfWeek(weekStarts[weekStarts.length - 1], { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
+
+  useEffect(() => {
+    const node = firstWeekdayHeaderRef.current;
+    if (!node) return;
+
+    const measure = () => {
+      const widthPx = node.getBoundingClientRect().width;
+      storeWeeklyPreviewWidth(widthPx);
+    };
+
+    const frame = window.requestAnimationFrame(measure);
+    return () => window.cancelAnimationFrame(frame);
+  }, [scrollResetKey]);
 
   const { data: appointments = [] } = useCalendarAppointments({
     fromDate: stripFromDate,
@@ -166,7 +188,6 @@ export function CalendarWeekView({
             dateKey: format(addDays(weekStart, dayIndex), "yyyy-MM-dd"),
             appointments: [],
           })),
-          isCollapsed: false,
         }));
 
       const unassignedLane: WeekTourLane = {
@@ -180,7 +201,6 @@ export function CalendarWeekView({
           dateKey: format(addDays(weekStart, dayIndex), "yyyy-MM-dd"),
           appointments: [],
         })),
-        isCollapsed: false,
       };
 
       const lanes = [...initialLanes, unassignedLane];
@@ -217,6 +237,85 @@ export function CalendarWeekView({
 
     return map;
   }, [appointments, appointmentsById, membersByTourId, tours, unassignedMembers, weekStarts]);
+
+  const primaryWeekLaneKeys = useMemo(() => {
+    if (weekStarts.length === 0) return [] as string[];
+    const primaryWeekKey = format(weekStarts[0], "yyyy-MM-dd");
+    const primaryWeekLanes = lanesByWeekStart.get(primaryWeekKey) ?? [];
+    return primaryWeekLanes.map((lane) => lane.laneKey);
+  }, [lanesByWeekStart, weekStarts]);
+
+  const collapsedLaneSelection = useMemo(
+    () => resolveCollapsedLaneSelection({
+      laneKeys: primaryWeekLaneKeys,
+      persistedExpandedLaneId,
+    }),
+    [persistedExpandedLaneId, primaryWeekLaneKeys],
+  );
+
+  const effectiveExpandedLaneId = isCollapsedMode ? collapsedLaneSelection.effectiveExpandedLaneId : null;
+
+  const persistExpandedLaneId = async (laneId: string) => {
+    await setSetting({
+      key: "calendar.weekLanes.expandedLaneId",
+      scopeType: "USER",
+      value: laneId,
+    });
+  };
+
+  const persistCollapsedMode = async (nextValue: boolean) => {
+    await setSetting({
+      key: "calendar.weekLanes.isCollapsed",
+      scopeType: "USER",
+      value: nextValue,
+    });
+  };
+
+  useEffect(() => {
+    if (!isCollapsedMode) {
+      pendingLaneCorrectionRef.current = null;
+      return;
+    }
+    if (!collapsedLaneSelection.requiresCorrection || !collapsedLaneSelection.effectiveExpandedLaneId) {
+      pendingLaneCorrectionRef.current = null;
+      return;
+    }
+    if (collapsedLaneSelection.effectiveExpandedLaneId === persistedExpandedLaneId) {
+      pendingLaneCorrectionRef.current = null;
+      return;
+    }
+    if (pendingLaneCorrectionRef.current === collapsedLaneSelection.effectiveExpandedLaneId) return;
+
+    pendingLaneCorrectionRef.current = collapsedLaneSelection.effectiveExpandedLaneId;
+
+    void persistExpandedLaneId(collapsedLaneSelection.effectiveExpandedLaneId).catch((error) => {
+      console.error(`${logPrefix} failed to persist lane correction`, error);
+      toast({
+        title: "Lane-Zustand konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+      pendingLaneCorrectionRef.current = null;
+    });
+  }, [collapsedLaneSelection, isCollapsedMode, persistedExpandedLaneId, toast]);
+
+  const handleToggleCollapsedMode = async () => {
+    if (!isCollapsedMode) {
+      if (collapsedLaneSelection.effectiveExpandedLaneId) {
+        await persistExpandedLaneId(collapsedLaneSelection.effectiveExpandedLaneId);
+      }
+      await persistCollapsedMode(true);
+      return;
+    }
+
+    await persistCollapsedMode(false);
+  };
+
+  const handleLaneHeaderClick = async (laneKey: string) => {
+    if (!isCollapsedMode) return;
+    if (effectiveExpandedLaneId === laneKey) return;
+    await persistExpandedLaneId(laneKey);
+  };
 
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointmentsById.get(appointmentId);
@@ -308,9 +407,9 @@ export function CalendarWeekView({
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-user-role": userRole,
         },
         body: JSON.stringify({
+          version: appointment.version,
           projectId: appointment.projectId,
           tourId: appointment.tourId ?? null,
           startDate: newStartDate,
@@ -322,6 +421,12 @@ export function CalendarWeekView({
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
+        if (error?.code === "VERSION_CONFLICT") {
+          throw new Error("Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
+        }
+        if (error?.code === "VALIDATION_ERROR") {
+          throw new Error("Termin kann nicht verschoben werden. Bitte neu laden.");
+        }
         throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
       }
 
@@ -348,6 +453,23 @@ export function CalendarWeekView({
             {format(baseWeekStart, "d. MMMM", { locale: de })} - {format(baseWeekEnd, "d. MMMM yyyy", { locale: de })}
           </span>
         </div>
+        <button
+          type="button"
+          className="rounded-md border border-border/60 bg-white px-3 py-1 text-xs font-semibold text-foreground hover:bg-muted"
+          data-testid="button-week-lanes-collapse-toggle"
+          onClick={() => {
+            void handleToggleCollapsedMode().catch((error) => {
+              console.error(`${logPrefix} toggle collapsed mode failed`, error);
+              toast({
+                title: "Lane-Modus konnte nicht gespeichert werden",
+                description: "Bitte erneut versuchen.",
+                variant: "destructive",
+              });
+            });
+          }}
+        >
+          {isCollapsedMode ? "Alle Lanes aufklappen" : "Lanes kollabieren"}
+        </button>
       </div>
 
       {/* FIX-RULE:
@@ -362,7 +484,7 @@ export function CalendarWeekView({
        */}
       <div key={scrollResetKey} className="flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full">
-          {weekStarts.map((weekStart) => {
+          {weekStarts.map((weekStart, weekIndex) => {
             const weekKey = format(weekStart, "yyyy-MM-dd");
             const weekLanes = lanesByWeekStart.get(weekKey) ?? [];
             const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
@@ -380,7 +502,12 @@ export function CalendarWeekView({
                       const dayKey = format(day, "yyyy-MM-dd");
 
                       return (
-                        <div key={dayKey} className="flex flex-col min-h-0 overflow-hidden" data-testid={`week-day-header-${dayKey}`}>
+                        <div
+                          key={dayKey}
+                          ref={weekIndex === 0 && dayIdx === 0 ? firstWeekdayHeaderRef : undefined}
+                          className="flex flex-col min-h-0 overflow-hidden"
+                          data-testid={`week-day-header-${dayKey}`}
+                        >
                           <div
                             className={`
                               px-2 py-1.5 text-center
@@ -405,43 +532,87 @@ export function CalendarWeekView({
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-2 space-y-3">
-                    {weekLanes.map((tourLane) => (
+                    {weekLanes.map((tourLane) => {
+                      const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
+
+                      return (
                       <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10 p-2">
                         <div className="relative">
                           <CalendarWeekTourLaneHeaderBar
                             label={tourLane.label}
                             color={tourLane.color}
                             members={tourLane.members}
+                            isExpanded={!isLaneCollapsed({
+                              isCollapsedMode,
+                              laneKey: tourLane.laneKey,
+                              effectiveExpandedLaneId,
+                            })}
+                            interactive={isCollapsedMode}
+                            onClick={() => {
+                              void handleLaneHeaderClick(tourLane.laneKey).catch((error) => {
+                                console.error(`${logPrefix} lane header click failed`, error);
+                                toast({
+                                  title: "Lane-Zustand konnte nicht gespeichert werden",
+                                  description: "Bitte erneut versuchen.",
+                                  variant: "destructive",
+                                });
+                              });
+                            }}
                             testId={`week-tour-lane-header-${tourLane.laneKey}`}
                           />
                           <div
                             className="pointer-events-none absolute inset-0 grid"
                             style={{ gridTemplateColumns: dayGridTemplate }}
                           >
-                            {tourLane.dayBuckets.map((dayBucket) => (
-                              <div key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`} className="flex items-center justify-end px-1">
-                                <button
-                                  onClick={() => {
-                                    console.info(`${logPrefix} new appointment click`, {
-                                      date: dayBucket.dateKey,
-                                      tourId: tourLane.tourId,
-                                      laneKey: tourLane.laneKey,
-                                    });
-                                    onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId });
-                                  }}
-                                  className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none text-white/85 hover:bg-white/15 hover:text-white"
-                                  data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
-                                  title={`Neuer Termin am ${dayBucket.dateKey}`}
-                                >
-                                  +
-                                </button>
+                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => (
+                              <div
+                                key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                className="flex items-center justify-between gap-1 px-1"
+                              >
+                                {dayAppointmentCounts[dayIdx] > 0 ? (
+                                  <span
+                                    className="truncate text-[10px] font-semibold text-white/90"
+                                    data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                  >
+                                    ({dayAppointmentCounts[dayIdx]}) Termine
+                                  </span>
+                                ) : (
+                                  <span />
+                                )}
+                                {dayBucket.dateKey >= berlinToday ? (
+                                  <button
+                                    onClick={() => {
+                                      console.info(`${logPrefix} new appointment click`, {
+                                        date: dayBucket.dateKey,
+                                        tourId: tourLane.tourId,
+                                        laneKey: tourLane.laneKey,
+                                      });
+                                      onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId });
+                                    }}
+                                    className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none text-white/85 hover:bg-white/15 hover:text-white"
+                                    data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                    title={`Neuer Termin am ${dayBucket.dateKey}`}
+                                  >
+                                    +
+                                  </button>
+                                ) : null}
                               </div>
                             ))}
                           </div>
                         </div>
-                        {!tourLane.isCollapsed && (
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            isLaneCollapsed({
+                              isCollapsedMode,
+                              laneKey: tourLane.laneKey,
+                              effectiveExpandedLaneId,
+                            })
+                              ? "max-h-0 opacity-0 mt-0"
+                              : "max-h-[2200px] opacity-100 mt-1"
+                          }`}
+                        >
                           <div
-                            className="mt-1 grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30"
+                            className="grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30"
                             style={{ gridTemplateColumns: dayGridTemplate }}
                           >
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
@@ -453,7 +624,9 @@ export function CalendarWeekView({
                                   key={`${tourLane.laneKey}-${dayBucket.dateKey}`}
                                   className={`h-full p-2 space-y-2 ${isWeekend ? "bg-slate-200/30" : "bg-white/70"}`}
                                   onDragOver={(event) => event.preventDefault()}
-                                  onDrop={(event) => handleDrop(event, day)}
+                                  onDrop={(event) => {
+                                    void handleDrop(event, day);
+                                  }}
                                   data-testid={`week-day-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                 >
                                   {dayBucket.appointments.map((appointmentId, stackIndex) => {
@@ -493,9 +666,10 @@ export function CalendarWeekView({
                               );
                             })}
                           </div>
-                        )}
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </section>
@@ -506,4 +680,3 @@ export function CalendarWeekView({
     </div>
   );
 }
-

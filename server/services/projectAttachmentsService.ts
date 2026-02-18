@@ -12,7 +12,3 @@ export async function getProjectAttachmentById(id: number): Promise<ProjectAttac
 export async function createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment> {
   return projectsRepository.createProjectAttachment(data);
 }
-
-export async function deleteProjectAttachment(id: number): Promise<void> {
-  await projectsRepository.deleteProjectAttachment(id);
-}

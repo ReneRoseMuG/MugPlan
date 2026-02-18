@@ -7,3 +7,4 @@ vite.config.ts.*
 .replit
 .vscode
 .env
+.env.test

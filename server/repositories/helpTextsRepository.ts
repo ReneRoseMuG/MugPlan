@@ -39,24 +39,58 @@ export async function createHelpText(data: InsertHelpText): Promise<HelpText> {
   return helpText;
 }
 
-export async function updateHelpText(id: number, data: UpdateHelpText): Promise<HelpText | null> {
-  await db
-    .update(helpTexts)
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq(helpTexts.id, id));
+export async function updateHelpTextWithVersion(
+  id: number,
+  expectedVersion: number,
+  data: UpdateHelpText,
+): Promise<{ kind: "updated"; helpText: HelpText } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update help_texts
+    set
+      help_key = coalesce(${data.helpKey ?? null}, help_key),
+      title = coalesce(${data.title ?? null}, title),
+      body = coalesce(${data.body ?? null}, body),
+      is_active = coalesce(${data.isActive ?? null}, is_active),
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
   const [helpText] = await db.select().from(helpTexts).where(eq(helpTexts.id, id));
-  return helpText || null;
+  return { kind: "updated", helpText };
 }
 
-export async function toggleHelpTextActive(id: number, isActive: boolean): Promise<HelpText | null> {
-  await db
-    .update(helpTexts)
-    .set({ isActive, updatedAt: new Date() })
-    .where(eq(helpTexts.id, id));
+export async function toggleHelpTextActiveWithVersion(
+  id: number,
+  expectedVersion: number,
+  isActive: boolean,
+): Promise<{ kind: "updated"; helpText: HelpText } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update help_texts
+    set
+      is_active = ${isActive},
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
   const [helpText] = await db.select().from(helpTexts).where(eq(helpTexts.id, id));
-  return helpText || null;
+  return { kind: "updated", helpText };
 }
 
-export async function deleteHelpText(id: number): Promise<void> {
-  await db.delete(helpTexts).where(eq(helpTexts.id, id));
+export async function deleteHelpTextWithVersion(
+  id: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    delete from help_texts
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
 }

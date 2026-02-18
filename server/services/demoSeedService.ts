@@ -18,12 +18,14 @@ import * as projectsService from "./projectsService";
 import * as projectStatusService from "./projectStatusService";
 import * as teamsService from "./teamsService";
 import * as toursService from "./toursService";
+import * as customersRepository from "../repositories/customersRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
 import * as usersRepository from "../repositories/usersRepository";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as projectAttachmentsService from "./projectAttachmentsService";
 import * as demoSeedRepository from "../repositories/demoSeedRepository";
 import * as userSettingsService from "./userSettingsService";
+import { assignEmployeesToGroups } from "./demoSeedAssignments";
 
 const logPrefix = "[demo-seed-service]";
 
@@ -59,12 +61,22 @@ const allowedTemplateKeys = new Set<string>([
   "oven_price_eur",
 ]);
 
+type SeedRunType = "base" | "appointments" | "legacy";
+
+type SeedProjectStatusInput = {
+  title: string;
+  color: string;
+  description?: string | null;
+};
+
 type SeedConfig = {
-  employees: number;
-  customers: number;
-  projects: number;
-  appointmentsPerProject: number;
-  generateAttachments: boolean;
+  runType?: SeedRunType;
+  baseSeedRunId?: string;
+  employees?: number;
+  customers?: number;
+  projects?: number;
+  appointmentsPerProject?: number;
+  generateAttachments?: boolean;
   randomSeed?: number;
   seedWindowDaysMin?: number;
   seedWindowDaysMax?: number;
@@ -72,11 +84,14 @@ type SeedConfig = {
   reklDelayDaysMax?: number;
   reklShare?: number;
   locale?: string;
+  projectStatuses?: SeedProjectStatusInput[];
 };
 
 type SeedSummary = {
   seedRunId: string;
   createdAt: string;
+  runType: SeedRunType;
+  baseSeedRunId?: string;
   requested: {
     employees: number;
     customers: number;
@@ -108,6 +123,13 @@ type SeedSummary = {
     reklSkippedConstraints: number;
   };
   warnings: string[];
+  meta?: {
+    projectContexts: Array<{
+      projectId: number;
+      modelId: string;
+      ovenId: string | null;
+    }>;
+  };
 };
 
 type PurgeSummary = {
@@ -159,9 +181,26 @@ type MaterializedAppointment = {
 
 type InternalSeedConfig = ReturnType<typeof defaults>;
 
+type SeedRunLike = {
+  id: string;
+  createdAt: Date;
+  configJson: unknown;
+  summaryJson: unknown;
+};
+
 function createBadRequestError(message: string) {
   const err = new Error(message) as Error & { status?: number };
   err.status = 400;
+  return err;
+}
+
+function createConflictError(message: string, dependentRunIds: string[]) {
+  const err = new Error(message) as Error & {
+    status?: number;
+    dependentRunIds?: string[];
+  };
+  err.status = 409;
+  err.dependentRunIds = dependentRunIds;
   return err;
 }
 
@@ -208,14 +247,6 @@ function isWeekend(date: Date) {
   return day === 0 || day === 6;
 }
 
-function nextWorkday(date: Date) {
-  const adjusted = new Date(date);
-  while (isWeekend(adjusted)) {
-    adjusted.setDate(adjusted.getDate() + 1);
-  }
-  return adjusted;
-}
-
 function toDateString(date: Date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -224,12 +255,21 @@ function toDateString(date: Date) {
 }
 
 function defaults(config: SeedConfig) {
+  const runType: SeedRunType = config.runType ?? "legacy";
   return {
-    employees: config.employees,
-    customers: config.customers,
-    projects: config.projects,
-    appointmentsPerProject: config.appointmentsPerProject,
-    generateAttachments: config.generateAttachments,
+    runType,
+    baseSeedRunId: typeof config.baseSeedRunId === "string" ? config.baseSeedRunId : undefined,
+    employees: runType === "appointments" ? 0 : (config.employees ?? 20),
+    customers: runType === "appointments" ? 0 : (config.customers ?? 10),
+    projects: runType === "appointments" ? 0 : (config.projects ?? 30),
+    appointmentsPerProject:
+      runType === "base"
+        ? 0
+        : (config.appointmentsPerProject ?? 1),
+    generateAttachments:
+      runType === "appointments"
+        ? false
+        : (config.generateAttachments ?? true),
     randomSeed: config.randomSeed,
     seedWindowDaysMin: config.seedWindowDaysMin ?? 60,
     seedWindowDaysMax: config.seedWindowDaysMax ?? 90,
@@ -237,6 +277,19 @@ function defaults(config: SeedConfig) {
     reklDelayDaysMax: config.reklDelayDaysMax ?? 42,
     reklShare: config.reklShare ?? 0.33,
     locale: config.locale ?? "de",
+    projectStatuses:
+      runType === "base"
+        ? (Array.isArray(config.projectStatuses)
+          ? config.projectStatuses.map((status) => ({
+              title: String(status.title ?? "").trim(),
+              color: String(status.color ?? "").trim(),
+              description:
+                status.description == null || String(status.description).trim().length === 0
+                  ? null
+                  : String(status.description).trim(),
+            }))
+          : [])
+        : [],
     durationWeights: {
       1: 0.55,
       2: 0.30,
@@ -244,6 +297,54 @@ function defaults(config: SeedConfig) {
     } as const,
     tourScatter: 0.8,
   };
+}
+
+function extractRunType(configJson: unknown): SeedRunType {
+  if (!configJson || typeof configJson !== "object") return "legacy";
+  const runType = (configJson as Record<string, unknown>).runType;
+  if (runType === "base" || runType === "appointments" || runType === "legacy") {
+    return runType;
+  }
+  return "legacy";
+}
+
+function extractBaseSeedRunId(configJson: unknown): string | undefined {
+  if (!configJson || typeof configJson !== "object") return undefined;
+  const value = (configJson as Record<string, unknown>).baseSeedRunId;
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function findDependentAppointmentRunIds(baseSeedRunId: string, runs: SeedRunLike[]) {
+  const dependent = runs
+    .filter((run) => {
+      const runType = extractRunType(run.configJson);
+      const candidateBaseRunId = extractBaseSeedRunId(run.configJson);
+      return runType === "appointments" && candidateBaseRunId === baseSeedRunId;
+    })
+    .map((run) => run.id);
+  return dependent;
+}
+
+async function getNextCustomerNumberStart() {
+  const numbers = await customersRepository.listCustomerNumbers();
+  let max = 0;
+  for (const value of numbers) {
+    if (!/^\d+$/.test(value)) continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > max) {
+      max = parsed;
+    }
+  }
+  return max + 1;
+}
+
+function formatProjectNameWithCustomerNumber(customerNumber: string, projectName: string) {
+  const customerNumberTrimmed = customerNumber.trim();
+  const projectNameTrimmed = projectName.trim();
+  if (!customerNumberTrimmed || !projectNameTrimmed) {
+    return projectNameTrimmed;
+  }
+  return `K: ${customerNumberTrimmed} - ${projectNameTrimmed}`;
 }
 
 function createSaunaContext(model: SaunaModelRow, oven: OvenRow | null) {
@@ -289,6 +390,78 @@ function resolveSelectedOven(
   if (allOvens.length === 0) return null;
   const fallbackIndex = hashInt(`${seedRunId}:${modelId}:fallback`) % allOvens.length;
   return allOvens[fallbackIndex] ?? null;
+}
+
+async function buildProjectSeedContextsFromBaseRun(
+  baseRun: SeedRunLike,
+  projectIds: number[],
+  saunaData: ReturnType<typeof loadSaunaSeedData>,
+) {
+  const uniqueProjectIds = uniqueNumberList(projectIds);
+  if (uniqueProjectIds.length === 0) return [] as ProjectSeedContext[];
+
+  const summaryJson = (baseRun.summaryJson ?? {}) as Record<string, unknown>;
+  const meta = (summaryJson.meta ?? {}) as Record<string, unknown>;
+  const projectContextsMetaRaw = Array.isArray(meta.projectContexts) ? meta.projectContexts : [];
+  const projectMetaByProjectId = new Map<
+    number,
+    {
+      modelId: string;
+      ovenId: string | null;
+    }
+  >();
+  for (const item of projectContextsMetaRaw) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+    const projectId = Number(record.projectId);
+    const modelId = String(record.modelId ?? "");
+    const ovenIdRaw = record.ovenId;
+    const ovenId = ovenIdRaw == null ? null : String(ovenIdRaw);
+    if (!Number.isFinite(projectId) || projectId <= 0 || modelId.trim().length === 0) continue;
+    projectMetaByProjectId.set(projectId, { modelId, ovenId });
+  }
+
+  const modelById = new Map(saunaData.saunaModels.map((model) => [model.modelId, model]));
+  const ovenById = new Map(saunaData.ovens.map((oven) => [oven.ovenId, oven]));
+  const ovenIdsByModelId = new Map<string, string[]>();
+  for (const mapping of saunaData.mappings) {
+    if (!mapping.modelId || !mapping.ovenId) continue;
+    const list = ovenIdsByModelId.get(mapping.modelId) ?? [];
+    list.push(mapping.ovenId);
+    ovenIdsByModelId.set(mapping.modelId, list);
+  }
+
+  const contexts: ProjectSeedContext[] = [];
+  for (const projectId of uniqueProjectIds) {
+    const project = await projectsService.getProject(projectId);
+    if (!project) continue;
+    const metaItem = projectMetaByProjectId.get(projectId);
+
+    const model =
+      (metaItem?.modelId ? modelById.get(metaItem.modelId) : undefined) ??
+      saunaData.saunaModels[
+        hashInt(`${baseRun.id}:project-model:${projectId}`) % Math.max(1, saunaData.saunaModels.length)
+      ];
+    if (!model) continue;
+
+    const selectedOven =
+      (metaItem?.ovenId ? ovenById.get(metaItem.ovenId) : undefined) ??
+      resolveSelectedOven(
+        baseRun.id,
+        model.modelId,
+        ovenById,
+        ovenIdsByModelId.get(model.modelId) ?? [],
+        saunaData.ovens,
+      );
+
+    contexts.push({
+      projectId: Number(project.id),
+      model,
+      selectedOven,
+    });
+  }
+
+  return contexts;
 }
 
 function uniqueNumberList(values: number[]) {
@@ -345,9 +518,8 @@ async function resolveSeedTemplates(seedRunId: string, locale: string) {
     [TEMPLATE_KEYS.reklTitle]: "Rekl. {oven_name}",
   };
 
-  const configuredUserId = Number(process.env.SETTINGS_USER_ID ?? "1");
   const fallbackUserIds = await usersRepository.listActiveUserIds(10);
-  const candidateUserIds = uniqueNumberList([configuredUserId, 1, ...fallbackUserIds]);
+  const candidateUserIds = uniqueNumberList(fallbackUserIds);
 
   for (const candidateUserId of candidateUserIds) {
     try {
@@ -895,61 +1067,224 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     const employees: number[] = [];
     const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
+    const customerNumberById = new Map<number, string>();
+    const projectSeedContexts: ProjectSeedContext[] = [];
 
-    for (let i = 0; i < 2; i += 1) {
-      const team = await teamsService.createTeam({ color: random.pick(["#0f766e", "#0369a1", "#be123c", "#4d7c0f"]) });
-      teams.push(team.id);
-      created.teams += 1;
-      await demoSeedRepository.addSeedRunEntity(seedRunId, "team", team.id);
-    }
+    if (config.runType === "appointments") {
+      if (!config.baseSeedRunId) {
+        throw createBadRequestError("Fuer Termine-Seed ist baseSeedRunId erforderlich.");
+      }
+      const baseRun = (await demoSeedRepository.getSeedRun(config.baseSeedRunId)) as SeedRunLike | null;
+      if (!baseRun) {
+        throw createBadRequestError(`Basis-Run nicht gefunden: ${config.baseSeedRunId}`);
+      }
+      if (extractRunType(baseRun.configJson) !== "base") {
+        throw createBadRequestError("Termine-Seed darf nur auf einem Basisdaten-Run aufsetzen.");
+      }
 
-    for (let i = 0; i < 3; i += 1) {
-      const tour = await toursService.createTour({ color: random.pick(["#1d4ed8", "#7c3aed", "#b91c1c", "#0f766e"]) });
-      tours.push(tour.id);
-      created.tours += 1;
-      await demoSeedRepository.addSeedRunEntity(seedRunId, "tour", tour.id);
-    }
+      const baseEntities = await demoSeedRepository.getSeedRunEntities(baseRun.id);
+      const idsByType: Record<string, number[]> = {};
+      for (const entity of baseEntities) {
+        const list = idsByType[entity.entityType] ?? [];
+        list.push(Number(entity.entityId));
+        idsByType[entity.entityType] = list;
+      }
 
-    const seedPrefix = seedRunId.slice(0, 8);
-    for (let i = 0; i < config.employees; i += 1) {
-      const employee = await employeesService.createEmployee(filler.nextEmployee(i, seedPrefix));
-      employees.push(employee.id);
-      created.employees += 1;
-      await demoSeedRepository.addSeedRunEntity(seedRunId, "employee", employee.id);
-    }
+      const baseProjectIds = uniqueNumberList(idsByType.project ?? []);
+      const baseEmployeeIds = uniqueNumberList(idsByType.employee ?? []);
+      const baseTourIds = uniqueNumberList(idsByType.tour ?? []);
+      if (baseProjectIds.length === 0) {
+        throw createBadRequestError("Basis-Run enthaelt keine Projekte.");
+      }
+      if (baseEmployeeIds.length === 0) {
+        throw createBadRequestError("Basis-Run enthaelt keine Mitarbeitenden.");
+      }
+      if (baseTourIds.length === 0) {
+        throw createBadRequestError("Basis-Run enthaelt keine Touren.");
+      }
 
-    for (const employeeId of employees) {
-      await employeesRepository.setEmployeeTeam(employeeId, random.pick(teams));
-      const assignedTour = random.pick(tours);
-      await employeesRepository.setEmployeeTour(employeeId, assignedTour);
-      employeeTourById.set(employeeId, assignedTour);
-    }
+      const availableTours = await toursService.listTours();
+      tours.push(...availableTours.filter((tour) => baseTourIds.includes(Number(tour.id))).map((tour) => Number(tour.id)));
+      if (tours.length === 0) {
+        throw createBadRequestError("Keine gueltigen Touren aus dem Basis-Run verfuegbar.");
+      }
 
-    for (let i = 0; i < config.customers; i += 1) {
-      const customerPayload = filler.nextCustomer(i, seedPrefix);
-      const customer = await customersService.createCustomer({
-        ...customerPayload,
-        customerNumber: String(i + 1),
-      });
-      customers.push(customer.id);
-      created.customers += 1;
-      await demoSeedRepository.addSeedRunEntity(seedRunId, "customer", customer.id);
-    }
+      for (const employeeId of baseEmployeeIds) {
+        const employee = await employeesRepository.getEmployee(employeeId);
+        if (!employee) continue;
+        employees.push(Number(employee.id));
+        const assignedTourId = Number(employee.tourId ?? tours[0]);
+        employeeTourById.set(Number(employee.id), assignedTourId);
+      }
+      if (employees.length === 0) {
+        throw createBadRequestError("Keine gueltigen Mitarbeitenden aus dem Basis-Run verfuegbar.");
+      }
 
-    const projectsToCreate = config.projects;
+      projectSeedContexts.push(
+        ...(await buildProjectSeedContextsFromBaseRun(baseRun, baseProjectIds, saunaData)),
+      );
+      if (projectSeedContexts.length === 0) {
+        throw createBadRequestError("Keine gueltigen Projekt-Kontexte aus dem Basis-Run verfuegbar.");
+      }
+    } else {
+      for (let i = 0; i < 3; i += 1) {
+        const team = await teamsService.createTeam({ color: random.pick(["#0f766e", "#0369a1", "#be123c", "#4d7c0f"]) });
+        teams.push(team.id);
+        created.teams += 1;
+        await demoSeedRepository.addSeedRunEntity(seedRunId, "team", team.id);
+      }
 
-    const ovenById = new Map(saunaData.ovens.map((oven) => [oven.ovenId, oven]));
-    const ovenIdsByModelId = new Map<string, string[]>();
-    for (const mapping of saunaData.mappings) {
-      if (!mapping.modelId || !mapping.ovenId) continue;
-      const list = ovenIdsByModelId.get(mapping.modelId) ?? [];
-      list.push(mapping.ovenId);
-      ovenIdsByModelId.set(mapping.modelId, list);
-    }
+      for (let i = 0; i < 3; i += 1) {
+        const tour = await toursService.createTour({ color: random.pick(["#1d4ed8", "#7c3aed", "#b91c1c", "#0f766e"]) });
+        tours.push(tour.id);
+        created.tours += 1;
+        await demoSeedRepository.addSeedRunEntity(seedRunId, "tour", tour.id);
+      }
 
-    const statuses = await projectStatusService.listProjectStatuses("active");
-    if (statuses.length === 0) {
-      warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
+      const seedPrefix = seedRunId.slice(0, 8);
+      for (let i = 0; i < config.employees; i += 1) {
+        const employee = await employeesService.createEmployee(filler.nextEmployee(i, seedPrefix));
+        employees.push(employee.id);
+        created.employees += 1;
+        await demoSeedRepository.addSeedRunEntity(seedRunId, "employee", employee.id);
+      }
+
+      if (config.runType === "base") {
+        const minAssignmentsPerGroup = employees.length >= teams.length ? 1 : 0;
+        const teamAssignment = assignEmployeesToGroups({
+          employeeIds: employees,
+          groupIds: teams,
+          minPerGroup: minAssignmentsPerGroup,
+          maxPerGroup: 3,
+          randomInt: (min, max) => random.int(min, max),
+        });
+        const minTourAssignmentsPerGroup = employees.length >= tours.length ? 1 : 0;
+        const tourAssignment = assignEmployeesToGroups({
+          employeeIds: employees,
+          groupIds: tours,
+          minPerGroup: minTourAssignmentsPerGroup,
+          maxPerGroup: 3,
+          randomInt: (min, max) => random.int(min, max),
+        });
+
+        for (const employeeId of employees) {
+          const assignedTeam = teamAssignment.byEmployeeId.get(employeeId) ?? null;
+          await employeesRepository.setEmployeeTeam(employeeId, assignedTeam);
+          const assignedTour = tourAssignment.byEmployeeId.get(employeeId) ?? null;
+          await employeesRepository.setEmployeeTour(employeeId, assignedTour);
+          if (assignedTour != null) {
+            employeeTourById.set(employeeId, assignedTour);
+          }
+        }
+      } else {
+        for (const employeeId of employees) {
+          await employeesRepository.setEmployeeTeam(employeeId, random.pick(teams));
+          const assignedTour = random.pick(tours);
+          await employeesRepository.setEmployeeTour(employeeId, assignedTour);
+          employeeTourById.set(employeeId, assignedTour);
+        }
+      }
+
+      let nextCustomerNumber = await getNextCustomerNumberStart();
+      for (let i = 0; i < config.customers; i += 1) {
+        const customerPayload = filler.nextCustomer(i, seedPrefix);
+        const customer = await customersService.createCustomer({
+          ...customerPayload,
+          customerNumber: String(nextCustomerNumber),
+        });
+        nextCustomerNumber += 1;
+        customers.push(customer.id);
+        customerNumberById.set(customer.id, customer.customerNumber);
+        created.customers += 1;
+        await demoSeedRepository.addSeedRunEntity(seedRunId, "customer", customer.id);
+      }
+
+      const projectsToCreate = config.projects;
+      const ovenById = new Map(saunaData.ovens.map((oven) => [oven.ovenId, oven]));
+      const ovenIdsByModelId = new Map<string, string[]>();
+      for (const mapping of saunaData.mappings) {
+        if (!mapping.modelId || !mapping.ovenId) continue;
+        const list = ovenIdsByModelId.get(mapping.modelId) ?? [];
+        list.push(mapping.ovenId);
+        ovenIdsByModelId.set(mapping.modelId, list);
+      }
+
+      let statusIdsForProjectAssignment: number[] = [];
+      if (config.runType === "base") {
+        if (config.projectStatuses.length === 0) {
+          throw createBadRequestError("Mindestens ein Projekt-Status fuer Basis-Seed erforderlich.");
+        }
+        for (let i = 0; i < config.projectStatuses.length; i += 1) {
+          const item = config.projectStatuses[i];
+          if (!item.title || item.title.trim().length === 0) {
+            throw createBadRequestError("Projekt-Status-Titel darf nicht leer sein.");
+          }
+          if (!item.color || item.color.trim().length === 0) {
+            throw createBadRequestError("Projekt-Status-Farbe darf nicht leer sein.");
+          }
+          const status = await projectStatusService.createProjectStatus({
+            title: item.title.trim(),
+            color: item.color.trim(),
+            description: item.description ?? null,
+            sortOrder: i,
+          }, "ADMIN");
+          statusIdsForProjectAssignment.push(Number(status.id));
+        }
+      } else {
+        const statuses = await projectStatusService.listProjectStatuses("active", "ADMIN");
+        statusIdsForProjectAssignment = statuses.map((status) => Number(status.id));
+        if (statusIdsForProjectAssignment.length === 0) {
+          warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
+        }
+      }
+
+      for (let i = 0; i < projectsToCreate; i += 1) {
+        const model = random.pick(saunaData.saunaModels);
+        const customerId = customers.length > 0 ? random.pick(customers) : null;
+        if (!customerId) {
+          warnings.push("Keine Kunden erzeugt; Projektanlage uebersprungen.");
+          break;
+        }
+        const customerNumber = customerNumberById.get(customerId) ?? "";
+
+        const possibleOvenIds = ovenIdsByModelId.get(model.modelId) ?? [];
+        const selectedOven = resolveSelectedOven(
+          seedRunId,
+          model.modelId,
+          ovenById,
+          possibleOvenIds,
+          saunaData.ovens,
+        );
+        const ctx = createSaunaContext(model, selectedOven);
+
+        const rawProjectName =
+          renderTemplate(templates[TEMPLATE_KEYS.projectTitle], ctx, { allowedKeys: allowedTemplateKeys }) ||
+          model.saunaModelName ||
+          `Sauna ${i + 1}`;
+        const project = await projectsService.createProject({
+          name: formatProjectNameWithCustomerNumber(customerNumber, rawProjectName),
+          customerId,
+          descriptionMd: renderTemplate(templates[TEMPLATE_KEYS.projectDescription], ctx, { allowedKeys: allowedTemplateKeys }),
+        });
+        created.projects += 1;
+        await demoSeedRepository.addSeedRunEntity(seedRunId, "project", project.id);
+
+        if (statusIdsForProjectAssignment.length > 0) {
+          const maxCount = Math.min(statusIdsForProjectAssignment.length, config.runType === "base" ? 2 : 1);
+          const relationCount = random.int(1, Math.max(1, maxCount));
+          const selectedStatusIds = seededShuffle(statusIdsForProjectAssignment, random).slice(0, relationCount);
+          for (const statusId of selectedStatusIds) {
+            await projectStatusService.addProjectStatus(project.id, statusId, 0, "ADMIN");
+            created.projectStatusRelations += 1;
+          }
+        }
+
+        projectSeedContexts.push({
+          projectId: project.id,
+          model,
+          selectedOven,
+        });
+      }
     }
 
     const startDate = addDays(new Date(), 1);
@@ -957,97 +1292,59 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     for (const employeeId of employees) {
       employeeDaySlots.set(employeeId, new Set<string>());
     }
-    const projectSeedContexts: ProjectSeedContext[] = [];
 
-    for (let i = 0; i < projectsToCreate; i += 1) {
-      const model = random.pick(saunaData.saunaModels);
-      const customerId = customers.length > 0 ? random.pick(customers) : null;
-      if (!customerId) {
-        warnings.push("Keine Kunden erzeugt; Projektanlage uebersprungen.");
-        break;
-      }
-
-      const possibleOvenIds = ovenIdsByModelId.get(model.modelId) ?? [];
-      const selectedOven = resolveSelectedOven(
+    if (config.runType !== "base") {
+      const mountIntents = planMountAppointmentIntents({
+        random,
+        config,
+        projects: projectSeedContexts,
+        tours,
+      });
+      const mountResult = await materializeAppointmentIntents({
         seedRunId,
-        model.modelId,
-        ovenById,
-        possibleOvenIds,
-        saunaData.ovens,
-      );
-      const ctx = createSaunaContext(model, selectedOven);
-
-      const project = await projectsService.createProject({
-        name: renderTemplate(templates[TEMPLATE_KEYS.projectTitle], ctx, { allowedKeys: allowedTemplateKeys }) || model.saunaModelName || `Sauna ${i + 1}`,
-        customerId,
-        descriptionMd: renderTemplate(templates[TEMPLATE_KEYS.projectDescription], ctx, { allowedKeys: allowedTemplateKeys }),
+        intents: mountIntents,
+        config,
+        anchorDate: startDate,
+        employees,
+        employeeTourById,
+        employeeDaySlots,
+        templates,
       });
-      created.projects += 1;
-      await demoSeedRepository.addSeedRunEntity(seedRunId, "project", project.id);
-
-      if (statuses.length > 0) {
-        const statusId = random.pick(statuses).id;
-        await projectStatusService.addProjectStatus(project.id, statusId);
-        created.projectStatusRelations += 1;
-      }
-
-      projectSeedContexts.push({
-        projectId: project.id,
-        model,
-        selectedOven,
+      const mountAppointments = mountResult.createdAppointments.filter((appointment) => appointment.kind === "mount");
+      const reklPlan = buildReklIntents({
+        seedRunId,
+        config,
+        mountAppointments,
       });
-    }
+      const reklResult = await materializeAppointmentIntents({
+        seedRunId,
+        intents: reklPlan.intents,
+        config,
+        anchorDate: startDate,
+        employees,
+        employeeTourById,
+        employeeDaySlots,
+        templates,
+      });
 
-    const mountIntents = planMountAppointmentIntents({
-      random,
-      config,
-      projects: projectSeedContexts,
-      tours,
-    });
-    const mountResult = await materializeAppointmentIntents({
-      seedRunId,
-      intents: mountIntents,
-      config,
-      anchorDate: startDate,
-      employees,
-      employeeTourById,
-      employeeDaySlots,
-      templates,
-    });
-    const mountAppointments = mountResult.createdAppointments.filter((appointment) => appointment.kind === "mount");
-    const reklPlan = buildReklIntents({
-      seedRunId,
-      config,
-      mountAppointments,
-    });
-    const reklResult = await materializeAppointmentIntents({
-      seedRunId,
-      intents: reklPlan.intents,
-      config,
-      anchorDate: startDate,
-      employees,
-      employeeTourById,
-      employeeDaySlots,
-      templates,
-    });
+      reductions.appointments += mountResult.reductions.appointments + reklResult.reductions.appointments;
+      reductions.reklMissingOven += reklPlan.reklMissingOven;
+      reductions.reklSkippedConstraints +=
+        mountResult.reductions.reklSkippedConstraints + reklResult.reductions.reklSkippedConstraints;
 
-    reductions.appointments += mountResult.reductions.appointments + reklResult.reductions.appointments;
-    reductions.reklMissingOven += reklPlan.reklMissingOven;
-    reductions.reklSkippedConstraints +=
-      mountResult.reductions.reklSkippedConstraints + reklResult.reductions.reklSkippedConstraints;
-
-    const allCreatedAppointments = [
-      ...mountResult.createdAppointments,
-      ...reklResult.createdAppointments,
-    ];
-    for (const appointment of allCreatedAppointments) {
-      created.appointments += 1;
-      if (appointment.kind === "mount") {
-        created.mountAppointments += 1;
-        await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_mount", appointment.id);
-      } else {
-        created.reklAppointments += 1;
-        await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_rekl", appointment.id);
+      const allCreatedAppointments = [
+        ...mountResult.createdAppointments,
+        ...reklResult.createdAppointments,
+      ];
+      for (const appointment of allCreatedAppointments) {
+        created.appointments += 1;
+        if (appointment.kind === "mount") {
+          created.mountAppointments += 1;
+          await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_mount", appointment.id);
+        } else {
+          created.reklAppointments += 1;
+          await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_rekl", appointment.id);
+        }
       }
     }
 
@@ -1076,6 +1373,8 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     const summary: SeedSummary = {
       seedRunId,
       createdAt,
+      runType: config.runType,
+      baseSeedRunId: config.baseSeedRunId,
       requested: {
         employees: config.employees,
         customers: config.customers,
@@ -1092,6 +1391,16 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       created,
       reductions,
       warnings,
+      meta:
+        config.runType === "base"
+          ? {
+              projectContexts: projectSeedContexts.map((ctx) => ({
+                projectId: ctx.projectId,
+                modelId: ctx.model.modelId,
+                ovenId: ctx.selectedOven?.ovenId ?? null,
+              })),
+            }
+          : undefined,
     };
 
     await demoSeedRepository.updateSeedRunSummary(seedRunId, summary);
@@ -1120,12 +1429,29 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
 }
 
 export async function listSeedRuns() {
-  const runs = await demoSeedRepository.listSeedRuns();
+  const runs = (await demoSeedRepository.listSeedRuns()) as SeedRunLike[];
+  const dependentByBaseRunId = new Map<string, string[]>();
+  for (const run of runs) {
+    const runType = extractRunType(run.configJson);
+    const baseSeedRunId = extractBaseSeedRunId(run.configJson);
+    if (runType !== "appointments" || !baseSeedRunId) continue;
+    const list = dependentByBaseRunId.get(baseSeedRunId) ?? [];
+    list.push(run.id);
+    dependentByBaseRunId.set(baseSeedRunId, list);
+  }
+
   return runs.map((run) => ({
     seedRunId: run.id,
     createdAt: run.createdAt.toISOString(),
     config: run.configJson as SeedConfig,
+    runType: extractRunType(run.configJson),
+    baseSeedRunId: extractBaseSeedRunId(run.configJson),
+    dependentRunIds: dependentByBaseRunId.get(run.id) ?? [],
     summary: (run.summaryJson ?? {
+      seedRunId: run.id,
+      createdAt: run.createdAt.toISOString(),
+      runType: extractRunType(run.configJson),
+      baseSeedRunId: extractBaseSeedRunId(run.configJson),
       requested: {
         employees: 0,
         customers: 0,
@@ -1162,7 +1488,7 @@ export async function listSeedRuns() {
 }
 
 export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
-  const run = await demoSeedRepository.getSeedRun(seedRunId);
+  const run = (await demoSeedRepository.getSeedRun(seedRunId)) as SeedRunLike | null;
   if (!run) {
     return {
       seedRunId,
@@ -1182,6 +1508,18 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
       warnings: [],
       noOp: true,
     };
+  }
+
+  const runType = extractRunType(run.configJson);
+  if (runType === "base") {
+    const allRuns = (await demoSeedRepository.listSeedRuns()) as SeedRunLike[];
+    const dependentRunIds = findDependentAppointmentRunIds(seedRunId, allRuns);
+    if (dependentRunIds.length > 0) {
+      throw createConflictError(
+        "Basisdaten-Run kann nicht geloescht werden, solange abhaengige Termine-Runs existieren.",
+        dependentRunIds,
+      );
+    }
   }
 
   const warnings: string[] = [];

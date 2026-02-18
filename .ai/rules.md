@@ -119,3 +119,114 @@ Eine Aufgabe gilt als abgeschlossen, wenn:
 
 Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie ebenfalls als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.
 
+# Test-Dokumentationspflicht
+
+## Grundsatz
+
+Jede neu erstellte oder erweiterte Testdatei muss fachlich dokumentiert werden.
+
+Ziel ist, dass ein Entwickler ohne Codeanalyse verstehen kann:
+
+- Welche Funktionalität wird getestet?
+- Welche Regeln oder Invarianten werden abgesichert?
+- Welche Fehlerfälle werden geprüft?
+- Welcher fachliche Kontext (Feature / Use Case) wird abgedeckt?
+
+Reiner Testcode ohne erklärenden Kontext ist nicht zulässig.
+
+---
+
+## 1. Pflicht-Kommentar in jeder Testdatei
+
+Am Anfang jeder Testdatei muss ein erklärender Blockkommentar stehen.
+
+Format:
+
+    /**
+     * Test Scope:
+     *
+     * Feature: FTxx – <Feature-Name>
+     * Use Case: UCxx – <Use-Case-Titel>
+     *
+     * Abgedeckte Regeln:
+     * - <Regel 1>
+     * - <Regel 2>
+     *
+     * Fehlerfälle:
+     * - <Fehlerfall 1>
+     * - <Fehlerfall 2>
+     *
+     * Ziel:
+     * <Kurzbeschreibung der Absicherung>
+     */
+
+Der Kommentar muss:
+
+- verständlich formuliert sein
+- keine technischen Details wiederholen
+- die fachliche Intention beschreiben
+
+---
+
+## 2. Dokumentationsdatei für Testübersicht
+
+Zusätzlich muss jede neue Testdatei in docs/TEST_MATRIX.md eingetragen werden.
+
+Format:
+
+    | Test-Datei | Feature | Bereich | Zweck | Status |
+    |------------|----------|----------|--------|--------|
+    | appointment.versioning.test.ts | FT14 | Unit | Optimistic Locking & Konfliktlogik | ✓ |
+
+Ohne Eintrag in TEST_MATRIX.md gilt ein Test als unvollständig integriert.
+
+Ergänzende Strukturregel für `docs/TEST_MATRIX.md`:
+
+- Spalte `Test-Datei` muss als klickbarer Markdown-Link auf die konkrete Testdatei gepflegt werden.
+- Beschreibungen in `Zweck` müssen kurz und fachlich verständlich sein (kein technisches Detailprotokoll).
+
+---
+
+## 2a. Automatische Pflegepflicht durch Coding Agents
+
+Bei jeder Erstellung oder Erweiterung von Tests führen Coding Agents die Pflege von `docs/TEST_MATRIX.md` eigenständig und verpflichtend aus, ohne zusätzliche Rückfrage.
+
+Pflichtumfang:
+
+- neuer Test: neuen Tabellen-Eintrag anlegen (mit Link, Feature, Bereich, Zweck, Status)
+- bestehender Test erweitert: bestehenden Eintrag fachlich aktualisieren
+- kein separater Auftrag nötig; die Pflege ist integraler Bestandteil jeder Teständerung
+
+Fehlt die Aktualisierung der Test-Matrix, gilt die Teständerung als unvollständig.
+
+---
+
+## 3. Erweiterung bestehender Testdateien
+
+Wenn eine bestehende Testdatei erweitert wird:
+
+- Der Kopfkommentar muss aktualisiert werden.
+- Neue Szenarien müssen in „Abgedeckte Regeln“ ergänzt werden.
+- TEST_MATRIX.md muss angepasst werden.
+
+---
+
+## 4. Keine undokumentierten Tests
+
+Folgende sind unzulässig:
+
+- Testdateien ohne Kopfkommentar
+- Tests ohne fachliche Beschreibung
+- „misc“, „new“, „tmp“ Testdateien
+- Tests ohne Zuordnung zu Feature oder Use Case
+
+---
+
+## 5. Ziel dieser Regel
+
+Diese Dokumentationspflicht dient:
+
+- Transparenz der Testabdeckung
+- Nachvollziehbarkeit der Systeminvarianten
+- Vermeidung redundanter Tests
+- Kontrolle über regressionskritische Bereiche

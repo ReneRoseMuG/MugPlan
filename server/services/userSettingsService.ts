@@ -19,6 +19,7 @@ const attachmentStoragePathSettingKey = "attachmentStoragePath";
 type SetSettingInput = {
   key: string;
   scopeType: SettingScopeType;
+  version: number;
   value?: unknown;
 };
 
@@ -35,14 +36,18 @@ type ResolvedSettingRow = {
   key: string;
   label: string;
   description: string;
-  type: "enum" | "string" | "number";
+  type: "enum" | "string" | "number" | "boolean";
   constraints: Record<string, unknown>;
   allowedScopes: SettingScopeType[];
   defaultValue: unknown;
   globalValue?: unknown;
+  globalVersion?: number;
   roleValue?: unknown;
+  roleVersion?: number;
   userValue?: unknown;
+  userVersion?: number;
   resolvedValue: unknown;
+  resolvedVersion?: number;
   resolvedScope: ResolvedScope;
   roleCode: DbRoleCode;
   roleKey: CanonicalRoleKey;
@@ -160,28 +165,35 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
     const userValue = userCandidate && definition.validate(userCandidate.valueJson)
       ? userCandidate.valueJson
       : undefined;
+    const userVersion = userValue !== undefined ? userCandidate?.version : undefined;
     const roleValue = roleCandidate && definition.validate(roleCandidate.valueJson)
       ? roleCandidate.valueJson
       : undefined;
+    const roleVersion = roleValue !== undefined ? roleCandidate?.version : undefined;
     const globalValue = globalCandidate && definition.validate(globalCandidate.valueJson)
       ? globalCandidate.valueJson
       : undefined;
+    const globalVersion = globalValue !== undefined ? globalCandidate?.version : undefined;
 
     let resolvedValue: unknown = definition.defaultValue;
     let resolvedScope: ResolvedScope = "DEFAULT";
+    let resolvedVersion: number | undefined;
     let resolvedMeta: userSettingsRepository.CandidateSettingValue | undefined;
 
     if (userValue !== undefined) {
       resolvedValue = userValue;
       resolvedScope = "USER";
+      resolvedVersion = userVersion;
       resolvedMeta = userCandidate;
     } else if (roleValue !== undefined) {
       resolvedValue = roleValue;
       resolvedScope = "ROLE";
+      resolvedVersion = roleVersion;
       resolvedMeta = roleCandidate;
     } else if (globalValue !== undefined) {
       resolvedValue = globalValue;
       resolvedScope = "GLOBAL";
+      resolvedVersion = globalVersion;
       resolvedMeta = globalCandidate;
     }
 
@@ -194,13 +206,19 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
         ? { options: [...definition.options] }
         : definition.type === "string"
           ? { placeholderWhitelist: [...definition.placeholderWhitelist] }
-          : { min: definition.min, max: definition.max, integer: definition.integer },
+          : definition.type === "number"
+            ? { min: definition.min, max: definition.max, integer: definition.integer }
+            : {},
       allowedScopes: [...definition.allowedScopes],
       defaultValue: definition.defaultValue,
       globalValue,
+      globalVersion,
       roleValue,
+      roleVersion,
       userValue,
+      userVersion,
       resolvedValue,
+      resolvedVersion,
       resolvedScope,
       roleCode: responseRoleCode,
       roleKey: responseRoleKey,
@@ -217,6 +235,9 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
 
   if (input.scopeType === "ROLE") {
     throw new UserSettingsError("ROLE scope nicht verfuegbar, solange Rollenmodell nicht aktiv ist.", 400);
+  }
+  if (!Number.isInteger(input.version) || input.version < 1) {
+    throw new UserSettingsError("VALIDATION_ERROR", 422);
   }
 
   const definition = getSettingDefinitionByKey(input.key);
@@ -241,13 +262,17 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
     throw new UserSettingsError("Ungueltiger Wert fuer Setting", 400);
   }
 
-  await userSettingsRepository.upsertSettingValue({
+  const upsertResult = await userSettingsRepository.upsertSettingValueWithVersion({
     settingKey: definition.key,
     scopeType: input.scopeType,
     scopeId,
     valueJson: valueToPersist,
     updatedBy: userId,
+    expectedVersion: input.version,
   });
+  if (upsertResult.kind === "version_conflict") {
+    throw new UserSettingsError("VERSION_CONFLICT", 409);
+  }
 
   if (definition.key === attachmentStoragePathSettingKey && input.scopeType === "GLOBAL") {
     invalidateGlobalAttachmentStoragePathCache();

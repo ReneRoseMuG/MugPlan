@@ -3,26 +3,26 @@ import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarYearView } from "@/components/calendar/CalendarYearView";
-import { CalendarEmployeeFilter } from "@/components/calendar/CalendarEmployeeFilter";
+import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { CustomerData } from "@/components/CustomerData";
-import { CustomerList } from "@/components/CustomerList";
+import { CustomersPage } from "@/components/CustomersPage";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
-import { EmployeePage } from "@/components/EmployeePage";
+import { EmployeesPage } from "@/components/EmployeesPage";
 import { ProjectForm } from "@/components/ProjectForm";
-import ProjectList from "@/components/ProjectList";
-import { EmployeeWeeklyView } from "@/components/EmployeeWeeklyView";
+import { ProjectsPage } from "@/components/ProjectsPage";
 import { AppointmentForm } from "@/components/AppointmentForm";
+import { AppointmentsListPage } from "@/components/AppointmentsListPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
-import { addMonths, subMonths, addWeeks, subWeeks, format } from "date-fns";
-import { de } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
+import { UsersPage } from "@/components/UsersPage";
+import { useListFilters } from "@/hooks/useListFilters";
+import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'employeeWeekly' | 'project' | 'projectList' | 'appointment' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData' | 'users';
 export type CalendarNavCommand = {
   id: number;
   direction: "next" | "prev";
@@ -35,11 +35,12 @@ type HomeProps = {
 export default function Home({ onLogout }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>('month');
-  const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
-  const [calendarEmployeeFilterId, setCalendarEmployeeFilterId] = useState<number | null>(null);
+  const { filters: calendarFilters, setFilter: setCalendarFilter } = useListFilters({
+    initialFilters: { employeeId: null as number | null },
+  });
   const [appointmentContext, setAppointmentContext] = useState<{
     initialDate?: string;
     initialTourId?: number | null;
@@ -47,6 +48,8 @@ export default function Home({ onLogout }: HomeProps) {
     appointmentId?: number;
     returnView?: ViewType;
   } | null>(null);
+  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
 
   // Handlers for navigation
   const next = () => {
@@ -74,7 +77,7 @@ export default function Home({ onLogout }: HomeProps) {
       return (
         <WeekGrid
           currentDate={currentDate}
-          employeeFilterId={calendarEmployeeFilterId}
+          employeeFilterId={calendarFilters.employeeId}
           onNewAppointment={(date, options) => {
             console.info("[calendar] new appointment", { date, tourId: options?.tourId ?? null, view: "week" });
             setAppointmentContext({ initialDate: date, initialTourId: options?.tourId ?? null, returnView: "week" });
@@ -92,7 +95,7 @@ export default function Home({ onLogout }: HomeProps) {
       return (
         <CalendarYearView
           currentDate={currentDate}
-          employeeFilterId={calendarEmployeeFilterId}
+          employeeFilterId={calendarFilters.employeeId}
           onNewAppointment={(date) => {
             console.info("[calendar] new appointment", { date, view: "year" });
             setAppointmentContext({ initialDate: date });
@@ -109,7 +112,7 @@ export default function Home({ onLogout }: HomeProps) {
     return (
       <CalendarGrid
         currentDate={currentDate}
-        employeeFilterId={calendarEmployeeFilterId}
+        employeeFilterId={calendarFilters.employeeId}
         onNewAppointment={(date) => {
           console.info("[calendar] new appointment", { date, view: "month" });
           setAppointmentContext({ initialDate: date });
@@ -123,38 +126,15 @@ export default function Home({ onLogout }: HomeProps) {
     );
   };
 
-  const calendarTitleDate = currentDate;
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
       {/* Left Sidebar - 20% Width */}
       <aside className="w-[20%] h-full flex-shrink-0 z-10 relative">
-        <Sidebar onViewChange={handleViewChange} currentView={view} />
+        <Sidebar onViewChange={handleViewChange} onLogout={onLogout} currentView={view} userRole={userRole} />
       </aside>
 
       {/* Main Content - 80% Width */}
       <main className="w-[80%] h-full flex flex-col relative">
-        
-        {/* Header / Navigation Bar */}
-        <header className="px-8 py-6 flex items-center justify-between bg-white border-b-2 border-border z-20">
-          <div className="flex items-center gap-6">
-            <h2 className="text-3xl font-black font-display text-primary tracking-tighter uppercase">
-              {view === 'customer' ? 'Kundendaten' : view === 'customerList' ? 'Kundenliste' : view === 'tours' ? 'Touren Übersicht' : view === 'teams' ? 'Teams' : view === 'employees' ? 'Mitarbeiter Übersicht' : view === 'employeeWeekly' ? 'Mitarbeiter Wochenplan' : view === 'project' ? 'Neues Projekt' : view === 'projectList' ? 'Projektliste' : view === 'appointment' ? 'Neuer Termin' : view === 'noteTemplates' ? 'Notiz Vorlagen' : view === 'projectStatus' ? 'Projekt Status' : view === 'helpTexts' ? 'Hilfetexte' : view === 'settings' ? 'Einstellungen' : view === 'demoData' ? 'Demo-Daten' : view === 'year' ? format(calendarTitleDate, "yyyy") : format(calendarTitleDate, "MMMM yyyy", { locale: de })}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-          {isCalendarView && (
-            <div className="flex items-center gap-3">
-              <CalendarEmployeeFilter value={calendarEmployeeFilterId} onChange={setCalendarEmployeeFilterId} />
-            </div>
-          )}
-            <Button variant="outline" onClick={onLogout}>
-              Logout
-            </Button>
-          </div>
-        </header>
-
         {/* Content Area */}
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
           {view === 'customer' ? (
@@ -169,29 +149,20 @@ export default function Home({ onLogout }: HomeProps) {
               }}
             />
           ) : view === 'customerList' ? (
-            <CustomerList 
-              onCancel={() => setView('month')} 
+            <CustomersPage
               onNewCustomer={() => { setSelectedCustomerId(null); setView('customer'); }}
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView('customer'); }}
             />
           ) : view === 'tours' ? (
-            <TourManagement onCancel={() => setView('month')} />
+            <TourManagement />
           ) : view === 'teams' ? (
-            <TeamManagement onCancel={() => setView('month')} />
+            <TeamManagement />
           ) : view === 'employees' ? (
-            <EmployeePage 
-              onCancel={() => setView('month')}
+            <EmployeesPage
               onOpenAppointment={(appointmentId) => {
                 setAppointmentContext({ appointmentId, returnView: "employees" });
                 setView('appointment');
               }}
-            />
-          ) : view === 'employeeWeekly' && selectedEmployee ? (
-            <EmployeeWeeklyView 
-              employeeId={selectedEmployee.id}
-              employeeName={selectedEmployee.name}
-              onCancel={() => setView('employees')} 
-              onOpenAppointment={() => setView('appointment')}
             />
           ) : view === 'project' ? (
             <ProjectForm 
@@ -225,52 +196,68 @@ export default function Home({ onLogout }: HomeProps) {
                 setView(returnToProject ? 'project' : returnView);
               }}
             />
+          ) : view === 'appointmentsList' ? (
+            <AppointmentsListPage
+              onOpenAppointment={(appointmentId) => {
+                setAppointmentContext({ appointmentId, returnView: "appointmentsList" });
+                setView('appointment');
+              }}
+            />
           ) : view === 'projectList' ? (
-            <ProjectList 
-              onCancel={() => setView('month')} 
+            <ProjectsPage
               onNewProject={() => { setSelectedProjectId(null); setProjectReturnView('projectList'); setView('project'); }}
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView('projectList'); setView('project'); }}
             />
-          ) : view === 'noteTemplates' ? (
+          ) : view === 'noteTemplates' && isAdmin ? (
             <NoteTemplatesPage />
-          ) : view === 'projectStatus' ? (
+          ) : view === 'projectStatus' && isAdmin ? (
             <ProjectStatusPage />
-          ) : view === 'helpTexts' ? (
+          ) : view === 'helpTexts' && isAdmin ? (
             <HelpTextsPage />
-          ) : view === 'settings' ? (
+          ) : view === 'settings' && isAdmin ? (
             <SettingsPage />
-          ) : view === 'demoData' ? (
+          ) : view === 'demoData' && isAdmin ? (
             <DemoDataPage />
+          ) : view === 'users' && isAdmin ? (
+            <UsersPage />
           ) : isCalendarView ? (
-            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground grid grid-cols-[28px_minmax(0,1fr)_28px]">
-              {/* UI-ONLY:
-               * Diese Navigationsfläche triggert ausschließlich die bestehende
-               * Vor/Zurück-Navigation.
-               * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
-               */}
-              <button
-                onClick={prev}
-                className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
-                data-testid="button-prev"
-                aria-label="Zurück"
-              >
-                {"<"}
-              </button>
-              {/* Kalenderansicht benötigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
-              <div className="min-w-0 h-full overflow-hidden">{renderCalendarContent()}</div>
-              {/* UI-ONLY:
-               * Diese Navigationsfläche triggert ausschließlich die bestehende
-               * Vor/Zurück-Navigation.
-               * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
-               */}
-              <button
-                onClick={next}
-                className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
-                data-testid="button-next"
-                aria-label="Vor"
-              >
-                {">"}
-              </button>
+            <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground flex flex-col">
+              <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
+                {/* UI-ONLY:
+                 * Diese Navigationsfläche triggert ausschließlich die bestehende
+                 * Vor/Zurück-Navigation.
+                 * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
+                 */}
+                <button
+                  onClick={prev}
+                  className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+                  data-testid="button-prev"
+                  aria-label="Zurück"
+                >
+                  {"<"}
+                </button>
+                {/* Kalenderansicht benötigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
+                <div className="min-w-0 h-full overflow-hidden">{renderCalendarContent()}</div>
+                {/* UI-ONLY:
+                 * Diese Navigationsfläche triggert ausschließlich die bestehende
+                 * Vor/Zurück-Navigation.
+                 * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
+                 */}
+                <button
+                  onClick={next}
+                  className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+                  data-testid="button-next"
+                  aria-label="Vor"
+                >
+                  {">"}
+                </button>
+              </div>
+              <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+                <CalendarFilterPanel
+                  employeeId={calendarFilters.employeeId}
+                  onEmployeeIdChange={(employeeId) => setCalendarFilter("employeeId", employeeId)}
+                />
+              </div>
             </div>
           ) : null}
         </div>
@@ -279,5 +266,3 @@ export default function Home({ onLogout }: HomeProps) {
     </div>
   );
 }
-
-

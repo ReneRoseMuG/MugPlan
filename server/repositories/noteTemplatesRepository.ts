@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import { noteTemplates, type NoteTemplate, type InsertNoteTemplate, type UpdateNoteTemplate } from "@shared/schema";
 
@@ -25,15 +25,39 @@ export async function createNoteTemplate(template: InsertNoteTemplate): Promise<
   return created;
 }
 
-export async function updateNoteTemplate(id: number, data: UpdateNoteTemplate): Promise<NoteTemplate | null> {
-  await db
-    .update(noteTemplates)
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq(noteTemplates.id, id));
+export async function updateNoteTemplateWithVersion(
+  id: number,
+  expectedVersion: number,
+  data: UpdateNoteTemplate,
+): Promise<{ kind: "updated"; template: NoteTemplate } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update note_template
+    set
+      title = coalesce(${data.title ?? null}, title),
+      body = coalesce(${data.body ?? null}, body),
+      color = ${data.color ?? null},
+      sort_order = coalesce(${data.sortOrder ?? null}, sort_order),
+      is_active = coalesce(${data.isActive ?? null}, is_active),
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
   const [template] = await db.select().from(noteTemplates).where(eq(noteTemplates.id, id));
-  return template || null;
+  return { kind: "updated", template };
 }
 
-export async function deleteNoteTemplate(id: number): Promise<void> {
-  await db.delete(noteTemplates).where(eq(noteTemplates.id, id));
+export async function deleteNoteTemplateWithVersion(
+  id: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    delete from note_template
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
 }

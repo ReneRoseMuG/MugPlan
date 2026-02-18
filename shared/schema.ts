@@ -1,7 +1,6 @@
-import { mysqlTable, text, int, date, time, boolean, datetime, bigint, primaryKey, varchar, timestamp, json, uniqueIndex, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, time, boolean, bigint, primaryKey, varchar, timestamp, json, uniqueIndex, index } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations, sql } from "drizzle-orm";
 
 // Customer - Kundenverwaltung (FT 09)
 export const customers = mysqlTable("customer", {
@@ -18,6 +17,7 @@ export const customers = mysqlTable("customer", {
   postalCode: varchar("postal_code", { length: 255 }),
   city: varchar("city", { length: 255 }),
   isActive: boolean("is_active").notNull().default(true),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -53,27 +53,18 @@ export const updateCustomerSchema = z.object({
   addressLine2: z.string().nullable().optional(),
   postalCode: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 
-export const events = mysqlTable("events", {
-  id: int("id").autoincrement().primaryKey(),
-  title: varchar("title", { length: 255 }).notNull(),
-  date: date("date").notNull(),
-});
-
-export const insertEventSchema = createInsertSchema(events).omit({ id: true });
-
-export type Event = typeof events.$inferSelect;
-export type InsertEvent = z.infer<typeof insertEventSchema>;
-
 export const tours = mysqlTable("tours", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   color: varchar("color", { length: 255 }).notNull(),
+  version: int("version").notNull().default(1),
 });
 
 export const insertTourSchema = createInsertSchema(tours).omit({ id: true, name: true });
@@ -87,6 +78,7 @@ export const teams = mysqlTable("teams", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   color: varchar("color", { length: 255 }).notNull(),
+  version: int("version").notNull().default(1),
 });
 
 export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, name: true });
@@ -102,6 +94,7 @@ export const roles = mysqlTable("roles", {
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   isSystem: boolean("is_system").notNull().default(true),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -118,6 +111,7 @@ export const users = mysqlTable("users", {
   fullName: varchar("full_name", { length: 200 }).notNull(),
   roleId: int("role_id").notNull().references(() => roles.id, { onDelete: "restrict" }),
   isActive: boolean("is_active").notNull().default(true),
+  version: int("version").notNull().default(1),
   lastLoginAt: timestamp("last_login_at"),
   createdBy: bigint("created_by", { mode: "number" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -133,6 +127,7 @@ export const notes = mysqlTable("note", {
   body: text("body").notNull(),
   color: varchar("color", { length: 255 }),
   isPinned: boolean("is_pinned").notNull().default(false),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -163,6 +158,7 @@ export const noteTemplates = mysqlTable("note_template", {
   color: varchar("color", { length: 255 }),
   sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -189,6 +185,7 @@ export type UpdateNoteTemplate = z.infer<typeof updateNoteTemplateSchema>;
 export const customerNotes = mysqlTable("customer_note", {
   customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "cascade" }),
   noteId: bigint("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
 }, (table) => ({
   pk: primaryKey({ columns: [table.customerId, table.noteId] }),
 }));
@@ -197,9 +194,11 @@ export const customerNotes = mysqlTable("customer_note", {
 export const projects = mysqlTable("project", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  orderNumber: varchar("order_number", { length: 255 }),
   customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
   descriptionMd: text("description_md"),
   isActive: boolean("is_active").notNull().default(true),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -213,6 +212,7 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 
 export const updateProjectSchema = z.object({
   name: z.string().optional(),
+  orderNumber: z.string().nullable().optional(),
   customerId: z.number().optional(),
   descriptionMd: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
@@ -226,6 +226,7 @@ export type UpdateProject = z.infer<typeof updateProjectSchema>;
 export const projectNotes = mysqlTable("project_note", {
   projectId: bigint("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
   noteId: bigint("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.noteId] }),
 }));
@@ -239,6 +240,7 @@ export const projectAttachments = mysqlTable("project_attachment", {
   mimeType: varchar("mime_type", { length: 255 }).notNull(),
   fileSize: int("file_size").notNull(),
   storagePath: varchar("storage_path", { length: 500 }).notNull(),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -259,6 +261,7 @@ export const customerAttachments = mysqlTable("customer_attachment", {
   mimeType: varchar("mime_type", { length: 255 }).notNull(),
   fileSize: int("file_size").notNull(),
   storagePath: varchar("storage_path", { length: 500 }).notNull(),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -283,6 +286,7 @@ export const appointments = mysqlTable("appointments", {
   startTime: time("start_time"),
   endDate: date("end_date"),
   endTime: time("end_time"),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 });
@@ -299,6 +303,7 @@ export const projectStatus = mysqlTable("project_status", {
   sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   isDefault: boolean("is_default").notNull().default(false),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -326,6 +331,7 @@ export type UpdateProjectStatus = z.infer<typeof updateProjectStatusSchema>;
 export const projectProjectStatus = mysqlTable("project_project_status", {
   projectId: bigint("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
   projectStatusId: bigint("project_status_id", { mode: "number" }).notNull().references(() => projectStatus.id, { onDelete: "restrict" }),
+  version: int("version").notNull().default(1),
 }, (table) => ({
   pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),
 }));
@@ -341,6 +347,7 @@ export const employees = mysqlTable("employee", {
   isActive: boolean("is_active").notNull().default(true),
   teamId: int("team_id").references(() => teams.id, { onDelete: "set null" }),
   tourId: int("tour_id").references(() => tours.id, { onDelete: "set null" }),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -376,6 +383,7 @@ export const employeeAttachments = mysqlTable("employee_attachment", {
   mimeType: varchar("mime_type", { length: 255 }).notNull(),
   fileSize: int("file_size").notNull(),
   storagePath: varchar("storage_path", { length: 500 }).notNull(),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -395,6 +403,7 @@ export const appointmentEmployees = mysqlTable("appointment_employee", {
   employeeId: bigint("employee_id", { mode: "number" })
     .notNull()
     .references(() => employees.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
 }, (table) => ({
   pk: primaryKey({ columns: [table.appointmentId, table.employeeId] }),
 }));
@@ -408,6 +417,7 @@ export const helpTexts = mysqlTable("help_texts", {
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
@@ -463,6 +473,7 @@ export const userSettingsValue = mysqlTable(
     scopeType: varchar("scope_type", { length: 16 }).notNull(),
     scopeId: varchar("scope_id", { length: 128 }).notNull(),
     valueJson: json("value_json").$type<unknown>().notNull(),
+    version: int("version").notNull().default(1),
     updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
     updatedBy: bigint("updated_by", { mode: "number" }),
   },

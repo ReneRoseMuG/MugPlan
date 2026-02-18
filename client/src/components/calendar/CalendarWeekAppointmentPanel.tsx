@@ -64,6 +64,7 @@ export function CalendarWeekAppointmentPanel({
         />
         <CalendarWeekAppointmentPanelProject
           projectName={appointment.projectName}
+          projectOrderNumber={appointment.projectOrderNumber}
           projectDescription={appointment.projectDescription}
           projectStatuses={appointment.projectStatuses}
         />

@@ -16,6 +16,7 @@ import {
 import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import {
   getAppointmentEndDate,
   getAppointmentSortValue,
@@ -43,6 +44,7 @@ export function CalendarYearView({
     [],
   );
   const isAdmin = userRole === "ADMIN";
+  const berlinToday = getBerlinTodayDateString();
 
   const yearStart = startOfYear(currentDate);
   const yearEnd = endOfYear(currentDate);
@@ -131,13 +133,17 @@ export function CalendarYearView({
                     className={`border border-border/30 rounded-sm p-0.5 min-h-[34px] ${!isCurrentMonth ? "bg-muted/10" : "bg-white"}`}
                   >
                     <div className="flex items-center justify-between">
-                      <button
-                        onClick={() => onNewAppointment?.(dayKey)}
-                        className="w-4 h-4 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded"
-                        data-testid={`button-new-appointment-year-${dayKey}`}
-                      >
-                        <span className="text-[10px] font-bold">+</span>
-                      </button>
+                      {dayKey >= berlinToday ? (
+                        <button
+                          onClick={() => onNewAppointment?.(dayKey)}
+                          className="w-4 h-4 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded"
+                          data-testid={`button-new-appointment-year-${dayKey}`}
+                        >
+                          <span className="text-[10px] font-bold">+</span>
+                        </button>
+                      ) : (
+                        <span className="w-4 h-4" aria-hidden="true" />
+                      )}
                       <span
                         className={`text-[10px] font-semibold ${isTodayDate ? "text-primary" : "text-slate-500"}`}
                       >

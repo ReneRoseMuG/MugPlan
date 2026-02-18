@@ -10,7 +10,13 @@ export const defaultCustomerFilters: CustomerFilters = {
   customerNumber: "",
 };
 
-const normalizeText = (value: string) => value.trim().toLowerCase();
+const normalizeText = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 const normalizeNumber = (value: string) => value.trim();
 
 export function applyCustomerFilters(
@@ -22,7 +28,13 @@ export function applyCustomerFilters(
 
   return customers.filter((customer) => {
     const matchesLastName = normalizedLastName
-      ? (customer.lastName ?? "").toLowerCase().includes(normalizedLastName)
+      ? [
+          customer.lastName ?? "",
+          customer.firstName ?? "",
+          customer.fullName ?? "",
+        ]
+          .map(normalizeText)
+          .some((value) => value.includes(normalizedLastName))
       : true;
     const matchesCustomerNumber = normalizedCustomerNumber
       ? (customer.customerNumber ?? "").includes(normalizedCustomerNumber)

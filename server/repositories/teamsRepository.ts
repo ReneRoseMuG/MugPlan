@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import { teams, type Team } from "@shared/schema";
 
@@ -18,12 +18,35 @@ export async function createTeam(name: string, color: string): Promise<Team> {
   return team;
 }
 
-export async function updateTeam(id: number, color: string): Promise<Team | null> {
-  await db.update(teams).set({ color }).where(eq(teams.id, id));
+export async function updateTeamWithVersion(
+  id: number,
+  expectedVersion: number,
+  color: string,
+): Promise<{ kind: "updated"; team: Team } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update teams
+    set
+      color = ${color},
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
+
   const [team] = await db.select().from(teams).where(eq(teams.id, id));
-  return team || null;
+  return { kind: "updated", team };
 }
 
-export async function deleteTeam(id: number): Promise<void> {
-  await db.delete(teams).where(eq(teams.id, id));
+export async function deleteTeamWithVersion(
+  id: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    delete from teams
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
 }

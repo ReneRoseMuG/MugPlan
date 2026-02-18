@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { HoverPreview } from "@/components/ui/hover-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, getAppointmentEndDate } from "@/lib/calendar-utils";
-import { CalendarAppointmentPopover } from "./CalendarAppointmentPopover";
+import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
 
 type CompactBarProps = {
   appointment: CalendarAppointment;
@@ -18,8 +18,6 @@ type CompactBarProps = {
   onDrop?: (event: React.DragEvent) => void;
 };
 
-const logPrefix = "[calendar-compact-bar]";
-
 export function CalendarAppointmentCompactBar({
   appointment,
   isFirstDay,
@@ -34,10 +32,6 @@ export function CalendarAppointmentCompactBar({
   onDragOver,
   onDrop,
 }: CompactBarProps) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   const endDate = getAppointmentEndDate(appointment);
   const isMultiDay = appointment.startDate !== endDate;
   const customerNumber = appointment.customer.customerNumber?.trim() || "-";
@@ -47,33 +41,6 @@ export function CalendarAppointmentCompactBar({
     ? `K: ${customerNumber} - Name: ${customerName}`
     : `K: ${customerNumber}`;
   const rightContent = `PLZ: ${postalCode}`;
-
-  const updateTooltipPositionFromMouse = (event: React.MouseEvent) => {
-    setTooltipPosition({
-      x: event.clientX + 12,
-      y: event.clientY + 10,
-    });
-  };
-
-  const handleMouseEnter = (event: React.MouseEvent) => {
-    updateTooltipPositionFromMouse(event);
-    tooltipTimeoutRef.current = setTimeout(() => {
-      setShowTooltip(true);
-      console.info(`${logPrefix} popover open`, { appointmentId: appointment.id });
-    }, 400);
-  };
-
-  const handleMouseMove = (event: React.MouseEvent) => {
-    updateTooltipPositionFromMouse(event);
-  };
-
-  const handleMouseLeave = () => {
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
-    setShowTooltip(false);
-  };
 
   const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
   const textColor = (() => {
@@ -85,13 +52,10 @@ export function CalendarAppointmentCompactBar({
     return luminance > 0.55 ? "#1a1a1a" : "#ffffff";
   })();
 
-  return (
+  const barBody = (
     <div
       className={`relative ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""}`}
       style={positionStyle}
-      onMouseEnter={handleMouseEnter}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       onDoubleClick={onDoubleClick}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -119,10 +83,31 @@ export function CalendarAppointmentCompactBar({
           <span className="truncate">{rightContent}</span>
         </span>
       </div>
-
-      {showTooltip && showPopover && (
-        <CalendarAppointmentPopover appointment={appointment} position={tooltipPosition} />
-      )}
     </div>
+  );
+
+  if (!showPopover) {
+    return barBody;
+  }
+
+  return (
+    <HoverPreview
+      preview={(
+        <div className="rounded-lg bg-white p-1">
+          <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
+        </div>
+      )}
+      mode="cursor"
+      openDelay={400}
+      closeDelay={0}
+      maxWidth={360}
+      maxHeight={320}
+      cursorOffsetX={12}
+      cursorOffsetY={10}
+      className="z-[9999] w-[360px] pointer-events-none"
+      contentClassName="pointer-events-none"
+    >
+      {barBody}
+    </HoverPreview>
   );
 }
