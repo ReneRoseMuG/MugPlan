@@ -73,6 +73,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const canManageProjectStatuses = isAdmin || userRole === "DISPATCHER";
 
   const buildFormSnapshot = (input: { name: string; orderNumber: string; descriptionMd: string; customerId: number | null }) =>
     JSON.stringify({
@@ -585,13 +586,13 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                   assignedStatuses={assignedStatuses}
                   availableStatuses={allStatuses}
                   isLoading={statusesLoading}
-                  canEdit={isAdmin}
+                  canEdit={canManageProjectStatuses}
                   onAdd={(statusId) => {
-                    if (!isAdmin) return;
+                    if (!canManageProjectStatuses) return;
                     addStatusMutation.mutate(statusId);
                   }}
                   onRemove={(item) => {
-                    if (!isAdmin) return;
+                    if (!canManageProjectStatuses) return;
                     removeStatusMutation.mutate(item);
                   }}
                 />

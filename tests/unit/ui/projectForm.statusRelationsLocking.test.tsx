@@ -20,13 +20,14 @@ import { readFileSync } from "fs";
 import path from "path";
 
 describe("FT15 project form relation locking wiring", () => {
-  it("derives admin role and wires canEdit to ProjectStatusPanel", () => {
+  it("derives role and wires canEdit to ProjectStatusPanel for ADMIN or DISPATCHER", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("const [userRole] = useState(() => window.localStorage.getItem(\"userRole\")?.toUpperCase() ?? \"DISPATCHER\")");
     expect(source).toContain("const isAdmin = userRole === \"ADMIN\"");
-    expect(source).toContain("canEdit={isAdmin}");
+    expect(source).toContain("const canManageProjectStatuses = isAdmin || userRole === \"DISPATCHER\"");
+    expect(source).toContain("canEdit={canManageProjectStatuses}");
   });
 
   it("sends expectedVersion=0 on add relation", () => {
@@ -34,7 +35,7 @@ describe("FT15 project form relation locking wiring", () => {
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("expectedVersion: 0");
-    expect(source).toContain("if (!isAdmin) return;");
+    expect(source).toContain("if (!canManageProjectStatuses) return;");
     expect(source).toContain("`/api/projects/${projectId}/statuses`");
   });
 

@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - Nicht-Admin sieht bei Projektstatuslisten immer nur aktive Stati (Scope-Eskalation zu active).
  * - Nur ADMIN darf Projektstatus-Stammdaten erstellen, aendern, aktivieren/deaktivieren, loeschen.
- * - Nur ADMIN darf Projektstatus Projekten zuordnen und entfernen.
+ * - DISPONENT und ADMIN duerfen Projektstatus Projekten zuordnen und entfernen.
  *
  * Fehlerfaelle:
  * - Unzulaessige Rollen werden mit FORBIDDEN abgelehnt.
@@ -76,14 +76,7 @@ describe("PKG-15 Authorization: projectStatusService", () => {
     });
   });
 
-  it("rejects remove relation for DISPONENT with FORBIDDEN", async () => {
-    await expect(projectStatusService.removeProjectStatus(10, 20, 1, "DISPONENT")).rejects.toMatchObject({
-      status: 403,
-      code: "FORBIDDEN",
-    });
-  });
-
-  it("allows ADMIN to add and remove relation", async () => {
+  it("allows DISPONENT to add and remove relation", async () => {
     repoMock.getProjectStatus.mockResolvedValue({
       id: 20,
       title: "In Arbeit",
@@ -99,8 +92,8 @@ describe("PKG-15 Authorization: projectStatusService", () => {
     repoMock.addProjectStatusWithExpectedVersion.mockResolvedValue({ kind: "created", relationVersion: 1 });
     repoMock.removeProjectStatusWithVersion.mockResolvedValue({ kind: "deleted" });
 
-    await projectStatusService.addProjectStatus(10, 20, 0, "ADMIN");
-    await projectStatusService.removeProjectStatus(10, 20, 1, "ADMIN");
+    await projectStatusService.addProjectStatus(10, 20, 0, "DISPONENT");
+    await projectStatusService.removeProjectStatus(10, 20, 1, "DISPONENT");
 
     expect(repoMock.addProjectStatusWithExpectedVersion).toHaveBeenCalledWith(10, 20, 0);
     expect(repoMock.removeProjectStatusWithVersion).toHaveBeenCalledWith(10, 20, 1);

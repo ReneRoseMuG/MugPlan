@@ -7,11 +7,12 @@
  * Abgedeckte Regeln:
  * - Nicht-Admin sieht bei Projektstatuslisten nur aktive Stati, auch bei angefragtem all/inactive Scope.
  * - LESER darf die aktive Projektstatusliste abrufen.
- * - Add/Remove von Projektstatus-Zuordnungen ist nur fuer ADMIN erlaubt.
+ * - DISPONENT und ADMIN duerfen Projektstatus-Zuordnungen hinzufuegen/entfernen.
+ * - LESER darf Projektstatus-Zuordnungen nicht hinzufuegen/entfernen.
  * - Projektstatus-Zuordnungen sind fuer Nicht-Admin readonly lesbar.
  *
  * Fehlerfaelle:
- * - Nicht-Admin Add/Remove von Zuordnungen liefert FORBIDDEN.
+ * - LESER Add/Remove von Zuordnungen liefert FORBIDDEN.
  *
  * Ziel:
  * End-to-end-Absicherung der FT15-Rollenregeln fuer Sichtbarkeit und readonly-Zuordnungspfad.
@@ -167,12 +168,30 @@ describe("FT15 integration: project status visibility by role", () => {
       });
   });
 
-  it("returns 403 FORBIDDEN when non-admin tries to add/remove project-status relation", async () => {
+  it("allows DISPONENT to add and remove project-status relation", async () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
+    const { project, activeStatus } = await createProjectWithStatusPair();
+
+    const createdRelation = await dispatcher
+      .post(`/api/projects/${project.id}/statuses`)
+      .send({ statusId: activeStatus.id, expectedVersion: 0 })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body.status.id).toBe(activeStatus.id);
+        expect(typeof res.body.relationVersion).toBe("number");
+      });
+
+    await dispatcher
+      .delete(`/api/projects/${project.id}/statuses/${activeStatus.id}`)
+      .send({ version: createdRelation.body.relationVersion })
+      .expect(204);
+  });
+
+  it("returns 403 FORBIDDEN when READER tries to add/remove project-status relation", async () => {
     const reader = await createRoleAgent("READER");
     const { project, activeStatus } = await createProjectWithStatusPair();
 
-    await dispatcher
+    await reader
       .post(`/api/projects/${project.id}/statuses`)
       .send({ statusId: activeStatus.id, expectedVersion: 0 })
       .expect(403)
@@ -181,7 +200,6 @@ describe("FT15 integration: project status visibility by role", () => {
       });
 
     const relation = await projectStatusService.addProjectStatus(project.id, activeStatus.id, 0, "ADMIN");
-
     await reader
       .delete(`/api/projects/${project.id}/statuses/${activeStatus.id}`)
       .send({ version: relation.relationVersion })

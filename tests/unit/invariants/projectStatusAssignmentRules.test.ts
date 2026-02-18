@@ -72,7 +72,7 @@ describe("PKG-15 Invariant: project status assignment rules", () => {
     } as any);
 
     repoMock.addProjectStatusWithExpectedVersion.mockResolvedValue({ kind: "created", relationVersion: 1 });
-    const result = await projectStatusService.addProjectStatus(2, 10, 0, "ADMIN");
+    const result = await projectStatusService.addProjectStatus(2, 10, 0, "DISPONENT");
 
     expect(repoMock.addProjectStatusWithExpectedVersion).toHaveBeenCalledWith(2, 10, 0);
     expect(result).toMatchObject({ relationVersion: 1, status: { id: 10 } });
@@ -93,7 +93,7 @@ describe("PKG-15 Invariant: project status assignment rules", () => {
     } as any);
     repoMock.addProjectStatusWithExpectedVersion.mockResolvedValue({ kind: "version_conflict", currentVersion: 1 });
 
-    await expect(projectStatusService.addProjectStatus(2, 10, 0, "ADMIN")).rejects.toMatchObject({
+    await expect(projectStatusService.addProjectStatus(2, 10, 0, "DISPONENT")).rejects.toMatchObject({
       status: 409,
       code: "VERSION_CONFLICT",
     });
@@ -102,14 +102,14 @@ describe("PKG-15 Invariant: project status assignment rules", () => {
   it("removes relation with matching version", async () => {
     repoMock.removeProjectStatusWithVersion.mockResolvedValue({ kind: "deleted" });
 
-    await expect(projectStatusService.removeProjectStatus(2, 10, 1, "ADMIN")).resolves.toBeUndefined();
+    await expect(projectStatusService.removeProjectStatus(2, 10, 1, "DISPONENT")).resolves.toBeUndefined();
     expect(repoMock.removeProjectStatusWithVersion).toHaveBeenCalledWith(2, 10, 1);
   });
 
   it("returns VERSION_CONFLICT for stale remove version", async () => {
     repoMock.removeProjectStatusWithVersion.mockResolvedValue({ kind: "version_conflict" });
 
-    await expect(projectStatusService.removeProjectStatus(2, 10, 99, "ADMIN")).rejects.toMatchObject({
+    await expect(projectStatusService.removeProjectStatus(2, 10, 99, "DISPONENT")).rejects.toMatchObject({
       status: 409,
       code: "VERSION_CONFLICT",
     });
@@ -118,7 +118,7 @@ describe("PKG-15 Invariant: project status assignment rules", () => {
   it("returns NOT_FOUND when relation is missing", async () => {
     repoMock.removeProjectStatusWithVersion.mockResolvedValue({ kind: "not_found" });
 
-    await expect(projectStatusService.removeProjectStatus(2, 777, 1, "ADMIN")).rejects.toMatchObject({
+    await expect(projectStatusService.removeProjectStatus(2, 777, 1, "DISPONENT")).rejects.toMatchObject({
       status: 404,
       code: "NOT_FOUND",
     });
