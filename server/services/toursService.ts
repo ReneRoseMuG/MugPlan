@@ -17,14 +17,20 @@ export async function listTours(): Promise<Tour[]> {
 }
 
 function buildNextTourName(existing: Tour[]): string {
-  const nextNumber = existing.length + 1;
-  let name = `Tour ${nextNumber}`;
-  const existingNames = new Set(existing.map((tour) => tour.name));
-  while (existingNames.has(name)) {
-    const num = parseInt(name.split(" ")[1], 10) + 1;
-    name = `Tour ${num}`;
+  const usedNumbers = new Set(
+    existing
+      .map((tour) => {
+        const match = tour.name.match(/^Tour (\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter((value) => value > 0),
+  );
+
+  let nextNumber = 1;
+  while (usedNumbers.has(nextNumber)) {
+    nextNumber += 1;
   }
-  return name;
+  return `Tour ${nextNumber}`;
 }
 
 export async function createTour(data: InsertTour): Promise<Tour> {

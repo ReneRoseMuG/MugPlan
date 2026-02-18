@@ -254,6 +254,7 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                         firstName={member.firstName}
                         lastName={member.lastName}
                         action="none"
+                        showPreview={false}
                         size="sm"
                         fullWidth
                         testId={`text-team-member-${member.id}`}

@@ -42,14 +42,20 @@ export function TourManagement({ onCancel }: TourManagementProps) {
   }));
 
   const getNextTourName = () => {
-    const existingNumbers = tours
+    const usedNumbers = new Set(
+      tours
       .map((tour) => {
         const match = tour.name.match(/^Tour (\d+)$/);
         return match ? parseInt(match[1], 10) : 0;
       })
-      .filter((value) => value > 0);
-    const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
-    return `Tour ${maxNumber + 1}`;
+        .filter((value) => value > 0),
+    );
+
+    let nextNumber = 1;
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber += 1;
+    }
+    return `Tour ${nextNumber}`;
   };
 
   const extractApiCode = (error: unknown): string | null => {
@@ -253,6 +259,7 @@ export function TourManagement({ onCancel }: TourManagementProps) {
                         firstName={member.firstName}
                         lastName={member.lastName}
                         action="none"
+                        showPreview={false}
                         size="sm"
                         fullWidth
                         testId={`text-tour-member-${member.id}`}
