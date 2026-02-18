@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Admin-UI bietet Aktionen fuer Aktivieren/Deaktivieren und Loeschen.
+ * - Edit-Entry-Points sind zentral ueber canEdit verdrahtet.
  * - Update/Toggle/Delete senden Versionsinformationen fuer Optimistic Locking.
  * - Default-Status ist in der UI fuer Loeschen deaktiviert.
  *
@@ -24,6 +25,7 @@ describe("FT15 project status page action wiring", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
+    expect(source).toContain("canEdit={true}");
     expect(source).toContain('apiRequest("PATCH", `/api/project-status/${status.id}/active`');
     expect(source).toContain('apiRequest("DELETE", `/api/project-status/${status.id}`');
   });
@@ -39,8 +41,9 @@ describe("FT15 project status page action wiring", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusList.tsx");
     const source = readFileSync(filePath, "utf8");
 
+    expect(source).toContain("onDoubleClick={!isPicker && canEdit ? () => onEditStatus?.(status) : undefined}");
+    expect(source).toContain("!isPicker && canEdit && (");
     expect(source).toContain("disabled={isActionPending || status.isDefault}");
     expect(source).toContain("button-delete-status-");
   });
 });
-

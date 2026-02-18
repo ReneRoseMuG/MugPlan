@@ -10,10 +10,6 @@ export async function listProjectStatusRelations(req: Request, res: Response, ne
       res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
       return;
     }
-    if (userContext.roleKey !== "ADMIN" && userContext.roleKey !== "DISPONENT") {
-      res.status(403).json({ code: "FORBIDDEN" });
-      return;
-    }
     const projectId = Number(req.params.projectId);
     const statuses = await projectStatusService.listProjectStatusesByProject(projectId);
     res.json(statuses);

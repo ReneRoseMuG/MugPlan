@@ -28,21 +28,19 @@ function requireAdmin(roleKey: CanonicalRoleKey): void {
   }
 }
 
-function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
-  if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
-    throw new ProjectStatusError(403, "FORBIDDEN");
-  }
+function resolveScope(
+  roleKey: CanonicalRoleKey,
+  requestedScope: "active" | "inactive" | "all",
+): "active" | "inactive" | "all" {
+  if (roleKey === "ADMIN") return requestedScope;
+  return "active";
 }
 
 export async function listProjectStatuses(
   filter: "active" | "inactive" | "all" = "active",
   roleKey: CanonicalRoleKey,
 ): Promise<ProjectStatus[]> {
-  requireDispatcherOrAdmin(roleKey);
-  if (filter !== "active") {
-    requireAdmin(roleKey);
-  }
-  return projectStatusRepository.getProjectStatuses(filter);
+  return projectStatusRepository.getProjectStatuses(resolveScope(roleKey, filter));
 }
 
 export async function getProjectStatus(id: number): Promise<ProjectStatus | null> {
@@ -154,7 +152,7 @@ export async function addProjectStatus(
   expectedVersion: number,
   roleKey: CanonicalRoleKey,
 ): Promise<ProjectStatusRelationItem> {
-  requireDispatcherOrAdmin(roleKey);
+  requireAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 0) {
     throw new ProjectStatusError(422, "VALIDATION_ERROR");
   }
@@ -178,7 +176,7 @@ export async function removeProjectStatus(
   version: number,
   roleKey: CanonicalRoleKey,
 ): Promise<void> {
-  requireDispatcherOrAdmin(roleKey);
+  requireAdmin(roleKey);
   if (!Number.isInteger(version) || version < 1) {
     throw new ProjectStatusError(422, "VALIDATION_ERROR");
   }

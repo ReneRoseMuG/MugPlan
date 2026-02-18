@@ -16,6 +16,7 @@ interface ProjectStatusPanelProps {
   onAdd: (statusId: number) => void;
   onRemove: (item: ProjectStatusRelationItem) => void;
   title?: string;
+  canEdit?: boolean;
 }
 
 export function ProjectStatusPanel({
@@ -25,6 +26,7 @@ export function ProjectStatusPanel({
   onAdd,
   onRemove,
   title = "Status",
+  canEdit = false,
 }: ProjectStatusPanelProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -32,10 +34,12 @@ export function ProjectStatusPanel({
   const unassignedStatuses = availableStatuses.filter((status) => !assignedIds.has(status.id) && status.isActive);
 
   const handleOpenDialog = () => {
+    if (!canEdit) return;
     setDialogOpen(true);
   };
 
   const handleSelectStatus = (statusId: number) => {
+    if (!canEdit) return;
     onAdd(statusId);
     setDialogOpen(false);
   };
@@ -49,7 +53,7 @@ export function ProjectStatusPanel({
       <SidebarChildPanel
         title={`${title} (${assignedStatuses.length})`}
         icon={<Flag className="w-4 h-4" />}
-        headerActions={(
+        headerActions={canEdit ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -69,7 +73,7 @@ export function ProjectStatusPanel({
                   : "Status hinzufügen"}
             </TooltipContent>
           </Tooltip>
-        )}
+        ) : null}
       >
         <div className="space-y-2" data-testid="list-project-statuses">
           {isLoading ? (
@@ -83,8 +87,8 @@ export function ProjectStatusPanel({
                 <ProjectStatusInfoBadge
                   key={item.status.id}
                   status={item.status}
-                  action="remove"
-                  onRemove={() => onRemove(item)}
+                  action={canEdit ? "remove" : "none"}
+                  onRemove={canEdit ? () => onRemove(item) : undefined}
                   fullWidth
                   testId={`status-badge-${item.status.id}`}
                 />

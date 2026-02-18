@@ -5,6 +5,7 @@
  * Use Case: UC Projektstatus zu Projekt zuordnen / UC Projektstatus entfernen
  *
  * Abgedeckte Regeln:
+ * - Projektstatus-Panel wird fuer Nicht-Admins readonly ueber canEdit gesteuert.
  * - Add-Relation sendet expectedVersion=0 als Precondition-Create.
  * - Remove-Relation sendet die relationVersion als optimistic-lock token.
  *
@@ -19,11 +20,21 @@ import { readFileSync } from "fs";
 import path from "path";
 
 describe("FT15 project form relation locking wiring", () => {
+  it("derives admin role and wires canEdit to ProjectStatusPanel", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("const [userRole] = useState(() => window.localStorage.getItem(\"userRole\")?.toUpperCase() ?? \"DISPATCHER\")");
+    expect(source).toContain("const isAdmin = userRole === \"ADMIN\"");
+    expect(source).toContain("canEdit={isAdmin}");
+  });
+
   it("sends expectedVersion=0 on add relation", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("expectedVersion: 0");
+    expect(source).toContain("if (!isAdmin) return;");
     expect(source).toContain("`/api/projects/${projectId}/statuses`");
   });
 
@@ -35,4 +46,3 @@ describe("FT15 project form relation locking wiring", () => {
     expect(source).toContain("`/api/projects/${projectId}/statuses/${item.status.id}`");
   });
 });
-

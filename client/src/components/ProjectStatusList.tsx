@@ -20,6 +20,7 @@ interface ProjectStatusListProps {
   title?: string;
   helpKey?: string;
   onCancel?: () => void;
+  canEdit?: boolean;
 }
 
 interface ProjectStatusListViewProps extends ProjectStatusListProps {
@@ -42,6 +43,7 @@ export function ProjectStatusListView({
   title,
   helpKey = "project-status",
   onCancel,
+  canEdit = true,
 }: ProjectStatusListViewProps) {
   const isPicker = mode === "picker";
   const resolvedTitle = title ?? (isPicker ? "Projektstatus auswählen" : "Projekt Status");
@@ -56,7 +58,7 @@ export function ProjectStatusListView({
       closeTestId="button-close-project-status"
       footerSlot={(
         <div className="flex items-center justify-between">
-          {!isPicker && onCreateStatus ? (
+          {!isPicker && canEdit && onCreateStatus ? (
             <Button
               variant="outline"
               onClick={onCreateStatus}
@@ -96,7 +98,7 @@ export function ProjectStatusListView({
                 borderColor={getProjectStatusColor(status)}
                 icon={status.isDefault ? <Shield className="w-4 h-4 text-amber-600" /> : undefined}
                 className={`${!status.isActive ? "opacity-60" : ""} ${isSelected ? "ring-2 ring-primary/40 border-primary/40 bg-primary/5" : ""}`}
-                onDoubleClick={!isPicker ? () => onEditStatus?.(status) : undefined}
+                onDoubleClick={!isPicker && canEdit ? () => onEditStatus?.(status) : undefined}
                 onClick={isPicker ? handleSelect : undefined}
                 footer={(
                   <div className="flex items-center justify-between w-full">
@@ -114,7 +116,7 @@ export function ProjectStatusListView({
                         </span>
                       )}
                     </div>
-                    {!isPicker && (
+                    {!isPicker && canEdit && (
                       <div className="flex items-center">
                         <Button
                           size="icon"
@@ -177,8 +179,10 @@ export function ProjectStatusListView({
 }
 
 export function ProjectStatusList(props: ProjectStatusListProps) {
+  const { canEdit = true } = props;
+  const statusQueryKey = canEdit ? "/api/project-status?active=all" : "/api/project-status";
   const { data: statuses = [], isLoading } = useQuery<ProjectStatus[]>({
-    queryKey: ["/api/project-status?active=all"],
+    queryKey: [statusQueryKey],
   });
 
   return (

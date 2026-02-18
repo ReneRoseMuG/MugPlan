@@ -162,6 +162,7 @@ export function ProjectStatusPage() {
       <ProjectStatusListView
         statuses={statuses}
         isLoading={isLoading}
+        canEdit={true}
         onCreateStatus={handleOpenCreate}
         onEditStatus={handleOpenEdit}
         onToggleStatusActive={handleToggleStatusActive}

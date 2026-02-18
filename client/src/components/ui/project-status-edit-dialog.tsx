@@ -89,54 +89,53 @@ export function ProjectStatusEditDialog({
       saveTestId="button-save-status"
       cancelTestId="button-cancel-status"
     >
-        <div className="space-y-2">
-          <Label htmlFor="status-title">Titel *</Label>
-          <Input
-            id="status-title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="Name des Status..."
-            data-testid="input-status-title"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="status-title">Titel *</Label>
+        <Input
+          id="status-title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          placeholder="Name des Status..."
+          data-testid="input-status-title"
+        />
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="status-description">Beschreibung</Label>
-          <RichTextEditor
-            value={formData.description}
-            onChange={(value) => setFormData({ ...formData, description: value })}
-            placeholder="Optionale Beschreibung..."
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="status-description">Beschreibung</Label>
+        <RichTextEditor
+          value={formData.description}
+          onChange={(value) => setFormData({ ...formData, description: value })}
+          placeholder="Optionale Beschreibung..."
+        />
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="status-sort-order">Sortierreihenfolge</Label>
-          <Input
-            id="status-sort-order"
-            type="number"
-            min="0"
-            value={formData.sortOrder}
-            onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-            data-testid="input-status-sort-order"
-          />
-          <p className="text-xs text-slate-500">Niedrigere Werte werden zuerst angezeigt.</p>
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="status-sort-order">Sortierreihenfolge</Label>
+        <Input
+          id="status-sort-order"
+          type="number"
+          min="0"
+          value={formData.sortOrder}
+          onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value, 10) || 0 })}
+          data-testid="input-status-sort-order"
+        />
+      </div>
 
-        {!isCreate && (
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="status-active"
-              checked={formData.isActive}
-              disabled={true}
-              className="w-4 h-4 cursor-not-allowed"
-              data-testid="checkbox-status-active"
-            />
-            <Label htmlFor="status-active" className="text-muted-foreground">
-              Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
-            </Label>
-          </div>
-        )}
+      {!isCreate && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="status-active"
+            checked={formData.isActive}
+            onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+            className="w-4 h-4"
+            data-testid="checkbox-status-active"
+          />
+          <Label htmlFor="status-active" className="text-muted-foreground">
+            Aktiv
+          </Label>
+        </div>
+      )}
     </ColorSelectEntityEditDialog>
   );
 }

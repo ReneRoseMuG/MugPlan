@@ -71,6 +71,8 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
+  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
 
   const buildFormSnapshot = (input: { name: string; orderNumber: string; descriptionMd: string; customerId: number | null }) =>
     JSON.stringify({
@@ -583,8 +585,15 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                   assignedStatuses={assignedStatuses}
                   availableStatuses={allStatuses}
                   isLoading={statusesLoading}
-                  onAdd={(statusId) => addStatusMutation.mutate(statusId)}
-                  onRemove={(item) => removeStatusMutation.mutate(item)}
+                  canEdit={isAdmin}
+                  onAdd={(statusId) => {
+                    if (!isAdmin) return;
+                    addStatusMutation.mutate(statusId);
+                  }}
+                  onRemove={(item) => {
+                    if (!isAdmin) return;
+                    removeStatusMutation.mutate(item);
+                  }}
                 />
               )}
 

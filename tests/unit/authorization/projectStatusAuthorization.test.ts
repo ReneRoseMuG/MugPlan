@@ -5,9 +5,9 @@
  * Use Case: UC Projektstatus verwalten / UC Projektstatus zuordnen
  *
  * Abgedeckte Regeln:
- * - Nur ADMIN darf Projektstatus-Stammdaten lesen (all/inactive), erstellen, aendern, aktivieren/deaktivieren, loeschen.
- * - DISPONENT und ADMIN duerfen Projektstatus Projekten zuordnen und entfernen.
- * - LESER darf weder Stammdatenverwaltung noch Zuordnung ausfuehren.
+ * - Nicht-Admin sieht bei Projektstatuslisten immer nur aktive Stati (Scope-Eskalation zu active).
+ * - Nur ADMIN darf Projektstatus-Stammdaten erstellen, aendern, aktivieren/deaktivieren, loeschen.
+ * - Nur ADMIN darf Projektstatus Projekten zuordnen und entfernen.
  *
  * Fehlerfaelle:
  * - Unzulaessige Rollen werden mit FORBIDDEN abgelehnt.
@@ -39,11 +39,22 @@ describe("PKG-15 Authorization: projectStatusService", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects list(all) for DISPONENT with FORBIDDEN", async () => {
-    await expect(projectStatusService.listProjectStatuses("all", "DISPONENT")).rejects.toMatchObject({
-      status: 403,
-      code: "FORBIDDEN",
-    });
+  it("forces non-admin list scope to active", async () => {
+    repoMock.getProjectStatuses.mockResolvedValue([]);
+
+    await projectStatusService.listProjectStatuses("all", "DISPONENT");
+    await projectStatusService.listProjectStatuses("inactive", "LESER");
+    await projectStatusService.listProjectStatuses("active", "LESER");
+
+    expect(repoMock.getProjectStatuses).toHaveBeenNthCalledWith(1, "active");
+    expect(repoMock.getProjectStatuses).toHaveBeenNthCalledWith(2, "active");
+    expect(repoMock.getProjectStatuses).toHaveBeenNthCalledWith(3, "active");
+  });
+
+  it("allows LESER to read active project statuses", async () => {
+    repoMock.getProjectStatuses.mockResolvedValue([]);
+    await expect(projectStatusService.listProjectStatuses("active", "LESER")).resolves.toEqual([]);
+    expect(repoMock.getProjectStatuses).toHaveBeenCalledWith("active");
   });
 
   it("rejects create for DISPONENT with FORBIDDEN", async () => {
@@ -65,7 +76,14 @@ describe("PKG-15 Authorization: projectStatusService", () => {
     });
   });
 
-  it("allows DISPONENT to add and remove relation", async () => {
+  it("rejects remove relation for DISPONENT with FORBIDDEN", async () => {
+    await expect(projectStatusService.removeProjectStatus(10, 20, 1, "DISPONENT")).rejects.toMatchObject({
+      status: 403,
+      code: "FORBIDDEN",
+    });
+  });
+
+  it("allows ADMIN to add and remove relation", async () => {
     repoMock.getProjectStatus.mockResolvedValue({
       id: 20,
       title: "In Arbeit",
@@ -81,8 +99,8 @@ describe("PKG-15 Authorization: projectStatusService", () => {
     repoMock.addProjectStatusWithExpectedVersion.mockResolvedValue({ kind: "created", relationVersion: 1 });
     repoMock.removeProjectStatusWithVersion.mockResolvedValue({ kind: "deleted" });
 
-    await projectStatusService.addProjectStatus(10, 20, 0, "DISPONENT");
-    await projectStatusService.removeProjectStatus(10, 20, 1, "DISPONENT");
+    await projectStatusService.addProjectStatus(10, 20, 0, "ADMIN");
+    await projectStatusService.removeProjectStatus(10, 20, 1, "ADMIN");
 
     expect(repoMock.addProjectStatusWithExpectedVersion).toHaveBeenCalledWith(10, 20, 0);
     expect(repoMock.removeProjectStatusWithVersion).toHaveBeenCalledWith(10, 20, 1);
