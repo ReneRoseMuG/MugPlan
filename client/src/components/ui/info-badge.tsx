@@ -118,6 +118,10 @@ export function InfoBadge({
     </div>
   );
 
+  const previewClassName = previewOptions.scrollY === "auto"
+    ? "overflow-y-auto"
+    : "overflow-visible p-0 border-0 bg-transparent shadow-none w-auto";
+
   const previewWrapper = previewContent && previewOptions ? (
     <HoverPreview
       preview={previewContent}
@@ -129,7 +133,7 @@ export function InfoBadge({
       sideOffset={8}
       maxWidth={previewOptions.maxWidth}
       maxHeight={previewOptions.maxHeight}
-      className={previewOptions.scrollY === "auto" ? "overflow-y-auto" : undefined}
+      className={previewClassName}
       contentClassName="space-y-2"
     >
       {badgeBody}

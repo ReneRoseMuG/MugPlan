@@ -32,6 +32,7 @@ describe("FT03 weekly preview no-scroll options", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ui/info-badge.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain('className={previewOptions.scrollY === "auto" ? "overflow-y-auto" : undefined}');
+    expect(source).toContain('const previewClassName = previewOptions.scrollY === "auto"');
+    expect(source).toContain('"overflow-visible p-0 border-0 bg-transparent shadow-none w-auto"');
   });
 });

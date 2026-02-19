@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
@@ -34,6 +34,12 @@ type SortDirection = "asc" | "desc";
 interface AppointmentsListPageProps {
   onCancel?: () => void;
   onOpenAppointment?: (appointmentId: number) => void;
+  title?: string;
+  showCloseButton?: boolean;
+  hideTourFilter?: boolean;
+  lockedTourId?: number | null;
+  hideTourColumn?: boolean;
+  emptyStateOverride?: ReactNode;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -53,7 +59,16 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
   return <ArrowUpDown className="w-3.5 h-3.5" />;
 }
 
-export function AppointmentsListPage({ onCancel, onOpenAppointment }: AppointmentsListPageProps) {
+export function AppointmentsListPage({
+  onCancel,
+  onOpenAppointment,
+  title = "Terminliste",
+  showCloseButton = true,
+  hideTourFilter = false,
+  lockedTourId,
+  hideTourColumn = false,
+  emptyStateOverride,
+}: AppointmentsListPageProps) {
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<AppointmentSortKey>("project");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -62,10 +77,22 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
     employeeId: undefined,
     projectId: undefined,
     customerId: undefined,
-    tourId: undefined,
+    tourId: lockedTourId ?? undefined,
     dateFrom: undefined,
     dateTo: undefined,
   });
+
+  useEffect(() => {
+    setFilters((current) => ({ ...current, tourId: lockedTourId ?? undefined }));
+    setPage(1);
+  }, [lockedTourId]);
+
+  useEffect(() => {
+    if (hideTourColumn && sortKey === "tour") {
+      setSortKey("project");
+      setSortDirection("asc");
+    }
+  }, [hideTourColumn, sortKey]);
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees", { scope: "active" }],
@@ -86,6 +113,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
 
   const { data, isLoading } = useQuery<AppointmentListResponse>({
     queryKey: ["appointments-list", filters, page, DEFAULT_PAGE_SIZE, userRole],
+    enabled: lockedTourId !== null,
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
@@ -101,8 +129,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
 
       const response = await fetch(`/api/appointments/list?${params.toString()}`, {
         credentials: "include",
-        headers: {
-        },
+        headers: {},
       });
       if (!response.ok) {
         throw new Error("Terminliste konnte nicht geladen werden");
@@ -112,6 +139,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
   });
 
   const rows = useMemo(() => {
+    if (lockedTourId === null) return [];
     const source = data?.items ?? [];
     const multiplier = sortDirection === "asc" ? 1 : -1;
     return [...source].sort((left, right) => {
@@ -123,7 +151,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
       }
       return left.projectName.localeCompare(right.projectName, "de") * multiplier;
     });
-  }, [data?.items, sortDirection, sortKey]);
+  }, [data?.items, lockedTourId, sortDirection, sortKey]);
 
   const handleSortToggle = (nextKey: AppointmentSortKey) => {
     if (sortKey === nextKey) {
@@ -148,8 +176,8 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
     );
   };
 
-  const tableColumns = useMemo<TableViewColumnDef<AppointmentListItem>[]>(
-    () => [
+  const tableColumns = useMemo<TableViewColumnDef<AppointmentListItem>[]>(() => {
+    const columns: TableViewColumnDef<AppointmentListItem>[] = [
       {
         id: "date",
         header: "Datum",
@@ -173,27 +201,35 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
           <span>{row.customer.fullName} (K: {row.customer.customerNumber})</span>
         ),
       },
-      {
+    ];
+
+    if (!hideTourColumn) {
+      columns.push({
         id: "tour",
         header: renderSortHeader("Tour", "tour"),
         accessor: (row) => row.tourName ?? "",
         minWidth: 160,
         cell: ({ row }) => <span>{row.tourName ?? "â€”"}</span>,
-      },
-      {
-        id: "allDay",
-        header: "Ganztag",
-        accessor: (row) => row.allDay,
-        align: "center",
-        width: 110,
-        cell: ({ row }) => <span>{row.allDay ? "Ja" : "Nein"}</span>,
-      },
-    ],
-    [sortDirection, sortKey],
-  );
+      });
+    }
+
+    columns.push({
+      id: "allDay",
+      header: "Ganztag",
+      accessor: (row) => row.allDay,
+      align: "center",
+      width: 110,
+      cell: ({ row }) => <span>{row.allDay ? "Ja" : "Nein"}</span>,
+    });
+
+    return columns;
+  }, [hideTourColumn, sortDirection, sortKey]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
-    setFilters((current) => ({ ...current, ...patch }));
+    const nextPatch = lockedTourId == null
+      ? patch
+      : { ...patch, tourId: lockedTourId };
+    setFilters((current) => ({ ...current, ...nextPatch }));
     setPage(1);
   };
 
@@ -203,12 +239,13 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
 
   return (
     <ListLayout
-      title="Terminliste"
+      title={title}
       icon={<CalendarDays className="w-5 h-5" />}
       viewModeKey="appointments"
       helpKey="appointments"
       isLoading={isLoading}
       onClose={onCancel}
+      showCloseButton={showCloseButton}
       closeTestId="button-close-appointments-list"
       filterSlot={
         <AppointmentsFilterPanel
@@ -218,6 +255,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
           projects={projects}
           customers={customers}
           tours={tours}
+          hideTourFilter={hideTourFilter}
         />
       }
       footerSlot={
@@ -260,7 +298,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
           rowKey={(row) => row.id}
           onRowDoubleClick={(row) => onOpenAppointment?.(row.id)}
           rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row)}
-          emptyState={<p className="py-4 text-sm text-slate-400">Keine Termine gefunden.</p>}
+          emptyState={emptyStateOverride ?? <p className="py-4 text-sm text-slate-400">Keine Termine gefunden.</p>}
           stickyHeader
         />
       }

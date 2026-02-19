@@ -20,6 +20,7 @@ interface AppointmentsFilterPanelProps {
   projects: Project[];
   customers: Customer[];
   tours: Tour[];
+  hideTourFilter?: boolean;
 }
 
 export function AppointmentsFilterPanel({
@@ -29,6 +30,7 @@ export function AppointmentsFilterPanel({
   projects,
   customers,
   tours,
+  hideTourFilter = false,
 }: AppointmentsFilterPanelProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -93,25 +95,27 @@ export function AppointmentsFilterPanel({
           </Select>
         </div>
 
-        <div className="flex min-w-[150px] flex-col gap-1">
-          <Label className="text-xs">Tour</Label>
-          <Select
-            value={filters.tourId ? String(filters.tourId) : "all"}
-            onValueChange={(value) => onChange({ tourId: value === "all" ? undefined : Number(value) })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Alle Touren" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle Touren</SelectItem>
-              {tours.map((tour) => (
-                <SelectItem key={tour.id} value={String(tour.id)}>
-                  {tour.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!hideTourFilter && (
+          <div className="flex min-w-[150px] flex-col gap-1">
+            <Label className="text-xs">Tour</Label>
+            <Select
+              value={filters.tourId ? String(filters.tourId) : "all"}
+              onValueChange={(value) => onChange({ tourId: value === "all" ? undefined : Number(value) })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Alle Touren" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Touren</SelectItem>
+                {tours.map((tour) => (
+                  <SelectItem key={tour.id} value={String(tour.id)}>
+                    {tour.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </FilterPanel>
 
       <FilterPanel title="Datums- und Statusfilter" layout="row">

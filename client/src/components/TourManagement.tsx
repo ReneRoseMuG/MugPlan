@@ -1,18 +1,20 @@
 ﻿import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Route, Pencil } from "lucide-react";
+import { Route } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
-import { TourEditDialog } from "@/components/ui/tour-edit-dialog";
+import { TourEditForm } from "@/components/TourEditForm";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
 import type { Tour, Employee } from "@shared/schema";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 interface TourWithMembers extends Tour {
   members: Employee[];
@@ -39,11 +41,30 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
   });
 
   const isLoading = toursLoading || employeesLoading;
+  const today = getBerlinTodayDateString();
 
   const toursWithMembers: TourWithMembers[] = tours.map((tour) => ({
     ...tour,
     members: employees.filter((employee) => employee.tourId === tour.id),
   }));
+
+  const { data: appointmentCountsByTourId = new Map<number, number>() } = useQuery({
+    queryKey: ["tour-management-appointments-count", today, toursWithMembers.map((tour) => tour.id).join("-")],
+    enabled: toursWithMembers.length > 0,
+    queryFn: async () => {
+      const responses = await Promise.all(
+        toursWithMembers.map(async (tour) => {
+          const response = await fetch(`/api/tours/${tour.id}/current-appointments?fromDate=${today}`, {
+            credentials: "include",
+          });
+          if (!response.ok) throw new Error("Termine konnten nicht geladen werden");
+          const payload = (await response.json()) as CalendarAppointment[];
+          return [tour.id, payload.length] as const;
+        }),
+      );
+      return new Map<number, number>(responses);
+    },
+  });
 
   const getNextTourName = () => {
     const usedNumbers = new Set(
@@ -205,6 +226,28 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
     handleCloseDialog();
   };
 
+  const activeTour = editingTour
+    ? (toursWithMembers.find((tour) => tour.id === editingTour.id) ?? editingTour)
+    : null;
+
+  if (activeTour || isCreating) {
+    return (
+      <TourEditForm
+        tour={activeTour}
+        allEmployees={employees}
+        onSubmit={handleSubmitTour}
+        onDelete={handleDeleteFromDialog}
+        canDelete={isAdmin}
+        isDeleting={deleteMutation.isPending}
+        isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
+        isCreate={isCreating}
+        defaultName={getNextTourName()}
+        defaultColor={defaultEntityColor}
+        onCancel={handleCloseDialog}
+      />
+    );
+  }
+
   return (
     <>
       <BadgeInteractionProvider value={{ openTourEdit: handleOpenEditById }}>
@@ -251,19 +294,8 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
                   borderColor={tour.color}
                   testId={`card-tour-${tour.id}`}
                   onDoubleClick={() => handleOpenEdit(tour)}
-                  footer={
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleOpenEdit(tour);
-                      }}
-                      data-testid={`button-edit-tour-members-${tour.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  }
+                  footer={<span data-testid={`text-tour-appointment-count-${tour.id}`}>({appointmentCountsByTourId.get(tour.id) ?? 0}) Termine</span>}
+                  footerVisibility="visible"
                 >
                   <MembersSectionHeader className="px-0 py-1 mb-1 border-b border-border" />
                   <div className="space-y-2">
@@ -292,21 +324,6 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
           )}
         />
       </BadgeInteractionProvider>
-
-      <TourEditDialog
-        open={!!editingTour || isCreating}
-        onOpenChange={(open) => !open && handleCloseDialog()}
-        tour={editingTour ? (toursWithMembers.find((tour) => tour.id === editingTour.id) || editingTour) : null}
-        allEmployees={employees}
-        onSubmit={handleSubmitTour}
-        onDelete={handleDeleteFromDialog}
-        canDelete={isAdmin}
-        isDeleting={deleteMutation.isPending}
-        isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
-        isCreate={isCreating}
-        defaultName={getNextTourName()}
-        defaultColor={defaultEntityColor}
-      />
     </>
   );
 }

@@ -15,6 +15,7 @@ interface ColoredEntityCardProps {
   className?: string;
   onDoubleClick?: () => void;
   onClick?: () => void;
+  footerVisibility?: "hidden" | "visible";
 }
 
 export function ColoredEntityCard({
@@ -31,6 +32,7 @@ export function ColoredEntityCard({
   className = "",
   onDoubleClick,
   onClick,
+  footerVisibility,
 }: ColoredEntityCardProps) {
   const style = borderColor 
     ? { borderLeftWidth: '5px', borderLeftColor: borderColor } 
@@ -50,6 +52,7 @@ export function ColoredEntityCard({
       style={style}
       onDoubleClick={onDoubleClick}
       onClick={onClick}
+      footerVisibility={footerVisibility}
     >
       {children}
     </EntityCard>

@@ -33,12 +33,15 @@ describe("FT17 UI: EntityCard global layout", () => {
 
   it("keeps footer in markup but hides it visually", () => {
     expect(entityCardSource).toContain("{footer && (");
-    expect(entityCardSource).toContain("className=\"hidden px-4 py-2 border-t border-border bg-slate-50 flex items-center justify-end gap-2\"");
+    expect(entityCardSource).toContain("footerVisibility?: \"hidden\" | \"visible\";");
+    expect(entityCardSource).toContain("footerVisibility = \"hidden\"");
+    expect(entityCardSource).toContain("`${footerVisibility === \"visible\" ? \"flex\" : \"hidden\"}");
     expect(entityCardSource).toContain("{footer}");
   });
 
   it("applies the same hidden footer behavior through ColoredEntityCard", () => {
     expect(coloredEntityCardSource).toContain("<EntityCard");
     expect(coloredEntityCardSource).toContain("footer={footer}");
+    expect(coloredEntityCardSource).toContain("footerVisibility={footerVisibility}");
   });
 });

@@ -17,6 +17,7 @@ interface EntityCardProps {
   style?: React.CSSProperties;
   onDoubleClick?: () => void;
   onClick?: () => void;
+  footerVisibility?: "hidden" | "visible";
 }
 
 export function EntityCard({
@@ -33,6 +34,7 @@ export function EntityCard({
   style,
   onDoubleClick,
   onClick,
+  footerVisibility = "hidden",
 }: EntityCardProps) {
   const borderStyle = style?.borderLeftColor 
     ? { borderLeftColor: style.borderLeftColor } 
@@ -75,7 +77,7 @@ export function EntityCard({
       </div>
       <div className="p-4 flex-1">{children}</div>
       {footer && (
-        <div className="hidden px-4 py-2 border-t border-border bg-slate-50 flex items-center justify-end gap-2">
+        <div className={`${footerVisibility === "visible" ? "flex" : "hidden"} px-4 py-2 border-t border-border bg-slate-50 items-center justify-end gap-2`}>
           {footer}
         </div>
       )}
