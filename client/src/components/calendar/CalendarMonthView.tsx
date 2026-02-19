@@ -26,9 +26,9 @@ import {
   normalizeWeekendColumnPercent,
 } from "@/lib/calendar-layout";
 import {
+  compareAppointmentsByTourIndexThenTime,
   getAppointmentDurationDays,
   getAppointmentEndDate,
-  getAppointmentSortValue,
 } from "@/lib/calendar-utils";
 import { CalendarAppointmentCompactBar } from "./CalendarAppointmentCompactBar";
 import type { CalendarNavCommand } from "@/pages/Home";
@@ -334,7 +334,7 @@ export function CalendarMonthView({
                           const end = parseISO(getAppointmentEndDate(appointment));
                           return start <= weekEnd && end >= weekStart;
                         })
-                        .sort((a, b) => getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b)));
+                        .sort(compareAppointmentsByTourIndexThenTime);
 
                       const laneGroups: WeekLaneItem[][] = [];
                       weekAppointments.forEach((appointment) => {
