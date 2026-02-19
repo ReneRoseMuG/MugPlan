@@ -233,7 +233,7 @@ export function DocumentExtractionDialog({
                 </Button>
               ) : null}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={disableActions}>
-              Schließen
+              Abbrechen
             </Button>
           </div>
         </DialogFooter>

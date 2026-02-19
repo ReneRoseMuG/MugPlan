@@ -68,6 +68,12 @@ function normalizeFieldValue(field: HeaderField, value: string): string {
   return normalized;
 }
 
+function looksLikeDateValue(value: string): boolean {
+  const normalized = value.trim();
+  if (normalized.length === 0) return false;
+  return /^(?:\d{1,2}\s*[./-]\s*\d{1,2}\s*[./-]\s*\d{2,4})$/.test(normalized);
+}
+
 function isValidFieldValue(field: HeaderField, value: string): boolean {
   const normalized = normalizeFieldValue(field, value);
   if (normalized.length === 0) return false;
@@ -78,6 +84,7 @@ function isValidFieldValue(field: HeaderField, value: string): boolean {
     case "orderNumber":
       return /^(?=.*\d)[A-Za-z0-9][A-Za-z0-9/-]{3,}$/.test(normalized);
     case "mobile": {
+      if (looksLikeDateValue(normalized)) return false;
       if (!/^[+\d\s\-/.()]+$/.test(normalized)) return false;
       const digitsOnly = normalized.replace(/\D/g, "");
       return digitsOnly.length >= 7;

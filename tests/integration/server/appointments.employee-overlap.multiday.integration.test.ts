@@ -6,11 +6,11 @@
  *
  * Abgedeckte Regeln:
  * - Overlap-Pruefung wird ueber jeden Tag der Terminspanne angewendet.
- * - Konflikt an einem einzelnen Tag blockiert den Mitarbeiter vollstaendig.
+ * - Konflikt an einem einzelnen Tag blockiert den Save vollstaendig.
  * - Konfliktmeldung nennt den blockierten Mitarbeiter explizit.
  *
  * Fehlerfaelle:
- * - Partielle Zuweisung trotz Konflikt an nur einem Tag.
+ * - Partielle Persistierung trotz Konflikt an nur einem Tag.
  * - Konfliktmeldung ohne betroffenen Mitarbeiter.
  *
  * Ziel:
@@ -52,7 +52,7 @@ beforeEach(async () => {
 });
 
 describe("FT01 integration: employee overlap multiday scenarios", () => {
-  it("multiday + tour: employee blocked when conflict exists on one day in span", async () => {
+  it("multiday + tour: overlap blocks create completely when conflict exists on one day in span", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("MULTI-TOUR");
 
@@ -83,13 +83,10 @@ describe("FT01 integration: employee overlap multiday scenarios", () => {
     const target = listResponse.body.find((entry: { startDate: string; endDate: string | null }) => (
       entry.startDate === "2099-06-01" && entry.endDate === "2099-06-05"
     ));
-    expect(target).toBeDefined();
-
-    const assigned = await getAppointmentEmployeeIds(target.id as number);
-    expect(assigned).toEqual([employeeE.id]);
+    expect(target).toBeUndefined();
   });
 
-  it("multiday + team: one-day conflict blocks employee for entire assignment", async () => {
+  it("multiday + team: one-day conflict keeps existing assignment unchanged", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("MULTI-TEAM");
 
@@ -123,10 +120,10 @@ describe("FT01 integration: employee overlap multiday scenarios", () => {
     expectConflictPayloadContainsEmployees(response.body, [{ id: employeeD.id, fullName: employeeD.fullName }]);
 
     const assigned = await getAppointmentEmployeeIds(base.id);
-    expect(assigned).toEqual([employeeF.id]);
+    expect(assigned).toEqual([]);
   });
 
-  it("multiday + manual assignment: conflicting employee is not partially assigned", async () => {
+  it("multiday + manual assignment: conflict keeps existing assignment unchanged", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("MULTI-MANUAL");
 

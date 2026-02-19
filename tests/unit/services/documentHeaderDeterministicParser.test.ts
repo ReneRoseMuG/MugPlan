@@ -197,6 +197,28 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.mobile).toBeNull();
   });
 
+  it("does not map date values as mobile numbers", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "A0118067A",
+      "163033",
+      "26.01.2026",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.orderNumber).toBe("A0118067A");
+    expect(parsed.customerNumber).toBe("163033");
+    expect(parsed.mobile).toBeNull();
+  });
+
   it("ignores free text after mobile label", () => {
     const source = [
       "Fasssauna.de - Barrier Str. 29 - 28857 Syke",

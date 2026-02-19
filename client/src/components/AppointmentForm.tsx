@@ -67,6 +67,9 @@ interface AppointmentDetail {
 }
 
 type AppointmentApiError = Error & { status?: number; code?: string };
+type ApiConflictEmployee = { id?: unknown; fullName?: unknown };
+type ApiErrorPayload = { message?: string; code?: string; conflictEmployees?: ApiConflictEmployee[] };
+type ApiSuccessPayload = { id?: number; message?: string };
 
 const logPrefix = "[AppointmentForm]";
 
@@ -89,7 +92,7 @@ const buildApiError = (message: string, status?: number, code?: string): Appoint
   return error;
 };
 
-const parseErrorPayload = (rawBody: string): { message?: string; code?: string } | null => {
+const parseJsonBody = (rawBody: string): unknown | null => {
   const trimmedBody = rawBody.trim();
   if (
     !trimmedBody ||
@@ -101,14 +104,34 @@ const parseErrorPayload = (rawBody: string): { message?: string; code?: string }
     return null;
   }
   try {
-    const payload = JSON.parse(trimmedBody) as { message?: unknown; code?: unknown };
-    return {
-      message: typeof payload.message === "string" && payload.message.trim().length > 0 ? payload.message : undefined,
-      code: typeof payload.code === "string" ? payload.code : undefined,
-    };
+    return JSON.parse(trimmedBody);
   } catch {
     return null;
   }
+};
+
+const parseErrorPayload = (rawBody: string): ApiErrorPayload | null => {
+  const parsed = parseJsonBody(rawBody);
+  if (!parsed || typeof parsed !== "object") return null;
+  const payload = parsed as {
+    message?: unknown;
+    code?: unknown;
+    conflictEmployees?: unknown;
+  };
+  return {
+    message: typeof payload.message === "string" && payload.message.trim().length > 0 ? payload.message : undefined,
+    code: typeof payload.code === "string" ? payload.code : undefined,
+    conflictEmployees: Array.isArray(payload.conflictEmployees) ? payload.conflictEmployees as ApiConflictEmployee[] : undefined,
+  };
+};
+
+const formatConflictEmployees = (conflictEmployees?: ApiConflictEmployee[]) => {
+  if (!Array.isArray(conflictEmployees) || conflictEmployees.length === 0) return null;
+  const names = conflictEmployees
+    .map((entry) => (typeof entry.fullName === "string" ? entry.fullName.trim() : ""))
+    .filter((name) => name.length > 0);
+  if (names.length === 0) return null;
+  return names.join(", ");
 };
 
 const isPastStartDate = (startDate: string) => {
@@ -873,10 +896,41 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         body: JSON.stringify(payload),
         credentials: "include",
       });
-      const data = await response.json();
+      const rawBody = await response.text();
+      const parsedBody = parseJsonBody(rawBody);
+      const parsed = parseErrorPayload(rawBody);
+      const data =
+        parsedBody && typeof parsedBody === "object"
+          ? (parsedBody as ApiSuccessPayload)
+          : (rawBody.trim().length > 0 ? { message: rawBody } : null);
       console.info(`${logPrefix} submit response`, { status: response.status });
       if (!response.ok) {
-        throw new Error(data?.message ?? "Speichern fehlgeschlagen");
+        if (parsed?.code === "BUSINESS_CONFLICT") {
+          const conflictNames = formatConflictEmployees(parsed.conflictEmployees);
+          const conflictDetail = conflictNames
+            ? `Konflikt mit: ${conflictNames}.`
+            : "Mindestens ein Mitarbeiter ist in diesem Zeitraum bereits geplant.";
+          console.info(`${logPrefix} submit blocked: BUSINESS_CONFLICT`, {
+            status: response.status,
+            conflictEmployees: parsed.conflictEmployees?.length ?? 0,
+          });
+          toast({
+            title: "Speichern nicht moeglich",
+            description: `${parsed.message ?? "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen."} ${conflictDetail}`,
+            variant: "destructive",
+          });
+          return;
+        }
+        if (parsed?.code === "VERSION_CONFLICT") {
+          console.info(`${logPrefix} submit blocked: VERSION_CONFLICT`, { status: response.status });
+          toast({
+            title: "Speichern nicht moeglich",
+            description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden und erneut speichern.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error((data as { message?: string } | null)?.message ?? "Speichern fehlgeschlagen");
       }
       const savedAppointmentId = data?.id ?? appointmentId ?? null;
       console.info(`${logPrefix} save success`, {

@@ -478,12 +478,53 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     }
   };
 
-  const applyExtractedProjectSuggestion = async (payload: {
+  const resolveOrCreateCustomerForExtraction = async (customerDraft: ExtractionCustomerDraft): Promise<Customer | null> => {
+    const extractedCustomerNumber = customerDraft.customerNumber.trim();
+    if (!extractedCustomerNumber) {
+      throw new Error("Kundennummer ist erforderlich.");
+    }
+    if (customerId && selectedCustomer) {
+      const selectedNumber = selectedCustomer.customerNumber.trim();
+      if (selectedNumber === extractedCustomerNumber) {
+        return selectedCustomer;
+      }
+      const overwriteCustomer = window.confirm(
+        `Es ist bereits ein abweichender Kunde ausgewählt (${selectedNumber}). Mit Kunde ${extractedCustomerNumber} ersetzen?`,
+      );
+      if (!overwriteCustomer) {
+        return null;
+      }
+    }
+    const resolution = await resolveCustomerByNumber(extractedCustomerNumber);
+    if (resolution.resolution === "multiple") {
+      throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
+    }
+    if (resolution.resolution === "single") {
+      if (!resolution.customer) {
+        throw new Error("Dateninkonsistenz: Vorhandener Kunde konnte nicht geladen werden.");
+      }
+      const confirmed = window.confirm("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");
+      if (!confirmed) {
+        return null;
+      }
+      return resolution.customer;
+    }
+    return createCustomerFromDraft(customerDraft);
+  };
+
+  const applyExtractedData = async (payload: {
     saunaModel: string;
     orderNumber: string;
     articleListHtml: string;
+    customer: ExtractionCustomerDraft;
   }) => {
     try {
+      const resolvedCustomer = await resolveOrCreateCustomerForExtraction(payload.customer);
+      if (!resolvedCustomer) {
+        return;
+      }
+      setCustomerId(resolvedCustomer.id);
+
       const hasExistingValues = name.trim().length > 0 || descriptionMd.trim().length > 0;
       if (hasExistingValues) {
         const confirmed = window.confirm("Titel oder Beschreibung sind bereits befüllt. Inhalte überschreiben?");
@@ -505,44 +546,10 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
           }
         }
       }
-      toast({ title: "Projektvorschlag übernommen" });
+      toast({ title: "Daten übernommen" });
     } catch (error) {
       toast({
-        title: "Projektvorschlag konnte nicht übernommen werden",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const applyExtractedCustomerSuggestion = async (payload: { customer: ExtractionCustomerDraft }) => {
-    try {
-      if (customerId) {
-        throw new Error("Kundendaten-Übernahme ist nicht zulässig, da bereits ein Kunde ausgewählt ist.");
-      }
-      if (!payload.customer.customerNumber.trim()) {
-        throw new Error("Kundennummer ist erforderlich.");
-      }
-      const resolution = await resolveCustomerByNumber(payload.customer.customerNumber);
-      if (resolution.resolution === "multiple") {
-        throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
-      }
-      if (resolution.resolution === "single") {
-        if (!resolution.customer) {
-          throw new Error("Dateninkonsistenz: Vorhandener Kunde konnte nicht geladen werden.");
-        }
-        const confirmed = window.confirm("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");
-        if (!confirmed) return;
-        setCustomerId(resolution.customer.id);
-        toast({ title: "Vorhandener Kunde übernommen" });
-        return;
-      }
-      const createdCustomer = await createCustomerFromDraft(payload.customer);
-      setCustomerId(createdCustomer.id);
-      toast({ title: "Kundendaten übernommen" });
-    } catch (error) {
-      toast({
-        title: "Kundendaten konnten nicht übernommen werden",
+        title: "Daten konnten nicht übernommen werden",
         description: error instanceof Error ? error.message : "Unbekannter Fehler",
         variant: "destructive",
       });
@@ -709,12 +716,8 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         onOpenChange={setDocumentExtractionOpen}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
-        customerApplyLabel="Kundendaten übernehmen"
-        projectApplyLabel="Projektdaten übernehmen"
-        onApplyCustomer={applyExtractedCustomerSuggestion}
-        onApplyProject={({ saunaModel, orderNumber, articleListHtml }) =>
-          applyExtractedProjectSuggestion({ saunaModel, orderNumber, articleListHtml })
-        }
+        dataApplyLabel="Daten übernehmen"
+        onApplyData={applyExtractedData}
       />
 
       {/* Customer Selection Dialog */}

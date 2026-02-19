@@ -5,6 +5,7 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 
 const logPrefix = "[appointments-service]";
+const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -234,8 +235,12 @@ export async function createAppointment(
       startDate,
       endDate,
     });
-    const conflictEmployeeIds = new Set(conflictEmployees.map((employee) => employee.id));
-    const persistedEmployeeIds = employeeIds.filter((employeeId) => !conflictEmployeeIds.has(employeeId));
+    if (conflictEmployees.length > 0) {
+      console.log(
+        `${logPrefix} create blocked by overlap projectId=${data.projectId} startDate=${data.startDate} endDate=${data.endDate ?? data.startDate} conflictEmployees=${conflictEmployees.length}`,
+      );
+      throw new AppointmentError(overlapConflictMessage, 409, "BUSINESS_CONFLICT", { conflictEmployees });
+    }
 
     const appointmentData: InsertAppointment = {
       projectId: data.projectId,
@@ -248,14 +253,11 @@ export async function createAppointment(
       endTime: null,
     };
 
-    console.log(`${logPrefix} persisting appointment with ${persistedEmployeeIds.length} employees`);
+    console.log(`${logPrefix} persisting appointment with ${employeeIds.length} employees`);
     const appointmentId = await appointmentsRepository.createAppointmentTx(tx, appointmentData);
-    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, persistedEmployeeIds);
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
     const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
     if (!appointment) return null;
-    if (conflictEmployees.length > 0) {
-      return { ...appointment, conflictEmployees };
-    }
     return appointment;
   });
   if (created?.id) {
@@ -308,8 +310,12 @@ export async function updateAppointment(
       endDate,
       excludeAppointmentId: appointmentId,
     });
-    const conflictEmployeeIds = new Set(conflictEmployees.map((employee) => employee.id));
-    const persistedEmployeeIds = employeeIds.filter((employeeId) => !conflictEmployeeIds.has(employeeId));
+    if (conflictEmployees.length > 0) {
+      console.log(
+        `${logPrefix} update blocked by overlap appointmentId=${appointmentId} startDate=${data.startDate} endDate=${data.endDate ?? data.startDate} conflictEmployees=${conflictEmployees.length}`,
+      );
+      throw new AppointmentError(overlapConflictMessage, 409, "BUSINESS_CONFLICT", { conflictEmployees });
+    }
 
     const appointmentData: Partial<InsertAppointment> = {
       projectId: data.projectId,
@@ -322,7 +328,7 @@ export async function updateAppointment(
       endTime: null,
     };
 
-    console.log(`${logPrefix} update appointmentId=${appointmentId} with ${persistedEmployeeIds.length} employees`);
+    console.log(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
     const updateResult = await appointmentsRepository.updateAppointmentWithVersionTx(tx, {
       appointmentId,
       expectedVersion: data.version,
@@ -332,12 +338,9 @@ export async function updateAppointment(
       throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
     }
 
-    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, persistedEmployeeIds);
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
     const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
     if (!appointment) return null;
-    if (conflictEmployees.length > 0) {
-      return { ...appointment, conflictEmployees };
-    }
     return appointment;
   });
   if (updated?.id) {

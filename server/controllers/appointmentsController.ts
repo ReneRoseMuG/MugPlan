@@ -33,11 +33,6 @@ export async function createAppointment(req: Request, res: Response, next: NextF
       return;
     }
     const appointment = await appointmentsService.createAppointment(input);
-    const maybeConflict = appointment as unknown as { conflictEmployees?: Array<{ id: number; fullName: string }> };
-    if (Array.isArray(maybeConflict.conflictEmployees) && maybeConflict.conflictEmployees.length > 0) {
-      res.status(409).json({ code: "BUSINESS_CONFLICT", conflictEmployees: maybeConflict.conflictEmployees });
-      return;
-    }
     res.status(201).json(appointment);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -47,8 +42,8 @@ export async function createAppointment(req: Request, res: Response, next: NextF
     if (appointmentsService.isAppointmentError(err)) {
       res.status(err.status).json(
         err.conflictEmployees
-          ? { code: err.code, conflictEmployees: err.conflictEmployees }
-          : { code: err.code },
+          ? { code: err.code, message: err.message, conflictEmployees: err.conflictEmployees }
+          : { code: err.code, message: err.message },
       );
       return;
     }
@@ -77,11 +72,6 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
     }
-    const maybeConflict = appointment as unknown as { conflictEmployees?: Array<{ id: number; fullName: string }> };
-    if (Array.isArray(maybeConflict.conflictEmployees) && maybeConflict.conflictEmployees.length > 0) {
-      res.status(409).json({ code: "BUSINESS_CONFLICT", conflictEmployees: maybeConflict.conflictEmployees });
-      return;
-    }
     res.json(appointment);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -91,8 +81,8 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
     if (appointmentsService.isAppointmentError(err)) {
       res.status(err.status).json(
         err.conflictEmployees
-          ? { code: err.code, conflictEmployees: err.conflictEmployees }
-          : { code: err.code },
+          ? { code: err.code, message: err.message, conflictEmployees: err.conflictEmployees }
+          : { code: err.code, message: err.message },
       );
       return;
     }

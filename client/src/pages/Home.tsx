@@ -35,7 +35,7 @@ type HomeProps = {
 
 export default function Home({ onLogout }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<ViewType>('month');
+  const [view, setView] = useState<ViewType>('week');
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');

@@ -5,14 +5,14 @@
  * Use Case: UC01 - Tour-/Team-/manuelle Mitarbeiteruebernahme mit Konfliktpruefung
  *
  * Abgedeckte Regeln:
- * - Tour-Vorbelegung meldet konfliktierende Mitarbeiter explizit und uebernimmt nur konfliktfreie Mitarbeiter.
- * - Team-Zuweisung meldet konfliktierende Mitarbeiter explizit und uebernimmt nur konfliktfreie Mitarbeiter.
- * - Manuelle Zuweisung meldet konfliktierende Mitarbeiter explizit und verhindert deren Persistierung.
+ * - Tour-Vorbelegung meldet konfliktierende Mitarbeiter explizit und bricht den Save ohne Persistierung ab.
+ * - Team-Zuweisung meldet konfliktierende Mitarbeiter explizit und bricht den Save ohne Persistierung ab.
+ * - Manuelle Zuweisung meldet konfliktierende Mitarbeiter explizit und verhindert Persistierung.
  * - Join-Tabelle enthaelt keine doppelten appointment/employee-Paare.
  *
  * Fehlerfaelle:
  * - Konfliktpayload ohne konfliktierende Mitarbeiter.
- * - Konfliktierende Mitarbeiter landen trotz Konflikt im Termin.
+ * - Termin-/Join-Daten werden trotz Konflikt teilweise persistiert.
  *
  * Ziel:
  * Soll-Verhalten der Konfliktbehandlung fuer die drei Grundszenarien deterministisch absichern.
@@ -55,7 +55,7 @@ beforeEach(async () => {
 });
 
 describe("FT01 integration: employee overlap base scenarios", () => {
-  it("Case 1: tour prefill reports conflicting employee and keeps conflict-free tour members", async () => {
+  it("Case 1: tour prefill reports conflicting employee and does not persist create", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("TOUR-BASE");
 
@@ -85,15 +85,12 @@ describe("FT01 integration: employee overlap base scenarios", () => {
       entry.startDate === "2099-05-01" && entry.tourId === tour.id
     ));
 
-    expect(created).toBeDefined();
-    const assignmentIds = await getAppointmentEmployeeIds(created.id as number);
-    expect(assignmentIds).toContain(employeeX.id);
-    expect(assignmentIds).not.toContain(employeeA.id);
+    expect(created).toBeUndefined();
 
     await assertNoDuplicateAppointmentEmployeePairs();
   });
 
-  it("Case 2: team assignment reports conflicting employee and keeps conflict-free team members", async () => {
+  it("Case 2: team assignment reports conflicting employee and keeps pre-update assignment unchanged", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("TEAM-BASE");
 
@@ -125,13 +122,12 @@ describe("FT01 integration: employee overlap base scenarios", () => {
     expectConflictPayloadContainsEmployees(response.body, [{ id: employeeB.id, fullName: employeeB.fullName }]);
 
     const assignmentIds = await getAppointmentEmployeeIds(existing.id);
-    expect(assignmentIds).toContain(employeeY.id);
-    expect(assignmentIds).not.toContain(employeeB.id);
+    expect(assignmentIds).toEqual([]);
 
     await assertNoDuplicateAppointmentEmployeePairs();
   });
 
-  it("Case 3: manual employee assignment reports conflict and does not persist blocked employee", async () => {
+  it("Case 3: manual employee assignment reports conflict and leaves assignment unchanged", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("MANUAL-BASE");
 
@@ -160,7 +156,7 @@ describe("FT01 integration: employee overlap base scenarios", () => {
     expectConflictPayloadContainsEmployees(response.body, [{ id: employeeC.id, fullName: employeeC.fullName }]);
 
     const assignmentIds = await getAppointmentEmployeeIds(existing.id);
-    expect(assignmentIds).not.toContain(employeeC.id);
+    expect(assignmentIds).toEqual([]);
 
     await assertNoDuplicateAppointmentEmployeePairs();
   });

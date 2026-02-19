@@ -70,8 +70,7 @@ describe("FT01 appointment form save and employees panel wiring", () => {
   it("renders employee picker as header action button with plus icon", () => {
     expect(source).toContain("Zugewiesene Mitarbeiter");
     expect(source).toContain("className=\"flex items-center justify-between\"");
-    expect(source).toContain("size=\"icon\"");
-    expect(source).toContain("variant=\"ghost\"");
+    expect(source).toContain("<PlusActionButton");
     expect(source).toContain("data-testid=\"button-add-employee\"");
   });
 

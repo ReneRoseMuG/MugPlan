@@ -5,7 +5,7 @@
  * Use Case: UC03 - Tour nachtraeglich setzen, entfernen, wechseln sowie Team/manuelle Zuweisung
  *
  * Abgedeckte Regeln:
- * - Nachtraegliche Tour-Zuweisung darf keine unzulaessige Doppelverplanung erzeugen.
+ * - Nachtraegliche Tour-Zuweisung darf keine unzulaessige Doppelverplanung erzeugen und persistiert bei Konflikt nichts.
  * - Tour-Entfernung und Tour-Wechsel bleiben join-konsistent.
  * - Team- und manuelle Zuweisung werden durch dieselbe Join-Konfliktlogik abgesichert.
  * - appointment_employee enthaelt keine doppelten Zuordnungen.
@@ -98,7 +98,7 @@ describe("FT01 integration: employee overlap follow-up flows", () => {
 
     expect(setTourOne.status).toBe(409);
     expectConflictPayloadContainsEmployees(setTourOne.body, [{ id: employeeA.id }]);
-    expect(await getAppointmentEmployeeIds(base.id)).toEqual([employeeB.id]);
+    expect(await getAppointmentEmployeeIds(base.id)).toEqual([]);
 
     const removeTour = await agent.patch(`/api/appointments/${base.id}`).send({
       version: await loadAppointmentVersion(agent, base.id),
@@ -147,5 +147,50 @@ describe("FT01 integration: employee overlap follow-up flows", () => {
     expect(await getAppointmentEmployeeIds(base.id)).toEqual([employeeB.id, employeeC.id]);
 
     await assertNoDuplicateAppointmentEmployeePairs();
+  });
+
+  it("allows second save after reverting endDate when previous overlap update failed", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("FLOW-RETRY");
+
+    const employeeA = await createEmployeeFixture("FLOW-RETRY-A");
+    const employeeB = await createEmployeeFixture("FLOW-RETRY-B");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-08-11",
+      employeeIds: [employeeB.id],
+    });
+
+    const base = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-08-10",
+      endDate: "2099-08-10",
+      employeeIds: [employeeA.id, employeeB.id],
+    });
+
+    const firstTry = await agent.patch(`/api/appointments/${base.id}`).send({
+      version: base.version,
+      projectId: project.id,
+      startDate: "2099-08-10",
+      endDate: "2099-08-11",
+      employeeIds: [employeeA.id, employeeB.id],
+    });
+
+    expect(firstTry.status).toBe(409);
+    expectConflictPayloadContainsEmployees(firstTry.body, [{ id: employeeB.id }]);
+
+    const secondTry = await agent.patch(`/api/appointments/${base.id}`).send({
+      version: base.version,
+      projectId: project.id,
+      startDate: "2099-08-10",
+      endDate: "2099-08-10",
+      employeeIds: [employeeA.id, employeeB.id],
+    });
+
+    expect(secondTry.status).toBe(200);
+    expect(secondTry.body.version).toBe(base.version + 1);
+    const assigned = await getAppointmentEmployeeIds(base.id);
+    expect(assigned).toEqual([employeeA.id, employeeB.id]);
   });
 });

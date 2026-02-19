@@ -50,34 +50,41 @@ describe("PKG-01 Invariant: conflict priority", () => {
     });
   });
 
-  it("returns conflictEmployees metadata when overlap exists", async () => {
+  it("throws BUSINESS_CONFLICT with conflictEmployees metadata when overlap exists", async () => {
     appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([{ id: 1, fullName: "Emp One" }]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
-    appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
-    appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 101, projectId: 201, employees: [] } as any);
 
-    const result = await updateAppointment(
-      101,
-      {
-        version: 5,
-        projectId: 201,
-        startDate: "2099-01-10",
-        employeeIds: [1, 2],
-      },
-      "DISPONENT",
-    );
+    let error: unknown;
+    try {
+      await updateAppointment(
+        101,
+        {
+          version: 5,
+          projectId: 201,
+          startDate: "2099-01-10",
+          employeeIds: [1, 2],
+        },
+        "DISPONENT",
+      );
+    } catch (err) {
+      error = err;
+    }
 
-    expect(result).toMatchObject({ id: 101, projectId: 201 });
-    expect((result as any).conflictEmployees).toEqual([{ id: 1, fullName: "Emp One" }]);
+    expect(isAppointmentError(error)).toBe(true);
+    expect(error).toMatchObject({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+      conflictEmployees: [{ id: 1, fullName: "Emp One" }],
+    });
   });
 
-  it("executes version-update path and persists only non-conflicting employees", async () => {
+  it("aborts before version-update path and employee writes when overlap exists", async () => {
     appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([{ id: 1, fullName: "Emp One" }]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
     appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
     appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 101, projectId: 201, employees: [] } as any);
 
-    await updateAppointment(
+    await expect(updateAppointment(
       101,
       {
         version: 5,
@@ -86,14 +93,14 @@ describe("PKG-01 Invariant: conflict priority", () => {
         employeeIds: [1, 2],
       },
       "DISPONENT",
-    );
+    )).rejects.toMatchObject({ code: "BUSINESS_CONFLICT" });
 
-    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).toHaveBeenCalledOnce();
-    expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).toHaveBeenCalledWith(expect.anything(), 101, [2]);
+    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
+    expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).not.toHaveBeenCalled();
   });
 
   it("still surfaces deterministic VERSION_CONFLICT if optimistic lock fails", async () => {
-    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([{ id: 1, fullName: "Emp One" }]);
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "version_conflict" });
 
     let error: unknown;

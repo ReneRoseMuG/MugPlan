@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - Upload ruft den Extract-Endpunkt mit project_form auf.
  * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
- * - Apply-Callbacks sind an Customer/Project-Uebernahme verdrahtet.
+ * - Apply-Callback nutzt einen kombinierten Daten-Button fuer Customer/Project.
  * - Auftragsnummer ist nur bei Bestandsprojekt readOnly und bei neuem Projekt editierbar.
  * - Bei single-Customer-Konflikt wird bestaetigt und vorhandener Kunde uebernommen statt Neuanlage.
  *
@@ -39,10 +39,11 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("data={documentExtractionData}");
   });
 
-  it("wires split apply callbacks for customer and project", () => {
-    expect(source).toContain("onApplyCustomer={applyExtractedCustomerSuggestion}");
-    expect(source).toContain("projectApplyLabel=\"Projektdaten");
-    expect(source).toContain("onApplyProject={({ saunaModel, orderNumber, articleListHtml }) =>");
+  it("wires single data apply callback", () => {
+    expect(source).toContain("dataApplyLabel=\"Daten übernehmen\"");
+    expect(source).toContain("onApplyData={applyExtractedData}");
+    expect(source).not.toContain("onApplyCustomer={");
+    expect(source).not.toContain("onApplyProject={");
   });
 
   it("keeps order number editable for new project and readonly for existing project", () => {
@@ -50,10 +51,11 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("readOnly={isEditing}");
   });
 
-  it("resolves duplicate customer numbers via confirm and existing customer selection", () => {
+  it("resolves duplicate customer numbers via confirm and existing customer reuse", () => {
     expect(source).toContain("if (resolution.resolution === \"single\")");
     expect(source).toContain("const confirmed = window.confirm(\"Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?\")");
-    expect(source).toContain("setCustomerId(resolution.customer.id);");
+    expect(source).toContain("return resolution.customer;");
+    expect(source).toContain("setCustomerId(resolvedCustomer.id);");
     expect(source).not.toContain("if (resolution.resolution !== \"none\")");
   });
 });
