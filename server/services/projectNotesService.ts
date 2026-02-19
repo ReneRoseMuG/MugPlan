@@ -28,7 +28,10 @@ export async function createProjectNote(
   return notesRepository.withNotesTransaction(async (tx) => {
     const noteId = await notesRepository.createNoteTx(tx, noteData);
     await notesRepository.addProjectNoteRelationTx(tx, projectId, noteId);
-    const note = await notesRepository.getNote(noteId);
+    const note = await notesRepository.getNoteTx(tx, noteId);
+    if (!note) {
+      throw new Error("NOTE_CREATE_READBACK_FAILED");
+    }
     return note;
   });
 }

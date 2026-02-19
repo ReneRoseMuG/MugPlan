@@ -31,7 +31,10 @@ export async function createCustomerNote(
   return notesRepository.withNotesTransaction(async (tx) => {
     const noteId = await notesRepository.createNoteTx(tx, noteData);
     await notesRepository.addCustomerNoteRelationTx(tx, customerId, noteId);
-    const note = await notesRepository.getNote(noteId);
+    const note = await notesRepository.getNoteTx(tx, noteId);
+    if (!note) {
+      throw new Error("NOTE_CREATE_READBACK_FAILED");
+    }
     return note;
   });
 }

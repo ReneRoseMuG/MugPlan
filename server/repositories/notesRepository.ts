@@ -45,6 +45,11 @@ export async function getNote(noteId: number): Promise<Note | null> {
   return note ?? null;
 }
 
+export async function getNoteTx(tx: DbTx, noteId: number): Promise<Note | null> {
+  const [note] = await tx.select().from(notes).where(eq(notes.id, noteId));
+  return note ?? null;
+}
+
 export async function addCustomerNoteRelation(customerId: number, noteId: number): Promise<void> {
   await db.insert(customerNotes).values({ customerId, noteId });
 }
