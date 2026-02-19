@@ -9,7 +9,8 @@ export type InfoBadgePreviewOptions = {
   side: "top" | "right" | "bottom" | "left";
   align: "start" | "center" | "end";
   maxWidth: number;
-  maxHeight: number;
+  maxHeight: number | null;
+  scrollY: "auto" | "visible";
 };
 
 export type InfoBadgePreview = {
@@ -38,6 +39,7 @@ const defaultPreviewOptions: InfoBadgePreviewOptions = {
   align: "start",
   maxWidth: 360,
   maxHeight: 260,
+  scrollY: "auto",
 };
 
 export function InfoBadge({ 
@@ -127,7 +129,7 @@ export function InfoBadge({
       sideOffset={8}
       maxWidth={previewOptions.maxWidth}
       maxHeight={previewOptions.maxHeight}
-      className="overflow-y-auto"
+      className={previewOptions.scrollY === "auto" ? "overflow-y-auto" : undefined}
       contentClassName="space-y-2"
     >
       {badgeBody}

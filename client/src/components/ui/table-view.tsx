@@ -1,5 +1,6 @@
 import React, { type ReactNode } from "react";
 import { HoverPreview } from "@/components/ui/hover-preview";
+import type { InfoBadgePreview, InfoBadgePreviewOptions } from "@/components/ui/info-badge";
 import {
   Table,
   TableBody,
@@ -29,7 +30,7 @@ export interface TableViewProps<T> {
   rows: T[];
   rowKey: (row: T, rowIndex: number) => string | number;
   onRowDoubleClick?: (row: T, rowIndex: number) => void;
-  rowPreviewRenderer?: (row: T, rowIndex: number) => ReactNode;
+  rowPreviewRenderer?: (row: T, rowIndex: number) => ReactNode | InfoBadgePreview;
   emptyState?: ReactNode;
   density?: "compact" | "comfortable";
   stickyHeader?: boolean;
@@ -48,6 +49,19 @@ function alignmentClass(align: TableViewColumnAlign | undefined) {
   if (align === "center") return "text-center";
   if (align === "right") return "text-right";
   return "text-left";
+}
+
+const defaultPreviewOptions: InfoBadgePreviewOptions = {
+  openDelayMs: 380,
+  side: "right",
+  align: "start",
+  maxWidth: 360,
+  maxHeight: 260,
+  scrollY: "auto",
+};
+
+function isInfoBadgePreview(preview: ReactNode | InfoBadgePreview): preview is InfoBadgePreview {
+  return typeof preview === "object" && preview !== null && "content" in preview;
 }
 
 export function TableView<T>({
@@ -135,8 +149,37 @@ export function TableView<T>({
               );
             }
 
+            const resolvedPreview = rowPreviewRenderer(row, rowIndex);
+            if (isInfoBadgePreview(resolvedPreview)) {
+              const previewOptions = {
+                ...defaultPreviewOptions,
+                ...resolvedPreview.options,
+              };
+
+              return (
+                <HoverPreview
+                  key={resolvedRowKey}
+                  preview={resolvedPreview.content}
+                  mode="cursor"
+                  openDelay={previewOptions.openDelayMs}
+                  side={previewOptions.side}
+                  align={previewOptions.align}
+                  maxWidth={previewOptions.maxWidth}
+                  maxHeight={previewOptions.maxHeight}
+                  className={previewOptions.scrollY === "auto" ? "overflow-y-auto" : undefined}
+                >
+                  <TableRow
+                    className={cn(onRowDoubleClick && "cursor-pointer", rowClassName?.(row, rowIndex))}
+                    onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row, rowIndex) : undefined}
+                  >
+                    {cells}
+                  </TableRow>
+                </HoverPreview>
+              );
+            }
+
             return (
-              <HoverPreview key={resolvedRowKey} preview={rowPreviewRenderer(row, rowIndex)} mode="cursor">
+              <HoverPreview key={resolvedRowKey} preview={resolvedPreview} mode="cursor">
                 <TableRow
                   className={cn(onRowDoubleClick && "cursor-pointer", rowClassName?.(row, rowIndex))}
                   onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row, rowIndex) : undefined}

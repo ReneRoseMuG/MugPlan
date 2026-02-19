@@ -499,7 +499,7 @@ export function ProjectsPage({
                   </div>
                 );
               }
-              return createAppointmentWeeklyPanelPreview(row.relevantAppointment).content;
+              return createAppointmentWeeklyPanelPreview(row.relevantAppointment);
             }}
             emptyState={<p className="text-sm text-slate-400 py-4">Keine Projekte gefunden.</p>}
             stickyHeader

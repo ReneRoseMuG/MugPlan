@@ -12,7 +12,8 @@ export const appointmentWeeklyPanelPreviewOptions = {
   side: "right" as const,
   align: "start" as const,
   maxWidth: 240,
-  maxHeight: 360,
+  maxHeight: null,
+  scrollY: "visible" as const,
 };
 
 export function AppointmentWeeklyPanelPreview({ appointment }: AppointmentWeeklyPanelPreviewProps) {

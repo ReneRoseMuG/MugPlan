@@ -259,7 +259,7 @@ export function AppointmentsListPage({ onCancel, onOpenAppointment }: Appointmen
           rows={rows}
           rowKey={(row) => row.id}
           onRowDoubleClick={(row) => onOpenAppointment?.(row.id)}
-          rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row).content}
+          rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row)}
           emptyState={<p className="py-4 text-sm text-slate-400">Keine Termine gefunden.</p>}
           stickyHeader
         />

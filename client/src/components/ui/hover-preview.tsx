@@ -23,7 +23,7 @@ type HoverPreviewProps = {
   align?: "start" | "center" | "end";
   sideOffset?: number;
   maxWidth?: number;
-  maxHeight?: number;
+  maxHeight?: number | null;
   cursorOffsetX?: number;
   cursorOffsetY?: number;
   viewportPadding?: number;
@@ -92,6 +92,7 @@ export function HoverPreview({
   const globalOpenDelayMs = useOptionalHoverPreviewDelaySetting();
   const [open, setOpen] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const resolvedMaxHeight = typeof maxHeight === "number" && Number.isFinite(maxHeight) ? maxHeight : null;
   const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -196,7 +197,7 @@ export function HoverPreview({
           side={side}
           align={align}
           sideOffset={sideOffset}
-          style={{ maxWidth, maxHeight }}
+          style={resolvedMaxHeight == null ? { maxWidth } : { maxWidth, maxHeight: resolvedMaxHeight }}
           className={cn(className)}
           onMouseEnter={handlePreviewMouseEnter}
           onMouseLeave={handlePreviewMouseLeave}
@@ -217,8 +218,10 @@ export function HoverPreview({
 
     const preferredLeft = cursorPos.x + cursorOffsetX;
     const preferredTop = cursorPos.y + cursorOffsetY;
+    const maxHeightForClamp = resolvedMaxHeight ?? (window.innerHeight - viewportPadding * 2);
+    const safeMaxHeight = Math.max(0, maxHeightForClamp);
     const maxLeft = window.innerWidth - maxWidth - viewportPadding;
-    const maxTop = window.innerHeight - maxHeight - viewportPadding;
+    const maxTop = window.innerHeight - safeMaxHeight - viewportPadding;
 
     return {
       left: Math.max(viewportPadding, Math.min(preferredLeft, maxLeft)),
@@ -233,12 +236,20 @@ export function HoverPreview({
         ? createPortal(
             <div
               className={cn("fixed z-50", className)}
-              style={{
-                left: cursorPosition.left,
-                top: cursorPosition.top,
-                maxWidth,
-                maxHeight,
-              }}
+              style={
+                resolvedMaxHeight == null
+                  ? {
+                      left: cursorPosition.left,
+                      top: cursorPosition.top,
+                      maxWidth,
+                    }
+                  : {
+                      left: cursorPosition.left,
+                      top: cursorPosition.top,
+                      maxWidth,
+                      maxHeight: resolvedMaxHeight,
+                    }
+              }
               onMouseEnter={handlePreviewMouseEnter}
               onMouseLeave={handlePreviewMouseLeave}
             >

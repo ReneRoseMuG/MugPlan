@@ -136,7 +136,7 @@ export function EmployeeAppointmentsTableDialog({
                   rows={sortedAppointments}
                   rowKey={(row) => row.id}
                   onRowDoubleClick={(row) => handleOpenAppointment(row.id)}
-                  rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row).content}
+                  rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row)}
                   emptyState={<p className="py-4 text-sm text-muted-foreground">Keine Termine vorhanden</p>}
                   stickyHeader
                 />

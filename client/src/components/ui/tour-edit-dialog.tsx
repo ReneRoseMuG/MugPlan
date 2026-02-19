@@ -85,9 +85,8 @@ export function TourEditDialog({
       colorPickerTestId="button-tour-color-picker"
       saveTestId="button-save-tour-members"
       cancelTestId="button-cancel-tour"
-    >
-      {!isCreate && canDelete && tour && onDelete ? (
-        <div className="flex justify-end">
+      leftActions={
+        !isCreate && canDelete && tour && onDelete ? (
           <Button
             variant="destructive"
             onClick={() => {
@@ -100,8 +99,8 @@ export function TourEditDialog({
           >
             {isDeleting ? "Loeschen..." : "Tour loeschen"}
           </Button>
-        </div>
-      ) : null}
-    </EmployeeSelectEntityEditDialog>
+        ) : undefined
+      }
+    />
   );
 }

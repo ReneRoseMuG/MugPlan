@@ -23,7 +23,7 @@ describe("FT03 projects table preview wiring", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("createAppointmentWeeklyPanelPreview(row.relevantAppointment).content");
+    expect(source).toContain("createAppointmentWeeklyPanelPreview(row.relevantAppointment)");
   });
 
   it("keeps no-appointment fallback text", () => {
