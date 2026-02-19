@@ -7,6 +7,8 @@
  * Abgedeckte Regeln:
  * - Kundennummer und Auftragsnummer werden deterministisch extrahiert.
  * - Mobilnummer bleibt optional und darf als null aufgeloest werden.
+ * - Telefonlabels (Tel/Telefon/Fon) werden zusaetzlich zur Mobil-Erkennung unterstuetzt.
+ * - Bei mehreren validen Telefonnummern wird deterministisch priorisiert (Mobil vor Tel/Telefon).
  * - Inline-Headerzeilen (Label + Wert in einer Zeile) werden robust erkannt.
  * - Feldvalidierung verhindert Fehlzuordnung von Bearbeiter/Datum auf Nummernfelder.
  * - WaWi-Adresszeilen (Identitaet, Strasse, PLZ/Ort; Anrede optional) werden deterministisch geparst.
@@ -61,6 +63,65 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.orderNumber).toBe("A0118067A");
     expect(parsed.customerNumber).toBe("163033");
     expect(parsed.mobile).toBe("0152-53500769");
+  });
+
+  it("extracts phone from label Kunden - Tel.", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Tel.:",
+      "A0118067A",
+      "163033",
+      "05751-7052150",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.orderNumber).toBe("A0118067A");
+    expect(parsed.customerNumber).toBe("163033");
+    expect(parsed.mobile).toBe("05751-7052150");
+  });
+
+  it("extracts phone from inline label Kunden Tel.", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr. A0118067A",
+      "Kunden-Nr. 163033",
+      "Kunden Tel.: 05751-7052150",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.mobile).toBe("05751-7052150");
+  });
+
+  it("extracts phone from Telefon label without customer prefix", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Telefon:",
+      "A0118067A",
+      "163033",
+      "05751/7052150",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.mobile).toBe("05751/7052150");
   });
 
   it("extracts customer number, order number and mobile", () => {
@@ -197,6 +258,72 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.mobile).toBeNull();
   });
 
+  it("prefers mobile when both mobile and tel labels contain different valid numbers", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "Kunden - Tel.:",
+      "A0118067A",
+      "163033",
+      "0152-53500769",
+      "05751-7052150",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.mobile).toBe("0152-53500769");
+  });
+
+  it("selects first valid mobile when multiple mobile numbers exist", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "Kunden - Mobil:",
+      "A0118067A",
+      "163033",
+      "0152-53500769",
+      "0172-8811909",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.mobile).toBe("0152-53500769");
+  });
+
+  it("selects first valid tel when no mobile number exists", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Tel.:",
+      "Kunden - Telefon:",
+      "A0118067A",
+      "163033",
+      "05751-7052150",
+      "04242/78088",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.mobile).toBe("05751-7052150");
+  });
+
   it("does not map date values as mobile numbers", () => {
     const source = [
       "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
@@ -219,6 +346,26 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.mobile).toBeNull();
   });
 
+  it("does not map date values as tel numbers", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Tel.:",
+      "A0118067A",
+      "163033",
+      "26.01.2026",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.mobile).toBeNull();
+  });
+
   it("ignores free text after mobile label", () => {
     const source = [
       "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
@@ -229,6 +376,25 @@ describe("FT21 deterministic header parser", () => {
       "Auftrag-Nr. A0218249A",
       "Kunden-Nr. 163214",
       "Kunden - Mobil: Michael Meisel",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.orderNumber).toBe("A0218249A");
+    expect(parsed.customerNumber).toBe("163214");
+    expect(parsed.mobile).toBeNull();
+  });
+
+  it("ignores free text after tel label", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Frau",
+      "Anke Gotthardt",
+      "Haupstrasse 69",
+      "06917 Jessen / Holzdorf",
+      "Auftrag-Nr. A0218249A",
+      "Kunden-Nr. 163214",
+      "Kunden - Tel.: Michael Meisel",
       "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
     ].join("\n");
 

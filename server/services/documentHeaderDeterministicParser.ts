@@ -3,7 +3,7 @@
 const START_MARKER = "Menge Art.Nr.";
 const POSTAL_CITY_REGEX = /^(\d{4,5})\s+(.+)$/;
 
-type HeaderField = "orderNumber" | "customerNumber" | "mobile";
+type HeaderField = "orderNumber" | "customerNumber" | "mobile" | "phone";
 
 export type DeterministicHeaderExtraction = {
   orderNumber: string | null;
@@ -21,12 +21,16 @@ const fieldAliases: Record<HeaderField, string[]> = {
   orderNumber: ["auftragnr", "auftragsnr", "auftragsnummer"],
   customerNumber: ["kundennr", "kundennummer"],
   mobile: ["kundenmobil", "kundemobil", "mobil"],
+  phone: ["kundentel", "kundentelefon", "telefon", "tel", "kundenfon", "fon"],
 };
 
 const inlineLabelPatterns: Record<HeaderField, RegExp[]> = {
   orderNumber: [/^\s*(?:auftrag(?:s)?\s*[-.]?\s*nr\.?|auftragsnummer)\s*:?\s*(.*)\s*$/i],
   customerNumber: [/^\s*(?:kunden?\s*[-.]?\s*nr\.?|kundennummer)\s*:?\s*(.*)\s*$/i],
   mobile: [/^\s*(?:kunden?\s*-\s*mobil|kundenmobil|kundemobil|mobil(?:nummer)?)\s*:?\s*(.*)\s*$/i],
+  phone: [
+    /^\s*(?:kunden?\s*(?:-\s*)?(?:tel\.?|telefon|fon)|tel\.?|telefon|fon)\s*:?\s*(.*)\s*$/i,
+  ],
 };
 
 function normalizeLine(value: string): string {
@@ -89,6 +93,12 @@ function isValidFieldValue(field: HeaderField, value: string): boolean {
       const digitsOnly = normalized.replace(/\D/g, "");
       return digitsOnly.length >= 7;
     }
+    case "phone": {
+      if (looksLikeDateValue(normalized)) return false;
+      if (!/^[+\d\s\-/.()]+$/.test(normalized)) return false;
+      const digitsOnly = normalized.replace(/\D/g, "");
+      return digitsOnly.length >= 7;
+    }
     default:
       return false;
   }
@@ -142,6 +152,7 @@ function collectLabelValues(lines: string[]): Record<HeaderField, string[]> {
     orderNumber: [],
     customerNumber: [],
     mobile: [],
+    phone: [],
   };
 
   const consumedInlineLineIndexes = new Set<number>();
@@ -266,6 +277,18 @@ function pickSingleValue(values: string[]): string | null {
   return null;
 }
 
+function pickFirstValue(values: string[]): string | null {
+  const unique = Array.from(new Set(values.map((value) => value.trim()).filter((value) => value.length > 0)));
+  if (unique.length === 0) return null;
+  return unique[0];
+}
+
+function pickPreferredPhone(mobileValues: string[], phoneValues: string[]): string | null {
+  const mobile = pickFirstValue(mobileValues);
+  if (mobile) return mobile;
+  return pickFirstValue(phoneValues);
+}
+
 export function parseDocumentHeaderDeterministically(sourceText: string): DeterministicHeaderExtraction {
   const allLines = extractHeaderLines(sourceText);
   const addressRegionLines = extractAddressRegionLines(sourceText);
@@ -285,7 +308,7 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
     throw new Error("Mehrfache Kundennummern im Dokumentkopf erkannt");
   }
 
-  const mobile = pickSingleValue(labelValues.mobile);
+  const mobile = pickPreferredPhone(labelValues.mobile, labelValues.phone);
 
   const orderNumber = pickSingleValue(labelValues.orderNumber);
 
