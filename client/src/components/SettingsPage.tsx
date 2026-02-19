@@ -57,6 +57,7 @@ export function SettingsPage() {
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
   const storagePathSetting = settingsByKey.get("attachmentStoragePath");
+  const backupBasePathSetting = settingsByKey.get("backup_base_path");
   const toastDesktopPositionSetting = settingsByKey.get("toastDesktopPosition");
   const weekendWidthSetting = settingsByKey.get("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = settingsByKey.get("calendarWeekScrollRange");
@@ -90,6 +91,10 @@ export function SettingsPage() {
   const resolvedStoragePath = useMemo(() => {
     return typeof storagePathSetting?.resolvedValue === "string" ? storagePathSetting.resolvedValue : "server/uploads";
   }, [storagePathSetting?.resolvedValue]);
+
+  const resolvedBackupBasePath = useMemo(() => {
+    return typeof backupBasePathSetting?.resolvedValue === "string" ? backupBasePathSetting.resolvedValue : "Backups";
+  }, [backupBasePathSetting?.resolvedValue]);
 
   const resolvedToastDesktopPosition = useMemo(() => {
     const value = toastDesktopPositionSetting?.resolvedValue;
@@ -146,6 +151,7 @@ export function SettingsPage() {
 
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
   const [storagePathValue, setStoragePathValue] = useState<string>(resolvedStoragePath);
+  const [backupBasePathValue, setBackupBasePathValue] = useState<string>(resolvedBackupBasePath);
   const [toastDesktopPositionValue, setToastDesktopPositionValue] = useState<ToastDesktopPosition>(resolvedToastDesktopPosition);
   const [weekendColumnPercentValue, setWeekendColumnPercentValue] = useState<string>(String(resolvedWeekendColumnPercent));
   const [weekScrollRangeValue, setWeekScrollRangeValue] = useState<string>(String(resolvedWeekScrollRange));
@@ -155,6 +161,7 @@ export function SettingsPage() {
   const [backupEnabledValue, setBackupEnabledValue] = useState<boolean>(resolvedBackupEnabled);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [backupBasePathError, setBackupBasePathError] = useState<string | null>(null);
   const [toastDesktopPositionError, setToastDesktopPositionError] = useState<string | null>(null);
   const [weekendError, setWeekendError] = useState<string | null>(null);
   const [weekScrollRangeError, setWeekScrollRangeError] = useState<string | null>(null);
@@ -164,6 +171,7 @@ export function SettingsPage() {
   const [backupEnabledError, setBackupEnabledError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
   const [storageSaved, setStorageSaved] = useState(false);
+  const [backupBasePathSaved, setBackupBasePathSaved] = useState(false);
   const [toastDesktopPositionSaved, setToastDesktopPositionSaved] = useState(false);
   const [weekendSaved, setWeekendSaved] = useState(false);
   const [weekScrollRangeSaved, setWeekScrollRangeSaved] = useState(false);
@@ -179,6 +187,10 @@ export function SettingsPage() {
   useEffect(() => {
     setStoragePathValue(resolvedStoragePath);
   }, [resolvedStoragePath]);
+
+  useEffect(() => {
+    setBackupBasePathValue(resolvedBackupBasePath);
+  }, [resolvedBackupBasePath]);
 
   useEffect(() => {
     setToastDesktopPositionValue(resolvedToastDesktopPosition);
@@ -273,6 +285,21 @@ export function SettingsPage() {
       setToastDesktopPositionSaved(true);
     } catch (error) {
       setToastDesktopPositionError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveBackupBasePath = async () => {
+    setBackupBasePathError(null);
+    setBackupBasePathSaved(false);
+    try {
+      await setSetting({
+        key: "backup_base_path",
+        scopeType: "GLOBAL",
+        value: backupBasePathValue,
+      });
+      setBackupBasePathSaved(true);
+    } catch (error) {
+      setBackupBasePathError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
 
@@ -452,6 +479,27 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(storagePathSetting?.resolvedValue)} ({storagePathSetting?.resolvedScope ?? "-"})</p>
           {storageSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {storageError && <p className="mt-1 text-xs text-destructive">{storageError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-base-path">
+          <p className="font-semibold text-slate-900">{backupBasePathSetting?.label ?? "Backup Basis-Pfad"}</p>
+          <p className="mb-3 text-xs text-slate-500">{backupBasePathSetting?.description ?? "Basis-Verzeichnis fuer Backups."}</p>
+
+          <div className="flex items-center gap-3">
+            <Input
+              value={backupBasePathValue}
+              onChange={(event) => setBackupBasePathValue(event.target.value)}
+              placeholder="Backups"
+              data-testid="input-setting-backup-base-path"
+            />
+            <Button onClick={() => void handleSaveBackupBasePath()} disabled={isSaving} data-testid="button-save-backup-base-path">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(backupBasePathSetting?.resolvedValue ?? "Backups")} ({backupBasePathSetting?.resolvedScope ?? "-"})</p>
+          {backupBasePathSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {backupBasePathError && <p className="mt-1 text-xs text-destructive">{backupBasePathError}</p>}
         </div>
 
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-toastDesktopPosition">

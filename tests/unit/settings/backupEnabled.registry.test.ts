@@ -6,9 +6,10 @@
  *
  * Abgedeckte Regeln:
  * - Setting `backup_enabled` ist im Registry-Modell vorhanden.
- * - Defaultwert ist `true`.
+ * - Setting `backup_base_path` ist als GLOBAL-String mit Default `Backups` vorhanden.
+ * - Defaultwert von `backup_enabled` ist `true`.
  * - Scope ist GLOBAL-only.
- * - Validierung akzeptiert nur boolean-Werte.
+ * - Validierung akzeptiert nur passende Typen.
  *
  * Fehlerfaelle:
  * - Nicht-boolean Werte duerfen nicht als gueltig gelten.
@@ -36,5 +37,15 @@ describe("FT07 settings registry: backup_enabled", () => {
     expect(setting.validate(1)).toBe(false);
     expect(setting.validate(null)).toBe(false);
   });
-});
 
+  it("defines backup_base_path as GLOBAL string with default Backups", () => {
+    const setting = userSettingsRegistry.backupBasePath;
+    expect(setting.key).toBe("backup_base_path");
+    expect(setting.type).toBe("string");
+    expect(setting.defaultValue).toBe("Backups");
+    expect(setting.allowedScopes).toEqual(["GLOBAL"]);
+    expect(setting.validate("Backups")).toBe(true);
+    expect(setting.validate("   ")).toBe(false);
+    expect(setting.validate(123)).toBe(false);
+  });
+});

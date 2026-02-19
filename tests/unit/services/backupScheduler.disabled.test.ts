@@ -27,6 +27,25 @@ vi.mock("../../../server/services/backupService", () => ({
 
 vi.mock("../../../server/repositories/backupRepository", () => ({
   createBackupLogEntry: vi.fn(),
+  getLastSuccessfulExportAt: vi.fn(async () => new Date("2026-01-01T00:00:00.000Z")),
+}));
+
+vi.mock("../../../server/db", () => ({
+  db: {
+    execute: vi.fn(async () => [{ lock_ok: 1 }]),
+  },
+}));
+
+vi.mock("../../../server/repositories/backupRuntimeRepository", () => ({
+  getLatestRelevantDataChangeAt: vi.fn(async () => new Date("2026-01-01T00:00:00.000Z")),
+}));
+
+vi.mock("../../../server/services/exportService", () => ({
+  generateBackupDocuments: vi.fn(),
+}));
+
+vi.mock("../../../server/services/backupStorageService", () => ({
+  persistBackupFiles: vi.fn(),
 }));
 
 import { getGlobalSettingValue } from "../../../server/services/userSettingsService";
@@ -52,7 +71,6 @@ describe("FT07 service: backup scheduler disabled handling", () => {
 
     await runBackupSchedulerTick();
 
-    expect(createSkippedBackupLog).not.toHaveBeenCalled();
+    expect(createSkippedBackupLog).not.toHaveBeenCalledWith("disabled");
   });
 });
-

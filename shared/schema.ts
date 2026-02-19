@@ -92,6 +92,7 @@ export const tours = mysqlTable("tours", {
   name: varchar("name", { length: 255 }).notNull(),
   color: varchar("color", { length: 255 }).notNull(),
   version: int("version").notNull().default(1),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
 export const insertTourSchema = createInsertSchema(tours).omit({ id: true, name: true });

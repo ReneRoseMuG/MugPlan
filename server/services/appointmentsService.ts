@@ -2,6 +2,7 @@ import type { InsertAppointment } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
+import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 
 const logPrefix = "[appointments-service]";
 
@@ -226,7 +227,7 @@ export async function createAppointment(
   const startDate = parseDateOnly(data.startDate);
   const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
 
-  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+  const created = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const project = await ensureProjectExistsTx(tx, data.projectId);
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
@@ -257,6 +258,10 @@ export async function createAppointment(
     }
     return appointment;
   });
+  if (created?.id) {
+    dispatchCalDavUpsert(created.id);
+  }
+  return created;
 }
 
 export async function updateAppointment(
@@ -277,7 +282,7 @@ export async function updateAppointment(
   const startDate = parseDateOnly(data.startDate);
   const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
 
-  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+  const updated = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
 
@@ -335,6 +340,10 @@ export async function updateAppointment(
     }
     return appointment;
   });
+  if (updated?.id) {
+    dispatchCalDavUpsert(updated.id);
+  }
+  return updated;
 }
 
 export async function listProjectAppointments(
@@ -579,7 +588,7 @@ export async function listAppointmentsList(params: {
 }
 
 export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
-  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+  const deleted = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
 
@@ -599,6 +608,10 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
 
     return existing;
   });
+  if (deleted?.id) {
+    dispatchCalDavDelete(deleted.id);
+  }
+  return deleted;
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {

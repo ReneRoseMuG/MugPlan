@@ -83,3 +83,21 @@ export async function getBackupLogById(id: number): Promise<BackupLogRecord | nu
   }
 }
 
+export async function getLastSuccessfulExportAt(): Promise<Date | null> {
+  try {
+    await ensureBackupLogTable();
+    const [row] = await db
+      .select({ createdAt: backupLog.createdAt })
+      .from(backupLog)
+      .where(eq(backupLog.status, "success"))
+      .orderBy(desc(backupLog.createdAt), desc(backupLog.id))
+      .limit(1);
+    const rawValue = row?.createdAt ?? null;
+    if (!rawValue) return null;
+    const parsed = rawValue instanceof Date ? rawValue : new Date(rawValue);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  } catch (error) {
+    if (isMissingTableError(error)) return null;
+    throw error;
+  }
+}

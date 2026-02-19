@@ -125,6 +125,16 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL"],
     validate: (value: unknown): value is boolean => typeof value === "boolean",
   },
+  backupBasePath: {
+    key: "backup_base_path",
+    label: "Backup Basis-Pfad",
+    description: "Basis-Verzeichnis fuer serverseitige Backups (Excel/PDF).",
+    type: "string",
+    defaultValue: "Backups",
+    allowedScopes: ["GLOBAL"],
+    placeholderWhitelist: [],
+    validate: (value: unknown): value is string => typeof value === "string" && value.trim().length > 0,
+  },
   calendarWeekendColumnPercent: {
     key: "calendarWeekendColumnPercent",
     label: "Kalender Wochenende Breite (%)",
