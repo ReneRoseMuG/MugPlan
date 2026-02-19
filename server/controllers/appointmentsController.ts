@@ -129,6 +129,35 @@ export async function listProjectAppointments(req: Request, res: Response, next:
   }
 }
 
+export async function listTourAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const tourId = Number(req.params.tourId);
+    if (Number.isNaN(tourId)) {
+      res.status(400).json({ message: "Ungueltige tourId" });
+      return;
+    }
+
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
+      console.log(`${logPrefix} list tour appointments rejected: invalid fromDate=${fromDate}`);
+      res.status(400).json({ message: "Ungueltiges fromDate" });
+      return;
+    }
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    console.log(`${logPrefix} list tour appointments request tourId=${tourId} fromDate=${fromDate ?? "n/a"}`);
+    const appointments = await appointmentsService.listTourAppointments(tourId, fromDate, roleKey);
+    res.json(appointments);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listAppointmentsList(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.list.input.parse(req.query);

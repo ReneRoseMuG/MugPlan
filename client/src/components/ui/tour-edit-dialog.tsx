@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmployeeSelectEntityEditDialog } from "./employee-select-entity-edit-dialog";
+import { TourAppointmentsPanel } from "@/components/TourAppointmentsPanel";
+import { TourAppointmentsTableDialog } from "@/components/TourAppointmentsTableDialog";
 import type { Tour, Employee } from "@shared/schema";
 
 interface TourWithMembers extends Tour {
@@ -40,11 +42,14 @@ export function TourEditDialog({
   const currentMemberIds = tour?.members.map(m => m.id) || [];
   const [selectedMembers, setSelectedMembers] = useState<number[]>(currentMemberIds);
   const [selectedColor, setSelectedColor] = useState<string>(tour?.color || defaultColor);
+  const [tourAppointmentsTableOpen, setTourAppointmentsTableOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSelectedMembers(tour?.members.map(m => m.id) || []);
       setSelectedColor(tour?.color || defaultColor);
+    } else {
+      setTourAppointmentsTableOpen(false);
     }
   }, [open, tour, defaultColor]);
 
@@ -61,6 +66,7 @@ export function TourEditDialog({
   };
 
   const handleCancel = () => {
+    setTourAppointmentsTableOpen(false);
     onOpenChange(false);
   };
 
@@ -101,6 +107,19 @@ export function TourEditDialog({
           </Button>
         ) : undefined
       }
-    />
+    >
+      <TourAppointmentsPanel
+        tourId={tour?.id ?? null}
+        onOpenTourAppointmentsView={() => setTourAppointmentsTableOpen(true)}
+      />
+      {tourAppointmentsTableOpen && tour ? (
+        <TourAppointmentsTableDialog
+          open={tourAppointmentsTableOpen}
+          onOpenChange={setTourAppointmentsTableOpen}
+          tourId={tour.id}
+          tourName={tour.name}
+        />
+      ) : null}
+    </EmployeeSelectEntityEditDialog>
   );
 }

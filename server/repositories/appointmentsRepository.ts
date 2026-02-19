@@ -323,6 +323,23 @@ export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: numb
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 
+export async function listSidebarAppointmentsByTourFromDate(tourId: number, fromDate: Date) {
+  console.log(`${logPrefix} list sidebar appointments by tour tourId=${tourId} fromDate>=${fromDate}`);
+  return db
+    .select({
+      appointment: appointments,
+      project: projects,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointments)
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(and(eq(appointments.tourId, tourId), gte(appointments.startDate, fromDate)))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
 export async function listAppointmentsForCalendarRange({
   fromDate,
   toDate,

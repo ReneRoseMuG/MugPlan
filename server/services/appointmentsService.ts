@@ -385,6 +385,30 @@ export async function listEmployeeAppointments(
   return mapSidebarAppointments(appointments, roleKey);
 }
 
+export async function listTourAppointments(
+  tourId: number,
+  fromDate: string | undefined,
+  roleKey: CanonicalRoleKey,
+) {
+  const todayBerlin = getBerlinTodayDateString();
+  const effectiveFromDate = fromDate ?? todayBerlin;
+
+  if (!fromDate) {
+    console.log(`${logPrefix} list tour appointments defaulting fromDate=${effectiveFromDate}`);
+  } else {
+    console.log(`${logPrefix} list tour appointments using fromDate=${effectiveFromDate}`);
+  }
+
+  console.log(`${logPrefix} list tour appointments tourId=${tourId} fromDate=${effectiveFromDate}`);
+  const appointments = await appointmentsRepository.listSidebarAppointmentsByTourFromDate(
+    tourId,
+    parseDateOnly(effectiveFromDate),
+  );
+  console.log(`${logPrefix} list tour appointments result tourId=${tourId} count=${appointments.length}`);
+
+  return mapSidebarAppointments(appointments, roleKey);
+}
+
 export async function listCalendarAppointments({
   fromDate,
   toDate,
