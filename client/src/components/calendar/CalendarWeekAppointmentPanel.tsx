@@ -7,6 +7,8 @@ import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentP
 import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
 
+export const DEFAULT_CONTINUATION_HEIGHT_PX = 180;
+
 export function CalendarWeekAppointmentPanel({
   appointment,
   onDoubleClick,
@@ -20,6 +22,8 @@ export function CalendarWeekAppointmentPanel({
   onMouseLeave,
   segment = "start",
   context = "default",
+  continuationHeightPx,
+  containerRef,
   testId,
 }: {
   appointment: CalendarAppointment;
@@ -34,9 +38,12 @@ export function CalendarWeekAppointmentPanel({
   onMouseLeave?: () => void;
   segment?: "start" | "continuation";
   context?: "default" | "week-calendar";
+  continuationHeightPx?: number | null;
+  containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
 }) {
   const isContinuation = segment === "continuation";
+  const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
@@ -49,6 +56,7 @@ export function CalendarWeekAppointmentPanel({
   return (
     <div
       className={`relative overflow-hidden rounded-lg border p-2 shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      ref={containerRef}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
       onDragStart={canDrag ? onDragStart : undefined}
@@ -57,33 +65,36 @@ export function CalendarWeekAppointmentPanel({
       onMouseLeave={onMouseLeave}
       aria-disabled={isLocked}
       data-testid={testId ?? `week-appointment-panel-${appointment.id}`}
+      style={isContinuation ? { height: `${resolvedContinuationHeightPx}px` } : undefined}
     >
-      <div className={`space-y-1.5 ${isContinuation ? "opacity-0 select-none" : ""}`}>
-        <CalendarWeekAppointmentPanelHeader
-          customerNumber={appointment.customer.customerNumber}
-          postalCode={appointment.customer.postalCode}
-          color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
-        />
-        <CalendarWeekAppointmentPanelCustomer
-          fullName={appointment.customer.fullName}
-          addressLine1={appointment.customer.addressLine1}
-          addressLine2={appointment.customer.addressLine2}
-          postalCode={appointment.customer.postalCode}
-          city={appointment.customer.city}
-        />
-        <CalendarWeekAppointmentPanelProject
-          projectName={resolvedProjectName}
-          projectOrderNumber={appointment.projectOrderNumber}
-          projectDescription={appointment.projectDescription}
-          projectStatuses={appointment.projectStatuses}
-          enableFullDescriptionPreview={context === "week-calendar"}
-        />
-        {context === "week-calendar" ? (
-          <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-        ) : (
-          <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
-        )}
-      </div>
+      {!isContinuation && (
+        <div className="space-y-1.5">
+          <CalendarWeekAppointmentPanelHeader
+            customerNumber={appointment.customer.customerNumber}
+            postalCode={appointment.customer.postalCode}
+            color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
+          />
+          <CalendarWeekAppointmentPanelCustomer
+            fullName={appointment.customer.fullName}
+            addressLine1={appointment.customer.addressLine1}
+            addressLine2={appointment.customer.addressLine2}
+            postalCode={appointment.customer.postalCode}
+            city={appointment.customer.city}
+          />
+          <CalendarWeekAppointmentPanelProject
+            projectName={resolvedProjectName}
+            projectOrderNumber={appointment.projectOrderNumber}
+            projectDescription={appointment.projectDescription}
+            projectStatuses={appointment.projectStatuses}
+            enableFullDescriptionPreview={context === "week-calendar"}
+          />
+          {context === "week-calendar" ? (
+            <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+          ) : (
+            <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+          )}
+        </div>
+      )}
       {isContinuation && (
         <div
           className="absolute inset-0 rounded-lg"

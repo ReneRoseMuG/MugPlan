@@ -18,7 +18,7 @@ import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getAppointmentDurationDays, getAppointmentEndDate, getAppointmentSortValue } from "@/lib/calendar-utils";
 import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
-import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
+import { CalendarWeekAppointmentPanel, DEFAULT_CONTINUATION_HEIGHT_PX } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import type { CalendarNavCommand } from "@/pages/Home";
@@ -63,8 +63,10 @@ export function CalendarWeekView({
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
+  const appointmentHeightByIdRef = useRef<Map<number, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
+  const [, setAppointmentHeightVersion] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { setSetting } = useSettings();
@@ -115,6 +117,11 @@ export function CalendarWeekView({
 
     const frame = window.requestAnimationFrame(measure);
     return () => window.cancelAnimationFrame(frame);
+  }, [scrollResetKey]);
+
+  useEffect(() => {
+    appointmentHeightByIdRef.current.clear();
+    setAppointmentHeightVersion((prev) => prev + 1);
   }, [scrollResetKey]);
 
   const { data: appointments = [] } = useCalendarAppointments({
@@ -444,6 +451,15 @@ export function CalendarWeekView({
     }
   };
 
+  const measureStartSegmentHeight = (appointmentId: number, node: HTMLDivElement | null) => {
+    if (!node) return;
+    const heightPx = Math.round(node.getBoundingClientRect().height);
+    if (heightPx <= 0) return;
+    if (appointmentHeightByIdRef.current.get(appointmentId) === heightPx) return;
+    appointmentHeightByIdRef.current.set(appointmentId, heightPx);
+    setAppointmentHeightVersion((prev) => prev + 1);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
@@ -635,6 +651,8 @@ export function CalendarWeekView({
 
                                     const appointmentStart = parseISO(appointment.startDate);
                                     const isContinuationSegment = appointmentStart < day;
+                                    const continuationHeightPx = appointmentHeightByIdRef.current.get(appointment.id)
+                                      ?? DEFAULT_CONTINUATION_HEIGHT_PX;
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
                                     const isSegmentLocked = appointment.isLocked && !isAdmin;
                                     const canDragSegment = !isSegmentLocked;
@@ -645,6 +663,12 @@ export function CalendarWeekView({
                                         appointment={appointment}
                                         context="week-calendar"
                                         segment={isContinuationSegment ? "continuation" : "start"}
+                                        continuationHeightPx={continuationHeightPx}
+                                        containerRef={
+                                          isContinuationSegment
+                                            ? undefined
+                                            : (node) => measureStartSegmentHeight(appointment.id, node)
+                                        }
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}
