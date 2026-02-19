@@ -9,6 +9,7 @@ export type UserSettingKey =
   | "attachmentPreviewSize"
   | "attachmentStoragePath"
   | "toastDesktopPosition"
+  | "backup_enabled"
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
@@ -21,6 +22,7 @@ type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
   attachmentStoragePath: string;
   toastDesktopPosition: ToastDesktopPosition;
+  backup_enabled: boolean;
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
@@ -72,6 +74,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.weekLanes.isCollapsed") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
+    }
+    if (key === "backup_enabled") {
+      return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : true) as UserSettingValueByKey[K];
     }
     if (key === "calendar.weekLanes.expandedLaneId") {
       return (typeof setting?.resolvedValue === "string" ? setting.resolvedValue : "") as UserSettingValueByKey[K];

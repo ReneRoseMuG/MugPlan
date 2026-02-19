@@ -8,6 +8,7 @@ import { createServer } from "http";
 import { errorHandler } from "./middleware/errorHandler";
 import { ensureSystemRoles } from "./bootstrap/ensureSystemRoles";
 import { getBootstrapState } from "./bootstrap/getBootstrapState";
+import { startBackupScheduler } from "./services/backupScheduler";
 
 const app = express();
 const httpServer = createServer(app);
@@ -88,6 +89,7 @@ void (async () => {
   await ensureSystemRoles();
   const bootstrapState = await getBootstrapState();
   await registerRoutes(httpServer, app);
+  startBackupScheduler();
 
   app.use(errorHandler);
 

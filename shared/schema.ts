@@ -514,3 +514,14 @@ export const userSettingsValue = mysqlTable(
 );
 
 export type UserSettingsValue = typeof userSettingsValue.$inferSelect;
+
+export const backupLog = mysqlTable("backup_log", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  status: varchar("status", { length: 16 }).notNull(),
+  errorMessage: text("error_message"),
+  exportedRecordCount: int("exported_record_count").notNull().default(0),
+  filePath: text("file_path"),
+});
+
+export type BackupLog = typeof backupLog.$inferSelect;

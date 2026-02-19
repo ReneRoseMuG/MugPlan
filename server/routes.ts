@@ -4,6 +4,7 @@ import { resolveUserRole } from "./middleware/resolveUserRole";
 import { requireSessionUser, sessionAuth } from "./middleware/sessionAuth";
 import { setupGate } from "./middleware/setupGate";
 import adminRoutes from "./routes/adminRoutes";
+import backupRoutes from "./routes/backupRoutes";
 import customerNotesRoutes from "./routes/customerNotesRoutes";
 import customerAttachmentsRoutes from "./routes/customerAttachmentsRoutes";
 import customersRoutes from "./routes/customersRoutes";
@@ -37,6 +38,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use("/api", resolveUserRole);
 
   app.use(adminRoutes);
+  app.use(backupRoutes);
   app.use(appointmentsRoutes);
   app.use(demoSeedRoutes);
   app.use(documentExtractionRoutes);

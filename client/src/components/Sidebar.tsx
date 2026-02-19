@@ -6,6 +6,7 @@ interface SidebarProps {
   onLogout: () => void;
   currentView?: ViewType;
   userRole?: string;
+  backupDisabled?: boolean;
 }
 
 function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
@@ -92,10 +93,15 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
   );
 }
 
-export function Sidebar({ onViewChange, onLogout, currentView, userRole }: SidebarProps) {
+export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupDisabled = false }: SidebarProps) {
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
   return (
-    <div className="w-full h-full bg-slate-50 border-r border-border flex flex-col p-4 overflow-y-auto" data-testid="sidebar">
+    <div
+      className={`w-full h-full bg-slate-50 border-r border-border flex flex-col p-4 overflow-y-auto ${
+        backupDisabled ? "border-2 border-red-600" : ""
+      }`}
+      data-testid="sidebar"
+    >
       <div className="mb-6">
         <h1 className="text-xl font-bold font-display text-primary tracking-tight" data-testid="text-app-title">
           MuG Plan

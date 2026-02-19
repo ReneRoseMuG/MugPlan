@@ -116,6 +116,15 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is ToastDesktopPosition =>
       typeof value === "string" && toastDesktopPositionOptions.includes(value as ToastDesktopPosition),
   },
+  backupEnabled: {
+    key: "backup_enabled",
+    label: "Backups aktiv",
+    description: "Aktiviert oder deaktiviert den automatischen Backup-Scheduler.",
+    type: "boolean",
+    defaultValue: true,
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
   calendarWeekendColumnPercent: {
     key: "calendarWeekendColumnPercent",
     label: "Kalender Wochenende Breite (%)",

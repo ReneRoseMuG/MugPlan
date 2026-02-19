@@ -1651,6 +1651,34 @@ export const api = {
       },
     },
   },
+  backups: {
+    listLogs: {
+      method: "GET" as const,
+      path: "/api/admin/backups/logs",
+      responses: {
+        200: z.array(
+          z.object({
+            id: z.number().int().positive(),
+            createdAt: z.string(),
+            status: z.enum(["success", "error", "skipped"]),
+            errorMessage: z.string().nullable(),
+            exportedRecordCount: z.number().int().min(0),
+            filePath: z.string().nullable(),
+          }),
+        ),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    download: {
+      method: "GET" as const,
+      path: "/api/admin/backups/:id/download/:kind",
+      responses: {
+        200: z.any(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   userSettings: {
     getResolved: {
       method: 'GET' as const,

@@ -20,6 +20,7 @@ import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
 import { useListFilters } from "@/hooks/useListFilters";
+import { useSetting } from "@/hooks/useSettings";
 import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
 
 export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData' | 'users';
@@ -50,6 +51,8 @@ export default function Home({ onLogout }: HomeProps) {
   } | null>(null);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const backupEnabled = useSetting("backup_enabled");
+  const backupDisabled = backupEnabled === false;
 
   // Handlers for navigation
   const next = () => {
@@ -130,7 +133,13 @@ export default function Home({ onLogout }: HomeProps) {
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
       {/* Left Sidebar - 20% Width */}
       <aside className="w-[20%] h-full flex-shrink-0 z-10 relative">
-        <Sidebar onViewChange={handleViewChange} onLogout={onLogout} currentView={view} userRole={userRole} />
+        <Sidebar
+          onViewChange={handleViewChange}
+          onLogout={onLogout}
+          currentView={view}
+          userRole={userRole}
+          backupDisabled={backupDisabled}
+        />
       </aside>
 
       {/* Main Content - 80% Width */}

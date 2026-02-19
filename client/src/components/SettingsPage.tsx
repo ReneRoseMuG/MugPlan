@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@shared/routes";
 
 function stringifyValue(value: unknown): string {
   if (value === null || value === undefined) return "-";
@@ -25,6 +28,30 @@ const defaultHoverPreviewOpenDelayMs = 380;
 const defaultCardListColumns = 4;
 const defaultToastDesktopPosition: ToastDesktopPosition = "bottom-right";
 
+type BackupLogRow = {
+  id: number;
+  createdAt: string;
+  status: "success" | "error" | "skipped";
+  errorMessage: string | null;
+  exportedRecordCount: number;
+  filePath: string | null;
+};
+
+function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; pdfPath?: string } {
+  if (!filePathRaw) return {};
+  try {
+    const parsed = JSON.parse(filePathRaw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const candidate = parsed as { excelPath?: unknown; pdfPath?: unknown };
+    return {
+      excelPath: typeof candidate.excelPath === "string" ? candidate.excelPath : undefined,
+      pdfPath: typeof candidate.pdfPath === "string" ? candidate.pdfPath : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
 
@@ -36,6 +63,21 @@ export function SettingsPage() {
   const monthScrollRangeSetting = settingsByKey.get("calendarMonthScrollRange");
   const hoverPreviewOpenDelaySetting = settingsByKey.get("hoverPreviewOpenDelayMs");
   const cardListColumnsSetting = settingsByKey.get("cardListColumns");
+  const backupEnabledSetting = settingsByKey.get("backup_enabled");
+
+  const backupsQuery = useQuery<BackupLogRow[]>({
+    queryKey: [api.backups.listLogs.path],
+    queryFn: async () => {
+      const response = await fetch(api.backups.listLogs.path, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Backups konnten nicht geladen werden");
+      }
+      return response.json();
+    },
+  });
 
   const resolvedPreviewValue = useMemo(() => {
     const value = previewSetting?.resolvedValue;
@@ -97,6 +139,11 @@ export function SettingsPage() {
     return defaultCardListColumns;
   }, [cardListColumnsSetting?.resolvedValue]);
 
+  const resolvedBackupEnabled = useMemo(() => {
+    const value = backupEnabledSetting?.resolvedValue;
+    return typeof value === "boolean" ? value : true;
+  }, [backupEnabledSetting?.resolvedValue]);
+
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
   const [storagePathValue, setStoragePathValue] = useState<string>(resolvedStoragePath);
   const [toastDesktopPositionValue, setToastDesktopPositionValue] = useState<ToastDesktopPosition>(resolvedToastDesktopPosition);
@@ -105,6 +152,7 @@ export function SettingsPage() {
   const [monthScrollRangeValue, setMonthScrollRangeValue] = useState<string>(String(resolvedMonthScrollRange));
   const [hoverPreviewOpenDelayValue, setHoverPreviewOpenDelayValue] = useState<string>(String(resolvedHoverPreviewOpenDelay));
   const [cardListColumnsValue, setCardListColumnsValue] = useState<string>(String(resolvedCardListColumns));
+  const [backupEnabledValue, setBackupEnabledValue] = useState<boolean>(resolvedBackupEnabled);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [toastDesktopPositionError, setToastDesktopPositionError] = useState<string | null>(null);
@@ -113,6 +161,7 @@ export function SettingsPage() {
   const [monthScrollRangeError, setMonthScrollRangeError] = useState<string | null>(null);
   const [hoverPreviewOpenDelayError, setHoverPreviewOpenDelayError] = useState<string | null>(null);
   const [cardListColumnsError, setCardListColumnsError] = useState<string | null>(null);
+  const [backupEnabledError, setBackupEnabledError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
   const [storageSaved, setStorageSaved] = useState(false);
   const [toastDesktopPositionSaved, setToastDesktopPositionSaved] = useState(false);
@@ -121,6 +170,7 @@ export function SettingsPage() {
   const [monthScrollRangeSaved, setMonthScrollRangeSaved] = useState(false);
   const [hoverPreviewOpenDelaySaved, setHoverPreviewOpenDelaySaved] = useState(false);
   const [cardListColumnsSaved, setCardListColumnsSaved] = useState(false);
+  const [backupEnabledSaved, setBackupEnabledSaved] = useState(false);
 
   useEffect(() => {
     setPreviewValue(resolvedPreviewValue);
@@ -153,6 +203,10 @@ export function SettingsPage() {
   useEffect(() => {
     setCardListColumnsValue(String(resolvedCardListColumns));
   }, [resolvedCardListColumns]);
+
+  useEffect(() => {
+    setBackupEnabledValue(resolvedBackupEnabled);
+  }, [resolvedBackupEnabled]);
 
   if (isLoading) {
     return (
@@ -326,6 +380,24 @@ export function SettingsPage() {
       setCardListColumnsError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
+
+  const handleSaveBackupEnabled = async () => {
+    setBackupEnabledError(null);
+    setBackupEnabledSaved(false);
+    try {
+      await setSetting({
+        key: "backup_enabled",
+        scopeType: "GLOBAL",
+        value: backupEnabledValue,
+      });
+      setBackupEnabledSaved(true);
+      void backupsQuery.refetch();
+    } catch (error) {
+      setBackupEnabledError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const backupRows = backupsQuery.data ?? [];
 
   return (
     <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white p-6 flex flex-col" data-testid="settings-landing-page">
@@ -527,6 +599,88 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(cardListColumnsSetting?.resolvedValue ?? defaultCardListColumns)} ({cardListColumnsSetting?.resolvedScope ?? "-"})</p>
           {cardListColumnsSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {cardListColumnsError && <p className="mt-1 text-xs text-destructive">{cardListColumnsError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-enabled">
+          <p className="font-semibold text-slate-900">{backupEnabledSetting?.label ?? "Backups aktiv"}</p>
+          <p className="mb-3 text-xs text-slate-500">{backupEnabledSetting?.description ?? "Aktiviert den automatischen Backup-Job."}</p>
+
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={backupEnabledValue}
+              onCheckedChange={setBackupEnabledValue}
+              data-testid="switch-setting-backup-enabled"
+            />
+            <span className="text-sm text-slate-700">{backupEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+            <Button onClick={() => void handleSaveBackupEnabled()} disabled={isSaving} data-testid="button-save-backup-enabled">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">
+            Wirksam: {stringifyValue(backupEnabledSetting?.resolvedValue ?? true)} ({backupEnabledSetting?.resolvedScope ?? "-"})
+          </p>
+          {backupEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {backupEnabledError && <p className="mt-1 text-xs text-destructive">{backupEnabledError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="font-semibold text-slate-900">Backups (Read-Only Monitoring)</p>
+            <Button variant="outline" size="sm" onClick={() => void backupsQuery.refetch()} data-testid="button-backups-refresh">
+              Aktualisieren
+            </Button>
+          </div>
+
+          {backupsQuery.isLoading ? (
+            <p className="text-sm text-slate-500">Backups werden geladen...</p>
+          ) : backupsQuery.isError ? (
+            <p className="text-sm text-destructive">Backups konnten nicht geladen werden.</p>
+          ) : backupRows.length === 0 ? (
+            <p className="text-sm text-slate-500">Noch keine Backup-Eintraege vorhanden.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm" data-testid="table-backup-logs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left">
+                    <th className="px-2 py-2">Created</th>
+                    <th className="px-2 py-2">Status</th>
+                    <th className="px-2 py-2">Fehlermeldung</th>
+                    <th className="px-2 py-2">Anzahl exportierter Datensaetze</th>
+                    <th className="px-2 py-2">Download</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {backupRows.map((row) => (
+                    <tr key={row.id} className="border-b border-slate-100" data-testid={`backup-row-${row.id}`}>
+                      <td className="px-2 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
+                      <td className="px-2 py-2">{row.status}</td>
+                      <td className="px-2 py-2">{row.errorMessage ?? "-"}</td>
+                      <td className="px-2 py-2">{row.exportedRecordCount}</td>
+                      <td className="px-2 py-2">
+                        <div className="flex gap-2">
+                          {parseBackupFileRefs(row.filePath).excelPath ? (
+                            <a href={`/api/admin/backups/${row.id}/download/excel`} className="underline text-primary" data-testid={`backup-download-excel-${row.id}`}>
+                              Excel
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">Excel</span>
+                          )}
+                          {parseBackupFileRefs(row.filePath).pdfPath ? (
+                            <a href={`/api/admin/backups/${row.id}/download/pdf`} className="underline text-primary" data-testid={`backup-download-pdf-${row.id}`}>
+                              PDF
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">PDF</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
         </div>
       </div>
