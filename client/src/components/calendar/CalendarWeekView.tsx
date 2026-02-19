@@ -29,8 +29,10 @@ type CalendarWeekViewProps = {
   employeeFilterId?: number | null;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
-  onNewAppointment?: (date: string, options?: { tourId?: number | null }) => void;
+  onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number) => void;
+  restoreScrollLeft?: number | null;
+  onScrollRestoreApplied?: () => void;
 };
 
 type WeekDayBucket = {
@@ -57,6 +59,8 @@ export function CalendarWeekView({
   onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
+  restoreScrollLeft,
+  onScrollRestoreApplied,
 }: CalendarWeekViewProps) {
   // FIX-RULE:
   // Navigation/Sync-Signale werden absichtlich nicht verarbeitet.
@@ -65,6 +69,7 @@ export function CalendarWeekView({
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
   const appointmentHeightByIdRef = useRef<Map<number, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
+  const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
   const [, setAppointmentHeightVersion] = useState(0);
   const { toast } = useToast();
@@ -123,6 +128,19 @@ export function CalendarWeekView({
     appointmentHeightByIdRef.current.clear();
     setAppointmentHeightVersion((prev) => prev + 1);
   }, [scrollResetKey]);
+
+  useEffect(() => {
+    if (typeof restoreScrollLeft !== "number" || !Number.isFinite(restoreScrollLeft)) return;
+    const node = horizontalScrollContainerRef.current;
+    if (!node) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      node.scrollLeft = Math.max(0, restoreScrollLeft);
+      onScrollRestoreApplied?.();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [onScrollRestoreApplied, restoreScrollLeft, scrollResetKey]);
 
   const { data: appointments = [] } = useCalendarAppointments({
     fromDate: stripFromDate,
@@ -498,7 +516,7 @@ export function CalendarWeekView({
        * Der key setzt den Scrollcontainer deterministisch neu auf den linken Rand (0),
        * ohne Scrollwerte zu lesen oder zu speichern.
        */}
-      <div key={scrollResetKey} className="flex-1 overflow-x-auto overflow-y-hidden">
+      <div key={scrollResetKey} ref={horizontalScrollContainerRef} className="flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full">
           {weekStarts.map((weekStart, weekIndex) => {
             const weekKey = format(weekStart, "yyyy-MM-dd");
@@ -598,12 +616,14 @@ export function CalendarWeekView({
                                 {dayBucket.dateKey >= berlinToday ? (
                                   <button
                                     onClick={() => {
+                                      const scrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
                                       console.info(`${logPrefix} new appointment click`, {
                                         date: dayBucket.dateKey,
                                         tourId: tourLane.tourId,
                                         laneKey: tourLane.laneKey,
+                                        scrollLeft,
                                       });
-                                      onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId });
+                                      onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft });
                                     }}
                                     className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none text-white/85 hover:bg-white/15 hover:text-white"
                                     data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}

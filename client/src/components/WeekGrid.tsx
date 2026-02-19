@@ -6,11 +6,22 @@ interface WeekGridProps {
   employeeFilterId?: number | null;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
-  onNewAppointment?: (date: string, options?: { tourId?: number | null }) => void;
+  onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number) => void;
+  restoreScrollLeft?: number | null;
+  onScrollRestoreApplied?: () => void;
 }
 
-export function WeekGrid({ currentDate, employeeFilterId, navCommand, onVisibleDateChange, onNewAppointment, onOpenAppointment }: WeekGridProps) {
+export function WeekGrid({
+  currentDate,
+  employeeFilterId,
+  navCommand,
+  onVisibleDateChange,
+  onNewAppointment,
+  onOpenAppointment,
+  restoreScrollLeft,
+  onScrollRestoreApplied,
+}: WeekGridProps) {
   return (
     <CalendarWeekView
       currentDate={currentDate}
@@ -19,6 +30,8 @@ export function WeekGrid({ currentDate, employeeFilterId, navCommand, onVisibleD
       onVisibleDateChange={onVisibleDateChange}
       onNewAppointment={onNewAppointment}
       onOpenAppointment={onOpenAppointment}
+      restoreScrollLeft={restoreScrollLeft}
+      onScrollRestoreApplied={onScrollRestoreApplied}
     />
   );
 }

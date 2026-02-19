@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useCallback, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { WeekGrid } from "@/components/WeekGrid";
@@ -48,11 +48,29 @@ export default function Home({ onLogout }: HomeProps) {
     projectId?: number;
     appointmentId?: number;
     returnView?: ViewType;
+    weekScrollLeft?: number | null;
   } | null>(null);
+  const [pendingWeekScrollRestore, setPendingWeekScrollRestore] = useState<number | null>(null);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const backupEnabled = useSetting("backup_enabled");
   const backupDisabled = backupEnabled === false;
+  const handleWeekScrollRestoreApplied = useCallback(() => {
+    setPendingWeekScrollRestore(null);
+  }, []);
+  const returnFromAppointment = () => {
+    const context = appointmentContext;
+    const returnToProject = Boolean(context?.projectId);
+    const returnView = context?.returnView ?? "month";
+    const weekScrollLeft = context?.weekScrollLeft;
+    if (!returnToProject && returnView === "week" && typeof weekScrollLeft === "number" && Number.isFinite(weekScrollLeft) && weekScrollLeft >= 0) {
+      setPendingWeekScrollRestore(weekScrollLeft);
+    } else {
+      setPendingWeekScrollRestore(null);
+    }
+    setAppointmentContext(null);
+    setView(returnToProject ? "project" : returnView);
+  };
 
   // Handlers for navigation
   const next = () => {
@@ -83,13 +101,20 @@ export default function Home({ onLogout }: HomeProps) {
           employeeFilterId={calendarFilters.employeeId}
           onNewAppointment={(date, options) => {
             console.info("[calendar] new appointment", { date, tourId: options?.tourId ?? null, view: "week" });
-            setAppointmentContext({ initialDate: date, initialTourId: options?.tourId ?? null, returnView: "week" });
+            setAppointmentContext({
+              initialDate: date,
+              initialTourId: options?.tourId ?? null,
+              returnView: "week",
+              weekScrollLeft: options?.scrollLeft ?? null,
+            });
             setView('appointment');
           }}
           onOpenAppointment={(appointmentId) => {
             setAppointmentContext({ appointmentId, returnView: "week" });
             setView('appointment');
           }}
+          restoreScrollLeft={pendingWeekScrollRestore}
+          onScrollRestoreApplied={handleWeekScrollRestoreApplied}
         />
       );
     }
@@ -192,18 +217,8 @@ export default function Home({ onLogout }: HomeProps) {
               initialDate={appointmentContext?.initialDate}
               initialTourId={appointmentContext?.initialTourId}
               projectId={appointmentContext?.projectId}
-              onCancel={() => {
-                const returnToProject = Boolean(appointmentContext?.projectId);
-                const returnView = appointmentContext?.returnView ?? 'month';
-                setAppointmentContext(null);
-                setView(returnToProject ? 'project' : returnView);
-              }}
-              onSaved={() => {
-                const returnToProject = Boolean(appointmentContext?.projectId);
-                const returnView = appointmentContext?.returnView ?? 'month';
-                setAppointmentContext(null);
-                setView(returnToProject ? 'project' : returnView);
-              }}
+              onCancel={returnFromAppointment}
+              onSaved={returnFromAppointment}
             />
           ) : view === 'appointmentsList' ? (
             <AppointmentsListPage

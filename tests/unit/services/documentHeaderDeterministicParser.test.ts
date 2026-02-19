@@ -13,6 +13,7 @@
  * - Feldvalidierung verhindert Fehlzuordnung von Bearbeiter/Datum auf Nummernfelder.
  * - WaWi-Adresszeilen (Identitaet, Strasse, PLZ/Ort; Anrede optional) werden deterministisch geparst.
  * - Identitaet wird je nach Muster als Person, Firma oder Person+Firma aufgeloest.
+ * - Personenzeilen mit Unicode-Namen und OCR-Sonderzeichen werden robust erkannt.
  * - Fehlende oder mehrfache Kundennummer fuehren zu Fehlern.
  *
  * Fehlerfaelle:
@@ -449,6 +450,31 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("Hannoversche Straße 164");
     expect(parsed.postalCode).toBe("30823");
     expect(parsed.city).toBe("Garbsen");
+  });
+
+  it("parses person identity with unicode letters and OCR accent artifacts", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Ren\u00E9\u00B4 R\u00E4pple",
+      "H\u00F6lderlinstra\u00DFe 6",
+      "68542 Heddesheim",
+      "Deutschland",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "A0118075A",
+      "162765",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.firstName).toBe("Ren\u00E9");
+    expect(parsed.lastName).toBe("R\u00E4pple");
+    expect(parsed.customerNumber).toBe("162765");
+    expect(parsed.orderNumber).toBe("A0118075A");
+    expect(parsed.addressLine1).toBe("H\u00F6lderlinstra\u00DFe 6");
+    expect(parsed.postalCode).toBe("68542");
+    expect(parsed.city).toBe("Heddesheim");
   });
 
   it("throws deterministic address-pattern error when street line is missing", () => {

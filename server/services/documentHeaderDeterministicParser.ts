@@ -246,6 +246,15 @@ function normalizeIdentityLine(value: string | null): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function normalizeNameToken(token: string): string {
+  return token
+    .normalize("NFKC")
+    .replace(/\s+/g, "")
+    .replace(/^[`'´.,;:!?()[\]{}]+/g, "")
+    .replace(/[`'´.,;:!?()[\]{}]+$/g, "")
+    .replace(/^\p{M}+|\p{M}+$/gu, "");
+}
+
 function parsePersonLine(value: string | null): { firstName: string; lastName: string } | null {
   const normalized = normalizeIdentityLine(value);
   if (!normalized) return null;
@@ -254,9 +263,12 @@ function parsePersonLine(value: string | null): { firstName: string; lastName: s
   const withoutSalutation = normalized.replace(/^(herr|frau|familie)\b[:\s]*/i, "").trim();
   if (withoutSalutation.length === 0) return null;
 
-  const tokens = withoutSalutation.split(/\s+/).filter((token) => token.length > 0);
+  const tokens = withoutSalutation
+    .split(/\s+/)
+    .map((token) => normalizeNameToken(token))
+    .filter((token) => token.length > 0);
   if (tokens.length < 2) return null;
-  if (!tokens.every((token) => /^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß'`-]*$/.test(token))) return null;
+  if (!tokens.every((token) => /^\p{L}[\p{L}\p{M}'`´-]*$/u.test(token))) return null;
 
   return {
     firstName: tokens[0],
