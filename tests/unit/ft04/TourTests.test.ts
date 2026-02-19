@@ -7,14 +7,16 @@
  * Abgedeckte Regeln:
  * - Tournamen werden serverseitig deterministisch als "Tour N" vergeben.
  * - Tour-Update/Delete verlangen gueltige Version >= 1.
+ * - Tour-Delete ist gesperrt, wenn Termine auf die Tour verweisen (BUSINESS_CONFLICT).
  * - Der aktuelle Tour-Contract kennt nur "color" (kein Namefeld).
  *
  * Fehlerfaelle:
  * - Ungueltige Version fuehrt zu VALIDATION_ERROR.
+ * - Loeschen bei verknuepften Terminen liefert BUSINESS_CONFLICT.
  * - Leerer Name als Sollfall ist im Contract nicht vorgesehen.
  *
  * Ziel:
- * Unit-Absicherung der FT04-Kernlogik und explizite Dokumentation von Soll-Ist-Abweichungen beim Namen.
+ * Unit-Absicherung der FT04-Kernlogik inkl. Loeschschutz bei Terminreferenzen.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@shared/routes";
@@ -22,6 +24,7 @@ import { api } from "@shared/routes";
 vi.mock("../../../server/repositories/toursRepository", () => ({
   getTours: vi.fn(),
   getTour: vi.fn(),
+  hasAppointmentsForTour: vi.fn(),
   createTour: vi.fn(),
   updateTourWithVersion: vi.fn(),
   deleteTourWithVersion: vi.fn(),
@@ -123,6 +126,7 @@ describe("FT04 Unit: TourTests", () => {
   });
 
   it("maps delete conflict to NOT_FOUND when entity no longer exists", async () => {
+    toursRepositoryMock.hasAppointmentsForTour.mockResolvedValue(false);
     toursRepositoryMock.deleteTourWithVersion.mockResolvedValue({ kind: "version_conflict" } as any);
     toursRepositoryMock.getTour.mockResolvedValue(null);
 
@@ -130,6 +134,16 @@ describe("FT04 Unit: TourTests", () => {
       status: 404,
       code: "NOT_FOUND",
     });
+  });
+
+  it("returns BUSINESS_CONFLICT when appointments reference the tour", async () => {
+    toursRepositoryMock.hasAppointmentsForTour.mockResolvedValue(true);
+
+    await expect(deleteTour(7, 1)).rejects.toMatchObject({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+    expect(toursRepositoryMock.deleteTourWithVersion).not.toHaveBeenCalled();
   });
 
   it("throws typed ToursError for direct type checks", () => {

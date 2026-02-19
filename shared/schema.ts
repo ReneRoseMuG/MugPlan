@@ -306,7 +306,7 @@ export const appointments = mysqlTable("appointments", {
   projectId: bigint("project_id", { mode: "number" })
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
-  tourId: int("tour_id").references(() => tours.id, { onDelete: "set null", onUpdate: "restrict" }),
+  tourId: int("tour_id").references(() => tours.id, { onDelete: "restrict", onUpdate: "restrict" }),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   startDate: date("start_date").notNull(),

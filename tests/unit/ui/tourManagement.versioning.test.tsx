@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Feature: FT07 - Tourverwaltung Multi-User
@@ -8,10 +8,12 @@
  * - Tour-PATCH sendet color und version.
  * - Tour-DELETE sendet version.
  * - Batch-Assign sendet items[{ employeeId, version }].
+ * - Dialog-Delete ist nur fuer ADMIN sichtbar und nutzt den Dialog-Delete-Flow.
  *
  * Fehlerfaelle:
  * - Fehlende Tour-/Employee-Version wird als VALIDATION_ERROR blockiert.
  * - VERSION_CONFLICT wird konfliktbezogen gemeldet.
+ * - BUSINESS_CONFLICT beim Loeschen wird mit FT04-Hinweistext gemeldet.
  *
  * Ziel:
  * Verdrahtung der Tour-Mutationen auf den Multi-User-Contract absichern.
@@ -27,7 +29,7 @@ describe("FT07 TourManagement versioning wiring", () => {
   it("sends version in tour update and delete payloads", () => {
     expect(source).toContain("apiRequest(\"PATCH\", `/api/tours/${id}`, { color, version })");
     expect(source).toContain("apiRequest(\"DELETE\", `/api/tours/${id}`, { version })");
-    expect(source).toContain("deleteMutation.mutate({ id: tour.id, version: tour.version })");
+    expect(source).toContain("deleteMutation.mutateAsync({ id: currentTour.id, version: currentTour.version })");
   });
 
   it("uses batch payload items with employee version", () => {
@@ -36,9 +38,16 @@ describe("FT07 TourManagement versioning wiring", () => {
     expect(source).toContain("apiRequest(\"POST\", `/api/tours/${tourId}/employees`, { items })");
   });
 
-  it("maps VERSION_CONFLICT to user-facing conflict text", () => {
+  it("maps VERSION_CONFLICT and BUSINESS_CONFLICT to user-facing conflict text", () => {
     expect(source).toContain("if (code === \"VERSION_CONFLICT\")");
-    expect(source).toContain("Datensatz wurde zwischenzeitlich geändert");
+    expect(source).toContain("Datensatz wurde zwischenzeitlich ge\u00e4ndert");
+    expect(source).toContain("if (code === \"BUSINESS_CONFLICT\")");
+    expect(source).toContain("Tour kann nicht gel\u00f6scht werden, solange Termine zugeordnet sind.");
+  });
+
+  it("wires admin-only delete action into the tour edit dialog", () => {
+    expect(source).toContain("const isAdmin = effectiveUserRole === \"ADMIN\";");
+    expect(source).toContain("onDelete={handleDeleteFromDialog}");
+    expect(source).toContain("canDelete={isAdmin}");
   });
 });
-

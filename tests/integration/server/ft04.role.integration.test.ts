@@ -6,7 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - READER darf laut Soll keine Touren anlegen, bearbeiten oder loeschen.
- * - DISPATCHER darf Tour-CRUD ausfuehren.
+ * - DISPATCHER darf Touren anlegen/bearbeiten, aber nicht loeschen.
  * - ADMIN darf Tour-CRUD und Tour-Mitarbeiteroperationen ausfuehren.
  *
  * Fehlerfaelle:
@@ -93,7 +93,7 @@ describe("FT04 integration: RoleTests", () => {
     await reader.delete(`/api/tours/${id}`).send({ version }).expect(403);
   });
 
-  it("allows DISPATCHER to perform tour CRUD", async () => {
+  it("allows DISPATCHER to create/update tours but blocks delete", async () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
 
     const created = await dispatcher.post("/api/tours").send({ color: "#1111aa" }).expect(201);
@@ -102,7 +102,7 @@ describe("FT04 integration: RoleTests", () => {
       .send({ color: "#22aa22", version: created.body.version })
       .expect(200);
 
-    await dispatcher.delete(`/api/tours/${created.body.id}`).send({ version: updated.body.version }).expect(204);
+    await dispatcher.delete(`/api/tours/${created.body.id}`).send({ version: updated.body.version }).expect(403);
   });
 
   it("allows ADMIN to perform tour CRUD and tour-employee operations", async () => {

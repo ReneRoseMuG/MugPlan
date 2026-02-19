@@ -7,6 +7,10 @@ function canMutateTours(req: Request): boolean {
   return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
 }
 
+function canDeleteTours(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN";
+}
+
 export async function listTours(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tours = await toursService.listTours();
@@ -62,7 +66,7 @@ export async function updateTour(req: Request, res: Response, next: NextFunction
 
 export async function deleteTour(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    if (!canMutateTours(req)) {
+    if (!canDeleteTours(req)) {
       res.status(403).json({ code: "FORBIDDEN" });
       return;
     }

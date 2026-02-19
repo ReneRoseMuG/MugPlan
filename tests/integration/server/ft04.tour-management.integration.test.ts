@@ -7,15 +7,17 @@
  * Abgedeckte Regeln:
  * - Tour-CRUD ueber API mit Versionierung fuer Update/Delete.
  * - Mehrfache Farbaenderung erhoeht Version deterministisch.
+ * - Tour-Delete ist gesperrt, solange Termine mit tour_id verknuepft sind.
  * - Loeschen einer Tour setzt employee.tourId auf NULL.
  * - Nicht existierende Tour-IDs liefern NOT_FOUND.
  *
  * Fehlerfaelle:
  * - Ungueltige Create-Payload liefert VALIDATION_ERROR.
+ * - Loeschen bei verknuepften Terminen liefert BUSINESS_CONFLICT.
  * - Name-Felder in Requests werden aktuell nicht als editierbares Tourmerkmal verarbeitet.
  *
  * Ziel:
- * Ist-Zustand der FT04-Tour-Stammdaten serverseitig dokumentieren, ohne Produktcodeaenderungen.
+ * End-to-end-Absicherung der FT04-Loeschregeln inklusive Termin-Referenzschutz.
  */
 import express from "express";
 import { createServer } from "http";
@@ -23,9 +25,13 @@ import request, { type SuperAgentTest } from "supertest";
 import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
+import * as appointmentsService from "../../../server/services/appointmentsService";
+import * as customersService from "../../../server/services/customersService";
+import * as projectsService from "../../../server/services/projectsService";
 
 let app: express.Express;
 let employeeCounter = 1;
+let customerCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -38,6 +44,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   employeeCounter = 1;
+  customerCounter = 1;
 });
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
@@ -58,6 +65,30 @@ async function createEmployee(agent: SuperAgentTest) {
     })
     .expect(201);
   return response.body as { id: number; version: number; tourId: number | null };
+}
+
+async function createProjectForTourDeleteTest() {
+  const customer = await customersService.createCustomer({
+    customerNumber: `FT04-DEL-${customerCounter}`,
+    firstName: "Test",
+    lastName: `Tour-${customerCounter}`,
+    fullName: `Tour-${customerCounter}, Test`,
+    company: null,
+    email: null,
+    phone: "12345",
+    addressLine1: null,
+    addressLine2: null,
+    postalCode: null,
+    city: null,
+    version: 1,
+  });
+  customerCounter += 1;
+  return projectsService.createProject({
+    name: `FT04-TourDelete-${customerCounter}`,
+    customerId: customer.id,
+    descriptionMd: null,
+    version: 1,
+  });
 }
 
 describe("FT04 integration: TourTests", () => {
@@ -148,6 +179,32 @@ describe("FT04 integration: TourTests", () => {
 
     await admin.get(`/api/employees/${employee.id}`).expect(200).expect((res) => {
       expect(res.body.employee.tourId).toBeNull();
+    });
+  });
+
+  it("returns BUSINESS_CONFLICT when deleting a tour that is referenced by appointments", async () => {
+    const admin = await loginAdminAgent();
+    const tour = await admin.post("/api/tours").send({ color: "#a0a0a0" }).expect(201);
+    const project = await createProjectForTourDeleteTest();
+
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-01-10",
+      tourId: tour.body.id,
+      employeeIds: [],
+    });
+    expect(appointment).toBeTruthy();
+
+    await admin.delete(`/api/tours/${tour.body.id}`).send({ version: tour.body.version }).expect(409).expect((res) => {
+      expect(res.body.code).toBe("BUSINESS_CONFLICT");
+    });
+
+    await admin.get("/api/tours").expect(200).expect((res) => {
+      expect(res.body.some((entry: { id: number }) => entry.id === tour.body.id)).toBe(true);
+    });
+
+    await admin.get(`/api/appointments/${(appointment as { id: number }).id}`).expect(200).expect((res) => {
+      expect(res.body.tourId).toBe(tour.body.id);
     });
   });
 

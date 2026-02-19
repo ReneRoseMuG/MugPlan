@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Route } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmployeeSelectEntityEditDialog } from "./employee-select-entity-edit-dialog";
 import type { Tour, Employee } from "@shared/schema";
 
@@ -13,6 +14,9 @@ export interface TourEditDialogProps {
   tour: TourWithMembers | null;
   allEmployees: Employee[];
   onSubmit: (tourId: number | null, employeeIds: number[], color: string) => Promise<void>;
+  onDelete?: () => Promise<void>;
+  canDelete?: boolean;
+  isDeleting?: boolean;
   isSaving: boolean;
   isCreate?: boolean;
   defaultName?: string;
@@ -25,6 +29,9 @@ export function TourEditDialog({
   tour,
   allEmployees,
   onSubmit,
+  onDelete,
+  canDelete = false,
+  isDeleting = false,
   isSaving,
   isCreate = false,
   defaultName = "Neue Tour",
@@ -78,6 +85,23 @@ export function TourEditDialog({
       colorPickerTestId="button-tour-color-picker"
       saveTestId="button-save-tour-members"
       cancelTestId="button-cancel-tour"
-    />
+    >
+      {!isCreate && canDelete && tour && onDelete ? (
+        <div className="flex justify-end">
+          <Button
+            variant="destructive"
+            onClick={() => {
+              void onDelete().catch(() => {
+                // errors are handled by mutation toasts in the parent
+              });
+            }}
+            disabled={isSaving || isDeleting}
+            data-testid="button-delete-tour-dialog"
+          >
+            {isDeleting ? "Loeschen..." : "Tour loeschen"}
+          </Button>
+        </div>
+      ) : null}
+    </EmployeeSelectEntityEditDialog>
   );
 }

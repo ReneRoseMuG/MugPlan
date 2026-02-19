@@ -50,3 +50,13 @@ export async function deleteTourWithVersion(
   const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
   return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "deleted" };
 }
+
+export async function hasAppointmentsForTour(tourId: number): Promise<boolean> {
+  const result = await db.execute(sql`
+    select count(*) as count
+    from appointments
+    where tour_id = ${tourId}
+  `);
+  const countRaw = (result as any)?.[0]?.[0]?.count ?? (result as any)?.[0]?.count ?? 0;
+  return Number(countRaw) > 0;
+}

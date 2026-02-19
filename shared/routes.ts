@@ -477,7 +477,7 @@ export const api = {
         204: z.void(),
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

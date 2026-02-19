@@ -20,12 +20,15 @@ interface TourWithMembers extends Tour {
 
 interface TourManagementProps {
   onCancel?: () => void;
+  userRole?: string;
 }
 
-export function TourManagement({ onCancel }: TourManagementProps) {
+export function TourManagement({ onCancel, userRole }: TourManagementProps) {
   const { toast } = useToast();
   const [editingTour, setEditingTour] = useState<TourWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
+  const isAdmin = effectiveUserRole === "ADMIN";
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -115,6 +118,14 @@ export function TourManagement({ onCancel }: TourManagementProps) {
           description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
+        return;
+      }
+      if (code === "BUSINESS_CONFLICT") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Tour kann nicht gelöscht werden, solange Termine zugeordnet sind.",
+          variant: "destructive",
+        });
       }
     },
   });
@@ -181,10 +192,17 @@ export function TourManagement({ onCancel }: TourManagementProps) {
     setIsCreating(false);
   };
 
-  const handleDelete = (tour: TourWithMembers) => {
-    if (window.confirm(`Wollen Sie die Tour ${tour.name} wirklich löschen?`)) {
-      deleteMutation.mutate({ id: tour.id, version: tour.version });
+  const handleDeleteFromDialog = async () => {
+    if (!editingTour || !isAdmin) return;
+    const currentTour = tours.find((entry) => entry.id === editingTour.id);
+    if (!currentTour || !Number.isInteger(currentTour.version) || currentTour.version < 1) {
+      throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing tour version"}');
     }
+    if (!window.confirm(`Wollen Sie die Tour ${currentTour.name} wirklich löschen?`)) {
+      return;
+    }
+    await deleteMutation.mutateAsync({ id: currentTour.id, version: currentTour.version });
+    handleCloseDialog();
   };
 
   return (
@@ -231,8 +249,6 @@ export function TourManagement({ onCancel }: TourManagementProps) {
                   title={tour.name}
                   icon={<Route className="w-4 h-4" />}
                   borderColor={tour.color}
-                  onDelete={() => handleDelete(tour)}
-                  isDeleting={deleteMutation.isPending}
                   testId={`card-tour-${tour.id}`}
                   onDoubleClick={() => handleOpenEdit(tour)}
                   footer={
@@ -283,6 +299,9 @@ export function TourManagement({ onCancel }: TourManagementProps) {
         tour={editingTour ? (toursWithMembers.find((tour) => tour.id === editingTour.id) || editingTour) : null}
         allEmployees={employees}
         onSubmit={handleSubmitTour}
+        onDelete={handleDeleteFromDialog}
+        canDelete={isAdmin}
+        isDeleting={deleteMutation.isPending}
         isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
         isCreate={isCreating}
         defaultName={getNextTourName()}

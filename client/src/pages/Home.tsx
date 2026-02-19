@@ -154,7 +154,7 @@ export default function Home({ onLogout }: HomeProps) {
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView('customer'); }}
             />
           ) : view === 'tours' ? (
-            <TourManagement />
+            <TourManagement userRole={userRole} />
           ) : view === 'teams' ? (
             <TeamManagement />
           ) : view === 'employees' ? (

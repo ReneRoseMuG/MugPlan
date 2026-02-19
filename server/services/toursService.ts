@@ -3,9 +3,9 @@ import * as toursRepository from "../repositories/toursRepository";
 
 export class ToursError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
+  code: "VERSION_CONFLICT" | "BUSINESS_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
+  constructor(status: number, code: "VERSION_CONFLICT" | "BUSINESS_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
     super(code);
     this.status = status;
     this.code = code;
@@ -56,7 +56,27 @@ export async function deleteTour(id: number, version: number): Promise<void> {
   if (!Number.isInteger(version) || version < 1) {
     throw new ToursError(422, "VALIDATION_ERROR");
   }
-  const result = await toursRepository.deleteTourWithVersion(id, version);
+
+  const hasAppointments = await toursRepository.hasAppointmentsForTour(id);
+  if (hasAppointments) {
+    throw new ToursError(409, "BUSINESS_CONFLICT");
+  }
+
+  let result: Awaited<ReturnType<typeof toursRepository.deleteTourWithVersion>>;
+  try {
+    result = await toursRepository.deleteTourWithVersion(id, version);
+  } catch (error) {
+    const mysqlError = error as { code?: string; errno?: number } | null;
+    const isFkConflict =
+      mysqlError?.code === "ER_ROW_IS_REFERENCED_2" ||
+      mysqlError?.code === "ER_ROW_IS_REFERENCED" ||
+      mysqlError?.errno === 1451;
+    if (isFkConflict) {
+      throw new ToursError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+
   if (result.kind === "version_conflict") {
     const exists = await toursRepository.getTour(id);
     if (!exists) {
