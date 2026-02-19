@@ -51,6 +51,22 @@ interface ProjectFormProps {
 export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
+  const invalidateAppointmentProjectionQueries = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: ["calendarAppointments"],
+    });
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return key === "appointments-list"
+          || key === "projects-page-appointments"
+          || key === "customers-page-appointments"
+          || key === "employees-page-appointments"
+          || key === "customerAppointments"
+          || key === "projectAppointments";
+      },
+    });
+  };
   const invalidateProjectQueries = async () => {
     await queryClient.invalidateQueries({
       predicate: (query) => {
@@ -61,6 +77,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     await queryClient.invalidateQueries({
       queryKey: ["projects-page-statuses"],
     });
+    await invalidateAppointmentProjectionQueries();
   };
   
   const [name, setName] = useState("");
