@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import fs from "fs";
 import * as backupService from "../services/backupService";
 
 function getRoleKeyFromRequest(req: Request) {
@@ -38,7 +39,15 @@ export async function downloadBackupFile(req: Request, res: Response, next: Next
     }
 
     const file = await backupService.resolveBackupDownloadPath({ roleKey }, backupLogId, kind);
-    res.download(file.filePath, file.fileName);
+    res.setHeader("Content-Disposition", `attachment; filename="${file.fileName}"`);
+    res.setHeader("Content-Type", kind === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+    await new Promise<void>((resolve, reject) => {
+      const stream = fs.createReadStream(file.filePath);
+      stream.on("error", reject);
+      res.on("finish", () => resolve());
+      stream.pipe(res);
+    });
   } catch (error) {
     if (backupService.isBackupServiceError(error)) {
       res.status(error.status).json({ code: error.code, message: error.message });
@@ -47,4 +56,3 @@ export async function downloadBackupFile(req: Request, res: Response, next: Next
     next(error);
   }
 }
-

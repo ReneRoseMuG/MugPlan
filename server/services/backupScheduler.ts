@@ -14,6 +14,9 @@ let schedulerStarted = false;
 const schedulerLockKey = "ft07_backup_scheduler_lock";
 
 async function acquireSchedulerLock(): Promise<boolean> {
+  if (process.env.FT07_DISABLE_DB_LOCK === "1") {
+    return true;
+  }
   const [row] = await db.execute(sql`SELECT GET_LOCK(${schedulerLockKey}, 0) AS lock_ok`) as unknown as Array<{ lock_ok?: number }>;
   return Number(row?.lock_ok ?? 0) === 1;
 }

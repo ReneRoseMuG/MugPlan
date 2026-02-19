@@ -481,27 +481,6 @@ export function SettingsPage() {
           {storageError && <p className="mt-1 text-xs text-destructive">{storageError}</p>}
         </div>
 
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-base-path">
-          <p className="font-semibold text-slate-900">{backupBasePathSetting?.label ?? "Backup Basis-Pfad"}</p>
-          <p className="mb-3 text-xs text-slate-500">{backupBasePathSetting?.description ?? "Basis-Verzeichnis fuer Backups."}</p>
-
-          <div className="flex items-center gap-3">
-            <Input
-              value={backupBasePathValue}
-              onChange={(event) => setBackupBasePathValue(event.target.value)}
-              placeholder="Backups"
-              data-testid="input-setting-backup-base-path"
-            />
-            <Button onClick={() => void handleSaveBackupBasePath()} disabled={isSaving} data-testid="button-save-backup-base-path">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(backupBasePathSetting?.resolvedValue ?? "Backups")} ({backupBasePathSetting?.resolvedScope ?? "-"})</p>
-          {backupBasePathSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {backupBasePathError && <p className="mt-1 text-xs text-destructive">{backupBasePathError}</p>}
-        </div>
-
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-toastDesktopPosition">
           <p className="font-semibold text-slate-900">{toastDesktopPositionSetting?.label ?? "Toast Position Desktop"}</p>
           <p className="mb-3 text-xs text-slate-500">{toastDesktopPositionSetting?.description ?? "Steuert die Position von Info-Popups auf Desktop."}</p>
@@ -729,6 +708,27 @@ export function SettingsPage() {
               </table>
             </div>
           )}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-base-path">
+          <p className="font-semibold text-slate-900">{backupBasePathSetting?.label ?? "Backup Basis-Pfad"}</p>
+          <p className="mb-3 text-xs text-slate-500">{backupBasePathSetting?.description ?? "Basis-Verzeichnis fuer Backups."}</p>
+
+          <div className="flex items-center gap-3">
+            <Input
+              value={backupBasePathValue}
+              onChange={(event) => setBackupBasePathValue(event.target.value)}
+              placeholder="Backups"
+              data-testid="input-setting-backup-base-path"
+            />
+            <Button onClick={() => void handleSaveBackupBasePath()} disabled={isSaving} data-testid="button-save-backup-base-path">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(backupBasePathSetting?.resolvedValue ?? "Backups")} ({backupBasePathSetting?.resolvedScope ?? "-"})</p>
+          {backupBasePathSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {backupBasePathError && <p className="mt-1 text-xs text-destructive">{backupBasePathError}</p>}
         </div>
         </div>
       </div>

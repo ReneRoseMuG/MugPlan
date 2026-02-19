@@ -31,30 +31,18 @@ export type ExportAppointmentRow = {
   addressLine2: string | null;
 };
 
-let ensureToursUpdatedAtPromise: Promise<void> | null = null;
-
-async function ensureToursUpdatedAtColumn(): Promise<void> {
-  if (!ensureToursUpdatedAtPromise) {
-    ensureToursUpdatedAtPromise = db.execute(sql`
-      ALTER TABLE tours
-      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    `).then(() => undefined).catch(() => undefined);
-  }
-  await ensureToursUpdatedAtPromise;
-}
-
 export async function getLatestRelevantDataChangeAt(): Promise<Date | null> {
-  await ensureToursUpdatedAtColumn();
-
-  const [row] = await db.execute(sql`
+  const result = await db.execute(sql`
     SELECT GREATEST(
       IFNULL((SELECT MAX(updated_at) FROM appointments), '1970-01-01 00:00:00'),
       IFNULL((SELECT MAX(updated_at) FROM project), '1970-01-01 00:00:00'),
       IFNULL((SELECT MAX(updated_at) FROM customer), '1970-01-01 00:00:00'),
-      IFNULL((SELECT MAX(updated_at) FROM employee), '1970-01-01 00:00:00'),
-      IFNULL((SELECT MAX(updated_at) FROM tours), '1970-01-01 00:00:00')
+      IFNULL((SELECT MAX(updated_at) FROM employee), '1970-01-01 00:00:00')
     ) AS latest_change
-  `) as unknown as Array<{ latest_change?: Date | string | null }>;
+  `);
+
+  const rows = Array.isArray(result?.[0]) ? (result[0] as Array<{ latest_change?: Date | string | null }>) : [];
+  const row = rows[0];
 
   const rawValue = row?.latest_change ?? null;
   if (!rawValue) return null;
@@ -192,7 +180,6 @@ export async function getProjectStatusesByIds(projectIds: number[]) {
 }
 
 export async function listAllTours() {
-  await ensureToursUpdatedAtColumn();
   return db.select().from(tours).orderBy(asc(tours.id));
 }
 
