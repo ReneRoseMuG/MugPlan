@@ -55,3 +55,37 @@ export async function deleteNote(noteId: number, version: number): Promise<void>
     throw new NotesError(409, "VERSION_CONFLICT");
   }
 }
+
+export async function deleteCustomerScopedNote(customerId: number, noteId: number, version: number): Promise<void> {
+  if (!Number.isInteger(version) || version < 1) {
+    throw new NotesError(422, "VALIDATION_ERROR");
+  }
+  const result = await notesRepository.deleteCustomerScopedNoteWithVersion(customerId, noteId, version);
+  if (result.kind === "not_found") {
+    throw new NotesError(404, "NOT_FOUND");
+  }
+  if (result.kind === "version_conflict") {
+    const exists = await notesRepository.getNote(noteId);
+    if (!exists) {
+      throw new NotesError(404, "NOT_FOUND");
+    }
+    throw new NotesError(409, "VERSION_CONFLICT");
+  }
+}
+
+export async function deleteProjectScopedNote(projectId: number, noteId: number, version: number): Promise<void> {
+  if (!Number.isInteger(version) || version < 1) {
+    throw new NotesError(422, "VALIDATION_ERROR");
+  }
+  const result = await notesRepository.deleteProjectScopedNoteWithVersion(projectId, noteId, version);
+  if (result.kind === "not_found") {
+    throw new NotesError(404, "NOT_FOUND");
+  }
+  if (result.kind === "version_conflict") {
+    const exists = await notesRepository.getNote(noteId);
+    if (!exists) {
+      throw new NotesError(404, "NOT_FOUND");
+    }
+    throw new NotesError(409, "VERSION_CONFLICT");
+  }
+}

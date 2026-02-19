@@ -131,3 +131,75 @@ export async function deleteNoteWithVersion(
     throw error;
   });
 }
+
+export async function deleteCustomerScopedNoteWithVersion(
+  customerId: number,
+  noteId: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" } | { kind: "not_found" }> {
+  return db.transaction(async (tx) => {
+    const relationResult = await tx
+      .delete(customerNotes)
+      .where(sql`${customerNotes.customerId} = ${customerId} and ${customerNotes.noteId} = ${noteId}`);
+    const relationAffectedRows = Number((relationResult as any)?.[0]?.affectedRows ?? (relationResult as any)?.affectedRows ?? 0);
+    if (relationAffectedRows === 0) {
+      throw new Error("NOT_FOUND");
+    }
+
+    await tx.delete(projectNotes).where(eq(projectNotes.noteId, noteId));
+    const result = await tx.execute(sql`
+      delete from note
+      where id = ${noteId}
+        and version = ${expectedVersion}
+    `);
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      throw new Error("VERSION_CONFLICT");
+    }
+    return { kind: "deleted" as const };
+  }).catch((error) => {
+    if (error instanceof Error && error.message === "VERSION_CONFLICT") {
+      return { kind: "version_conflict" as const };
+    }
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return { kind: "not_found" as const };
+    }
+    throw error;
+  });
+}
+
+export async function deleteProjectScopedNoteWithVersion(
+  projectId: number,
+  noteId: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" } | { kind: "not_found" }> {
+  return db.transaction(async (tx) => {
+    const relationResult = await tx
+      .delete(projectNotes)
+      .where(sql`${projectNotes.projectId} = ${projectId} and ${projectNotes.noteId} = ${noteId}`);
+    const relationAffectedRows = Number((relationResult as any)?.[0]?.affectedRows ?? (relationResult as any)?.affectedRows ?? 0);
+    if (relationAffectedRows === 0) {
+      throw new Error("NOT_FOUND");
+    }
+
+    await tx.delete(customerNotes).where(eq(customerNotes.noteId, noteId));
+    const result = await tx.execute(sql`
+      delete from note
+      where id = ${noteId}
+        and version = ${expectedVersion}
+    `);
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      throw new Error("VERSION_CONFLICT");
+    }
+    return { kind: "deleted" as const };
+  }).catch((error) => {
+    if (error instanceof Error && error.message === "VERSION_CONFLICT") {
+      return { kind: "version_conflict" as const };
+    }
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return { kind: "not_found" as const };
+    }
+    throw error;
+  });
+}

@@ -40,8 +40,9 @@ export async function createProjectNote(req: Request, res: Response, next: NextF
 export async function deleteProjectNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.projectNotes.delete.input.parse(req.body);
+    const projectId = Number(req.params.projectId);
     const noteId = Number(req.params.noteId);
-    await notesService.deleteNote(noteId, input.version);
+    await notesService.deleteProjectScopedNote(projectId, noteId, input.version);
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {

@@ -88,6 +88,14 @@ export function NoteTemplatesPage() {
     const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
     return match?.[1] ?? null;
   };
+  const invalidateNoteTemplateQueries = async () => {
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const firstKey = query.queryKey[0];
+        return typeof firstKey === "string" && firstKey.startsWith("/api/note-templates");
+      },
+    });
+  };
 
   const { data: templates = [], isLoading } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates?active=false"],
@@ -98,7 +106,7 @@ export function NoteTemplatesPage() {
       return apiRequest("POST", "/api/note-templates", data);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void invalidateNoteTemplateQueries();
       handleCloseDialog();
     },
   });
@@ -108,7 +116,7 @@ export function NoteTemplatesPage() {
       return apiRequest("PUT", `/api/note-templates/${id}`, data);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void invalidateNoteTemplateQueries();
       handleCloseDialog();
     },
     onError: (error) => {
@@ -128,7 +136,7 @@ export function NoteTemplatesPage() {
       return apiRequest("DELETE", `/api/note-templates/${id}`, { version });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/note-templates?active=false"] });
+      void invalidateNoteTemplateQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);

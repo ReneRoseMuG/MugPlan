@@ -8,6 +8,7 @@
  * - PUT sendet version aus editingTemplate.
  * - DELETE sendet version aus dem selektierten Template.
  * - VERSION_CONFLICT wird konfliktbezogen angezeigt.
+ * - Nach Mutationen werden alle Notizvorlagen-Queryvarianten invalidiert.
  *
  * Fehlerfaelle:
  * - Update/Delete ohne version fuehrt zu Locking-Fehlern.
@@ -33,5 +34,9 @@ describe("FT13 NoteTemplatesPage versioning wiring", () => {
     expect(source).toContain("if (code === \"VERSION_CONFLICT\")");
     expect(source).toContain("Datensatz wurde zwischenzeitlich geaendert");
   });
-});
 
+  it("invalidates active and admin template queries after mutations", () => {
+    expect(source).toContain("firstKey.startsWith(\"/api/note-templates\")");
+    expect(source).toContain("void invalidateNoteTemplateQueries()");
+  });
+});

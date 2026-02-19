@@ -44,8 +44,9 @@ export async function createCustomerNote(req: Request, res: Response, next: Next
 export async function deleteCustomerNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.customerNotes.delete.input.parse(req.body);
+    const customerId = Number(req.params.customerId);
     const noteId = Number(req.params.noteId);
-    await notesService.deleteNote(noteId, input.version);
+    await notesService.deleteCustomerScopedNote(customerId, noteId, input.version);
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {

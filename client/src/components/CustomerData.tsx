@@ -569,7 +569,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 />
               ) : null}
 
-              {isEditMode && (
+              {isEditMode && isAdmin && (
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
                     Status
