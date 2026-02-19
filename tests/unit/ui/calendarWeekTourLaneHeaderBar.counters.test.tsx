@@ -41,6 +41,8 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
 
     expect(html).toContain("h-7 w-full");
     expect(html).toContain("Tour Alpha");
+    expect(html).toContain("background-image:linear-gradient");
+    expect(html).toContain("box-shadow:inset");
     expect(html).not.toContain("Termine");
     expect(html).not.toContain("day-counters");
     expect(html).not.toContain("offen |");

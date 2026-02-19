@@ -1,5 +1,6 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { parseProjectStoredName } from "@/lib/project-name-format";
+import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
@@ -61,6 +62,7 @@ export function CalendarWeekAppointmentPanel({
         <CalendarWeekAppointmentPanelHeader
           customerNumber={appointment.customer.customerNumber}
           postalCode={appointment.customer.postalCode}
+          color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
         />
         <CalendarWeekAppointmentPanelCustomer
           fullName={appointment.customer.fullName}
