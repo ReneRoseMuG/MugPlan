@@ -45,6 +45,28 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const { toast } = useToast();
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const invalidateAppointmentProjectionQueries = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: ["calendarAppointments"],
+    });
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const firstKey = query.queryKey[0];
+        return firstKey === "appointments-list"
+          || firstKey === "customers-page-appointments"
+          || firstKey === "employees-page-appointments"
+          || firstKey === "projects-page-appointments"
+          || firstKey === "customerAppointments"
+          || firstKey === "projectAppointments";
+      },
+    });
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const firstKey = query.queryKey[0];
+        return typeof firstKey === "string" && firstKey.includes("/current-appointments?");
+      },
+    });
+  };
   
   const [formData, setFormData] = useState({
     customerNumber: "",
@@ -174,6 +196,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      void invalidateAppointmentProjectionQueries();
       toast({ title: "Kunde angelegt", description: "Der Kunde wurde erfolgreich angelegt." });
     },
     onError: (error: Error) => {
@@ -197,6 +220,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
+      void invalidateAppointmentProjectionQueries();
       toast({ title: "Gespeichert", description: "Die Kundendaten wurden erfolgreich aktualisiert." });
     },
     onError: (error: Error) => {
