@@ -519,8 +519,18 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         throw new Error("Kundennummer ist erforderlich.");
       }
       const resolution = await resolveCustomerByNumber(payload.customer.customerNumber);
-      if (resolution.resolution !== "none") {
-        throw new Error("Kundennummer ist bereits vergeben.");
+      if (resolution.resolution === "multiple") {
+        throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
+      }
+      if (resolution.resolution === "single") {
+        if (!resolution.customer) {
+          throw new Error("Dateninkonsistenz: Vorhandener Kunde konnte nicht geladen werden.");
+        }
+        const confirmed = window.confirm("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");
+        if (!confirmed) return;
+        setCustomerId(resolution.customer.id);
+        toast({ title: "Vorhandener Kunde übernommen" });
+        return;
       }
       const createdCustomer = await createCustomerFromDraft(payload.customer);
       setCustomerId(createdCustomer.id);

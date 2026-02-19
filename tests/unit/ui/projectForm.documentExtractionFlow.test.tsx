@@ -9,6 +9,7 @@
  * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
  * - Apply-Callbacks sind an Customer/Project-Uebernahme verdrahtet.
  * - Auftragsnummer ist nur bei Bestandsprojekt readOnly und bei neuem Projekt editierbar.
+ * - Bei single-Customer-Konflikt wird bestaetigt und vorhandener Kunde uebernommen statt Neuanlage.
  *
  * Fehlerfaelle:
  * - Fehlende Endpunktverdrahtung wuerde Upload-/Dialog-Flow brechen.
@@ -47,5 +48,12 @@ describe("FT20 project form document extraction flow wiring", () => {
   it("keeps order number editable for new project and readonly for existing project", () => {
     expect(source).toContain("const isEditing = !!projectId;");
     expect(source).toContain("readOnly={isEditing}");
+  });
+
+  it("resolves duplicate customer numbers via confirm and existing customer selection", () => {
+    expect(source).toContain("if (resolution.resolution === \"single\")");
+    expect(source).toContain("const confirmed = window.confirm(\"Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?\")");
+    expect(source).toContain("setCustomerId(resolution.customer.id);");
+    expect(source).not.toContain("if (resolution.resolution !== \"none\")");
   });
 });

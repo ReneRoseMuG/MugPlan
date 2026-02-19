@@ -505,7 +505,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     return json as Customer;
   };
 
-  const resolveOrCreateCustomerForExtraction = async (customerDraft: ExtractionCustomerDraft) => {
+  const resolveOrCreateCustomerForExtraction = async (customerDraft: ExtractionCustomerDraft): Promise<Customer | null> => {
     if (!customerDraft.customerNumber.trim()) {
       throw new Error("Kundennummer ist erforderlich");
     }
@@ -514,7 +514,14 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
     }
     if (resolution.resolution === "single") {
-      throw new Error("Kundennummer ist bereits vergeben.");
+      if (!resolution.customer) {
+        throw new Error("Dateninkonsistenz: Vorhandener Kunde konnte nicht geladen werden.");
+      }
+      const confirmed = window.confirm("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");
+      if (!confirmed) {
+        return null;
+      }
+      return resolution.customer;
     }
     return createCustomerFromDraft(customerDraft);
   };
@@ -587,6 +594,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       }
 
       const resolvedCustomer = await resolveOrCreateCustomerForExtraction(payload.customer);
+      if (!resolvedCustomer) {
+        return;
+      }
       const projectResponse = await fetch("/api/projects", {
         method: "POST",
         credentials: "include",

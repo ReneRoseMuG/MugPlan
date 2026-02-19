@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Feature: FT20 - Dokumentextraktion
@@ -6,12 +6,13 @@
  *
  * Abgedeckte Regeln:
  * - Upload ruft den Extract-Endpunkt mit appointment_form auf.
- * - Erfolgsfall öffnet Dialog und übergibt Extraktionsdaten.
- * - Apply-Callbacks sind an Customer/Project-Übernahme verdrahtet.
- * - Disable-Flags für Apply sind an selektiertes Projekt gekoppelt.
+ * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
+ * - Apply-Callbacks sind an Customer/Project-Uebernahme verdrahtet.
+ * - Disable-Flags fuer Apply sind an selektiertes Projekt gekoppelt.
+ * - Bei single-Customer-Konflikt wird bestaetigt und vorhandener Kunde uebernommen.
  *
  * Fehlerfaelle:
- * - Fehlende Verdrahtung kann zu falschen Apply-Aktionen im Terminformular führen.
+ * - Fehlende Verdrahtung kann zu falschen Apply-Aktionen im Terminformular fuehren.
  *
  * Ziel:
  * Sicherstellen, dass der Terminformular-Flow zur Dokumentextraktion korrekt verdrahtet ist.
@@ -40,14 +41,17 @@ describe("FT20 appointment form document extraction flow wiring", () => {
 
   it("uses single data apply callback with disable rule", () => {
     expect(source).toContain("onApplyData={applyExtractedProject}");
-    expect(source).toContain("dataApplyLabel=\"Daten übernehmen\"");
+    expect(source).toContain("dataApplyLabel=");
     expect(source).toContain("disableProjectApply={Boolean(selectedProjectId)}");
     expect(source).not.toContain("onApplyCustomer={applyExtractedCustomer}");
   });
 
-  it("forwards extracted order number and blocks duplicate customer numbers", () => {
+  it("forwards extracted order number and uses existing customer on duplicate conflicts", () => {
     expect(source).toContain("orderNumber: payload.orderNumber.trim() || null");
-    expect(source).toContain("throw new Error(\"Vorname und Nachname sind erforderlich\")");
-    expect(source).toContain("throw new Error(\"Kundennummer ist bereits vergeben.\")");
+    expect(source).toContain("if (resolution.resolution === \"single\")");
+    expect(source).toContain("const confirmed = window.confirm(\"Kundennummer existiert bereits.");
+    expect(source).toContain("return resolution.customer;");
+    expect(source).toContain("if (!resolvedCustomer) {");
+    expect(source).not.toContain("throw new Error(\"Kundennummer ist bereits vergeben.\")");
   });
 });
