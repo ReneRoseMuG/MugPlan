@@ -48,10 +48,11 @@ describe("FT20 appointment form document extraction flow wiring", () => {
 
   it("forwards extracted order number and uses existing customer on duplicate conflicts", () => {
     expect(source).toContain("orderNumber: payload.orderNumber.trim() || null");
+    expect(source).toContain("formatProjectStoredName(resolvedCustomer.customerNumber, payload.saunaModel)");
     expect(source).toContain("if (resolution.resolution === \"single\")");
     expect(source).toContain("const confirmed = window.confirm(\"Kundennummer existiert bereits.");
     expect(source).toContain("return resolution.customer;");
     expect(source).toContain("if (!resolvedCustomer) {");
-    expect(source).not.toContain("throw new Error(\"Kundennummer ist bereits vergeben.\")");
+    expect(source).not.toContain("name: payload.saunaModel.trim()");
   });
 });

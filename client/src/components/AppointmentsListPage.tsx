@@ -209,7 +209,7 @@ export function AppointmentsListPage({
         header: renderSortHeader("Tour", "tour"),
         accessor: (row) => row.tourName ?? "",
         minWidth: 160,
-        cell: ({ row }) => <span>{row.tourName ?? "â€”"}</span>,
+        cell: ({ row }) => <span>{row.tourName ?? "---"}</span>,
       });
     }
 

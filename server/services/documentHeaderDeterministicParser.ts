@@ -23,6 +23,12 @@ const fieldAliases: Record<HeaderField, string[]> = {
   mobile: ["kundenmobil", "kundemobil", "mobil"],
 };
 
+const inlineLabelPatterns: Record<HeaderField, RegExp[]> = {
+  orderNumber: [/^\s*(?:auftrag(?:s)?\s*[-.]?\s*nr\.?|auftragsnummer)\s*:?\s*(.*)\s*$/i],
+  customerNumber: [/^\s*(?:kunden?\s*[-.]?\s*nr\.?|kundennummer)\s*:?\s*(.*)\s*$/i],
+  mobile: [/^\s*(?:kunden?\s*-\s*mobil|kundenmobil|kundemobil|mobil(?:nummer)?)\s*:?\s*(.*)\s*$/i],
+};
+
 function normalizeLine(value: string): string {
   return value.replace(/\r/g, "\n").trim();
 }
@@ -50,6 +56,49 @@ function isGenericLabelLine(value: string): boolean {
   return /:\s*$/.test(trimmed) || /\bnr\.?\s*$/i.test(trimmed) || /\bnummer\s*$/i.test(trimmed);
 }
 
+function normalizeCandidateValue(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function normalizeFieldValue(field: HeaderField, value: string): string {
+  const normalized = normalizeCandidateValue(value);
+  if (field === "customerNumber") {
+    return normalized.replace(/\s+/g, "");
+  }
+  return normalized;
+}
+
+function isValidFieldValue(field: HeaderField, value: string): boolean {
+  const normalized = normalizeFieldValue(field, value);
+  if (normalized.length === 0) return false;
+
+  switch (field) {
+    case "customerNumber":
+      return /^\d{4,}$/.test(normalized);
+    case "orderNumber":
+      return /^(?=.*\d)[A-Za-z0-9][A-Za-z0-9/-]{3,}$/.test(normalized);
+    case "mobile": {
+      if (!/^[+\d\s\-/.()]+$/.test(normalized)) return false;
+      const digitsOnly = normalized.replace(/\D/g, "");
+      return digitsOnly.length >= 7;
+    }
+    default:
+      return false;
+  }
+}
+
+function extractInlineFieldValue(line: string): { field: HeaderField; value: string } | null {
+  for (const field of Object.keys(inlineLabelPatterns) as HeaderField[]) {
+    for (const pattern of inlineLabelPatterns[field]) {
+      const match = pattern.exec(line);
+      if (!match) continue;
+      const value = normalizeFieldValue(field, match[1] ?? "");
+      return { field, value };
+    }
+  }
+  return null;
+}
+
 function extractHeaderLines(sourceText: string): string[] {
   return sourceText
     .split("\n")
@@ -64,13 +113,19 @@ function extractAddressRegionLines(sourceText: string): string[] {
   return allLines.slice(0, end);
 }
 
-function nextNonEmpty(lines: string[], fromIndex: number, maxLookahead = 12): string | null {
+function findNextValidValue(
+  lines: string[],
+  field: HeaderField,
+  fromIndex: number,
+  maxLookahead = 12,
+): { value: string; index: number } | null {
   const end = Math.min(lines.length, fromIndex + maxLookahead);
   for (let i = fromIndex; i < end; i += 1) {
     const candidate = lines[i]?.trim() ?? "";
-    if (candidate.length > 0 && !classifyLabel(candidate)) {
-      return candidate;
-    }
+    if (candidate.length === 0) continue;
+    if (classifyLabel(candidate) || isGenericLabelLine(candidate)) continue;
+    if (!isValidFieldValue(field, candidate)) continue;
+    return { value: normalizeFieldValue(field, candidate), index: i };
   }
   return null;
 }
@@ -82,8 +137,22 @@ function collectLabelValues(lines: string[]): Record<HeaderField, string[]> {
     mobile: [],
   };
 
+  const consumedInlineLineIndexes = new Set<number>();
+  for (let i = 0; i < lines.length; i += 1) {
+    const inlineFieldValue = extractInlineFieldValue(lines[i] ?? "");
+    if (!inlineFieldValue) continue;
+    if (!isValidFieldValue(inlineFieldValue.field, inlineFieldValue.value)) continue;
+    collected[inlineFieldValue.field].push(normalizeFieldValue(inlineFieldValue.field, inlineFieldValue.value));
+    consumedInlineLineIndexes.add(i);
+  }
+
   let index = 0;
   while (index < lines.length) {
+    if (consumedInlineLineIndexes.has(index)) {
+      index += 1;
+      continue;
+    }
+
     const firstField = classifyLabel(lines[index]);
     if (!firstField) {
       index += 1;
@@ -93,39 +162,30 @@ function collectLabelValues(lines: string[]): Record<HeaderField, string[]> {
     const block: Array<{ field: HeaderField | null; lineIndex: number }> = [];
     let scan = index;
     while (scan < lines.length) {
+      if (consumedInlineLineIndexes.has(scan)) break;
       const field = classifyLabel(lines[scan]);
       if (!field && !isGenericLabelLine(lines[scan])) break;
       block.push({ field, lineIndex: scan });
       scan += 1;
     }
 
-    const blockValues: string[] = [];
-    let valueScan = scan;
-    while (valueScan < lines.length && blockValues.length < block.length) {
-      const candidate = lines[valueScan]?.trim() ?? "";
-      if (candidate.length > 0 && !classifyLabel(candidate)) {
-        blockValues.push(candidate);
+    if (block.length > 1) {
+      let valueCursor = scan;
+      for (const entry of block) {
+        if (!entry.field) continue;
+        const next = findNextValidValue(lines, entry.field, valueCursor, 18);
+        if (!next) continue;
+        collected[entry.field].push(next.value);
+        valueCursor = next.index + 1;
       }
-      valueScan += 1;
-    }
-
-    if (block.length > 1 && blockValues.length === block.length) {
-      for (let i = 0; i < block.length; i += 1) {
-        const field = block[i].field;
-        if (field) {
-          collected[field].push(blockValues[i]);
-        }
-      }
-      index = valueScan;
+      index = valueCursor;
       continue;
     }
 
     for (const entry of block) {
       if (!entry.field) continue;
-      const value = nextNonEmpty(lines, entry.lineIndex + 1, 4);
-      if (value && !isGenericLabelLine(value)) {
-        collected[entry.field].push(value);
-      }
+      const next = findNextValidValue(lines, entry.field, entry.lineIndex + 1, 6);
+      if (next) collected[entry.field].push(next.value);
     }
 
     index = scan;

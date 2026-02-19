@@ -51,12 +51,15 @@ interface ProjectFormProps {
 export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
-  const invalidateProjectQueries = () => {
-    void queryClient.invalidateQueries({
+  const invalidateProjectQueries = async () => {
+    await queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey[0];
         return typeof key === "string" && key.startsWith("/api/projects");
       },
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["projects-page-statuses"],
     });
   };
   
@@ -267,7 +270,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       return res.json();
     },
     onSuccess: () => {
-      invalidateProjectQueries();
+      void invalidateProjectQueries();
       toast({ title: "Projekt erstellt" });
     },
     onError: () => {
@@ -282,7 +285,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       return res.json();
     },
     onSuccess: () => {
-      invalidateProjectQueries();
+      void invalidateProjectQueries();
       toast({ title: "Projekt gespeichert" });
     },
     onError: (error) => {
@@ -364,6 +367,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void invalidateProjectQueries();
     },
     onError: (error) => {
       if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
@@ -380,6 +384,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void invalidateProjectQueries();
     },
     onError: (error) => {
       if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
@@ -395,7 +400,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       await apiRequest("DELETE", `/api/projects/${projectId}`, { version: projectVersion });
     },
     onSuccess: () => {
-      invalidateProjectQueries();
+      void invalidateProjectQueries();
       toast({ title: "Projekt geloescht" });
       if (onSaved && onSaved !== onCancel) {
         onSaved();

@@ -7,6 +7,8 @@
  * Abgedeckte Regeln:
  * - Kundennummer und Auftragsnummer werden deterministisch extrahiert.
  * - Mobilnummer bleibt optional und darf als null aufgeloest werden.
+ * - Inline-Headerzeilen (Label + Wert in einer Zeile) werden robust erkannt.
+ * - Feldvalidierung verhindert Fehlzuordnung von Bearbeiter/Datum auf Nummernfelder.
  * - WaWi-Adresszeilen (Identitaet, Strasse, PLZ/Ort; Anrede optional) werden deterministisch geparst.
  * - Identitaet wird je nach Muster als Person, Firma oder Person+Firma aufgeloest.
  * - Fehlende oder mehrfache Kundennummer fuehren zu Fehlern.
@@ -42,6 +44,25 @@ function buildSource(overrides?: { customerValues?: string[]; includeCustomerLab
 }
 
 describe("FT21 deterministic header parser", () => {
+  it("extracts inline label-value header fields in one line", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr. A0118067A",
+      "Kunden-Nr. 163033",
+      "Kunden - Mobil: 0152-53500769",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.orderNumber).toBe("A0118067A");
+    expect(parsed.customerNumber).toBe("163033");
+    expect(parsed.mobile).toBe("0152-53500769");
+  });
+
   it("extracts customer number, order number and mobile", () => {
     const parsed = parseDocumentHeaderDeterministically(buildSource());
 
@@ -128,6 +149,71 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("Haupstrasse 69");
     expect(parsed.postalCode).toBe("06917");
     expect(parsed.city).toBe("Jessen / Holzdorf");
+  });
+
+  it("skips interleaved generic lines and still maps correct numeric values", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Leif Doepking",
+      "Ellerdamm 28",
+      "27339 Riede, Kreis Verden",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "Bearbeiter: Michael Meisel",
+      "Datum: 26.01.2026",
+      "A0118067A",
+      "163033",
+      "0152-53500769",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.orderNumber).toBe("A0118067A");
+    expect(parsed.customerNumber).toBe("163033");
+    expect(parsed.mobile).toBe("0152-53500769");
+  });
+
+  it("returns null mobile when mobil label has no valid number", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Frau",
+      "Anke Gotthardt",
+      "Haupstrasse 69",
+      "06917 Jessen / Holzdorf",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "A0218249A",
+      "163214",
+      "Bearbeiter: Michael Meisel",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.orderNumber).toBe("A0218249A");
+    expect(parsed.customerNumber).toBe("163214");
+    expect(parsed.mobile).toBeNull();
+  });
+
+  it("ignores free text after mobile label", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Frau",
+      "Anke Gotthardt",
+      "Haupstrasse 69",
+      "06917 Jessen / Holzdorf",
+      "Auftrag-Nr. A0218249A",
+      "Kunden-Nr. 163214",
+      "Kunden - Mobil: Michael Meisel",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.orderNumber).toBe("A0218249A");
+    expect(parsed.customerNumber).toBe("163214");
+    expect(parsed.mobile).toBeNull();
   });
 
   it("parses company-only identity without forcing person names", () => {

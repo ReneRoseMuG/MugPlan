@@ -1,5 +1,7 @@
 import type { Customer, InsertProject, Project, UpdateProject } from "@shared/schema";
 import * as projectsRepository from "../repositories/projectsRepository";
+import * as customersRepository from "../repositories/customersRepository";
+import { formatProjectStoredName, parseProjectStoredName } from "../lib/project-name-format";
 
 export class ProjectsError extends Error {
   status: number;
@@ -42,7 +44,16 @@ export async function getProjectWithCustomer(
 }
 
 export async function createProject(data: InsertProject): Promise<Project> {
-  return projectsRepository.createProject(data);
+  const customer = await customersRepository.getCustomer(data.customerId);
+  if (!customer) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+
+  const isolatedProjectName = parseProjectStoredName(data.name).isolatedProjectName;
+  return projectsRepository.createProject({
+    ...data,
+    name: formatProjectStoredName(customer.customerNumber, isolatedProjectName),
+  });
 }
 
 export async function updateProject(
@@ -52,7 +63,28 @@ export async function updateProject(
   if (!Number.isInteger(data.version) || data.version < 1) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
-  const result = await projectsRepository.updateProjectWithVersion(id, data.version, data);
+  let normalizedData = { ...data };
+  const shouldNormalizeName = data.name !== undefined || data.customerId !== undefined;
+
+  if (shouldNormalizeName) {
+    const existing = await projectsRepository.getProject(id);
+    if (!existing) return null;
+
+    const targetCustomerId = data.customerId ?? existing.customerId;
+    const targetCustomer = await customersRepository.getCustomer(targetCustomerId);
+    if (!targetCustomer) {
+      throw new ProjectsError(422, "VALIDATION_ERROR");
+    }
+
+    const sourceProjectName = data.name ?? existing.name;
+    const isolatedProjectName = parseProjectStoredName(sourceProjectName).isolatedProjectName;
+    normalizedData = {
+      ...normalizedData,
+      name: formatProjectStoredName(targetCustomer.customerNumber, isolatedProjectName),
+    };
+  }
+
+  const result = await projectsRepository.updateProjectWithVersion(id, data.version, normalizedData);
   if (result.kind === "version_conflict") {
     const exists = await projectsRepository.getProject(id);
     if (!exists) return null;
