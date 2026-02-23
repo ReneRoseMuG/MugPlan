@@ -35,11 +35,13 @@ export function CalendarAppointmentCompactBar({
   const endDate = getAppointmentEndDate(appointment);
   const isMultiDay = appointment.startDate !== endDate;
   const customerNumber = appointment.customer.customerNumber?.trim() || "-";
-  const customerName = appointment.customer.fullName?.trim() || "";
+  const customerName = appointment.customer.fullName?.trim() || "-";
+  const orderNumber = appointment.projectOrderNumber?.trim() || "-";
   const postalCode = appointment.customer.postalCode?.trim() || "-";
-  const leftContent = isMultiDay && customerName
-    ? `K: ${customerNumber} - Name: ${customerName}`
+  const leftContent = isMultiDay
+    ? `K: ${customerNumber} - ${orderNumber} - Name: ${customerName}`
     : `K: ${customerNumber}`;
+  const middleContent = orderNumber;
   const rightContent = `PLZ: ${postalCode}`;
 
   const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
@@ -83,9 +85,14 @@ export function CalendarAppointmentCompactBar({
           width: "100%",
         }}
       >
-        <span className="inline-flex min-w-0 max-w-[75%] items-center text-[10px]">
+        <span className={`inline-flex min-w-0 items-center text-[10px] ${isMultiDay ? "max-w-[75%]" : "max-w-[42%]"}`}>
           <span className="truncate">{leftContent}</span>
         </span>
+        {!isMultiDay && (
+          <span className="inline-flex min-w-0 max-w-[28%] items-center justify-center text-[10px] text-center">
+            <span className="truncate">{middleContent}</span>
+          </span>
+        )}
         <span className="ml-auto inline-flex min-w-0 max-w-[35%] items-center justify-end text-[10px] text-right">
           <span className="truncate">{rightContent}</span>
         </span>

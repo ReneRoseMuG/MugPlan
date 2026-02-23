@@ -8,6 +8,8 @@
  * - CalendarAppointmentCompactBar rendert Header-typischen Verlauf.
  * - CalendarAppointmentCompactBar rendert Header-typischen Inset-/Drop-Shadow.
  * - CalendarAppointmentCompactBar nutzt den gleichen Border-Look wie Header-Komponenten.
+ * - Eintagestermine zeigen Kundennummer | Auftragsnummer | PLZ.
+ * - Mehrtagestermine zeigen Kundennummer | Auftragsnummer | Kundenname in dieser Reihenfolge.
  *
  * Fehlerfaelle:
  * - Terminbalken fallen auf flaches Legacy-Styling zurueck.
@@ -32,5 +34,8 @@ describe("FT03 UI: calendar appointment compact bar header style wiring", () => 
     expect(compactBarSource).toContain("linear-gradient(180deg, rgba(255,255,255,0.24) 0%");
     expect(compactBarSource).toContain("boxShadow:");
     expect(compactBarSource).toContain("inset 0 1px 0 rgba(255,255,255,0.26)");
+    expect(compactBarSource).toContain("const orderNumber = appointment.projectOrderNumber?.trim() || \"-\"");
+    expect(compactBarSource).toContain("const middleContent = orderNumber;");
+    expect(compactBarSource).toContain("`K: ${customerNumber} - ${orderNumber} - Name: ${customerName}`");
   });
 });

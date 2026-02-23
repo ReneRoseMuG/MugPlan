@@ -5,9 +5,9 @@
  * Use Case: UC Wochenkarte zeigt Tourfarbe im Header
  *
  * Abgedeckte Regeln:
- * - CalendarWeekAppointmentPanel gibt die Tourfarbe als Header-Farbe weiter.
+ * - CalendarWeekAppointmentPanel gibt die Tourfarbe und Auftragsnummer in den Header weiter.
  * - Fallback auf CALENDAR_NEUTRAL_COLOR bleibt erhalten.
- * - Header rendert die Farbe als Hintergrund mit kontrastierter Textfarbe.
+ * - Header rendert die Farbe als Hintergrund mit kontrastierter Textfarbe und 3-Spalten-Inhalt.
  *
  * Fehlerfaelle:
  * - Wochenkarten-Header bleibt grau statt Tourfarbe.
@@ -26,6 +26,7 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
 
     expect(source).toContain("import { CALENDAR_NEUTRAL_COLOR } from \"@/lib/calendar-utils\"");
     expect(source).toContain("color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}");
+    expect(source).toContain("orderNumber={appointment.projectOrderNumber}");
   });
 
   it("applies provided color to header background and computes readable text color", () => {
@@ -38,5 +39,8 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
     expect(source).toContain("color: textColor");
     expect(source).toContain("backgroundImage:");
     expect(source).toContain("boxShadow:");
+    expect(source).toContain("orderNumber: string | null;");
+    expect(source).toContain("grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]");
+    expect(source).toContain("const resolvedOrderNumber = orderNumber?.trim() || \"-\"");
   });
 });

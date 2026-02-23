@@ -71,6 +71,7 @@ export function CalendarWeekAppointmentPanel({
         <div className="space-y-1.5">
           <CalendarWeekAppointmentPanelHeader
             customerNumber={appointment.customer.customerNumber}
+            orderNumber={appointment.projectOrderNumber}
             postalCode={appointment.customer.postalCode}
             color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
           />
@@ -83,7 +84,6 @@ export function CalendarWeekAppointmentPanel({
           />
           <CalendarWeekAppointmentPanelProject
             projectName={resolvedProjectName}
-            projectOrderNumber={appointment.projectOrderNumber}
             projectDescription={appointment.projectDescription}
             projectStatuses={appointment.projectStatuses}
             enableFullDescriptionPreview={context === "week-calendar"}

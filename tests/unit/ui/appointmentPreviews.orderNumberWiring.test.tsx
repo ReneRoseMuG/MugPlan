@@ -5,8 +5,8 @@
  * Use Case: UC Auftragsnummer in Termin-Previews
  *
  * Abgedeckte Regeln:
- * - Weekly-Panel uebergibt die Projekt-Auftragsnummer in den Projektbereich.
- * - Projektbereich im Weekly-Panel zeigt die Auftragsnummer.
+ * - Weekly-Panel uebergibt die Projekt-Auftragsnummer in den Headerbereich.
+ * - Header im Weekly-Panel rendert die Auftragsnummer als mittleren Wert.
  * - Projektbeschreibung im Weekly-Panel wird als HTML gerendert.
  * - Fallback-Preview zeigt die Auftragsnummer.
  *
@@ -21,18 +21,20 @@ import { readFileSync } from "fs";
 import path from "path";
 
 describe("FT02 appointment preview order number wiring", () => {
-  it("passes projectOrderNumber into weekly project panel", () => {
+  it("passes projectOrderNumber into weekly header panel", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanel.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("projectOrderNumber={appointment.projectOrderNumber}");
+    expect(source).toContain("orderNumber={appointment.projectOrderNumber}");
   });
 
-  it("renders order number line in weekly project panel", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelProject.tsx");
+  it("renders order number as center value in weekly header panel", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelHeader.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("Auftragsnr.: {projectOrderNumber}");
+    expect(source).toContain("orderNumber: string | null;");
+    expect(source).toContain("const resolvedOrderNumber = orderNumber?.trim() || \"-\"");
+    expect(source).toContain("{resolvedOrderNumber}");
   });
 
   it("renders weekly project description as HTML", () => {
