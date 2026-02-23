@@ -37,8 +37,8 @@ function CustomerMenuButton({ isActive, onViewChange }: { isActive?: boolean; on
           : "text-slate-600 hover:bg-white hover:text-slate-900"}
       `}
     >
-      <UserCircle className="w-4 h-4 opacity-80" />
-      Kunden
+      <UserCircle className="w-4 h-4 opacity-80 shrink-0" />
+      <span className="min-w-0 whitespace-nowrap truncate">Kunden</span>
     </button>
   );
 }
@@ -55,8 +55,8 @@ function ProjectMenuButton({ isActive, onViewChange }: { isActive?: boolean; onV
           : "text-slate-600 hover:bg-white hover:text-slate-900"}
       `}
     >
-      <FolderKanban className="w-4 h-4 opacity-80" />
-      Projekte
+      <FolderKanban className="w-4 h-4 opacity-80 shrink-0" />
+      <span className="min-w-0 whitespace-nowrap truncate">Projekte</span>
     </button>
   );
 }
@@ -76,8 +76,8 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
             : "text-slate-600 hover:bg-white hover:text-slate-900"}
         `}
       >
-        <Icon className="w-4 h-4 opacity-80" />
-        {label}
+        <Icon className="w-4 h-4 opacity-80 shrink-0" />
+        <span className="min-w-0 whitespace-nowrap truncate">{label}</span>
       </button>
     );
   }
@@ -87,8 +87,8 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
       data-testid={testId}
       className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium w-full text-left text-slate-400"
     >
-      <Icon className="w-4 h-4 opacity-60" />
-      {label}
+      <Icon className="w-4 h-4 opacity-60 shrink-0" />
+      <span className="min-w-0 whitespace-nowrap truncate">{label}</span>
     </div>
   );
 }
@@ -97,7 +97,7 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
   return (
     <div
-      className={`w-full h-full bg-slate-50 border-r border-border flex flex-col p-4 overflow-y-auto ${
+      className={`w-auto min-w-[260px] max-w-[360px] h-full bg-slate-50 border-r border-border flex flex-col p-4 overflow-y-auto ${
         backupDisabled ? "border-2 border-red-600" : ""
       }`}
       data-testid="sidebar"

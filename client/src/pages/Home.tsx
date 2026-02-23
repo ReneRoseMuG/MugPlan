@@ -156,8 +156,8 @@ export default function Home({ onLogout }: HomeProps) {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
-      {/* Left Sidebar - 20% Width */}
-      <aside className="w-[20%] h-full flex-shrink-0 z-10 relative">
+      {/* Left Sidebar - content width with desktop clamp */}
+      <aside className="h-full flex-shrink-0 z-10 relative">
         <Sidebar
           onViewChange={handleViewChange}
           onLogout={onLogout}
@@ -167,8 +167,8 @@ export default function Home({ onLogout }: HomeProps) {
         />
       </aside>
 
-      {/* Main Content - 80% Width */}
-      <main className="w-[80%] h-full flex flex-col relative">
+      {/* Main Content - fills remaining width */}
+      <main className="flex-1 min-w-0 h-full flex flex-col relative">
         {/* Content Area */}
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
           {view === 'customer' ? (
