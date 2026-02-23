@@ -345,15 +345,6 @@ export function CalendarWeekView({
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointmentsById.get(appointmentId);
     if (!appointment) return;
-    if (appointment.isLocked && !isAdmin) {
-      console.info(`${logPrefix} open blocked`, { appointmentId });
-      toast({
-        title: "Termin ist gesperrt",
-        description: "Nur Admins dürfen vergangene Termine ändern.",
-        variant: "destructive",
-      });
-      return;
-    }
     console.info(`${logPrefix} open appointment`, { appointmentId });
     onOpenAppointment?.(appointmentId);
   };
@@ -725,3 +716,4 @@ export function CalendarWeekView({
     </div>
   );
 }
+

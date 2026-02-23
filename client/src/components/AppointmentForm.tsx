@@ -1007,7 +1007,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
         <Alert variant="destructive" className="mb-6">
           <AlertTitle>Termin gesperrt</AlertTitle>
           <AlertDescription>
-            Ab dem Starttag kann der Termin nur noch von Admins geändert werden.
+            Historische Termine können nicht verändert werden. Kontaktieren Sie einen Admin.
           </AlertDescription>
         </Alert>
       )}
@@ -1028,6 +1028,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
             {selectedProject ? (
               <ProjectDetailCard
                 project={selectedProject}
+                customerNumber={selectedCustomer?.customerNumber ?? null}
                 projectStatusTitles={selectedProjectStatuses.map((item) => item.status.title)}
                 testId="badge-project"
               />

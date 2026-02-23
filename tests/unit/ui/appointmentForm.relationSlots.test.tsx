@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Projektrelation im Terminformular nutzt RelationSlot.
+ * - ProjectDetailCard erhaelt Kundennummer aus der selektierten Kundenrelation.
  * - Projektdatenquelle des Formulars nutzt scope=all, damit ausgewaehlte Projekte aus allen Picker-Sichten angezeigt werden.
  * - Lock-Zustand erzwingt readonly fuer den Projekt-Slot.
  * - Tour-Auswahlbadges werden nur angezeigt, wenn keine Tour zugeordnet ist.
@@ -47,6 +48,7 @@ describe("FT01 appointment form relation slot wiring", () => {
   it("renders project detail card inside project relation slot", () => {
     expect(source).toContain("<ProjectDetailCard");
     expect(source).toContain("testId=\"badge-project\"");
+    expect(source).toContain("customerNumber={selectedCustomer?.customerNumber ?? null}");
   });
 
   it("loads projects with scope=all for stable post-selection rendering", () => {

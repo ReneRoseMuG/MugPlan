@@ -79,15 +79,6 @@ export function CalendarYearView({
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointments.find((item) => item.id === appointmentId);
     if (!appointment) return;
-    if (appointment.isLocked && !isAdmin) {
-      console.info(`${logPrefix} open blocked`, { appointmentId });
-      toast({
-        title: "Termin ist gesperrt",
-        description: "Nur Admins d\u00FCrfen vergangene Termine \u00E4ndern.",
-        variant: "destructive",
-      });
-      return;
-    }
     console.info(`${logPrefix} open appointment`, { appointmentId });
     onOpenAppointment?.(appointmentId);
   };
@@ -175,3 +166,4 @@ export function CalendarYearView({
     </div>
   );
 }
+
