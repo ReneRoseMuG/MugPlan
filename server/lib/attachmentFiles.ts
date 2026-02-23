@@ -1,12 +1,12 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { getGlobalAttachmentStoragePath } from "../services/userSettingsService";
+import { getAttachmentStoragePath } from "../config/storagePaths";
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 export async function ensureUploadDir(): Promise<string> {
-  return getGlobalAttachmentStoragePath();
+  return getAttachmentStoragePath();
 }
 
 export function sanitizeFilename(name: string): string {

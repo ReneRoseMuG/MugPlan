@@ -7,8 +7,6 @@ type ToastDesktopPosition = (typeof toastDesktopPositionValues)[number];
 export type UserSettingKey =
   // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
   | "attachmentPreviewSize"
-  | "attachmentStoragePath"
-  | "backup_base_path"
   | "toastDesktopPosition"
   | "backup_enabled"
   | "calendarWeekendColumnPercent"
@@ -21,8 +19,6 @@ export type UserSettingKey =
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
-  attachmentStoragePath: string;
-  backup_base_path: string;
   toastDesktopPosition: ToastDesktopPosition;
   backup_enabled: boolean;
   calendarWeekendColumnPercent: number;

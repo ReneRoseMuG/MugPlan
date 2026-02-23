@@ -9,6 +9,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import { ensureSystemRoles } from "./bootstrap/ensureSystemRoles";
 import { getBootstrapState } from "./bootstrap/getBootstrapState";
 import { startBackupScheduler } from "./services/backupScheduler";
+import { initStoragePathsFromEnv } from "./config/storagePaths";
 
 const app = express();
 const httpServer = createServer(app);
@@ -87,6 +88,7 @@ app.use((req, res, next) => {
 
 void (async () => {
   await ensureSystemRoles();
+  await initStoragePathsFromEnv();
   const bootstrapState = await getBootstrapState();
   await registerRoutes(httpServer, app);
   startBackupScheduler();

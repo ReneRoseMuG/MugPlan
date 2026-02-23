@@ -1,6 +1,3 @@
-import { constants as fsConstants } from "fs";
-import { access, mkdir } from "fs/promises";
-import path from "path";
 import * as usersRepository from "../repositories/usersRepository";
 import * as userSettingsRepository from "../repositories/userSettingsRepository";
 import {
@@ -13,9 +10,6 @@ import {
   type SettingDefinition,
   type SettingScopeType,
 } from "../settings/registry";
-
-const attachmentStoragePathSettingKey = "attachmentStoragePath";
-const backupBasePathSettingKey = "backup_base_path";
 
 type SetSettingInput = {
   key: string;
@@ -56,9 +50,6 @@ type ResolvedSettingRow = {
   updatedBy?: number | null;
 };
 
-let globalAttachmentStoragePathCache: { rawPath: string; absolutePath: string } | null = null;
-let globalBackupBasePathCache: { rawPath: string; absolutePath: string } | null = null;
-
 function toIsoString(input: Date | string | null | undefined): string | null {
   if (!input) return null;
   if (typeof input === "string") return input;
@@ -88,67 +79,6 @@ function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): st
     throw new UserSettingsError("ROLE scope nicht verfuegbar, solange Rollenmodell nicht aktiv ist.", 400);
   }
   return globalScopeMarker;
-}
-
-function resolveAbsolutePathFromInput(inputPath: string): string {
-  return path.resolve(process.cwd(), inputPath);
-}
-
-async function ensureWritableDirectory(absolutePath: string): Promise<void> {
-  await mkdir(absolutePath, { recursive: true });
-  await access(absolutePath, fsConstants.W_OK);
-}
-
-async function normalizeAndValidateAttachmentStoragePath(value: unknown): Promise<{ rawPath: string; absolutePath: string }> {
-  if (typeof value !== "string") {
-    throw new UserSettingsError("attachmentStoragePath muss ein String sein", 400);
-  }
-
-  const rawPath = value.trim();
-  if (rawPath.length === 0) {
-    throw new UserSettingsError("attachmentStoragePath darf nicht leer sein", 400);
-  }
-
-  const absolutePath = resolveAbsolutePathFromInput(rawPath);
-
-  try {
-    await ensureWritableDirectory(absolutePath);
-  } catch {
-    throw new UserSettingsError(
-      "Attachment-Speicherpfad konnte nicht angelegt oder beschrieben werden",
-      400,
-    );
-  }
-
-  return { rawPath, absolutePath };
-}
-
-async function normalizeAndValidateBackupBasePath(value: unknown): Promise<{ rawPath: string; absolutePath: string }> {
-  if (typeof value !== "string") {
-    throw new UserSettingsError("backup_base_path muss ein String sein", 400);
-  }
-
-  const rawPath = value.trim();
-  if (rawPath.length === 0) {
-    throw new UserSettingsError("backup_base_path darf nicht leer sein", 400);
-  }
-
-  const absolutePath = resolveAbsolutePathFromInput(rawPath);
-  try {
-    await ensureWritableDirectory(absolutePath);
-  } catch {
-    throw new UserSettingsError("Backup-Basispfad konnte nicht angelegt oder beschrieben werden", 400);
-  }
-
-  return { rawPath, absolutePath };
-}
-
-function invalidateGlobalAttachmentStoragePathCache(): void {
-  globalAttachmentStoragePathCache = null;
-}
-
-function invalidateGlobalBackupBasePathCache(): void {
-  globalBackupBasePathCache = null;
 }
 
 export async function getResolvedSettingsForUser(userId: number): Promise<ResolvedSettingRow[]> {
@@ -276,21 +206,7 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
   }
 
   const scopeId = resolveScopeIdForWrite(input.scopeType, userId);
-  let valueToPersist = input.value;
-
-  if (definition.key === attachmentStoragePathSettingKey) {
-    const normalized = await normalizeAndValidateAttachmentStoragePath(input.value);
-    if (!definition.validate(normalized.rawPath)) {
-      throw new UserSettingsError("Ungueltiger Wert fuer attachmentStoragePath", 400);
-    }
-    valueToPersist = normalized.rawPath;
-  } else if (definition.key === backupBasePathSettingKey) {
-    const normalized = await normalizeAndValidateBackupBasePath(input.value);
-    if (!definition.validate(normalized.rawPath)) {
-      throw new UserSettingsError("Ungueltiger Wert fuer backup_base_path", 400);
-    }
-    valueToPersist = normalized.rawPath;
-  } else if (!definition.validate(input.value)) {
+  if (!definition.validate(input.value)) {
     throw new UserSettingsError("Ungueltiger Wert fuer Setting", 400);
   }
 
@@ -298,19 +214,12 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
     settingKey: definition.key,
     scopeType: input.scopeType,
     scopeId,
-    valueJson: valueToPersist,
+    valueJson: input.value,
     updatedBy: userId,
     expectedVersion: input.version,
   });
   if (upsertResult.kind === "version_conflict") {
     throw new UserSettingsError("VERSION_CONFLICT", 409);
-  }
-
-  if (definition.key === attachmentStoragePathSettingKey && input.scopeType === "GLOBAL") {
-    invalidateGlobalAttachmentStoragePathCache();
-  }
-  if (definition.key === backupBasePathSettingKey && input.scopeType === "GLOBAL") {
-    invalidateGlobalBackupBasePathCache();
   }
 
   return getResolvedSettingsForUser(userId);
@@ -328,51 +237,6 @@ export async function getGlobalSettingValue(key: string): Promise<unknown> {
   }
 
   return definition.defaultValue;
-}
-
-export async function getGlobalAttachmentStoragePath(): Promise<string> {
-  if (globalAttachmentStoragePathCache) {
-    return globalAttachmentStoragePathCache.absolutePath;
-  }
-
-  const storedValue = await getGlobalSettingValue(attachmentStoragePathSettingKey);
-  const rawPath = typeof storedValue === "string" ? storedValue.trim() : "";
-
-  if (rawPath.length === 0) {
-    throw new UserSettingsError("attachmentStoragePath ist leer", 500);
-  }
-
-  const absolutePath = resolveAbsolutePathFromInput(rawPath);
-  try {
-    await ensureWritableDirectory(absolutePath);
-  } catch {
-    throw new UserSettingsError("Attachment-Speicherpfad ist nicht beschreibbar", 500);
-  }
-
-  globalAttachmentStoragePathCache = { rawPath, absolutePath };
-  return absolutePath;
-}
-
-export async function getGlobalBackupBasePath(): Promise<string> {
-  if (globalBackupBasePathCache) {
-    return globalBackupBasePathCache.absolutePath;
-  }
-
-  const storedValue = await getGlobalSettingValue(backupBasePathSettingKey);
-  const rawPath = typeof storedValue === "string" ? storedValue.trim() : "";
-  if (rawPath.length === 0) {
-    throw new UserSettingsError("backup_base_path ist leer", 500);
-  }
-
-  const absolutePath = resolveAbsolutePathFromInput(rawPath);
-  try {
-    await ensureWritableDirectory(absolutePath);
-  } catch {
-    throw new UserSettingsError("Backup-Basispfad ist nicht beschreibbar", 500);
-  }
-
-  globalBackupBasePathCache = { rawPath, absolutePath };
-  return absolutePath;
 }
 
 export function isUserSettingsError(error: unknown): error is UserSettingsError {

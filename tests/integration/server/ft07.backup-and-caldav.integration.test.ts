@@ -26,6 +26,7 @@ import fs from "fs/promises";
 import path from "path";
 import ExcelJS from "exceljs";
 import selfsigned from "selfsigned";
+import { sql } from "drizzle-orm";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
@@ -37,6 +38,7 @@ import * as backupRepository from "../../../server/repositories/backupRepository
 import { runBackupSchedulerTick } from "../../../server/services/backupScheduler";
 import { getAuthUserByUsername } from "../../../server/repositories/usersRepository";
 import * as userSettingsService from "../../../server/services/userSettingsService";
+import { db } from "../../../server/db";
 
 let app: express.Express;
 const backupBaseDir = path.resolve(process.cwd(), ".tmp", "ft07-integration-backups");
@@ -146,11 +148,25 @@ async function waitFor(condition: () => boolean | Promise<boolean>, timeoutMs = 
   throw new Error("waitFor timeout");
 }
 
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function clearBackupLogs(): Promise<void> {
+  try {
+    await db.execute(sql`DELETE FROM backup_log`);
+  } catch {
+    // Ignore when table does not exist yet; scheduler/repo creates it lazily.
+  }
+}
+
 describe("FT07 integration: backup scheduler + caldav outbound", () => {
   it("creates real backup files and logs success, then skips on no_changes", async () => {
+    await clearBackupLogs();
     process.env.FT07_DISABLE_DB_LOCK = "1";
     await setGlobalSetting("backup_enabled", true);
-    await setGlobalSetting("backup_base_path", backupBaseDir);
+    process.env.BACKUP_BASE_PATH = backupBaseDir;
+    await sleep(1200);
     await seedDomainData();
 
     await runBackupSchedulerTick();
@@ -184,9 +200,11 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
   });
 
   it("exposes backup logs and downloads via admin API", async () => {
+    await clearBackupLogs();
     process.env.FT07_DISABLE_DB_LOCK = "1";
     await setGlobalSetting("backup_enabled", true);
-    await setGlobalSetting("backup_base_path", backupBaseDir);
+    process.env.BACKUP_BASE_PATH = backupBaseDir;
+    await sleep(1200);
     await seedDomainData();
     await runBackupSchedulerTick();
 

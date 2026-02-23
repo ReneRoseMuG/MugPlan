@@ -44,16 +44,16 @@ describe("PKG-08 SettingsProvider versioning", () => {
         roleKey: "ADMIN",
       },
       {
-        key: "attachmentStoragePath",
-        label: "Attachment Speicherpfad",
+        key: "backup_enabled",
+        label: "Backups aktiv",
         description: "desc",
-        type: "string",
+        type: "boolean",
         constraints: {},
         allowedScopes: ["GLOBAL"],
-        defaultValue: "server/uploads",
-        globalValue: "server/uploads",
+        defaultValue: true,
+        globalValue: true,
         globalVersion: 3,
-        resolvedValue: "server/uploads",
+        resolvedValue: true,
         resolvedVersion: 3,
         resolvedScope: "GLOBAL",
         roleCode: "ADMIN",
@@ -62,7 +62,7 @@ describe("PKG-08 SettingsProvider versioning", () => {
     ];
 
     expect(resolveSettingVersion(settings, { key: "projects.viewMode", scopeType: "USER" })).toBe(7);
-    expect(resolveSettingVersion(settings, { key: "attachmentStoragePath", scopeType: "GLOBAL" })).toBe(3);
+    expect(resolveSettingVersion(settings, { key: "backup_enabled", scopeType: "GLOBAL" })).toBe(3);
   });
 
   it("falls back to version 1 when scope is allowed but no persisted scope value exists", () => {

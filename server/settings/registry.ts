@@ -95,16 +95,6 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is AttachmentPreviewSize =>
       typeof value === "string" && attachmentPreviewSizeOptions.includes(value as AttachmentPreviewSize),
   },
-  attachmentStoragePath: {
-    key: "attachmentStoragePath",
-    label: "Attachment Speicherpfad",
-    description: "Basis-Verzeichnis fuer gespeicherte Attachments.",
-    type: "string",
-    defaultValue: "server/uploads",
-    allowedScopes: ["GLOBAL"],
-    placeholderWhitelist: [],
-    validate: (value: unknown): value is string => typeof value === "string" && value.trim().length > 0,
-  },
   toastDesktopPosition: {
     key: "toastDesktopPosition",
     label: "Toast Position Desktop",
@@ -124,16 +114,6 @@ export const userSettingsRegistry = {
     defaultValue: true,
     allowedScopes: ["GLOBAL"],
     validate: (value: unknown): value is boolean => typeof value === "boolean",
-  },
-  backupBasePath: {
-    key: "backup_base_path",
-    label: "Backup Basis-Pfad",
-    description: "Basis-Verzeichnis fuer serverseitige Backups (Excel/PDF).",
-    type: "string",
-    defaultValue: "Backups",
-    allowedScopes: ["GLOBAL"],
-    placeholderWhitelist: [],
-    validate: (value: unknown): value is string => typeof value === "string" && value.trim().length > 0,
   },
   calendarWeekendColumnPercent: {
     key: "calendarWeekendColumnPercent",

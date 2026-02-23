@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { getGlobalBackupBasePath } from "./userSettingsService";
+import { getBackupBasePath } from "../config/storagePaths";
 
 function formatDateFolder(input = new Date()): string {
   const year = input.getFullYear();
@@ -10,7 +10,7 @@ function formatDateFolder(input = new Date()): string {
 }
 
 export async function getBackupDayDirectory(now = new Date()): Promise<string> {
-  const basePath = await getGlobalBackupBasePath();
+  const basePath = await getBackupBasePath();
   const dayFolder = formatDateFolder(now);
   const fullDir = path.resolve(basePath, dayFolder);
   await fs.mkdir(fullDir, { recursive: true });
@@ -31,4 +31,3 @@ export async function persistBackupFiles(input: {
 
   return { excelPath, pdfPath };
 }
-
