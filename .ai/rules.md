@@ -232,4 +232,4 @@ Diese Dokumentationspflicht dient:
 - Kontrolle über regressionskritische Bereiche
 
 ## Encoding Probleme lösen
-Lies die Datei ..Docs/encoding.md und bestätige den Lesevorgang.
+Lies die Datei encoding.md und bestätige den Lesevorgang.
