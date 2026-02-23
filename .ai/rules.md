@@ -230,3 +230,6 @@ Diese Dokumentationspflicht dient:
 - Nachvollziehbarkeit der Systeminvarianten
 - Vermeidung redundanter Tests
 - Kontrolle über regressionskritische Bereiche
+
+## Encoding Probleme lösen
+Lies die Datei ..Docs/encoding.md und bestätige den Lesevorgang.

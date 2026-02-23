@@ -2,7 +2,7 @@
 
 # FT (01): **Kalendertermine verwalten**
 
-## Ziel / Zweck
+## FT (01) Ziel / Zweck
 
 Dieses Feature bildet die **zentrale fachliche Grundlage der Terminplanung**.
 
@@ -10,7 +10,7 @@ Es ermöglicht der Disposition, Termine als zeitliche Planungseinheiten **anzule
 
 FT (01) ist die **fachliche Quelle der Wahrheit für alle Termindaten**. Alle weiteren Features, die Termine anzeigen, auswerten, überwachen oder ausgeben, leiten ihre Informationen **ausschließlich** aus den hier verwalteten Terminen ab.
 
-## Fachliche Beschreibung
+## FT (01) Fachliche Beschreibung
 
 Ein Termin ist eine **zeitliche Planungseinheit** mit einem Startzeitpunkt und einem optionalen Endzeitpunkt. Jeder Termin gehört **immer genau zu einem Projekt**. Über das Projekt ist der Termin **indirekt** einem Kunden zugeordnet. Die Projekt-Termin-Beziehung ist die fachlich relevante und stabile Zuordnung.
 
@@ -39,7 +39,7 @@ Unabhängig vom Einstiegspunkt gilt:
 
 **Ein Termin ist erst fachlich gültig, wenn ihm ein Projekt zugeordnet ist.**
 
-## Regeln & Randbedingungen
+## FT (01) Regeln & Randbedingungen
 
 **Grundlegende Terminregeln**
 
@@ -83,9 +83,9 @@ Unabhängig vom Einstiegspunkt gilt:
 - Änderungen an Teams wirken **nicht rückwirkend**.
 - Der Termin übernimmt die Mitarbeiter des Teams
 
-## **Use Cases**
+## **FT (01) Use Cases**
 
-### UC 01: Termin anlegen
+### UC 01/01: Termin anlegen
 
 ### **Akteur**
 
@@ -132,7 +132,7 @@ Der Termin ist einem Projekt zugeordnet und im Kalender sichtbar, entweder mit T
 
 Für alle dem Termin zugeordneten Mitarbeiter zeigt das Mitarbeiterformular diesen Termin in der Mitarbeiter-Terminliste. Das Projektformular zeigt den Termin in der Projekt-Terminliste. Das Kundenformular zeigt den Termin in der Terminliste des Kunden, der über das Projekt ermittelt wird. Wenn der Termin einer Tour zugeordnet ist, zeigt das Tour-Formular den Termin in der Tour-Terminliste.
 
-### UC 02: Termin bearbeiten
+### UC 01/02: Termin bearbeiten
 
 ### **Akteur**
 
@@ -184,7 +184,7 @@ Der Termin ist mit den geänderten Daten gespeichert und weiterhin einem Projekt
 
 Die aktualisierten Termindaten sind in allen konsumierenden Sichten konsistent sichtbar. Das bedeutet, dass das Mitarbeiterformular den Termin in der Mitarbeiter-Terminliste für alle zugeordneten Mitarbeiter korrekt anzeigt, das Projektformular den Termin in der Projekt-Terminliste anzeigt und das Kundenformular den Termin in der Terminliste des Kunden anzeigt, der über das Projekt ermittelt wird. Wenn der Termin einer Tour zugeordnet ist, zeigt das Tour-Formular den Termin in der Tour-Terminliste, und wenn die Tourzuordnung entfernt wurde, verschwindet der Termin entsprechend aus dieser Tour-Sicht.
 
-### UC 03: Termin verschieben
+### UC 01/03: Termin verschieben
 
 ### **Akteur**
 
@@ -226,7 +226,7 @@ Der Termin ist auf das neue Datum beziehungsweise den neuen Zeitraum verschoben 
 
 Der Termin erscheint in der neuen Tages- beziehungsweise Wochen-Sicht und ist in der alten Sicht nicht mehr vorhanden. Für alle zugeordneten Mitarbeiter ist der Termin in der Mitarbeiter-Terminliste sichtbar, und wenn der Termin einer Tour zugeordnet ist, ist er auch in der Tour-Terminliste sichtbar.
 
-### UC 04: Termin löschen
+### UC 01/04: Termin löschen
 
 ### **Akteur**
 
@@ -263,7 +263,7 @@ Der Termin ist vollständig gelöscht. Es existiert kein Termin-Datensatz mehr i
 
 Der Termin ist in keiner Sicht mehr auffindbar. Das bedeutet, dass er weder im Kalender noch in der Projekt-Terminliste, noch in der Mitarbeiter-Terminliste, noch in einer Tour-Terminliste, noch in einer kundenbezogenen Terminliste erscheint.
 
-### UC 05: Tour einem Termin zuweisen
+### UC 01/05: Tour einem Termin zuweisen
 
 ### **Akteur**
 
@@ -309,7 +309,7 @@ Der Termin ist mit der Tour verknüpft. Die Mitarbeiterliste des Termins besteht
 
 Der Termin ist im Kalender sichtbar und wird je nach Darstellungsregel mit Tourfarbe oder Standardfarbe angezeigt. Der Termin ist in der Tour-Terminliste sichtbar, sofern eine Tour-Terminliste existiert, und er ist in den Mitarbeiter-Terminlisten aller Tour-Mitarbeiter sichtbar, während er bei zuvor entfernten Mitarbeitern nicht mehr erscheint.
 
-### UC 06: Tourzuweisung eines Termins entfernen
+### UC 01/06: Tourzuweisung eines Termins entfernen
 
 ### **Akteur**
 
@@ -345,7 +345,7 @@ Der Termin ist keiner Tour mehr zugeordnet und wird im Kalender nach den Regeln 
 
 Die Mitarbeiterzuordnungen des Termins bleiben unverändert und sind weiterhin konsistent als Einträge in der Join-Tabelle Termin–Mitarbeiter abrufbar. Der Termin ist in der Tour-Terminliste nicht mehr sichtbar. In Mitarbeiter-Terminlisten bleibt der Termin für alle zugeordneten Mitarbeiter sichtbar.
 
-### UC 07: Mitarbeiter über Team zuweisen
+### UC 01/07: Mitarbeiter über Team zuweisen
 
 ### **Ziel**
 
@@ -382,7 +382,7 @@ Die Mitarbeiter des ausgewählten Teams sind dem Termin zugeordnet und als Eintr
 
 Für alle dem Termin zugeordneten Mitarbeiter zeigt das Mitarbeiterformular diesen Termin in der Mitarbeiter-Terminliste. Der Termin erscheint in den projektbezogenen Terminsichten und, sofern vorhanden, in kundenbezogenen Terminsichten über die Projekt-Kunden-Beziehung.
 
-### UC 08: Mitarbeiter einem Termin zuweisen
+### UC 01/08: Mitarbeiter einem Termin zuweisen
 
 ### **Akteur**
 
@@ -423,7 +423,7 @@ Der Mitarbeiter ist dem Termin zugeordnet und erscheint im Termin in der Liste d
 
 Der Termin ist für diesen Mitarbeiter in der Mitarbeiter-Terminliste sichtbar. Der Termin ist außerdem weiterhin in projektbezogenen Terminsichten sichtbar und, sofern vorgesehen, in kundenbezogenen Terminsichten über die Projekt-Kunden-Beziehung.
 
-### UC 09: Mitarbeiter von einem Termin entfernen
+### UC 01/09: Mitarbeiter von einem Termin entfernen
 
 ### **Akteur**
 
@@ -458,7 +458,7 @@ Der Mitarbeiter ist dem Termin nicht mehr zugeordnet und erscheint im Termin nic
 
 Der Termin ist für diesen Mitarbeiter nicht mehr in der Mitarbeiter-Terminliste sichtbar. Für andere weiterhin zugeordnete Mitarbeiter bleibt der Termin sichtbar. Der Termin bleibt in projektbezogenen Terminsichten sichtbar und, sofern vorgesehen, in kundenbezogenen Terminsichten über die Projekt-Kunden-Beziehung.
 
-### UC 10: Termin in abhängigen Sichten anzeigen (Quersicht-Vertrag)
+### UC 01/10: Termin in abhängigen Sichten anzeigen (Quersicht-Vertrag)
 
 ### **Akteur**
 
@@ -494,7 +494,7 @@ Der Termin ist in allen relevanten Sichten konsistent sichtbar oder nicht sichtb
 
 Das bedeutet insbesondere: Das Mitarbeiterformular zeigt den Termin in der Mitarbeiter-Terminliste für alle dem Termin aktuell zugeordneten Mitarbeiter, und zeigt ihn nicht für Mitarbeiter, die nicht (mehr) zugeordnet sind. Das Projektformular zeigt den Termin in der Projekt-Terminliste des zugeordneten Projekts. Das Kundenformular zeigt den Termin in der Terminliste des Kunden, der über das Projekt ermittelt wird. Wenn der Termin einer Tour zugeordnet ist, zeigt das Tour-Formular den Termin in der Tour-Terminliste, und wenn die Tourzuordnung entfernt wurde, ist der Termin in dieser Tour-Sicht nicht mehr sichtbar.
 
-### UC 11: Denormalisierte Terminanzeige aktualisieren (Quersicht-Vertrag)
+### UC 01/11: Denormalisierte Terminanzeige aktualisieren (Quersicht-Vertrag)
 
 ### **Akteur**
 
@@ -527,7 +527,7 @@ Sicherstellen, dass Sichten, die Termin-Informationen denormalisiert anzeigen, n
 
 Alle Terminprojektionen und Terminlisten, die Kunden- oder Projektnamen anzeigen, liefern die aktuellen Namen konsistent aus. Ein Termin zeigt in Kalender- und Listenansichten die aktuellen Projekt- und Kundeninformationen, die sich aus Termin → Projekt → Kunde ergeben.
 
-### UC 12: Termin anzeigen und filtern (Kalender-/Listenprojektion)
+### UC 01/12: Termin anzeigen und filtern (Kalender-/Listenprojektion)
 
 ### **Akteur**
 
@@ -562,7 +562,7 @@ Termine in Kalender- und Listenansichten anzeigen und über Filter so einschrän
 
 Die Ansicht zeigt die vom System gelieferten Termine konsistent und reproduzierbar an. Die Terminmenge entspricht dem gewählten Zeitraum und den gesetzten Filtern. Alle in der Projektion angezeigten Projekt- und Kundeninformationen entsprechen den aktuellen Daten, wobei der Kunde stets indirekt über das Projekt bestimmt wird.
 
-### UC 13: Termin-Farbdarstellung ableiten
+### UC 01/13: Termin-Farbdarstellung ableiten
 
 ### **Akteur**
 
@@ -598,7 +598,7 @@ Termine in Kalender- und Listenansichten mit einer konsistent abgeleiteten Farbe
 
 Jeder Termin wird in allen Sichten konsistent mit der korrekten Farbe dargestellt. Termine mit Tourzuordnung nutzen die Tourfarbe, Termine ohne Tourzuordnung nutzen die Standardfarbe. Nach Änderungen an der Tourzuordnung ist die Darstellung ohne Inkonsistenzen aktualisiert.
 
-### UC 14: Historische Termine sind read-only
+### UC 01/14: Historische Termine sind read-only
 
 ### **Akteur**
 
@@ -633,7 +633,7 @@ Sicherstellen, dass historische Termine nicht mehr veränderbar sind und dass da
 
 Historische Termine sind nicht veränderbar. Es gibt keine Möglichkeit, historische Termine neu anzulegen oder bestehende Termine in die Vergangenheit zu verschieben. Das System stellt sicher, dass weder Termin-Datensätze noch Join-Einträge Termin–Mitarbeiter als Teilzustand entstehen, wenn eine historische Eingabe blockiert wird.
 
-### UC 15: Konsistenz bei parallelen Änderungen (Optimistic Locking)
+### UC 01/15: Konsistenz bei parallelen Änderungen (Optimistic Locking)
 
 ### **Akteur**
 
@@ -671,7 +671,7 @@ Verhindern, dass parallele Bearbeitungen am selben Termin zu Lost Updates führe
 
 Parallele Änderungen führen nicht zu stillen Überschreibungen. Stattdessen wird ein Versionskonflikt erkannt und die zweite Speicherung blockiert, bis der Benutzer auf Basis des aktuellen Stands erneut speichert. Der Termin und die Join-Tabelle Termin–Mitarbeiter bleiben konsistent, ohne Lost Updates und ohne Teilzustände.
 
-### UC 16: Termin-Join-Konsistenz und Duplikatvermeidung
+### UC 01/16: Termin-Join-Konsistenz und Duplikatvermeidung
 
 ### **Akteur**
 
@@ -713,13 +713,13 @@ Die Mitarbeiterzuordnungen eines Termins sind konsistent und duplikatfrei. Für 
 
 # FT (02): Projekte
 
-## Ziel / Zweck
+## FT (02) Ziel / Zweck
 
 Dieses Feature ermöglicht der Disposition, **Projekte als zentrale fachliche Einheit** anzulegen, zu pflegen und in ihrem Lebenszyklus zu steuern.
 
 Ein Projekt bildet den fachlichen Rahmen für alle zugehörigen Termine und bündelt alle projektbezogenen Informationen wie Beschreibung, Status, Notizen und Anhänge.
 
-## Fachliche Beschreibung
+## FT (02) Fachliche Beschreibung
 
 Ein Projekt repräsentiert einen Auftrag oder Vorgang (z. B. Aufbau, Service, Nachbesserung).
 
@@ -740,7 +740,7 @@ Projekt-Details sind immer **projektweit gültig** und gelten automatisch für a
 
 In der Projektliste wird standardmäßig nur die für die Disposition relevante Arbeitsmenge angezeigt. Unter „Aktuelle Projekte“ versteht das System Projekte, die mindestens einen Termin besitzen, dessen Startdatum heute oder in der Zukunft liegt. Projekte ohne Termine sind im Standardfall bewusst ausgeblendet, weil sie nicht disponierbar sind. Über eine explizite Umschaltoption kann die Liste stattdessen auf „Projekte ohne Termine“ umgestellt werden; in diesem Modus werden ausschließlich Projekte angezeigt, die keinen Termin besitzen. Zusätzliche Filter wie Titel- oder Statusfilter wirken immer nur auf die jeweils geladene Projektmenge und definieren nicht die Grundmenge.
 
-## Regeln & Randbedingungen
+## FT (02) Regeln & Randbedingungen
 
 - Ein Projekt ist immer genau **einem Kunden** zugeordnet.
 - Ein Projekt hat einen oder mehrere **Status Flags**.
@@ -753,9 +753,9 @@ In der Projektliste wird standardmäßig nur die für die Disposition relevante 
 - Anhänge sind dauerhaft dem Projekt zugeordnet.
 - Das physische Löschen eines Projekts ist nur zulässig, wenn keine Termine existieren.
 
-## **Use Cases**
+## **FT (02) Use Cases**
 
-### UC 01: Projekt anlegen
+### UC 02/01: Projekt anlegen
 
 ### **Akteur**
 
@@ -782,7 +782,7 @@ Ein neues Projekt erfassen, einem Kunden zuordnen und einen initialen Status set
 
 Projekt existiert und kann für Terminplanung genutzt werden.
 
-### UC 02: Projekt bearbeiten
+### UC 02/02: Projekt bearbeiten
 
 ### **Akteur**
 
@@ -806,7 +806,7 @@ Projekt existiert.
 
 Projekt ist aktualisiert.
 
-### UC 03: Projekt anzeigen
+### UC 02/03: Projekt anzeigen
 
 ### Akteur
 
@@ -846,7 +846,7 @@ Alle projektbezogenen Informationen (Kunde, Status, Notizen, Anhänge, Termine) 
 
 Es erfolgt keine fachliche Datenänderung.
 
-### UC 04: Projektstatus ändern
+### UC 02/04: Projektstatus ändern
 
 ### Akteur
 
@@ -882,7 +882,7 @@ Projekt befindet sich im neuen Status.
 
 Die Statusänderung wirkt ausschließlich auf das Projekt.
 
-### UC 05: Projektnotizen pflegen
+### UC 02/05: Projektnotizen pflegen
 
 ### Akteur
 
@@ -917,7 +917,7 @@ Notizen sind dem Projekt eindeutig zugeordnet und verfügbar.
 
 Bestehende Beziehungen zu Kunde, Status und Terminen bleiben unverändert.
 
-### UC 06: Projektanhänge verwalten
+### UC 02/06: Projektanhänge verwalten
 
 ### Akteur
 
@@ -955,7 +955,7 @@ Anhänge sind korrekt dem Projekt zugeordnet und stehen für alle zugehörigen T
 
 Bestehende Daten (Projekt, Status, Notizen, Termine) bleiben unverändert.
 
-### UC 07: Projekte anzeigen
+### UC 02/07: Projekte anzeigen
 
 ### Akteur
 
@@ -989,7 +989,7 @@ Der Akteur sieht eine für die tägliche Arbeit passende Projektliste und kann b
 
 Der Akteur sieht entweder die aktuellen Projekte oder ausschließlich Projekte ohne Termine, jeweils als klar getrennte Mengen. Es findet keine Vermischung der Grundmengen statt. Es erfolgt keine fachliche Datenänderung.
 
-### UC 08: Projekt löschen
+### UC 02/08: Projekt löschen
 
 ### Akteur
 
@@ -1029,7 +1029,7 @@ Zugehörige Statusbeziehungen und Notizen existieren nicht mehr.
 
 Termine bleiben unverändert bestehen, da eine Löschung nur ohne vorhandene Termine möglich ist.
 
-### UC 09: Projektänderung wird in Terminansichten konsistent dargestellt
+### UC 02/09: Projektänderung wird in Terminansichten konsistent dargestellt
 
 ### Akteur
 
@@ -1063,7 +1063,7 @@ Alle Terminansichten zeigen konsistente und aktuelle Projektdaten.
 
 Es existieren keine veralteten Projektreferenzen in Termin-Karten.
 
-### UC 10: Projektstatusänderung wirkt systemweit konsistent
+### UC 02/10: Projektstatusänderung wirkt systemweit konsistent
 
 ### Akteur
 
@@ -1096,7 +1096,7 @@ Projektstatus ist in allen Sichten identisch sichtbar.
 
 Statusfilter liefern konsistente Ergebnisse.
 
-### UC 11: Projektlöschung wird systemweit korrekt verarbeitet
+### UC 02/11: Projektlöschung wird systemweit korrekt verarbeitet
 
 ### Akteur
 
@@ -1128,7 +1128,7 @@ Es existieren keine Referenzen auf das gelöschte Projekt.
 
 Alle Sichten sind konsistent.
 
-### UC 12: Projekt in abhängigen Sichten anzeigen (Quer­sicht-Vertrag)
+### UC 02/12: Projekt in abhängigen Sichten anzeigen (Quer­sicht-Vertrag)
 
 ### Akteur
 
@@ -1162,7 +1162,7 @@ Alle abhängigen Sichten zeigen identische und konsistente Projektdaten.
 
 Es existieren keine widersprüchlichen Projektrepräsentationen zwischen Detailansicht und Quer­sichten.
 
-### UC 13: Denormalisierte Projektanzeige aktualisieren (Quer­sicht-Vertrag)
+### UC 02/13: Denormalisierte Projektanzeige aktualisieren (Quer­sicht-Vertrag)
 
 ### Akteur
 
@@ -1197,7 +1197,7 @@ Alle abhängigen Sichten zeigen konsistente und aktuelle Projektdaten.
 
 Es existieren keine veralteten oder widersprüchlichen Projektinformationen im System.
 
-### UC 14: Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking)
+### UC 02/14: Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking)
 
 ### Akteur
 
@@ -1236,7 +1236,7 @@ Das Projekt bleibt in einem konsistenten Zustand.
 
 Abhängige Sichten zeigen ausschließlich den zuletzt erfolgreich gespeicherten Zustand.
 
-### UC 15: Projekt-Join-Konsistenz (Projekt ↔ Status)
+### UC 02/15: Projekt-Join-Konsistenz (Projekt ↔ Status)
 
 ### Akteur
 
@@ -1274,7 +1274,7 @@ Es existieren keine doppelten oder verwaisten Join-Einträge.
 
 Die Integrität bleibt auch bei Projektlöschung gewahrt.
 
-### UC 16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)
+### UC 02/16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)
 
 ### Akteur
 
@@ -1313,7 +1313,7 @@ Es existieren keine Projekte ohne Kundenreferenz.
 
 Historische Projekte mit deaktivierten Kunden bleiben konsistent lesbar.
 
-### UC 17: Projekt-Mengenlogik-Konsistenz (Projektübersicht)
+### UC 02/17: Projekt-Mengenlogik-Konsistenz (Projektübersicht)
 
 ### Akteur
 
@@ -1353,7 +1353,7 @@ Filter verändern nicht die zugrunde liegende Grundmenge.
 
 Die Projektübersicht ist fachlich konsistent und nachvollziehbar.
 
-### UC 18: Race Condition bei Projektlöschung
+### UC 02/18: Race Condition bei Projektlöschung
 
 ### Akteur
 
@@ -1392,7 +1392,7 @@ Ein Projekt mit Terminreferenz kann nicht gelöscht werden.
 
 Die referenzielle Integrität bleibt jederzeit gewahrt.
 
-### UC 19: Projekt in abhängigen Sichten anzeigen (Quer­sicht-Vertrag)
+### UC 02/19: Projekt in abhängigen Sichten anzeigen (Quer­sicht-Vertrag)
 
 ### Akteur
 
@@ -1426,7 +1426,7 @@ Alle abhängigen Sichten zeigen identische Projektdaten.
 
 Es existieren keine widersprüchlichen Projektrepräsentationen im System.
 
-### UC 20: Denormalisierte Projektanzeige aktualisieren
+### UC 02/20: Denormalisierte Projektanzeige aktualisieren
 
 ### Akteur
 
@@ -1463,11 +1463,11 @@ Es existieren keine veralteten oder widersprüchlichen Projektinformationen.
 
 # FT (03): Kalenderansichten
 
-## Ziel / Zweck
+## FT (03) Ziel / Zweck
 
 Dieses Feature stellt Kalenderansichten bereit, um Termine über definierte Zeiträume hinweg übersichtlich darzustellen und die Disposition bei der Orientierung und Planung zu unterstützen. Es enthält ausschließlich Anzeige-, Navigations- und Drilldown-Funktionen und verändert keine Termindaten.
 
-## Fachliche Beschreibung
+## FT (03) Fachliche Beschreibung
 
 Die Anwendung visualisiert Termine in periodischen Kalenderansichten (Woche, Monat, mehrmonatige Übersicht, Jahresübersicht). Termine werden als **farbige Balken** dargestellt, deren Farbe aus der **Tourzuordnung** abgeleitet wird. Der Balken deckt den vollständigen Zeitraum des Termins ab und zeigt kompakt **Kundenname** und **Postleitzahl** an. 
 FT (03) Terminplanung und Kalen…
@@ -1476,7 +1476,7 @@ Zusätzlich bietet jeder Termin einen **Tooltip** in Form einer größeren Infor
 
 Die Ansichten müssen „heruntergebrochen“ werden können, also die Kalenderdarstellung muss wahlweise auf **Tour**, **Team** oder **Mitarbeiter** fokussiert werden, ohne dass sich die Terminlogik ändert.
 
-## Regeln & Randbedingungen
+## FT (03) Regeln & Randbedingungen
 
 Die Kalenderansichten sind Dispositionsoberflächen und nicht nur Anzeigeansichten. In allen Kalenderansichten können Termine über den `+`-Button pro Kalendertag angelegt werden, und Termine können per Drag & Drop verschoben werden. Beide Aktionen sind fachliche Änderungen und gehören zum Kernprozess der Disposition.
 
@@ -1494,7 +1494,7 @@ In Monats- und Jahresansicht wird beim Mouse-Over eines Termins ein Popover ange
 
 Die Kalenderansichten benötigen für die dargestellten Termine Zugriff auf Projekt- und Kundendaten sowie auf die Mitarbeiterzuordnungen. Diese Informationen dürfen serverseitig zusammengeführt oder bei Bedarf nachgeladen werden, solange die Oberfläche ohne spürbare Verzögerung bedienbar bleibt. Mouse-Over darf Details nachladen, muss jedoch pro Termin zwischenspeichern, damit wiederholtes Hovering keine wiederholten Ladevorgänge auslöst.
 
-## Darstellung
+## FT (03) Darstellung
 
 ## Gesamtkonzept: Einheitliche Logik, verschiedene Render-Modi
 
@@ -1642,31 +1642,31 @@ Bei Mehrtages-Terminen betrifft dies alle Abschnitte, die von der Spanne des Ter
 
 Nach dem Drop müssen Sortierung und Lane-Zuordnung wieder deterministisch nach denselben Regeln hergestellt werden.
 
-# **Use Cases**
+# FT (03) **Use Cases**
 
-### **UC: UC: Kalenderansicht anzeigen (Woche/Monat/Mehrmonat/Jahr)**
+### **UC 03/01: UC: Kalenderansicht anzeigen (Woche/Monat/Mehrmonat/Jahr)**
 
 Der Benutzer wählt eine der periodischen Ansichten und erhält die Terminbalken inklusive Kundenname und Postleitzahl.
 
-### **UC: Kalenderzeitraum wechseln**
+### **UC 03/02: Kalenderzeitraum wechseln**
 
 Der Benutzer navigiert vor/zurück oder wählt ein Datum; das System aktualisiert die Anzeige.
 
-### **UC: Tourbezogene Planung anzeigen**
+### **UC 03/03: Tourbezogene Planung anzeigen**
 
 Der Benutzer wählt eine Tour; das System zeigt die Termine dieser Tour im gewählten Zeitraum.
 
-### UC: Darstellung auf Mitarbeiter fokussieren
+### UC 03/04: Darstellung auf Mitarbeiter fokussieren
 
 Der Benutzer wählt einen Mitarbeiter; das System zeigt dessen Termine im gewählten Zeitraum.
 
 # FT (04): Tourenplanung
 
-## Ziel / Zweck
+## FT (04) Ziel / Zweck
 
 Dieses Feature ermöglicht der Disposition die Verwaltung von Touren zur logischen Gruppierung von Terminen im Kalender. Touren dienen ausschließlich der organisatorischen Bündelung und der visuellen Orientierung innerhalb der Terminplanung.
 
-## Fachliche Beschreibung
+## FT (04) Fachliche Beschreibung
 
 Eine Tour ist eine abstrakte Planungseinheit, mit der mehrere Termine logisch zusammengefasst werden können. Touren haben keinen fachlichen Bezug zu Fahrzeugen, Routen oder Arbeitszeiten. Sie dienen ausschließlich der Strukturierung und besseren Übersicht in der Terminplanung. Touren fungieren auch als Gruppenvorlage für die zeitweilige Gruppierung von Mitarbeitern.
 
@@ -1674,7 +1674,7 @@ Termine können einer Tour zugeordnet oder aus einer Tour entfernt werden. Alle 
 
 Touren können manuell angelegt und bearbeitet werden. Eine Übersicht ermöglicht es, alle einer Tour zugeordneten Termine gesammelt anzuzeigen. Touren enthalten selbst keine Terminlogik und keine zeitliche oder räumliche Auswertungsfunktion.
 
-## Regeln & Randbedingungen
+## FT (04) Regeln & Randbedingungen
 
 - Eine Tour dient ausschließlich der organisatorischen Gruppierung von Terminen.
 - Touren sind nicht an Fahrzeuge oder feste Ziele gebunden.
@@ -1689,9 +1689,9 @@ Touren können manuell angelegt und bearbeitet werden. Eine Übersicht ermöglic
 - Mehrere Mitarbeiter können einer Tour zugewiesen werden
 - Löschen einer Tour: weiterhin nur, wenn keine Termine zugeordnet sind, aber zusätzlich: **keine Kaskade**, sondern nur Mitarbeiter.Tour_ID auf NULL/0 setzen. (Die bestehende Löschregel “nur wenn keine Termine” steht bereits drin.)
 
-## **Use Cases**
+## FT (04) **Use Cases**
 
-### **UC 01: Tour anlegen**
+### **UC 04/01: Tour anlegen**
 
 ### **Akteur**
 
@@ -1746,7 +1746,7 @@ Der Akteur legt eine neue Tour an. Der Name der Tour wird systemseitig automatis
 - Die Tour steht für Terminzuweisungen zur Verfügung.
 - Kalender- und Wochenansichten berücksichtigen die neue Tour korrekt.
 
-### **UC 02: Tour bearbeiten**
+### **UC 04/02: Tour bearbeiten**
 
 ### **Akteur**
 
@@ -1798,7 +1798,7 @@ Der Akteur bearbeitet eine vorhandene Tour. Der Name der Tour ist systemseitig a
 - Kein Mitarbeiter ist mehreren Touren zugeordnet.
 - Kalenderansichten, Wochenübersichten und Kartenansicht übernehmen die aktualisierte Farbe und Mitarbeiterzuordnung korrekt.
 
-### UC 03: Mitarbeiter einer Tour zuweisen
+### UC **04/**03: Mitarbeiter einer Tour zuweisen
 
 ### **Akteur**
 
@@ -1847,7 +1847,7 @@ Der Akteur bearbeitet eine bestehende Tour und passt deren Mitarbeiterliste an. 
 - Die Tour enthält ausschließlich gültig zugewiesene Mitarbeiter.
 - Wochenübersichten und Mitarbeiterdetailansichten spiegeln den aktuellen Zustand korrekt wider.
 
-### UC 04: Tour löschen
+### UC **04/**04: Tour löschen
 
 ### **Akteur**
 
@@ -1897,7 +1897,7 @@ Die Tour existiert nicht mehr im System.
 - Alle betroffenen Sichten zeigen die Tour nicht mehr an.
 - Es sind keine Teilzustände oder verwaisten Referenzen vorhanden.
 
-### UC 05: Tourliste anzeigen
+### UC **04/**05: Tourliste anzeigen
 
 ### **Akteur**
 
@@ -1947,7 +1947,7 @@ Der Akteur ruft die Tourenverwaltung auf. Das System zeigt eine Übersicht aller
 - Monteure können keine Tourdaten verändern.
 - Es entstehen keine inkonsistenten Zustände durch unzulässige Aktionen.
 
-### UC 06: Kalenderdarstellung nach Touränderung aktualisieren
+### UC **04/**06: Kalenderdarstellung nach Touränderung aktualisieren
 
 ### **Akteur**
 
@@ -1997,7 +1997,7 @@ Der Akteur ändert Eigenschaften einer bestehenden Tour. Das System übernimmt d
 - Es existieren keine widersprüchlichen oder veralteten Darstellungen.
 - Die Kalenderansicht entspricht jederzeit dem aktuellen Datenzustand.
 
-### UC 07: Wochenübersicht nach Touränderung korrekt ableiten
+### UC **04/**07: Wochenübersicht nach Touränderung korrekt ableiten
 
 ### **Akteur**
 
@@ -2048,7 +2048,7 @@ Der Akteur ruft eine mitarbeiterbezogene oder tourbezogene Wochenübersicht auf.
 - Es existieren keine veralteten oder widersprüchlichen Anzeigen.
 - Die Übersicht bleibt rein informativ und verändert keine fachlichen Daten.
 
-### UC 08: Parallele Mitarbeiterzuweisung zu unterschiedlichen Touren
+### UC **04/**08: Parallele Mitarbeiterzuweisung zu unterschiedlichen Touren
 
 ### **Akteur**
 
@@ -2090,7 +2090,7 @@ Zwei Akteure versuchen nahezu zeitgleich, denselben Mitarbeiter unterschiedliche
 - Es existiert keine Mehrfachzuordnung.
 - Das System bleibt konsistent.
 
-### UC 09: Parallele Bearbeitung derselben Tour
+### UC **04/**09: Parallele Bearbeitung derselben Tour
 
 ### **Akteur**
 
@@ -2131,7 +2131,7 @@ Zwei Akteure bearbeiten gleichzeitig dieselbe Tour. Änderungen an Farbe oder Mi
 - Die Tour befindet sich in einem konsistenten Zustand.
 - Änderungen erfolgen kontrolliert und nachvollziehbar.
 
-### UC 10: Löschkonflikt bei paralleler Terminzuordnung
+### UC **04/**10: Löschkonflikt bei paralleler Terminzuordnung
 
 ### **Akteur**
 
@@ -2173,11 +2173,11 @@ Ein Akteur versucht, eine Tour zu löschen, während ein anderer Akteur parallel
 
 # FT (05): Mitarbeiterverwaltung
 
-## Ziel / Zweck
+## FT (05) Ziel / Zweck
 
 Dieses Feature dient der zentralen Verwaltung von Mitarbeitern als ausführende Ressourcen für Termine. Ziel ist es, Mitarbeiter als Stammdaten zu pflegen und ihre Einsätze über Termine hinweg nachvollziehbar darzustellen, ohne Terminplanung und Ressourcendarstellung fachlich zu vermischen.
 
-## Fachliche Beschreibung
+## FT (05) Fachliche Beschreibung
 
 Die Mitarbeiterverwaltung stellt Funktionen zum Anlegen, Bearbeiten und Anzeigen von Mitarbeitern bereit. Mitarbeiter können unabhängig von Terminen existieren und werden im Rahmen der Terminvergabe optional Terminen zugewiesen. Die Zuweisung selbst erfolgt nicht innerhalb dieses Features, sondern im Kontext der Terminplanung.
 Disponenten erhalten serverseitig nur aktive Mitarbeiter und können Mitarbeiter damit nur aus dem aktiven Bestand auswählen. Die Verwaltung von aktiven und inaktiven Mitarbeitern (Deaktivieren, Reaktivieren) ist eine Admin-Funktion und nicht Teil dieser Dokumentation.
@@ -2186,7 +2186,7 @@ Für jeden Mitarbeiter ist eine Terminübersicht verfügbar. Diese Übersicht ze
 In der Terminübersicht eines Mitarbeiters sind neben Zeitraum und Bezeichnung des Termins auch die zugehörige Tour sowie der Kunde erkennbar, da Termine diese Informationen referenzieren.
 In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.
 
-## Regeln & Randbedingungen
+## FT (05) Regeln & Randbedingungen
 
 - Mitarbeiter können unabhängig von Terminen existieren.
 - Die Zuweisung eines Mitarbeiters zu einem Termin ist optional.
@@ -2199,9 +2199,9 @@ In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge z
 - Mitarbeiter existieren unabhängig von Tour-Zugehörigkeit und Team-Zugehörigkeit. Löschungen von Tour oder Team wirken sich nur auf die FK-Eigenschaften des Mitarbeiters aus (Setzen auf NULL).
 - Mitarbeiteranhänge sind mitarbeiterbezogen und unabhängig von Terminen; Anhänge können hinzugefügt und heruntergeladen werden, eine physische Löschung ist nicht vorgesehen.
 
-## **Use Cases**
+## FT (05) **Use Cases**
 
-### **UC 01: Mitarbeiter anlegen**
+### **UC 05/01: Mitarbeiter anlegen**
 
 ## Akteur
 
@@ -2262,7 +2262,7 @@ Einen neuen Mitarbeiter als aktive Stammdatenressource im System anlegen.
 - Die Terminübersicht des Mitarbeiters ist initial leer.
 - Es wurden keine bestehenden Termine oder Projekte verändert.
 
-### **UC 02: Mitarbeiter bearbeiten**
+### **UC 05/02: Mitarbeiter bearbeiten**
 
 ## Akteur
 
@@ -2325,7 +2325,7 @@ Bestehende Stammdaten eines Mitarbeiters ändern, ohne Termin- oder Historienlog
 - Kalenderansichten, Kartenansichten und Terminformulare zeigen bei erneuter Abfrage die aktualisierten Mitarbeiterdaten.
 - Es entstehen keine inkonsistenten FK-Zustände.
 
-### **UC 03: Mitarbeiter-Termine anzeigen**
+### **UC 05/03: Mitarbeiter-Termine anzeigen**
 
 **Akteur**
 
@@ -2369,7 +2369,7 @@ Die Terminliste bildet die Einsatzhistorie des Mitarbeiters ab.
 - Zugeordnete Tour
 - Zugeordneter Kunde
 
-### **UC 04: Mitarbeiter deaktivieren**
+### **UC 05/04: Mitarbeiter deaktivieren**
 
 ## Akteur
 
@@ -2434,7 +2434,7 @@ Einen bestehenden Mitarbeiter für zukünftige Dispositionsvorgänge sperren, oh
     - in Filtern, die nur aktive Mitarbeiter berücksichtigen.
 - Administratoren können den Mitarbeiter weiterhin in der Stammdatenliste sehen.
 
-### **UC 05: Mitarbeiter reaktivieren**
+### **UC 05/05: Mitarbeiter reaktivieren**
 
 ## Akteur
 
@@ -2498,7 +2498,7 @@ Einen zuvor deaktivierten Mitarbeiter wieder für zukünftige Dispositionsvorgä
     - in Filtern für aktive Mitarbeiter.
 - Es wurden keine bestehenden Termine oder Projekte verändert.
 
-### UC 06: Mitarbeiteranhänge verwalten
+### UC **05/**06: Mitarbeiteranhänge verwalten
 
 ## Akteur
 
@@ -2568,7 +2568,7 @@ Dokumente einem Mitarbeiter hinzufügen sowie bestehende Anhänge einsehen und h
 - Es erfolgt keine physische Löschung bestehender Dateien.
 - Parallele Uploads verschiedener Akteure sind zulässig und erzeugen getrennte Datensätze.
 
-### UC 07: Mitarbeiter anzeigen
+### UC **05/**07: Mitarbeiter anzeigen
 
 ## Akteur
 
@@ -2629,7 +2629,7 @@ Mitarbeiterdaten in Listen- und Detailansichten anzeigen, rollenbasiert gefilter
 - Es erfolgt keinerlei fachliche Datenänderung.
 - Es entstehen keine inkonsistenten Zustände durch Anzeigeoperationen.
 
-### UC 08: Versionskonflikt bei paralleler Mitarbeiterbearbeitung
+### UC **05/**08: Versionskonflikt bei paralleler Mitarbeiterbearbeitung
 
 ## Akteur
 
@@ -2685,7 +2685,7 @@ Sicherstellen, dass bei paralleler Bearbeitung desselben Mitarbeiters keine unbe
 - Der Akteur muss den Datensatz neu laden, bevor erneut gespeichert werden kann.
 - Die Datenbank enthält zu keinem Zeitpunkt einen inkonsistenten Zustand.
 
-### UC 09: Konflikt bei paralleler Deaktivierung und Terminzuweisung
+### UC **05/**09: Konflikt bei paralleler Deaktivierung und Terminzuweisung
 
 ## Akteur
 
@@ -2739,7 +2739,7 @@ Verhindern, dass ein zwischenzeitlich deaktivierter Mitarbeiter einem Termin neu
 - Bereits bestehende Terminzuweisungen bleiben unverändert.
 - Historische Termine bleiben unverändert.
 
-### UC 10: Löschversuch bei bestehenden Terminreferenzen
+### UC **05/**10: Löschversuch bei bestehenden Terminreferenzen
 
 ## Akteur
 
@@ -2790,7 +2790,7 @@ Sicherstellen, dass ein Mitarbeiter nicht gelöscht werden kann, wenn noch Termi
 - System antwortet mit HTTP 409 Conflict bei bestehender Referenz.
 - Die Datenbank bleibt konsistent.
 
-### UC 11: Konflikt bei paralleler Reaktivierung und Bearbeitung
+### UC **05/**11: Konflikt bei paralleler Reaktivierung und Bearbeitung
 
 ## Akteur
 
@@ -2835,7 +2835,7 @@ Verhindern, dass bei gleichzeitiger Reaktivierung und Bearbeitung widersprüchli
 - Der gültige Zustand bleibt erhalten.
 - Keine Terminzuweisungen werden verändert.
 
-### UC 12: Rollenverletzung bei API-Direktzugriff
+### UC **05/**12: Rollenverletzung bei API-Direktzugriff
 
 ## Akteur
 
@@ -2880,7 +2880,7 @@ Sicherstellen, dass unberechtigte Rollen keine schreibenden Aktionen auf Mitarbe
 - Der Mitarbeiterbestand bleibt unverändert.
 - Es entstehen keine inkonsistenten Zustände.
 
-### UC 13: Query-Konsistenz zwischen Listen- und Dialogansicht
+### UC **05/**13: Query-Konsistenz zwischen Listen- und Dialogansicht
 
 ## Akteur
 
@@ -2934,11 +2934,11 @@ Sicherstellen, dass die in der Mitarbeiterliste angezeigten aktiven Mitarbeiter 
 
 # FT (06): Druckfunktionen
 
-## Ziel / Zweck
+## FT (06) Ziel / Zweck
 
 Dieses Feature ermöglicht die Ausgabe zentraler Planungs- und Übersichtsansichten als Papierdruck oder PDF. Die Druckfunktionen dienen der Unterstützung von Abstimmungen, Briefings und interner Kommunikation außerhalb des Systems.
 
-## Fachliche Beschreibung
+## FT (06) Fachliche Beschreibung
 
 Die Druckfunktionen stellen verschiedene Sichten der Terminplanung und -übersicht in druckbarer Form bereit. Grundlage für alle Druckausgaben sind die im System verfügbaren Kalender- und Übersichtsansichten. Die Druckausgaben bilden diese Ansichten inhaltlich vollständig ab, sind jedoch in ihrer Darstellung für Papier oder PDF optimiert.
 
@@ -2948,7 +2948,7 @@ Kalenderdrucke übernehmen die visuelle Strukturierung der jeweiligen Ansicht, i
 
 Die Ausgabe erfolgt wahlweise als direkter Papierdruck oder als PDF-Export.
 
-## Regeln & Randbedingungen
+## FT (06) Regeln & Randbedingungen
 
 - Jede Druckausgabe basiert auf einer bestehenden Ansicht oder Übersicht.
 - Für jede Druckausgabe kann ein Zeitraum gewählt werden.
@@ -2958,9 +2958,9 @@ Die Ausgabe erfolgt wahlweise als direkter Papierdruck oder als PDF-Export.
 - Relevante Kurzinformationen werden statisch dargestellt (Terminfläche, Spalten, Legende).
 - Die Druckfunktion verändert keine Daten und ist rein ausgabebezogen.
 
-## **Use Cases**
+## FT (06) **Use Cases**
 
-### **UC: Druck: Planungsansicht ausgeben**
+### **UC 06/01: Druck: Planungsansicht ausgeben**
 
 **Akteur**
 
@@ -2986,7 +2986,7 @@ Eine Kalender-Planungsansicht als Papierdruck oder PDF ausgeben.
 
 Die gewählte Planungsansicht liegt als Druck oder PDF vor.
 
-### **UC: Druck: Auslastungsansicht ausgeben**
+### **UC 06/02: Druck: Auslastungsansicht ausgeben**
 
 **Akteur**
 
@@ -3011,7 +3011,7 @@ Die Auslastungsansicht als Papierdruck oder PDF ausgeben.
 
 Die Auslastungsansicht liegt als Druck oder PDF vor.
 
-### **UC: Druck: Nächste Termine ausgeben**
+### **UC 06/03: Druck: Nächste Termine ausgeben**
 
 **Akteur**
 
@@ -3036,7 +3036,7 @@ Eine Übersicht der nächsten Termine als Druck oder PDF ausgeben.
 
 Die Übersicht der nächsten Termine liegt als Druck oder PDF vor.
 
-### **UC: Druck: Mitarbeitertermine ausgeben**
+### **UC 06/04: Druck: Mitarbeitertermine ausgeben**
 
 **Akteur**
 
@@ -3064,11 +3064,11 @@ Die Termine des Mitarbeiters liegen als Druck oder PDF vor.
 
 # FT (07): Fallback-Kalender und Datei
 
-## Ziel / Zweck
+## FT (07) Ziel / Zweck
 
 Sicherstellung der kurzfristigen operativen Handlungsfähigkeit bei Systemausfällen durch automatische, änderungsabhängige Generierung eines Excel-Fallback-Kalenders sowie eines PDF-Dokuments „Anstehende Termine“, inklusive täglichem E-Mail-Versand und administrativer Monitoring-Sicht.
 
-## Fachliche Beschreibung
+## FT (07) Fachliche Beschreibung
 
 Das System erzeugt täglich automatisiert ein Fallback-Dokument, sofern seit dem letzten erfolgreichen Export relevante Daten geändert wurden.
 
@@ -3113,7 +3113,7 @@ Es wird genau ein externer Kalender verwendet.
 
 Alle Termine werden dort eindeutig als MuGPlan-Termine gekennzeichnet.
 
-## Regeln & Randbedingungen
+## FT (07) Regeln & Randbedingungen
 
 - Export erfolgt nur bei tatsächlicher Datenänderung.
 - Änderungsprüfung über MAX(updated_at) relevanter Tabellen.
@@ -3146,15 +3146,15 @@ Alle Termine werden dort eindeutig als MuGPlan-Termine gekennzeichnet.
 
 ---
 
-## **Use Cases**
+## FT (07) **Use Cases**
 
-### UC: Änderungsabhängige Backup-Prüfung
+### UC 07/01: Änderungsabhängige Backup-Prüfung
 
-Akteur:
+### Akteur:
 
 System (Scheduler)
 
-Ziel:
+### Ziel:
 
 Feststellen, ob ein neues Backup erzeugt werden muss.
 
@@ -3163,7 +3163,7 @@ Vorbedingungen:
 - Scheduler wurde gestartet.
 - Tabelle `backup_log` existiert.
 
-Ablauf:
+### Ablauf:
 
 - System liest Zeitpunkt des letzten erfolgreichen Exports.
 - System ermittelt MAX(updated_at) aller relevanten Tabellen.
@@ -3171,21 +3171,21 @@ Ablauf:
 - Falls keine Änderung vorliegt, wird Lauf als „skipped“ protokolliert.
 - Falls Änderung vorliegt, wird Exportprozess gestartet.
 
-Alternativen:
+### Alternativen:
 
 - Fehler bei Datenbankzugriff → Lauf wird als „error“ protokolliert.
 
-Ergebnis:
+### Ergebnis:
 
 Backup wird nur bei tatsächlicher Datenänderung erzeugt.
 
-### UC: Excel-Fallback-Dokument erzeugen
+### UC 07/02: Excel-Fallback-Dokument erzeugen
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Erzeugung eines vollständigen Excel-Fallback-Dokuments.
 
@@ -3193,7 +3193,7 @@ Vorbedingungen:
 
 - Änderungsprüfung hat Exportbedarf festgestellt.
 
-Ablauf:
+### Ablauf:
 
 - System lädt alle relevanten Daten.
 - System erzeugt Kalender-Sheet mit Wochenstruktur.
@@ -3201,21 +3201,21 @@ Ablauf:
 - System erzeugt zusätzliche Sheets (Projekte, Kunden, Mitarbeiter).
 - Datei wird serverseitig gespeichert.
 
-Alternativen:
+### Alternativen:
 
 - Fehler bei Dateigenerierung → Lauf wird als „error“ protokolliert.
 
-Ergebnis:
+### Ergebnis:
 
 Excel-Dokument ist persistent gespeichert.
 
-### UC: PDF „Anstehende Termine“ erzeugen
+### UC 07/03: PDF „Anstehende Termine“ erzeugen
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Erzeugung einer operativen Terminliste für 2 Monate.
 
@@ -3223,28 +3223,28 @@ Vorbedingungen:
 
 - Exportprozess läuft.
 
-Ablauf:
+### Ablauf:
 
 - System ermittelt Termine im Zeitraum „heute + 2 Monate“.
 - Termine werden nach Datum und Uhrzeit sortiert.
 - PDF wird generiert.
 - Datei wird gespeichert.
 
-Alternativen:
+### Alternativen:
 
 - Fehler bei PDF-Erstellung → Lauf wird als „error“ protokolliert.
 
-Ergebnis:
+### Ergebnis:
 
 PDF-Dokument ist persistent gespeichert.
 
-### UC: Backup per E-Mail versenden
+### UC 07/04: Backup per E-Mail versenden
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Versand des Fallback-Dokuments an definierte Empfänger.
 
@@ -3252,28 +3252,28 @@ Vorbedingungen:
 
 - Excel- und PDF-Dateien wurden erfolgreich erzeugt.
 
-Ablauf:
+### Ablauf:
 
 - System erstellt E-Mail mit Datum im Betreff.
 - Excel- und PDF-Dateien werden angehängt.
 - E-Mail wird versendet.
 - Mailstatus wird im Log gespeichert.
 
-Alternativen:
+### Alternativen:
 
 - Versand schlägt fehl → Mailstatus „failed“, Laufstatus „error“.
 
-Ergebnis:
+### Ergebnis:
 
 Empfänger erhalten Backup-Dokumente per E-Mail.
 
-### UC: Backup-Historie einsehen
+### UC 07/05: Backup-Historie einsehen
 
-Akteur:
+### Akteur:
 
 Administrator
 
-Ziel:
+### Ziel:
 
 Nachvollziehen aller Backup-Läufe.
 
@@ -3281,27 +3281,27 @@ Vorbedingungen:
 
 - Administrator ist angemeldet.
 
-Ablauf:
+### Ablauf:
 
 - Admin öffnet Einstellungsbereich.
 - Admin wechselt zum Tab „Backups“.
 - System zeigt tabellarische Liste aller `backup_log`Einträge.
 
-Alternativen:
+### Alternativen:
 
 - Keine Logeinträge vorhanden → Leere Liste.
 
-Ergebnis:
+### Ergebnis:
 
 Admin kann Status und Verlauf aller Backups einsehen.
 
-### UC: Backup herunterladen
+### UC 07/06: Backup herunterladen
 
-Akteur:
+### Akteur:
 
 Administrator
 
-Ziel:
+### Ziel:
 
 Herunterladen eines gespeicherten Backups.
 
@@ -3309,27 +3309,27 @@ Vorbedingungen:
 
 - Backup-Datei existiert serverseitig.
 
-Ablauf:
+### Ablauf:
 
 - Admin doppelklickt auf einen Eintrag.
 - System prüft Berechtigung.
 - System liefert Datei über geschützten Endpoint aus.
 
-Alternativen:
+### Alternativen:
 
 - Datei nicht vorhanden → Fehlermeldung anzeigen.
 
-Ergebnis:
+### Ergebnis:
 
 Backup-Datei wird lokal gespeichert.
 
-### UC: Alte Backups automatisch löschen
+### UC 07/07: Alte Backups automatisch löschen
 
-Akteur:
+### Akteur:
 
 System (Scheduler)
 
-Ziel:
+### Ziel:
 
 Speicherbereinigung gemäß Retention-Regel.
 
@@ -3337,27 +3337,27 @@ Vorbedingungen:
 
 - Scheduler-Lauf wird ausgeführt.
 
-Ablauf:
+### Ablauf:
 
 - System prüft gespeicherte Dateien.
 - Dateien älter als 30 Tage werden gelöscht.
 - Löschvorgang wird protokolliert.
 
-Alternativen:
+### Alternativen:
 
 - Datei nicht auffindbar → Fehler protokollieren.
 
-Ergebnis:
+### Ergebnis:
 
 Speicher bleibt kontrolliert, Log bleibt erhalten.
 
-### UC: Termin in externen Kalender übertragen
+### UC 07/08: Termin in externen Kalender übertragen
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Neuen Termin im externen Kalender anlegen.
 
@@ -3366,28 +3366,28 @@ Vorbedingungen:
 - Termin wurde neu erstellt.
 - Externer Kalender ist konfiguriert.
 
-Ablauf:
+### Ablauf:
 
 - System erzeugt Event-Daten aus Termin.
 - System sendet Event an Kalender-API.
 - Externe Event-ID wird gespeichert.
 - Status wird protokolliert.
 
-Alternativen:
+### Alternativen:
 
 - API nicht erreichbar → Fehler wird protokolliert.
 
-Ergebnis:
+### Ergebnis:
 
 Termin ist im externen Kalender sichtbar.
 
-### UC: Synchronisationsfehler protokollieren
+### UC 07/09: Synchronisationsfehler protokollieren
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Nachvollziehbarkeit von Synchronisationsproblemen.
 
@@ -3395,27 +3395,27 @@ Vorbedingungen:
 
 - Fehler bei API-Kommunikation.
 
-Ablauf:
+### Ablauf:
 
 - System speichert Fehlermeldung.
 - Termin bleibt intern unverändert.
 - Optional Retry bei nächstem Lauf.
 
-Alternativen:
+### Alternativen:
 
 Keine.
 
-Ergebnis:
+### Ergebnis:
 
 Synchronisationsprobleme sind nachvollziehbar, Fachlogik bleibt stabil.
 
-### UC: Terminänderung im CalDAV-Kalender aktualisieren
+### UC 07/10: Terminänderung im CalDAV-Kalender aktualisieren
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Externen Kalender an geänderten Termin anpassen.
 
@@ -3423,28 +3423,28 @@ Vorbedingungen:
 
 - Termin besitzt external_event_id.
 
-Ablauf:
+### Ablauf:
 
 - System erzeugt aktualisierte iCalendar-Daten.
 - System sendet HTTP PUT an bestehende Event-URL.
 - Status wird aktualisiert.
 - Logeintrag wird erstellt.
 
-Alternativen:
+### Alternativen:
 
 - Event extern nicht vorhanden → Event wird neu angelegt.
 
-Ergebnis:
+### Ergebnis:
 
 Externer Kalender entspricht internem Stand.
 
-### UC: Termin im CalDAV-Kalender löschen
+### UC 07/11: Termin im CalDAV-Kalender löschen
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Externes Event entfernen.
 
@@ -3453,27 +3453,27 @@ Vorbedingungen:
 - Termin wird intern gelöscht.
 - external_event_id ist vorhanden.
 
-Ablauf:
+### Ablauf:
 
 - System sendet HTTP DELETE an Event-URL.
 - external_event_id wird entfernt.
 - Logeintrag wird erstellt.
 
-Alternativen:
+### Alternativen:
 
 - Event nicht auffindbar → Fehler protokollieren, intern fortfahren.
 
-Ergebnis:
+### Ergebnis:
 
 Termin ist extern nicht mehr sichtbar.
 
-### UC: Synchronisationsfehler protokollieren
+### UC 07/12: Synchronisationsfehler protokollieren
 
-Akteur:
+### Akteur:
 
 System
 
-Ziel:
+### Ziel:
 
 Nachvollziehbarkeit von Synchronisationsproblemen.
 
@@ -3481,26 +3481,26 @@ Vorbedingungen:
 
 - Fehler bei CalDAV-Kommunikation.
 
-Ablauf:
+### Ablauf:
 
 - System speichert Fehlermeldung im calendar_sync_log.
 - Termin bleibt intern unverändert.
 
-Alternativen:
+### Alternativen:
 
 Keine.
 
-Ergebnis:
+### Ergebnis:
 
 Synchronisationsprobleme sind nachvollziehbar, ohne Fachlogik zu beeinträchtigen.
 
 # FT (09): Kundenverwaltung
 
-## Ziel / Zweck
+## FT (09) Ziel / Zweck
 
 Dieses Feature stellt die Verwaltung von Kundenstammdaten bereit, damit Termine nicht mehr mit frei erfassten Kundendaten arbeiten müssen. Termine referenzieren künftig ein Projekt und über dieses einen Kunden und übernehmen Adresse sowie Kontaktdaten daraus, um Konsistenz, Wiederverwendbarkeit und saubere Historien sicherzustellen. Einem Kunden können Notizen zugeordnet werden.
 
-## Fachliche Beschreibung
+## FT (09) Fachliche Beschreibung
 
 Die Kundenverwaltung ermöglicht das Anlegen, Bearbeiten und Anzeigen von Kunden. Pro Kunde werden Stammdaten gespeichert, insbesondere **Name/Firma**, **Kundennummer**, **Adresse** und **Telefonnummer**.
 
@@ -3512,25 +3512,22 @@ Kunden haben eine **Notizenliste** (0..n). Notizen werden in der Kundendetailans
 
 In der Kundendetailansicht können dem Kunden zusätzlich Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.
 
-## Regeln & Randbedingungen
+## FT (09) Regeln & Randbedingungen
 
 - Kundendaten (Name, Kundennummer, Adresse, Telefon) werden **zentral** am Kunden gepflegt.
 - Kunden dürfen **nicht gelöscht** werden, wenn sie in Projekten verwendet werden.
 - Disponenten erhalten serverseitig nur aktive Kunden und können nur aktive Kunden für neue Projekte auswählen.
 - Pflichtfelder:
-    - Kundenname bzw. Firma,
-    - Telefonnummer,
     - Kundennummer (aus WAWI).
-- Die Adresse ist Pflicht, sofern sie für Planung oder Druck benötigt wird.
 - Notizen sind optional und werden über die Relationstabelle `customer_note` mit dem Kunden verknüpft.
 - Ein Kunde kann 0..n Notizen haben.
 - Notizen werden gemäß FT (13): Notizverwaltung verwaltet.
 - Das Löschen eines Kunden löscht auch alle zugehörigen Notizen (CASCADE über customer_note).
 - Kundenanhänge sind kundenbezogen und unabhängig von Projekten; Anhänge können hinzugefügt und heruntergeladen werden, eine physische Löschung ist nicht vorgesehen.
 
-## **Use Cases**
+## FT (09) **Use Cases**
 
-### **UC 01: Kunde anlegen**
+### **UC 09/01: Kunde anlegen**
 
 ### Akteur
 
@@ -3581,7 +3578,7 @@ Ein neuer Kunde wird mit vollständigen Stammdaten angelegt und steht anschließ
     - in Filterkomponenten für aktive Kunden.
 - Es existieren noch keine Projekte, Termine oder Notizen für diesen Kunden.
 
-### **UC 02: Kunde bearbeiten**
+### **UC 09/02: Kunde bearbeiten**
 
 ### Akteur
 
@@ -3634,7 +3631,7 @@ Bestehende Kundendaten werden aktualisiert, ohne referenzierende Projekte oder T
 - In Projektansichten, Kalender-Tooltips und Druckfunktionen erscheinen die aktualisierten Kundendaten.
 - Es werden keine Projekte, Termine oder Notizen verändert.
 
-### **UC 03: Kunde anzeigen (inkl. Terminliste)**
+### **UC 09/03: Kunde anzeigen (inkl. Terminliste)**
 
 ### Akteur
 
@@ -3685,9 +3682,9 @@ Die vollständige Kundendetailansicht wird angezeigt, einschließlich aller refe
 - Es werden keine Daten verändert.
 - Die dargestellten Daten entsprechen dem aktuellen persistenten Zustand.
 
-### **UC 04: Kunde deaktivieren / archivieren**
+### **UC 09/04: Kunde deaktivieren / archivieren**
 
-### kteur
+### Akteur
 
 Administrator
 
@@ -3740,7 +3737,7 @@ Ein bestehender Kunde wird deaktiviert, sodass er nicht mehr für neue Projekte 
 - Keine Projekte, Termine, Notizen oder Anhänge werden verändert oder gelöscht.
 - Es entstehen keine verwaisten Referenzen.
 
-### **UC 05: Kundennotizen verwalten**
+### **UC 09/05: Kundennotizen verwalten**
 
 ### Akteur
 
@@ -3802,7 +3799,7 @@ Notizen werden einem Kunden zugeordnet, angezeigt, bearbeitet und strukturiert d
 - Die Kundendetailansicht zeigt die aktualisierte, korrekt sortierte Notizenliste.
 - Keine Auswirkung auf Terminplanung oder Geschäftslogik.
 
-### **UC 06: Kunde reaktivieren**
+### **UC 09/06: Kunde reaktivieren**
 
 ### Akteur
 
@@ -3855,7 +3852,7 @@ Ein deaktivierter Kunde wird wieder aktiviert, sodass er erneut für neue Projek
 - Der Kunde ist wieder vollständig auswählbar.
 - Keine fachlichen Seiteneffekte auf bestehende Projekte oder Termine.
 
-### UC 07: Kundenanhänge verwalten
+### UC 09/07: Kundenanhänge verwalten
 
 ### Akteur
 
@@ -3927,7 +3924,7 @@ Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne di
 - Es entstehen keine Auswirkungen auf Projekte oder Termine.
 - Es entstehen keine verwaisten Attachment-Referenzen.
 
-### UC 08: Versionskonflikt bei paralleler Kundenbearbeitung
+### UC 09/08: Versionskonflikt bei paralleler Kundenbearbeitung
 
 ### Akteur
 
@@ -3971,7 +3968,7 @@ Sicherstellen, dass bei paralleler Bearbeitung desselben Kunden keine stillen Da
 - Der zuletzt gespeicherte, valide Stand bleibt erhalten.
 - Das System garantiert Optimistic Locking für Kundenänderungen.
 
-### UC 09: Statuskonflikt bei parallelem Bearbeiten und Deaktivieren
+### UC 09/09: Statuskonflikt bei parallelem Bearbeiten und Deaktivieren
 
 ### Akteur
 
@@ -4016,7 +4013,7 @@ Sicherstellen, dass eine Kundenbearbeitung nicht erfolgreich gespeichert werden 
 - Es entstehen keine inkonsistenten Zustände zwischen Aktiv-Status und Stammdaten.
 - Optimistic Locking wird auch bei Statusänderungen konsequent durchgesetzt.
 
-### UC 10: Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)
+### UC 09/10: Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)
 
 ### Akteur
 
@@ -4076,7 +4073,7 @@ Sicherstellen, dass bei parallelen Statusänderungen eines Kunden keine inkonsis
 - Es existiert kein Zustand, in dem zwei widersprüchliche Statusänderungen gleichzeitig persistiert werden.
 - Optimistic Locking gilt auch für reine Statusoperationen.
 
-### UC 11: Rollenabhängige Filterung von Kundenlisten
+### UC 09/11: Rollenabhängige Filterung von Kundenlisten
 
 ### Akteur
 
@@ -4135,7 +4132,7 @@ Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden u
 - Administratoren sehen vollständige Daten.
 - Die Datenintegrität ist unabhängig vom Client garantiert.
 
-### UC 12: Zugriff auf inaktiven Kunden durch Disponent blockieren
+### UC 09/12: Zugriff auf inaktiven Kunden durch Disponent blockieren
 
 ### Akteur
 
@@ -4190,7 +4187,7 @@ Sicherstellen, dass ein Disponent weder über direkte URL noch über manipuliert
 - Administratoren behalten vollständigen Zugriff.
 - Die Zugriffskontrolle ist unabhängig von der UI durchgesetzt.
 
-### UC 13: Kunde löschen ohne Referenzen
+### UC 09/13: Kunde löschen ohne Referenzen
 
 ### Akteur
 
@@ -4243,7 +4240,7 @@ Einen Kunden endgültig löschen, sofern keine referenzierenden Projekte existie
 - Es existieren keine Projekte oder Termine, die auf einen gelöschten Kunden verweisen.
 - Der Datenzustand bleibt konsistent.
 
-### UC 14: Kunde löschen mit Referenzen (Blockade)
+### UC 09/14: Kunde löschen mit Referenzen (Blockade)
 
 ### Akteur
 
@@ -4292,7 +4289,7 @@ Sicherstellen, dass ein Kunde nicht gelöscht werden kann, wenn ihm mindestens e
 - Bestehende Projekte und Termine behalten ihre Referenzen.
 - Es entstehen keine verwaisten Fremdschlüssel oder inkonsistenten Zustände.
 
-### UC 15: Konsistenz von Kundenlisten bei Statusänderung (Multi-Browser)
+### UC 09/15: Konsistenz von Kundenlisten bei Statusänderung (Multi-Browser)
 
 ### Akteur
 
@@ -4353,7 +4350,7 @@ Sicherstellen, dass Kundenlisten bei Statusänderungen (Deaktivieren / Reaktivie
 - Es entstehen keine dauerhaft sichtbaren veralteten Zustände.
 - Gelöschte oder deaktivierte Kunden können nicht dauerhaft angezeigt werden.
 
-### UC 16: Statusänderung des Kunden während Notiz- oder Attachment-Operation
+### UC 09/16: Statusänderung des Kunden während Notiz- oder Attachment-Operation
 
 ### Akteur
 
@@ -4444,11 +4441,11 @@ Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Lö
 
 # FT (11): Team Verwaltung
 
-## Ziel / Zweck
+## FT (11) Ziel / Zweck
 
 Teams ermöglichen der Disposition, häufig verwendete Mitarbeiterkombinationen schnell und konsistent auf Termine anzuwenden. Ziel ist es, die Mitarbeiterzuweisung zu beschleunigen, ohne die Terminplanung fachlich zu verändern oder zu verkomplizieren.
 
-## Fachliche Beschreibung
+## FT (11) Fachliche Beschreibung
 
 Teams sind **reine Dispositionshilfen**. Ein Team besteht aus einer Bezeichnung und einer Liste aktiver Mitarbeiter. Sie kann beim Anlegen oder Bearbeiten eines Termins ausgewählt werden; das System übernimmt dann die enthaltenen Mitarbeiter **als Vorschlag** in die Mitarbeiterzuweisung des Termins.
 
@@ -4456,7 +4453,7 @@ Am Termin selbst wird **immer die konkrete Mitarbeiterliste** gespeichert, nicht
 
 Teams können unabhängig von Terminen existieren. Sie dürfen ausschließlich **aktive Mitarbeiter** enthalten. Beim Anwenden eines Teams ist eindeutig festzulegen, ob die Mitarbeiter **ersetzt** oder **hinzugefügt** werden; die Entscheidung ist systemweit konsistent umzusetzen.
 
-## Regeln & Randbedingungen
+## FT (11) Regeln & Randbedingungen
 
 - Teams sind **nicht** direkt mit Terminen verknüpft.
 - Gespeichert wird am Termin stets die **konkrete Mitarbeiterzuweisung**.
@@ -4465,151 +4462,199 @@ Teams können unabhängig von Terminen existieren. Sie dürfen ausschließlich *
 - Ein Termin kann mehrere Mitarbeiter haben; die Mitarbeiterzuweisung ist optional.
 - Teams besitzen **keine Historie** und **keinen Status**.
 - Teams können ohne Bezug zu Terminen existieren.
+- Ein Mitarbeiter darf zu einem Zeitpunkt nur genau einem Team zugeordnet sein.
+- Eine Teamzuweisung ist nur zulässig, wenn der Mitarbeiter keinem anderen Team zugeordnet ist.
+- Bei paralleler Zuweisung entscheidet das System deterministisch durch serverseitige Validierung (409 bei Konflikt).
 
-## **Use Cases**
+## FT (11) **Use Cases**
 
-### **UC: Team anlegen**
+### **UC 11/01: Team anlegen**
 
-**Akteur**
+### Akteur
 
 Disponent
 
-**Ziel**
+### Ziel
 
 Ein neues Team anlegen, um häufig genutzte Mitarbeiterkombinationen schnell verwenden zu können.
 
-**Vorbedingungen**
+### Vorbedingungen
 
 - Es existieren aktive Mitarbeiter.
-- Der Disponent ist berechtigt.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt die Berechtigung zur Teamanlage.
 
-**Auslöser**
+### Auslöser
 
-Der Disponent startet die Funktion „Team anlegen".
+Der Akteur startet die Funktion „Team anlegen“.
 
-**Ablauf**
+### Ablauf
 
-1. Der Name des Teams wird automatisch generiert.
-2. Der Disponent wählt einen oder mehrere aktive Mitarbeiter aus.
-3. Der Disponent bestätigt die Eingabe.
-4. Das System speichert das Team.
+1. Das System erzeugt automatisch eine Bezeichnung für das neue Team.
+2. Das System lädt ausschließlich aktive Mitarbeiter ohne bestehende Teamzuordnung (`team_id = null`).
+3. Der Akteur wählt einen oder mehrere angezeigte Mitarbeiter aus.
+4. Der Akteur bestätigt die Eingabe.
+5. Das System prüft serverseitig für jeden ausgewählten Mitarbeiter:
+    - Der Mitarbeiter existiert.
+    - Der Mitarbeiter ist aktiv.
+    - Der Mitarbeiter besitzt keine bestehende Teamzuordnung.
+6. Das System persistiert das Team.
+7. Das System setzt für jeden ausgewählten Mitarbeiter das Feld `team_id` auf die ID des neu angelegten Teams.
+8. Das System erzeugt eine Versionskennung für das Team.
 
-**Alternativabläufe**
+### Alternativabläufe
 
-- Keine Mitarbeiter ausgewählt: Das System speichert nicht und fordert zur Auswahl auf.
-- Abbruch: Das System verwirft die Eingaben.
+- Keine Mitarbeiter ausgewählt → Das System lehnt die Speicherung ab und fordert zur Auswahl auf.
+- Ein ausgewählter Mitarbeiter ist zwischenzeitlich einem anderen Team zugeordnet worden → Das System antwortet mit 409 Conflict, es erfolgt keine Persistierung.
+- Versionskonflikt bei paralleler Anlage mit identischer Bezeichnung → Das System behandelt dies gemäß allgemeiner Persistenzregeln.
+- Abbruch durch den Akteur → Keine Persistierung.
+- Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.
 
-**Ergebnis**
+### Ergebnis
 
-Ein neues Team ist gespeichert und steht zur späteren Verwendung zur Verfügung.
+- Ein neues Team existiert persistent.
+- Alle zugeordneten Mitarbeiter besitzen `team_id = neuesTeam`.
+- Kein Mitarbeiter ist mehreren Teams zugeordnet.
+- Die Teamliste ist konsistent.
 
-### **UC: Team bearbeiten**
+### **UC 11/02: Team bearbeiten**
 
-**Akteur:** RO (01): Disponent
+### UC 11/02: Team bearbeiten
 
-**Ziel**
-
-Ein bestehendes Team anpassen, z. B. Mitarbeiter hinzufügen oder entfernen.
-
-**Vorbedingungen**
-
-- Das Team existiert.
-- Der Disponent ist berechtigt.
-
-**Auslöser**
-
-Der Disponent wählt ein bestehendes Team zur Bearbeitung aus.
-
-**Ablauf**
-
-1. Der Disponent öffnet ein Team.
-2. Das System zeigt Bezeichnung und zugeordnete Mitarbeiter an.
-3. Der Disponent ändert Bezeichnung und/oder Mitarbeiterliste.
-4. Der Disponent bestätigt die Änderungen.
-5. Das System speichert das aktualisierte Team.
-
-**Alternativabläufe**
-
-- Abbruch: Das System verwirft die Änderungen.
-- Ungültige Auswahl (z. B. kein Mitarbeiter): Das System speichert nicht.
-
-**Ergebnis**
-
-Das Team ist aktualisiert und steht in der neuen Zusammensetzung zur Verfügung.
-
-### **UC: Team löschen**
-
-**Akteur**
+### Akteur
 
 Disponent
 
-**Ziel**
+### Ziel
+
+Ein bestehendes Team anpassen, indem Mitarbeiter hinzugefügt oder entfernt werden.
+
+### Vorbedingungen
+
+- Das Team existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt die Berechtigung zur Teambearbeitung.
+- Das Team besitzt eine gültige Versionskennung.
+
+### Auslöser
+
+Der Akteur öffnet ein bestehendes Team zur Bearbeitung.
+
+### Ablauf
+
+1. Das System lädt Teamdaten inklusive aktueller Versionskennung.
+2. Das System lädt als auswählbare Mitarbeiter:
+    - alle aktiven Mitarbeiter ohne Teamzuordnung (`team_id = null`),
+    - alle aktiven Mitarbeiter, die bereits diesem Team zugeordnet sind.
+3. Der Akteur verändert die Mitarbeiterliste.
+4. Der Akteur bestätigt die Änderungen.
+5. Das System prüft serverseitig:
+    - Versionskennung ist unverändert.
+    - Jeder neu hinzugefügte Mitarbeiter existiert.
+    - Jeder neu hinzugefügte Mitarbeiter ist aktiv.
+    - Kein neu hinzugefügter Mitarbeiter ist einem anderen Team zugeordnet.
+6. Das System entfernt `team_id` bei Mitarbeitern, die aus dem Team entfernt wurden.
+7. Das System setzt `team_id` bei neu hinzugefügten Mitarbeitern auf die Team-ID.
+8. Das System erhöht die Versionskennung des Teams.
+9. Das System persistiert die Änderungen atomar.
+
+### Alternativabläufe
+
+- Versionskennung hat sich zwischenzeitlich geändert → Das System antwortet mit 409 Conflict, keine Persistierung.
+- Ein neu hinzugefügter Mitarbeiter wurde parallel einem anderen Team zugeordnet → Das System antwortet mit 409 Conflict, keine Persistierung.
+- Abbruch durch den Akteur → Keine Persistierung.
+- Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.
+
+### Ergebnis
+
+- Die Mitarbeiterliste des Teams ist aktualisiert.
+- Kein Mitarbeiter ist mehreren Teams zugeordnet.
+- Die Team-Version ist erhöht.
+- Der Datenzustand ist konsistent.
+
+### **UC 11/03: Team löschen**
+
+### Akteur
+
+Disponent
+
+### Ziel
 
 Ein nicht mehr benötigtes Team entfernen.
 
-**Vorbedingungen**
+### Vorbedingungen
 
 - Das Team existiert.
-- Der Disponent ist berechtigt.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt die Berechtigung zum Löschen von Teams.
+- Das Team besitzt eine gültige Versionskennung.
 
-**Auslöser**
+### Auslöser
 
-Der Disponent wählt ein Team zum Löschen aus.
+Der Akteur wählt ein Team zum Löschen aus.
 
-**Ablauf**
+### Ablauf
 
-1. Der Disponent startet „Team löschen".
+1. Der Akteur startet „Team löschen“.
 2. Das System fordert eine Bestätigung an.
-3. Der Disponent bestätigt den Löschvorgang.
-4. Das System löscht das Team.
+3. Der Akteur bestätigt den Löschvorgang.
+4. Das System prüft serverseitig die Versionskennung.
+5. Das System setzt bei allen Mitarbeitern dieses Teams das Feld `team_id = null`.
+6. Das System löscht das Team.
 
-**Alternativabläufe**
+### Alternativabläufe
 
-- Abbruch: Das Team bleibt unverändert bestehen.
+- Versionskonflikt → Das System antwortet mit 409 Conflict, keine Löschung.
+- Abbruch durch den Akteur → Keine Löschung.
+- Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung.
 
-**Ergebnis**
+### Ergebnis
 
-Das Team ist gelöscht und nicht mehr auswählbar.
+- Das Team existiert nicht mehr.
+- Alle ehemals zugeordneten Mitarbeiter besitzen `team_id = null`.
+- Kein verwaister Zustand entsteht.
 
-### **UC: Team anzeigen**
+### **UC 11/04: Team anzeigen**
 
-**Akteur**
+### Akteur
 
-Disponent (Leser)
+Disponent
 
-**Ziel**
+### Ziel
 
 Eine Übersicht über vorhandene Teams und deren Zusammensetzung erhalten.
 
-**Vorbedingungen**
+### Vorbedingungen
 
-- Mindestens ein Team existiert.
-- Der Nutzer ist berechtigt.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Leseberechtigung.
 
-**Auslöser**
+### Auslöser
 
-Der Nutzer wählt ein Team zur Anzeige aus.
+Der Akteur ruft die Teamübersicht auf oder wählt ein Team aus.
 
-**Ablauf**
+### Ablauf
 
-1. Der Nutzer wählt ein Team.
-2. Das System zeigt Bezeichnung und zugeordnete Mitarbeiter an.
+1. Das System lädt alle Teams.
+2. Das System lädt zu jedem Team die aktuell zugeordneten aktiven Mitarbeiter (`team_id = teamId`).
+3. Das System zeigt Bezeichnung und Mitarbeiterliste an.
 
-**Alternativabläufe**
+### Alternativabläufe
 
-- Keine Teams vorhanden: Das System zeigt eine entsprechende Information an.
+- Keine Teams vorhanden → Das System zeigt eine entsprechende Information an.
+- Technischer Fehler → Das System antwortet mit 500.
 
-**Ergebnis**
+### Ergebnis
 
-Die Zusammensetzung des Teams ist sichtbar.
+- Die Zusammensetzung der Teams ist vollständig und konsistent sichtbar.
 
 # FT (12): Dispositionsübersicht
 
-## Ziel / Zweck
+## FT (12) Ziel / Zweck
 
 Dieses Feature unterstützt die Disposition durch eine übersichtliche, wochenbezogene Darstellung von Mitarbeiter- und Tourzuordnungen. Ziel ist es, Einsatzverteilungen transparent zu machen und Planungsentscheidungen zu erleichtern, ohne in bestehende Termin- oder Ressourcendaten einzugreifen.
 
-## Fachliche Beschreibung
+## FT (12) Fachliche Beschreibung
 
 Die Dispositionsübersicht stellt aus bestehenden Termindaten abgeleitete Wochenübersichten bereit. Sie zeigt, **welcher Mitarbeiter in welchen Kalenderwochen auf welchen Touren eingesetzt ist** und umgekehrt, **welche Mitarbeiter innerhalb einer Kalenderwoche auf einer bestimmten Tour eingeplant sind**.
 
@@ -4617,7 +4662,7 @@ Die Übersichten basieren ausschließlich auf vorhandenen Termin-, Mitarbeiter- 
 
 Die Dispositionsübersicht berücksichtigt aktuelle und zukünftige Termine. Vergangene Termine können optional angezeigt werden, sind jedoch rein informativ und nicht veränderbar.
 
-## Regeln & Randbedingungen
+## FT (12) Regeln & Randbedingungen
 
 - Die Übersichten werden ausschließlich aus bestehenden Terminen abgeleitet.
 - Es werden nur Termine berücksichtigt, denen mindestens ein Mitarbeiter zugewiesen ist.
@@ -4628,9 +4673,9 @@ Die Dispositionsübersicht berücksichtigt aktuelle und zukünftige Termine. Ver
 - Die Übersicht trifft keine fachliche Bewertung und löst keine Warnungen aus.
 - Die Anzeige ist rein informativ und verändert keine Termine, Mitarbeiter oder Touren.
 
-## **Use Cases**
+## FT (12) **Use Cases**
 
-### **UC: Mitarbeiterbezogene Wochenübersicht anzeigen**
+### **UC 12/01: Mitarbeiterbezogene Wochenübersicht anzeigen**
 
 **Akteur**
 
@@ -4680,7 +4725,7 @@ Der Disponent erhält eine Übersicht, aus der ersichtlich ist, auf welchen Tour
 - Die Übersicht ist informativ und nicht blockierend.
 - Die Anzeige verändert keine fachlichen Daten.
 
-### **UC: Tourbezogene Wochenübersicht anzeigen**
+### **UC 12/02: Tourbezogene Wochenübersicht anzeigen**
 
 **Akteur**
 
@@ -4733,13 +4778,13 @@ Der Disponent erhält eine Übersicht, aus der ersichtlich ist, welche Mitarbeit
 
 # FT (13): Notizverwaltung
 
-## Ziel / Zweck
+## FT (13) Ziel / Zweck
 
 Dieses Feature ermöglicht die Verwaltung von Notizen als eigenständige Domainobjekte, die sowohl Projekten als auch Kunden zugeordnet werden können. Notizen dienen der Dokumentation zusätzlicher Informationen, Hinweise oder Besonderheiten, die im Kontext eines Projekts oder Kunden relevant sind.
 
 Zusätzlich bietet das Feature vordefinierte Notizvorlagen als Eingabehilfe sowie die Möglichkeit, wichtige Notizen anzupinnen, damit diese stets oben in der Notizliste erscheinen.
 
-## Fachliche Beschreibung
+## FT (13) Fachliche Beschreibung
 
 Notizen sind eigenständige Textobjekte mit Titel, formatierbarer Beschreibung und Zeitstempeln für Erstellung und letzte Bearbeitung. Sie werden über Relationstabellen entweder Projekten oder Kunden zugeordnet und ermöglichen eine flexible Dokumentation ohne strukturelle Abhängigkeiten.
 
@@ -4755,7 +4800,7 @@ Notizen haben keine fachliche Wirkung auf Termine, Status oder Planungslogik. Si
 
 **Neu: Kennzeichnungsfarbe für Notizvorlagen (optional, Admin-only).** Notizvorlagen können optional eine zusätzliche Eigenschaft `color` besitzen, die eine fachliche Kennzeichnung darstellt und nicht mit Text- oder Hintergrundfarben innerhalb des Richtext-Inhalts zu verwechseln ist. Wenn einer Notizvorlage eine Fahrzuweisung gegeben wird, kann dadurch eine `color` vergeben werden. Wird anschließend eine Notiz aus dieser Vorlage erzeugt, wird diese `color` beim Erstellen auf die neue Notiz übertragen. Daraus folgt, dass `color` als administrativ gepflegte Eigenschaft zu behandeln ist, die nur durch Administratoren gesetzt oder geändert werden darf.
 
-## Regeln & Randbedingungen
+## FT (13) Regeln & Randbedingungen
 
 **Allgemeine Regeln für Notizen**
 
@@ -4808,343 +4853,591 @@ Notizen haben keine fachliche Wirkung auf Termine, Status oder Planungslogik. Si
 - Die Übernahme der `color` ist einmalig beim Erstellen; spätere Änderungen an der Vorlagen-`color` verändern bereits erstellte Notizen nicht automatisch.
 - `color` ist fachliche Kennzeichnung und unabhängig von Richtext-Formatierungen (Text-/Hintergrundfarben) im Feld `body`.
 
-## **Use Cases**
+## FT (13) **Use Cases**
 
-### **UC: Notiz zu Projekt hinzufügen**
+### **UC 13/01: Notiz zu Projekt hinzufügen**
 
-**Akteur**
+### kteur
 
 Disponent
 
-**Ziel**
+### Ziel
 
 Eine neue Notiz erstellen und einem Projekt zuordnen.
 
-**Vorbedingungen**
+### Vorbedingungen
 
 - Das Projekt existiert.
-- Der Disponent ist angemeldet und berechtigt.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Schreibrechte für Projektnotizen.
 
-**Ablauf**
+### Ablauf
 
-1. Benutzer öffnet die Projektdetails.
-2. Benutzer wählt „Notiz hinzufügen".
-3. Das System öffnet den Richtext-Editor.
-4. Optional: Das System zeigt eine Auswahlliste verfügbarer Vorlagen an.
-5. Optional: Benutzer wählt eine Vorlage – Titel und Beschreibung werden in den Editor übernommen.
-6. Optional (NEU): Wenn die gewählte Vorlage eine Kennzeichnungsfarbe (`color`) besitzt, übernimmt das System diese Kennzeichnungsfarbe für die neue Notiz.
-7. Benutzer erfasst Titel und Beschreibung.
-8. Benutzer bestätigt die Eingabe.
-9. Das System erstellt die Notiz und verknüpft sie mit dem Projekt.
-10. Das System zeigt die Notiz in der Notizenliste des Projekts an.
+1. Der Akteur öffnet die Projektdetailansicht.
+2. Der Akteur wählt „Notiz hinzufügen“.
+3. Das System öffnet einen Richtext-Editor.
+4. Optional zeigt das System aktive Vorlagen an.
+5. Wählt der Akteur eine Vorlage, übernimmt das System Titel und Inhalt.
+6. Besitzt die Vorlage eine Kennzeichnungsfarbe (`color`), übernimmt das System diese einmalig.
+7. Der Akteur erfasst oder ändert Titel und Beschreibung.
+8. Der Akteur bestätigt.
+9. Das System validiert Pflichtfelder.
+10. Das System persistiert die Notiz mit Projektreferenz.
+11. Das System aktualisiert die Notizenliste.
 
-**Alternativabläufe**
+### Alternativen
 
-- Pflichtfelder fehlen: Das System fordert zur Korrektur auf.
-- Abbruch: Notiz wird nicht erstellt.
+- Pflichtfelder fehlen → Validierungsfehler.
+- Abbruch → keine Persistenz.
 
-**Ergebnis**
+### Ergebnis
 
-Die Notiz ist erstellt und dem Projekt zugeordnet.
+Die Notiz ist persistent gespeichert und projektbezogen referenziert.
 
-### **UC: Notiz zu Kunde hinzufügen**
+### **UC 13/02: Notiz zu Kunde hinzufügen**
 
-**Akteur**
+### Akteur
 
-Disponent
+Disponent, Administrator
 
-**Ziel**
+### Ziel
 
-Eine neue Notiz erstellen und einem Kunden zuordnen.
+Eine neue Notiz erstellen und eindeutig einem bestehenden Kunden zuordnen.
 
-**Vorbedingungen**
+### Vorbedingungen
 
 - Der Kunde existiert.
-- Der Disponent ist angemeldet und berechtigt.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Schreibrechte für Kundennotizen.
+- Das System erzwingt eine eindeutige Parent-Zuordnung (Kunde).
 
-**Ablauf**
+### Ablauf
 
-1. Benutzer öffnet die Kundendetails.
-2. Benutzer wählt „Notiz hinzufügen".
-3. Das System öffnet den Richtext-Editor.
-4. Optional: Das System zeigt eine Auswahlliste verfügbarer Vorlagen an.
-5. Optional: Benutzer wählt eine Vorlage – Titel und Beschreibung werden in den Editor übernommen.
-6. Optional (NEU): Wenn die gewählte Vorlage eine Kennzeichnungsfarbe (`color`) besitzt, übernimmt das System diese Kennzeichnungsfarbe für die neue Notiz.
-7. Benutzer erfasst Titel und Beschreibung.
-8. Benutzer bestätigt die Eingabe.
-9. Das System erstellt die Notiz und verknüpft sie mit dem Kunden.
-10. Das System zeigt die Notiz in der Notizenliste des Kunden an.
+1. Der Akteur öffnet die Detailansicht eines bestehenden Kunden.
+2. Der Akteur wählt die Funktion „Notiz hinzufügen“.
+3. Das System öffnet einen Richtext-Editor zur Erfassung der Notizdaten.
+4. Das System zeigt ausschließlich aktive Notizvorlagen zur Auswahl an.
+5. Optional wählt der Akteur eine Vorlage.
+6. Wurde eine Vorlage gewählt, übernimmt das System Titel und Inhalt in den Editor.
+7. Besitzt die gewählte Vorlage eine Kennzeichnungsfarbe (`color`), übernimmt das System diese Kennzeichnungsfarbe einmalig in die neue Notiz.
+8. Der Akteur erfasst oder ändert Titel und Beschreibung der Notiz.
+9. Der Akteur bestätigt die Eingabe.
+10. Das System validiert Pflichtfelder und Berechtigungen serverseitig.
+11. Das System erstellt die Notiz mit folgenden Initialwerten:
+    - Referenz ausschließlich auf den gewählten Kunden
+    - Keine Projekt-Referenz
+    - `is_pinned = false`
+    - Setzen von `created_at` und `updated_at`
+12. Das System speichert die Notiz persistent.
+13. Das System aktualisiert die Notizenliste in der Kundendetailansicht gemäß Sortierlogik.
 
-**Alternativabläufe**
+### Alternativabläufe
 
-- Pflichtfelder fehlen: Das System fordert zur Korrektur auf.
-- Abbruch: Notiz wird nicht erstellt.
+- Pflichtfelder fehlen → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Speicherung.
+- Abbruch durch den Akteur → Keine Persistierung.
+- Technischer Fehler bei Speicherung → HTTP 500, keine persistente Notiz entsteht.
 
-**Ergebnis**
+### Ergebnis
 
-Die Notiz ist erstellt und dem Kunden zugeordnet.
+- Eine neue Notiz existiert persistent.
+- Die Notiz ist ausschließlich dem Kunden zugeordnet.
+- Die Notiz erscheint in der Notizenliste des Kunden.
+- Es entstehen keine zusätzlichen Referenzen oder Seiteneffekte in anderen Domänen.
 
-### **UC: Notiz bearbeiten**
+### **UC 13/03: Notiz bearbeiten**
 
-**Akteur**
+### Akteur
 
-Disponent
+Disponent, Administrator
 
-**Ziel**
+### Ziel
 
-Eine bestehende Notiz ändern.
+Eine bestehende Notiz ändern, ohne parallele Änderungen anderer Akteure still zu überschreiben.
 
-**Vorbedingungen**
-
-- Die Notiz existiert.
-- Der Disponent ist berechtigt.
-
-**Ablauf**
-
-1. Benutzer wählt eine Notiz aus der Notizenliste (Projekt oder Kunde).
-2. Das System öffnet den Richtext-Editor mit den aktuellen Inhalten.
-3. Benutzer ändert Titel, Beschreibung oder Farben.
-4. Benutzer bestätigt die Änderungen.
-5. Das System aktualisiert die Notiz.
-6. Das System setzt updated_at auf den aktuellen Zeitstempel.
-7. Das System zeigt die aktualisierte Notiz an.
-
-**Alternativabläufe**
-
-- Pflichtfelder ungültig: Das System fordert zur Korrektur auf.
-- Abbruch: Änderungen werden verworfen.
-
-**Ergebnis**
-
-Die Notiz ist aktualisiert und in allen zugeordneten Kontexten (Projekt/Kunde) sichtbar.
-
-**Hinweis (NEU):** Die hier genannten „Farben“ beziehen sich auf die Richtext-Formatierung im Feld `body` (Text-/Hintergrundfarben). Die Kennzeichnungsfarbe `color`, die aus einer Vorlage übernommen werden kann, ist davon unabhängig und wird nicht durch normale Disponenten-Bearbeitung an der Notizvorlage gesteuert.
-
-### **UC: Notiz löschen**
-
-**Akteur**
-
-Disponent
-
-**Ziel**
-
-Eine Notiz vollständig entfernen.
-
-**Vorbedingungen**
+### Vorbedingungen
 
 - Die Notiz existiert.
-- Der Disponent ist berechtigt.
+- Die Notiz ist eindeutig einem Kunden oder Projekt zugeordnet.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Schreibrechte für Notizen.
+- Die Notiz verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
 
-**Ablauf**
+### Ablauf
 
-1. Benutzer wählt eine Notiz aus der Notizenliste.
-2. Benutzer wählt „Notiz löschen".
-3. Das System zeigt eine Sicherheitsabfrage an.
-4. Benutzer bestätigt das Löschen.
-5. Das System löscht die Notiz und die zugehörige Relation endgültig
-6. Das Löschen erfolgt immer aus dem Parent-Kontext heraus
-7. Das System entfernt die Notiz aus allen Notizenlisten.
+1. Der Akteur öffnet die Notiz aus der Notizenliste eines Kunden oder Projekts.
+2. Das System lädt die vollständigen Notizdaten einschließlich des aktuellen Versionsmerkmals.
+3. Der Akteur ändert Titel und/oder Beschreibung der Notiz.
+4. Änderungen an der Kennzeichnungsfarbe (`color`) sind nicht Bestandteil der normalen Bearbeitung durch Disponenten.
+5. Der Akteur bestätigt die Änderungen.
+6. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Übereinstimmung des übermittelten Versionsmerkmals mit dem aktuellen Stand.
+7. Stimmen die Versionsinformationen überein, speichert das System die Änderungen.
+8. Das System erhöht das Versionsmerkmal und setzt `updated_at` auf den aktuellen Zeitstempel.
+9. Das System aktualisiert die Notizenliste im jeweiligen Parent-Kontext.
 
-**Alternativabläufe**
+### Alternativabläufe
 
-- Abbruch: Notiz bleibt erhalten.
+- Pflichtfelder ungültig → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Speicherung.
+- Versionskonflikt (Notiz wurde zwischenzeitlich von einem anderen Akteur geändert oder gelöscht) →
+    
+    Das System antwortet mit HTTP 409 Conflict, speichert keine Änderungen und fordert den Akteur zum Neuladen des aktuellen Stands auf.
+    
+- Abbruch durch den Akteur → Keine Persistierung.
+- Technischer Fehler → HTTP 500, keine Änderung wird gespeichert.
 
-**Ergebnis**
+### Ergebnis
 
-Die Notiz ist vollständig gelöscht und erscheint in keiner Ansicht mehr.
+- Die Notiz ist im Erfolgsfall mit neuer Versionsinformation gespeichert.
+- Parallele Änderungen führen nicht zu stillen Überschreibungen.
+- Die Notiz bleibt konsistent dem ursprünglichen Parent-Objekt zugeordnet.
+- Es entstehen keine inkonsistenten Zwischenzustände oder Lost Updates.
 
-### **UC: Notizen eines Projekts anzeigen**
+### **UC 13/04: Notiz löschen**
 
-**Akteur**
+### Akteur
 
-Disponent, Leser
+Disponent, Administrator
 
-**Ziel**
+### Ziel
 
-Alle einem Projekt zugeordneten Notizen einsehen.
+Eine bestehende Notiz vollständig und konsistent entfernen.
 
-**Vorbedingungen**
-
-- Das Projekt existiert.
-- Der Nutzer besitzt Leserechte.
-
-**Ablauf**
-
-1. Benutzer öffnet die Projektdetails.
-2. Das System zeigt alle verknüpften Notizen als vertikale Kärtchenliste an.
-3. Angepinnte Notizen erscheinen zuerst, gekennzeichnet durch ein Pin-Symbol.
-4. Jede Notiz wird mit Titel, Beschreibung und Farben dargestellt.
-5. Neu (NEU): Wenn eine Notiz eine Kennzeichnungsfarbe (`color`) besitzt, kann diese zusätzlich als visueller Marker an der Notizkarte dargestellt werden.
-
-**Alternativabläufe**
-
-- Keine Notizen vorhanden: Das System zeigt eine leere Liste an.
-
-**Ergebnis**
-
-Alle Notizen des Projekts sind sichtbar.
-
-### **UC: Notizen eines Kunden anzeigen**
-
-**Akteur**
-
-Disponent, Leser
-
-**Ziel**
-
-Alle einem Kunden zugeordneten Notizen einsehen.
-
-**Vorbedingungen**
-
-- Der Kunde existiert.
-- Der Nutzer besitzt Leserechte.
-
-**Ablauf**
-
-1. Benutzer öffnet die Kundendetails.
-2. Das System zeigt alle verknüpften Notizen als vertikale Kärtchenliste an.
-3. Angepinnte Notizen erscheinen zuerst, gekennzeichnet durch ein Pin-Symbol.
-4. Jede Notiz wird mit Titel, Beschreibung und Farben dargestellt.
-5. Neu (NEU): Wenn eine Notiz eine Kennzeichnungsfarbe (`color`) besitzt, kann diese zusätzlich als visueller Marker an der Notizkarte dargestellt werden.
-
-**Alternativabläufe**
-
-- Keine Notizen vorhanden: Das System zeigt eine leere Liste an.
-
-**Ergebnis**
-
-Alle Notizen des Kunden sind sichtbar.
-
-### **UC: Notiz anpinnen / Pinning aufheben**
-
-**Akteur:** Disponent
-
-**Ziel:** Eine Notiz dauerhaft oben in der Liste positionieren oder diese Positionierung aufheben.
-
-**Vorbedingungen:**
+### Vorbedingungen
 
 - Die Notiz existiert.
-- Der Disponent ist berechtigt.
+- Die Notiz ist eindeutig einem Kunden oder Projekt zugeordnet.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Löschrechte für Notizen.
+- Die Notiz verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
 
-**Ablauf:**
+### Ablauf
 
-1. Benutzer wählt eine Notiz aus der Notizenliste.
-2. Benutzer wählt „Anpinnen" (bzw. „Pinning aufheben" wenn bereits gepinnt).
-3. Das System setzt das Feld `is_pinned` auf TRUE (bzw. FALSE).
-4. Das System aktualisiert die Sortierung der Notizliste.
-5. Angepinnte Notizen erscheinen nun oben in der Liste.
-
-**Alternativabläufe:** Keine.
-
-**Ergebnis:** Die Notiz ist angepinnt (oder nicht mehr angepinnt) und die Liste zeigt die neue Sortierung.
-
-### **UC: Notizvorlage erstellen**
-
-**Akteur:** Administrator, Disponent (je nach Rollenkonzept)
-
-**Ziel:** Eine neue Notizvorlage anlegen.
-
-**Vorbedingungen:**
-
-- Der Benutzer hat Zugriff auf die Stammdatenverwaltung.
-
-**Ablauf:**
-
-1. Benutzer öffnet die Vorlagenverwaltung (z.B. unter Stammdaten oder Einstellungen).
-2. Benutzer wählt „Vorlage hinzufügen".
-3. Das System öffnet den Editor.
-4. Benutzer erfasst Titel und vordefinierten Inhalt.
-5. Optional: Benutzer legt Sortierreihenfolge fest.
-6. Optional (NEU): Administrator legt eine Kennzeichnungsfarbe (`color`) fest, sofern eine Fahrzuweisung bzw. eine farbliche Kennzeichnung vorgesehen ist.
-7. Benutzer bestätigt die Eingabe.
-8. Das System erstellt die Vorlage.
-
-**Alternativabläufe:**
-
-- Pflichtfelder fehlen: Das System fordert zur Korrektur auf.
-- Abbruch: Vorlage wird nicht erstellt.
-
-**Ergebnis:** Die Vorlage ist erstellt und steht bei der Notizerstellung zur Auswahl.
-
-### **UC: Notizvorlage bearbeiten**
-
-**Akteur:** Administrator, Disponent (je nach Rollenkonzept)
-
-**Ziel:** Eine bestehende Notizvorlage ändern.
-
-**Vorbedingungen:**
-
-- Die Vorlage existiert.
-- Der Benutzer hat Zugriff auf die Stammdatenverwaltung.
-
-**Ablauf:**
-
-1. Benutzer öffnet die Vorlagenverwaltung.
-2. Benutzer wählt eine Vorlage aus.
-3. Das System öffnet den Editor mit den aktuellen Inhalten.
-4. Benutzer ändert Titel, Inhalt oder Sortierreihenfolge.
-5. Optional (NEU): Administrator ändert die Kennzeichnungsfarbe (`color`), sofern erforderlich.
-6. Benutzer bestätigt die Änderungen.
-7. Das System aktualisiert die Vorlage.
-
-**Alternativabläufe:**
-
-- Pflichtfelder ungültig: Das System fordert zur Korrektur auf.
-- Abbruch: Änderungen werden verworfen.
-
-**Ergebnis:** Die Vorlage ist aktualisiert. Bereits erstellte Notizen bleiben unverändert.
-
-### **UC: Notizvorlage deaktivieren/aktivieren**
-
-**Akteur:** Administrator, Disponent (je nach Rollenkonzept)
-
-**Ziel:** Eine Vorlage aus der Auswahlliste entfernen, ohne sie zu löschen.
-
-**Vorbedingungen:**
-
-- Die Vorlage existiert.
-
-**Ablauf:**
-
-1. Benutzer öffnet die Vorlagenverwaltung.
-2. Benutzer wählt eine Vorlage aus.
-3. Benutzer wählt „Deaktivieren" (bzw. „Aktivieren").
-4. Das System setzt das Feld `is_active` entsprechend.
-
-**Ergebnis:** Deaktivierte Vorlagen erscheinen nicht mehr in der Auswahlliste bei der Notizerstellung, bleiben aber im System erhalten.
-
-### **UC: Notizvorlage löschen**
-
-**Akteur:** Administrator
-
-**Ziel:** Eine Vorlage vollständig entfernen.
-
-**Vorbedingungen:**
-
-- Die Vorlage existiert.
-
-**Ablauf:**
-
-1. Benutzer öffnet die Vorlagenverwaltung.
-2. Benutzer wählt eine Vorlage aus.
-3. Benutzer wählt „Vorlage löschen".
+1. Der Akteur öffnet die Notizenliste im jeweiligen Parent-Kontext (Kunde oder Projekt).
+2. Der Akteur wählt eine bestehende Notiz aus.
+3. Der Akteur wählt die Funktion „Notiz löschen“.
 4. Das System zeigt eine Sicherheitsabfrage an.
-5. Benutzer bestätigt das Löschen.
-6. Das System löscht die Vorlage endgültig.
+5. Der Akteur bestätigt das Löschen.
+6. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Übereinstimmung des übermittelten Versionsmerkmals mit dem aktuellen Stand.
+7. Stimmen die Versionsinformationen überein, löscht das System die Notiz sowie die zugehörige Parent-Relation endgültig.
+8. Das System aktualisiert die Notizenliste im jeweiligen Parent-Kontext.
 
-**Alternativabläufe:**
+### Alternativabläufe
 
-- Abbruch: Vorlage bleibt erhalten.
+- Der Akteur bricht die Sicherheitsabfrage ab → Die Notiz bleibt unverändert bestehen.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
+- Versionskonflikt (Notiz wurde zwischenzeitlich geändert oder bereits gelöscht) →
+    
+    Das System antwortet mit HTTP 409 Conflict, es erfolgt keine Löschung, der Akteur wird zum Neuladen aufgefordert.
+    
+- Technischer Fehler → HTTP 500, keine Löschung erfolgt.
 
-**Ergebnis:** Die Vorlage ist gelöscht. Bereits erstellte Notizen bleiben unverändert.
+### Ergebnis
+
+- Die Notiz ist im Erfolgsfall vollständig aus dem System entfernt.
+- Die Notiz erscheint in keiner Notizenliste mehr.
+- Parallele Aktionen führen nicht zu inkonsistenten Zuständen oder unbeabsichtigten Löschungen.
+- Die Konsistenz der Parent-Relation bleibt gewahrt.
+
+### **UC 13/05: Notizen eines Projekts anzeigen**
+
+### Akteur
+
+Disponent, Administrator, Leser
+
+### Ziel
+
+Alle einem Projekt eindeutig zugeordneten Notizen vollständig und konsistent einsehen.
+
+### Vorbedingungen
+
+- Das Projekt existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt mindestens Leserechte für das Projekt.
+
+### Ablauf
+
+1. Der Akteur öffnet die Detailansicht eines bestehenden Projekts.
+2. Das System prüft serverseitig die Leseberechtigung.
+3. Das System lädt alle Notizen, die eindeutig diesem Projekt zugeordnet sind.
+4. Das System sortiert die Notizen deterministisch:
+    - Angepinnte Notizen (`is_pinned = true`) erscheinen zuerst.
+    - Innerhalb gleicher Pin-Logik erfolgt die Sortierung nach `updated_at` absteigend.
+5. Das System rendert die Notizen als vertikale Kärtchenliste.
+6. Jede Notiz zeigt mindestens:
+    - Titel,
+    - Beschreibung (Richtext formatiert),
+    - visuelle Kennzeichnung bei gesetzter `color`,
+    - ggf. Pin-Symbol.
+7. Die Darstellung enthält keine Bearbeitungselemente, sofern der Akteur ausschließlich Leserechte besitzt.
+
+### Alternativabläufe
+
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.
+- Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.
+- Es existieren keine Notizen → Das System zeigt eine leere Liste ohne Fehler an.
+- Technischer Fehler → HTTP 500, keine Anzeige.
+
+### Ergebnis
+
+- Alle projektbezogenen Notizen sind konsistent sichtbar.
+- Es werden ausschließlich Notizen dieses Projekts angezeigt.
+- Die Sortierung ist deterministisch und reproduzierbar.
+- Die Anzeige verändert keine persistierten Daten.
+
+### **UC 13/06: Notizen eines Kunden anzeigen**
+
+### Akteur
+
+Disponent, Administrator, Leser
+
+### Ziel
+
+Alle einem Kunden eindeutig zugeordneten Notizen vollständig und konsistent einsehen.
+
+### Vorbedingungen
+
+- Der Kunde existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt mindestens Leserechte für den Kunden.
+
+### Ablauf
+
+1. Der Akteur öffnet die Detailansicht eines bestehenden Kunden.
+2. Das System prüft serverseitig die Leseberechtigung.
+3. Das System lädt ausschließlich die Notizen, die eindeutig diesem Kunden zugeordnet sind.
+4. Das System sortiert die Notizen deterministisch:
+    - Angepinnte Notizen (`is_pinned = true`) erscheinen zuerst.
+    - Innerhalb gleicher Pin-Logik erfolgt die Sortierung nach `updated_at` absteigend.
+5. Das System rendert die Notizen als vertikale Kärtchenliste.
+6. Jede Notiz zeigt mindestens:
+    - Titel,
+    - Beschreibung (Richtext formatiert),
+    - visuelle Kennzeichnung bei gesetzter `color`,
+    - ggf. Pin-Symbol.
+7. Enthält der Akteur ausschließlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
+
+### Alternativabläufe
+
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.
+- Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.
+- Es existieren keine Notizen → Das System zeigt eine leere Liste ohne Fehler an.
+- Technischer Fehler → HTTP 500, keine Anzeige.
+
+### Ergebnis
+
+- Alle kundenspezifischen Notizen sind konsistent sichtbar.
+- Es werden ausschließlich Notizen dieses Kunden angezeigt.
+- Die Sortierung ist deterministisch und reproduzierbar.
+- Die Anzeige verändert keine persistierten Daten und hat keine Seiteneffekte auf Projektnotizen.
+
+### **UC 13/07: Notiz anpinnen / Pinning aufheben**
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Die Position einer bestehenden Notiz innerhalb der Notizenliste deterministisch beeinflussen, indem sie angepinnt oder das Pinning aufgehoben wird.
+
+### Vorbedingungen
+
+- Die Notiz existiert.
+- Die Notiz ist eindeutig einem Kunden oder Projekt zugeordnet.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Schreibrechte für Notizen.
+- Die Notiz verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
+
+### Ablauf
+
+1. Der Akteur öffnet die Notizenliste im jeweiligen Parent-Kontext.
+2. Der Akteur wählt eine bestehende Notiz aus.
+3. Der Akteur wählt die Funktion „Anpinnen“ oder „Pinning aufheben“.
+4. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Übereinstimmung des Versionsmerkmals.
+5. Bei erfolgreicher Prüfung setzt das System `is_pinned` entsprechend auf TRUE oder FALSE.
+6. Das System erhöht das Versionsmerkmal und aktualisiert `updated_at`.
+7. Das System sortiert die Notizenliste neu gemäß Sortierlogik:
+    - Gepinnte Notizen zuerst,
+    - danach Sortierung nach `updated_at` absteigend.
+8. Das System rendert die aktualisierte Liste.
+
+### Alternativabläufe
+
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Änderung.
+- Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
+- Technischer Fehler → HTTP 500, keine Änderung.
+
+### Ergebnis
+
+- Die Notiz ist im Erfolgsfall angepinnt oder nicht mehr angepinnt.
+- Die Sortierung der Notizenliste ist deterministisch und konsistent.
+- Parallele Änderungen führen nicht zu stillen Überschreibungen.
+- Es entstehen keine Duplikate oder inkonsistenten Sortierzustände.
+
+### **UC 13/08: Notizvorlage erstellen**
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt werden kann.
+
+### Vorbedingungen
+
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.
+
+### Ablauf
+
+1. Der Akteur öffnet die Vorlagenverwaltung.
+2. Der Akteur wählt die Funktion „Vorlage hinzufügen“.
+3. Das System öffnet einen Editor zur Erfassung der Vorlagendaten.
+4. Der Akteur erfasst mindestens Titel und vordefinierten Inhalt.
+5. Optional legt der Akteur eine Sortierreihenfolge fest.
+6. Optional legt der Administrator eine Kennzeichnungsfarbe (`color`) fest. Disponenten können die Kennzeichnungsfarbe nicht setzen oder ändern.
+7. Der Akteur bestätigt die Eingabe.
+8. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Validierung der Pflichtfelder.
+9. Das System erstellt die Vorlage mit folgenden Initialwerten:
+    - `is_active = true`,
+    - Setzen von `created_at` und `updated_at`.
+10. Das System speichert die Vorlage persistent.
+11. Das System aktualisiert die Vorlagenliste gemäß definierter Sortierlogik.
+
+### Alternativabläufe
+
+- Pflichtfelder fehlen → Validierungsfehler, keine Persistierung.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Persistierung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Persistierung.
+- Technischer Fehler → HTTP 500, keine Persistierung.
+- Abbruch durch den Akteur → Keine Persistierung.
+
+### Ergebnis
+
+- Eine neue Notizvorlage existiert persistent.
+- Die Vorlage ist aktiv (`is_active = true`) und erscheint in der Auswahlliste bei der Notizerstellung.
+- Die Kennzeichnungsfarbe ist ausschließlich gesetzt, wenn sie durch einen Administrator definiert wurde.
+- Es entstehen keine Seiteneffekte auf bereits bestehende Notizen.
+
+### **UC 13/09: Notizvorlage bearbeiten**
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Eine bestehende Notizvorlage ändern, ohne bereits erstellte Notizen rückwirkend zu beeinflussen.
+
+### Vorbedingungen
+
+- Die Vorlage existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.
+- Die Vorlage verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
+
+### Ablauf
+
+1. Der Akteur öffnet die Vorlagenverwaltung.
+2. Der Akteur wählt eine bestehende Vorlage aus.
+3. Das System lädt die Vorlagendaten einschließlich Versionsmerkmal.
+4. Der Akteur ändert Titel, vordefinierten Inhalt und optional die Sortierreihenfolge.
+5. Optional ändert der Administrator die Kennzeichnungsfarbe (`color`). Disponenten dürfen die Kennzeichnungsfarbe nicht setzen oder ändern.
+6. Der Akteur bestätigt die Änderungen.
+7. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Validierung der Pflichtfelder,
+    - Übereinstimmung des Versionsmerkmals.
+8. Stimmen die Versionsinformationen überein, speichert das System die Änderungen.
+9. Das System erhöht das Versionsmerkmal und aktualisiert `updated_at`.
+10. Das System aktualisiert die Vorlagenliste gemäß Sortierlogik.
+
+### Alternativabläufe
+
+- Pflichtfelder ungültig → Validierungsfehler, keine Persistierung.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Änderung.
+- Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
+- Abbruch durch den Akteur → Keine Persistierung.
+- Technischer Fehler → HTTP 500, keine Änderung.
+
+### Ergebnis
+
+- Die Vorlage ist im Erfolgsfall aktualisiert.
+- Bereits erstellte Notizen bleiben unverändert, einschließlich ihrer übernommenen Kennzeichnungsfarbe.
+- Parallele Änderungen führen nicht zu stillen Überschreibungen.
+- Die Vorlage steht weiterhin gemäß `is_active`Status in Auswahllisten zur Verfügung.
+
+### **UC 13/10: Notizvorlage deaktivieren/aktivieren**
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Den Aktivstatus einer bestehenden Notizvorlage ändern, ohne sie physisch zu löschen.
+
+### Vorbedingungen
+
+- Die Vorlage existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.
+- Die Vorlage verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
+
+### Ablauf
+
+1. Der Akteur öffnet die Vorlagenverwaltung.
+2. Der Akteur wählt eine bestehende Vorlage aus.
+3. Der Akteur wählt die Funktion „Deaktivieren“ oder „Aktivieren“.
+4. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Übereinstimmung des Versionsmerkmals.
+5. Bei erfolgreicher Prüfung setzt das System das Feld `is_active` entsprechend auf TRUE oder FALSE.
+6. Das System erhöht das Versionsmerkmal und aktualisiert `updated_at`.
+7. Das System speichert die Änderung persistent.
+8. Das System aktualisiert die Vorlagenliste.
+
+### Alternativabläufe
+
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Änderung.
+- Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
+- Technischer Fehler → HTTP 500, keine Änderung.
+
+### Ergebnis
+
+- Der Aktivstatus der Vorlage ist aktualisiert.
+- Nur Vorlagen mit `is_active = true` erscheinen in der Auswahlliste bei der Notizerstellung.
+- Bereits erstellte Notizen bleiben unverändert.
+- Es entsteht keine physische Löschung der Vorlage.
+
+### **UC 13/11: Notizvorlage löschen**
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Eine bestehende Notizvorlage endgültig aus dem System entfernen, ohne bereits erstellte Notizen zu verändern.
+
+### Vorbedingungen
+
+- Die Vorlage existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.
+- Die Vorlage verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
+
+### Ablauf
+
+1. Der Akteur öffnet die Vorlagenverwaltung.
+2. Der Akteur wählt eine bestehende Vorlage aus.
+3. Der Akteur wählt die Funktion „Löschen“.
+4. Das System zeigt eine Sicherheitsabfrage an.
+5. Der Akteur bestätigt das Löschen.
+6. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Übereinstimmung des Versionsmerkmals.
+7. Stimmen die Versionsinformationen überein, löscht das System die Vorlage endgültig aus der Persistenz.
+8. Das System aktualisiert die Vorlagenliste.
+
+### Alternativabläufe
+
+- Der Akteur bricht die Sicherheitsabfrage ab → Die Vorlage bleibt unverändert bestehen.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
+- Versionskonflikt → HTTP 409 Conflict, keine Löschung, Neuladen erforderlich.
+- Technischer Fehler → HTTP 500, keine Löschung.
+
+### Ergebnis
+
+- Die Vorlage ist im Erfolgsfall vollständig aus dem System entfernt.
+- Gelöschte Vorlagen erscheinen nicht mehr in der Vorlagenverwaltung und nicht in der Auswahlliste bei der Notizerstellung.
+- Bereits erstellte Notizen bleiben unverändert bestehen.
+- Es entstehen keine verwaisten Referenzen oder Seiteneffekte in bestehenden Notizen.
+
+### UC 13/12: Notizen bei zulässiger Projektlöschung kaskadierend entfernen
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Sicherstellen, dass bei einer fachlich zulässigen Löschung eines Projekts alle eindeutig zugeordneten Projektnotizen konsistent und automatisch entfernt werden.
+
+### Vorbedingungen
+
+- Das Projekt existiert.
+- Dem Projekt sind eine oder mehrere Notizen eindeutig zugeordnet.
+- Mit dem Projekt ist **kein Termin verbunden**.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Löschrechte für Projekte.
+- Das Projekt verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
+
+### Ablauf
+
+1. Der Akteur öffnet die Detailansicht eines bestehenden Projekts.
+2. Der Akteur wählt die Funktion „Löschen“.
+3. Das System prüft vor Anzeige der Sicherheitsabfrage, ob mit dem Projekt Termine verknüpft sind.
+4. Sind keine Termine verknüpft, zeigt das System eine Sicherheitsabfrage an.
+5. Der Akteur bestätigt die Löschung.
+6. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung,
+    - Übereinstimmung des Versionsmerkmals des Projekts,
+    - weiterhin das Nichtvorhandensein verknüpfter Termine.
+7. Stimmen alle Prüfungen, löscht das System das Projekt.
+8. Das System entfernt automatisch alle Notizen, die eindeutig diesem Projekt zugeordnet sind.
+9. Das System stellt sicher, dass keine verwaisten Projektnotizen verbleiben.
+10. Das System bestätigt den erfolgreichen Löschvorgang.
+
+### Alternativabläufe
+
+- Mit dem Projekt sind Termine verknüpft → HTTP 409 Conflict, keine Löschung.
+- Der Akteur bricht die Sicherheitsabfrage ab → Keine Löschung.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
+- Versionskonflikt → HTTP 409 Conflict, keine Löschung.
+- Technischer Fehler → HTTP 500, keine Löschung.
+
+### Ergebnis
+
+- Das Projekt ist im Erfolgsfall vollständig gelöscht.
+- Alle zugeordneten Projektnotizen sind vollständig entfernt.
+- Kundennotizen bleiben unverändert bestehen.
+- Es existieren keine verwaisten Notizen.
+- Die referenzielle Integrität bleibt gewahrt.
 
 # FT (14): Benutzer- und Rollenverwaltung
 
-## Ziel / Zweck
+## FT (14) Ziel / Zweck
 
 Dieses Feature definiert die Benutzerrollen und deren Berechtigungen im System. Ziel ist eine klare, nachvollziehbare und technisch durchsetzbare Trennung von Leserechten, operativen Bearbeitungsrechten und administrativen Systemrechten. Die Rollen wirken systemweit und bilden die Grundlage für sichere UI- und Backend-Logik.
 
-## Fachliche Beschreibung
+## FT (14) Fachliche Beschreibung
 
 Das System arbeitet rollenbasiert. Jeder Benutzer besitzt genau eine Rolle. Die Rolle bestimmt, welche Inhalte sichtbar sind und welche Aktionen erlaubt sind. Die Durchsetzung der Berechtigungen erfolgt sowohl in der Benutzeroberfläche (Sichtbarkeit und Bedienbarkeit) als auch serverseitig zur Absicherung gegen manipulierte Requests.
 
@@ -5156,7 +5449,7 @@ Es existieren drei Rollen:
 
 Die Rollen beziehen sich auf alle fachlichen Objekte, insbesondere Kunden und Notizen, wie sie in FT (09) und FT (13) beschrieben sind. Bestimmte Felder und Aktionen (z. B. Archivierung von Kunden) sind bewusst ausschließlich administrativen Benutzern vorbehalten.
 
-## Regeln und Randbedingungen
+## FT (14) Regeln und Randbedingungen
 
 Ein Benutzer besitzt genau eine Rolle. Mehrfachrollen oder temporäre Rollen sind nicht vorgesehen.
 
@@ -5168,11 +5461,245 @@ Notizen existieren ausschließlich im Kontext eines übergeordneten Objekts (Kun
 
 Leser dürfen keinerlei schreibende Aktionen durchführen. Disponenten dürfen fachlich arbeiten, aber keine systemkritischen Zustände verändern. Admins dürfen alle Aktionen durchführen.
 
-## Use Cases
+## FT (14) Use Cases
+
+### UC 14/01: Benutzer anlegen
+
+### Akteur
+
+Admin
+
+### Ziel
+
+Einen neuen Benutzer mit einer gültigen Rolle im System anlegen.
+
+### Vorbedingungen
+
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt die Rolle Admin.
+- Es existiert mindestens ein weiterer Admin im System.
+
+### Ablauf
+
+1. Der Akteur öffnet die Benutzerverwaltung.
+2. Der Akteur wählt die Funktion „Benutzer anlegen“.
+3. Das System zeigt ein Formular zur Erfassung der Benutzerdaten an.
+4. Der Akteur erfasst die erforderlichen Stammdaten.
+5. Der Akteur wählt eine Rolle aus (Leser, Disponent oder Admin).
+6. Der Akteur speichert.
+7. Das System prüft die Admin-Berechtigung serverseitig.
+8. Das System validiert die Eingaben.
+9. Das System persistiert den Benutzer mit der gewählten Rolle.
+
+### Alternativen
+
+- Der Akteur besitzt keine Admin-Rolle → System antwortet mit 403.
+- Pflichtfelder fehlen → System lehnt ab und speichert nicht.
+- Technischer Fehler → System antwortet mit 500.
+
+### Ergebnis
+
+Ein neuer Benutzer existiert persistent mit genau einer Rolle.
+
+### UC 14/02: Rolle eines Benutzers ändern
+
+### Akteur
+
+Admin
+
+### Ziel
+
+Die Rolle eines bestehenden Benutzers ändern.
+
+### Vorbedingungen
+
+- Der Benutzer existiert.
+- Der Akteur besitzt die Rolle Admin.
+- Es bleibt mindestens ein Admin im System erhalten.
+
+### Ablauf
+
+1. Der Akteur öffnet die Detailansicht eines Benutzers.
+2. Der Akteur ändert die Rolle.
+3. Der Akteur speichert.
+4. Das System prüft serverseitig die Admin-Berechtigung.
+5. Das System prüft, ob nach der Änderung mindestens ein Admin verbleibt.
+6. Das System persistiert die neue Rolle.
+
+### Alternativen
+
+- Letzter Admin würde entfernt → System blockiert mit 409.
+- Akteur ohne Admin-Rolle → System blockiert mit 403.
+- Versionskonflikt → System blockiert mit 409.
+
+### Ergebnis
+
+Die Rolle ist aktualisiert und wirkt systemweit.
+
+### UC 14/03: Unzulässige Mutation blockieren
+
+### Akteur
+
+Leser oder Disponent ohne ausreichende Rechte
+
+### Ziel
+
+Verhindern, dass ein Benutzer eine nicht erlaubte Mutation ausführt.
+
+### Vorbedingungen
+
+- Der Benutzer ist authentifiziert.
+- Der Benutzer besitzt nicht die erforderliche Rolle.
+
+### Ablauf
+
+1. Der Akteur löst eine schreibende Aktion aus.
+2. Das System prüft serverseitig die Rolle.
+3. Das System erkennt fehlende Berechtigung.
+4. Das System blockiert die Mutation.
+5. Das System antwortet mit 403.
+
+### Alternativen
+
+- UI verhindert bereits die Anzeige der Aktion → Keine Mutation möglich.
+- Manipulierter Request → Serverseitige Blockade greift.
+
+### Ergebnis
+
+Keine fachliche Änderung wird persistiert.
+
+### UC 14/04: Letzten Admin schützen
+
+### Akteur
+
+Admin
+
+### Ziel
+
+Sicherstellen, dass das System niemals ohne Admin bleibt.
+
+### Vorbedingungen
+
+- Es existiert genau ein Admin.
+- Der Akteur versucht, diesen herabzustufen oder zu löschen.
+
+### Ablauf
+
+1. Der Akteur startet die Rollenänderung oder Löschung.
+2. Das System prüft die Anzahl verbleibender Admins.
+3. Das System erkennt, dass kein weiterer Admin existiert.
+4. Das System blockiert die Aktion.
+5. Das System antwortet mit 409.
+
+### Alternativen
+
+- Es existieren mehrere Admins → Aktion wird erlaubt.
+
+### Ergebnis
+
+Mindestens ein Admin bleibt im System erhalten.
+
+---
+
+### UC 14/05: Rollenabhängige UI-Reduktion
+
+### Akteur
+
+Leser
+
+### Ziel
+
+Sicherstellen, dass ein Leser keine schreibenden UI-Elemente sieht.
+
+### Vorbedingungen
+
+- Der Benutzer ist authentifiziert.
+- Der Benutzer besitzt die Rolle Leser.
+
+### Ablauf
+
+1. Der Akteur öffnet eine fachliche Ansicht.
+2. Das System rendert die UI rollenabhängig.
+3. Das System blendet schreibende Elemente aus.
+4. Der Akteur kann ausschließlich lesende Aktionen durchführen.
+
+### Alternativen
+
+- Deep-Link auf Bearbeitungsroute → Serverseitige Prüfung blockiert.
+
+### Ergebnis
+
+Die UI ist funktionsreduziert, ohne Datenmodelländerung.
+
+---
+
+### UC 14/06: Deep-Link serverseitig validieren
+
+### Akteur
+
+Benutzer ohne ausreichende Rolle
+
+### Ziel
+
+Sicherstellen, dass direkte URL-Aufrufe keine unzulässigen Aktionen ermöglichen.
+
+### Vorbedingungen
+
+- Der Benutzer ist authentifiziert.
+- Der Benutzer besitzt nicht die erforderliche Rolle.
+
+### Ablauf
+
+1. Der Akteur ruft eine geschützte Route direkt auf.
+2. Das System prüft serverseitig die Rolle.
+3. Das System verweigert Zugriff.
+4. Das System antwortet mit 403.
+
+### Alternativen
+
+- Route existiert nicht → 404.
+- Technischer Fehler → 500.
+
+### Ergebnis
+
+Keine unzulässige Aktion wird ausgeführt.
+
+---
+
+### UC 14/07: Multi-Browser-Rollenänderung konsistent darstellen
+
+### Akteur
+
+Admin
+
+### Ziel
+
+Sicherstellen, dass Rollenänderungen in parallelen Sitzungen konsistent wirksam werden.
+
+### Vorbedingungen
+
+- Ein Benutzer ist in zwei Browsern angemeldet.
+- Eine Rolle wird geändert.
+
+### Ablauf
+
+1. Der Akteur ändert die Rolle eines Benutzers.
+2. Das System persistiert die neue Rolle.
+3. In der zweiten Sitzung wird eine neue Anfrage gestellt.
+4. Das System prüft die Rolle erneut serverseitig.
+5. Das System setzt die neue Berechtigungsstufe durch.
+
+### Alternativen
+
+- Sitzung verwendet veraltete Tokens → System validiert bei nächstem Request.
+
+### Ergebnis
+
+Rollenänderungen wirken konsistent in allen Sitzungen.
 
 # FT (15): Projekt Status Verwaltung
 
-## Ziel / Zweck
+## FT (15) Ziel / Zweck
 
 Dieses Feature beschreibt die Verwaltung von Projektstatus-Etiketten als administrative Stammdaten.
 
@@ -5180,7 +5707,7 @@ Projektstatus dienen der fachlichen Einordnung und Orientierung von Projekten ü
 
 Ziel ist eine klar strukturierte, erweiterbare und historientaugliche Statusverwaltung, die unabhängig von der eigentlichen Projektbearbeitung gepflegt werden kann.
 
-## **Fachliche Beschreibung**
+## FT (15) **Fachliche Beschreibung**
 
 Projektstatus sind fachliche Etiketten, die zusätzlich zum Aktiv-Status eines Projekts (`is_active`) verwendet werden. Ein Projekt kann keinen, einen oder mehrere Projektstatus gleichzeitig besitzen. Die Status haben keinen unmittelbaren Einfluss auf Termine oder Kalenderfunktionen, dienen jedoch der fachlichen Orientierung, Filterung, Auswertung und Kommunikation im Dispositionsprozess.
 
@@ -5199,7 +5726,7 @@ Ist ein Status mindestens einem Projekt zugeordnet, ist eine Löschung nicht zul
 
 Bestimmte Status können als Default-Status definiert sein. Diese sind systemseitig geschützt und dürfen nicht gelöscht werden, unabhängig vom Verwendungszustand.
 
-## **Regeln & Randbedingungen**
+## FT (15) **Regeln & Randbedingungen**
 
 - Projektstatus sind zentrale Stammdaten und werden systemweit verwendet.
 - Ein Projekt kann keinen, einen oder mehrere Projektstatus besitzen.
@@ -5232,254 +5759,258 @@ Bestimmte Status können als Default-Status definiert sein. Diese sind systemsei
 - Die Pflege (Anlegen, Bearbeiten, Aktivieren, Deaktivieren, Löschen) ist ausschließlich der Rolle **Admin** vorbehalten.
 - Disponenten dürfen Status ausschließlich Projekten zuordnen oder von Projekten entfernen.
 
-## **Use Cases**
+## FT (15) **Use Cases**
 
-### **UC: Projektstatus anzeigen**
+### **UC 15/01: Projektstatus anzeigen**
 
-Akteur: RO (01) Disponent, RO (03) Admin
+### Akteur
 
-Ziel:
+Disponent, Admin
 
-Übersicht über verfügbare Projektstatus erhalten.
+### Ziel
 
-Vorbedingungen:
+Eine Übersicht über verfügbare Projektstatus anzeigen.
+
+### Vorbedingungen
 
 - Mindestens ein Projektstatus existiert.
 
-Ablauf:
+### Ablauf
 
-1. Benutzer öffnet ein Projekt oder eine Statusauswahl.
-2. System zeigt alle aktiven Projektstatus in definierter Sortierung an.
+1. Der Akteur öffnet ein Projekt oder eine Statusauswahl.
+2. Das System ermittelt alle Projektstatus mit `is_active = true`.
+3. Das System sortiert die Status gemäß definierter Standardsortierung.
+4. Das System zeigt die Statusliste an.
 
-Ergebnis:
+### Ergebnis
 
-Projektstatus sind übersichtlich sichtbar und auswählbar.
+Die aktiven Projektstatus sind sichtbar und auswählbar.
 
-### **UC: Projektstatus zu Projekt zuordnen**
+### **UC 15/02: Projektstatus zu Projekt zuordnen**
 
-Akteur: RO (01) Disponent
+### Akteur
 
-Ziel:
+Disponent
 
-Einem Projekt einen oder mehrere Projektstatus zuweisen.
+### Ziel
 
-Vorbedingungen:
+Einem Projekt einen oder mehrere aktive Projektstatus zuweisen.
+
+### Vorbedingungen
 
 - Projekt existiert.
 - Mindestens ein aktiver Projektstatus existiert.
 
-Ablauf:
+### Ablauf
 
-1. Disponent öffnet ein Projekt.
-2. Disponent wählt einen oder mehrere Status aus der Statusliste.
-3. System speichert die Zuordnung.
+1. Der Akteur öffnet ein Projekt.
+2. Der Akteur wählt einen oder mehrere Status aus der Liste.
+3. Das System prüft für jeden gewählten Status `is_active = true`.
+4. Das System verhindert doppelte Zuordnungen.
+5. Das System speichert die n:m-Beziehung.
 
-Ergebnis:
+### Ergebnis
 
-Das Projekt ist mit den ausgewählten Status-Etiketten versehen.
+Das Projekt besitzt die ausgewählten Status-Etiketten.
 
-### **UC: Projektstatus entfernen**
+### **UC 15/03: Projektstatus entfernen**
 
-Akteur: RO (01) Disponent
+### Akteur
 
-Ziel:
+Disponent
 
-Einen Projektstatus von einem Projekt entfernen.
+### Ziel
 
-Vorbedingungen:
+Einen bestehenden Projektstatus von einem Projekt entfernen.
+
+### Vorbedingungen
 
 - Projekt existiert.
 - Dem Projekt ist mindestens ein Status zugeordnet.
 
-Ablauf:
+### Ablauf
 
-1. Disponent öffnet ein Projekt.
-2. Disponent entfernt einen Status aus der Statusliste.
-3. System speichert die Änderung.
+1. Der Akteur öffnet das Projekt.
+2. Der Akteur entfernt einen Status.
+3. Das System entfernt die entsprechende n:m-Verknüpfung.
+4. Das System speichert die Änderung.
 
-Ergebnis:
+### Ergebnis
 
-Der Status ist nicht mehr dem Projekt zugeordnet; andere Status bleiben erhalten.
+Der Status ist nicht mehr dem Projekt zugeordnet. Andere Status bleiben unverändert.
 
-### **UC: Projektstatus verwalten**
+### **UC 15/04: Projektstatus verwalten**
 
-**Akteur:** RO (03) Admin
+### Akteur
 
-**Ziel:**
+Admin
 
-Projektstatus administrativ pflegen.
+### Ziel
 
-**Vorbedingungen:**
+Projektstatus administrativ anlegen, bearbeiten, aktivieren, deaktivieren oder löschen.
 
-- Admin ist angemeldet.
+### Vorbedingungen
 
-**Ablauf:**
+- Der Akteur ist angemeldet.
 
-1. Admin öffnet die Projektstatusverwaltung.
-2. Admin kann neue Status anlegen.
-3. Admin kann bestehende Status bearbeiten.
-4. Admin kann Status aktivieren oder deaktivieren.
-5. Admin versucht einen Status zu löschen.
-6. Das System prüft:
-    - ob der Status einem Projekt zugeordnet ist,
-    - ob es sich um einen geschützten Default-Status handelt.
-7. Falls keine Zuordnung existiert und kein Schutz greift, löscht das System den Status.
-8. Falls eine Zuordnung existiert oder Schutz greift, blockiert das System die Löschung und zeigt eine verständliche Fehlermeldung an.
-9. System speichert die Änderungen.
+### Ablauf
 
-**Ergebnis:**
+1. Der Akteur öffnet die Projektstatusverwaltung.
+2. Der Akteur legt neue Status an oder bearbeitet bestehende.
+3. Der Akteur aktiviert oder deaktiviert Status.
+4. Der Akteur versucht einen Status zu löschen.
+5. Das System prüft Referenzen und Default-Schutz.
+6. Das System führt die zulässige Aktion aus oder blockiert sie mit Fehlermeldung.
+7. Das System speichert die Änderung.
 
-Die Statusliste ist konsistent gepflegt.
+### Ergebnis
 
-Kein verwendeter oder geschützter Status wurde gelöscht.
+Die Statusliste ist konsistent gepflegt. Kein verwendeter oder geschützter Status wurde gelöscht.
 
-### UC: Nicht verwendeten Projektstatus löschen
+### UC 15/05: Nicht verwendeten Projektstatus löschen
 
-**Akteur:** RO (03) Admin
+### Akteur
 
-**Ziel:**
+Admin
 
-Einen Projektstatus dauerhaft entfernen, der keinem Projekt zugeordnet ist.
+### Ziel
 
-**Vorbedingungen:**
+Einen nicht referenzierten und nicht geschützten Projektstatus dauerhaft löschen.
 
-- Admin ist angemeldet.
-- Der Projektstatus existiert.
-- Der Projektstatus ist keinem Projekt zugeordnet.
-- Der Projektstatus ist kein geschützter Default-Status.
+### Vorbedingungen
 
-**Ablauf:**
+- Der Akteur ist angemeldet.
+- Der Status existiert.
+- Keine Projektzuordnung existiert.
+- Kein Default-Schutz besteht.
 
-1. Admin öffnet die Projektstatusverwaltung.
-2. Admin wählt einen Projektstatus aus.
-3. Admin löst die Löschaktion aus.
-4. System prüft, ob Referenzen zu Projekten existieren.
-5. System prüft, ob der Status als Default geschützt ist.
-6. Beide Prüfungen sind negativ.
-7. System löscht den Projektstatus physisch aus der Stammdatentabelle.
+### Ablauf
 
-**Ergebnis:**
+1. Der Akteur öffnet die Statusverwaltung.
+2. Der Akteur wählt einen Status.
+3. Der Akteur löst die Löschung aus.
+4. Das System prüft Referenzen.
+5. Das System prüft Default-Schutz.
+6. Das System löscht den Status physisch.
 
-- Der Projektstatus existiert nicht mehr im System.
-- Er erscheint in keiner Auswahlliste.
-- Historische Projektdaten bleiben unverändert, da keine Zuordnung existierte.
+### Ergebnis
 
-**Testbare Erwartung (Integration/E2E):**
+Der Status ist vollständig aus dem System entfernt.
 
-- DELETE-Request liefert Erfolg (z. B. 200 oder 204).
-- Ein nachfolgender GET auf die Statusliste enthält den Status nicht mehr.
-- Datenbank enthält keinen Datensatz mehr mit dieser ID.
+### UC 15/06: Verwendeten Projektstatus löschen (blockiert)
 
-### UC: Verwendeten Projektstatus löschen (blockiert)
+### Akteur
 
-**Akteur:** RO (03) Admin
+Admin
 
-**Ziel:**
+### Ziel
 
-Sicherstellen, dass ein zugeordnetes Status-Etikett nicht gelöscht werden kann.
+Verhindern, dass ein referenzierter Status gelöscht wird.
 
-**Vorbedingungen:**
+### Vorbedingungen
 
-- Admin ist angemeldet.
-- Der Projektstatus existiert.
-- Der Projektstatus ist mindestens einem Projekt zugeordnet.
+- Der Akteur ist angemeldet.
+- Der Status ist mindestens einem Projekt zugeordnet.
 
-**Ablauf:**
+### Ablauf
 
-1. Admin öffnet die Projektstatusverwaltung.
-2. Admin wählt einen Projektstatus aus.
-3. Admin löst die Löschaktion aus.
-4. System prüft, ob Referenzen zu Projekten existieren.
-5. System erkennt mindestens eine bestehende Zuordnung.
-6. System blockiert die Löschung.
-7. System gibt eine verständliche Fehlermeldung zurück.
+1. Der Akteur öffnet die Statusverwaltung.
+2. Der Akteur löst die Löschung aus.
+3. Das System erkennt bestehende Referenzen.
+4. Das System blockiert die Löschung.
+5. Das System gibt eine Fehlermeldung zurück.
 
-**Ergebnis:**
+### Ergebnis
 
-- Der Projektstatus bleibt unverändert bestehen.
-- Bestehende Projektzuordnungen bleiben erhalten.
+Der Status bleibt unverändert bestehen.
 
-**Testbare Erwartung (Integration/E2E):**
+### UC 15/07: Geschützten Default-Status löschen (blockiert)
 
-- DELETE-Request liefert Fehlerstatus (z. B. 409 Conflict).
-- Fehlermeldung enthält Hinweis auf bestehende Verwendung.
-- Status erscheint weiterhin in der Stammdatenliste.
-- Datenbank enthält unveränderten Datensatz.
+### Akteur
 
-### UC: Geschützten Default-Status löschen (blockiert)
+Admin
 
-**Akteur:** RO (03) Admin
+### Ziel
 
-**Ziel:**
+Verhindern, dass ein referenzierter Status gelöscht wird.
 
-Sicherstellen, dass systemgeschützte Default-Status nicht gelöscht werden können.
+### Vorbedingungen
 
-**Vorbedingungen:**
+- Der Akteur ist angemeldet.
+- Der Status ist mindestens einem Projekt zugeordnet.
 
-- Admin ist angemeldet.
-- Der Projektstatus ist als Default-Status markiert.
+### Ablauf
 
-**Ablauf:**
+1. Der Akteur öffnet die Statusverwaltung.
+2. Der Akteur löst die Löschung aus.
+3. Das System erkennt bestehende Referenzen.
+4. Das System blockiert die Löschung.
+5. Das System gibt eine Fehlermeldung zurück.
 
-1. Admin öffnet die Projektstatusverwaltung.
-2. Admin wählt einen Default-Status aus.
-3. Admin löst die Löschaktion aus.
-4. System prüft die Default-Markierung.
-5. System blockiert die Löschung unabhängig vom Verwendungszustand.
-6. System gibt eine verständliche Fehlermeldung zurück.
+### Ergebnis
 
-**Ergebnis:**
+Der Status bleibt unverändert bestehen.
 
-- Der Default-Status bleibt im System bestehen.
-- Keine Datenänderung erfolgt.
+### UC 15/08: Projektstatus deaktivieren
 
-**Testbare Erwartung (Integration/E2E):**
+### Akteur
 
-- DELETE-Request liefert Fehlerstatus (z. B. 403 oder 409).
-- Fehlermeldung verweist auf Schutzstatus.
-- Status ist weiterhin vorhanden.
+Admin
 
-### UC: Projektstatus deaktivieren
+### Ziel
 
-**Akteur:** RO (03) Admin
+Einen Status für zukünftige Auswahl deaktivieren.
 
-**Ziel:**
+### Vorbedingungen
 
-Einen Projektstatus für zukünftige Verwendung sperren, ohne historische Daten zu verändern.
+- Der Akteur ist angemeldet.
+- Der Status existiert.
 
-**Vorbedingungen:**
+### Ablauf
 
-- Admin ist angemeldet.
-- Der Projektstatus existiert.
+1. Der Akteur öffnet die Statusverwaltung.
+2. Der Akteur setzt `is_active = false`.
+3. Das System speichert die Änderung.
+4. Das System stellt sicher, dass der Status nicht mehr in Auswahlendpunkten erscheint.
 
-**Ablauf:**
+### Ergebnis
 
-1. Admin öffnet die Projektstatusverwaltung.
-2. Admin wählt einen aktiven Projektstatus.
-3. Admin setzt den Status auf „deaktiviert“.
-4. System speichert `is_active = false`.
+Der Status bleibt historisch erhalten, ist jedoch nicht mehr neu auswählbar.
 
-**Ergebnis:**
+### UC 15/09: Projektstatus bearbeiten
 
-- Der Status bleibt in der Stammdatentabelle erhalten.
-- Bestehende Projektzuordnungen bleiben unverändert.
-- Der Status ist in Projektdetails weiterhin sichtbar.
-- Der Status erscheint nicht mehr in Auswahlkomponenten für Disponenten.
+### Akteur
 
-**Testbare Erwartung (Integration/E2E):**
+Admin
 
-- PATCH `/project-status/:id/active` liefert Erfolg.
-- GET Statusliste für Admin enthält den Status mit `is_active = false`.
-- GET Statusliste für Disponent enthält diesen Status nicht.
-- Ein Projekt, das diesen Status bereits besitzt, zeigt ihn weiterhin an.
+### Ziel
+
+Den Namen oder die fachliche Bezeichnung eines bestehenden Projektstatus ändern.
+
+### Vorbedingungen
+
+- Der Akteur ist angemeldet.
+- Der Status existiert.
+
+### Ablauf
+
+1. Der Akteur öffnet die Statusverwaltung.
+2. Der Akteur wählt einen Status.
+3. Der Akteur ändert den Namen.
+4. Das System validiert die Eingabe.
+5. Das System speichert die Änderung.
+
+### Ergebnis
+
+Der Status ist mit aktualisierter Bezeichnung gespeichert und in allen Projekten konsistent sichtbar.
 
 # FT (16): Hilfetexte verwalten
 
-## Ziel / Zweck
+## FT (16) Ziel / Zweck
 
 Dieses Feature ermöglicht die zentrale Verwaltung von Hilfetexten in der Anwendung, die von Benutzern kontextbezogen über Hilfe-Symbole in der UI abgerufen werden können. Ziel ist, fachliche Bedienhinweise konsistent, wartbar und rollenbasiert bereitzustellen, ohne dass Hilfetexte in einzelnen UI-Views dupliziert oder fest im Frontend verdrahtet werden müssen.
 
-## Fachliche Beschreibung
+## FT (16) Fachliche Beschreibung
 
 Ein Hilfetext ist ein eigenständiges, administrierbares Objekt mit eindeutiger Kennung („help_key“), Titel und formatierbarem Inhalt (Markdown). Hilfetexte werden in der UI kontextbezogen über ein Hilfe-Symbol (z. B. „?“ oder „i“) angezeigt. Die UI übergibt beim Abruf den help_key, das System liefert den passenden Hilfetext zurück.
 
@@ -5487,7 +6018,7 @@ Hilfetexte sind rein informativ. Sie verändern keine fachlichen Daten (Kunden, 
 
 Die Pflege der Hilfetexte erfolgt administrativ. Disponenten und Leser können Hilfetexte anzeigen, aber nicht verändern. Admins können Hilfetexte anlegen, bearbeiten, aktivieren/deaktivieren und verwalten.
 
-## Regeln & Randbedingungen
+## FT (16) Regeln & Randbedingungen
 
 Ein Hilfetext besitzt einen eindeutigen help_key und darf pro help_key nur einmal existieren.
 
@@ -5503,151 +6034,301 @@ Die Anzeige der Hilfetexte ist für alle Rollen erlaubt, sofern der Text aktiv i
 
 Der Inhalt wird als Markdown gespeichert; externe Ressourcen- oder Dateipfadabhängigkeiten aus dem Client sind nicht vorgesehen.
 
-## **Use Cases**
+## FT (16) **Use Cases**
 
-### UC: Hilfetext anzeigen (kontextbezogen)
+### UC 16/01: Hilfetext anzeigen (kontextbezogen)
 
-**Akteur:** RO (01) Disponent, RO (02) Leser, RO (03) Admin
+### Akteur
 
-**Ziel:**
+Disponent, Leser, Admin
 
-Einen Hilfetext in der UI über ein Hilfe-Symbol abrufen und lesen.
+### Ziel
 
-**Vorbedingungen:**
+Einen aktiven Hilfetext im jeweiligen UI-Kontext abrufen und anzeigen.
 
-- Der Hilfetext ist aktiv.
+### Vorbedingungen
+
+- Ein Hilfetext mit dem entsprechenden help_key existiert.
+- Der Hilfetext ist als aktiv gekennzeichnet.
 - Der help_key ist im UI-Kontext hinterlegt.
+- Der Akteur ist authentifiziert.
 
-**Ablauf:**
+### Ablauf
 
-- Der Benutzer klickt in der UI auf das Hilfe-Symbol am jeweiligen UI-Element.
-- Die UI übergibt den help_key an das System.
-- Das System liefert Titel und Inhalt des zugehörigen Hilfetextes zurück.
-- Die UI zeigt den Hilfetext als Tooltip/Popover/Modal an.
+1. Der Akteur klickt in der UI auf das Hilfe-Symbol des jeweiligen Elements.
+2. Die UI übergibt den hinterlegten help_key an das System.
+3. Das System prüft, ob ein aktiver Hilfetext mit diesem help_key existiert.
+4. Das System lädt Titel und Markdown-Inhalt des Hilfetextes.
+5. Die UI stellt den Hilfetext als Tooltip, Popover oder Modal dar.
 
-**Alternativen:**
+### Alternativen
 
-- Kein Hilfetext vorhanden oder deaktiviert: Die UI zeigt „Keine Hilfe verfügbar“ oder blendet das Symbol aus.
+- Es existiert kein Hilfetext mit diesem help_key → Das System liefert einen leeren Status zurück; die UI zeigt „Keine Hilfe verfügbar“ oder blendet das Symbol aus.
+- Der Hilfetext ist deaktiviert → Das System liefert keinen Inhalt zurück; die UI zeigt keine Hilfe an.
+- Technischer Fehler → Das System antwortet mit einem Fehlerstatus; die UI zeigt eine Fehlermeldung oder keine Hilfe an.
 
-**Ergebnis:**
+### Ergebnis
 
-Der Benutzer sieht den passenden Hilfetext zum aktuellen Kontext.
+Der Akteur sieht den zum aktuellen UI-Kontext passenden Hilfetext. Es werden keine fachlichen Daten verändert.
 
-### UC: Hilfetext anlegen
+### UC 16/02: Hilfetext anlegen
 
-**Akteur:** RO (03) Admin
+### kteur
 
-**Ziel:**
+Admin
+
+### Ziel
 
 Einen neuen Hilfetext erstellen, um einen UI-Kontext erklärbar zu machen.
 
-**Vorbedingungen:**
+### Vorbedingungen
 
-- Admin ist angemeldet und berechtigt.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Admin-Rechte.
+- Der gewünschte help_key ist noch nicht vergeben.
 
-**Ablauf:**
+### Ablauf
 
-- Admin öffnet die Hilfetext-Verwaltung.
-- Admin wählt „Hilfetext anlegen“.
-- Admin erfasst help_key, Titel und Inhalt und setzt den Text aktiv.
-- Das System validiert die Eindeutigkeit des help_key und speichert.
+1. Der Akteur öffnet die Hilfetext-Verwaltung.
+2. Der Akteur wählt die Funktion „Hilfetext anlegen“.
+3. Der Akteur erfasst help_key, Titel und Markdown-Inhalt.
+4. Der Akteur legt fest, ob der Hilfetext aktiv ist.
+5. Der Akteur speichert den Datensatz.
+6. Das System validiert Pflichtfelder und Datentypen.
+7. Das System prüft serverseitig die Eindeutigkeit des help_key.
+8. Bei erfolgreicher Validierung speichert das System den Hilfetext persistent.
 
-**Alternativen:**
+### Alternativen
 
-- help_key existiert bereits: Das System blockiert und fordert zur Korrektur auf.
+- Pflichtfeld fehlt → Das System lehnt die Speicherung mit Validierungsfehler ab.
+- help_key existiert bereits → Das System blockiert die Speicherung und fordert zur Korrektur auf.
+- Der Akteur besitzt keine Admin-Rechte → Das System blockiert mit einem Berechtigungsfehler.
+- Technischer Fehler → Das System speichert nicht und liefert einen Fehlerstatus zurück.
 
-**Ergebnis:**
+### Ergebnis
 
-Der Hilfetext ist gespeichert und in der UI über den help_key abrufbar.
+Ein neuer Hilfetext ist persistent gespeichert und über seinen help_key referenzierbar. Der Hilfetext ist je nach gesetztem Status in der UI abrufbar oder nicht abrufbar.
 
-### UC: Hilfetext bearbeiten
+### UC 16/03: Hilfetext bearbeiten
 
-**Akteur:** RO (03) Admin
+### Akteur
 
-**Ziel:**
+Admin
+
+### Ziel
 
 Einen bestehenden Hilfetext inhaltlich aktualisieren.
 
-**Vorbedingungen:**
+### Vorbedingungen
 
-- Hilfetext existiert.
+- Der Hilfetext existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Admin-Rechte.
 
-**Ablauf:**
+### Ablauf
 
-- Admin öffnet die Hilfetext-Verwaltung und wählt einen Hilfetext.
-- Admin ändert Titel und/oder Inhalt.
-- Admin speichert.
-- Das System aktualisiert den Hilfetext.
+1. Der Akteur öffnet die Hilfetext-Verwaltung.
+2. Der Akteur wählt einen bestehenden Hilfetext aus der Liste aus.
+3. Das System lädt die aktuellen Daten des Hilfetextes.
+4. Der Akteur ändert Titel und/oder Markdown-Inhalt.
+5. Der Akteur speichert die Änderungen.
+6. Das System validiert die Eingaben.
+7. Das System speichert die aktualisierten Daten persistent.
 
-**Alternativen:**
+### Alternativen
 
-- Abbruch: Es wird nichts gespeichert.
+- Der Akteur bricht den Vorgang ab → Es erfolgt keine Änderung.
+- Der Hilfetext existiert nicht mehr → Das System antwortet mit einem Fehlerstatus.
+- Der Akteur besitzt keine Admin-Rechte → Das System blockiert mit einem Berechtigungsfehler.
+- Technischer Fehler → Das System speichert nicht und liefert einen Fehlerstatus zurück.
 
-**Ergebnis:**
+### Ergebnis
 
-Der Hilfetext ist aktualisiert und wird künftig in der UI in der neuen Version angezeigt.
+Der Hilfetext ist aktualisiert. Bei zukünftigen Abrufen über den help_key wird die neue Version angezeigt.
 
-### UC: Hilfetext aktivieren/deaktivieren
+### UC 16/04: Hilfetext aktivieren/deaktivieren
 
-**Akteur:** RO (03) Admin
+### Akteur
 
-**Ziel:**
+Admin
 
-Einen Hilfetext temporär aus der UI entfernen, ohne ihn zu löschen.
+### Ziel
 
-**Vorbedingungen:**
+Einen bestehenden Hilfetext aktivieren oder deaktivieren, um seine Sichtbarkeit in der UI zu steuern.
 
-- Hilfetext existiert.
+### Vorbedingungen
 
-**Ablauf:**
+- Der Hilfetext existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Admin-Rechte.
 
-- Admin öffnet einen Hilfetext in der Verwaltung.
-- Admin setzt aktiv/inaktiv.
-- Das System speichert den Status.
+### Ablauf
 
-**Alternativen:**
+1. Der Akteur öffnet die Hilfetext-Verwaltung.
+2. Der Akteur wählt einen bestehenden Hilfetext aus.
+3. Der Akteur ändert den Status auf „aktiv“ oder „inaktiv“.
+4. Der Akteur speichert die Änderung.
+5. Das System persistiert den neuen Status.
 
-- Abbruch: Keine Änderung.
+### Alternativen
 
-**Ergebnis:**
+- Der Akteur bricht den Vorgang ab → Der Status bleibt unverändert.
+- Der Hilfetext existiert nicht mehr → Das System antwortet mit einem Fehlerstatus.
+- Der Akteur besitzt keine Admin-Rechte → Das System blockiert mit einem Berechtigungsfehler.
+- Technischer Fehler → Das System speichert nicht und liefert einen Fehlerstatus zurück.
 
-Der Hilfetext ist je nach Status in der UI abrufbar oder verborgen.
+### Ergebnis
 
-### UC: Hilfetexte durchsuchen und anzeigen
+Der Hilfetext ist entsprechend dem gesetzten Status in der UI abrufbar oder nicht abrufbar. Bestehende fachliche Daten bleiben unverändert.
 
-**Akteur:** RO (03) Admin
+### UC 16/05: Hilfetexte durchsuchen und anzeigen
 
-**Ziel:**
+### Akteur
 
-Hilfetexte effizient finden, um sie zu pflegen.
+Admin
 
-**Vorbedingungen:**
+### Ziel
 
-- Hilfetexte existieren.
+Hilfetexte anhand von Suchkriterien auffinden und zur weiteren Bearbeitung anzeigen.
 
-**Ablauf:**
+### Vorbedingungen
 
-- Admin öffnet die Hilfetext-Verwaltung.
-- Admin sucht nach help_key oder Titel.
-- Das System zeigt Trefferliste und Details an.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Admin-Rechte.
+- Es existieren Hilfetexte im System.
 
-**Alternativen:**
+### Ablauf
 
-- Keine Treffer: Das System zeigt eine leere Liste an.
+1. Der Akteur öffnet die Hilfetext-Verwaltung.
+2. Das System lädt die Liste der Hilfetexte.
+3. Der Akteur gibt ein Suchkriterium ein, beispielsweise help_key oder Titel.
+4. Das System filtert die Hilfetexte serverseitig anhand des eingegebenen Suchkriteriums.
+5. Das System zeigt die gefilterte Trefferliste an.
+6. Der Akteur kann einen Hilfetext aus der Liste auswählen, um dessen Detailansicht zu öffnen.
 
-**Ergebnis:**
+### Alternativen
 
-Admin kann Hilfetexte schnell auffinden und bearbeiten.
+- Keine Hilfetexte vorhanden → Das System zeigt eine leere Liste an.
+- Suchkriterium liefert keine Treffer → Das System zeigt eine leere Trefferliste an.
+- Der Akteur besitzt keine Admin-Rechte → Das System blockiert mit einem Berechtigungsfehler.
+- Technischer Fehler → Das System liefert einen Fehlerstatus zurück und zeigt keine oder eine unvollständige Liste an.
+
+### Ergebnis
+
+Der Akteur erhält eine gefilterte und konsistente Übersicht der Hilfetexte und kann einzelne Datensätze zur weiteren Bearbeitung auswählen.
+
+### UC 16/06: Hilfetext löschen
+
+### Akteur
+
+Admin
+
+### Ziel
+
+Einen bestehenden Hilfetext dauerhaft aus dem System entfernen.
+
+### Vorbedingungen
+
+- Der Hilfetext existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Admin-Rechte.
+
+### Ablauf
+
+1. Der Akteur öffnet die Hilfetext-Verwaltung.
+2. Der Akteur wählt einen bestehenden Hilfetext aus.
+3. Der Akteur löst die Löschaktion aus.
+4. Das System prüft die Berechtigung des Akteurs.
+5. Das System löscht den Hilfetext persistent.
+6. Das System aktualisiert die Hilfetextliste.
+
+### Alternativen
+
+- Der Hilfetext existiert nicht → Das System antwortet mit einem Fehlerstatus.
+- Der Akteur besitzt keine Admin-Rechte → Das System blockiert mit einem Berechtigungsfehler.
+- Technischer Fehler → Das System löscht nicht und liefert einen Fehlerstatus zurück.
+
+### Ergebnis
+
+Der Hilfetext ist nicht mehr im System vorhanden und kann über seinen help_key nicht mehr abgerufen werden.
+
+### UC 16/07: Versionskonflikt bei paralleler Bearbeitung eines Hilfetextes
+
+### Akteur
+
+Admin
+
+### Ziel
+
+Sicherstellen, dass parallele Änderungen an einem Hilfetext nicht zu stillen Überschreibungen führen.
+
+### Vorbedingungen
+
+- Der Hilfetext existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Admin-Rechte.
+- Der Hilfetext besitzt eine gültige Versionskennung.
+
+### Ablauf
+
+1. Der Akteur öffnet einen bestehenden Hilfetext zur Bearbeitung.
+2. Das System übermittelt die aktuelle Versionskennung des Hilfetextes.
+3. Ein zweiter Akteur speichert zwischenzeitlich eine Änderung desselben Hilfetextes.
+4. Das System erhöht die Versionskennung nach erfolgreicher Speicherung.
+5. Der erste Akteur speichert auf Basis der veralteten Versionskennung.
+6. Das System erkennt die veraltete Versionskennung.
+7. Das System blockiert die Speicherung mit einem Konfliktstatus.
+8. Das System fordert den Akteur auf, den aktuellen Stand neu zu laden.
+
+### Alternativen
+
+- Der Akteur lädt den aktuellen Stand und speichert erneut → Die Speicherung erfolgt erfolgreich auf Basis der aktuellen Versionskennung.
+- Der Akteur bricht ab → Der zuletzt erfolgreich gespeicherte Stand bleibt unverändert.
+
+### Ergebnis
+
+Es entstehen keine Lost Updates. Der Hilfetext bleibt konsistent und entspricht stets dem zuletzt erfolgreich gespeicherten Zustand.
+
+### UC 16/08: Unberechtigter Zugriff auf Hilfetext-Verwaltung verhindern
+
+### Akteur
+
+Disponent, Leser
+
+### Ziel
+
+Sicherstellen, dass nur Administratoren Hilfetexte anlegen, bearbeiten, aktivieren, deaktivieren oder löschen dürfen.
+
+### Vorbedingungen
+
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt keine Admin-Rechte.
+
+### Ablauf
+
+1. Der Akteur versucht, die Hilfetext-Verwaltung aufzurufen oder eine Verwaltungsaktion auszuführen.
+2. Das System prüft serverseitig die Rolle des Akteurs.
+3. Das System verweigert den Zugriff auf Verwaltungsfunktionen.
+4. Das System liefert einen Berechtigungsfehler zurück.
+
+### Alternativen
+
+- Der Akteur versucht, direkt über einen API-Endpunkt eine Verwaltungsaktion auszuführen → Das System prüft die Rolle und blockiert ebenfalls mit einem Berechtigungsfehler.
+- Technischer Fehler → Das System liefert einen Fehlerstatus zurück.
+
+### Ergebnis
+
+Nicht berechtigte Rollen können keine Hilfetexte anlegen, bearbeiten, aktivieren, deaktivieren oder löschen. Die Integrität der Hilfetexte bleibt gewahrt.
 
 # FT (17): UI Komposition
 
-## Ziel / Zweck
+## FT (17) Ziel / Zweck
 
 Dieses Feature definiert eine eigene, klar abgegrenzte Kompositionsschicht für UI-Bausteine und die dazugehörige Dokumentation. Das Ziel ist es, wiederkehrende Layout- und Strukturmuster als verbindliche Vorlagen zu etablieren, sodass neue Screens nicht jedes Mal „frei“ komponiert werden, sondern sich kontrolliert aus stabilen, getesteten Mustern zusammensetzen. Dadurch sinken Komplexität, UI-Drift und Duplikation, während Refactorings nachvollziehbar und risikoarm bleiben.
 
 Dieses Feature ist bewusst kein Fachfeature, sondern eine technische und gestalterische Leitplanke. Es beschreibt, welche UI-Komponenten als „Kompositionsvorlagen“ gelten, wie sie verwendet werden, welche Slots und Zuständigkeiten sie besitzen und wie sich neue Patterns ergänzen lassen, ohne bestehende Screens zu destabilisieren.
 
-## Fachliche Beschreibung
+## FT (17) Fachliche Beschreibung
 
 ### UI-Komponenten-Dokumentation
 
@@ -5969,7 +6650,7 @@ Arbeitsreihenfolge:
 - Bekannte Einschränkungen:
 ```
 
-## Regeln & Randbedingungen
+## FT (17) Regeln & Randbedingungen
 
 Die Kompositionsschicht enthält ausschließlich Layout- und Strukturkomponenten, die keine fachliche Logik besitzen und keine Datenhaltung erzwingen. Fachlogik, Mutationen und Validierungen verbleiben in den Feature-Screens oder in fachnahen Hooks, während die Kompositionskomponenten nur definierte Slots bereitstellen.
 
@@ -5981,17 +6662,17 @@ Neue Kompositionskomponenten werden nur dann eingeführt, wenn sie mindestens zw
 
 # FT (18): User Preferences
 
-## ZIEL / ZWECK
+## FT (18) Ziel / Zweck
 
 Dieses Feature stellt editierbare Einstellungen zu App-Funktionen direkt in der Anwendung bereit. Ziel ist, dass definierte Verhaltensweisen und Parameter ohne Code-Änderungen konfigurierbar sind und die Lösung auch bei wachsender Anzahl und Vielfalt von Einstellungstypen stabil und wartbar bleibt.
 
-## FACHLICHE BESCHREIBUNG
+## FT (18) Fachliche Beschreibung
 
 Die Anwendung bietet eine zentrale Oberfläche, in der berechtigte Nutzer Einstellungen anzeigen und ändern können. Jede Einstellung ist durch einen eindeutigen Schlüssel identifiziert und besitzt einen fest definierten Datentyp sowie einen Standardwert. Der wirksame Wert ergibt sich aus einem gespeicherten Wert; sofern kein Wert gespeichert ist, gilt der Standardwert.
 
 Die Eingabe und Darstellung in der UI erfolgt generisch anhand des Einstellungstyps. Bool-Einstellungen werden als Schalter bedient, Zahlen als numerische Eingabe und Farben über eine Farbauswahl. Das System ist so gestaltet, dass weitere Typen und neue Einstellungen ergänzt werden können, ohne dass dafür für jede Einstellung eine eigene Persistenzlogik oder ein eigener Screen erforderlich wird.
 
-## REGELN & RANDBEDINGUNGEN
+## FT (18) Regeln & Randbedingungen
 
 Eine Einstellung darf nur gespeichert werden, wenn der Wert zum definierten Typ passt und die fachlich vorgesehenen Constraints erfüllt. Ungültige Eingaben werden abgelehnt und mit einer verständlichen Fehlermeldung zurückgemeldet.
 
@@ -6001,57 +6682,161 @@ Berechtigungen müssen eindeutig greifen. Normale Nutzer dürfen ausschließlich
 
 Zu Beginn müssen mindestens die Typen Zahl, Bool (Aktivität) und Farbe unterstützt werden. Weitere Typen wie Text, Auswahlwerte (Enum) oder Wertebereiche (Min/Max/Step) sollen später ohne Bruch ergänzt werden können.
 
-## USE CASES
+## FT (18) Use Cases
 
-### UC: PERSÖNLICHE EINSTELLUNG ÄNDERN
+### UC 18/01: Persönliche Einstellung ändern
 
-**AKTEUR**
+### Akteur
 
-Nutzer
+Disponent, Leser, Admin
 
-**ZIEL**
+### Ziel
 
-Der Nutzer passt eine persönliche Einstellung an, sodass die App sich entsprechend verhält.
+Eine persönliche Einstellung ändern, sodass diese ausschließlich für den jeweiligen Akteur wirksam ist.
 
-**VORBEDINGUNGEN**
+### Vorbedingungen
 
-Der Nutzer ist angemeldet.
+- Der Akteur ist authentifiziert.
+- Die persönliche Einstellung ist im System definiert.
+- Für den Akteur existiert ein gültiger Benutzerkontext.
 
-Der Nutzer ist berechtigt, die betroffene Einstellung zu bearbeiten.
+### Ablauf
 
-Die Einstellung ist in der Oberfläche sichtbar.
+1. Der Akteur öffnet den Bereich für persönliche Einstellungen.
+2. Das System lädt die aktuell gespeicherten Einstellungen des Akteurs.
+3. Der Akteur ändert eine oder mehrere Einstellungen.
+4. Der Akteur speichert die Änderungen.
+5. Das System validiert Datentyp und Wertebereich der geänderten Einstellungen.
+6. Das System speichert die Einstellungen persistent und ordnet sie eindeutig dem Akteur zu.
+7. Das System bestätigt die erfolgreiche Speicherung.
+8. Die geänderte Einstellung wird bei zukünftigen Aktionen des Akteurs angewendet.
 
-**ABLAUF**
+### Alternativen
 
-Der Nutzer öffnet die Seite „Einstellungen“.
+- Ungültiger Wert → Das System lehnt die Speicherung mit Validierungsfehler ab.
+- Der Akteur bricht ab → Es erfolgt keine Änderung.
+- Technischer Fehler → Das System speichert nicht und liefert einen Fehlerstatus zurück.
 
-Der Nutzer sieht den aktuell wirksamen Wert der Einstellung.
+### Ergebnis
 
-Der Nutzer ändert den Wert über das zum Typ passende Eingabeelement.
+Die geänderte Einstellung ist persistent gespeichert und wirkt ausschließlich für den betreffenden Akteur. Andere Akteure sind nicht betroffen.
 
-Der Nutzer speichert die Änderung.
+### UC 18/02: Persönliche Einstellung auf Standardwert zurücksetzen
 
-Das System validiert den Wert und übernimmt ihn bei Erfolg.
+### Akteur
 
-**ALTERNATIVEN**
+Disponent, Leser, Admin
 
-Der Nutzer bricht den Vorgang ab, dann bleibt der bisher wirksame Wert unverändert.
+### Ziel
 
-Der Nutzer gibt einen ungültigen Wert ein, dann lehnt das System ab und zeigt eine Fehlermeldung; es wird nichts gespeichert.
+Eine persönliche Einstellung auf den systemseitig definierten Standardwert zurücksetzen.
 
-**ERGEBNIS**
+### Vorbedingungen
 
-Der neue Wert ist gespeichert und für den Nutzer wirksam.
+- Der Akteur ist authentifiziert.
+- Für die betreffende Einstellung ist ein systemweiter Standardwert definiert.
+- Für den Akteur existiert eine gespeicherte individuelle Einstellung.
+
+### Ablauf
+
+1. Der Akteur öffnet den Bereich für persönliche Einstellungen.
+2. Das System lädt die aktuell gespeicherten Einstellungen des Akteurs.
+3. Der Akteur wählt für eine Einstellung die Funktion „Auf Standard zurücksetzen“.
+4. Der Akteur bestätigt die Aktion.
+5. Das System entfernt oder überschreibt den individuellen Wert des Akteurs.
+6. Das System speichert den Standardwert als wirksame Einstellung.
+7. Das System bestätigt die erfolgreiche Zurücksetzung.
+8. Bei zukünftigen Aktionen wird der Standardwert angewendet.
+
+### Alternativen
+
+- Der Akteur bricht die Zurücksetzung ab → Der individuelle Wert bleibt unverändert.
+- Für die Einstellung existiert kein definierter Standardwert → Das System blockiert die Aktion mit einem Fehlerstatus.
+- Technischer Fehler → Das System speichert nicht und liefert einen Fehlerstatus zurück.
+
+### Ergebnis
+
+Die persönliche Einstellung entspricht dem systemweit definierten Standardwert und wirkt ausschließlich für den betreffenden Akteur.
+
+### UC 18/03: Unberechtigten Zugriff auf persönliche Einstellungen verhindern
+
+### Akteur
+
+Disponent, Leser, Admin
+
+### Ziel
+
+Sicherstellen, dass ein Akteur ausschließlich seine eigenen persönlichen Einstellungen einsehen und ändern kann.
+
+### Vorbedingungen
+
+- Der Akteur ist authentifiziert.
+- Für mindestens einen weiteren Akteur existieren gespeicherte persönliche Einstellungen.
+
+### Ablauf
+
+1. Der Akteur ruft den Bereich für persönliche Einstellungen auf.
+2. Das System ermittelt anhand des Benutzerkontextes die Identität des Akteurs.
+3. Das System lädt ausschließlich die dem Akteur zugeordneten Einstellungen.
+4. Der Akteur versucht, direkt oder indirekt Einstellungen eines anderen Akteurs abzurufen oder zu ändern.
+5. Das System prüft serverseitig die Benutzerzuordnung.
+6. Das System verweigert den Zugriff auf fremde Einstellungen und liefert einen Berechtigungsfehler zurück.
+
+### Alternativen
+
+- Der Akteur ruft ausschließlich seine eigenen Einstellungen auf → Das System erlaubt Zugriff.
+- Technischer Fehler → Das System liefert einen Fehlerstatus zurück.
+
+### Ergebnis
+
+Ein Akteur kann ausschließlich seine eigenen persönlichen Einstellungen einsehen und ändern. Einstellungen anderer Akteure bleiben geschützt und unverändert.
+
+### UC 18/04: Versionskonflikt bei paralleler Änderung persönlicher Einstellungen
+
+### Akteur
+
+Disponent, Leser, Admin
+
+### Ziel
+
+Sicherstellen, dass parallele Änderungen persönlicher Einstellungen desselben Akteurs nicht zu stillen Überschreibungen führen.
+
+### Vorbedingungen
+
+- Der Akteur ist authentifiziert.
+- Für den Akteur existieren gespeicherte persönliche Einstellungen.
+- Die Einstellungen besitzen eine gültige Versionskennung.
+
+### Ablauf
+
+1. Der Akteur öffnet in Browser A den Bereich für persönliche Einstellungen.
+2. Das System übermittelt die aktuelle Versionskennung der Einstellungen.
+3. Der Akteur öffnet in Browser B ebenfalls den Bereich für persönliche Einstellungen.
+4. Browser A speichert eine Änderung der Einstellungen.
+5. Das System erhöht die Versionskennung nach erfolgreicher Speicherung.
+6. Browser B speichert eine Änderung auf Basis der veralteten Versionskennung.
+7. Das System erkennt die veraltete Versionskennung.
+8. Das System blockiert die Speicherung mit einem Konfliktstatus.
+9. Das System fordert den Akteur auf, den aktuellen Stand neu zu laden.
+
+### Alternativen
+
+- Der Akteur lädt den aktuellen Stand und speichert erneut → Die Speicherung erfolgt erfolgreich auf Basis der aktuellen Versionskennung.
+- Der Akteur bricht ab → Der zuletzt erfolgreich gespeicherte Stand bleibt unverändert.
+
+### Ergebnis
+
+Es entstehen keine Lost Updates. Die persönlichen Einstellungen entsprechen stets dem zuletzt erfolgreich gespeicherten Zustand des Akteurs.
 
 # FT (19): Attachments
 
-## Ziel / Zweck
+## FT (19) Ziel / Zweck
 
 Dieses Feature stellt eine domänenübergreifende Infrastruktur zur Verfügung, um Dateien strukturiert an fachliche Objekte zu binden. Ziel ist es, Upload, Speicherung, Anzeige und Download von Dokumenten einheitlich, sicher und wartbar umzusetzen, ohne die jeweilige Fachdomäne mit technischer Dateilogik zu belasten.
 
 Attachments sind keine fachlichen Kerndaten, sondern ergänzende Dokumente zur Dokumentation, Nachvollziehbarkeit und Kommunikation.
 
-## Fachliche Beschreibung
+## FT (19) Fachliche Beschreibung
 
 Ein Attachment ist eine Datei, die eindeutig einem Parent-Objekt zugeordnet ist. Ein Attachment kann nie ohne Parent existieren.
 
@@ -6077,7 +6862,7 @@ Das Öffnen eines Attachments kann je nach Dateityp inline (z. B. PDF, Bild) ode
 
 Eine physische Löschung von Attachments ist systemweit nicht vorgesehen.
 
-## Regeln & Randbedingungen
+## FT (19) Regeln & Randbedingungen
 
 ### Allgemeine Struktur
 
@@ -6130,9 +6915,9 @@ Direkter Zugriff auf das Upload-Verzeichnis ist nicht vorgesehen.
 - UI-seitige Einschränkungen ersetzen keine serverseitige Prüfung.
 - Der Download erfolgt ausschließlich nach erfolgreicher Identifikation des Attachments.
 
-## Use Cases
+## FT (19) Use Cases
 
-### UC: Attachment hochladen
+### UC 19/01: Attachment hochladen
 
 **Akteur**
 
@@ -6140,34 +6925,49 @@ Disponent
 
 **Ziel**
 
-Eine Datei einem bestehenden Parent-Objekt (z. B. Projekt, Kunde oder Mitarbeiter) hinzufügen.
+Eine Datei einem bestehenden Parent-Objekt (Projekt, Kunde oder Mitarbeiter) hinzufügen.
 
 **Vorbedingungen**
 
-- Das Parent-Objekt existiert.
-- Der Benutzer ist berechtigt, das Parent-Objekt zu bearbeiten.
+- Das Parent-Objekt existiert persistent.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Änderungsrechte für das Parent-Objekt.
 - Die Detailansicht des Parent-Objekts ist geöffnet.
+- Die maximal zulässige Dateigröße ist systemseitig definiert.
 
 **Ablauf**
 
-1. Der Benutzer wählt die Funktion „Attachment hinzufügen“.
+1. Der Akteur wählt in der Detailansicht des Parent-Objekts die Funktion „Attachment hinzufügen“.
 2. Das System öffnet einen Dateiauswahldialog.
-3. Der Benutzer wählt eine Datei aus.
+3. Der Akteur wählt eine lokale Datei aus.
 4. Das System überträgt die Datei per Multipart-Request an den Server.
-5. Das System speichert die Datei im definierten Upload-Verzeichnis.
-6. Das System speichert die Metadaten in der entsprechenden Attachment-Tabelle.
-7. Das System aktualisiert die Attachmentliste in der UI.
+5. Das System prüft serverseitig:
+    - Authentifizierung,
+    - Berechtigung des Akteurs,
+    - Existenz des Parent-Objekts,
+    - Dateigröße,
+    - grundlegende Dateieigenschaften.
+6. Das System generiert einen eindeutigen persistenten Speichername.
+7. Das System speichert die Datei im definierten Upload-Verzeichnis.
+8. Das System legt einen Attachment-Datensatz mit Parent-Referenz an.
+9. Das System speichert Metadaten (Originaldateiname, persistenter Speichername, MIME-Typ, Dateigröße, Erstellungszeitpunkt).
+10. Das System aktualisiert die Attachmentliste in der UI.
 
 **Alternativabläufe**
 
-- Upload wird abgebrochen → Es wird kein Attachment gespeichert.
-- Fehler bei Speicherung → Das System zeigt eine Fehlermeldung und speichert nichts.
+- Der Akteur bricht den Upload vor Bestätigung ab → Es wird kein Attachment gespeichert.
+- Das Parent-Objekt existiert nicht → System antwortet mit 404.
+- Der Akteur besitzt keine Änderungsrechte → System blockiert mit 403.
+- Die Datei überschreitet das Größenlimit oder ist ungültig → System antwortet mit 400, speichert nichts.
+- Technischer Fehler bei Speicherung → System antwortet mit 500, speichert nichts.
 
 **Ergebnis**
 
-Die Datei ist gespeichert und eindeutig dem Parent-Objekt zugeordnet.
+- Die Datei ist persistent gespeichert.
+- Ein Attachment-Datensatz mit korrekter Parent-Referenz existiert.
+- Die Attachmentliste zeigt das neue Attachment konsistent an.
 
-### UC: Attachmentliste anzeigen
+### UC 19/02: Attachmentliste anzeigen
 
 **Akteur**
 
@@ -6175,28 +6975,39 @@ Disponent, Leser (rollenabhängig)
 
 **Ziel**
 
-Alle einem Parent-Objekt zugeordneten Attachments einsehen.
+Alle einem Parent-Objekt zugeordneten Attachments anzeigen.
 
 **Vorbedingungen**
 
 - Das Parent-Objekt existiert.
-- Der Benutzer besitzt Leserechte.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Leserechte für das Parent-Objekt.
 
 **Ablauf**
 
-1. Der Benutzer öffnet die Detailansicht des Parent-Objekts.
-2. Das System lädt alle zugeordneten Attachments.
-3. Das System zeigt eine strukturierte Liste mit Dateiname und Metadaten an.
+1. Der Akteur öffnet die Detailansicht des Parent-Objekts.
+2. Das System prüft serverseitig die Leseberechtigung.
+3. Das System lädt alle dem Parent-Objekt zugeordneten Attachments.
+4. Das System liefert für jedes Attachment mindestens:
+    - Originaldateiname,
+    - Dateigröße,
+    - MIME-Typ,
+    - Erstellungszeitpunkt.
+5. Das System zeigt die strukturierte Liste in der UI an.
 
 **Alternativabläufe**
 
-- Keine Attachments vorhanden → Das System zeigt eine leere Liste an.
+- Keine Attachments vorhanden → System zeigt eine leere Liste.
+- Parent-Objekt existiert nicht → System antwortet mit 404.
+- Akteur ohne Leserechte → System blockiert mit 403.
+- Technischer Fehler → System antwortet mit 500.
 
 **Ergebnis**
 
-Die vorhandenen Attachments des Parent-Objekts sind sichtbar.
+- Alle vorhandenen Attachments sind vollständig und konsistent sichtbar.
+- Es werden keine Daten verändert.
 
-### UC: Attachment öffnen (Inline-Anzeige)
+### UC 19/03: Attachment öffnen (Inline-Anzeige)
 
 **Akteur**
 
@@ -6204,29 +7015,41 @@ Disponent, Leser (rollenabhängig)
 
 **Ziel**
 
-Ein Attachment direkt im Browser anzeigen, sofern der Dateityp dies unterstützt.
+Ein Attachment direkt im Browser anzeigen, sofern der Dateityp Inline-Anzeige unterstützt.
 
 **Vorbedingungen**
 
 - Das Attachment existiert.
-- Der Benutzer besitzt Leserechte.
+- Das zugehörige Parent-Objekt existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Leserechte für das Parent-Objekt.
 
 **Ablauf**
 
-1. Der Benutzer wählt ein Attachment aus der Liste.
-2. Das System ruft den Download-Endpunkt auf.
-3. Das System liefert die Datei mit korrektem MIME-Typ und Inline-Disposition aus.
-4. Der Browser zeigt die Datei an (z. B. PDF oder Bild).
+1. Der Akteur wählt ein Attachment aus der Liste.
+2. Das System prüft serverseitig:
+    - Existenz des Attachments,
+    - Existenz des Parent-Objekts,
+    - Leseberechtigung des Akteurs.
+3. Das System ruft den Download-Endpunkt auf.
+4. Das System liefert die Datei mit:
+    - korrektem MIME-Typ,
+    - Content-Disposition „inline“, sofern Dateityp Inline-Anzeige erlaubt.
+5. Der Browser zeigt die Datei an.
 
 **Alternativabläufe**
 
-- Dateityp nicht inlinefähig → Das System liefert die Datei als Download.
+- Dateityp nicht inlinefähig → System liefert Content-Disposition „attachment“.
+- Attachment existiert nicht → System antwortet mit 404.
+- Akteur ohne Leserechte → System blockiert mit 403.
+- Technischer Fehler → System antwortet mit 500.
 
 **Ergebnis**
 
-Das Attachment wird im Browser angezeigt oder entsprechend behandelt.
+- Das Attachment wird inline angezeigt oder als Download behandelt.
+- Es werden keine persistenten Daten verändert.
 
-### UC: Attachment herunterladen
+### UC 19/04: Attachment herunterladen
 
 **Akteur**
 
@@ -6239,24 +7062,36 @@ Ein Attachment lokal speichern.
 **Vorbedingungen**
 
 - Das Attachment existiert.
-- Der Benutzer besitzt Leserechte.
+- Das zugehörige Parent-Objekt existiert.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt Leserechte für das Parent-Objekt.
 
 **Ablauf**
 
-1. Der Benutzer wählt die Download-Funktion für ein Attachment.
-2. Das System ruft den Download-Endpunkt mit Download-Parameter auf.
-3. Das System liefert die Datei mit korrekter Content-Disposition „attachment“.
-4. Der Browser startet den Download.
+1. Der Akteur wählt die Download-Funktion für ein Attachment.
+2. Das System prüft serverseitig:
+    - Existenz des Attachments,
+    - Existenz des Parent-Objekts,
+    - Leseberechtigung des Akteurs.
+3. Das System ruft den Download-Endpunkt mit Download-Parameter auf.
+4. Das System liefert:
+    - korrekten MIME-Typ,
+    - Content-Disposition „attachment“,
+    - den gespeicherten Dateistream.
+5. Der Browser startet den Download.
 
 **Alternativabläufe**
 
-- Datei nicht auffindbar → Das System liefert eine Fehlermeldung.
+- Attachment nicht auffindbar → System antwortet mit 404.
+- Akteur ohne Leserechte → System blockiert mit 403.
+- Technischer Fehler → System antwortet mit 500.
 
 **Ergebnis**
 
-Die Datei wird lokal gespeichert.
+- Die Datei wird lokal gespeichert.
+- Es werden keine persistenten Daten verändert.
 
-### UC: Attachment-Upload validieren (Größe / Typ)
+### UC 19/05: Attachment-Upload validieren (Größe / Typ)
 
 **Akteur**
 
@@ -6264,29 +7099,34 @@ System
 
 **Ziel**
 
-Sicherstellen, dass nur zulässige Dateien gespeichert werden.
+Sicherstellen, dass ausschließlich zulässige Dateien gespeichert werden.
 
 **Vorbedingungen**
 
-- Eine Datei wurde zum Upload übergeben.
+- Eine Datei wurde im Rahmen eines Upload-Vorgangs übermittelt.
 
 **Ablauf**
 
-1. Das System prüft die Dateigröße gegen das definierte Limit.
-2. Das System prüft grundlegende Dateieigenschaften (z. B. MIME-Typ).
-3. Bei gültiger Datei wird der Upload fortgesetzt.
-4. Bei ungültiger Datei wird der Upload abgebrochen.
+1. Das System liest die übermittelte Dateigröße.
+2. Das System vergleicht die Größe mit dem definierten Maximalwert.
+3. Das System ermittelt grundlegende Dateieigenschaften (z. B. MIME-Typ).
+4. Das System prüft, ob der Dateityp grundsätzlich zulässig ist.
+5. Bei gültiger Datei wird der Upload-Prozess fortgesetzt.
+6. Bei ungültiger Datei wird der Upload-Prozess abgebrochen.
 
 **Alternativabläufe**
 
-- Datei überschreitet Größenlimit → Das System antwortet mit Fehler.
-- Datei ungültig → Das System speichert nicht und meldet den Fehler.
+- Datei überschreitet Größenlimit → System antwortet mit 400 und speichert nichts.
+- Datei besitzt unzulässigen Typ → System antwortet mit 400 und speichert nichts.
+- Technischer Fehler bei Validierung → System antwortet mit 500 und speichert nichts.
 
 **Ergebnis**
 
-Nur valide Dateien werden persistiert.
+- Nur valide Dateien werden persistiert.
+- Ungültige Dateien werden vollständig verworfen.
+- Es entstehen keine unvollständigen Attachment-Datensätze.
 
-### UC: Attachment einem Parent-Objekt zuordnen
+### UC 19/06: Attachment physisch löschen verhindern
 
 **Akteur**
 
@@ -6294,30 +7134,106 @@ System
 
 **Ziel**
 
-Ein Attachment eindeutig mit einem bestehenden Parent-Objekt verknüpfen.
+Sicherstellen, dass Attachments systemweit nicht physisch gelöscht werden können.
 
 **Vorbedingungen**
 
-- Das Parent-Objekt existiert.
-- Die Datei wurde erfolgreich gespeichert.
+- Ein Attachment-Datensatz existiert.
+- Ein Löschversuch wird initiiert (direkt oder indirekt, z. B. über API).
 
 **Ablauf**
 
-1. Das System prüft die Existenz des Parent-Objekts.
-2. Das System erzeugt einen Attachment-Datensatz mit Parent-ID.
-3. Das System speichert den Datensatz in der domänenspezifischen Attachment-Tabelle.
+1. Das System prüft, ob eine Löschoperation für ein Attachment angefordert wurde.
+2. Das System erkennt, dass physische Löschung von Attachments nicht vorgesehen ist.
+3. Das System blockiert die Löschoperation.
+4. Das System liefert einen definierten Fehlerstatus zurück.
 
 **Alternativabläufe**
 
-- Parent nicht vorhanden → Speicherung wird abgebrochen.
+- Technischer Fehler → System antwortet mit 500.
 
 **Ergebnis**
 
-Das Attachment ist eindeutig und referenziell korrekt dem Parent-Objekt zugeordnet.
+- Der Attachment-Datensatz bleibt unverändert bestehen.
+- Die physische Datei bleibt im Upload-Verzeichnis erhalten.
+- Es entstehen keine verwaisten Referenzen.
+
+### UC 19/07: Verhalten bei Löschung eines Parent-Objekts
+
+**Akteur**
+
+Administrator, Disponent
+
+**Ziel**
+
+Sicherstellen, dass bei Löschung eines Parent-Objekts keine verwaisten Attachment-Referenzen entstehen.
+
+**Vorbedingungen**
+
+- Ein Parent-Objekt (Projekt, Kunde oder Mitarbeiter) existiert.
+- Dem Parent-Objekt sind ein oder mehrere Attachments zugeordnet.
+- Der Akteur besitzt Löschrechte für das Parent-Objekt.
+
+**Ablauf**
+
+1. Der Akteur initiiert die Löschung des Parent-Objekts.
+2. Das System prüft die Berechtigung des Akteurs.
+3. Das System prüft referenzielle Integrität.
+4. Das System entfernt den Parent-Datensatz gemäß den Regeln des jeweiligen Features.
+5. Das System stellt sicher, dass Attachment-Datensätze nicht ohne Parent-Zuordnung bestehen bleiben.
+6. Das System verhindert verwaiste Fremdschlüsselzustände.
+
+**Alternativabläufe**
+
+- Parent-Objekt existiert nicht → System antwortet mit 404.
+- Akteur ohne Löschrechte → System blockiert mit 403.
+- Technischer Fehler → System antwortet mit 500.
+
+**Ergebnis**
+
+- Es existieren keine verwaisten Attachment-Referenzen.
+- Die physische Löschung der Datei erfolgt weiterhin nicht.
+- Die Datenbank bleibt konsistent.
+
+### UC 19/08: Serverseitige Berechtigungsprüfung bei Attachment-Zugriff
+
+**Akteur**
+
+System
+
+**Ziel**
+
+Sicherstellen, dass jeder Zugriff auf ein Attachment ausschließlich auf Basis der Parent-Berechtigungen erfolgt.
+
+**Vorbedingungen**
+
+- Ein Attachment existiert.
+- Ein Zugriff (Anzeige oder Download) wird angefordert.
+
+**Ablauf**
+
+1. Das System identifiziert das angeforderte Attachment.
+2. Das System ermittelt das zugehörige Parent-Objekt.
+3. Das System prüft die Berechtigung des Akteurs für dieses Parent-Objekt.
+4. Bei gültiger Berechtigung wird der Zugriff gewährt.
+5. Bei fehlender Berechtigung wird der Zugriff verweigert.
+
+**Alternativabläufe**
+
+- Attachment existiert nicht → System antwortet mit 404.
+- Parent-Objekt existiert nicht → System antwortet mit 404.
+- Akteur ohne Berechtigung → System blockiert mit 403.
+- Technischer Fehler → System antwortet mit 500.
+
+**Ergebnis**
+
+- Attachment-Zugriffe sind vollständig an Parent-Berechtigungen gebunden.
+- Es existieren keine eigenständigen Attachment-Berechtigungen.
+- Direkter Zugriff auf das Upload-Verzeichnis ist nicht möglich.
 
 # FT (20): Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung
 
-## Ziel / Zweck
+## FT (20) Ziel / Zweck
 
 Dieses Feature definiert die fachliche Bedeutung der Rollen **Admin**, **Disponent(in)** und **Monteur** innerhalb der Anwendung und regelt, welche Funktionen, Aktionen und Navigationsbereiche rollenspezifisch verfügbar sind.
 
@@ -6325,7 +7241,7 @@ Ziel ist es, eine klare Verantwortungsstruktur im System zu etablieren, ohne die
 
 Die fachliche Sicherheit bleibt stets serverseitig abgesichert (vgl. FT (14)); FT (20) ergänzt diese Grundlage um UI-seitige Steuerung und klare Nutzungsmodelle.
 
-## Fachliche Beschreibung
+## FT (20) Fachliche Beschreibung
 
 Jeder Benutzer besitzt genau eine Rolle. Diese Rolle definiert seinen funktionalen Handlungsspielraum im System.
 
@@ -6382,7 +7298,7 @@ Die Oberfläche für Monteure ist funktional reduziert und enthält keine aktive
 4. Es wird keine Rechte-Matrix eingeführt.
 5. Rollen wirken ausschließlich auf Funktionsverfügbarkeit, nicht auf Datenmodellierung.
 
-## Regeln & Randbedingungen
+## FT (20) Regeln & Randbedingungen
 
 - Rollen ändern keine Datenmodelle.
 - Rollen beeinflussen keine Aggregationslogik.
@@ -6394,94 +7310,119 @@ Die Oberfläche für Monteure ist funktional reduziert und enthält keine aktive
 - Ein Monteur sieht alle Termine, jedoch ausschließlich im Lesemodus.
 - Der letzte Admin darf nicht entfernt oder herabgestuft werden.
 
-## Use Cases
+## FT (20) Use Cases
 
-### UC: Unzulässige Aktion wird blockiert
+### UC 20/01: Unzulässige Aktion wird blockiert
 
-**Akteur**
+### Akteur
 
-Benutzer ohne ausreichende Rolle
+Admin, Disponent, Monteur
 
-**Ziel**
+### Ziel
 
-Verhindern einer nicht erlaubten Mutation.
+Verhindern, dass ein Akteur eine fachliche Mutation ausführt, für die seine Rolle keine Berechtigung besitzt.
 
-**Vorbedingungen**
+### Vorbedingungen
 
-Benutzer besitzt nicht die erforderliche Rolle.
+- Der Akteur ist authentifiziert.
+- Die angeforderte Aktion erfordert eine bestimmte Rolle.
+- Der Akteur besitzt diese Rolle nicht.
 
-**Ablauf**
+### Ablauf
 
-1. Benutzer versucht geschützte Aktion.
-2. Server prüft Rolle.
-3. Server antwortet mit 403 und maschinenlesbarem Fehlercode.
+1. Akteur startet eine fachliche Mutation (z. B. Anlegen, Bearbeiten oder Löschen eines Objekts).
+2. Das System prüft serverseitig die Rolle des Akteurs.
+3. Das System vergleicht die Rolle mit den für die Aktion definierten Berechtigungen.
+4. Das System verweigert die Ausführung der Mutation.
+5. Das System antwortet mit HTTP-Status 403.
 
-**Ergebnis**
+### Alternativen
 
-Keine Datenänderung. System bleibt konsistent.
+- Die Aktion wird ausschließlich über die UI angeboten, aber serverseitig ebenfalls geprüft.
+- Der Akteur versucht einen Direktaufruf eines Endpunkts → Das System blockiert mit 403.
 
-### UC: Rollenabhängige Navigation anzeigen
+### Ergebnis
 
-**Akteur**
+Die Mutation wird nicht durchgeführt.
 
-Angemeldeter Benutzer
+Es erfolgt keine Datenänderung.
 
-**Ziel**
+### UC 20/02: Rollenabhängige Navigation anzeigen
 
-Die Navigation zeigt nur die für die Rolle vorgesehenen Bereiche.
+### Akteur
 
-**Vorbedingungen**
+Admin, Disponent, Monteur
 
-Der Benutzer ist authentifiziert und besitzt eine Rolle.
+### Ziel
 
-**Ablauf**
+Die Navigation zeigt ausschließlich die für die Rolle des Akteurs vorgesehenen Bereiche.
 
-1. Benutzer öffnet die Anwendung.
-2. Das System bestimmt serverseitig die Rolle.
-3. Die Navigation wird entsprechend gerendert.
-4. Nicht erlaubte Bereiche erscheinen nicht in der Sidebar.
+### Vorbedingungen
 
-**Alternativen**
+- Der Akteur ist authentifiziert.
+- Dem Akteur ist genau eine Rolle zugeordnet.
 
-Direktaufruf eines nicht erlaubten Bereichs → Server blockiert mit 403.
+### Ablauf
 
-**Ergebnis**
+1. Akteur öffnet die Anwendung.
+2. Das System ermittelt serverseitig die Rolle des Akteurs.
+3. Das System rendert die Navigation gemäß der Rollendefinition.
+4. Nicht zulässige Navigationspunkte werden nicht angezeigt.
+5. Bei Direktaufruf eines nicht zulässigen Bereichs prüft das System serverseitig die Berechtigung.
+6. Das System blockiert mit 403 bei fehlender Berechtigung.
 
-Die Oberfläche entspricht der funktionalen Rolle des Benutzers.
+### Alternativen
 
-### UC: Admin verwaltet Benutzerrollen
+- Der Akteur besitzt die höchste Rolle → Alle vorgesehenen Bereiche werden angezeigt.
+- Der Akteur besitzt ausschließlich Leserechte → Nur lesende Bereiche werden angezeigt.
 
-**Akteur**
+### Ergebnis
+
+Die Navigation entspricht der funktionalen Rolle.
+
+Unzulässige Bereiche sind weder sichtbar noch serverseitig zugänglich.
+
+### UC 20/03: Admin verwaltet Benutzerrollen
+
+### Akteur
 
 Admin
 
-**Ziel**
+### Ziel
 
-Benutzerrollen ändern.
+Die Rolle eines bestehenden Benutzers ändern.
 
-**Vorbedingungen**
+### Vorbedingungen
 
-Der Admin ist angemeldet. Mindestens ein weiterer Admin existiert oder der aktuelle bleibt erhalten.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt die Rolle Admin.
+- Der zu ändernde Benutzer existiert.
+- Mindestens ein Admin bleibt im System erhalten.
 
-**Ablauf**
+### Ablauf
 
-1. Admin öffnet Benutzerverwaltung.
-2. Admin wählt Benutzer.
-3. Admin ändert Rolle.
-4. System validiert: letzter Admin darf nicht entfallen.
-5. System speichert Änderung.
+1. Akteur öffnet die Benutzerverwaltung.
+2. Akteur wählt einen Benutzer aus.
+3. Akteur wählt eine neue Rolle.
+4. Das System prüft, ob durch die Änderung kein letzter Admin entfernt wird.
+5. Das System speichert die neue Rolle.
+6. Das System macht die neue Rolle unmittelbar wirksam.
 
-**Alternativen**
+### Alternativen
 
-Letzter Admin soll entfernt werden → System blockiert.
+- Der zu ändernde Benutzer existiert nicht → System antwortet mit 404.
+- Die Änderung würde den letzten Admin entfernen → System blockiert mit 409.
+- Der Akteur besitzt keine Admin-Rolle → System blockiert mit 403.
 
-**Ergebnis**
+### Ergebnis
 
-Die neue Rolle ist gespeichert und wirksam.
+Die neue Rolle ist persistiert.
+
+Die Berechtigungen des betroffenen Benutzers ändern sich entsprechend.
 
 # FT (21): KI-gestützte Dokumentenextraktion
 
-## Ziel / Zweck
+## FT (21) Ziel / Zweck
 
 FT (21) erweitert das System um eine kontextgebundene Dokumentenextraktion zur Unterstützung der Disposition.
 
@@ -6497,7 +7438,7 @@ Das Feature dient ausschließlich der Arbeitserleichterung.
 
 Es ersetzt keine bestehende Validierungs- oder Sicherheitslogik.
 
-## Fachliche Beschreibung
+## FT (21) Fachliche Beschreibung
 
 Die Extraktionsfunktion ist ausschließlich in folgenden Kontexten verfügbar:
 
@@ -6558,7 +7499,7 @@ Editorfeld (RTF/HTML-kompatibel):
 - Darstellung als strukturierte HTML-Auflistung.
 - Vollständig editierbar.
 
-## Regeln & Randbedingungen
+## FT (21) Regeln & Randbedingungen
 
 - Die Verarbeitung erfolgt ausschließlich serverseitig.
 - Es werden keine Dokumente oder Texte an externe Dienste übertragen.
@@ -6574,183 +7515,469 @@ Editorfeld (RTF/HTML-kompatibel):
 - Das Feature darf keine impliziten Datenänderungen auslösen.
 - Bei strukturell ungeeigneten Dokumenten muss der Prozess sauber abbrechen.
 
-## **Use Cases**
+## FT (21) **Use Cases**
 
-### UC: Dokumentextraktion starten
+### UC 21/01: Dokumentextraktion starten
 
-**Akteur**
+### Akteur
 
-Disponent oder Admin
+Disponent, Administrator
 
-**Ziel**
+### Ziel
 
-Ein Attachment analysieren und strukturierte Daten extrahieren.
+Ein geeignetes Dokument mittels regelbasierter Parsing-Prozesse analysieren und daraus strukturierte, editierbare Datenvorschläge erzeugen.
 
-**Vorbedingungen**
+### Vorbedingungen
 
-- Ein Attachment existiert.
-- Der Benutzer besitzt ausreichende Berechtigung.
+- Ein Attachment existiert und ist einem fachlichen Objekt zugeordnet.
 - Das Dokument ist technisch lesbar.
+- Der Akteur ist authentifiziert.
+- Der Akteur besitzt die Berechtigung zur Dokumentextraktion.
 
-**Ablauf**
+### Ablauf
 
-1. Der Benutzer wählt ein Attachment.
-2. Der Benutzer startet die Extraktion.
+1. Der Akteur wählt ein vorhandenes Attachment aus.
+2. Der Akteur startet die Funktion „Dokument extrahieren“.
 3. Das System extrahiert den Text aus dem Dokument.
-4. Das System analysiert den Text über die KI-Schicht.
-5. Das System validiert das Ergebnis.
-6. Das System zeigt die extrahierten Daten als Vorschlag an.
+4. Das System analysiert den Text mithilfe deterministischer Parsing-Regeln.
+5. Das System identifiziert strukturierte Bereiche wie Kundendaten, Artikelliste und projektbezogene Informationen.
+6. Das System validiert die extrahierten Daten gegen definierte Feld- und Formatregeln.
+7. Das System zeigt die extrahierten Daten als editierbaren Vorschlag in einem Dialog an.
 
-**Alternativen**
+### Alternativen
 
-- Dokument nicht lesbar → Fehlermeldung.
-- Validierung schlägt fehl → strukturierter Fehlerstatus.
+- Dokument ist technisch nicht lesbar → Das System bricht ab und zeigt eine Fehlermeldung an.
+- Parsing-Regeln liefern keine verwertbaren Daten → Das System zeigt einen Hinweis und erzeugt keinen Vorschlag.
+- Validierung schlägt fehl → Das System zeigt einen strukturierten Fehlerstatus an; es werden keine Daten persistiert.
 
-**Ergebnis**
+### Ergebnis
 
-Strukturierter, editierbarer Vorschlag wird angezeigt.
+Ein strukturierter, validierter und editierbarer Datenvorschlag wird angezeigt. Es wurden keine fachlichen Stammdaten persistiert.
 
-### UC: Extrahierte Daten bestätigen
+### UC 21/02: Extrahierte Daten bestätigen
 
-**Akteur**
+### Akteur
 
-Disponent oder Admin
+Disponent, Administrator
 
-**Ziel**
+### Ziel
 
-Extrahierte Daten prüfen, anpassen und übernehmen.
+Einen durch Parsing erzeugten Extraktionsvorschlag prüfen, anpassen und in die entsprechenden Domänenobjekte übernehmen.
 
-**Vorbedingungen**
+### Vorbedingungen
 
 - Ein validierter Extraktionsvorschlag liegt vor.
+- Der Akteur ist berechtigt, Kunden, Projekte oder Termine anzulegen oder zu verändern.
 
-**Ablauf**
+### Ablauf
 
-1. Benutzer prüft Kundendaten.
-2. Benutzer korrigiert ggf. Felder.
-3. Benutzer prüft Artikelliste.
-4. Benutzer bestätigt Übernahme.
-5. System speichert Daten in den entsprechenden Domänen.
+1. Der Akteur prüft die vorbefüllten Kundendaten.
+2. Der Akteur passt bei Bedarf einzelne Felder an.
+3. Der Akteur prüft die extrahierte Artikelliste.
+4. Der Akteur bestätigt die Übernahme.
+5. Das System validiert die Daten gemäß den jeweiligen Domänenregeln.
+6. Das System persistiert die Daten transaktional in den betroffenen Domänenobjekten.
+7. Das System aktualisiert betroffene Sichten und Auswahlkomponenten.
 
-**Alternativen**
+### Alternativen
 
-- Benutzer bricht ab → keine Speicherung.
-- Validierungsfehler bei Speicherung → Fehlermeldung.
+- Der Akteur bricht den Vorgang ab → Es erfolgt keine Speicherung; bestehende Daten bleiben unverändert.
+- Bei der Persistierung tritt ein Validierungsfehler auf → Das System zeigt eine Fehlermeldung an; es werden keine Teilzustände gespeichert.
+- Während der Persistierung tritt ein Versionskonflikt auf → Das System bricht ab und informiert den Akteur; es erfolgt keine Speicherung.
 
-**Ergebnis**
+### Ergebnis
 
-Daten sind persistiert und fachlich korrekt zugeordnet.
+Die bestätigten Daten sind persistent gespeichert und fachlich korrekt den jeweiligen Domänenobjekten zugeordnet.
 
-### UC: Ungeeignetes Dokument behandeln
+### UC 21/03: Ungeeignetes Dokument behandeln
 
-**Akteur**
+### Akteur
 
-Disponent
+Disponent, Administrator
 
-**Ziel**
+### Ziel
 
-Fehlverarbeitung bei ungeeigneten Dokumenten vermeiden.
+Sicherstellen, dass ungeeignete oder nicht strukturierbare Dokumente nicht zu inkonsistenten Daten führen.
 
-**Vorbedingungen**
+### Vorbedingungen
 
-- Dokument enthält keine strukturierbaren Daten.
+- Das Dokument enthält keine ausreichend strukturierbaren Daten oder entspricht nicht dem erwarteten Format.
+- Der Akteur startet die Dokumentextraktion.
 
-**Ablauf**
+### Ablauf
 
-1. Benutzer startet Extraktion.
-2. System erkennt unzureichende Struktur oder Validierungsfehler.
-3. System bricht mit klarer Meldung ab.
+1. Der Akteur startet die Extraktion.
+2. Das System extrahiert den Text.
+3. Das System führt die Parsing-Regeln aus.
+4. Das System erkennt, dass keine hinreichend verwertbaren strukturierten Daten erzeugt werden können.
+5. Das System bricht den Prozess mit einer klaren Fehlermeldung ab.
 
-**Ergebnis**
+### Alternativen
 
-Keine Datenänderung. System bleibt konsistent.
+- Das Dokument enthält teilweise verwertbare Daten → Das System zeigt nur valide Teilbereiche als Vorschlag an und kennzeichnet unvollständige Felder.
 
-### UC: Kategorisierung schlägt fehl
+### Ergebnis
 
-Wenn die semantische Gruppierung nicht eindeutig möglich ist:
+Es erfolgt keine Persistierung fachlicher Daten. Das System bleibt konsistent.
 
-- Artikelliste wird in Originalreihenfolge angezeigt.
-- Keine Blockade des Prozesses.
+### UC 21/04: Kategorisierung schlägt fehl
 
-### UC: Dokumentextraktion im Formular „Neues Projekt“ starten
+### Akteur
 
-**Akteur:** Disponent / Admin
+Disponent, Administrator
 
-**Vorbedingungen:**
+### Ziel
 
-- Formular „Neues Projekt“ geöffnet
-- Berechtigung vorhanden
+Sicherstellen, dass eine fehlgeschlagene regelbasierte Gruppierung von Positionen die Extraktion nicht blockiert.
 
-**Ablauf:**
+### Vorbedingungen
 
-1. Benutzer zieht PDF in Extraktionsbereich.
-2. System verarbeitet Dokument.
-3. Ergebnisdialog erscheint.
+- Eine Artikelliste wurde extrahiert.
+- Die regelbasierte Gruppierung liefert kein eindeutiges Ergebnis.
 
-**Ergebnis:**
+### Ablauf
 
-Editierbarer Vorschlag wird angezeigt.
+1. Das System versucht, die Artikelliste anhand definierter Regeln zu gruppieren.
+2. Das System erkennt, dass keine eindeutige Gruppierung möglich ist.
+3. Das System stellt die Artikelliste in der ursprünglichen Reihenfolge dar.
+4. Der Akteur kann die Liste weiterhin bearbeiten und übernehmen.
 
-### UC: Dokumentextraktion im Formular „Neuer Termin“ starten
+### Alternativen
 
-Analog zum Projekt-Kontext, jedoch mit Termin-spezifischen Scope-Regeln.
+- Teilweise Gruppierung möglich → Das System gruppiert nur eindeutig identifizierbare Bereiche; übrige Positionen bleiben in Originalreihenfolge.
 
-### UC: Kundendaten übernehmen – Scope Neues Projekt
+### Ergebnis
 
-### Fall A: Kein Kunde ausgewählt
+Die Extraktion bleibt nutzbar. Es wird keine Blockade des Prozesses verursacht.
 
-- Nachfrage: „Kunde mit den erkannten Daten neu anlegen?“
-- Duplikatsprüfung erfolgt.
-- Kunde wird angelegt und im Projekt gesetzt.
+### UC 21/05: Dokumentextraktion im Formular „Neues Projekt“ starten
 
-### Fall B: Kunde bereits ausgewählt
+### Akteur
 
-- Nachfrage: „Der aktuell gewählte Kunde wird ersetzt. Fortfahren?“
-- Bei Bestätigung wird Kunde neu angelegt und verknüpft.
-- Bei Abbruch keine Änderung.
+Disponent, Administrator
 
-### UC: Kundendaten übernehmen – Scope Neuer Termin
+### Ziel
 
-**Vorbedingung:**
+Innerhalb des Formulars „Neues Projekt“ ein Dokument mittels Parsing analysieren und einen Vorschlag erzeugen.
 
-- Kein Projekt ausgewählt.
+### Vorbedingungen
 
-Nach Bestätigung:
+- Das Formular „Neues Projekt“ ist geöffnet.
+- Der Akteur besitzt die Berechtigung zur Projektanlage.
+- Ein PDF-Dokument ist verfügbar.
 
-- Neuer Kunde wird angelegt.
-- Duplikatsprüfung erfolgt.
-- Kunde wird im Terminformular gesetzt.
+### Ablauf
 
-### UC: Projekt übernehmen – Scope Neues Projekt
+1. Der Akteur lädt ein PDF in den definierten Extraktionsbereich des Formulars.
+2. Das System startet die regelbasierte Dokumentextraktion gemäß UC 21/01.
+3. Das System zeigt einen Ergebnisdialog mit editierbarem Vorschlag an.
 
-### Fall A: Titel/Beschreibung leer
+### Alternativen
 
-- Titel wird gesetzt.
-- Artikelliste wird als HTML eingefügt.
+- Das Dokument ist nicht geeignet → Das System zeigt eine Fehlermeldung; das Projektformular bleibt unverändert.
 
-### Fall B: Felder bereits befüllt
+### Ergebnis
 
-- Warnhinweis vor Überschreiben.
-- Nur bei Bestätigung Übernahme.
+Ein editierbarer Extraktionsvorschlag steht im Kontext des Formulars „Neues Projekt“ zur Verfügung. Es wurden keine Projektdaten gespeichert.
 
-### UC: Projekt übernehmen – Scope Neuer Termin
+### UC 21/06: Dokumentextraktion im Formular „Neuer Termin“ starten
 
-**Vorbedingung:**
+### Akteur
 
-- Kein Projekt ausgewählt.
+Disponent, Administrator
 
-Nach Bestätigung:
+### Ziel
 
-1. Neues Projekt wird angelegt.
-2. Titel = erkanntes Saunamodell.
+Innerhalb des Formulars „Neuer Termin“ ein Dokument mittels Parsing analysieren und einen Vorschlag erzeugen.
 
-1. Beschreibung = HTML-Artikelliste.
-2. Projekt wird im Termin gesetzt.
-3. Kunde wird automatisch verknüpft.
+### Vorbedingungen
+
+- Das Formular „Neuer Termin“ ist geöffnet.
+- Der Akteur besitzt die Berechtigung zur Terminanlage.
+- Ein PDF-Dokument ist verfügbar.
+
+### Ablauf
+
+1. Der Akteur lädt ein PDF in den definierten Extraktionsbereich des Terminformulars.
+2. Das System startet die regelbasierte Dokumentextraktion gemäß UC 21/01.
+3. Das System zeigt einen Ergebnisdialog mit editierbarem Vorschlag an.
+
+### Alternativen
+
+- Das Dokument ist nicht geeignet → Das System zeigt eine Fehlermeldung; das Terminformular bleibt unverändert.
+
+### Ergebnis
+
+Ein editierbarer Extraktionsvorschlag steht im Kontext des Formulars „Neuer Termin“ zur Verfügung. Es wurden keine Termin- oder Projektdaten gespeichert.
+
+### UC 21/07: Kundendaten übernehmen – Scope Neues Projekt
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Extrahierte Kundendaten im Kontext „Neues Projekt“ übernehmen und einen Kunden korrekt anlegen oder ersetzen.
+
+### Vorbedingungen
+
+- Ein Extraktionsvorschlag mit Kundendaten liegt vor.
+- Das Formular „Neues Projekt“ ist geöffnet.
+
+### Ablauf
+
+1. Der Akteur wählt die Übernahme der Kundendaten.
+2. Wenn kein Kunde ausgewählt ist:
+    1. Das System fragt, ob ein neuer Kunde mit den erkannten Daten angelegt werden soll.
+    2. Das System führt eine Duplikatsprüfung gemäß Kundenregeln durch.
+    3. Das System legt bei Bestätigung einen neuen Kunden an.
+    4. Das System verknüpft den neuen Kunden mit dem Projekt.
+3. Wenn bereits ein Kunde ausgewählt ist:
+    1. Das System warnt, dass der aktuell gewählte Kunde ersetzt wird.
+    2. Bei Bestätigung führt das System eine Duplikatsprüfung durch.
+    3. Das System legt einen neuen Kunden an.
+    4. Das System verknüpft den neuen Kunden mit dem Projekt.
+
+### Alternativen
+
+- Der Akteur bricht ab → Es erfolgt keine Kundenanlage und keine Änderung der Projektzuordnung.
+- Duplikatsprüfung schlägt fehl → Das System blockiert die Anlage oder weist auf einen bestehenden Kunden hin.
+
+### Ergebnis
+
+Der Projektentwurf ist mit einem neu angelegten oder bestätigten Kunden verknüpft. Es entstehen keine widersprüchlichen Kundenreferenzen.
+
+### UC 21/08: Kundendaten übernehmen – Scope Neuer Termin
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Extrahierte Kundendaten im Kontext „Neuer Termin“ übernehmen und korrekt mit Termin und ggf. Projekt verknüpfen.
+
+### Vorbedingungen
+
+- Ein Extraktionsvorschlag mit Kundendaten liegt vor.
+- Kein Projekt ist im Terminformular ausgewählt.
+
+### Ablauf
+
+1. Der Akteur wählt die Übernahme der Kundendaten.
+2. Das System fragt, ob ein neuer Kunde angelegt werden soll.
+3. Das System führt eine Duplikatsprüfung gemäß Kundenregeln durch.
+4. Das System legt bei Bestätigung einen neuen Kunden an.
+5. Das System setzt den neu angelegten Kunden im Terminformular.
+
+### Alternativen
+
+- Der Akteur bricht ab → Keine Kundenanlage, keine Formularänderung.
+- Duplikatsprüfung schlägt fehl → Das System blockiert die Anlage oder bietet Auswahl eines bestehenden Kunden an.
+
+### Ergebnis
+
+Der Terminentwurf referenziert einen neu angelegten oder bestätigten Kunden. Es existieren keine verwaisten Referenzen.
+
+### UC 21/09: Projekt übernehmen – Scope Neues Projekt
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Extrahierte Projektinformationen im Kontext „Neues Projekt“ übernehmen.
+
+### Vorbedingungen
+
+- Ein Extraktionsvorschlag mit Projektdaten liegt vor.
+- Das Formular „Neues Projekt“ ist geöffnet.
+
+### Ablauf
+
+1. Der Akteur wählt die Übernahme der Projektdaten.
+2. Wenn Titel und Beschreibung leer sind:
+    1. Das System setzt den Titel auf das erkannte Modell oder den erkannten Projektnamen.
+    2. Das System fügt die extrahierte Artikelliste als HTML in das Beschreibungsfeld ein.
+3. Wenn Felder bereits befüllt sind:
+    1. Das System zeigt einen Warnhinweis vor dem Überschreiben.
+    2. Bei Bestätigung ersetzt das System die bestehenden Inhalte.
+
+### Alternativen
+
+- Der Akteur lehnt das Überschreiben ab → Bestehende Inhalte bleiben unverändert.
+
+### Ergebnis
+
+Das Projektformular enthält die übernommenen Projektdaten gemäß Bestätigung des Akteurs.
+
+### UC 21/10: Projekt übernehmen – Scope Neuer Termin
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Extrahierte Projektinformationen im Kontext „Neuer Termin“ übernehmen und ein neues Projekt erzeugen.
+
+### Vorbedingungen
+
+- Ein Extraktionsvorschlag mit Projektdaten liegt vor.
+- Kein Projekt ist im Terminformular ausgewählt.
+
+### Ablauf
+
+1. Der Akteur wählt die Übernahme der Projektdaten.
+2. Das System legt ein neues Projekt an.
+3. Das System setzt den Projekttitel auf das erkannte Modell oder den erkannten Projektnamen.
+4. Das System setzt die Projektbeschreibung auf die extrahierte HTML-Artikelliste.
+5. Das System verknüpft das neue Projekt mit dem Termin.
+6. Das System verknüpft den zugehörigen Kunden mit dem Projekt.
+7. Das System speichert alle Änderungen transaktional.
+
+### Alternativen
+
+- Der Akteur bricht vor Bestätigung ab → Kein Projekt wird angelegt; das Terminformular bleibt unverändert.
+- Während der Anlage tritt ein Validierungs- oder Versionskonflikt auf → Das System bricht ab; es werden keine Teilzustände gespeichert.
+
+### Ergebnis
+
+Ein neues Projekt ist persistent angelegt und korrekt mit Termin und Kunde verknüpft. Alle Referenzen sind konsistent.
+
+### UC 21/11: Extraktionsvorgang abbrechen
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Einen gestarteten Extraktionsvorgang ohne Persistierung fachlicher Daten kontrolliert abbrechen.
+
+### Vorbedingungen
+
+- Ein Extraktionsdialog mit Vorschlagsdaten ist geöffnet.
+- Es wurden noch keine fachlichen Stammdaten gespeichert.
+
+### Ablauf
+
+1. Der Akteur wählt im Extraktionsdialog die Funktion „Abbrechen“.
+2. Das System verwirft alle extrahierten, nicht bestätigten Vorschlagsdaten.
+3. Das System schließt den Extraktionsdialog.
+4. Das System stellt den ursprünglichen Zustand des aufrufenden Formulars wieder her.
+
+### Alternativen
+
+- Der Akteur schließt den Dialog über die Fenstersteuerung → Das System behandelt dies identisch zum aktiven Abbruch.
+
+### Ergebnis
+
+Es wurden keine fachlichen Stammdaten angelegt oder verändert. Das System verbleibt im Zustand vor Beginn der Extraktion.
+
+### UC 21/12: Extraktion bei bestehendem Kunden im Termin-Kontext
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Sicherstellen, dass extrahierte Kundendaten im Kontext „Neuer Termin“ nicht automatisch einen bestehenden, bereits gesetzten Kunden überschreiben.
+
+### Vorbedingungen
+
+- Das Formular „Neuer Termin“ ist geöffnet.
+- Ein Kunde ist bereits im Terminformular ausgewählt.
+- Ein Extraktionsvorschlag mit Kundendaten liegt vor.
+
+### Ablauf
+
+1. Der Akteur wählt die Übernahme der extrahierten Kundendaten.
+2. Das System erkennt, dass bereits ein Kunde im Terminformular gesetzt ist.
+3. Das System zeigt einen eindeutigen Warnhinweis über das Ersetzen der bestehenden Kundenreferenz.
+4. Der Akteur bestätigt oder verwirft die Ersetzung.
+5. Bei Bestätigung führt das System eine Duplikatsprüfung durch.
+6. Das System legt gegebenenfalls einen neuen Kunden an.
+7. Das System ersetzt die Kundenreferenz im Terminformular.
+
+### Alternativen
+
+- Der Akteur verwirft die Ersetzung → Die bestehende Kundenreferenz bleibt unverändert.
+- Die Duplikatsprüfung ergibt einen bestehenden Kunden → Das System bietet die Auswahl des vorhandenen Kunden an.
+
+### Ergebnis
+
+Die Kundenreferenz im Terminformular ist eindeutig definiert und konsistent. Es existieren keine stillen Überschreibungen.
+
+### UC 21/13: Wiederholte Extraktion desselben Dokuments
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Sicherstellen, dass die wiederholte Extraktion desselben Attachments keine inkonsistenten oder doppelten Stammdaten erzeugt.
+
+### Vorbedingungen
+
+- Ein Attachment wurde bereits extrahiert.
+- Es wurden noch keine oder bereits bestätigte Daten aus diesem Dokument übernommen.
+
+### Ablauf
+
+1. Der Akteur startet erneut die Funktion „Dokument extrahieren“ für dasselbe Attachment.
+2. Das System führt die regelbasierte Parsing-Analyse erneut vollständig aus.
+3. Das System erzeugt einen neuen, unabhängigen Extraktionsvorschlag.
+4. Der Akteur bestätigt oder verwirft den neuen Vorschlag.
+5. Bei Bestätigung führt das System reguläre Duplikats- und Validierungsprüfungen durch.
+
+### Alternativen
+
+- Der Akteur verwirft den neuen Vorschlag → Keine Änderung an bestehenden Daten.
+- Duplikatsprüfung verhindert eine doppelte Kunden- oder Projektanlage → Das System blockiert oder verweist auf bestehende Datensätze.
+
+### Ergebnis
+
+Es entstehen keine automatischen Dubletten. Jede Persistierung erfolgt ausschließlich nach expliziter Bestätigung des Akteurs und unter Anwendung der bestehenden Domänenregeln.
+
+### UC 21/14: Extraktion bei zwischenzeitlich gelöschtem Parent-Objekt
+
+### Akteur
+
+Disponent, Administrator
+
+### Ziel
+
+Sicherstellen, dass eine laufende Extraktion nicht zu inkonsistenten Referenzen führt, wenn das aufrufende Objekt zwischenzeitlich gelöscht wurde.
+
+### Vorbedingungen
+
+- Ein Extraktionsdialog ist geöffnet.
+- Das zugrunde liegende Projekt- oder Terminformular wurde in einem anderen Browser oder durch einen anderen Akteur gelöscht oder geschlossen.
+
+### Ablauf
+
+1. Der Akteur bestätigt im Extraktionsdialog die Übernahme der Daten.
+2. Das System prüft vor Persistierung die Existenz des referenzierten Parent-Objekts.
+3. Das System erkennt, dass das Parent-Objekt nicht mehr existiert.
+4. Das System bricht den Vorgang ab.
+5. Das System informiert den Akteur über den Konflikt.
+
+### Alternativen
+
+- Das Parent-Objekt existiert, aber wurde verändert → Das System prüft Versionsinformationen und behandelt einen Konflikt gemäß den jeweiligen Domänenregeln.
+
+### Ergebnis
+
+Es werden keine Daten mit ungültigen oder nicht existierenden Referenzen gespeichert. Die Systemkonsistenz bleibt gewahrt.
 
 # FT (22): Termin- und Tourvisualisierung in Maps
 
-## Ziel / Zweck
+## FT (22) Ziel / Zweck
 
 Dieses Feature erweitert die bestehende Terminplanung um eine **räumliche Visualisierungsebene**. Ziel ist es, Termine und Touren auf einer Kartenansicht darzustellen, um geografische Zusammenhänge, räumliche Ballungen und Tourverteilungen besser erkennen zu können.
 
@@ -6758,7 +7985,7 @@ Die Kartenansicht dient ausschließlich der visuellen Orientierung und unterstü
 
 FT (22) ist ein reines Darstellungs- und Analysefeature.
 
-## Fachliche Beschreibung
+## FT (22) Fachliche Beschreibung
 
 Die Kartenansicht stellt Termine als Marker auf einer OpenStreetMap-basierten Karte dar. Grundlage der Positionierung ist die Adresse des dem Termin zugeordneten Kunden.
 
@@ -6781,7 +8008,7 @@ Mehrere Termine an derselben Adresse können entweder:
 
 Die Kartenansicht verwendet dieselben Filtermechanismen wie Kalender- und Terminlistenansicht. Es werden ausschließlich die aktuell gefilterten Termine dargestellt.
 
-## Regeln & Randbedingungen
+## FT (22) Regeln & Randbedingungen
 
 - Die Kartenansicht ist rein lesend.
 - Über die Kartenansicht können keine Termine erstellt, bearbeitet oder gelöscht werden.
@@ -6800,7 +8027,7 @@ Die Kartenansicht verändert keine bestehenden Features:
 - FT (04) Tourenplanung bleibt unverändert.
 - FT (03) Kalenderansichten bleiben unverändert.
 
-## Darstellung
+## FT (22) Darstellung
 
 ### Marker
 
@@ -6833,15 +8060,15 @@ Die initiale Ansicht orientiert sich:
 - an der geografischen Mitte der angezeigten Termine oder
 - an einem vordefinierten Standardbereich.
 
-## Use Cases
+## FT (22) Use Cases
 
-### UC: Kartenansicht anzeigen
+### UC 22/01: Kartenansicht anzeigen
 
-**Akteur:**                           
+### Akteur:
 
 Disponent, Admin, Monteur (Leserolle)
 
-**Ziel:**
+### Ziel:
 
 Termine im gewählten Zeitraum räumlich visualisieren.
 
@@ -6851,7 +8078,7 @@ Termine im gewählten Zeitraum räumlich visualisieren.
 - Kunden besitzen gültige Adressen.
 - Benutzer besitzt Leserechte.
 
-**Ablauf:**
+### Ablauf:
 
 1. Benutzer öffnet die Kartenansicht.
 2. System ermittelt die aktuell gefilterten Termine.
@@ -6860,22 +8087,22 @@ Termine im gewählten Zeitraum räumlich visualisieren.
 5. System rendert Marker auf der Karte.
 6. Benutzer kann Marker anklicken, um Details einzusehen.
 
-**Alternativabläufe:**
+### Alternativen:
 
 - Adresse nicht geokodierbar → Marker wird nicht angezeigt oder als „nicht lokalisierbar“ markiert.
 - Keine Termine vorhanden → Karte wird ohne Marker angezeigt.
 
-**Ergebnis:**
+### Ergebnis:
 
 Die ausgewählten Termine sind räumlich visualisiert.
 
-### UC: Kartenansicht nach Tour filtern
+### UC 22/02: Kartenansicht nach Tour filtern
 
 **Akteur:**
 
 Disponent
 
-**Ziel:**
+### Ziel:
 
 Nur Termine einer bestimmten Tour räumlich anzeigen.
 
@@ -6884,23 +8111,23 @@ Nur Termine einer bestimmten Tour räumlich anzeigen.
 - Touren existieren.
 - Termine sind Touren zugeordnet.
 
-**Ablauf:**
+### Ablauf:
 
 1. Benutzer wählt Tourfilter.
 2. System filtert Termine.
 3. System aktualisiert Marker-Darstellung.
 
-**Ergebnis:**
+### Ergebnis:
 
 Nur Termine der gewählten Tour sind sichtbar.
 
-### UC: Marker-Details anzeigen
+### UC 22/03: Marker-Details anzeigen
 
 **Akteur:**
 
 Disponent, Admin, Monteur
 
-**Ziel:**
+### Ziel:
 
 Detailinformationen zu einem Termin auf der Karte anzeigen.
 
@@ -6908,11 +8135,11 @@ Detailinformationen zu einem Termin auf der Karte anzeigen.
 
 - Marker existiert.
 
-**Ablauf:**
+### Ablauf:
 
 1. Benutzer klickt Marker.
 2. System zeigt Popup mit Termindetails.
 
-**Ergebnis:**
+### Ergebnis:
 
 Benutzer erhält vollständige Terminübersicht im Kartenkontext.
