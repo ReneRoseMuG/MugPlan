@@ -1,6 +1,7 @@
 import { constants as fsConstants } from "fs";
 import { access, mkdir } from "fs/promises";
 import path from "path";
+import { getLoadedEnvSource } from "./loadEnv";
 
 const ATTACHMENT_STORAGE_PATH_KEY = "ATTACHMENT_STORAGE_PATH";
 const BACKUP_BASE_PATH_KEY = "BACKUP_BASE_PATH";
@@ -15,6 +16,7 @@ let cachedStoragePaths: StoragePaths | null = null;
 function resolveConfiguredPath(rawValue: string, envKey: string): string {
   const nodeEnv = process.env.NODE_ENV ?? "";
   const value = rawValue.trim();
+  const envSource = getLoadedEnvSource();
 
   if (value.length === 0) {
     throw new Error(`Leere Env-Variable: ${envKey}`);
@@ -23,8 +25,13 @@ function resolveConfiguredPath(rawValue: string, envKey: string): string {
   const isAbsolute = path.isAbsolute(value);
 
   if (nodeEnv === "production") {
+    // In shared server deployments, enforce relative paths in shared/.env.
+    // For local production smoke-runs (fallback root .env), keep absolute paths compatible.
+    if (envSource === "shared" && isAbsolute) {
+      throw new Error(`${envKey} muss bei shared/.env in production als relativer Pfad gesetzt werden.`);
+    }
     if (isAbsolute) {
-      throw new Error(`${envKey} muss in production als relativer Pfad gesetzt werden.`);
+      return value;
     }
     return path.resolve(process.cwd(), value);
   }
@@ -88,4 +95,3 @@ export async function getBackupBasePath(): Promise<string> {
   const paths = await initStoragePathsFromEnv();
   return paths.backupBasePath;
 }
-

@@ -1,6 +1,9 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as schema from "@shared/schema";
+import { loadEnv } from "./config/loadEnv";
+
+loadEnv();
 
 if (!process.env.MYSQL_DATABASE_URL) {
   throw new Error(

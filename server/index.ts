@@ -1,15 +1,11 @@
-import "dotenv/config";
 import express from "express";
 import fs from "fs";
 import path from "path";
-import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
 import { createServer } from "http";
 import { errorHandler } from "./middleware/errorHandler";
-import { ensureSystemRoles } from "./bootstrap/ensureSystemRoles";
-import { getBootstrapState } from "./bootstrap/getBootstrapState";
-import { startBackupScheduler } from "./services/backupScheduler";
-import { initStoragePathsFromEnv } from "./config/storagePaths";
+import { loadEnv } from "./config/loadEnv";
+
+loadEnv();
 
 const app = express();
 const httpServer = createServer(app);
@@ -87,6 +83,14 @@ app.use((req, res, next) => {
 });
 
 void (async () => {
+  const [{ ensureSystemRoles }, { getBootstrapState }, { registerRoutes }, { startBackupScheduler }, { initStoragePathsFromEnv }] = await Promise.all([
+    import("./bootstrap/ensureSystemRoles"),
+    import("./bootstrap/getBootstrapState"),
+    import("./routes"),
+    import("./services/backupScheduler"),
+    import("./config/storagePaths"),
+  ]);
+
   await ensureSystemRoles();
   await initStoragePathsFromEnv();
   const bootstrapState = await getBootstrapState();
@@ -99,6 +103,7 @@ void (async () => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
+    const { serveStatic } = await import("./static");
     serveStatic(app);
   } else {
     const { setupVite } = await import("./vite");
