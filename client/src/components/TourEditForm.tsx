@@ -116,6 +116,7 @@ export function TourEditForm({
             hideTourFilter
             lockedTourId={tour?.id ?? null}
             hideTourColumn
+            enforceFromToday
             emptyStateOverride={leftEmptyState}
           />
         </div>

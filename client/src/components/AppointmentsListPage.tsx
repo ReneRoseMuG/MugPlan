@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import type { Customer, Employee, Project, Tour } from "@shared/schema";
 
 type AppointmentListItem = CalendarAppointment & {
@@ -39,6 +40,7 @@ interface AppointmentsListPageProps {
   hideTourFilter?: boolean;
   lockedTourId?: number | null;
   hideTourColumn?: boolean;
+  enforceFromToday?: boolean;
   emptyStateOverride?: ReactNode;
 }
 
@@ -67,8 +69,10 @@ export function AppointmentsListPage({
   hideTourFilter = false,
   lockedTourId,
   hideTourColumn = false,
+  enforceFromToday = false,
   emptyStateOverride,
 }: AppointmentsListPageProps) {
+  const todayBerlin = getBerlinTodayDateString();
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<AppointmentSortKey>("project");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -78,7 +82,7 @@ export function AppointmentsListPage({
     projectId: undefined,
     customerId: undefined,
     tourId: lockedTourId ?? undefined,
-    dateFrom: undefined,
+    dateFrom: enforceFromToday ? todayBerlin : undefined,
     dateTo: undefined,
   });
 
@@ -93,6 +97,14 @@ export function AppointmentsListPage({
       setSortDirection("asc");
     }
   }, [hideTourColumn, sortKey]);
+
+  useEffect(() => {
+    if (!enforceFromToday) return;
+    setFilters((current) => {
+      if (current.dateFrom === todayBerlin) return current;
+      return { ...current, dateFrom: todayBerlin };
+    });
+  }, [enforceFromToday, todayBerlin]);
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees", { scope: "active" }],
@@ -226,9 +238,12 @@ export function AppointmentsListPage({
   }, [hideTourColumn, sortDirection, sortKey]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
+    const enforcedPatch = enforceFromToday
+      ? { ...patch, dateFrom: todayBerlin }
+      : patch;
     const nextPatch = lockedTourId == null
-      ? patch
-      : { ...patch, tourId: lockedTourId };
+      ? enforcedPatch
+      : { ...enforcedPatch, tourId: lockedTourId };
     setFilters((current) => ({ ...current, ...nextPatch }));
     setPage(1);
   };
