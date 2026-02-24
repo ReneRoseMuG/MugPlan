@@ -1,4 +1,5 @@
 import { deleteAppointmentInCaldav, upsertAppointmentInCaldav } from "./caldavService";
+import { logWarn } from "../lib/logger";
 
 const logPrefix = "[caldav-dispatcher]";
 let queue: Promise<void> = Promise.resolve();
@@ -7,7 +8,7 @@ function enqueue(task: () => Promise<void>): void {
   queue = queue
     .then(task)
     .catch((error) => {
-      console.warn(`${logPrefix} task failed`, {
+      logWarn(`${logPrefix} task failed`, {
         message: error instanceof Error ? error.message : String(error),
       });
     });
@@ -24,4 +25,3 @@ export function dispatchCalDavDelete(appointmentId: number): void {
     await deleteAppointmentInCaldav(appointmentId);
   });
 }
-

@@ -3,6 +3,7 @@ import * as appointmentsRepository from "../repositories/appointmentsRepository"
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
+import { logDebug, logInfo, logWarn } from "../lib/logger";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
@@ -220,7 +221,7 @@ export async function createAppointment(
     employeeIds?: number[];
   },
 ) {
-  console.log(`${logPrefix} create request projectId=${data.projectId}`);
+  logDebug(`${logPrefix} create request projectId=${data.projectId}`);
   validateDateRange(data.startDate, data.endDate ?? null);
   assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
@@ -236,7 +237,7 @@ export async function createAppointment(
       endDate,
     });
     if (conflictEmployees.length > 0) {
-      console.log(
+      logWarn(
         `${logPrefix} create blocked by overlap projectId=${data.projectId} startDate=${data.startDate} endDate=${data.endDate ?? data.startDate} conflictEmployees=${conflictEmployees.length}`,
       );
       throw new AppointmentError(overlapConflictMessage, 409, "BUSINESS_CONFLICT", { conflictEmployees });
@@ -253,7 +254,7 @@ export async function createAppointment(
       endTime: null,
     };
 
-    console.log(`${logPrefix} persisting appointment with ${employeeIds.length} employees`);
+    logDebug(`${logPrefix} persisting appointment with ${employeeIds.length} employees`);
     const appointmentId = await appointmentsRepository.createAppointmentTx(tx, appointmentData);
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
     const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
@@ -290,10 +291,10 @@ export async function updateAppointment(
 
     if (isStartDateLocked(existing.startDate)) {
       if (roleKey !== "ADMIN") {
-        console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+        logWarn(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
         throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
       }
-      console.log(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+      logWarn(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
       throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "BUSINESS_CONFLICT");
     }
     assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
@@ -301,7 +302,7 @@ export async function updateAppointment(
     const project = await ensureProjectExistsTx(tx, data.projectId);
 
     if (existing.tourId !== (data.tourId ?? null)) {
-      console.log(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
+      logInfo(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
     }
 
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
@@ -311,7 +312,7 @@ export async function updateAppointment(
       excludeAppointmentId: appointmentId,
     });
     if (conflictEmployees.length > 0) {
-      console.log(
+      logWarn(
         `${logPrefix} update blocked by overlap appointmentId=${appointmentId} startDate=${data.startDate} endDate=${data.endDate ?? data.startDate} conflictEmployees=${conflictEmployees.length}`,
       );
       throw new AppointmentError(overlapConflictMessage, 409, "BUSINESS_CONFLICT", { conflictEmployees });
@@ -328,7 +329,7 @@ export async function updateAppointment(
       endTime: null,
     };
 
-    console.log(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
+    logDebug(`${logPrefix} update appointmentId=${appointmentId} with ${employeeIds.length} employees`);
     const updateResult = await appointmentsRepository.updateAppointmentWithVersionTx(tx, {
       appointmentId,
       expectedVersion: data.version,
@@ -358,17 +359,17 @@ export async function listProjectAppointments(
   const effectiveFromDate = fromDate ?? todayBerlin;
 
   if (!fromDate) {
-    console.log(`${logPrefix} list appointments defaulting fromDate=${effectiveFromDate}`);
+    logDebug(`${logPrefix} list appointments defaulting fromDate=${effectiveFromDate}`);
   } else {
-    console.log(`${logPrefix} list appointments using fromDate=${effectiveFromDate}`);
+    logDebug(`${logPrefix} list appointments using fromDate=${effectiveFromDate}`);
   }
 
-  console.log(`${logPrefix} list appointments projectId=${projectId} fromDate=${effectiveFromDate}`);
+  logDebug(`${logPrefix} list appointments projectId=${projectId} fromDate=${effectiveFromDate}`);
   const appointments = await appointmentsRepository.listSidebarAppointmentsByProjectFromDate(
     projectId,
     parseDateOnly(effectiveFromDate),
   );
-  console.log(`${logPrefix} list appointments result projectId=${projectId} count=${appointments.length}`);
+  logDebug(`${logPrefix} list appointments result projectId=${projectId} count=${appointments.length}`);
 
   return mapSidebarAppointments(appointments, roleKey);
 }
@@ -382,17 +383,17 @@ export async function listEmployeeAppointments(
   const effectiveFromDate = fromDate ?? todayBerlin;
 
   if (!fromDate) {
-    console.log(`${logPrefix} list employee appointments defaulting fromDate=${effectiveFromDate}`);
+    logDebug(`${logPrefix} list employee appointments defaulting fromDate=${effectiveFromDate}`);
   } else {
-    console.log(`${logPrefix} list employee appointments using fromDate=${effectiveFromDate}`);
+    logDebug(`${logPrefix} list employee appointments using fromDate=${effectiveFromDate}`);
   }
 
-  console.log(`${logPrefix} list employee appointments employeeId=${employeeId} fromDate=${effectiveFromDate}`);
+  logDebug(`${logPrefix} list employee appointments employeeId=${employeeId} fromDate=${effectiveFromDate}`);
   const appointments = await appointmentsRepository.listSidebarAppointmentsByEmployeeFromDate(
     employeeId,
     parseDateOnly(effectiveFromDate),
   );
-  console.log(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
+  logDebug(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
 
   return mapSidebarAppointments(appointments, roleKey);
 }
@@ -406,17 +407,17 @@ export async function listTourAppointments(
   const effectiveFromDate = fromDate ?? todayBerlin;
 
   if (!fromDate) {
-    console.log(`${logPrefix} list tour appointments defaulting fromDate=${effectiveFromDate}`);
+    logDebug(`${logPrefix} list tour appointments defaulting fromDate=${effectiveFromDate}`);
   } else {
-    console.log(`${logPrefix} list tour appointments using fromDate=${effectiveFromDate}`);
+    logDebug(`${logPrefix} list tour appointments using fromDate=${effectiveFromDate}`);
   }
 
-  console.log(`${logPrefix} list tour appointments tourId=${tourId} fromDate=${effectiveFromDate}`);
+  logDebug(`${logPrefix} list tour appointments tourId=${tourId} fromDate=${effectiveFromDate}`);
   const appointments = await appointmentsRepository.listSidebarAppointmentsByTourFromDate(
     tourId,
     parseDateOnly(effectiveFromDate),
   );
-  console.log(`${logPrefix} list tour appointments result tourId=${tourId} count=${appointments.length}`);
+  logDebug(`${logPrefix} list tour appointments result tourId=${tourId} count=${appointments.length}`);
 
   return mapSidebarAppointments(appointments, roleKey);
 }
@@ -435,7 +436,7 @@ export async function listCalendarAppointments({
   roleKey: CanonicalRoleKey;
 }) {
   const resolvedDetail = detail ?? "compact";
-  console.log(
+  logDebug(
     `${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} detail=${resolvedDetail} employeeId=${employeeId ?? "n/a"}`,
   );
   const rows = await appointmentsRepository.listAppointmentsForCalendarRange({
@@ -443,7 +444,7 @@ export async function listCalendarAppointments({
     toDate: parseDateOnly(toDate),
     employeeId,
   });
-  console.log(`${logPrefix} list calendar appointments result count=${rows.length}`);
+  logDebug(`${logPrefix} list calendar appointments result count=${rows.length}`);
 
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
@@ -596,11 +597,11 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
     if (!existing) return null;
 
     if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
-      console.log(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
+      logWarn(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
       throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
     }
 
-    console.log(`${logPrefix} delete appointmentId=${appointmentId}`);
+    logDebug(`${logPrefix} delete appointmentId=${appointmentId}`);
     const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
       appointmentId,
       expectedVersion,

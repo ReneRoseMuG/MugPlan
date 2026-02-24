@@ -1,7 +1,7 @@
 import { constants as fsConstants } from "fs";
 import { access, mkdir } from "fs/promises";
 import path from "path";
-import { getLoadedEnvSource } from "./loadEnv";
+import { getLoadedEnvSource } from "./runtimeEnv";
 
 const ATTACHMENT_STORAGE_PATH_KEY = "ATTACHMENT_STORAGE_PATH";
 const BACKUP_BASE_PATH_KEY = "BACKUP_BASE_PATH";

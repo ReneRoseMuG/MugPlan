@@ -1,9 +1,9 @@
-import "dotenv/config";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../server/db";
+import { initializeRuntimeEnv } from "../server/config/runtimeEnv";
 import {
   appointments,
   projectAttachments,
@@ -12,6 +12,8 @@ import {
   seedRuns,
 } from "../shared/schema";
 import { createSeedRun, purgeSeedRun } from "../server/services/demoSeedService";
+
+initializeRuntimeEnv();
 
 type EntityType = "project" | "appointment_mount" | "appointment_rekl" | "project_attachment";
 

@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import { enforceAdminMaintenancePolicy } from "./middleware/adminMaintenancePolicy";
 import { resolveUserRole } from "./middleware/resolveUserRole";
 import { requireSessionUser, sessionAuth } from "./middleware/sessionAuth";
 import { setupGate } from "./middleware/setupGate";
@@ -36,6 +37,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.use("/api", requireSessionUser);
   app.use("/api", resolveUserRole);
+  app.use("/api", enforceAdminMaintenancePolicy);
 
   app.use(adminRoutes);
   app.use(backupRoutes);

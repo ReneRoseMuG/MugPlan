@@ -1,5 +1,7 @@
-import "dotenv/config";
 import { ensureSystemRoles } from "../server/bootstrap/ensureSystemRoles";
+import { initializeRuntimeEnv } from "../server/config/runtimeEnv";
+
+initializeRuntimeEnv();
 
 async function seedRoles() {
   await ensureSystemRoles();

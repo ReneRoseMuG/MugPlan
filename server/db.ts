@@ -1,15 +1,23 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as schema from "@shared/schema";
-import { loadEnv } from "./config/loadEnv";
+import { getRuntimeConfig, initializeRuntimeEnv } from "./config/runtimeEnv";
+import { isSqlLoggingEnabled, logSql } from "./lib/logger";
 
-loadEnv();
+initializeRuntimeEnv();
+const runtime = getRuntimeConfig();
+export const pool = mysql.createPool(runtime.mysqlDatabaseUrl);
 
-if (!process.env.MYSQL_DATABASE_URL) {
-  throw new Error(
-    "MYSQL_DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+const sqlLoggingEnabled = isSqlLoggingEnabled();
 
-export const pool = mysql.createPool(process.env.MYSQL_DATABASE_URL);
-export const db = drizzle(pool, { schema, mode: "default" });
+export const db = drizzle(pool, {
+  schema,
+  mode: "default",
+  logger: sqlLoggingEnabled
+    ? {
+        logQuery(query: string, params: unknown[]) {
+          logSql("query", { query, params });
+        },
+      }
+    : false,
+});

@@ -7,6 +7,7 @@ import { generateBackupDocuments } from "./exportService";
 import { persistBackupFiles } from "./backupStorageService";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
+import { logError, logInfo } from "../lib/logger";
 
 const logPrefix = "[backup-scheduler]";
 let isRunning = false;
@@ -27,7 +28,7 @@ async function releaseSchedulerLock(): Promise<void> {
 
 export async function runBackupSchedulerTick(): Promise<void> {
   if (isRunning) {
-    console.info(`${logPrefix} tick skipped (already running)`);
+    logInfo(`${logPrefix} tick skipped (already running)`);
     return;
   }
 
@@ -36,7 +37,7 @@ export async function runBackupSchedulerTick(): Promise<void> {
   try {
     lockAcquired = await acquireSchedulerLock();
     if (!lockAcquired) {
-      console.info(`${logPrefix} tick skipped (db lock busy)`);
+      logInfo(`${logPrefix} tick skipped (db lock busy)`);
       return;
     }
 
@@ -45,7 +46,7 @@ export async function runBackupSchedulerTick(): Promise<void> {
 
     if (!isEnabled) {
       await backupService.createSkippedBackupLog("disabled");
-      console.info(`${logPrefix} tick -> skipped (disabled)`);
+      logInfo(`${logPrefix} tick -> skipped (disabled)`);
       return;
     }
 
@@ -54,13 +55,13 @@ export async function runBackupSchedulerTick(): Promise<void> {
 
     if (!latestChange) {
       await backupService.createSkippedBackupLog("no_data_change_marker");
-      console.info(`${logPrefix} tick -> skipped (no data change marker)`);
+      logInfo(`${logPrefix} tick -> skipped (no data change marker)`);
       return;
     }
 
     if (lastSuccess && latestChange.getTime() <= lastSuccess.getTime()) {
       await backupService.createSkippedBackupLog("no_changes");
-      console.info(`${logPrefix} tick -> skipped (no changes)`);
+      logInfo(`${logPrefix} tick -> skipped (no changes)`);
       return;
     }
 
@@ -75,13 +76,13 @@ export async function runBackupSchedulerTick(): Promise<void> {
       exportedRecordCount: documents.exportedRecordCount,
       filePath: JSON.stringify(persisted),
     });
-    console.info(`${logPrefix} tick -> success`, {
+    logInfo(`${logPrefix} tick -> success`, {
       exportedRecordCount: documents.exportedRecordCount,
       excelPath: persisted.excelPath,
       pdfPath: persisted.pdfPath,
     });
   } catch (error) {
-    console.error(`${logPrefix} tick failed`, error);
+    logError(`${logPrefix} tick failed`, { error });
     try {
       await backupRepository.createBackupLogEntry({
         status: "error",
@@ -110,5 +111,5 @@ export function startBackupScheduler(): void {
     void runBackupSchedulerTick();
   }, { timezone: "Europe/Berlin" });
 
-  console.info(`${logPrefix} started (cron: 0 2 * * *)`);
+  logInfo(`${logPrefix} started (cron: 0 2 * * *)`);
 }

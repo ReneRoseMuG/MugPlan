@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { getBootstrapState } from "../bootstrap/getBootstrapState";
+import { logWarn } from "../lib/logger";
 
 const setupAllowedPaths = new Set<string>([
   "/auth/setup-status",
@@ -19,6 +20,11 @@ export async function setupGate(req: Request, res: Response, next: NextFunction)
 
   const state = await getBootstrapState();
   if (state.needsAdminSetup) {
+    logWarn("setup_gate_blocked", {
+      reason: "SETUP_REQUIRED",
+      method: req.method,
+      path: req.path,
+    });
     res.status(503).json({ code: "SETUP_REQUIRED" });
     return;
   }

@@ -1,3 +1,4 @@
-import dotenv from "dotenv";
+import { initializeRuntimeEnv } from "../server/config/runtimeEnv";
 
-dotenv.config({ path: ".env.test" });
+process.env.NODE_ENV = "test";
+initializeRuntimeEnv();

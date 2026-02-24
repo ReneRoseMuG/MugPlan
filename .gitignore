@@ -9,3 +9,9 @@ vite.config.ts.*
 .vscode
 .env
 .env.test
+
+# local artifacts
+server.log
+*.log
+*.zip
+

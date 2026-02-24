@@ -1,6 +1,8 @@
-import "dotenv/config";
 import { sql } from "drizzle-orm";
 import { db } from "../server/db";
+import { initializeRuntimeEnv } from "../server/config/runtimeEnv";
+
+initializeRuntimeEnv();
 
 async function migrateProjectNamesWithCustomerNumber() {
   const previewRows = await db.execute(sql`

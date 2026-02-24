@@ -3,6 +3,7 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as appointmentsService from "../services/appointmentsService";
 import { handleZodError } from "./validation";
+import { logDebug, logWarn } from "../lib/logger";
 
 const logPrefix = "[appointments-controller]";
 
@@ -28,7 +29,7 @@ export async function createAppointment(req: Request, res: Response, next: NextF
   try {
     const input = api.appointments.create.input.parse(req.body);
     if (!input.projectId) {
-      console.log(`${logPrefix} create rejected: project missing`);
+      logWarn(`${logPrefix} create rejected: project missing`);
       res.status(400).json({ message: "Projekt ist erforderlich" });
       return;
     }
@@ -55,7 +56,7 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
   try {
     const input = api.appointments.update.input.parse(req.body);
     if (!input.projectId) {
-      console.log(`${logPrefix} update rejected: project missing`);
+      logWarn(`${logPrefix} update rejected: project missing`);
       res.status(400).json({ message: "Projekt ist erforderlich" });
       return;
     }
@@ -100,7 +101,7 @@ export async function listProjectAppointments(req: Request, res: Response, next:
 
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
-      console.log(`${logPrefix} list project appointments rejected: invalid fromDate=${fromDate}`);
+      logWarn(`${logPrefix} list project appointments rejected: invalid fromDate=${fromDate}`);
       res.status(400).json({ message: "Ungueltiges fromDate" });
       return;
     }
@@ -111,7 +112,7 @@ export async function listProjectAppointments(req: Request, res: Response, next:
       return;
     }
 
-    console.log(`${logPrefix} list project appointments request projectId=${projectId} fromDate=${fromDate ?? "n/a"}`);
+    logDebug(`${logPrefix} list project appointments request projectId=${projectId} fromDate=${fromDate ?? "n/a"}`);
     const appointments = await appointmentsService.listProjectAppointments(projectId, fromDate, roleKey);
     res.json(appointments);
   } catch (err) {
@@ -129,7 +130,7 @@ export async function listTourAppointments(req: Request, res: Response, next: Ne
 
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
-      console.log(`${logPrefix} list tour appointments rejected: invalid fromDate=${fromDate}`);
+      logWarn(`${logPrefix} list tour appointments rejected: invalid fromDate=${fromDate}`);
       res.status(400).json({ message: "Ungueltiges fromDate" });
       return;
     }
@@ -140,7 +141,7 @@ export async function listTourAppointments(req: Request, res: Response, next: Ne
       return;
     }
 
-    console.log(`${logPrefix} list tour appointments request tourId=${tourId} fromDate=${fromDate ?? "n/a"}`);
+    logDebug(`${logPrefix} list tour appointments request tourId=${tourId} fromDate=${fromDate ?? "n/a"}`);
     const appointments = await appointmentsService.listTourAppointments(tourId, fromDate, roleKey);
     res.json(appointments);
   } catch (err) {
@@ -183,7 +184,7 @@ export async function deleteAppointment(req: Request, res: Response, next: NextF
     }
 
     const appointmentId = Number(req.params.id);
-    console.log(`${logPrefix} delete request appointmentId=${appointmentId}`);
+    logDebug(`${logPrefix} delete request appointmentId=${appointmentId}`);
     const appointment = await appointmentsService.deleteAppointment(appointmentId, input.version, roleKey);
     if (!appointment) {
       res.status(404).json({ message: "Termin nicht gefunden" });
@@ -216,7 +217,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
-      console.log(`${logPrefix} list calendar appointments rejected: invalid range ${fromDate}-${toDate}`);
+      logWarn(`${logPrefix} list calendar appointments rejected: invalid range ${fromDate}-${toDate}`);
       res.status(400).json({ message: "Ungueltiger Datumsbereich" });
       return;
     }
@@ -242,7 +243,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
       return;
     }
 
-    console.log(
+    logDebug(
       `${logPrefix} list calendar appointments request fromDate=${fromDate} toDate=${toDate} detail=${detail} employeeId=${employeeId ?? "n/a"}`,
     );
     const appointments = await appointmentsService.listCalendarAppointments({

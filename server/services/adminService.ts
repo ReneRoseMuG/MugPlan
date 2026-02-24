@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
+import mysql from "mysql2/promise";
+import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
+import { assertSafeDatabaseUrlForMode, assertSqlDatabaseIdentity } from "../security/dbSafetyGuards";
 import * as adminRepository from "../repositories/adminRepository";
+import { logError, logInfo } from "../lib/logger";
 
 const logPrefix = "[admin-service]";
 
@@ -16,7 +20,17 @@ export type ResetDatabaseResult = {
 
 export async function resetDatabase(): Promise<ResetDatabaseResult> {
   const startedAtMs = Date.now();
-  console.info(`${logPrefix} reset start`);
+  logInfo(`${logPrefix} reset start`);
+
+  const runtimeMode = getRuntimeMode();
+  const runtimeConfig = getRuntimeConfig();
+  const expectedDbName = assertSafeDatabaseUrlForMode(runtimeConfig.mysqlDatabaseUrl, runtimeMode);
+  const safetyConnection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
+  try {
+    await assertSqlDatabaseIdentity(safetyConnection, expectedDbName);
+  } finally {
+    await safetyConnection.end();
+  }
 
   const storagePaths = await adminRepository.listAllAttachmentStoragePaths();
   const deleted = await adminRepository.resetDomainData();
@@ -33,7 +47,7 @@ export async function resetDatabase(): Promise<ResetDatabaseResult> {
         filesMissing += 1;
         continue;
       }
-      console.error(`${logPrefix} attachment delete failed`, {
+      logError(`${logPrefix} attachment delete failed`, {
         storagePath,
         message: err.message,
       });
@@ -42,7 +56,7 @@ export async function resetDatabase(): Promise<ResetDatabaseResult> {
   }
 
   const durationMs = Date.now() - startedAtMs;
-  console.info(`${logPrefix} reset finish`, {
+  logInfo(`${logPrefix} reset finish`, {
     durationMs,
     deleted,
     attachments: { filesDeleted, filesMissing },

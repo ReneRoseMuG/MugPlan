@@ -26,6 +26,7 @@ import * as projectAttachmentsService from "./projectAttachmentsService";
 import * as demoSeedRepository from "../repositories/demoSeedRepository";
 import * as userSettingsService from "./userSettingsService";
 import { assignEmployeesToGroups } from "./demoSeedAssignments";
+import { logError, logInfo } from "../lib/logger";
 
 const logPrefix = "[demo-seed-service]";
 
@@ -556,7 +557,7 @@ async function resolveSeedTemplates(seedRunId: string, locale: string) {
     }
   }
 
-  console.info(`${logPrefix} template settings fallback defaults`, {
+  logInfo(`${logPrefix} template settings fallback defaults`, {
     seedRunId,
     locale,
     candidateUserIds,
@@ -1042,7 +1043,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
   try {
     await demoSeedRepository.createSeedRun(seedRunId, config);
     seedRunPersisted = true;
-    console.info(`${logPrefix} create start`, { seedRunId, config });
+    logInfo(`${logPrefix} create start`, { seedRunId, config });
 
     const created = {
       employees: 0,
@@ -1404,7 +1405,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     };
 
     await demoSeedRepository.updateSeedRunSummary(seedRunId, summary);
-    console.info(`${logPrefix} create finish`, {
+    logInfo(`${logPrefix} create finish`, {
       seedRunId,
       durationMs: Date.now() - new Date(createdAt).getTime(),
       created,
@@ -1418,7 +1419,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       try {
         await purgeSeedRun(seedRunId);
       } catch (cleanupError) {
-        console.error(`${logPrefix} cleanup failed`, {
+        logError(`${logPrefix} cleanup failed`, {
           seedRunId,
           message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
         });
@@ -1559,7 +1560,7 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
   }
 
   const deleted = await demoSeedRepository.purgeSeedRun(seedRunId, idsByType);
-  console.info(`${logPrefix} purge finish`, { seedRunId, deleted });
+  logInfo(`${logPrefix} purge finish`, { seedRunId, deleted });
 
   return {
     seedRunId,

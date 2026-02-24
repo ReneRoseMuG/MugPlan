@@ -10,6 +10,7 @@ import {
   type Appointment,
   type InsertAppointment,
 } from "@shared/schema";
+import { logDebug } from "../lib/logger";
 
 const logPrefix = "[appointments-repo]";
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -246,14 +247,14 @@ export async function getAppointmentWithEmployees(id: number) {
 
 export async function createAppointment(data: InsertAppointment, employeeIds: number[]) {
   return withAppointmentTransaction(async (tx) => {
-    console.log(`${logPrefix} create appointment for projectId=${data.projectId}`);
+    logDebug(`${logPrefix} create appointment for projectId=${data.projectId}`);
     const insertId = await createAppointmentTx(tx, data);
 
     if (employeeIds.length > 0) {
-      console.log(`${logPrefix} assign ${employeeIds.length} employees to appointmentId=${insertId}`);
+      logDebug(`${logPrefix} assign ${employeeIds.length} employees to appointmentId=${insertId}`);
       await replaceAppointmentEmployeesTx(tx, insertId, employeeIds);
     } else {
-      console.log(`${logPrefix} no employees assigned to appointmentId=${insertId}`);
+      logDebug(`${logPrefix} no employees assigned to appointmentId=${insertId}`);
     }
 
     const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, insertId));
@@ -264,7 +265,7 @@ export async function createAppointment(data: InsertAppointment, employeeIds: nu
 }
 
 export async function listAppointmentsByProjectFromDate(projectId: number, fromDate: Date): Promise<Appointment[]> {
-  console.log(`${logPrefix} list appointments projectId=${projectId} fromDate>=${fromDate}`);
+  logDebug(`${logPrefix} list appointments projectId=${projectId} fromDate>=${fromDate}`);
   return db
     .select()
     .from(appointments)
@@ -273,7 +274,7 @@ export async function listAppointmentsByProjectFromDate(projectId: number, fromD
 }
 
 export async function listAppointmentsByEmployeeFromDate(employeeId: number, fromDate: Date) {
-  console.log(`${logPrefix} list appointments employeeId=${employeeId} fromDate>=${fromDate}`);
+  logDebug(`${logPrefix} list appointments employeeId=${employeeId} fromDate>=${fromDate}`);
   return db
     .select({
       appointment: appointments,
@@ -289,7 +290,7 @@ export async function listAppointmentsByEmployeeFromDate(employeeId: number, fro
 }
 
 export async function listSidebarAppointmentsByProjectFromDate(projectId: number, fromDate: Date) {
-  console.log(`${logPrefix} list sidebar appointments by project projectId=${projectId} fromDate>=${fromDate}`);
+  logDebug(`${logPrefix} list sidebar appointments by project projectId=${projectId} fromDate>=${fromDate}`);
   return db
     .select({
       appointment: appointments,
@@ -306,7 +307,7 @@ export async function listSidebarAppointmentsByProjectFromDate(projectId: number
 }
 
 export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: number, fromDate: Date) {
-  console.log(`${logPrefix} list sidebar appointments by employee employeeId=${employeeId} fromDate>=${fromDate}`);
+  logDebug(`${logPrefix} list sidebar appointments by employee employeeId=${employeeId} fromDate>=${fromDate}`);
   return db
     .select({
       appointment: appointments,
@@ -324,7 +325,7 @@ export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: numb
 }
 
 export async function listSidebarAppointmentsByTourFromDate(tourId: number, fromDate: Date) {
-  console.log(`${logPrefix} list sidebar appointments by tour tourId=${tourId} fromDate>=${fromDate}`);
+  logDebug(`${logPrefix} list sidebar appointments by tour tourId=${tourId} fromDate>=${fromDate}`);
   return db
     .select({
       appointment: appointments,
@@ -349,7 +350,7 @@ export async function listAppointmentsForCalendarRange({
   toDate: Date;
   employeeId?: number | null;
 }) {
-  console.log(`${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
+  logDebug(`${logPrefix} list calendar appointments fromDate=${fromDate} toDate=${toDate} employeeId=${employeeId ?? "n/a"}`);
 
   const employeeAppointmentIdsQuery = employeeId
     ? db

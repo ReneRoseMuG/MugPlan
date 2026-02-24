@@ -1,35 +1,40 @@
-import dotenv from "dotenv";
 import mysql from "mysql2/promise";
+import { getRuntimeConfig, getRuntimeMode, initializeRuntimeEnv } from "../server/config/runtimeEnv";
+import {
+  assertRuntimeMode,
+  assertSafeDatabaseUrlForMode,
+  assertSqlDatabaseIdentity,
+} from "../server/security/dbSafetyGuards";
 
-dotenv.config({ path: ".env.test" });
-console.log("DB:", process.env.MYSQL_DATABASE_URL);
+process.env.NODE_ENV = "test";
+initializeRuntimeEnv();
+const runtimeMode = getRuntimeMode();
+const runtimeConfig = getRuntimeConfig();
+assertRuntimeMode("test", runtimeMode);
+const expectedDatabaseName = assertSafeDatabaseUrlForMode(runtimeConfig.mysqlDatabaseUrl, runtimeMode);
 
-if (process.env.NODE_ENV !== "test") {
-  throw new Error("Refusing to reset DB outside test mode.");
-}
-
-if (!process.env.MYSQL_DATABASE_URL?.includes("mysql")) {
-  throw new Error("Invalid DB connection.");
-}
+console.log("DB:", expectedDatabaseName);
 
 async function reset() {
-  const connection = await mysql.createConnection(
-    process.env.MYSQL_DATABASE_URL!
-  );
+  const connection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
+  try {
+    await assertSqlDatabaseIdentity(connection, expectedDatabaseName);
+    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
-  await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+    const [tables] = await connection.query("SHOW TABLES");
+    const tableRows = tables as any[];
 
-  const [tables] = await connection.query("SHOW TABLES");
-  const tableKey = Object.keys((tables as any)[0])[0];
-
-  for (const row of tables as any[]) {
-    const tableName = row[tableKey];
-    await connection.query(`TRUNCATE TABLE \`${tableName}\``);
+    if (tableRows.length > 0) {
+      const tableKey = Object.keys(tableRows[0])[0];
+      for (const row of tableRows) {
+        const tableName = row[tableKey];
+        await connection.query(`TRUNCATE TABLE \`${tableName}\``);
+      }
+    }
+    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+  } finally {
+    await connection.end();
   }
-
-  await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
-  await connection.end();
 }
 
 reset().then(() => {

@@ -1,26 +1,26 @@
 import mysql from "mysql2/promise";
-import dotenv from "dotenv";
-
-dotenv.config({ path: ".env.test" });
+import { getRuntimeConfig, getRuntimeMode, initializeRuntimeEnv } from "../../server/config/runtimeEnv";
+import {
+  assertRuntimeMode,
+  assertSafeDatabaseUrlForMode,
+  assertSqlDatabaseIdentity,
+} from "../../server/security/dbSafetyGuards";
 
 const RESET_DB_LOCK_NAME = "mugplan_test_reset_database_lock";
 const RESET_DB_LOCK_TIMEOUT_SECONDS = 60;
 
-if (process.env.NODE_ENV !== "test") {
-  throw new Error("resetDatabase darf nur im Testmodus laufen.");
-}
-
-if (!process.env.MYSQL_DATABASE_URL?.includes("mugplan_test")) {
-  throw new Error("resetDatabase verweigert – keine Test-Datenbank.");
-}
-
+initializeRuntimeEnv();
+const runtimeMode = getRuntimeMode();
+const runtimeConfig = getRuntimeConfig();
+assertRuntimeMode("test", runtimeMode);
+const expectedDatabaseName = assertSafeDatabaseUrlForMode(runtimeConfig.mysqlDatabaseUrl, runtimeMode);
 
 export async function resetDatabase() {
-  const connection = await mysql.createConnection(
-    process.env.MYSQL_DATABASE_URL!
-  );
+  const connection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
 
   try {
+    await assertSqlDatabaseIdentity(connection, expectedDatabaseName);
+
     const [lockRows] = await connection.query("SELECT GET_LOCK(?, ?) AS lockStatus", [
       RESET_DB_LOCK_NAME,
       RESET_DB_LOCK_TIMEOUT_SECONDS,
