@@ -1,29 +1,26 @@
 # Test Strategy
 
-## Runtime and Environment
-- Test runs must execute with `NODE_ENV=test`.
-- `.env.test` is mandatory and must be loaded at startup.
-- Missing `.env.test` or missing required DB URL fails fast.
+## Runtime/Env Contract
+- Tests run with `NODE_ENV=test`.
+- Test file path is explicit: `<ENV_FILES_DIR>/.env.test`.
+- Default base dir is `process.cwd()` when `ENV_FILES_DIR` is unset.
+- Missing `.env.test` => fail fast.
 
-## Database Isolation
-- Test process must only target database names ending with `_test`.
-- Before destructive reset/cleanup, verify:
-- DB target by URL/name policy.
-- active SQL database identity via `SELECT DATABASE()`.
+## DB Isolation Contract
+- Test mode requires:
+- `DB_ALLOWED_DATABASES_TEST` (non-empty CSV)
+- `DB_ALLOWED_HOSTS_TEST` (non-empty CSV)
+- Runtime DB URL must match both allowlists.
+- Destructive reset/cleanup validates `SELECT DATABASE()`.
 
-## Process Chain in Server Environment
-1. Install and prepare the app.
-2. Run automated tests in test process.
-3. Run visual/manual checks in development process.
-4. Start final production process with `npm start`.
-
-Each step must have explicit env source, DB target, and active guard policy.
+## Local and Server Execution
+- Local:
+- `npm test` -> `cross-env ENV_FILES_DIR=. NODE_ENV=test vitest`
+- Server release dir:
+- `ENV_FILES_DIR=../../shared npm test`
 
 ## Smoke Checks
-- App starts from target directory.
-- App binds to `process.env.PORT`.
-- Effective DB identity can be verified without logging secrets.
-- Test process uses only test DB.
-- Development process uses only dev DB.
-- Production start (`npm start`) uses only production DB.
-- Destructive admin/maintenance endpoints follow runtime policy.
+- App/test boot fails on missing expected env file.
+- App/test boot fails on empty DB/host allowlists.
+- Guard blocks wrong DB or wrong host.
+- Destructive operations block on SQL identity mismatch.

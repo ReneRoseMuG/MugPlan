@@ -8,7 +8,9 @@ vite.config.ts.*
 .replit
 .vscode
 .env
+.env.dev
 .env.test
+.env.prod
 
 # local artifacts
 server.log

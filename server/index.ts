@@ -1,6 +1,4 @@
 import express from "express";
-import fs from "fs";
-import path from "path";
 import { createServer } from "http";
 import { errorHandler } from "./middleware/errorHandler";
 import { getRuntimeConfig, initializeRuntimeEnv } from "./config/runtimeEnv";
@@ -106,8 +104,6 @@ void (async () => {
     const runtime = getRuntimeConfig();
     const envPort = process.env.PORT;
     const port = parseInt(envPort || "5000", 10);
-    const envPath = path.resolve(process.cwd(), ".env");
-    const envExists = fs.existsSync(envPath);
 
     // Windows/local-dev: do NOT bind to 0.0.0.0 (can lead to ENOTSUP)
     // Production/deploy: 0.0.0.0 is fine.
@@ -129,7 +125,8 @@ void (async () => {
       logLevel: getEffectiveLogLevel(),
       needsAdminSetup: bootstrapState.needsAdminSetup,
       nodeVersion: process.version,
-      envExists,
+      envFilesDir: runtime.envFilesDir,
+      envFilePath: runtime.envFilePath ?? null,
     });
 
     process.on("uncaughtException", (err) => {

@@ -2,7 +2,7 @@ import mysql from "mysql2/promise";
 import { getRuntimeConfig, getRuntimeMode, initializeRuntimeEnv } from "../../server/config/runtimeEnv";
 import {
   assertRuntimeMode,
-  assertSafeDatabaseUrlForMode,
+  assertSafeDatabaseTargetForMode,
   assertSqlDatabaseIdentity,
 } from "../../server/security/dbSafetyGuards";
 
@@ -13,13 +13,18 @@ initializeRuntimeEnv();
 const runtimeMode = getRuntimeMode();
 const runtimeConfig = getRuntimeConfig();
 assertRuntimeMode("test", runtimeMode);
-const expectedDatabaseName = assertSafeDatabaseUrlForMode(runtimeConfig.mysqlDatabaseUrl, runtimeMode);
+const expectedTarget = assertSafeDatabaseTargetForMode(
+  runtimeConfig.mysqlDatabaseUrl,
+  runtimeMode,
+  runtimeConfig.allowedDatabases,
+  runtimeConfig.allowedHosts,
+);
 
 export async function resetDatabase() {
   const connection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
 
   try {
-    await assertSqlDatabaseIdentity(connection, expectedDatabaseName);
+    await assertSqlDatabaseIdentity(connection, expectedTarget.dbName);
 
     const [lockRows] = await connection.query("SELECT GET_LOCK(?, ?) AS lockStatus", [
       RESET_DB_LOCK_NAME,

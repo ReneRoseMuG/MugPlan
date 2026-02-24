@@ -1,22 +1,21 @@
 import type { Connection } from "mysql2/promise";
 import type { RuntimeMode } from "../config/runtimeEnv";
 
-const expectedSuffixByMode: Record<RuntimeMode, string> = {
-  test: "_test",
-  development: "_dev",
-  production: "_production",
-};
-
 function parseDatabaseName(databaseUrl: string): string {
   const parsed = new URL(databaseUrl);
   return parsed.pathname.replace(/^\/+/, "").trim();
+}
+
+function parseHostName(databaseUrl: string): string {
+  const parsed = new URL(databaseUrl);
+  return (parsed.hostname?.trim() ?? "").toLowerCase();
 }
 
 export function parseDatabaseLogInfo(databaseUrl: string): { dbName: string; host: string | null } {
   try {
     const parsed = new URL(databaseUrl);
     const dbName = parsed.pathname.replace(/^\/+/, "").trim();
-    const host = parsed.hostname?.trim() || null;
+    const host = parsed.hostname?.trim().toLowerCase() || null;
     return { dbName, host };
   } catch {
     return { dbName: "unknown", host: null };
@@ -29,13 +28,26 @@ export function assertRuntimeMode(expected: RuntimeMode, actual: RuntimeMode): v
   }
 }
 
-export function assertSafeDatabaseUrlForMode(databaseUrl: string, mode: RuntimeMode): string {
+export function assertSafeDatabaseTargetForMode(
+  databaseUrl: string,
+  mode: RuntimeMode,
+  allowedDatabases: string[],
+  allowedHosts: string[],
+): { dbName: string; host: string } {
   const dbName = parseDatabaseName(databaseUrl);
-  const expectedSuffix = expectedSuffixByMode[mode];
-  if (!dbName.endsWith(expectedSuffix)) {
-    throw new Error(`Unsafe database target '${dbName}' for mode '${mode}'.`);
+  const host = parseHostName(databaseUrl);
+
+  if (!allowedDatabases.includes(dbName)) {
+    throw new Error(
+      `Unsafe database target for mode '${mode}': db='${dbName}', host='${host || "unknown"}'.`,
+    );
   }
-  return dbName;
+  if (!allowedHosts.includes(host)) {
+    throw new Error(
+      `Unsafe host target for mode '${mode}': db='${dbName}', host='${host || "unknown"}'.`,
+    );
+  }
+  return { dbName, host };
 }
 
 export async function assertSqlDatabaseIdentity(

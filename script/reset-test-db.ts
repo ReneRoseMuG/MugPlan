@@ -2,7 +2,7 @@ import mysql from "mysql2/promise";
 import { getRuntimeConfig, getRuntimeMode, initializeRuntimeEnv } from "../server/config/runtimeEnv";
 import {
   assertRuntimeMode,
-  assertSafeDatabaseUrlForMode,
+  assertSafeDatabaseTargetForMode,
   assertSqlDatabaseIdentity,
 } from "../server/security/dbSafetyGuards";
 
@@ -11,14 +11,19 @@ initializeRuntimeEnv();
 const runtimeMode = getRuntimeMode();
 const runtimeConfig = getRuntimeConfig();
 assertRuntimeMode("test", runtimeMode);
-const expectedDatabaseName = assertSafeDatabaseUrlForMode(runtimeConfig.mysqlDatabaseUrl, runtimeMode);
+const expectedTarget = assertSafeDatabaseTargetForMode(
+  runtimeConfig.mysqlDatabaseUrl,
+  runtimeMode,
+  runtimeConfig.allowedDatabases,
+  runtimeConfig.allowedHosts,
+);
 
-console.log("DB:", expectedDatabaseName);
+console.log("DB:", expectedTarget.dbName);
 
 async function reset() {
   const connection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
   try {
-    await assertSqlDatabaseIdentity(connection, expectedDatabaseName);
+    await assertSqlDatabaseIdentity(connection, expectedTarget.dbName);
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
     const [tables] = await connection.query("SHOW TABLES");

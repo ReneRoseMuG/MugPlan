@@ -3,12 +3,16 @@ import path from "path";
 import dotenv from "dotenv";
 
 export type RuntimeMode = "development" | "test" | "production";
-export type RuntimeEnvSource = "shared" | "root" | "test" | "process";
+export type RuntimeEnvSource = "dev_file" | "test_file" | "process";
 
-type RuntimeConfig = {
+export type RuntimeConfig = {
   mode: RuntimeMode;
+  envFilesDir: string;
+  envFilePath?: string;
   envSource: RuntimeEnvSource;
   mysqlDatabaseUrl: string;
+  allowedDatabases: string[];
+  allowedHosts: string[];
 };
 
 let initialized = false;
@@ -21,29 +25,30 @@ function normalizeMode(raw: string | undefined): RuntimeMode {
   return "development";
 }
 
-function resolveEnvFile(mode: RuntimeMode): { path: string; source: RuntimeEnvSource } | null {
+function parseCsv(raw: string | undefined, opts?: { lowercase?: boolean }): string[] {
+  const lowercase = opts?.lowercase === true;
+  return (raw ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+    .map((value) => (lowercase ? value.toLowerCase() : value));
+}
+
+function resolveEnvFile(mode: RuntimeMode, envFilesDir: string): { path: string; source: RuntimeEnvSource } | null {
   if (mode === "production") {
     return null;
   }
 
-  if (mode === "test") {
+  if (mode === "development") {
     return {
-      path: path.resolve(process.cwd(), ".env.test"),
-      source: "test",
-    };
-  }
-
-  const sharedEnvPath = path.resolve(process.cwd(), "../../shared/.env");
-  if (fs.existsSync(sharedEnvPath)) {
-    return {
-      path: sharedEnvPath,
-      source: "shared",
+      path: path.resolve(envFilesDir, ".env.dev"),
+      source: "dev_file",
     };
   }
 
   return {
-    path: path.resolve(process.cwd(), ".env"),
-    source: "root",
+    path: path.resolve(envFilesDir, ".env.test"),
+    source: "test_file",
   };
 }
 
@@ -54,13 +59,15 @@ export function initializeRuntimeEnv(): RuntimeConfig {
 
   const mode = normalizeMode(process.env.NODE_ENV);
   process.env.NODE_ENV = mode;
+  const envFilesDir = process.env.ENV_FILES_DIR ?? process.cwd();
 
-  const resolved = resolveEnvFile(mode);
+  const resolved = resolveEnvFile(mode, envFilesDir);
   let envSource: RuntimeEnvSource = "process";
+  let envFilePath: string | undefined;
 
   if (resolved) {
     if (!fs.existsSync(resolved.path)) {
-      throw new Error(`Required environment file is missing: ${resolved.path}`);
+      throw new Error(`Missing required env file for mode '${mode}': ${resolved.path}`);
     }
 
     const result = dotenv.config({ path: resolved.path, override: false, quiet: true });
@@ -68,17 +75,33 @@ export function initializeRuntimeEnv(): RuntimeConfig {
       throw result.error;
     }
     envSource = resolved.source;
+    envFilePath = resolved.path;
   }
 
   const mysqlDatabaseUrl = process.env.MYSQL_DATABASE_URL?.trim() ?? "";
   if (!mysqlDatabaseUrl) {
-    throw new Error("MYSQL_DATABASE_URL must be set.");
+    throw new Error(`MYSQL_DATABASE_URL must be set for mode '${mode}'.`);
+  }
+
+  const modeKey = mode === "development" ? "DEV" : mode === "test" ? "TEST" : "PROD";
+  const allowedDatabases = parseCsv(process.env[`DB_ALLOWED_DATABASES_${modeKey}`]);
+  if (allowedDatabases.length === 0) {
+    throw new Error(`DB_ALLOWED_DATABASES_${modeKey} must be a non-empty CSV list for mode '${mode}'.`);
+  }
+
+  const allowedHosts = parseCsv(process.env[`DB_ALLOWED_HOSTS_${modeKey}`], { lowercase: true });
+  if (allowedHosts.length === 0) {
+    throw new Error(`DB_ALLOWED_HOSTS_${modeKey} must be a non-empty CSV list for mode '${mode}'.`);
   }
 
   cachedConfig = {
     mode,
+    envFilesDir,
+    envFilePath,
     envSource,
     mysqlDatabaseUrl,
+    allowedDatabases,
+    allowedHosts,
   };
   initialized = true;
   return cachedConfig;
