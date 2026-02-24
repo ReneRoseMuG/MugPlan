@@ -16,4 +16,5 @@ vite.config.ts.*
 server.log
 *.log
 *.zip
-
+plans/
+reports/
