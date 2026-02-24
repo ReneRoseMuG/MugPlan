@@ -228,7 +228,13 @@ export const projects = mysqlTable("project", {
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+  byCustomerActiveUpdated: index("idx_project_customer_active_updated").on(
+    table.customerId,
+    table.isActive,
+    table.updatedAt,
+  ),
+}));
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
@@ -316,7 +322,21 @@ export const appointments = mysqlTable("appointments", {
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+  byStartDate: index("idx_appt_start_date").on(table.startDate),
+  byProjectStartTimeId: index("idx_appt_project_start_time_id").on(
+    table.projectId,
+    table.startDate,
+    table.startTime,
+    table.id,
+  ),
+  byTourStartTimeId: index("idx_appt_tour_start_time_id").on(
+    table.tourId,
+    table.startDate,
+    table.startTime,
+    table.id,
+  ),
+}));
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;
@@ -433,6 +453,7 @@ export const appointmentEmployees = mysqlTable("appointment_employee", {
   version: int("version").notNull().default(1),
 }, (table) => ({
   pk: primaryKey({ columns: [table.appointmentId, table.employeeId] }),
+  byEmployeeAppointment: index("idx_ae_employee_appointment").on(table.employeeId, table.appointmentId),
 }));
 
 export type AppointmentEmployee = typeof appointmentEmployees.$inferSelect;
@@ -522,6 +543,8 @@ export const backupLog = mysqlTable("backup_log", {
   errorMessage: text("error_message"),
   exportedRecordCount: int("exported_record_count").notNull().default(0),
   filePath: text("file_path"),
-});
+}, (table) => ({
+  byCreatedAtId: index("idx_backup_created_id").on(table.createdAt, table.id),
+}));
 
 export type BackupLog = typeof backupLog.$inferSelect;
