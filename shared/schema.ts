@@ -397,7 +397,14 @@ export const employees = mysqlTable("employee", {
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+  byActiveNameId: index("idx_employee_active_name_id").on(
+    table.isActive,
+    table.lastName,
+    table.firstName,
+    table.id,
+  ),
+}));
 
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
@@ -545,6 +552,11 @@ export const backupLog = mysqlTable("backup_log", {
   filePath: text("file_path"),
 }, (table) => ({
   byCreatedAtId: index("idx_backup_created_id").on(table.createdAt, table.id),
+  byStatusCreatedAtId: index("idx_backup_status_created_id").on(
+    table.status,
+    table.createdAt,
+    table.id,
+  ),
 }));
 
 export type BackupLog = typeof backupLog.$inferSelect;
