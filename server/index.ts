@@ -19,9 +19,31 @@ const dbLogInfo = parseDatabaseLogInfo(runtimeConfig.mysqlDatabaseUrl);
 const app = express();
 const httpServer = createServer(app);
 
-if (process.env.NODE_ENV === "production") {
-  // Required so secure session cookies also work behind TLS-terminating proxies.
-  app.set("trust proxy", 1);
+function resolveTrustProxySetting(): boolean | number | string {
+  const fromEnv = process.env.TRUST_PROXY?.trim();
+  if (!fromEnv) {
+    return process.env.NODE_ENV === "production" ? 1 : false;
+  }
+
+  const normalized = fromEnv.toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+
+  if (/^\d+$/.test(normalized)) {
+    const numeric = Number.parseInt(normalized, 10);
+    if (!Number.isFinite(numeric) || numeric < 0) {
+      throw new Error("TRUST_PROXY numeric value must be >= 0");
+    }
+    return numeric;
+  }
+
+  return fromEnv;
+}
+
+const trustProxy = resolveTrustProxySetting();
+if (trustProxy !== false) {
+  // Required so secure session cookies work behind TLS-terminating proxies.
+  app.set("trust proxy", trustProxy);
 }
 
 declare module "http" {
@@ -122,6 +144,7 @@ void (async () => {
       envSource: runtime.envSource,
       host,
       port,
+      trustProxy: trustProxy === false ? null : trustProxy,
       dbName: dbLogInfo.dbName,
       dbHost: dbLogInfo.host,
       sqlLogging: isSqlLoggingEnabled(),

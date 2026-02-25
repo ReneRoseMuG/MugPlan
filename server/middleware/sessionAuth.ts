@@ -32,6 +32,19 @@ function resolveSessionSecret() {
   return "dev-session-secret-change-me";
 }
 
+function resolveSessionCookieSecure(): boolean | "auto" {
+  const fromEnv = process.env.SESSION_COOKIE_SECURE?.trim().toLowerCase();
+  if (!fromEnv) {
+    return process.env.NODE_ENV === "production" ? "auto" : false;
+  }
+
+  if (fromEnv === "true") return true;
+  if (fromEnv === "false") return false;
+  if (fromEnv === "auto") return "auto";
+
+  throw new Error("SESSION_COOKIE_SECURE must be one of: auto, true, false");
+}
+
 export const sessionAuth = session({
   secret: resolveSessionSecret(),
   resave: false,
@@ -39,7 +52,7 @@ export const sessionAuth = session({
   cookie: {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: resolveSessionCookieSecure(),
   },
 });
 

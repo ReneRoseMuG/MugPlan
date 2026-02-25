@@ -14,6 +14,12 @@ No env-file fallback is allowed.
 - loads exactly `../../shared/.env.dev` for development
 - loads exactly `../../shared/.env.test` for test
 - loads no file for production
+- `server/index.ts`
+- applies `TRUST_PROXY` (`false|true|<number>|<express trust proxy string>`)
+- defaults to `1` in production and `false` in development/test
+- `server/middleware/sessionAuth.ts`
+- applies `SESSION_COOKIE_SECURE` (`auto|true|false`)
+- defaults to `auto` in production and `false` in development/test
 - `package.json`
 - `npm start` sets `NODE_ENV=production`
 - `npm start` loads `../../shared/.env.prod` via `node --env-file=...`
@@ -38,6 +44,14 @@ For safety checks:
 - URL DB name must match allowed DB list.
 - URL host must match allowed host list.
 - Destructive operations must also validate `SELECT DATABASE()`.
+
+## Reverse-Proxy Session Settings
+- `TRUST_PROXY` controls `app.set("trust proxy", ...)`.
+- `SESSION_COOKIE_SECURE` controls `express-session` cookie `secure` mode.
+- Recommended production baseline:
+- `TRUST_PROXY=1`
+- `SESSION_COOKIE_SECURE=auto`
+- Ensure reverse proxy forwards `X-Forwarded-Proto=https`; otherwise secure session cookies are not issued.
 
 ## Startup Commands
 - Local:
