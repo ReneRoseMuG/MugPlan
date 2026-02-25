@@ -505,7 +505,7 @@ export function CalendarWeekView({
             });
           }}
         >
-          {isCollapsedMode ? "Alle Lanes aufklappen" : "Touren kollabieren"}
+          {isCollapsedMode ? "Alle Touren aufklappen" : "Touren kollabieren"}
         </button>
       </div>
 

@@ -1,0 +1,351 @@
+﻿/**
+ * Test Scope:
+ *
+ * Feature: FT02 - Projekte
+ * Use Case: UC 02/01 bis UC 02/20 (Hauptsuite)
+ *
+ * Abgedeckte Regeln:
+ * - Kernverhalten fuer Projekt create/update/delete, status-join, notes und Projektionen.
+ * - Optimistic locking fuer Projektupdates.
+ * - Join-Cleanup bei Projektloeschung.
+ * - Explizite Blocker-Tests fuer fachliche Quersicht-Vertraege, die im Ist-Code nicht direkt pruefbar sind.
+ *
+ * Fehlerfaelle:
+ * - stale version bei Projektupdate.
+ * - Loeschkonflikt bei vorhandenen Terminen.
+ * - fachliche Blocker fuer UC 02/12, UC 02/19, UC 02/20.
+ *
+ * Ziel:
+ * FT02-UC-Traceability in einer zentralen Integrationssuite herstellen.
+ */
+import express from "express";
+import { createServer } from "http";
+import request, { type SuperAgentTest } from "supertest";
+import { and, eq } from "drizzle-orm";
+import { beforeAll, describe, expect, it } from "vitest";
+
+import { registerRoutes } from "../../../server/routes";
+import { errorHandler } from "../../../server/middleware/errorHandler";
+import * as customersService from "../../../server/services/customersService";
+import * as projectsService from "../../../server/services/projectsService";
+import * as appointmentsService from "../../../server/services/appointmentsService";
+import { db } from "../../../server/db";
+import { projectProjectStatus } from "../../../shared/schema";
+
+let app: express.Express;
+let seq = 1;
+
+beforeAll(async () => {
+  app = express();
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  const httpServer = createServer(app);
+  await registerRoutes(httpServer, app);
+  app.use(errorHandler);
+});
+
+async function loginAdminAgent(): Promise<SuperAgentTest> {
+  const agent = request.agent(app);
+  await agent
+    .post("/api/auth/login")
+    .send({ username: "test-admin", password: "test-admin-password" })
+    .expect(200);
+  return agent;
+}
+
+async function createCustomer(prefix: string) {
+  const token = `${prefix}-${Date.now()}-${seq++}`;
+  return customersService.createCustomer({
+    customerNumber: token,
+    firstName: "FT02",
+    lastName: token,
+    fullName: `${token}, FT02`,
+    company: null,
+    email: null,
+    phone: null,
+    addressLine1: null,
+    addressLine2: null,
+    postalCode: null,
+    city: null,
+    version: 1,
+  });
+}
+
+async function createProject(customerId: number, name: string) {
+  return projectsService.createProject({
+    customerId,
+    name,
+    descriptionMd: null,
+    version: 1,
+  });
+}
+
+describe("FT02 integration: full uc coverage", () => {
+  it("UC 02/01 create project happy and basic validation negative", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0201");
+
+    const created = await admin
+      .post("/api/projects")
+      .send({ customerId: customer.id, name: "UC02-01 Project", descriptionMd: null })
+      .expect(201);
+
+    expect(created.body.customerId).toBe(customer.id);
+    expect(Number.isInteger(created.body.version)).toBe(true);
+
+    await admin
+      .post("/api/projects")
+      .send({ name: "Missing customer" })
+      .expect(422);
+  });
+
+  it("UC 02/02 project update with optimistic lock conflict", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0202");
+    const project = await createProject(customer.id, "UC02-02 Base");
+
+    const updated = await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, name: "UC02-02 Updated" })
+      .expect(200);
+
+    await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, name: "UC02-02 Stale" })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("VERSION_CONFLICT");
+      });
+
+    expect(updated.body.version).toBeGreaterThan(project.version);
+  });
+
+  it("UC 02/04 status relation add/remove with inactive block", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0204");
+    const project = await createProject(customer.id, "UC02-04");
+
+    const activeStatus = await admin
+      .post("/api/project-status")
+      .send({ title: `UC0204-Active-${Date.now()}-${seq++}`, color: "#16a34a", description: null, sortOrder: 1 })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/statuses`)
+      .send({ statusId: activeStatus.body.id, expectedVersion: 0 })
+      .expect(201);
+
+    await admin
+      .delete(`/api/projects/${project.id}/statuses/${activeStatus.body.id}`)
+      .send({ version: 1 })
+      .expect(204);
+
+    const inactiveStatus = await admin
+      .post("/api/project-status")
+      .send({ title: `UC0204-Inactive-${Date.now()}-${seq++}`, color: "#64748b", description: null, sortOrder: 2 })
+      .expect(201);
+
+    await admin
+      .patch(`/api/project-status/${inactiveStatus.body.id}/active`)
+      .send({ isActive: false, version: inactiveStatus.body.version })
+      .expect(200);
+
+    await admin
+      .post(`/api/projects/${project.id}/statuses`)
+      .send({ statusId: inactiveStatus.body.id, expectedVersion: 0 })
+      .expect(409);
+  });
+
+  it("UC 02/05 project notes create/list/delete", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0205");
+    const project = await createProject(customer.id, "UC02-05");
+
+    const createdNote = await admin
+      .post(`/api/projects/${project.id}/notes`)
+      .send({ title: "UC02 Note", body: "<p>Body</p>" })
+      .expect(201);
+
+    const noteId = Number(createdNote.body.id);
+    expect(Number.isInteger(noteId)).toBe(true);
+
+    const listed = await admin.get(`/api/projects/${project.id}/notes`).expect(200);
+    expect((listed.body as Array<{ id: number }>).some((row) => row.id === noteId)).toBe(true);
+
+    await admin
+      .delete(`/api/projects/${project.id}/notes/${noteId}`)
+      .send({ version: createdNote.body.version })
+      .expect(204);
+  });
+
+  it("UC 02/06 invariant surface: project attachment delete endpoint is disabled", async () => {
+    const admin = await loginAdminAgent();
+    await admin
+      .delete("/api/project-attachments/123456")
+      .expect(405)
+      .expect((res) => {
+        expect(res.body.message).toBe("Attachment deletion is disabled");
+      });
+  });
+
+  it("UC 02/08 delete rules: block when appointments exist and allow when empty", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0208");
+
+    const blockedProject = await createProject(customer.id, "UC02-08 Blocked");
+    await appointmentsService.createAppointment({
+      projectId: blockedProject.id,
+      startDate: "2099-12-20",
+      employeeIds: [],
+    });
+
+    await admin
+      .delete(`/api/projects/${blockedProject.id}`)
+      .send({ version: blockedProject.version })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    const deletableProject = await createProject(customer.id, "UC02-08 Deletable");
+    await admin
+      .delete(`/api/projects/${deletableProject.id}`)
+      .send({ version: deletableProject.version })
+      .expect(204);
+  });
+
+  it("UC 02/09 + UC 02/13: project update is reflected in calendar projection", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0209");
+    const project = await createProject(customer.id, "UC02-09 Original");
+
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-12-21",
+      employeeIds: [],
+    });
+
+    await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, name: "UC02-09 Changed" })
+      .expect(200);
+
+    const calendar = await admin
+      .get("/api/calendar/appointments?fromDate=2099-12-01&toDate=2099-12-31")
+      .expect(200);
+
+    const row = (calendar.body as Array<{ id: number; projectName: string }>).find((item) => item.id === appointment.id);
+    expect(row).toBeDefined();
+    expect(row?.projectName.includes("UC02-09 Changed")).toBe(true);
+  });
+
+  it("UC 02/10: project status projection appears in appointments payload", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0210");
+    const project = await createProject(customer.id, "UC02-10");
+
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-12-22",
+      employeeIds: [],
+    });
+
+    const status = await admin
+      .post("/api/project-status")
+      .send({ title: `UC0210-Status-${Date.now()}-${seq++}`, color: "#3344cc", description: null, sortOrder: 1 })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/statuses`)
+      .send({ statusId: status.body.id, expectedVersion: 0 })
+      .expect(201);
+
+    const response = await admin
+      .get(`/api/customers/${customer.id}/appointments?scope=all`)
+      .expect(200);
+
+    const item = (response.body as Array<{ projectId: number; projectStatuses: Array<{ id: number }> }>).find(
+      (row) => row.projectId === project.id,
+    );
+
+    expect(item).toBeDefined();
+    expect(item?.projectStatuses.some((entry) => entry.id === status.body.id)).toBe(true);
+  });
+
+  it("UC 02/11 + UC 02/15: deleting project removes status join relations", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0211");
+    const project = await createProject(customer.id, "UC02-11");
+
+    const status = await admin
+      .post("/api/project-status")
+      .send({ title: `UC0211-Status-${Date.now()}-${seq++}`, color: "#882299", description: null, sortOrder: 1 })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/statuses`)
+      .send({ statusId: status.body.id, expectedVersion: 0 })
+      .expect(201);
+
+    const beforeRows = await db
+      .select()
+      .from(projectProjectStatus)
+      .where(and(eq(projectProjectStatus.projectId, project.id), eq(projectProjectStatus.projectStatusId, status.body.id)));
+    expect(beforeRows).toHaveLength(1);
+
+    await admin
+      .delete(`/api/projects/${project.id}`)
+      .send({ version: project.version })
+      .expect(204);
+
+    const afterRows = await db
+      .select()
+      .from(projectProjectStatus)
+      .where(and(eq(projectProjectStatus.projectId, project.id), eq(projectProjectStatus.projectStatusId, status.body.id)));
+    expect(afterRows).toHaveLength(0);
+
+    await admin.get(`/api/projects/${project.id}`).expect(404);
+  });
+
+  it("UC 02/14: two clients with same version cause stale conflict", async () => {
+    const a = await loginAdminAgent();
+    const b = await loginAdminAgent();
+    const customer = await createCustomer("UC0214");
+    const project = await createProject(customer.id, "UC02-14");
+
+    const [first, second] = await Promise.all([
+      a.patch(`/api/projects/${project.id}`).send({ version: project.version, name: "UC02-14 A" }),
+      b.patch(`/api/projects/${project.id}`).send({ version: project.version, name: "UC02-14 B" }),
+    ]);
+
+    const statuses = [first.status, second.status].sort((x, y) => x - y);
+    expect(statuses).toEqual([200, 409]);
+  });
+
+  it("UC 02/16: assigning non-existing customer should be rejected", async () => {
+    const admin = await loginAdminAgent();
+
+    await admin
+      .post("/api/projects")
+      .send({ customerId: 999999999, name: "UC02-16 Invalid", descriptionMd: null })
+      .expect(422);
+  });
+
+  it("UC 02/12 blocker: cross-view source-of-truth contract is not directly verifiable in backend contract", () => {
+    throw new Error(
+      "NOT_IMPLEMENTED_BY_SCOPE | UC 02/12 | Required proof: dependent views must not locally persist duplicated project data. Current backend contracts expose projection payloads but no verifiable persistence-invariant endpoint.",
+    );
+  });
+
+  it("UC 02/19 blocker: duplicate cross-view contract kept separate by traceability policy", () => {
+    throw new Error(
+      "NOT_IMPLEMENTED_BY_SCOPE | UC 02/19 | Separate trace entry for cross-view contract retained. No additional backend-only invariant endpoint available for direct proof.",
+    );
+  });
+
+  it("UC 02/20 blocker: duplicate denormalized refresh contract kept separate by traceability policy", () => {
+    throw new Error(
+      "NOT_IMPLEMENTED_BY_SCOPE | UC 02/20 | Separate trace entry for denormalized refresh contract retained. Existing projections partially cover behavior but not full cross-view contract.",
+    );
+  });
+});
