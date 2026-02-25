@@ -27,7 +27,9 @@ describe("FT03 UI: week appointment notes hover/preview wiring", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentNotesHover.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("const totalNotesCount = customerNotesCount + projectNotesCount;");
+    expect(source).toContain("const safeCustomerNotesCount = Number.isFinite(customerNotesCount) ? Math.max(0, customerNotesCount) : 0;");
+    expect(source).toContain("const safeProjectNotesCount = Number.isFinite(projectNotesCount) ? Math.max(0, projectNotesCount) : 0;");
+    expect(source).toContain("const totalNotesCount = safeCustomerNotesCount + safeProjectNotesCount;");
     expect(source).toContain("if (totalNotesCount <= 0) return null;");
     expect(source).toContain("Notizen anzeigen ({totalNotesCount})");
     expect(source).toContain('data-testid="week-appointment-notes-hover-trigger"');

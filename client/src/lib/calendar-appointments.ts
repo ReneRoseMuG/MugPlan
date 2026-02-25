@@ -85,7 +85,20 @@ export function useCalendarAppointments({
       if (!Array.isArray(payload)) {
         return [];
       }
-      const data = payload as CalendarAppointment[];
+      const data = (payload as CalendarAppointment[]).map((rawAppointment) => {
+        const customerNotesCount = Number.isFinite(rawAppointment.customerNotesCount)
+          ? Math.max(0, rawAppointment.customerNotesCount)
+          : 0;
+        const projectNotesCount = Number.isFinite(rawAppointment.projectNotesCount)
+          ? Math.max(0, rawAppointment.projectNotesCount)
+          : 0;
+
+        return {
+          ...rawAppointment,
+          customerNotesCount,
+          projectNotesCount,
+        };
+      });
       console.info(`${logPrefix} fetch success`, { count: data.length });
       return data;
     },

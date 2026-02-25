@@ -15,7 +15,9 @@ export function CalendarWeekAppointmentNotesHover({
   projectNotesCount: number;
 }) {
   const [shouldLoadPreview, setShouldLoadPreview] = useState(false);
-  const totalNotesCount = customerNotesCount + projectNotesCount;
+  const safeCustomerNotesCount = Number.isFinite(customerNotesCount) ? Math.max(0, customerNotesCount) : 0;
+  const safeProjectNotesCount = Number.isFinite(projectNotesCount) ? Math.max(0, projectNotesCount) : 0;
+  const totalNotesCount = safeCustomerNotesCount + safeProjectNotesCount;
   if (totalNotesCount <= 0) return null;
 
   return (
@@ -24,8 +26,8 @@ export function CalendarWeekAppointmentNotesHover({
         <CalendarWeekAppointmentNotesPreview
           customerId={customerId}
           projectId={projectId}
-          customerNotesCount={customerNotesCount}
-          projectNotesCount={projectNotesCount}
+          customerNotesCount={safeCustomerNotesCount}
+          projectNotesCount={safeProjectNotesCount}
           shouldLoad={shouldLoadPreview}
         />
       )}
