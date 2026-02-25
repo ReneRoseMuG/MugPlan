@@ -99,6 +99,20 @@ describe("FT07 unit: runtime env loading", () => {
     expect(runtime.envFilePath).toBe(path.resolve(releaseDir, "../../shared/.env.test"));
   });
 
+  it("accepts changed .env.test allowlist database names without code changes", async () => {
+    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-allowlist-");
+    await writeEnvFile(sharedDir, ".env.test", "tenant_test_blue_42", "TEST");
+    process.chdir(releaseDir);
+    process.env.NODE_ENV = "test";
+
+    const { initializeRuntimeEnv } = await importRuntimeEnvModule();
+    const runtime = initializeRuntimeEnv();
+
+    expect(runtime.mode).toBe("test");
+    expect(runtime.mysqlDatabaseUrl).toContain("/tenant_test_blue_42");
+    expect(runtime.allowedDatabases).toEqual(["tenant_test_blue_42"]);
+  });
+
   it("fails fast with cwd and expected path for missing development env file", async () => {
     const { releaseDir } = await createReleaseLayout("mugplan-runtime-dev-missing-");
     process.chdir(releaseDir);

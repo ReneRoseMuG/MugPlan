@@ -41,9 +41,11 @@ No env-file fallback is allowed.
 - Empty mandatory lists are rejected.
 
 For safety checks:
+- Global startup guard in `server/db.ts` validates URL target before `createPool(...)`.
 - URL DB name must match allowed DB list.
 - URL host must match allowed host list.
 - Destructive operations must also validate `SELECT DATABASE()`.
+- Concrete DB names may vary per environment/tenant; allowlists are the sole source of truth.
 
 ## Reverse-Proxy Session Settings
 - `TRUST_PROXY` controls `app.set("trust proxy", ...)`.

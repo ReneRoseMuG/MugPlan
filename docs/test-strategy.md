@@ -12,6 +12,7 @@
 - `DB_ALLOWED_DATABASES_TEST` (non-empty CSV)
 - `DB_ALLOWED_HOSTS_TEST` (non-empty CSV)
 - Runtime DB URL must match both allowlists.
+- Global DB startup guard enforces this before pool creation.
 - Destructive reset/cleanup validates `SELECT DATABASE()`.
 
 ## Local and Server Execution

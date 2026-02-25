@@ -525,6 +525,22 @@ export function CalendarWeekView({
             const weekKey = format(weekStart, "yyyy-MM-dd");
             const weekLanes = lanesByWeekStart.get(weekKey) ?? [];
             const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+            const dayHeaderBadges = Array.from({ length: 7 }, (_, dayIdx) =>
+              weekLanes
+                .map((lane) => ({
+                  laneKey: lane.laneKey,
+                  tourId: lane.tourId,
+                  color: lane.color ?? "#64748b",
+                  count: lane.dayBuckets[dayIdx]?.appointments.length ?? 0,
+                }))
+                .filter((entry) => entry.count > 0)
+                .sort((a, b) => {
+                  if (a.tourId === null && b.tourId === null) return 0;
+                  if (a.tourId === null) return 1;
+                  if (b.tourId === null) return -1;
+                  return a.tourId - b.tourId;
+                }),
+            );
 
             return (
               <section
@@ -561,6 +577,24 @@ export function CalendarWeekView({
                               `}
                             >
                               {format(day, "d")}
+                            </div>
+                            <div
+                              className="mt-1 h-5 flex items-center justify-center gap-1 overflow-hidden px-1"
+                              data-testid={`week-day-tour-badges-${dayKey}`}
+                            >
+                              {dayHeaderBadges[dayIdx].map((badge) => (
+                                <span
+                                  key={`week-day-tour-badge-${dayKey}-${badge.laneKey}`}
+                                  className="inline-flex h-4 min-w-4 items-center justify-center rounded-md border px-1 text-[10px] font-bold leading-none text-white"
+                                  style={{
+                                    backgroundColor: badge.color,
+                                    borderColor: "rgba(255,255,255,0.42)",
+                                  }}
+                                  data-testid={`week-day-tour-badge-${dayKey}-${badge.laneKey}`}
+                                >
+                                  {badge.count}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         </div>
