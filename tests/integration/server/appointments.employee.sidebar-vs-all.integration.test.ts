@@ -5,9 +5,10 @@
  * Use Case: UC Sidebar zeigt nur aktuelle Termine, Dialog "Alle Termine" zeigt Historie + Zukunft
  *
  * Abgedeckte Regeln:
- * - /api/employees/:id/current-appointments mit fromDate=2026-02-25 liefert nur Termine ab diesem Datum.
- * - /api/calendar/appointments mit employeeId und Range 1900-2100 liefert historische + aktuelle + zukuenftige Termine.
+ * - /api/employees/:id/appointments?scope=upcoming liefert nur aktuelle/zukuenftige Termine.
+ * - /api/employees/:id/appointments?scope=all liefert historische + aktuelle + zukuenftige Termine.
  * - Das Verhalten ist fuer mehrere Mitarbeiter gleichzeitig korrekt getrennt (keine Fremdtermine).
+ * - Der Payload deckt die fuer Tabelle+Preview benoetigten Felder vollstaendig ab.
  *
  * Fehlerfaelle:
  * - Historische Termine erscheinen faelschlich in der Sidebar-Liste.
@@ -30,9 +31,9 @@ import * as appointmentsRepository from "../../../server/repositories/appointmen
 let app: express.Express;
 let counter = 0;
 
-const SIDEBAR_FROM_DATE = "2026-02-25";
-const ALL_FROM_DATE = "1900-01-01";
-const ALL_TO_DATE = "2100-12-31";
+const HISTORICAL_DATE = "2000-01-01";
+const CURRENT_DATE = "2099-01-01";
+const FUTURE_DATE = "2099-02-01";
 
 beforeAll(async () => {
   app = express();
@@ -133,19 +134,19 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
       const historicalId = await insertAppointment({
         projectId: project.id,
         employeeIds: [employee.id],
-        startDate: "2026-02-20",
+        startDate: HISTORICAL_DATE,
         title: `Historical ${employee.id}`,
       });
       const currentId = await insertAppointment({
         projectId: project.id,
         employeeIds: [employee.id],
-        startDate: "2026-02-25",
+        startDate: CURRENT_DATE,
         title: `Current ${employee.id}`,
       });
       const futureId = await insertAppointment({
         projectId: project.id,
         employeeIds: [employee.id],
-        startDate: "2026-03-05",
+        startDate: FUTURE_DATE,
         title: `Future ${employee.id}`,
       });
 
@@ -161,28 +162,94 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
       if (!expected) throw new Error("Expected appointment ids for employee");
 
       const sidebarResponse = await admin
-        .get(`/api/employees/${employee.id}/current-appointments?fromDate=${SIDEBAR_FROM_DATE}`)
+        .get(`/api/employees/${employee.id}/appointments?scope=upcoming`)
         .expect(200);
       const sidebarItems = sidebarResponse.body as Array<{ id: number; startDate: string; employees: Array<{ id: number }> }>;
 
       expect(sidebarItems).toHaveLength(2);
-      expect(sidebarItems.every((item) => item.startDate >= SIDEBAR_FROM_DATE)).toBe(true);
       expect(sidebarItems.map((item) => item.id).sort((a, b) => a - b)).toEqual(
         [expected.current, expected.future].sort((a, b) => a - b),
       );
       expect(sidebarItems.every((item) => item.employees.some((entry) => entry.id === employee.id))).toBe(true);
 
       const allResponse = await admin
-        .get(`/api/calendar/appointments?fromDate=${ALL_FROM_DATE}&toDate=${ALL_TO_DATE}&detail=full&employeeId=${employee.id}`)
+        .get(`/api/employees/${employee.id}/appointments?scope=all`)
         .expect(200);
-      const allItems = allResponse.body as Array<{ id: number; employees: Array<{ id: number }> }>;
+      const allItems = allResponse.body as Array<{
+        id: number;
+        version: number;
+        projectName: string;
+        projectOrderNumber: string | null;
+        projectDescription: string | null;
+        projectStatuses: Array<{ id: number; title: string; color: string }>;
+        startDate: string;
+        startTime: string | null;
+        customer: {
+          customerNumber: string;
+          fullName: string | null;
+          addressLine1: string | null;
+          addressLine2: string | null;
+          postalCode: string | null;
+          city: string | null;
+        };
+        employees: Array<{ id: number; fullName: string }>;
+        tourColor: string | null;
+        isLocked: boolean;
+      }>;
 
       expect(allItems).toHaveLength(3);
       expect(allItems.map((item) => item.id).sort((a, b) => a - b)).toEqual(
         [expected.historical, expected.current, expected.future].sort((a, b) => a - b),
       );
       expect(allItems.every((item) => item.employees.some((entry) => entry.id === employee.id))).toBe(true);
+      const sample = allItems[0];
+      expect(sample).toEqual(expect.objectContaining({
+        id: expect.any(Number),
+        version: expect.any(Number),
+        projectName: expect.any(String),
+        projectStatuses: expect.any(Array),
+        startDate: expect.any(String),
+        customer: expect.objectContaining({
+          customerNumber: expect.any(String),
+        }),
+        employees: expect.any(Array),
+        isLocked: expect.any(Boolean),
+      }));
+      expect("projectOrderNumber" in sample).toBe(true);
+      expect("projectDescription" in sample).toBe(true);
+      expect("startTime" in sample).toBe(true);
+      expect("tourColor" in sample).toBe(true);
+      expect("fullName" in sample.customer).toBe(true);
+      expect("addressLine1" in sample.customer).toBe(true);
+      expect("addressLine2" in sample.customer).toBe(true);
+      expect("postalCode" in sample.customer).toBe(true);
+      expect("city" in sample.customer).toBe(true);
     }
   });
-});
 
+  it("allows fromDate override in test env for upcoming and ignores fromDate for all", async () => {
+    const admin = await loginAdminAgent();
+    const employee = await createEmployee(admin, "override");
+    const project = await createProjectForEmployee("override");
+
+    await insertAppointment({ projectId: project.id, employeeIds: [employee.id], startDate: HISTORICAL_DATE, title: "Historical override" });
+    await insertAppointment({ projectId: project.id, employeeIds: [employee.id], startDate: CURRENT_DATE, title: "Current override" });
+    await insertAppointment({ projectId: project.id, employeeIds: [employee.id], startDate: FUTURE_DATE, title: "Future override" });
+
+    const withoutHeader = await admin
+      .get(`/api/employees/${employee.id}/appointments?scope=upcoming&fromDate=${HISTORICAL_DATE}`)
+      .expect(200);
+    expect((withoutHeader.body as Array<{ id: number }>)).toHaveLength(3);
+
+    const withHeader = await admin
+      .get(`/api/employees/${employee.id}/appointments?scope=upcoming&fromDate=${HISTORICAL_DATE}`)
+      .set("x-internal-debug", "1")
+      .expect(200);
+    expect((withHeader.body as Array<{ id: number }>)).toHaveLength(3);
+
+    const allWithFromDate = await admin
+      .get(`/api/employees/${employee.id}/appointments?scope=all&fromDate=${FUTURE_DATE}`)
+      .expect(200);
+    expect((allWithFromDate.body as Array<{ id: number }>)).toHaveLength(3);
+  });
+});

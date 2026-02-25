@@ -5,9 +5,10 @@
  * Use Case: UC Sidebar zeigt nur aktuelle Kundentermine, Dialog "Alle Termine" zeigt komplette Historie
  *
  * Abgedeckte Regeln:
- * - Kunden-Sidebar-Logik (projektbasiert mit fromDate=2026-02-25) liefert nur Termine ab diesem Datum.
- * - Kunden-"Alle Termine"-Logik (projektbasiert mit fromDate=1900-01-01) liefert historische + aktuelle + zukuenftige Termine.
+ * - /api/customers/:id/appointments?scope=upcoming liefert nur aktuelle/zukuenftige Termine.
+ * - /api/customers/:id/appointments?scope=all liefert historische + aktuelle + zukuenftige Termine.
  * - Das Verhalten ist fuer mehrere Kunden gleichzeitig korrekt getrennt (keine Fremdtermine).
+ * - Der Payload deckt die fuer Tabelle+Preview benoetigten Felder vollstaendig ab.
  *
  * Fehlerfaelle:
  * - Historische Termine erscheinen in der Sidebar-Projektion.
@@ -30,8 +31,9 @@ import * as appointmentsRepository from "../../../server/repositories/appointmen
 let app: express.Express;
 let counter = 0;
 
-const SIDEBAR_FROM_DATE = "2026-02-25";
-const ALL_FROM_DATE = "1900-01-01";
+const HISTORICAL_DATE = "2000-01-01";
+const CURRENT_DATE = "2099-01-01";
+const FUTURE_DATE = "2099-02-01";
 
 beforeAll(async () => {
   app = express();
@@ -104,23 +106,6 @@ async function insertProjectAppointment(params: { projectId: number; startDate: 
   return created.id as number;
 }
 
-async function loadCustomerAppointmentsByProjects(admin: SuperAgentTest, customerId: number, fromDate: string) {
-  const projectsResponse = await admin.get(`/api/projects?customerId=${customerId}&filter=all`).expect(200);
-  const projects = projectsResponse.body as Array<{ id: number }>;
-
-  const responses = await Promise.all(
-    projects.map(async (project) => {
-      const response = await admin.get(`/api/projects/${project.id}/appointments?fromDate=${fromDate}`).expect(200);
-      return response.body as Array<{ id: number; startDate: string; customer: { id: number } }>;
-    }),
-  );
-
-  return {
-    projectIds: projects.map((project) => project.id),
-    items: responses.flat(),
-  };
-}
-
 describe("FT04/FT05+ integration: customer sidebar vs all appointments", () => {
   it("returns only current+future for sidebar and full history for all-appointments across multiple customers", async () => {
     const admin = await loginAdminAgent();
@@ -135,17 +120,17 @@ describe("FT04/FT05+ integration: customer sidebar vs all appointments", () => {
     for (const bundle of customerBundles) {
       const historicalId = await insertProjectAppointment({
         projectId: bundle.projects[0].id,
-        startDate: "2026-02-20",
+        startDate: HISTORICAL_DATE,
         title: `Historical ${bundle.customer.id}`,
       });
       const currentId = await insertProjectAppointment({
         projectId: bundle.projects[0].id,
-        startDate: "2026-02-25",
+        startDate: CURRENT_DATE,
         title: `Current ${bundle.customer.id}`,
       });
       const futureId = await insertProjectAppointment({
         projectId: bundle.projects[1].id,
-        startDate: "2026-03-05",
+        startDate: FUTURE_DATE,
         title: `Future ${bundle.customer.id}`,
       });
       expectedByCustomer.set(bundle.customer.id, {
@@ -160,23 +145,90 @@ describe("FT04/FT05+ integration: customer sidebar vs all appointments", () => {
       const expected = expectedByCustomer.get(bundle.customer.id);
       if (!expected) throw new Error("Expected appointment ids for customer");
 
-      const sidebar = await loadCustomerAppointmentsByProjects(admin, bundle.customer.id, SIDEBAR_FROM_DATE);
-      expect(sidebar.projectIds.sort((a, b) => a - b)).toEqual(expected.projectIds);
-      expect(sidebar.items).toHaveLength(2);
-      expect(sidebar.items.every((item) => item.startDate >= SIDEBAR_FROM_DATE)).toBe(true);
-      expect(sidebar.items.map((item) => item.id).sort((a, b) => a - b)).toEqual(
+      const sidebarResponse = await admin.get(`/api/customers/${bundle.customer.id}/appointments?scope=upcoming`).expect(200);
+      const sidebarItems = sidebarResponse.body as Array<{ id: number; customer: { id: number } }>;
+      expect(sidebarItems).toHaveLength(2);
+      expect(sidebarItems.map((item) => item.id).sort((a, b) => a - b)).toEqual(
         [expected.current, expected.future].sort((a, b) => a - b),
       );
-      expect(sidebar.items.every((item) => item.customer.id === bundle.customer.id)).toBe(true);
+      expect(sidebarItems.every((item) => item.customer.id === bundle.customer.id)).toBe(true);
 
-      const all = await loadCustomerAppointmentsByProjects(admin, bundle.customer.id, ALL_FROM_DATE);
-      expect(all.projectIds.sort((a, b) => a - b)).toEqual(expected.projectIds);
-      expect(all.items).toHaveLength(3);
-      expect(all.items.map((item) => item.id).sort((a, b) => a - b)).toEqual(
+      const allResponse = await admin.get(`/api/customers/${bundle.customer.id}/appointments?scope=all`).expect(200);
+      const allItems = allResponse.body as Array<{
+        id: number;
+        version: number;
+        projectName: string;
+        projectOrderNumber: string | null;
+        projectDescription: string | null;
+        projectStatuses: Array<{ id: number; title: string; color: string }>;
+        startDate: string;
+        startTime: string | null;
+        customer: {
+          id: number;
+          customerNumber: string;
+          fullName: string | null;
+          addressLine1: string | null;
+          addressLine2: string | null;
+          postalCode: string | null;
+          city: string | null;
+        };
+        employees: Array<{ id: number; fullName: string }>;
+        tourColor: string | null;
+        isLocked: boolean;
+      }>;
+      expect(allItems).toHaveLength(3);
+      expect(allItems.map((item) => item.id).sort((a, b) => a - b)).toEqual(
         [expected.historical, expected.current, expected.future].sort((a, b) => a - b),
       );
-      expect(all.items.every((item) => item.customer.id === bundle.customer.id)).toBe(true);
+      expect(allItems.every((item) => item.customer.id === bundle.customer.id)).toBe(true);
+      const sample = allItems[0];
+      expect(sample).toEqual(expect.objectContaining({
+        id: expect.any(Number),
+        version: expect.any(Number),
+        projectName: expect.any(String),
+        projectStatuses: expect.any(Array),
+        startDate: expect.any(String),
+        customer: expect.objectContaining({
+          id: expect.any(Number),
+          customerNumber: expect.any(String),
+        }),
+        employees: expect.any(Array),
+        isLocked: expect.any(Boolean),
+      }));
+      expect("projectOrderNumber" in sample).toBe(true);
+      expect("projectDescription" in sample).toBe(true);
+      expect("startTime" in sample).toBe(true);
+      expect("tourColor" in sample).toBe(true);
+      expect("fullName" in sample.customer).toBe(true);
+      expect("addressLine1" in sample.customer).toBe(true);
+      expect("addressLine2" in sample.customer).toBe(true);
+      expect("postalCode" in sample.customer).toBe(true);
+      expect("city" in sample.customer).toBe(true);
     }
   });
-});
 
+  it("allows fromDate override in test env for upcoming and ignores fromDate for all", async () => {
+    const admin = await loginAdminAgent();
+    const bundle = await createCustomerWithProjects("override");
+
+    await insertProjectAppointment({ projectId: bundle.projects[0].id, startDate: HISTORICAL_DATE, title: "Historical override" });
+    await insertProjectAppointment({ projectId: bundle.projects[0].id, startDate: CURRENT_DATE, title: "Current override" });
+    await insertProjectAppointment({ projectId: bundle.projects[1].id, startDate: FUTURE_DATE, title: "Future override" });
+
+    const withoutHeader = await admin
+      .get(`/api/customers/${bundle.customer.id}/appointments?scope=upcoming&fromDate=${HISTORICAL_DATE}`)
+      .expect(200);
+    expect((withoutHeader.body as Array<{ id: number }>)).toHaveLength(3);
+
+    const withHeader = await admin
+      .get(`/api/customers/${bundle.customer.id}/appointments?scope=upcoming&fromDate=${HISTORICAL_DATE}`)
+      .set("x-internal-debug", "1")
+      .expect(200);
+    expect((withHeader.body as Array<{ id: number }>)).toHaveLength(3);
+
+    const allWithFromDate = await admin
+      .get(`/api/customers/${bundle.customer.id}/appointments?scope=all&fromDate=${FUTURE_DATE}`)
+      .expect(200);
+    expect((allWithFromDate.body as Array<{ id: number }>)).toHaveLength(3);
+  });
+});

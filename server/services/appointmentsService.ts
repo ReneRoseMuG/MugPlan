@@ -379,22 +379,51 @@ export async function listEmployeeAppointments(
   fromDate: string | undefined,
   roleKey: CanonicalRoleKey,
 ) {
-  const todayBerlin = getBerlinTodayDateString();
-  const effectiveFromDate = fromDate ?? todayBerlin;
+  return listEmployeeAppointmentsByScope(employeeId, "upcoming", roleKey, { fromDateOverride: fromDate });
+}
 
-  if (!fromDate) {
-    logDebug(`${logPrefix} list employee appointments defaulting fromDate=${effectiveFromDate}`);
-  } else {
-    logDebug(`${logPrefix} list employee appointments using fromDate=${effectiveFromDate}`);
+type EntityAppointmentsScope = "upcoming" | "all";
+
+function resolveScopeFromDate(scope: EntityAppointmentsScope, fromDateOverride?: string): Date | undefined {
+  if (scope === "all") {
+    return undefined;
   }
+  const todayBerlin = getBerlinTodayDateString();
+  const effectiveFromDate = fromDateOverride ?? todayBerlin;
+  return parseDateOnly(effectiveFromDate);
+}
 
-  logDebug(`${logPrefix} list employee appointments employeeId=${employeeId} fromDate=${effectiveFromDate}`);
-  const appointments = await appointmentsRepository.listSidebarAppointmentsByEmployeeFromDate(
-    employeeId,
-    parseDateOnly(effectiveFromDate),
+export async function listEmployeeAppointmentsByScope(
+  employeeId: number,
+  scope: EntityAppointmentsScope,
+  roleKey: CanonicalRoleKey,
+  options?: { fromDateOverride?: string },
+) {
+  const fromDate = resolveScopeFromDate(scope, options?.fromDateOverride);
+  logDebug(
+    `${logPrefix} list employee appointments by scope employeeId=${employeeId} scope=${scope} fromDate=${fromDate ? toDateOnlyString(fromDate) : "none"}`,
   );
-  logDebug(`${logPrefix} list employee appointments result employeeId=${employeeId} count=${appointments.length}`);
+  const appointments = await appointmentsRepository.listSidebarAppointmentsByEmployeeScope(employeeId, fromDate);
+  logDebug(
+    `${logPrefix} list employee appointments by scope result employeeId=${employeeId} scope=${scope} count=${appointments.length}`,
+  );
+  return mapSidebarAppointments(appointments, roleKey);
+}
 
+export async function listCustomerAppointmentsByScope(
+  customerId: number,
+  scope: EntityAppointmentsScope,
+  roleKey: CanonicalRoleKey,
+  options?: { fromDateOverride?: string },
+) {
+  const fromDate = resolveScopeFromDate(scope, options?.fromDateOverride);
+  logDebug(
+    `${logPrefix} list customer appointments by scope customerId=${customerId} scope=${scope} fromDate=${fromDate ? toDateOnlyString(fromDate) : "none"}`,
+  );
+  const appointments = await appointmentsRepository.listSidebarAppointmentsByCustomerScope(customerId, fromDate);
+  logDebug(
+    `${logPrefix} list customer appointments by scope result customerId=${customerId} scope=${scope} count=${appointments.length}`,
+  );
   return mapSidebarAppointments(appointments, roleKey);
 }
 

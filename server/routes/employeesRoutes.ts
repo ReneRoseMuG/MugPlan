@@ -10,5 +10,6 @@ router.post(api.employees.create.path, employeesController.createEmployee);
 router.put(api.employees.update.path, employeesController.updateEmployee);
 router.patch(api.employees.toggleActive.path, employeesController.toggleEmployeeActive);
 router.get(api.employees.currentAppointments.path, employeesController.listCurrentAppointments);
+router.get(api.employees.appointments.list.path, employeesController.listAppointments);
 
 export default router;

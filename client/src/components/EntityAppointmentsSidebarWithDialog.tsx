@@ -8,12 +8,7 @@ import { ListLayout } from "@/components/ui/list-layout";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { AppointmentsPanel, type AppointmentPanelItem } from "@/components/AppointmentsPanel";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
-import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
-import { useCalendarAppointments, type CalendarAppointment } from "@/lib/calendar-appointments";
-import type { Project } from "@shared/schema";
-
-const ALL_APPOINTMENTS_FROM_DATE = PROJECT_APPOINTMENTS_ALL_FROM_DATE;
-const ALL_APPOINTMENTS_TO_DATE = "2100-12-31";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 type EntityType = "employee" | "customer";
 type AppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
@@ -45,21 +40,12 @@ const formatStartTimeLabel = (value: string | null) => {
   return value.slice(0, 5);
 };
 
-async function fetchProjectAppointments(projects: Project[], fromDate: string): Promise<AppointmentSummary[]> {
-  const responses = await Promise.all(
-    projects.map(async (project) => {
-      const response = await fetch(`/api/projects/${project.id}/appointments?fromDate=${fromDate}`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      const payload = await response.json();
-      return payload as AppointmentSummary[];
-    }),
-  );
-
-  return responses.flat();
+async function fetchEntityAppointments(url: string): Promise<AppointmentSummary[]> {
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error(response.statusText);
+  }
+  return (await response.json()) as AppointmentSummary[];
 }
 
 export function EntityAppointmentsSidebarWithDialog({
@@ -70,42 +56,17 @@ export function EntityAppointmentsSidebarWithDialog({
   maxSidebarItems = 5,
 }: EntityAppointmentsSidebarWithDialogProps) {
   const [allAppointmentsDialogOpen, setAllAppointmentsDialogOpen] = useState(false);
-  const today = getBerlinTodayDateString();
   const canLoad = Boolean(entityId);
   const showOpenAllButton = canLoad;
+  const entityPath = entityType === "employee" ? "employees" : "customers";
+  const upcomingUrl = canLoad ? `/api/${entityPath}/${entityId}/appointments?scope=upcoming` : null;
+  const allUrl = canLoad ? `/api/${entityPath}/${entityId}/appointments?scope=all` : null;
 
-  const { data: customerProjects = [], isLoading: customerProjectsLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects", { customerId: entityId, filter: "all" }],
-    queryFn: () => fetch(`/api/projects?customerId=${entityId}&filter=all`).then((response) => response.json()),
-    enabled: entityType === "customer" && canLoad,
+  const { data: sidebarSourceAppointments = [], isLoading: sidebarLoading } = useQuery<AppointmentSummary[]>({
+    queryKey: ["entityAppointments", entityType, entityId ?? null, "upcoming"],
+    enabled: !!upcomingUrl,
+    queryFn: () => fetchEntityAppointments(upcomingUrl as string),
   });
-
-  const employeeUpcomingUrl = entityType === "employee" && entityId
-    ? `/api/employees/${entityId}/current-appointments?fromDate=${today}`
-    : null;
-
-  const { data: employeeUpcomingAppointments = [], isLoading: employeeUpcomingLoading } = useQuery<AppointmentSummary[]>({
-    queryKey: [employeeUpcomingUrl ?? ""],
-    enabled: !!employeeUpcomingUrl,
-  });
-
-  const customerProjectIds = useMemo(
-    () => customerProjects.map((project) => project.id).join("-"),
-    [customerProjects],
-  );
-
-  const customerUpcomingQuery = useQuery<AppointmentSummary[]>({
-    queryKey: ["customer-entity-appointments-upcoming", entityId, today, customerProjectIds],
-    enabled: entityType === "customer" && customerProjects.length > 0,
-    queryFn: () => fetchProjectAppointments(customerProjects, today),
-  });
-
-  const sidebarSourceAppointments = entityType === "employee"
-    ? employeeUpcomingAppointments
-    : (customerUpcomingQuery.data ?? []);
-  const sidebarLoading = entityType === "employee"
-    ? employeeUpcomingLoading
-    : (customerProjectsLoading || customerUpcomingQuery.isLoading);
 
   const sortedSidebarAppointments = useMemo(() => {
     return [...sidebarSourceAppointments].sort((a, b) => {
@@ -137,32 +98,11 @@ export function EntityAppointmentsSidebarWithDialog({
     }));
   }, [limitedSidebarAppointments]);
 
-  const userRole = useMemo(
-    () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-    [],
-  );
-
-  const { data: employeeAllAppointments = [], isLoading: employeeAllLoading } = useCalendarAppointments({
-    fromDate: ALL_APPOINTMENTS_FROM_DATE,
-    toDate: ALL_APPOINTMENTS_TO_DATE,
-    employeeId: entityType === "employee" ? (entityId ?? undefined) : undefined,
-    detail: "full",
-    userRole,
-    enabled: entityType === "employee" && canLoad,
+  const { data: allAppointments = [], isLoading: allLoading } = useQuery<AppointmentSummary[]>({
+    queryKey: ["entityAppointments", entityType, entityId ?? null, "all"],
+    enabled: !!allUrl,
+    queryFn: () => fetchEntityAppointments(allUrl as string),
   });
-
-  const customerAllQuery = useQuery<AppointmentSummary[]>({
-    queryKey: ["customer-entity-appointments-all", entityId, ALL_APPOINTMENTS_FROM_DATE, customerProjectIds],
-    enabled: entityType === "customer" && customerProjects.length > 0,
-    queryFn: () => fetchProjectAppointments(customerProjects, ALL_APPOINTMENTS_FROM_DATE),
-  });
-
-  const allAppointments = entityType === "employee"
-    ? employeeAllAppointments
-    : (customerAllQuery.data ?? []);
-  const allLoading = entityType === "employee"
-    ? employeeAllLoading
-    : (customerProjectsLoading || customerAllQuery.isLoading);
 
   const sortedAllAppointments = useMemo(() => {
     return [...allAppointments].sort((a, b) => {

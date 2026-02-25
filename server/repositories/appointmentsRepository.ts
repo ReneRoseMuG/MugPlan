@@ -324,6 +324,53 @@ export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: numb
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 
+export async function listSidebarAppointmentsByEmployeeScope(employeeId: number, fromDate?: Date) {
+  logDebug(
+    `${logPrefix} list sidebar appointments by employee scope employeeId=${employeeId} fromDate=${fromDate ? `>=${fromDate}` : "none"}`,
+  );
+  const whereConditions = [eq(appointmentEmployees.employeeId, employeeId)];
+  if (fromDate) {
+    whereConditions.push(gte(appointments.startDate, fromDate));
+  }
+  return db
+    .select({
+      appointment: appointments,
+      project: projects,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(and(...whereConditions))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
+export async function listSidebarAppointmentsByCustomerScope(customerId: number, fromDate?: Date) {
+  logDebug(
+    `${logPrefix} list sidebar appointments by customer scope customerId=${customerId} fromDate=${fromDate ? `>=${fromDate}` : "none"}`,
+  );
+  const whereConditions = [eq(projects.customerId, customerId)];
+  if (fromDate) {
+    whereConditions.push(gte(appointments.startDate, fromDate));
+  }
+  return db
+    .select({
+      appointment: appointments,
+      project: projects,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointments)
+    .innerJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(and(...whereConditions))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
 export async function listSidebarAppointmentsByTourFromDate(tourId: number, fromDate: Date) {
   logDebug(`${logPrefix} list sidebar appointments by tour tourId=${tourId} fromDate>=${fromDate}`);
   return db

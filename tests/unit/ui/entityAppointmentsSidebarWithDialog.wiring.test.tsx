@@ -6,8 +6,8 @@
  *
  * Abgedeckte Regeln:
  * - Die gekapselte Komponente zeigt den Footer-Button mit Label "Alle Termine".
- * - Mitarbeiterpfad nutzt Upcoming-Endpoint ab heute sowie Kalender-Range fuer alle Termine.
- * - Kundenpfad nutzt projektbasierte Abfragen fuer Upcoming und alle Termine (historisch ab 1900-01-01).
+ * - Mitarbeiterpfad nutzt den einheitlichen Entity-Endpoint mit scope=upcoming/all.
+ * - Kundenpfad nutzt denselben einheitlichen Entity-Endpoint mit scope=upcoming/all.
  * - Dialog-Open-State ist intern in der Komponente gekapselt.
  * - EmployeesPage und CustomerData binden die neue Komponente statt separatem Panel/Dialog ein.
  *
@@ -38,18 +38,18 @@ describe("FT04 EntityAppointmentsSidebarWithDialog wiring", () => {
     expect(componentSource).toContain("<Dialog open={allAppointmentsDialogOpen} onOpenChange={setAllAppointmentsDialogOpen}>");
   });
 
-  it("wires employee upcoming and all-appointments data sources", () => {
-    expect(componentSource).toContain("/api/employees/${entityId}/current-appointments?fromDate=${today}");
-    expect(componentSource).toContain("fromDate: ALL_APPOINTMENTS_FROM_DATE");
-    expect(componentSource).toContain("toDate: ALL_APPOINTMENTS_TO_DATE");
-    expect(componentSource).toContain("employeeId: entityType === \"employee\" ? (entityId ?? undefined) : undefined");
+  it("wires unified entity endpoint for employee scopes", () => {
+    expect(componentSource).toContain("const entityPath = entityType === \"employee\" ? \"employees\" : \"customers\";");
+    expect(componentSource).toContain("`/api/${entityPath}/${entityId}/appointments?scope=upcoming`");
+    expect(componentSource).toContain("`/api/${entityPath}/${entityId}/appointments?scope=all`");
+    expect(componentSource).not.toContain("fromDate=");
+    expect(componentSource).toContain("queryKey: [\"entityAppointments\", entityType, entityId ?? null, \"upcoming\"]");
+    expect(componentSource).toContain("queryKey: [\"entityAppointments\", entityType, entityId ?? null, \"all\"]");
   });
 
-  it("wires customer project-based upcoming and all-appointments loading", () => {
-    expect(componentSource).toContain("/api/projects?customerId=${entityId}&filter=all");
-    expect(componentSource).toContain("/api/projects/${project.id}/appointments?fromDate=${fromDate}");
-    expect(componentSource).toContain("queryKey: [\"customer-entity-appointments-upcoming\", entityId, today, customerProjectIds]");
-    expect(componentSource).toContain("queryKey: [\"customer-entity-appointments-all\", entityId, ALL_APPOINTMENTS_FROM_DATE, customerProjectIds]");
+  it("does not use project fan-out loading in customer mode anymore", () => {
+    expect(componentSource).not.toContain("/api/projects?customerId=");
+    expect(componentSource).not.toContain("/api/projects/${project.id}/appointments");
   });
 
   it("wires new component in employees page and customer data", () => {

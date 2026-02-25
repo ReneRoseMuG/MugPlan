@@ -53,6 +53,52 @@ const extractedArticleCategorySchema = z.object({
   items: z.array(extractedArticleItemSchema),
 });
 
+const entityAppointmentsScopeSchema = z.enum(["upcoming", "all"]);
+
+const entityAppointmentsQuerySchema = z.object({
+  scope: entityAppointmentsScopeSchema.default("upcoming"),
+  fromDate: z.string().optional(),
+}).strict();
+
+const entityAppointmentItemSchema = z.object({
+  id: z.number(),
+  version: z.number().int().min(1),
+  projectId: z.number(),
+  projectName: z.string(),
+  projectOrderNumber: z.string().nullable(),
+  projectDescription: z.string().nullable(),
+  projectStatuses: z.array(
+    z.object({
+      id: z.number(),
+      title: z.string(),
+      color: z.string(),
+    }),
+  ),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  startTimeHour: z.number().int().min(0).max(23).nullable(),
+  tourId: z.number().nullable(),
+  tourName: z.string().nullable(),
+  tourColor: z.string().nullable(),
+  customer: z.object({
+    id: z.number(),
+    customerNumber: z.string(),
+    fullName: z.string().nullable(),
+    addressLine1: z.string().nullable(),
+    addressLine2: z.string().nullable(),
+    postalCode: z.string().nullable(),
+    city: z.string().nullable(),
+  }),
+  employees: z.array(
+    z.object({
+      id: z.number(),
+      fullName: z.string(),
+    }),
+  ),
+  isLocked: z.boolean(),
+});
+
 export const api = {
   auth: {
     setupStatus: {
@@ -569,6 +615,16 @@ export const api = {
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
+    appointments: {
+      list: {
+        method: 'GET' as const,
+        path: '/api/customers/:id/appointments',
+        input: entityAppointmentsQuerySchema,
+        responses: {
+          200: z.array(entityAppointmentItemSchema),
+        },
+      },
+    },
   },
   customerNotes: {
     list: {
@@ -804,43 +860,17 @@ export const api = {
       method: 'GET' as const,
       path: '/api/employees/:id/current-appointments',
       responses: {
-        200: z.array(z.object({
-          id: z.number(),
-          version: z.number().int().min(1),
-          projectId: z.number(),
-          projectName: z.string(),
-          projectDescription: z.string().nullable(),
-          projectStatuses: z.array(
-            z.object({
-              id: z.number(),
-              title: z.string(),
-              color: z.string(),
-            }),
-          ),
-          startDate: z.string(),
-          endDate: z.string().nullable(),
-          startTime: z.string().nullable(),
-          startTimeHour: z.number().int().min(0).max(23).nullable(),
-          tourId: z.number().nullable(),
-          tourName: z.string().nullable(),
-          tourColor: z.string().nullable(),
-          customer: z.object({
-            id: z.number(),
-            customerNumber: z.string(),
-            fullName: z.string().nullable(),
-            addressLine1: z.string().nullable(),
-            addressLine2: z.string().nullable(),
-            postalCode: z.string().nullable(),
-            city: z.string().nullable(),
-          }),
-          employees: z.array(
-            z.object({
-              id: z.number(),
-              fullName: z.string(),
-            }),
-          ),
-          isLocked: z.boolean(),
-        })),
+        200: z.array(entityAppointmentItemSchema),
+      },
+    },
+    appointments: {
+      list: {
+        method: 'GET' as const,
+        path: '/api/employees/:id/appointments',
+        input: entityAppointmentsQuerySchema,
+        responses: {
+          200: z.array(entityAppointmentItemSchema),
+        },
       },
     },
   },

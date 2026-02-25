@@ -57,8 +57,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           || firstKey === "employees-page-appointments"
           || firstKey === "projects-page-appointments"
           || firstKey === "customerAppointments"
-          || firstKey === "customer-entity-appointments-upcoming"
-          || firstKey === "customer-entity-appointments-all"
+          || firstKey === "entityAppointments"
           || firstKey === "projectAppointments";
       },
     });

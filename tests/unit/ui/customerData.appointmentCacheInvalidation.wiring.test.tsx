@@ -34,6 +34,7 @@ describe("FT04/FT05+ customer data appointment cache invalidation wiring", () =>
     expect(source).toContain("firstKey === \"employees-page-appointments\"");
     expect(source).toContain("firstKey === \"projects-page-appointments\"");
     expect(source).toContain("firstKey === \"customerAppointments\"");
+    expect(source).toContain("firstKey === \"entityAppointments\"");
     expect(source).toContain("firstKey === \"projectAppointments\"");
   });
 
