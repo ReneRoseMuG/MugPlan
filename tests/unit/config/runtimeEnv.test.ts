@@ -34,9 +34,6 @@ function resetEnv(): void {
   delete process.env.DB_ALLOWED_HOSTS_DEV;
   delete process.env.DB_ALLOWED_HOSTS_TEST;
   delete process.env.DB_ALLOWED_HOSTS_PROD;
-  delete process.env.DB_ALLOWED_PORTS_DEV;
-  delete process.env.DB_ALLOWED_PORTS_TEST;
-  delete process.env.DB_ALLOWED_PORTS_PROD;
 }
 
 async function createReleaseLayout(prefix: string): Promise<{ releaseDir: string; sharedDir: string }> {
@@ -57,7 +54,6 @@ function writeEnvFile(sharedDir: string, fileName: ".env.dev" | ".env.test", mys
     `MYSQL_DATABASE_URL=mysql://user:pass@localhost:3306/${mysqlDb}`,
     `DB_ALLOWED_DATABASES_${modeSuffix}=${mysqlDb}`,
     `DB_ALLOWED_HOSTS_${modeSuffix}=localhost`,
-    `DB_ALLOWED_PORTS_${modeSuffix}=3306`,
     "",
   ].join("\n");
   return fs.writeFile(path.join(sharedDir, fileName), content, "utf8");
@@ -126,7 +122,6 @@ describe("FT07 unit: runtime env loading", () => {
         "MYSQL_DATABASE_URL=mysql://user:pass@localhost:3306/mugplan_test_local",
         "DB_ALLOWED_DATABASES_TEST=mugplan_test_local",
         "DB_ALLOWED_HOSTS_TEST=localhost",
-        "DB_ALLOWED_PORTS_TEST=3306",
         "",
       ].join("\n"),
       "utf8",
@@ -148,7 +143,7 @@ describe("FT07 unit: runtime env loading", () => {
   it("fails in CI when optional .env.test.local exists", async () => {
     const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-local-ci-");
     await writeEnvFile(sharedDir, ".env.test", "mugplan_test", "TEST");
-    await fs.writeFile(path.join(sharedDir, ".env.test.local"), "DB_ALLOWED_PORTS_TEST=3306\n", "utf8");
+    await fs.writeFile(path.join(sharedDir, ".env.test.local"), "LOG_LEVEL=INFO\n", "utf8");
 
     process.chdir(releaseDir);
     process.env.NODE_ENV = "test";
@@ -194,7 +189,6 @@ describe("FT07 unit: runtime env loading", () => {
     process.env.MYSQL_DATABASE_URL = "mysql://user:pass@localhost:3306/mugplan_prod";
     process.env.DB_ALLOWED_DATABASES_PROD = "mugplan_prod";
     process.env.DB_ALLOWED_HOSTS_PROD = "localhost";
-    process.env.DB_ALLOWED_PORTS_PROD = "3306";
 
     const { initializeRuntimeEnv } = await importRuntimeEnvModule();
     const runtime = initializeRuntimeEnv();

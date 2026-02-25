@@ -13,7 +13,6 @@ export type RuntimeConfig = {
   mysqlDatabaseUrl: string;
   allowedDatabases: string[];
   allowedHosts: string[];
-  allowedPorts: number[];
 };
 
 let initialized = false;
@@ -33,16 +32,6 @@ function parseCsv(raw: string | undefined, opts?: { lowercase?: boolean }): stri
     .map((value) => value.trim())
     .filter((value) => value.length > 0)
     .map((value) => (lowercase ? value.toLowerCase() : value));
-}
-
-function parsePortCsv(raw: string | undefined, mode: RuntimeMode): number[] {
-  const values = parseCsv(raw);
-  const ports = values.map((value) => Number.parseInt(value, 10));
-  const invalid = ports.some((port) => !Number.isInteger(port) || port <= 0 || port > 65535);
-  if (invalid) {
-    throw new Error(`DB_ALLOWED_PORTS must contain valid TCP ports for mode '${mode}'.`);
-  }
-  return ports;
 }
 
 function resolveEnvFile(mode: RuntimeMode): { path: string; source: RuntimeEnvSource } | null {
@@ -123,11 +112,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
     throw new Error(`DB_ALLOWED_HOSTS_${modeKey} must be a non-empty CSV list for mode '${mode}'.`);
   }
 
-  const allowedPorts = parsePortCsv(process.env[`DB_ALLOWED_PORTS_${modeKey}`], mode);
-  if (allowedPorts.length === 0) {
-    throw new Error(`DB_ALLOWED_PORTS_${modeKey} must be a non-empty CSV list for mode '${mode}'.`);
-  }
-
   cachedConfig = {
     mode,
     envFilePath,
@@ -136,7 +120,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
     mysqlDatabaseUrl,
     allowedDatabases,
     allowedHosts,
-    allowedPorts,
   };
   initialized = true;
   return cachedConfig;

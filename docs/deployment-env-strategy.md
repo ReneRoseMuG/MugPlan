@@ -37,7 +37,6 @@ No env-file fallback is allowed.
 - Required variables:
 - `DB_ALLOWED_DATABASES_DEV|TEST|PROD`
 - `DB_ALLOWED_HOSTS_DEV|TEST|PROD`
-- `DB_ALLOWED_PORTS_DEV|TEST|PROD`
 - CSV values are normalized (trim, remove empty entries, hosts lowercase).
 - Empty mandatory lists are rejected.
 
@@ -45,7 +44,6 @@ For safety checks:
 - Global startup guard in `server/db.ts` validates URL target before `createPool(...)`.
 - URL DB name must match allowed DB list.
 - URL host must match allowed host list.
-- URL port must match allowed port list.
 - Destructive operations must also validate `SELECT DATABASE()`.
 - Concrete DB names may vary per environment/tenant; allowlists are the sole source of truth.
 

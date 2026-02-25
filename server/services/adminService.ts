@@ -29,7 +29,6 @@ export async function resetDatabase(): Promise<ResetDatabaseResult> {
     databaseUrl: runtimeConfig.mysqlDatabaseUrl,
     allowedDatabases: runtimeConfig.allowedDatabases,
     allowedHosts: runtimeConfig.allowedHosts,
-    allowedPorts: runtimeConfig.allowedPorts,
   });
   const safetyConnection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
   try {

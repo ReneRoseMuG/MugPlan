@@ -16,7 +16,6 @@ const expectedTarget = assertSafeDestructiveOperationTarget({
   databaseUrl: runtimeConfig.mysqlDatabaseUrl,
   allowedDatabases: runtimeConfig.allowedDatabases,
   allowedHosts: runtimeConfig.allowedHosts,
-  allowedPorts: runtimeConfig.allowedPorts,
 });
 
 export async function resetDatabase() {

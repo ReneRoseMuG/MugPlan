@@ -48,26 +48,16 @@ export function assertSafeDatabaseTargetForMode(
   mode: RuntimeMode,
   allowedDatabases: string[],
   allowedHosts: string[],
-  allowedPorts: number[],
 ): { dbName: string; host: string; port: number } {
   const dbName = parseDatabaseName(databaseUrl);
   const host = parseHostName(databaseUrl);
   const port = parsePort(databaseUrl);
 
   if (!allowedDatabases.includes(dbName)) {
-    throw new Error(
-      `Unsafe database target for mode '${mode}': db='${dbName}', host='${host || "unknown"}', port='${port}'.`,
-    );
+    throw new Error(`Unsafe database target for mode '${mode}': db='${dbName}', host='${host || "unknown"}'.`);
   }
   if (!allowedHosts.includes(host)) {
-    throw new Error(
-      `Unsafe host target for mode '${mode}': db='${dbName}', host='${host || "unknown"}', port='${port}'.`,
-    );
-  }
-  if (!allowedPorts.includes(port)) {
-    throw new Error(
-      `Unsafe port target for mode '${mode}': db='${dbName}', host='${host || "unknown"}', port='${port}'.`,
-    );
+    throw new Error(`Unsafe host target for mode '${mode}': db='${dbName}', host='${host || "unknown"}'.`);
   }
   return { dbName, host, port };
 }
@@ -86,14 +76,12 @@ export function assertSafeWriteTargetForTestMode(
   databaseUrl: string,
   allowedDatabases: string[],
   allowedHosts: string[],
-  allowedPorts: number[],
 ): { dbName: string; host: string; port: number } {
   const target = assertSafeDatabaseTargetForMode(
     databaseUrl,
     "test",
     allowedDatabases,
     allowedHosts,
-    allowedPorts,
   );
   if (!target.dbName.endsWith("_test")) {
     throw new Error(`Unsafe test database name: '${target.dbName}'. Expected '*_test' suffix.`);
@@ -106,7 +94,6 @@ export function assertSafeDestructiveOperationTarget(params: {
   databaseUrl: string;
   allowedDatabases: string[];
   allowedHosts: string[];
-  allowedPorts: number[];
   mugplanModeRaw?: string;
 }): { dbName: string; host: string; port: number } {
   assertTestMode(params.mode, params.mugplanModeRaw);
@@ -114,7 +101,6 @@ export function assertSafeDestructiveOperationTarget(params: {
     params.databaseUrl,
     params.allowedDatabases,
     params.allowedHosts,
-    params.allowedPorts,
   );
 }
 

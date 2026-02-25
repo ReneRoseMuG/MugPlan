@@ -15,7 +15,6 @@ const expectedTarget = assertSafeDestructiveOperationTarget({
   databaseUrl: runtimeConfig.mysqlDatabaseUrl,
   allowedDatabases: runtimeConfig.allowedDatabases,
   allowedHosts: runtimeConfig.allowedHosts,
-  allowedPorts: runtimeConfig.allowedPorts,
 });
 
 console.log("DB:", expectedTarget.dbName);

@@ -13,7 +13,6 @@ Die folgenden Regeln muessen erfolgreich geprueft sein, **bevor irgendein Test a
    - `MYSQL_DATABASE_URL`
    - `DB_ALLOWED_DATABASES_TEST`
    - `DB_ALLOWED_HOSTS_TEST`
-   - `DB_ALLOWED_PORTS_TEST`
 4. Im Testmodus duerfen DB-Connections und destruktive Aktionen nur ueber zentrale Guard-APIs laufen:
    - `assertTestMode()`
    - `assertSafeWriteTargetForTestMode()`

@@ -72,7 +72,6 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
         databaseUrl: runtimeConfig.mysqlDatabaseUrl,
         allowedDatabases: runtimeConfig.allowedDatabases,
         allowedHosts: runtimeConfig.allowedHosts,
-        allowedPorts: runtimeConfig.allowedPorts,
       });
     } catch (error) {
       const dbInfo = parseDatabaseLogInfo(runtimeConfig.mysqlDatabaseUrl);

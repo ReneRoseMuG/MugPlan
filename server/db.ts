@@ -21,7 +21,6 @@ try {
       runtime.mysqlDatabaseUrl,
       runtime.allowedDatabases,
       runtime.allowedHosts,
-      runtime.allowedPorts,
     );
   } else {
     assertSafeDatabaseTargetForMode(
@@ -29,19 +28,17 @@ try {
       runtime.mode,
       runtime.allowedDatabases,
       runtime.allowedHosts,
-      runtime.allowedPorts,
     );
   }
 } catch (error) {
   const dbInfo = parseDatabaseLogInfo(runtime.mysqlDatabaseUrl);
   const allowedDatabases = runtime.allowedDatabases.join(", ");
   const allowedHosts = runtime.allowedHosts.join(", ");
-  const allowedPorts = runtime.allowedPorts.join(", ");
   const reason = error instanceof Error ? error.message : String(error);
   throw new Error(
     `DB startup guard rejected target for mode '${runtime.mode}': ` +
       `db='${dbInfo.dbName}', host='${dbInfo.host ?? "unknown"}', port='${dbInfo.port ?? "unknown"}', ` +
-      `allowedDatabases='${allowedDatabases}', allowedHosts='${allowedHosts}', allowedPorts='${allowedPorts}'. ` +
+      `allowedDatabases='${allowedDatabases}', allowedHosts='${allowedHosts}'. ` +
       `Reason: ${reason}`,
   );
 }

@@ -36,7 +36,6 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
         "test",
         ["dbu_test_9ak2"],
         ["localhost"],
-        [3306],
       ),
     ).toEqual({ dbName: "dbu_test_9ak2", host: "localhost", port: 3306 });
   });
@@ -49,7 +48,6 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
           "test",
           ["dbu_test_9ak2"],
           ["localhost"],
-          [3306],
         ),
     ).toThrow("Unsafe database target");
   });
@@ -62,22 +60,8 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
           "test",
           ["dbu_test_9ak2"],
           ["localhost"],
-          [3306],
         ),
     ).toThrow("Unsafe host target");
-  });
-
-  it("rejects non-allowed port", () => {
-    expect(
-      () =>
-        assertSafeDatabaseTargetForMode(
-          "mysql://u:p@localhost:3307/dbu_test_9ak2",
-          "test",
-          ["dbu_test_9ak2"],
-          ["localhost"],
-          [3306],
-        ),
-    ).toThrow("Unsafe port target");
   });
 
   it("requires MUGPLAN_MODE=test for test operations", () => {
@@ -91,7 +75,6 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
           "mysql://u:p@localhost:3306/mugplan_testing",
           ["mugplan_testing"],
           ["localhost"],
-          [3306],
         ),
     ).toThrow("Expected '*_test' suffix");
   });
@@ -104,7 +87,6 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
         databaseUrl: "mysql://u:p@localhost:3306/mugplan_test",
         allowedDatabases: ["mugplan_test"],
         allowedHosts: ["localhost"],
-        allowedPorts: [3306],
       }),
     ).toEqual({ dbName: "mugplan_test", host: "localhost", port: 3306 });
   });
