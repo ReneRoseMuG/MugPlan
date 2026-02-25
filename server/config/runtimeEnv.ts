@@ -7,7 +7,6 @@ export type RuntimeEnvSource = "dev_file" | "test_file" | "process";
 
 export type RuntimeConfig = {
   mode: RuntimeMode;
-  envFilesDir: string;
   envFilePath?: string;
   envSource: RuntimeEnvSource;
   mysqlDatabaseUrl: string;
@@ -34,20 +33,20 @@ function parseCsv(raw: string | undefined, opts?: { lowercase?: boolean }): stri
     .map((value) => (lowercase ? value.toLowerCase() : value));
 }
 
-function resolveEnvFile(mode: RuntimeMode, envFilesDir: string): { path: string; source: RuntimeEnvSource } | null {
+function resolveEnvFile(mode: RuntimeMode): { path: string; source: RuntimeEnvSource } | null {
   if (mode === "production") {
     return null;
   }
 
   if (mode === "development") {
     return {
-      path: path.resolve(envFilesDir, ".env.dev"),
+      path: path.resolve(process.cwd(), "../../shared/.env.dev"),
       source: "dev_file",
     };
   }
 
   return {
-    path: path.resolve(envFilesDir, ".env.test"),
+    path: path.resolve(process.cwd(), "../../shared/.env.test"),
     source: "test_file",
   };
 }
@@ -59,15 +58,16 @@ export function initializeRuntimeEnv(): RuntimeConfig {
 
   const mode = normalizeMode(process.env.NODE_ENV);
   process.env.NODE_ENV = mode;
-  const envFilesDir = process.env.ENV_FILES_DIR ?? process.cwd();
 
-  const resolved = resolveEnvFile(mode, envFilesDir);
+  const resolved = resolveEnvFile(mode);
   let envSource: RuntimeEnvSource = "process";
   let envFilePath: string | undefined;
 
   if (resolved) {
     if (!fs.existsSync(resolved.path)) {
-      throw new Error(`Missing required env file for mode '${mode}': ${resolved.path}`);
+      throw new Error(
+        `Missing required env file for mode '${mode}'. cwd='${process.cwd()}', expected='${resolved.path}'`,
+      );
     }
 
     const result = dotenv.config({ path: resolved.path, override: false, quiet: true });
@@ -96,7 +96,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
 
   cachedConfig = {
     mode,
-    envFilesDir,
     envFilePath,
     envSource,
     mysqlDatabaseUrl,

@@ -2,8 +2,9 @@
 
 ## Runtime/Env Contract
 - Tests run with `NODE_ENV=test`.
-- Test file path is explicit: `<ENV_FILES_DIR>/.env.test`.
-- Default base dir is `process.cwd()` when `ENV_FILES_DIR` is unset.
+- Test file path is explicit: `../../shared/.env.test`.
+- Runtime path resolution is intentionally bound to `process.cwd()`.
+- Hard operating rule: always start tests from `root/releases/<instanz>`.
 - Missing `.env.test` => fail fast.
 
 ## DB Isolation Contract
@@ -15,9 +16,9 @@
 
 ## Local and Server Execution
 - Local:
-- `npm test` -> `cross-env ENV_FILES_DIR=. NODE_ENV=test vitest`
+- `npm test` -> `cross-env NODE_ENV=test vitest`
 - Server release dir:
-- `ENV_FILES_DIR=../../shared npm test`
+- `npm test`
 
 ## Smoke Checks
 - App/test boot fails on missing expected env file.

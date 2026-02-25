@@ -125,7 +125,6 @@ void (async () => {
       logLevel: getEffectiveLogLevel(),
       needsAdminSetup: bootstrapState.needsAdminSetup,
       nodeVersion: process.version,
-      envFilesDir: runtime.envFilesDir,
       envFilePath: runtime.envFilePath ?? null,
     });
 
