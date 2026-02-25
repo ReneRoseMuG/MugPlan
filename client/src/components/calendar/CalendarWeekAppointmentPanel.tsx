@@ -3,6 +3,7 @@ import { parseProjectStoredName } from "@/lib/project-name-format";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
+import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
 import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
@@ -89,7 +90,15 @@ export function CalendarWeekAppointmentPanel({
             enableFullDescriptionPreview={context === "week-calendar"}
           />
           {context === "week-calendar" ? (
-            <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+            <>
+              <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+              <CalendarWeekAppointmentNotesHover
+                customerId={appointment.customer.id}
+                projectId={appointment.projectId}
+                customerNotesCount={appointment.customerNotesCount}
+                projectNotesCount={appointment.projectNotesCount}
+              />
+            </>
           ) : (
             <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
           )}

@@ -477,9 +477,12 @@ export async function listCalendarAppointments({
 
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+  const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
 
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
   const statusesByProject = await buildStatusesByProject(projectIds);
+  const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
+  const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
 
   return rows.map((row) => {
     const baseAppointment = {
@@ -496,16 +499,18 @@ export async function listCalendarAppointments({
       tourId: row.appointment.tourId ?? null,
       tourName: row.tour?.name ?? null,
       tourColor: row.tour?.color ?? null,
-      customer: {
-        id: row.customer.id,
-        customerNumber: row.customer.customerNumber,
-        fullName: row.customer.fullName,
-        postalCode: row.customer.postalCode ?? null,
-        city: row.customer.city ?? null,
-      },
-      employees: employeesByAppointment.get(row.appointment.id) ?? [],
-      isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
-    };
+        customer: {
+          id: row.customer.id,
+          customerNumber: row.customer.customerNumber,
+          fullName: row.customer.fullName,
+          postalCode: row.customer.postalCode ?? null,
+          city: row.customer.city ?? null,
+        },
+        customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
+        projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0,
+        employees: employeesByAppointment.get(row.appointment.id) ?? [],
+        isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      };
 
     if (resolvedDetail === "full") {
       return {

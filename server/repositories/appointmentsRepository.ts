@@ -3,8 +3,10 @@ import { db } from "../db";
 import {
   appointmentEmployees,
   appointments,
+  customerNotes,
   customers,
   employees,
+  projectNotes,
   projects,
   tours,
   type Appointment,
@@ -67,6 +69,38 @@ export async function getAppointmentEmployeesByAppointmentIds(appointmentIds: nu
     .from(appointmentEmployees)
     .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
     .where(inArray(appointmentEmployees.appointmentId, appointmentIds));
+}
+
+export async function getCustomerNoteCountsByCustomerIds(customerIds: number[]): Promise<Map<number, number>> {
+  const uniqueCustomerIds = Array.from(new Set(customerIds));
+  if (uniqueCustomerIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      customerId: customerNotes.customerId,
+      count: sql<number>`count(*)`,
+    })
+    .from(customerNotes)
+    .where(inArray(customerNotes.customerId, uniqueCustomerIds))
+    .groupBy(customerNotes.customerId);
+
+  return new Map(rows.map((row) => [row.customerId, Number(row.count)] as const));
+}
+
+export async function getProjectNoteCountsByProjectIds(projectIds: number[]): Promise<Map<number, number>> {
+  const uniqueProjectIds = Array.from(new Set(projectIds));
+  if (uniqueProjectIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      projectId: projectNotes.projectId,
+      count: sql<number>`count(*)`,
+    })
+    .from(projectNotes)
+    .where(inArray(projectNotes.projectId, uniqueProjectIds))
+    .groupBy(projectNotes.projectId);
+
+  return new Map(rows.map((row) => [row.projectId, Number(row.count)] as const));
 }
 
 export async function getAppointment(id: number): Promise<Appointment | null> {

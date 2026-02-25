@@ -31,6 +31,8 @@ export type CalendarAppointment = {
     postalCode: string | null;
     city: string | null;
   };
+  customerNotesCount: number;
+  projectNotesCount: number;
   employees: { id: number; fullName: string }[];
   isLocked: boolean;
 };

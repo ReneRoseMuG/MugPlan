@@ -469,6 +469,8 @@ export const api = {
               descriptionMd: z.string().nullable(),
               isActive: z.boolean(),
             }).optional(),
+            customerNotesCount: z.number().int().min(0),
+            projectNotesCount: z.number().int().min(0),
             employees: z.array(
               z.object({
                 id: z.number(),
