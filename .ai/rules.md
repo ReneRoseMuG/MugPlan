@@ -6,7 +6,11 @@ Coding Agents sind **ausführende Werkzeuge**. Sie treffen keine eigenständigen
 
 ## Pflichtlektuere vor Testarbeit
 
-Vor jeder Planung, Erstellung oder Aenderung von Tests muss `docs/test-strategy.md` vollstaendig gelesen und beachtet werden.
+Vor jeder Planung, Erstellung oder Aenderung von Tests muss die Teststrategie vollstaendig gelesen und beachtet werden:
+
+- [docs/test-strategy.md](../docs/test-strategy.md)
+
+Ohne diese Pflichtlektuere duerfen keine Test-Entscheidungen getroffen und keine Tests angelegt oder erweitert werden.
 
 ---
 
