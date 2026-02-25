@@ -3,10 +3,26 @@ import mysql from "mysql2/promise";
 import { asc } from "drizzle-orm";
 import { db } from "../../../server/db";
 import { ensureSystemRoles } from "../../../server/bootstrap/ensureSystemRoles";
+import { getRuntimeConfig, getRuntimeMode } from "../../../server/config/runtimeEnv";
+import {
+  assertSafeDestructiveOperationTarget,
+  assertSqlDatabaseIdentity,
+} from "../../../server/security/dbSafetyGuards";
 import { roles } from "../../../shared/schema";
 
 async function truncateRolesOnly() {
-  const connection = await mysql.createConnection(process.env.MYSQL_DATABASE_URL!);
+  const runtimeMode = getRuntimeMode();
+  const runtimeConfig = getRuntimeConfig();
+  const target = assertSafeDestructiveOperationTarget({
+    mode: runtimeMode,
+    databaseUrl: runtimeConfig.mysqlDatabaseUrl,
+    allowedDatabases: runtimeConfig.allowedDatabases,
+    allowedHosts: runtimeConfig.allowedHosts,
+    allowedPorts: runtimeConfig.allowedPorts,
+  });
+
+  const connection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
+  await assertSqlDatabaseIdentity(connection, target.dbName);
   await connection.query("SET FOREIGN_KEY_CHECKS = 0");
   await connection.query("TRUNCATE TABLE `roles`");
   await connection.query("SET FOREIGN_KEY_CHECKS = 1");

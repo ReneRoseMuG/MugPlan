@@ -1,22 +1,22 @@
 import mysql from "mysql2/promise";
 import { getRuntimeConfig, getRuntimeMode, initializeRuntimeEnv } from "../server/config/runtimeEnv";
 import {
-  assertRuntimeMode,
-  assertSafeDatabaseTargetForMode,
+  assertSafeDestructiveOperationTarget,
   assertSqlDatabaseIdentity,
 } from "../server/security/dbSafetyGuards";
 
 process.env.NODE_ENV = "test";
+process.env.MUGPLAN_MODE = "test";
 initializeRuntimeEnv();
 const runtimeMode = getRuntimeMode();
 const runtimeConfig = getRuntimeConfig();
-assertRuntimeMode("test", runtimeMode);
-const expectedTarget = assertSafeDatabaseTargetForMode(
-  runtimeConfig.mysqlDatabaseUrl,
-  runtimeMode,
-  runtimeConfig.allowedDatabases,
-  runtimeConfig.allowedHosts,
-);
+const expectedTarget = assertSafeDestructiveOperationTarget({
+  mode: runtimeMode,
+  databaseUrl: runtimeConfig.mysqlDatabaseUrl,
+  allowedDatabases: runtimeConfig.allowedDatabases,
+  allowedHosts: runtimeConfig.allowedHosts,
+  allowedPorts: runtimeConfig.allowedPorts,
+});
 
 console.log("DB:", expectedTarget.dbName);
 

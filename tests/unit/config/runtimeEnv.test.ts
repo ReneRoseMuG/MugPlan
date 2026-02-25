@@ -34,6 +34,9 @@ function resetEnv(): void {
   delete process.env.DB_ALLOWED_HOSTS_DEV;
   delete process.env.DB_ALLOWED_HOSTS_TEST;
   delete process.env.DB_ALLOWED_HOSTS_PROD;
+  delete process.env.DB_ALLOWED_PORTS_DEV;
+  delete process.env.DB_ALLOWED_PORTS_TEST;
+  delete process.env.DB_ALLOWED_PORTS_PROD;
 }
 
 async function createReleaseLayout(prefix: string): Promise<{ releaseDir: string; sharedDir: string }> {
@@ -54,6 +57,7 @@ function writeEnvFile(sharedDir: string, fileName: ".env.dev" | ".env.test", mys
     `MYSQL_DATABASE_URL=mysql://user:pass@localhost:3306/${mysqlDb}`,
     `DB_ALLOWED_DATABASES_${modeSuffix}=${mysqlDb}`,
     `DB_ALLOWED_HOSTS_${modeSuffix}=localhost`,
+    `DB_ALLOWED_PORTS_${modeSuffix}=3306`,
     "",
   ].join("\n");
   return fs.writeFile(path.join(sharedDir, fileName), content, "utf8");
@@ -113,6 +117,50 @@ describe("FT07 unit: runtime env loading", () => {
     expect(runtime.allowedDatabases).toEqual(["tenant_test_blue_42"]);
   });
 
+  it("loads optional .env.test.local override in local test mode", async () => {
+    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-local-");
+    await writeEnvFile(sharedDir, ".env.test", "mugplan_test", "TEST");
+    await fs.writeFile(
+      path.join(sharedDir, ".env.test.local"),
+      [
+        "MYSQL_DATABASE_URL=mysql://user:pass@localhost:3306/mugplan_test_local",
+        "DB_ALLOWED_DATABASES_TEST=mugplan_test_local",
+        "DB_ALLOWED_HOSTS_TEST=localhost",
+        "DB_ALLOWED_PORTS_TEST=3306",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    process.chdir(releaseDir);
+    process.env.NODE_ENV = "test";
+    delete process.env.CI;
+
+    const { initializeRuntimeEnv } = await importRuntimeEnvModule();
+    const runtime = initializeRuntimeEnv();
+
+    expect(runtime.mode).toBe("test");
+    expect(runtime.mysqlDatabaseUrl).toContain("/mugplan_test_local");
+    expect(runtime.allowedDatabases).toEqual(["mugplan_test_local"]);
+    expect(runtime.envLocalFilePath).toBe(path.resolve(releaseDir, "../../shared/.env.test.local"));
+  });
+
+  it("fails in CI when optional .env.test.local exists", async () => {
+    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-local-ci-");
+    await writeEnvFile(sharedDir, ".env.test", "mugplan_test", "TEST");
+    await fs.writeFile(path.join(sharedDir, ".env.test.local"), "DB_ALLOWED_PORTS_TEST=3306\n", "utf8");
+
+    process.chdir(releaseDir);
+    process.env.NODE_ENV = "test";
+    process.env.CI = "true";
+
+    const { initializeRuntimeEnv } = await importRuntimeEnvModule();
+    const expectedPath = path.resolve(releaseDir, "../../shared/.env.test.local");
+    expect(() => initializeRuntimeEnv()).toThrow(
+      `Forbidden env file in CI for mode 'test'. cwd='${releaseDir}', file='${expectedPath}'`,
+    );
+  });
+
   it("fails fast with cwd and expected path for missing development env file", async () => {
     const { releaseDir } = await createReleaseLayout("mugplan-runtime-dev-missing-");
     process.chdir(releaseDir);
@@ -146,6 +194,7 @@ describe("FT07 unit: runtime env loading", () => {
     process.env.MYSQL_DATABASE_URL = "mysql://user:pass@localhost:3306/mugplan_prod";
     process.env.DB_ALLOWED_DATABASES_PROD = "mugplan_prod";
     process.env.DB_ALLOWED_HOSTS_PROD = "localhost";
+    process.env.DB_ALLOWED_PORTS_PROD = "3306";
 
     const { initializeRuntimeEnv } = await importRuntimeEnvModule();
     const runtime = initializeRuntimeEnv();

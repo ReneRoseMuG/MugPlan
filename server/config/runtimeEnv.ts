@@ -8,10 +8,12 @@ export type RuntimeEnvSource = "dev_file" | "test_file" | "process";
 export type RuntimeConfig = {
   mode: RuntimeMode;
   envFilePath?: string;
+  envLocalFilePath?: string;
   envSource: RuntimeEnvSource;
   mysqlDatabaseUrl: string;
   allowedDatabases: string[];
   allowedHosts: string[];
+  allowedPorts: number[];
 };
 
 let initialized = false;
@@ -31,6 +33,16 @@ function parseCsv(raw: string | undefined, opts?: { lowercase?: boolean }): stri
     .map((value) => value.trim())
     .filter((value) => value.length > 0)
     .map((value) => (lowercase ? value.toLowerCase() : value));
+}
+
+function parsePortCsv(raw: string | undefined, mode: RuntimeMode): number[] {
+  const values = parseCsv(raw);
+  const ports = values.map((value) => Number.parseInt(value, 10));
+  const invalid = ports.some((port) => !Number.isInteger(port) || port <= 0 || port > 65535);
+  if (invalid) {
+    throw new Error(`DB_ALLOWED_PORTS must contain valid TCP ports for mode '${mode}'.`);
+  }
+  return ports;
 }
 
 function resolveEnvFile(mode: RuntimeMode): { path: string; source: RuntimeEnvSource } | null {
@@ -62,6 +74,7 @@ export function initializeRuntimeEnv(): RuntimeConfig {
   const resolved = resolveEnvFile(mode);
   let envSource: RuntimeEnvSource = "process";
   let envFilePath: string | undefined;
+  let envLocalFilePath: string | undefined;
 
   if (resolved) {
     if (!fs.existsSync(resolved.path)) {
@@ -76,6 +89,22 @@ export function initializeRuntimeEnv(): RuntimeConfig {
     }
     envSource = resolved.source;
     envFilePath = resolved.path;
+
+    if (mode === "test") {
+      const localPath = path.resolve(process.cwd(), "../../shared/.env.test.local");
+      if (fs.existsSync(localPath)) {
+        if (process.env.CI && process.env.CI.toLowerCase() !== "false") {
+          throw new Error(
+            `Forbidden env file in CI for mode 'test'. cwd='${process.cwd()}', file='${localPath}'`,
+          );
+        }
+        const localResult = dotenv.config({ path: localPath, override: true, quiet: true });
+        if (localResult.error) {
+          throw localResult.error;
+        }
+        envLocalFilePath = localPath;
+      }
+    }
   }
 
   const mysqlDatabaseUrl = process.env.MYSQL_DATABASE_URL?.trim() ?? "";
@@ -94,13 +123,20 @@ export function initializeRuntimeEnv(): RuntimeConfig {
     throw new Error(`DB_ALLOWED_HOSTS_${modeKey} must be a non-empty CSV list for mode '${mode}'.`);
   }
 
+  const allowedPorts = parsePortCsv(process.env[`DB_ALLOWED_PORTS_${modeKey}`], mode);
+  if (allowedPorts.length === 0) {
+    throw new Error(`DB_ALLOWED_PORTS_${modeKey} must be a non-empty CSV list for mode '${mode}'.`);
+  }
+
   cachedConfig = {
     mode,
     envFilePath,
+    envLocalFilePath,
     envSource,
     mysqlDatabaseUrl,
     allowedDatabases,
     allowedHosts,
+    allowedPorts,
   };
   initialized = true;
   return cachedConfig;

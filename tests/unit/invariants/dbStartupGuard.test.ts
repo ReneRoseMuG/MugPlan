@@ -24,6 +24,7 @@ type RuntimeConfigMock = {
   mysqlDatabaseUrl: string;
   allowedDatabases: string[];
   allowedHosts: string[];
+  allowedPorts: number[];
 };
 
 const createPoolMock = vi.fn(() => ({ mockPool: true }));
@@ -52,21 +53,23 @@ describe("PKG-02 Invariant: db startup guardrails", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    process.env.MUGPLAN_MODE = "test";
   });
 
   it("accepts allowed database + host and creates pool", async () => {
     installBaseMocks({
       mode: "test",
       envSource: "test_file",
-      mysqlDatabaseUrl: "mysql://u:p@localhost:3306/tenant_test_01",
-      allowedDatabases: ["tenant_test_01", "tenant_test_02"],
+      mysqlDatabaseUrl: "mysql://u:p@localhost:3306/tenant_01_test",
+      allowedDatabases: ["tenant_01_test", "tenant_02_test"],
       allowedHosts: ["localhost"],
+      allowedPorts: [3306],
     });
 
     await import("../../../server/db");
 
     expect(createPoolMock).toHaveBeenCalledTimes(1);
-    expect(createPoolMock).toHaveBeenCalledWith("mysql://u:p@localhost:3306/tenant_test_01");
+    expect(createPoolMock).toHaveBeenCalledWith("mysql://u:p@localhost:3306/tenant_01_test");
   });
 
   it("fails fast when database is outside allowlist", async () => {
@@ -74,14 +77,15 @@ describe("PKG-02 Invariant: db startup guardrails", () => {
       mode: "test",
       envSource: "test_file",
       mysqlDatabaseUrl: "mysql://u:p@localhost:3306/tenant_dev_01",
-      allowedDatabases: ["tenant_test_01", "tenant_test_02"],
+      allowedDatabases: ["tenant_01_test", "tenant_02_test"],
       allowedHosts: ["localhost"],
+      allowedPorts: [3306],
     });
 
     const loadDbModule = import("../../../server/db");
     await expect(loadDbModule).rejects.toThrow("DB startup guard rejected target for mode 'test'");
     await expect(loadDbModule).rejects.toThrow("Unsafe database target for mode 'test'");
-    await expect(loadDbModule).rejects.toThrow("allowedDatabases='tenant_test_01, tenant_test_02'");
+    await expect(loadDbModule).rejects.toThrow("allowedDatabases='tenant_01_test, tenant_02_test'");
     expect(createPoolMock).not.toHaveBeenCalled();
   });
 
@@ -89,15 +93,31 @@ describe("PKG-02 Invariant: db startup guardrails", () => {
     installBaseMocks({
       mode: "test",
       envSource: "test_file",
-      mysqlDatabaseUrl: "mysql://u:p@db.example.com:3306/tenant_test_01",
-      allowedDatabases: ["tenant_test_01"],
+      mysqlDatabaseUrl: "mysql://u:p@db.example.com:3306/tenant_01_test",
+      allowedDatabases: ["tenant_01_test"],
       allowedHosts: ["localhost"],
+      allowedPorts: [3306],
     });
 
     const loadDbModule = import("../../../server/db");
     await expect(loadDbModule).rejects.toThrow("DB startup guard rejected target for mode 'test'");
     await expect(loadDbModule).rejects.toThrow("Unsafe host target for mode 'test'");
     await expect(loadDbModule).rejects.toThrow("allowedHosts='localhost'");
+    expect(createPoolMock).not.toHaveBeenCalled();
+  });
+
+  it("fails fast when port is outside allowlist", async () => {
+    installBaseMocks({
+      mode: "test",
+      envSource: "test_file",
+      mysqlDatabaseUrl: "mysql://u:p@localhost:3307/tenant_01_test",
+      allowedDatabases: ["tenant_01_test"],
+      allowedHosts: ["localhost"],
+      allowedPorts: [3306],
+    });
+
+    const loadDbModule = import("../../../server/db");
+    await expect(loadDbModule).rejects.toThrow("Unsafe port target for mode 'test'");
     expect(createPoolMock).not.toHaveBeenCalled();
   });
 });

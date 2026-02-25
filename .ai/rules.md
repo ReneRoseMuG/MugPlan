@@ -4,6 +4,10 @@ Dieses Dokument definiert verbindliche Leitplanken für **Coding Agents** (z. 
 
 Coding Agents sind **ausführende Werkzeuge**. Sie treffen keine eigenständigen Architektur‑, Produkt‑ oder Scope‑Entscheidungen. Denken, Einordnen und Entscheiden liegen außerhalb ihres Verantwortungsbereichs.
 
+## Pflichtlektuere vor Testarbeit
+
+Vor jeder Planung, Erstellung oder Aenderung von Tests muss `docs/test-strategy.md` vollstaendig gelesen und beachtet werden.
+
 ---
 
 ## 1. Grundverständnis der Rolle

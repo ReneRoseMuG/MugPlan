@@ -21,14 +21,14 @@
     "db:seed:roles": "tsx script/seed-roles.ts",
     "test:template-render": "tsx script/test-template-render.ts",
     "verify:demo-seed": "tsx script/verify-demo-seed.ts",
-    "test": "cross-env NODE_ENV=test vitest",
-    "test:run": "cross-env NODE_ENV=test vitest run",
-    "test:extraction:mock": "cross-env NODE_ENV=test vitest run tests/integration/server/documentExtraction.routes.test.ts tests/unit/validation/extractionValidator.structure.test.ts tests/unit/services/documentProcessing.customerResolution.test.ts tests/unit/ui/projectForm.documentExtractionFlow.test.tsx tests/unit/ui/appointmentForm.documentExtractionFlow.test.tsx tests/unit/extraction/documentTextExtractor.test.ts tests/unit/validation/dtoValidators.test.ts",
+    "test": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest",
+    "test:run": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run",
+    "test:extraction:mock": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run tests/integration/server/documentExtraction.routes.test.ts tests/unit/validation/extractionValidator.structure.test.ts tests/unit/services/documentProcessing.customerResolution.test.ts tests/unit/ui/projectForm.documentExtractionFlow.test.tsx tests/unit/ui/appointmentForm.documentExtractionFlow.test.tsx tests/unit/extraction/documentTextExtractor.test.ts tests/unit/validation/dtoValidators.test.ts",
     "test:extraction": "npm run test:extraction:mock",
-    "test:unit": "cross-env NODE_ENV=test vitest run tests/unit",
-    "test:integration": "cross-env NODE_ENV=test vitest run -c vitest.integration.config.ts tests/integration",
-    "test:e2e": "cross-env NODE_ENV=test vitest run tests/e2e",
-    "test:coverage": "cross-env NODE_ENV=test vitest run --coverage"
+    "test:unit": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run tests/unit",
+    "test:integration": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run -c vitest.integration.config.ts tests/integration",
+    "test:e2e": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run tests/e2e",
+    "test:coverage": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run --coverage"
   },
   "dependencies": {
     "@faker-js/faker": "^9.9.0",

@@ -11,14 +11,29 @@ function parseHostName(databaseUrl: string): string {
   return (parsed.hostname?.trim() ?? "").toLowerCase();
 }
 
-export function parseDatabaseLogInfo(databaseUrl: string): { dbName: string; host: string | null } {
+function parsePort(databaseUrl: string): number {
+  const parsed = new URL(databaseUrl);
+  if (parsed.port) {
+    const explicit = Number.parseInt(parsed.port, 10);
+    if (!Number.isInteger(explicit) || explicit <= 0 || explicit > 65535) {
+      throw new Error(`Invalid database port in URL '${databaseUrl}'.`);
+    }
+    return explicit;
+  }
+  if (parsed.protocol === "mysql:") return 3306;
+  if (parsed.protocol === "postgres:" || parsed.protocol === "postgresql:") return 5432;
+  throw new Error(`Cannot infer database port for protocol '${parsed.protocol}'.`);
+}
+
+export function parseDatabaseLogInfo(databaseUrl: string): { dbName: string; host: string | null; port: number | null } {
   try {
     const parsed = new URL(databaseUrl);
     const dbName = parsed.pathname.replace(/^\/+/, "").trim();
     const host = parsed.hostname?.trim().toLowerCase() || null;
-    return { dbName, host };
+    const port = parsed.port ? Number.parseInt(parsed.port, 10) : parsed.protocol === "mysql:" ? 3306 : null;
+    return { dbName, host, port: Number.isInteger(port) ? port : null };
   } catch {
-    return { dbName: "unknown", host: null };
+    return { dbName: "unknown", host: null, port: null };
   }
 }
 
@@ -33,21 +48,74 @@ export function assertSafeDatabaseTargetForMode(
   mode: RuntimeMode,
   allowedDatabases: string[],
   allowedHosts: string[],
-): { dbName: string; host: string } {
+  allowedPorts: number[],
+): { dbName: string; host: string; port: number } {
   const dbName = parseDatabaseName(databaseUrl);
   const host = parseHostName(databaseUrl);
+  const port = parsePort(databaseUrl);
 
   if (!allowedDatabases.includes(dbName)) {
     throw new Error(
-      `Unsafe database target for mode '${mode}': db='${dbName}', host='${host || "unknown"}'.`,
+      `Unsafe database target for mode '${mode}': db='${dbName}', host='${host || "unknown"}', port='${port}'.`,
     );
   }
   if (!allowedHosts.includes(host)) {
     throw new Error(
-      `Unsafe host target for mode '${mode}': db='${dbName}', host='${host || "unknown"}'.`,
+      `Unsafe host target for mode '${mode}': db='${dbName}', host='${host || "unknown"}', port='${port}'.`,
     );
   }
-  return { dbName, host };
+  if (!allowedPorts.includes(port)) {
+    throw new Error(
+      `Unsafe port target for mode '${mode}': db='${dbName}', host='${host || "unknown"}', port='${port}'.`,
+    );
+  }
+  return { dbName, host, port };
+}
+
+export function assertTestMode(mode: RuntimeMode, mugplanModeRaw = process.env.MUGPLAN_MODE): void {
+  assertRuntimeMode("test", mode);
+  const mugplanMode = (mugplanModeRaw ?? "").trim().toLowerCase();
+  if (mugplanMode !== "test") {
+    throw new Error(
+      `Invalid MUGPLAN_MODE for test operations: expected 'test', received '${mugplanModeRaw ?? ""}'.`,
+    );
+  }
+}
+
+export function assertSafeWriteTargetForTestMode(
+  databaseUrl: string,
+  allowedDatabases: string[],
+  allowedHosts: string[],
+  allowedPorts: number[],
+): { dbName: string; host: string; port: number } {
+  const target = assertSafeDatabaseTargetForMode(
+    databaseUrl,
+    "test",
+    allowedDatabases,
+    allowedHosts,
+    allowedPorts,
+  );
+  if (!target.dbName.endsWith("_test")) {
+    throw new Error(`Unsafe test database name: '${target.dbName}'. Expected '*_test' suffix.`);
+  }
+  return target;
+}
+
+export function assertSafeDestructiveOperationTarget(params: {
+  mode: RuntimeMode;
+  databaseUrl: string;
+  allowedDatabases: string[];
+  allowedHosts: string[];
+  allowedPorts: number[];
+  mugplanModeRaw?: string;
+}): { dbName: string; host: string; port: number } {
+  assertTestMode(params.mode, params.mugplanModeRaw);
+  return assertSafeWriteTargetForTestMode(
+    params.databaseUrl,
+    params.allowedDatabases,
+    params.allowedHosts,
+    params.allowedPorts,
+  );
 }
 
 export async function assertSqlDatabaseIdentity(
