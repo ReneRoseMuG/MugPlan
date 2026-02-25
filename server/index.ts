@@ -19,6 +19,11 @@ const dbLogInfo = parseDatabaseLogInfo(runtimeConfig.mysqlDatabaseUrl);
 const app = express();
 const httpServer = createServer(app);
 
+if (process.env.NODE_ENV === "production") {
+  // Required so secure session cookies also work behind TLS-terminating proxies.
+  app.set("trust proxy", 1);
+}
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;

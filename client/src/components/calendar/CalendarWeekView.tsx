@@ -156,7 +156,19 @@ export function CalendarWeekView({
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees", { scope: "active" }],
-    queryFn: () => fetch("/api/employees?scope=active").then((response) => response.json()),
+    queryFn: async () => {
+      const response = await fetch("/api/employees?scope=active", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Mitarbeiter konnten nicht geladen werden");
+      }
+      const payload = (await response.json()) as unknown;
+      if (!Array.isArray(payload)) {
+        return [];
+      }
+      return payload as Employee[];
+    },
   });
 
   const appointmentsById = useMemo(
@@ -716,4 +728,3 @@ export function CalendarWeekView({
     </div>
   );
 }
-

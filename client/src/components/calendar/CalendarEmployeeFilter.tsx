@@ -19,9 +19,15 @@ export function CalendarEmployeeFilter({
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
     queryFn: async () => {
-      const response = await fetch("/api/employees");
+      const response = await fetch("/api/employees", {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Mitarbeiter konnten nicht geladen werden");
-      return response.json();
+      const payload = (await response.json()) as unknown;
+      if (!Array.isArray(payload)) {
+        return [];
+      }
+      return payload as Employee[];
     },
   });
 

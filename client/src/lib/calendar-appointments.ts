@@ -76,7 +76,11 @@ export function useCalendarAppointments({
       if (!response.ok) {
         throw new Error("Kalendertermine konnten nicht geladen werden");
       }
-      const data = (await response.json()) as CalendarAppointment[];
+      const payload = (await response.json()) as unknown;
+      if (!Array.isArray(payload)) {
+        return [];
+      }
+      const data = payload as CalendarAppointment[];
       console.info(`${logPrefix} fetch success`, { count: data.length });
       return data;
     },
