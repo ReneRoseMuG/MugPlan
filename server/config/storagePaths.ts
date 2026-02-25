@@ -13,33 +13,17 @@ type StoragePaths = {
 let cachedStoragePaths: StoragePaths | null = null;
 
 function resolveConfiguredPath(rawValue: string, envKey: string): string {
-  const nodeEnv = process.env.NODE_ENV ?? "";
   const value = rawValue.trim();
 
   if (value.length === 0) {
     throw new Error(`Leere Env-Variable: ${envKey}`);
   }
 
-  const isAbsolute = path.isAbsolute(value);
-
-  if (nodeEnv === "production") {
-    if (isAbsolute) {
-      return value;
-    }
-    return path.resolve(process.cwd(), value);
-  }
-
-  if (nodeEnv === "development" || nodeEnv === "test") {
-    if (!isAbsolute) {
-      throw new Error(`${envKey} muss in ${nodeEnv} als absoluter Pfad gesetzt werden.`);
-    }
+  if (path.isAbsolute(value)) {
     return value;
   }
 
-  if (!isAbsolute) {
-    throw new Error(`${envKey} muss ausserhalb production als absoluter Pfad gesetzt werden.`);
-  }
-  return value;
+  return path.resolve(process.cwd(), value);
 }
 
 async function ensureWritableDirectory(absolutePath: string, envKey: string): Promise<void> {
