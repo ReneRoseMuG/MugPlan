@@ -678,7 +678,8 @@ export function CalendarWeekView({
                                       ?? DEFAULT_CONTINUATION_HEIGHT_PX;
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
                                     const isSegmentLocked = appointment.isLocked && !isAdmin;
-                                    const canDragSegment = !isSegmentLocked;
+                                    const isHistoricalSource = appointment.startDate < berlinToday;
+                                    const canDragSegment = !isSegmentLocked && !isHistoricalSource;
 
                                     return (
                                       <CalendarWeekAppointmentPanel

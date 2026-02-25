@@ -424,6 +424,9 @@ export function CalendarMonthView({
                                     const segmentStart = addDays(weekStart, item.startIndex);
                                     const segmentEnd = addDays(weekStart, item.endIndex);
                                     const position = getLaneItemPosition(item.startIndex, item.endIndex);
+                                    const isLocked = appointment.isLocked && !isAdmin;
+                                    const isHistoricalSource = appointment.startDate < berlinToday;
+                                    const canDrag = !isLocked && !isHistoricalSource;
 
                                     return (
                                       <div
@@ -436,15 +439,11 @@ export function CalendarMonthView({
                                           isFirstDay={isSameDay(segmentStart, appointmentStart)}
                                           isLastDay={isSameDay(segmentEnd, appointmentEnd)}
                                           showPopover={true}
-                                          isLocked={appointment.isLocked && !isAdmin}
+                                          isLocked={isLocked}
                                           isDragging={draggedAppointmentId === appointment.id}
                                           onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                          onDragStart={
-                                            appointment.isLocked && !isAdmin
-                                              ? undefined
-                                              : (event) => handleDragStart(event, appointment.id)
-                                          }
-                                          onDragEnd={handleDragEnd}
+                                          onDragStart={canDrag ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                          onDragEnd={canDrag ? handleDragEnd : undefined}
                                         />
                                       </div>
                                     );
@@ -466,4 +465,3 @@ export function CalendarMonthView({
     </div>
   );
 }
-

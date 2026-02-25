@@ -9,10 +9,13 @@
  * - Wochenansicht zeigt New-Appointment-Button nur fuer Tage >= heute (Berlin).
  * - Jahresansicht zeigt New-Appointment-Button nur fuer Tage >= heute (Berlin).
  * - Tabellenansicht enthaelt keine Aktion zur Erstellung historischer Termine.
+ * - Monatsansicht erlaubt Drag nur fuer nicht-historische und nicht-gesperrte Termine.
+ * - Wochenansicht erlaubt Segment-Drag nur fuer nicht-historische und nicht-gesperrte Termine.
  *
  * Fehlerfaelle:
  * - Sichtbare Plus-Aktionen fuer Vergangenheitsdaten.
  * - Tabellenaktion zur Termin-Neuanlage in historischem Kontext.
+ * - Drag-Start ist fuer historische Termine weiterhin moeglich.
  *
  * Ziel:
  * Deterministische Absicherung der UI-Schutzregeln gegen historische Termin-Neuanlage.
@@ -37,6 +40,20 @@ describe("FT01 UI: calendar historical create controls", () => {
     expect(weekSource).toContain("const berlinToday = getBerlinTodayDateString();");
     expect(weekSource).toContain("{dayBucket.dateKey >= berlinToday ? (");
     expect(weekSource).toContain("data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}" );
+  });
+
+  it("guards month drag start behind non-historical source and lock state", () => {
+    expect(monthSource).toContain("const isHistoricalSource = appointment.startDate < berlinToday;");
+    expect(monthSource).toContain("const canDrag = !isLocked && !isHistoricalSource;");
+    expect(monthSource).toContain("onDragStart={canDrag ? (event) => handleDragStart(event, appointment.id) : undefined}");
+    expect(monthSource).toContain("onDragEnd={canDrag ? handleDragEnd : undefined}");
+  });
+
+  it("guards week drag start behind non-historical source and lock state", () => {
+    expect(weekSource).toContain("const isHistoricalSource = appointment.startDate < berlinToday;");
+    expect(weekSource).toContain("const canDragSegment = !isSegmentLocked && !isHistoricalSource;");
+    expect(weekSource).toContain("onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}");
+    expect(weekSource).toContain("onDragEnd={canDragSegment ? handleDragEnd : undefined}");
   });
 
   it("guards year create button behind day >= berlinToday", () => {
