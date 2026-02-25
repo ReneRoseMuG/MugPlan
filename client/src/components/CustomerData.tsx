@@ -7,7 +7,7 @@ import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { User, Phone, MapPin, Mail } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
-import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
+import { EntityAppointmentsSidebarWithDialog } from "@/components/EntityAppointmentsSidebarWithDialog";
 import { CustomerAttachmentsPanel } from "@/components/CustomerAttachmentsPanel";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -57,6 +57,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           || firstKey === "employees-page-appointments"
           || firstKey === "projects-page-appointments"
           || firstKey === "customerAppointments"
+          || firstKey === "customer-entity-appointments-upcoming"
+          || firstKey === "customer-entity-appointments-all"
           || firstKey === "projectAppointments";
       },
     });
@@ -601,9 +603,10 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         <div className="space-y-6">
           <LinkedProjectsPanel customerId={customerId} onOpenProject={onOpenProject} />
 
-          <CustomerAppointmentsPanel
-            customerId={customerId}
-            customerName={customer?.fullName ?? null}
+          <EntityAppointmentsSidebarWithDialog
+            entityType="customer"
+            entityId={customerId}
+            entityLabel={customer?.fullName ?? null}
           />
 
           {isEditMode && <CustomerAttachmentsPanel customerId={customerId} />}
@@ -622,4 +625,3 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     </EntityFormLayout>
   );
 }
-

@@ -55,16 +55,19 @@ export function useCalendarAppointments({
   employeeId,
   detail,
   userRole,
+  enabled,
 }: {
   fromDate: string;
   toDate: string;
   employeeId?: number | null;
   detail?: "compact" | "full";
   userRole: string;
+  enabled?: boolean;
 }) {
   const resolvedDetail = detail ?? "compact";
   return useQuery<CalendarAppointment[]>({
     queryKey: [...getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }), resolvedDetail],
+    enabled,
     queryFn: async () => {
       const params = new URLSearchParams({ fromDate, toDate, detail: resolvedDetail });
       if (employeeId) params.set("employeeId", String(employeeId));
