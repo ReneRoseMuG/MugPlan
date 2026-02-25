@@ -30,6 +30,7 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as documentProcessingService from "../../../server/services/documentProcessingService";
 import * as multipart from "../../../server/lib/multipart";
 import * as customersService from "../../../server/services/customersService";
+import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
 
@@ -210,7 +211,7 @@ describe("FT20 integration: document extraction routes", () => {
 
   it("returns duplicate=true/count=1 for existing customer number", async () => {
     const agent = await loginAdminAgent();
-    const suffix = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+    const suffix = nextDeterministicToken("doc-extract-dup");
     await customersService.createCustomer({
       customerNumber: `DUP-${suffix}`,
       firstName: "Test",
@@ -237,7 +238,7 @@ describe("FT20 integration: document extraction routes", () => {
 
   it("returns none/single/multiple in resolve-customer-by-number", async () => {
     const agent = await loginAdminAgent();
-    const suffix = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+    const suffix = nextDeterministicToken("doc-extract-resolve");
     const created = await customersService.createCustomer({
       customerNumber: `RES-${suffix}`,
       firstName: "A",

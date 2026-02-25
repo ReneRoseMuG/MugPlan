@@ -1,6 +1,34 @@
 -- WARNUNG: DESTRUKTIV - LOESCHT BESTEHENDE DATEN IM AKTUELL AKTIVEN SCHEMA.
 
 -- ============================================================================
+-- BLOCK: GUARD (TEST DB ONLY)
+-- ============================================================================
+SELECT DATABASE() AS active_database_before_guard;
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `__guard_reset_absolute_state`$$
+CREATE PROCEDURE `__guard_reset_absolute_state`()
+BEGIN
+  DECLARE v_db_name VARCHAR(255);
+  SET v_db_name = LOWER(COALESCE(DATABASE(), ''));
+
+  SELECT v_db_name AS active_database_evaluated;
+
+  IF v_db_name = '' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'ABSOLUTE RESET ABGEBROCHEN: Keine aktive Datenbank.';
+  END IF;
+
+  IF v_db_name NOT LIKE '%\\_test' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'ABSOLUTE RESET ABGEBROCHEN: Nur Test-Datenbanken mit Suffix _test erlaubt.';
+  END IF;
+END$$
+CALL `__guard_reset_absolute_state`()$$
+DROP PROCEDURE IF EXISTS `__guard_reset_absolute_state`$$
+DELIMITER ;
+
+-- ============================================================================
 -- BLOCK: CONTEXT
 -- ============================================================================
 SELECT DATABASE() AS active_database;

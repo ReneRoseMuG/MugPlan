@@ -27,6 +27,7 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
 let counter = 0;
@@ -57,7 +58,7 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 
 async function createCustomerWithProjects(label: string) {
   const seq = nextSeq();
-  const unique = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const unique = nextDeterministicToken("cust-sidebar-all");
   const customer = await customersService.createCustomer({
     customerNumber: `CUST-SIDE-ALL-${label}-${seq}-${unique}`,
     firstName: "Cust",

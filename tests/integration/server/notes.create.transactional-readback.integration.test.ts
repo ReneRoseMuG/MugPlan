@@ -22,6 +22,7 @@ import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
+import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
 
@@ -44,10 +45,11 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 async function createCustomer(agent: SuperAgentTest): Promise<number> {
+  const token = nextDeterministicToken("notes-create-customer");
   const res = await agent
     .post("/api/customers")
     .send({
-      customerNumber: `NOTE-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      customerNumber: `NOTE-${token}`,
       firstName: "Note",
       lastName: "Customer",
       company: null,
@@ -67,7 +69,7 @@ async function createProject(agent: SuperAgentTest, customerId: number): Promise
   const res = await agent
     .post("/api/projects")
     .send({
-      name: `Projekt ${Date.now()}`,
+      name: `Projekt ${nextDeterministicToken("notes-create-project")}`,
       customerId,
       descriptionMd: null,
       orderNumber: null,

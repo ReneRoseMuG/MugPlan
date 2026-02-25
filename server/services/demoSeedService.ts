@@ -27,6 +27,7 @@ import * as demoSeedRepository from "../repositories/demoSeedRepository";
 import * as userSettingsService from "./userSettingsService";
 import { assignEmployeesToGroups } from "./demoSeedAssignments";
 import { logError, logInfo } from "../lib/logger";
+import { assertSafeDemoSeedPurgeTarget } from "./demoSeedPurgeSafety";
 
 const logPrefix = "[demo-seed-service]";
 
@@ -1522,6 +1523,8 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
       );
     }
   }
+
+  await assertSafeDemoSeedPurgeTarget();
 
   const warnings: string[] = [];
   const entities = await demoSeedRepository.getSeedRunEntities(seedRunId);

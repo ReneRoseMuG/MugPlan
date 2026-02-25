@@ -7,10 +7,12 @@
  * Abgedeckte Regeln:
  * - Runtime-Mode-Guard akzeptiert nur den erwarteten Zielmodus.
  * - DB-/Host-Guard akzeptiert nur explizit erlaubte Zielwerte aus den Allowlists.
+ * - SQL-Identity-Guard akzeptiert nur die erwartete aktive Datenbank.
  *
  * Fehlerfaelle:
  * - Falscher Runtime-Mode fuehrt zu Guard-Fehler.
  * - Nicht erlaubte DB oder nicht erlaubter Host fuehrt zu Guard-Fehler.
+ * - Abweichende oder leere SQL-Datenbankidentitaet fuehrt zu Guard-Fehler.
  *
  * Ziel:
  * Technische Invarianten der zentralen DB-Safety-Guards stabil absichern.
@@ -20,6 +22,7 @@ import {
   assertRuntimeMode,
   assertSafeDatabaseTargetForMode,
   assertSafeDestructiveOperationTarget,
+  assertSqlDatabaseIdentity,
   assertSafeWriteTargetForTestMode,
   assertTestMode,
 } from "../../../server/security/dbSafetyGuards";
@@ -89,5 +92,33 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
         allowedHosts: ["localhost"],
       }),
     ).toEqual({ dbName: "mugplan_test", host: "localhost", port: 3306 });
+  });
+
+  it("accepts SQL identity when active database matches expected test db", async () => {
+    const connection = {
+      query: async () => [[{ dbName: "mugplan_test" }]],
+    };
+
+    await expect(assertSqlDatabaseIdentity(connection as any, "mugplan_test")).resolves.toBeUndefined();
+  });
+
+  it("rejects SQL identity when active database differs from expected test db", async () => {
+    const connection = {
+      query: async () => [[{ dbName: "mugplan_dev" }]],
+    };
+
+    await expect(assertSqlDatabaseIdentity(connection as any, "mugplan_test")).rejects.toThrow(
+      "does not match expected",
+    );
+  });
+
+  it("rejects SQL identity when active database cannot be resolved", async () => {
+    const connection = {
+      query: async () => [[{ dbName: null }]],
+    };
+
+    await expect(assertSqlDatabaseIdentity(connection as any, "mugplan_test")).rejects.toThrow(
+      "Could not resolve active SQL database name.",
+    );
   });
 });

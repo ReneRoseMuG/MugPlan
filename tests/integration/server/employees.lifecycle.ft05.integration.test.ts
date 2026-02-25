@@ -25,6 +25,7 @@ import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
+import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
 let employeeCounter = 1;
@@ -50,7 +51,7 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 async function createDispatcherAgent(): Promise<SuperAgentTest> {
-  const username = `test-dispatcher-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const username = `test-dispatcher-${nextDeterministicToken("employees-lifecycle-dispatcher")}`;
   const password = "test-dispatcher-password";
   const passwordHash = await hashPassword(password);
   await createUser({

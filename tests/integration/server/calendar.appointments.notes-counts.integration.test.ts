@@ -26,6 +26,7 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
 let seq = 0;
@@ -51,7 +52,7 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 async function createCustomer(label: string) {
-  const unique = `${Date.now()}-${Math.floor(Math.random() * 100000)}-${nextSeq()}`;
+  const unique = `${nextDeterministicToken("calendar-notes-customer")}-${nextSeq()}`;
   return customersService.createCustomer({
     customerNumber: `CAL-NOTE-${label}-${unique}`,
     firstName: "Kalender",
@@ -70,7 +71,7 @@ async function createCustomer(label: string) {
 
 async function createProject(customerId: number, label: string) {
   return projectsService.createProject({
-    name: `Kalender Notiz Projekt ${label} ${Date.now()}-${nextSeq()}`,
+    name: `Kalender Notiz Projekt ${label} ${nextDeterministicToken("calendar-notes-project")}-${nextSeq()}`,
     customerId,
     descriptionMd: null,
     orderNumber: null,
