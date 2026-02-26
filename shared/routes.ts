@@ -1440,6 +1440,7 @@ export const api = {
       responses: {
         201: z.custom<typeof employeeAttachments.$inferSelect>(),
         400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
       },
     },

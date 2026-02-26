@@ -57,6 +57,16 @@ export async function getEmployee(req: Request, res: Response, next: NextFunctio
 
 export async function createEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
+
     if (req.body.teamId !== undefined || req.body.tourId !== undefined) {
       res.status(400).json({
         message:
