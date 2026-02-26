@@ -643,7 +643,7 @@ export async function listAppointmentsList(params: {
   };
 }
 
-export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
+export async function deleteAppointment(appointmentId: number, expectedVersion: number, _roleKey: CanonicalRoleKey) {
   const deleted = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;

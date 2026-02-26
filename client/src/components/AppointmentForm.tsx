@@ -1049,7 +1049,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
           {selectedProjectId === null ? (
             <DocumentExtractionDropzone
-              onFileSelected={runDocumentExtraction}
+              onFileSelected={(file) => {
+                void runDocumentExtraction(file);
+              }}
               disabled={isLocked}
               isProcessing={documentExtractionLoading}
             />

@@ -180,7 +180,12 @@ export default function Login({ onAuthenticated }: LoginProps) {
             </div>
           )}
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              void handleSubmit(event);
+            }}
+          >
             <div className="space-y-2">
               <Label htmlFor="login-username">Benutzername oder E-Mail</Label>
               <Input

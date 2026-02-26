@@ -54,7 +54,12 @@ export default function AdminSetup({ onCompleted, onSwitchToLogin }: AdminSetupP
           <CardDescription>Es wurde noch kein Admin angelegt. Bitte initialen Admin erstellen.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              void handleSubmit(event);
+            }}
+          >
             <div className="space-y-2">
               <Label htmlFor="setup-username">Admin Benutzername</Label>
               <Input

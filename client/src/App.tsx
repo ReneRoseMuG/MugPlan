@@ -31,7 +31,7 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const status = await getSetupStatus();
         if (cancelled) return;

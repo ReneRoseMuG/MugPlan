@@ -668,7 +668,9 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
               {!isEditing ? (
                 <DocumentExtractionDropzone
-                  onFileSelected={runDocumentExtraction}
+                  onFileSelected={(file) => {
+                    void runDocumentExtraction(file);
+                  }}
                   isProcessing={documentExtractionLoading}
                 />
               ) : null}
