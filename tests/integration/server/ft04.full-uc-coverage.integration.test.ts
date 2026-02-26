@@ -262,10 +262,55 @@ describe("FT04 full UC coverage integration", () => {
     });
   });
 
-  it("UC 04/07 derives week overview from current tour-employee assignments (NOT_IMPLEMENTED_BY_SCOPE)", () => {
-    throw new Error(
-      "NOT_IMPLEMENTED_BY_SCOPE | UC 04/07 Wochenuebersicht nach Touraenderung korrekt ableiten | Fehlendes Verhalten: verifizierbare serverseitige UC-Ableitung aus aktuellen Tour-Mitarbeiterzuordnungen in einer dedizierten Wochenprojektion | Betroffene Produktion: server/services/appointmentsService.ts + client/src/components/calendar/CalendarWeekView.tsx",
+  it("UC 04/07 derives week overview from current tour-employee assignments", async () => {
+    const admin = await loginAdminAgent();
+    const tour = await createTour(admin, "#2a6fbb");
+    const employeeA = await createEmployee(admin);
+    const employeeB = await createEmployee(admin);
+    const employeeC = await createEmployee(admin);
+
+    const assignInitial = await admin
+      .post(`/api/tours/${tour.id}/employees`)
+      .send({
+        items: [
+          { employeeId: employeeA.id, version: employeeA.version },
+          { employeeId: employeeB.id, version: employeeB.version },
+        ],
+      })
+      .expect(200);
+
+    const versionB = Number(
+      (assignInitial.body as Array<{ id: number; version: number }>).find((entry) => entry.id === employeeB.id)?.version,
     );
+    if (!Number.isInteger(versionB) || versionB < 1) {
+      throw new Error("Expected valid employee version for employeeB after assignment");
+    }
+
+    await admin
+      .delete(`/api/tours/${tour.id}/employees/${employeeB.id}`)
+      .send({ version: versionB })
+      .expect(200);
+
+    await admin
+      .post(`/api/tours/${tour.id}/employees`)
+      .send({
+        items: [{ employeeId: employeeC.id, version: employeeC.version }],
+      })
+      .expect(200);
+
+    await admin.get("/api/employees?scope=active").expect(200).expect((res) => {
+      const rows = res.body as Array<{ id: number; tourId: number | null }>;
+      const byId = new Map(rows.map((row) => [row.id, row] as const));
+      expect(byId.get(employeeA.id)?.tourId).toBe(tour.id);
+      expect(byId.get(employeeB.id)?.tourId ?? null).toBeNull();
+      expect(byId.get(employeeC.id)?.tourId).toBe(tour.id);
+    });
+
+    await admin.get(`/api/tours/${tour.id}/employees`).expect(200).expect((res) => {
+      const ids = (res.body as Array<{ id: number }>).map((entry) => entry.id).sort((l, r) => l - r);
+      expect(ids).toEqual([employeeA.id, employeeC.id].sort((l, r) => l - r));
+      expect(ids).not.toContain(employeeB.id);
+    });
   });
 
   it("UC 04/08 prevents parallel assignment of same employee to different tours", async () => {
