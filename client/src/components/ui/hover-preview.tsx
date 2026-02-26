@@ -218,10 +218,10 @@ export function HoverPreview({
 
     const preferredLeft = cursorPos.x + cursorOffsetX;
     const preferredTop = cursorPos.y + cursorOffsetY;
-    const maxHeightForClamp = resolvedMaxHeight ?? (window.innerHeight - viewportPadding * 2);
-    const safeMaxHeight = Math.max(0, maxHeightForClamp);
     const maxLeft = window.innerWidth - maxWidth - viewportPadding;
-    const maxTop = window.innerHeight - safeMaxHeight - viewportPadding;
+    const maxTop = resolvedMaxHeight == null
+      ? window.innerHeight - viewportPadding
+      : window.innerHeight - Math.max(0, resolvedMaxHeight) - viewportPadding;
 
     return {
       left: Math.max(viewportPadding, Math.min(preferredLeft, maxLeft)),

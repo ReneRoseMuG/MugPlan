@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - Weekly-Appointment-Preview setzt maxHeight explizit auf null.
  * - Weekly-Appointment-Preview erzwingt sichtbaren Inhalt ohne Y-Scrollcontainer.
+ * - Weekly-Appointment-Preview nutzt den week-calendar Kontext der Originalkarte.
  * - InfoBadge leitet scrollY so weiter, dass nur bei "auto" ein Overflow-Container gesetzt wird.
  *
  * Fehlerfaelle:
@@ -26,6 +27,7 @@ describe("FT03 weekly preview no-scroll options", () => {
 
     expect(source).toContain("maxHeight: null");
     expect(source).toContain('scrollY: "visible"');
+    expect(source).toContain('context="week-calendar"');
   });
 
   it("applies overflow-y-auto only when scrollY is auto", () => {

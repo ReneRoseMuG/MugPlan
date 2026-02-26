@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, HelpCircle, Table2, LogOut } from "lucide-react";
+import { CalendarDays, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, HelpCircle, Table2, LogOut } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 
 interface SidebarProps {
@@ -112,7 +112,6 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
         <NavGroup title="Terminplanung">
           <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week'} onClick={() => onViewChange('week')} />
           <NavButton icon={Calendar} label="Monatsübersicht" isActive={currentView === 'month'} onClick={() => onViewChange('month')} />
-          <NavButton icon={CalendarRange} label="Jahresübersicht" isActive={currentView === 'year'} onClick={() => onViewChange('year')} />
           <NavButton icon={Table2} label="Terminliste" isActive={currentView === 'appointmentsList'} onClick={() => onViewChange('appointmentsList')} />
         </NavGroup>
 

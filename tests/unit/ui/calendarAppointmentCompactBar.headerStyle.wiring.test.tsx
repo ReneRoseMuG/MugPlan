@@ -10,6 +10,7 @@
  * - CalendarAppointmentCompactBar nutzt den gleichen Border-Look wie Header-Komponenten.
  * - Eintagestermine zeigen Kundennummer | Auftragsnummer | PLZ.
  * - Mehrtagestermine zeigen Kundennummer | Auftragsnummer | Kundenname in dieser Reihenfolge.
+ * - Preview nutzt die standardisierte Weekly-Preview-Fabrik ohne Pointer-Event-Blockade.
  *
  * Fehlerfaelle:
  * - Terminbalken fallen auf flaches Legacy-Styling zurueck.
@@ -37,5 +38,7 @@ describe("FT03 UI: calendar appointment compact bar header style wiring", () => 
     expect(compactBarSource).toContain("const orderNumber = appointment.projectOrderNumber?.trim() || \"-\"");
     expect(compactBarSource).toContain("const middleContent = orderNumber;");
     expect(compactBarSource).toContain("`K: ${customerNumber} - ${orderNumber} - Name: ${customerName}`");
+    expect(compactBarSource).toContain("const preview = createAppointmentWeeklyPanelPreview(appointment);");
+    expect(compactBarSource).not.toContain("pointer-events-none");
   });
 });

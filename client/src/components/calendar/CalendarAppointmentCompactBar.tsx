@@ -1,7 +1,7 @@
 import { HoverPreview } from "@/components/ui/hover-preview";
+import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, getAppointmentEndDate } from "@/lib/calendar-utils";
-import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
 
 type CompactBarProps = {
   appointment: CalendarAppointment;
@@ -104,22 +104,18 @@ export function CalendarAppointmentCompactBar({
     return barBody;
   }
 
+  const preview = createAppointmentWeeklyPanelPreview(appointment);
+
   return (
     <HoverPreview
-      preview={(
-        <div className="rounded-lg bg-white p-1">
-          <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
-        </div>
-      )}
+      preview={preview.content}
       mode="cursor"
-      openDelay={400}
-      closeDelay={0}
-      maxWidth={360}
-      maxHeight={320}
+      openDelay={preview.options?.openDelayMs}
+      maxWidth={preview.options?.maxWidth}
+      maxHeight={preview.options?.maxHeight}
       cursorOffsetX={12}
       cursorOffsetY={10}
-      className="z-[9999] w-[360px] pointer-events-none"
-      contentClassName="pointer-events-none"
+      className="z-[9999]"
     >
       {barBody}
     </HoverPreview>
