@@ -1183,6 +1183,15 @@ export const api = {
         200: z.object({
           project: z.custom<typeof projects.$inferSelect>(),
           customer: z.custom<typeof customers.$inferSelect>(),
+          projectStatuses: z.array(
+            z.object({
+              status: z.custom<typeof projectStatus.$inferSelect>(),
+              relationVersion: z.number().int().min(1),
+            }),
+          ),
+          projectNotes: z.array(z.custom<typeof notes.$inferSelect>()),
+          projectAttachments: z.array(z.custom<typeof projectAttachments.$inferSelect>()),
+          projectAppointments: z.array(entityAppointmentItemSchema),
         }),
         404: errorSchemas.notFound,
       },
