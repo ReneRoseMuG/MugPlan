@@ -886,6 +886,20 @@ export const api = {
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/employees/:id",
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
     currentAppointments: {
       method: 'GET' as const,
       path: '/api/employees/:id/current-appointments',

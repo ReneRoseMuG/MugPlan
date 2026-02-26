@@ -2,20 +2,21 @@
  * Test Scope:
  *
  * Feature: FT05 - Mitarbeiterverwaltung
- * Use Case: UC 05/02, UC 05/07, UC 05/09, UC 05/11, UC 05/13 sowie Melder fuer UC 05/10 und UC 05/12 (DELETE)
+ * Use Case: UC 05/02, UC 05/07, UC 05/09, UC 05/10, UC 05/11, UC 05/12, UC 05/13
  *
  * Abgedeckte Regeln:
  * - Bearbeitung durch Disponent aendert Stammdaten ohne Nebenwirkung auf Terminrelation.
  * - Detail-, Attachment- und Terminansicht sind konsistent lesbar.
  * - Parallelfaelle fuer Reaktivierung/Bearbeitung triggern VERSION_CONFLICT.
  * - Listen-/Dialog-Query fuer aktive Mitarbeiter bleibt konsistent.
+ * - DELETE blockiert bei bestehenden Terminreferenzen und ist nur fuer ADMIN erlaubt.
  *
  * Fehlerfaelle:
  * - Konfliktfall Deaktivierung vor Terminspeicherung muss Save blockieren.
- * - Nicht umsetzbare DELETE-Use-Cases werden als verpflichtende Melder-Tests ausgegeben.
+ * - DELETE liefert BUSINESS_CONFLICT bei Referenzen und FORBIDDEN fuer unberechtigte Rollen.
  *
  * Ziel:
- * FT05-Use-Cases mit Integrationsfokus absichern und verbleibende Produktluecken explizit sichtbar machen.
+ * FT05-Use-Cases mit Integrationsfokus inklusive DELETE-Regeln absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -265,19 +266,37 @@ describe("FT05 integration: full UC coverage", () => {
     expect(listIds).not.toContain(inactive.id);
   });
 
-  it("UC 05/10 MELDER: deletion with existing appointment references cannot be tested because endpoint is missing", async () => {
-    throw new Error(
-      "UC 05/10 not testable without production extension. Missing endpoint: DELETE /api/employees/:id. " +
-        "Required behavior: block delete with HTTP 409 when appointment references exist. " +
-        "Reason: current API contract exposes no employee delete path, therefore reference-protection cannot be verified.",
-    );
+  it("UC 05/10: deletion with existing appointment references is blocked with 409 BUSINESS_CONFLICT", async () => {
+    const admin = await loginAdminAgent();
+    const employee = await createEmployee(admin, "uc0510");
+    const project = await createProjectFixture("uc0510");
+
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-11-01",
+      employeeIds: [employee.id],
+    });
+
+    await admin
+      .delete(`/api/employees/${employee.id}`)
+      .send({ version: employee.version })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
   });
 
-  it("UC 05/12 MELDER: unauthorized DELETE protection cannot be tested because endpoint is missing", async () => {
-    throw new Error(
-      "UC 05/12 (DELETE path) not testable without production extension. Missing endpoint: DELETE /api/employees/:id. " +
-        "Required behavior: enforce role guard with HTTP 403 for unauthorized roles. " +
-        "Reason: no DELETE route exists, so direct API role-violation check is impossible.",
-    );
+  it("UC 05/12: unauthorized delete attempt is rejected with 403 FORBIDDEN", async () => {
+    const admin = await loginAdminAgent();
+    const reader = await createRoleAgent("READER", "uc0512-reader");
+    const employee = await createEmployee(admin, "uc0512");
+
+    await reader
+      .delete(`/api/employees/${employee.id}`)
+      .send({ version: employee.version })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
   });
 });

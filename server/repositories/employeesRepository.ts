@@ -1,6 +1,7 @@
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  appointmentEmployees,
   employeeAttachments,
   employees,
   type Employee,
@@ -92,6 +93,52 @@ export async function toggleEmployeeActiveWithVersion(
 
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
   return { kind: "updated", employee };
+}
+
+export async function deleteEmployeeWithVersion(
+  id: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" } | { kind: "business_conflict" }> {
+  return db.transaction(async (tx) => {
+    const versionCheck = await tx.execute(sql`
+      update employee
+      set version = version
+      where id = ${id}
+        and version = ${expectedVersion}
+    `);
+    const versionCheckAffectedRows = Number(
+      (versionCheck as any)?.[0]?.affectedRows ?? (versionCheck as any)?.affectedRows ?? 0,
+    );
+    if (versionCheckAffectedRows === 0) {
+      throw new Error("VERSION_CONFLICT");
+    }
+
+    const [existingReference] = await tx
+      .select({ appointmentId: appointmentEmployees.appointmentId })
+      .from(appointmentEmployees)
+      .where(eq(appointmentEmployees.employeeId, id))
+      .limit(1);
+    if (existingReference) {
+      return { kind: "business_conflict" as const };
+    }
+
+    await tx.delete(employeeAttachments).where(eq(employeeAttachments.employeeId, id));
+    const result = await tx.execute(sql`
+      delete from employee
+      where id = ${id}
+        and version = ${expectedVersion}
+    `);
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      throw new Error("VERSION_CONFLICT");
+    }
+    return { kind: "deleted" as const };
+  }).catch((error) => {
+    if (error instanceof Error && error.message === "VERSION_CONFLICT") {
+      return { kind: "version_conflict" as const };
+    }
+    throw error;
+  });
 }
 
 export async function getEmployeesByTour(tourId: number): Promise<Employee[]> {

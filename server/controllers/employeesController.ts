@@ -181,6 +181,31 @@ export async function toggleEmployeeActive(req: Request, res: Response, next: Ne
   }
 }
 
+export async function deleteEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = Number(req.params.id);
+    const input = api.employees.delete.input.parse(req.body);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    await employeesService.deleteEmployee(id, input.version, roleKey);
+    res.status(204).send();
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof employeesService.EmployeesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function listCurrentAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const employeeId = Number(req.params.id);

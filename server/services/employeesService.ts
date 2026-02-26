@@ -6,9 +6,12 @@ import type { CanonicalRoleKey } from "../settings/registry";
 
 export class EmployeesError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN";
+  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN" | "BUSINESS_CONFLICT";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN") {
+  constructor(
+    status: number,
+    code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN" | "BUSINESS_CONFLICT",
+  ) {
     super(code);
     this.status = status;
     this.code = code;
@@ -50,6 +53,12 @@ export class EmployeeImportError extends Error {
 function resolveScope(roleKey: CanonicalRoleKey, requestedScope: "active" | "inactive"): "active" | "inactive" {
   if (roleKey !== "ADMIN") return "active";
   return requestedScope;
+}
+
+function requireAdmin(roleKey: CanonicalRoleKey): void {
+  if (roleKey !== "ADMIN") {
+    throw new EmployeesError(403, "FORBIDDEN");
+  }
 }
 
 export async function listEmployees(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<Employee[]> {
@@ -121,9 +130,7 @@ export async function toggleEmployeeActive(
   version: number,
   roleKey: CanonicalRoleKey,
 ): Promise<Employee | null> {
-  if (roleKey !== "ADMIN") {
-    throw new EmployeesError(403, "FORBIDDEN");
-  }
+  requireAdmin(roleKey);
   if (!Number.isInteger(version) || version < 1) {
     throw new EmployeesError(422, "VALIDATION_ERROR");
   }
@@ -134,6 +141,25 @@ export async function toggleEmployeeActive(
     throw new EmployeesError(409, "VERSION_CONFLICT");
   }
   return result.employee;
+}
+
+export async function deleteEmployee(id: number, version: number, roleKey: CanonicalRoleKey): Promise<void> {
+  requireAdmin(roleKey);
+  if (!Number.isInteger(version) || version < 1) {
+    throw new EmployeesError(422, "VALIDATION_ERROR");
+  }
+
+  const result = await employeesRepository.deleteEmployeeWithVersion(id, version);
+  if (result.kind === "version_conflict") {
+    const exists = await employeesRepository.getEmployee(id);
+    if (!exists) {
+      throw new EmployeesError(404, "NOT_FOUND");
+    }
+    throw new EmployeesError(409, "VERSION_CONFLICT");
+  }
+  if (result.kind === "business_conflict") {
+    throw new EmployeesError(409, "BUSINESS_CONFLICT");
+  }
 }
 
 function normalizeNamePart(value: string): string {
