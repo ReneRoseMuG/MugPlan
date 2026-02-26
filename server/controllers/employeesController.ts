@@ -4,6 +4,8 @@ import { ZodError } from "zod";
 import * as appointmentsService from "../services/appointmentsService";
 import * as employeesService from "../services/employeesService";
 import { logWarn } from "../lib/logger";
+import { MAX_UPLOAD_BYTES } from "../lib/attachmentFiles";
+import { parseMultipartFile } from "../lib/multipart";
 
 const logPrefix = "[employees-controller]";
 
@@ -71,6 +73,44 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
       return;
     }
     if (err instanceof employeesService.EmployeesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function importEmployeesCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    if (roleKey !== "ADMIN") {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
+
+    const parsed = await parseMultipartFile(req, {
+      fieldName: "file",
+      maxSizeBytes: MAX_UPLOAD_BYTES,
+    });
+    const result = await employeesService.importEmployeesFromCsv(parsed.buffer);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error && err.message === "Payload too large") {
+      res.status(413).json({ code: "PAYLOAD_TOO_LARGE" });
+      return;
+    }
+    if (
+      err instanceof Error &&
+      (err.message === "Missing multipart boundary" || err.message === "No file found in multipart payload")
+    ) {
+      res.status(422).json({ code: "INVALID_CSV_FORMAT" });
+      return;
+    }
+    if (err instanceof employeesService.EmployeeImportError) {
       res.status(err.status).json({ code: err.code });
       return;
     }

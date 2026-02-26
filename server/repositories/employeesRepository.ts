@@ -20,6 +20,13 @@ export async function getEmployees(scope: "active" | "inactive" = "active"): Pro
     .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
 }
 
+export async function getAllEmployees(): Promise<Employee[]> {
+  return db
+    .select()
+    .from(employees)
+    .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
+}
+
 export async function getEmployee(id: number): Promise<Employee | null> {
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
   return employee || null;

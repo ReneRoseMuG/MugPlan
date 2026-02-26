@@ -829,6 +829,34 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    importCsv: {
+      method: "POST" as const,
+      path: "/api/employees/import-csv",
+      responses: {
+        200: z.object({
+          summary: z.object({
+            totalRows: z.number().int().min(0),
+            importedRows: z.number().int().min(0),
+            duplicateRows: z.number().int().min(0),
+            invalidRows: z.number().int().min(0),
+            errorRows: z.number().int().min(0),
+          }),
+          rows: z.array(
+            z.object({
+              lineNumber: z.number().int().min(1),
+              firstName: z.string(),
+              lastName: z.string(),
+              status: z.enum(["IMPORTED", "DUPLICATE", "INVALID", "ERROR"]),
+              message: z.string(),
+            }),
+          ),
+        }),
+        400: z.object({ code: z.literal("INVALID_CSV_HEADER") }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        413: z.object({ code: z.literal("PAYLOAD_TOO_LARGE") }),
+        422: z.object({ code: z.enum(["INVALID_CSV_FORMAT", "INVALID_CSV_CONTENT"]) }),
+      },
+    },
     update: {
       method: 'PUT' as const,
       path: '/api/employees/:id',
