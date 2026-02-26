@@ -14,7 +14,6 @@ import {
   startOfYear,
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { useToast } from "@/hooks/use-toast";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import {
@@ -38,7 +37,6 @@ export function CalendarYearView({
   onNewAppointment,
   onOpenAppointment,
 }: CalendarYearViewProps) {
-  const { toast } = useToast();
   const userRole = useMemo(
     () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
     [],
@@ -166,4 +164,3 @@ export function CalendarYearView({
     </div>
   );
 }
-
