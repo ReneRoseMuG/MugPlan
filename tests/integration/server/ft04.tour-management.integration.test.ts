@@ -12,7 +12,7 @@
  * - Nicht existierende Tour-IDs liefern NOT_FOUND.
  *
  * Fehlerfaelle:
- * - Ungueltige Create-Payload liefert VALIDATION_ERROR.
+ * - Unerlaubter Datentyp in Create-Payload liefert VALIDATION_ERROR.
  * - Loeschen bei verknuepften Terminen liefert BUSINESS_CONFLICT.
  * - Name-Felder in Requests werden aktuell nicht als editierbares Tourmerkmal verarbeitet.
  *
@@ -105,11 +105,12 @@ describe("FT04 integration: TourTests", () => {
     expect(response.body.version).toBe(1);
   });
 
-  it("rejects invalid create payloads", async () => {
+  it("applies default color on empty create payload and rejects invalid color datatype", async () => {
     const admin = await loginAdminAgent();
 
-    await admin.post("/api/tours").send({}).expect(422).expect((res) => {
-      expect(res.body.code).toBe("VALIDATION_ERROR");
+    await admin.post("/api/tours").send({}).expect(201).expect((res) => {
+      expect(res.body.color).toBe("#2563eb");
+      expect(res.body.name).toMatch(/^Tour \d+$/);
     });
 
     await admin.post("/api/tours").send({ color: 123 }).expect(422).expect((res) => {

@@ -112,7 +112,7 @@ describe("FT05 integration: employee attachments", () => {
       .get(`/api/employee-attachments/${attachmentId}/download`)
       .expect(200)
       .expect((res) => {
-        expect(String(res.headers["content-disposition"] ?? "")).toContain("inline");
+        expect(String(res.headers["content-disposition"] ?? "")).toContain("attachment");
       });
 
     await admin
