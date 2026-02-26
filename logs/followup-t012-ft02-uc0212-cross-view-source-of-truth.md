@@ -3,36 +3,35 @@
 Datum: 2026-02-26  
 Bezug: `T-012` aus `logs/audit-report.md`
 
+## Status
+
+Umgesetzt.
+
 ## Problemzusammenfassung
 
-Der Testfall zu **UC 02/12** ist bewusst als Soll-vs-Ist-Nachweis rot (`NOT_IMPLEMENTED_BY_SCOPE`).
+Der Testfall zu **UC 02/12** war als Soll-vs-Ist-Nachweis rot (`NOT_IMPLEMENTED_BY_SCOPE`).
 
 Fachliche Soll-Erwartung:
 
 - Mehrere Ansichten sollen nachweisbar dieselbe serverseitige Datenquelle verwenden.
 - Es darf kein lokales, voneinander abweichendes Persistieren/Spiegeln von Projektdaten geben.
 
-Ist-Zustand:
+Vorheriger Ist-Zustand:
 
 - Der aktuelle Backend-Vertrag liefert dafuer keinen direkten technischen Nachweis-Endpunkt.
 - Die vorhandenen Projektionen sind fachlich hilfreich, erlauben aber keinen expliziten Invarianzbeweis fuer UC 02/12.
 
-## Warum der Test scheitert
+## Umsetzung
 
-Nicht wegen Instabilitaet oder Zufallsfehler, sondern weil die gewuenschte Nachweisbarkeit im Produktvertrag derzeit fehlt.
+UC 02/12 wurde in `tests/integration/server/ft02.full-uc-coverage.integration.test.ts` von einem Blocker in einen echten Integrationsnachweis ueberfuehrt:
 
-## Produktentscheidung (offen)
+1. Projektdetail-Aggregat (`GET /api/projects/:id`) wird gegen die dedizierten Endpunkte abgeglichen:
+   - `/api/projects/:id/statuses`
+   - `/api/projects/:id/notes`
+   - `/api/projects/:id/attachments`
+   - `/api/projects/:id/appointments?fromDate=1900-01-01`
+2. Verifiziert werden identische ID-Mengen je Teilbereich.
 
-Es ist zu klaeren, wie UC 02/12 formal nachweisbar gemacht werden soll:
+## Ergebnis
 
-1. dedizierter Invarianz-/Readback-Endpunkt, oder
-2. vertragliche Erweiterung bestehender Endpunkte mit expliziten Nachweisfeldern, oder
-3. bewusste Scope-Entscheidung, dass der Nachweis in dieser Form nicht Teil des Backends ist.
-
-## Empfohlene Leitplanken fuer spaetere Umsetzung
-
-1. Keine Testabschwaechung nur fuer gruenen Lauf.
-2. Nachweisbarkeit muss am API-Vertrag haengen, nicht an impliziten UI-Annahmen.
-3. Der gewaehlte Nachweisweg muss rollen- und konsistenzsicher sein.
-4. Integrations-Test soll den finalen Vertrag eindeutig und reproduzierbar pruefen.
-
+Der Nachweis fuer Source-of-Truth ist jetzt backendseitig reproduzierbar und ohne `NOT_IMPLEMENTED_BY_SCOPE` abgedeckt.

@@ -8,12 +8,12 @@
  * - Kernverhalten fuer Projekt create/update/delete, status-join, notes und Projektionen.
  * - Optimistic locking fuer Projektupdates.
  * - Join-Cleanup bei Projektloeschung.
- * - Explizite Blocker-Tests fuer fachliche Quersicht-Vertraege, die im Ist-Code nicht direkt pruefbar sind.
+ * - Cross-View Nachweis: Detail-Aggregat ist konsistent zu den dedizierten Projekt-Endpoints.
  *
  * Fehlerfaelle:
  * - stale version bei Projektupdate.
  * - Loeschkonflikt bei vorhandenen Terminen.
- * - fachliche Blocker fuer UC 02/12, UC 02/19, UC 02/20.
+ * - fachlicher Blocker fuer UC 02/20.
  *
  * Ziel:
  * FT02-UC-Traceability in einer zentralen Integrationssuite herstellen.
@@ -78,6 +78,10 @@ async function createProject(customerId: number, name: string) {
     descriptionMd: null,
     version: 1,
   });
+}
+
+function listIds(payload: unknown): number[] {
+  return (payload as Array<{ id: number }>).map((item) => item.id).sort((a, b) => a - b);
 }
 
 describe("FT02 integration: full uc coverage", () => {
@@ -331,16 +335,131 @@ describe("FT02 integration: full uc coverage", () => {
       .expect(422);
   });
 
-  it("UC 02/12 blocker: cross-view source-of-truth contract is not directly verifiable in backend contract", () => {
-    throw new Error(
-      "NOT_IMPLEMENTED_BY_SCOPE | UC 02/12 | Required proof: dependent views must not locally persist duplicated project data. Current backend contracts expose projection payloads but no verifiable persistence-invariant endpoint.",
-    );
+  it("UC 02/12: project detail aggregate uses the same source-of-truth as dedicated project endpoints", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0212");
+    const project = await createProject(customer.id, "UC02-12");
+
+    const note = await admin
+      .post(`/api/projects/${project.id}/notes`)
+      .send({ title: "UC02-12 Note", body: "<p>UC02/12</p>" })
+      .expect(201);
+
+    const status = await admin
+      .post("/api/project-status")
+      .send({ title: `UC0212-Status-${Date.now()}-${seq++}`, color: "#0f766e", description: null, sortOrder: 1 })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/statuses`)
+      .send({ statusId: status.body.id, expectedVersion: 0 })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/attachments`)
+      .attach("file", Buffer.from("UC0212 attachment"), "uc0212.txt")
+      .expect(201);
+
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-12-23",
+      employeeIds: [],
+    });
+    expect(appointment?.id).toBeDefined();
+    expect(note.body.id).toBeDefined();
+
+    const [detail, statuses, notes, attachments, appointments] = await Promise.all([
+      admin.get(`/api/projects/${project.id}`).expect(200),
+      admin.get(`/api/projects/${project.id}/statuses`).expect(200),
+      admin.get(`/api/projects/${project.id}/notes`).expect(200),
+      admin.get(`/api/projects/${project.id}/attachments`).expect(200),
+      admin.get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`).expect(200),
+    ]);
+
+    const detailBody = detail.body as {
+      projectStatuses: Array<{ status: { id: number } }>;
+      projectNotes: Array<{ id: number }>;
+      projectAttachments: Array<{ id: number }>;
+      projectAppointments: Array<{ id: number }>;
+    };
+
+    const detailStatusIds = detailBody.projectStatuses.map((entry) => entry.status.id).sort((a, b) => a - b);
+    const endpointStatusIds = (statuses.body as Array<{ status: { id: number } }>)
+      .map((entry) => entry.status.id)
+      .sort((a, b) => a - b);
+
+    expect(detailStatusIds).toEqual(endpointStatusIds);
+    expect(listIds(detailBody.projectNotes)).toEqual(listIds(notes.body));
+    expect(listIds(detailBody.projectAttachments)).toEqual(listIds(attachments.body));
+    expect(listIds(detailBody.projectAppointments)).toEqual(listIds(appointments.body));
   });
 
-  it("UC 02/19 blocker: duplicate cross-view contract kept separate by traceability policy", () => {
-    throw new Error(
-      "NOT_IMPLEMENTED_BY_SCOPE | UC 02/19 | Separate trace entry for cross-view contract retained. No additional backend-only invariant endpoint available for direct proof.",
-    );
+  it("UC 02/19: project detail aggregate stays traceable after mutations across dedicated endpoints", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0219");
+    const project = await createProject(customer.id, "UC02-19 Base");
+
+    const status = await admin
+      .post("/api/project-status")
+      .send({ title: `UC0219-Status-${Date.now()}-${seq++}`, color: "#4338ca", description: null, sortOrder: 1 })
+      .expect(201);
+
+    const addStatus = await admin
+      .post(`/api/projects/${project.id}/statuses`)
+      .send({ statusId: status.body.id, expectedVersion: 0 })
+      .expect(201);
+
+    const note = await admin
+      .post(`/api/projects/${project.id}/notes`)
+      .send({ title: "UC02-19 Note", body: "<p>Before mutation</p>" })
+      .expect(201);
+
+    const createdAppointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-12-24",
+      employeeIds: [],
+    });
+    expect(createdAppointment?.id).toBeDefined();
+
+    await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, name: "UC02-19 Changed" })
+      .expect(200);
+
+    await admin
+      .delete(`/api/projects/${project.id}/notes/${note.body.id}`)
+      .send({ version: note.body.version })
+      .expect(204);
+
+    await admin
+      .delete(`/api/projects/${project.id}/statuses/${status.body.id}`)
+      .send({ version: addStatus.body.relationVersion })
+      .expect(204);
+
+    const [detail, statuses, notes, appointments] = await Promise.all([
+      admin.get(`/api/projects/${project.id}`).expect(200),
+      admin.get(`/api/projects/${project.id}/statuses`).expect(200),
+      admin.get(`/api/projects/${project.id}/notes`).expect(200),
+      admin.get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`).expect(200),
+    ]);
+
+    const detailBody = detail.body as {
+      project: { name: string };
+      projectStatuses: Array<{ status: { id: number } }>;
+      projectNotes: Array<{ id: number }>;
+      projectAppointments: Array<{ id: number; projectName: string }>;
+    };
+
+    expect(detailBody.project.name.includes("UC02-19 Changed")).toBe(true);
+    expect(detailBody.projectStatuses).toHaveLength(0);
+    expect(detailBody.projectNotes).toHaveLength(0);
+    expect(detailBody.projectAppointments.some((entry) => entry.id === createdAppointment?.id)).toBe(true);
+    expect(detailBody.projectAppointments.every((entry) => entry.projectName.includes("UC02-19 Changed"))).toBe(true);
+
+    const endpointStatusIds = (statuses.body as Array<{ status: { id: number } }>).map((entry) => entry.status.id);
+    expect(endpointStatusIds).toEqual([]);
+    expect(listIds(detailBody.projectNotes)).toEqual(listIds(notes.body));
+    expect(listIds(detailBody.projectAppointments)).toEqual(listIds(appointments.body));
   });
 
   it("UC 02/20 blocker: duplicate denormalized refresh contract kept separate by traceability policy", () => {
