@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - UC-nahe End-to-end-Absicherung von Tour-CRUD, Rollenlogik, Konflikten und Darstellungskonsistenz.
  * - Multi-User-Konflikte werden deterministisch ueber zwei Sessions validiert.
- * - Nicht ohne Produktionsaenderung testbare Sollregeln werden als NOT_IMPLEMENTED_BY_SCOPE sichtbar gemacht.
+ * - Rollen- und Projektionserwartungen werden als verifizierbare Integrationskontrakte geprueft.
  *
  * Fehlerfaelle:
  * - Fehlende Rollen-Guards fuer Tour-Mitarbeiter-Mutationen.
@@ -228,7 +228,7 @@ describe("FT04 full UC coverage integration", () => {
     });
     if (response.status !== 403 || response.body?.code !== "FORBIDDEN") {
       throw new Error(
-        `NOT_IMPLEMENTED_BY_SCOPE | UC 04/05 Tourliste anzeigen | Fehlendes Verhalten: READER/Monteur darf Tour-Mitarbeiter-Mutationen nicht ausfuehren (erwartet 403/FORBIDDEN, erhalten ${response.status}/${response.body?.code ?? "n/a"}) | Betroffene Produktion: server/controllers/tourEmployeesController.ts`,
+        `UC 04/05 contract mismatch: READER/Monteur darf Tour-Mitarbeiter-Mutationen nicht ausfuehren (erwartet 403/FORBIDDEN, erhalten ${response.status}/${response.body?.code ?? "n/a"})`,
       );
     }
   });

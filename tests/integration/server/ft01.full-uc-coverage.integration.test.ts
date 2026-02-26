@@ -7,11 +7,11 @@
  * Abgedeckte Regeln:
  * - End-to-end Absicherung der Termin-Lifecycle-, Zuordnungs-, Historien-, Locking- und Projektion-Regeln.
  * - DB-Write-Pfade werden mit Join-Konsistenz (appointment_employee) und Atomaritaets-Checks validiert.
- * - Nicht ohne Produktionscode testbare FT01-Regeln werden bewusst fehlschlagend mit NOT_IMPLEMENTED_BY_SCOPE ausgewiesen.
+ * - UC-Regeln werden als verifizierbare Integrationskontrakte abgedeckt.
  *
  * Fehlerfaelle:
  * - Overlap-Konflikte, Versionskonflikte, historische Blockaden, ungueltige Eingaben und List-Filter-Fehler.
- * - Scope-Blocker mit expliziter Meldung statt stiller Auslassung.
+ * - Kontraktabweichungen mit expliziter Fehlermeldung statt stiller Auslassung.
  *
  * Ziel:
  * Vollstaendige UC-nahe FT01-Testabdeckung unter strikter Produktionscode-Sperre.

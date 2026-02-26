@@ -9,7 +9,7 @@ Umgesetzt.
 
 ## Problemzusammenfassung
 
-UC 02/20 ist als eigener Vertragspunkt zur denormalisierten Aktualisierung gefuehrt und scheitert aktuell mit `NOT_IMPLEMENTED_BY_SCOPE`.
+UC 02/20 war als eigener Vertragspunkt zur denormalisierten Aktualisierung gefuehrt und scheiterte zuvor mit `NOT_IMPLEMENTED_BY_SCOPE`.
 
 Fachliche Soll-Erwartung:
 
