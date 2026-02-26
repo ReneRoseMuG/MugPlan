@@ -6,9 +6,11 @@
  *
  * Abgedeckte Regeln:
  * - POST erzeugt Mitarbeiter mit version=1 und isActive=true.
+ * - POST ist fuer Leserrollen als Schreibzugriff mit 403 FORBIDDEN blockiert.
  * - PUT/PATCH arbeiten optimistic-locking-basiert mit Versionspflicht.
  * - Stale Version liefert VERSION_CONFLICT, unbekannte ID liefert NOT_FOUND.
  * - Nicht-Admin darf isActive weder per PUT noch per PATCH aendern.
+ * - Aktivieren/Deaktivieren ist idempotent und liefert auch bei gleichem Zielzustand 200.
  *
  * Fehlerfaelle:
  * - DTO-Fehler liefern im IST 422 VALIDATION_ERROR.
@@ -61,6 +63,24 @@ async function createDispatcherAgent(): Promise<SuperAgentTest> {
     lastName: "Dispatcher",
     passwordHash,
     roleCode: "DISPATCHER",
+  });
+
+  const agent = request.agent(app);
+  await agent.post("/api/auth/login").send({ username, password }).expect(200);
+  return agent;
+}
+
+async function createReaderAgent(): Promise<SuperAgentTest> {
+  const username = `test-reader-${nextDeterministicToken("employees-lifecycle-reader")}`;
+  const password = "test-reader-password";
+  const passwordHash = await hashPassword(password);
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "Test",
+    lastName: "Reader",
+    passwordHash,
+    roleCode: "READER",
   });
 
   const agent = request.agent(app);
@@ -173,6 +193,37 @@ describe("FT05 integration: employees lifecycle", () => {
       .expect((res) => {
         expect(res.body.isActive).toBe(true);
         expect(res.body.version).toBe(deactivated.body.version + 1);
+      });
+  });
+
+  it("PATCH active is idempotent for already inactive employee and still returns 200", async () => {
+    const admin = await loginAdminAgent();
+    const created = await createEmployee(admin, "toggle-idempotent-false");
+
+    const firstDeactivate = await admin
+      .patch(`/api/employees/${created.id}/active`)
+      .send({ isActive: false, version: created.version })
+      .expect(200);
+
+    await admin
+      .patch(`/api/employees/${created.id}/active`)
+      .send({ isActive: false, version: firstDeactivate.body.version })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.isActive).toBe(false);
+      });
+  });
+
+  it("PATCH active is idempotent for already active employee and still returns 200", async () => {
+    const admin = await loginAdminAgent();
+    const created = await createEmployee(admin, "toggle-idempotent-true");
+
+    await admin
+      .patch(`/api/employees/${created.id}/active`)
+      .send({ isActive: true, version: created.version })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.isActive).toBe(true);
       });
   });
 
@@ -365,6 +416,18 @@ describe("FT05 integration: employees lifecycle", () => {
     await dispatcher
       .put(`/api/employees/${employee.id}`)
       .send({ isActive: false, version: employee.version })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+  });
+
+  it("reader cannot create employee via POST", async () => {
+    const reader = await createReaderAgent();
+
+    await reader
+      .post("/api/employees")
+      .send({ firstName: "No", lastName: "Access", phone: null, email: null })
       .expect(403)
       .expect((res) => {
         expect(res.body.code).toBe("FORBIDDEN");

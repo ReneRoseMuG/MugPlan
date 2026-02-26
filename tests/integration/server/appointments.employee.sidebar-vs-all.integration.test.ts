@@ -9,6 +9,8 @@
  * - /api/employees/:id/appointments?scope=all liefert historische + aktuelle + zukuenftige Termine.
  * - Das Verhalten ist fuer mehrere Mitarbeiter gleichzeitig korrekt getrennt (keine Fremdtermine).
  * - Der Payload deckt die fuer Tabelle+Preview benoetigten Felder vollstaendig ab.
+ * - Mitarbeiter ohne Terminzuweisungen erhalten eine leere Liste.
+ * - Leserrolle darf aktive Mitarbeitertermine lesend abrufen.
  *
  * Fehlerfaelle:
  * - Historische Termine erscheinen faelschlich in der Sidebar-Liste.
@@ -27,6 +29,8 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
 import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
@@ -53,6 +57,24 @@ function nextSeq() {
 async function loginAdminAgent(): Promise<SuperAgentTest> {
   const agent = request.agent(app);
   await agent.post("/api/auth/login").send({ username: "test-admin", password: "test-admin-password" }).expect(200);
+  return agent;
+}
+
+async function createReaderAgent(): Promise<SuperAgentTest> {
+  const username = `test-reader-${nextDeterministicToken("employees-sidebar-reader")}`;
+  const password = "test-reader-password";
+  const passwordHash = await hashPassword(password);
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "Test",
+    lastName: "Reader",
+    passwordHash,
+    roleCode: "READER",
+  });
+
+  const agent = request.agent(app);
+  await agent.post("/api/auth/login").send({ username, password }).expect(200);
   return agent;
 }
 
@@ -252,5 +274,40 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
       .get(`/api/employees/${employee.id}/appointments?scope=all&fromDate=${FUTURE_DATE}`)
       .expect(200);
     expect((allWithFromDate.body as Array<{ id: number }>)).toHaveLength(3);
+  });
+
+  it("returns an empty array for employee without appointments", async () => {
+    const admin = await loginAdminAgent();
+    const employee = await createEmployee(admin, "empty");
+
+    await admin
+      .get(`/api/employees/${employee.id}/appointments?scope=all`)
+      .expect(200)
+      .expect((res) => {
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body).toHaveLength(0);
+      });
+  });
+
+  it("allows reader role to fetch employee appointments for active employee", async () => {
+    const admin = await loginAdminAgent();
+    const reader = await createReaderAgent();
+    const employee = await createEmployee(admin, "reader");
+    const project = await createProjectForEmployee("reader");
+
+    const futureId = await insertAppointment({
+      projectId: project.id,
+      employeeIds: [employee.id],
+      startDate: FUTURE_DATE,
+      title: `Reader ${employee.id}`,
+    });
+
+    await reader
+      .get(`/api/employees/${employee.id}/appointments?scope=all`)
+      .expect(200)
+      .expect((res) => {
+        expect(Array.isArray(res.body)).toBe(true);
+        expect((res.body as Array<{ id: number }>).map((item) => item.id)).toContain(futureId);
+      });
   });
 });
