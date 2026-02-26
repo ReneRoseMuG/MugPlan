@@ -105,3 +105,12 @@ export async function downloadEmployeeAttachment(req: Request, res: Response, ne
     next(err);
   }
 }
+
+export async function deleteEmployeeAttachment(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    // Deletion is intentionally disabled system-wide.
+    res.status(405).json({ message: "Attachment deletion is disabled" });
+  } catch (err) {
+    next(err);
+  }
+}

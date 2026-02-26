@@ -1445,6 +1445,13 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/employee-attachments/:id',
+      responses: {
+        405: errorSchemas.validation,
+      },
+    },
     download: {
       method: 'GET' as const,
       path: '/api/employee-attachments/:id/download',
