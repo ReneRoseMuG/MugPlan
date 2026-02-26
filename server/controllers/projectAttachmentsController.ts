@@ -38,6 +38,11 @@ export async function createProjectAttachment(req: Request, res: Response, next:
       res.status(400).json({ message: "Ungueltige projectId" });
       return;
     }
+    const exists = await projectAttachmentsService.projectExists(projectId);
+    if (!exists) {
+      res.status(404).json({ message: "Projekt nicht gefunden" });
+      return;
+    }
 
     const parsed = await parseMultipartFile(req, {
       fieldName: "file",

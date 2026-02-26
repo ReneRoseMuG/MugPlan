@@ -42,6 +42,11 @@ export async function createEmployeeAttachment(req: Request, res: Response, next
       res.status(400).json({ message: "Ungueltige employeeId" });
       return;
     }
+    const exists = await employeeAttachmentsService.employeeExists(employeeId);
+    if (!exists) {
+      res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
+      return;
+    }
 
     const parsed = await parseMultipartFile(req, {
       fieldName: "file",

@@ -1,6 +1,11 @@
 import type { EmployeeAttachment, InsertEmployeeAttachment } from "@shared/schema";
 import * as employeesRepository from "../repositories/employeesRepository";
 
+export async function employeeExists(employeeId: number): Promise<boolean> {
+  const employee = await employeesRepository.getEmployee(employeeId);
+  return employee !== null;
+}
+
 export async function listEmployeeAttachments(employeeId: number): Promise<EmployeeAttachment[]> {
   return employeesRepository.getEmployeeAttachments(employeeId);
 }
