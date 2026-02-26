@@ -107,6 +107,22 @@ function normalizeEmployeeIds(employeeIds?: number[]) {
   return Array.from(new Set(employeeIds ?? [])).filter((id) => Number.isFinite(id));
 }
 
+async function assertNoInactiveEmployeesTx(
+  tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
+  employeeIds: number[],
+): Promise<void> {
+  if (employeeIds.length === 0) return;
+  const inactiveEmployees = await appointmentsRepository.getInactiveEmployeesByIdsTx(tx, employeeIds);
+  if (inactiveEmployees.length > 0) {
+    throw new AppointmentError(
+      "Inaktive Mitarbeiter koennen keinem Termin zugewiesen werden",
+      409,
+      "BUSINESS_CONFLICT",
+      { conflictEmployees: inactiveEmployees },
+    );
+  }
+}
+
 type SidebarAppointmentRow = Awaited<
   ReturnType<typeof appointmentsRepository.listSidebarAppointmentsByProjectFromDate>
 >[number];
@@ -151,6 +167,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     version: row.appointment.version,
     projectId: row.project.id,
     projectName: row.project.name,
+    projectVersion: row.project.version,
     projectOrderNumber: row.project.orderNumber ?? null,
     projectDescription: row.project.descriptionMd ?? null,
     projectStatuses: statusesByProject.get(row.project.id) ?? [],
@@ -231,6 +248,7 @@ export async function createAppointment(
 
   const created = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const project = await ensureProjectExistsTx(tx, data.projectId);
+    await assertNoInactiveEmployeesTx(tx, employeeIds);
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
       startDate,
@@ -300,6 +318,7 @@ export async function updateAppointment(
     assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
     const project = await ensureProjectExistsTx(tx, data.projectId);
+    await assertNoInactiveEmployeesTx(tx, employeeIds);
 
     if (existing.tourId !== (data.tourId ?? null)) {
       logInfo(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
@@ -490,6 +509,7 @@ export async function listCalendarAppointments({
       version: row.appointment.version,
       projectId: row.project.id,
       projectName: row.project.name,
+      projectVersion: row.project.version,
       projectOrderNumber: row.project.orderNumber ?? null,
       projectDescription: row.project.descriptionMd ?? null,
       projectStatuses: statusesByProject.get(row.project.id) ?? [],
@@ -589,6 +609,7 @@ export async function listAppointmentsList(params: {
       id: row.appointment.id,
       projectId: row.project.id,
       projectName: row.project.name,
+      projectVersion: row.project.version,
       projectOrderNumber: row.project.orderNumber ?? null,
       projectDescription: row.project.descriptionMd ?? null,
       projectStatuses: statusesByProject.get(row.project.id) ?? [],
@@ -625,14 +646,14 @@ export async function listAppointmentsList(params: {
   };
 }
 
-export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
+export async function deleteAppointment(appointmentId: number, expectedVersion: number, _roleKey: CanonicalRoleKey) {
   const deleted = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
 
-    if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
+    if (isStartDateLocked(existing.startDate)) {
       logWarn(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-      throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+      throw new AppointmentError("Historische Termine koennen nicht geloescht werden", 409, "BUSINESS_CONFLICT");
     }
 
     logDebug(`${logPrefix} delete appointmentId=${appointmentId}`);

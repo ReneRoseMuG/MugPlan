@@ -1,6 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
-import { assertSafeDatabaseTargetForMode, parseDatabaseLogInfo } from "../security/dbSafetyGuards";
+import {
+  assertSafeDestructiveOperationTarget,
+  parseDatabaseLogInfo,
+} from "../security/dbSafetyGuards";
 import { logWarn } from "../lib/logger";
 
 type AdminEndpointCategory = "destructive" | "write_non_destructive" | "sensitive_read" | "none";
@@ -64,12 +67,12 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
 
     const runtimeConfig = getRuntimeConfig();
     try {
-      assertSafeDatabaseTargetForMode(
-        runtimeConfig.mysqlDatabaseUrl,
+      assertSafeDestructiveOperationTarget({
         mode,
-        runtimeConfig.allowedDatabases,
-        runtimeConfig.allowedHosts,
-      );
+        databaseUrl: runtimeConfig.mysqlDatabaseUrl,
+        allowedDatabases: runtimeConfig.allowedDatabases,
+        allowedHosts: runtimeConfig.allowedHosts,
+      });
     } catch (error) {
       const dbInfo = parseDatabaseLogInfo(runtimeConfig.mysqlDatabaseUrl);
       logWarn("admin_action_blocked", {
@@ -80,6 +83,7 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
         mode,
         dbName: dbInfo.dbName,
         dbHost: dbInfo.host,
+        dbPort: dbInfo.port,
         message: error instanceof Error ? error.message : String(error),
       });
       res.status(403).json({ code: "UNSAFE_DATABASE_TARGET" });

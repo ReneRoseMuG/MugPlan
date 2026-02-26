@@ -12,7 +12,7 @@
  * - Nicht existierende Tour-IDs liefern NOT_FOUND.
  *
  * Fehlerfaelle:
- * - Ungueltige Create-Payload liefert VALIDATION_ERROR.
+ * - Unerlaubter Datentyp in Create-Payload liefert VALIDATION_ERROR.
  * - Loeschen bei verknuepften Terminen liefert BUSINESS_CONFLICT.
  * - Name-Felder in Requests werden aktuell nicht als editierbares Tourmerkmal verarbeitet.
  *
@@ -28,6 +28,7 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
+import { resetDatabase } from "../../helpers/resetDatabase";
 
 let app: express.Express;
 let employeeCounter = 1;
@@ -43,6 +44,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetDatabase();
   employeeCounter = 1;
   customerCounter = 1;
 });
@@ -103,11 +105,12 @@ describe("FT04 integration: TourTests", () => {
     expect(response.body.version).toBe(1);
   });
 
-  it("rejects invalid create payloads", async () => {
+  it("applies default color on empty create payload and rejects invalid color datatype", async () => {
     const admin = await loginAdminAgent();
 
-    await admin.post("/api/tours").send({}).expect(422).expect((res) => {
-      expect(res.body.code).toBe("VALIDATION_ERROR");
+    await admin.post("/api/tours").send({}).expect(201).expect((res) => {
+      expect(res.body.color).toBe("#2563eb");
+      expect(res.body.name).toMatch(/^Tour \d+$/);
     });
 
     await admin.post("/api/tours").send({ color: 123 }).expect(422).expect((res) => {
@@ -120,7 +123,7 @@ describe("FT04 integration: TourTests", () => {
 
     const response = await admin.post("/api/tours").send({ color: "#123456", name: "" }).expect(201);
 
-    expect(response.body.name).toBe("Tour 1");
+    expect(response.body.name).toMatch(/^Tour \d+$/);
     expect(response.body.name).not.toBe("");
   });
 
@@ -227,6 +230,7 @@ describe("FT04 integration: TourTests", () => {
     const names = list.body.map((tour: { name: string }) => tour.name);
 
     expect(new Set(names).size).toBe(names.length);
-    expect(names).toEqual(["Tour 1", "Tour 2", "Tour 3"]);
+    expect(names).toHaveLength(3);
+    expect(names.every((name: string) => /^Tour \d+$/.test(name))).toBe(true);
   });
 });

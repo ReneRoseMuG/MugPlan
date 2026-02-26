@@ -252,7 +252,7 @@ function normalizeNameToken(token: string): string {
     .replace(/\s+/g, "")
     .replace(/^[`'´.,;:!?()[\]{}]+/g, "")
     .replace(/[`'´.,;:!?()[\]{}]+$/g, "")
-    .replace(/^\p{M}+|\p{M}+$/gu, "");
+    .replace(/^[\u0300-\u036f]+|[\u0300-\u036f]+$/g, "");
 }
 
 function parsePersonLine(value: string | null): { firstName: string; lastName: string } | null {
@@ -268,7 +268,7 @@ function parsePersonLine(value: string | null): { firstName: string; lastName: s
     .map((token) => normalizeNameToken(token))
     .filter((token) => token.length > 0);
   if (tokens.length < 2) return null;
-  if (!tokens.every((token) => /^\p{L}[\p{L}\p{M}'`´-]*$/u.test(token))) return null;
+  if (!tokens.every((token) => /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'`´-]*$/.test(token))) return null;
 
   return {
     firstName: tokens[0],

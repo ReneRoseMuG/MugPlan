@@ -65,6 +65,7 @@ const entityAppointmentItemSchema = z.object({
   version: z.number().int().min(1),
   projectId: z.number(),
   projectName: z.string(),
+  projectVersion: z.number().int().min(1),
   projectOrderNumber: z.string().nullable(),
   projectDescription: z.string().nullable(),
   projectStatuses: z.array(
@@ -286,6 +287,7 @@ export const api = {
               id: z.number(),
               projectId: z.number(),
               projectName: z.string(),
+              projectVersion: z.number().int().min(1),
               projectOrderNumber: z.string().nullable(),
               projectDescription: z.string().nullable(),
               projectStatuses: z.array(
@@ -437,6 +439,7 @@ export const api = {
             version: z.number().int().min(1),
             projectId: z.number(),
             projectName: z.string(),
+            projectVersion: z.number().int().min(1),
             projectOrderNumber: z.string().nullable(),
             projectDescription: z.string().nullable(),
             projectStatuses: z.array(
@@ -829,6 +832,34 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    importCsv: {
+      method: "POST" as const,
+      path: "/api/employees/import-csv",
+      responses: {
+        200: z.object({
+          summary: z.object({
+            totalRows: z.number().int().min(0),
+            importedRows: z.number().int().min(0),
+            duplicateRows: z.number().int().min(0),
+            invalidRows: z.number().int().min(0),
+            errorRows: z.number().int().min(0),
+          }),
+          rows: z.array(
+            z.object({
+              lineNumber: z.number().int().min(1),
+              firstName: z.string(),
+              lastName: z.string(),
+              status: z.enum(["IMPORTED", "DUPLICATE", "INVALID", "ERROR"]),
+              message: z.string(),
+            }),
+          ),
+        }),
+        400: z.object({ code: z.literal("INVALID_CSV_HEADER") }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        413: z.object({ code: z.literal("PAYLOAD_TOO_LARGE") }),
+        422: z.object({ code: z.enum(["INVALID_CSV_FORMAT", "INVALID_CSV_CONTENT"]) }),
+      },
+    },
     update: {
       method: 'PUT' as const,
       path: '/api/employees/:id',
@@ -855,6 +886,20 @@ export const api = {
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/employees/:id",
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -1141,6 +1186,15 @@ export const api = {
         200: z.object({
           project: z.custom<typeof projects.$inferSelect>(),
           customer: z.custom<typeof customers.$inferSelect>(),
+          projectStatuses: z.array(
+            z.object({
+              status: z.custom<typeof projectStatus.$inferSelect>(),
+              relationVersion: z.number().int().min(1),
+            }),
+          ),
+          projectNotes: z.array(z.custom<typeof notes.$inferSelect>()),
+          projectAttachments: z.array(z.custom<typeof projectAttachments.$inferSelect>()),
+          projectAppointments: z.array(entityAppointmentItemSchema),
         }),
         404: errorSchemas.notFound,
       },
@@ -1223,6 +1277,7 @@ export const api = {
           version: z.number().int().min(1),
           projectId: z.number(),
           projectName: z.string(),
+          projectVersion: z.number().int().min(1),
           projectDescription: z.string().nullable(),
           projectStatuses: z.array(
             z.object({
@@ -1267,6 +1322,7 @@ export const api = {
           id: z.number(),
           projectId: z.number(),
           projectName: z.string(),
+          projectVersion: z.number().int().min(1),
           projectOrderNumber: z.string().nullable(),
           projectDescription: z.string().nullable(),
           projectStatuses: z.array(
@@ -1317,6 +1373,7 @@ export const api = {
       responses: {
         201: z.custom<typeof projectAttachments.$inferSelect>(),
         400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
       },
     },
@@ -1398,7 +1455,15 @@ export const api = {
       responses: {
         201: z.custom<typeof employeeAttachments.$inferSelect>(),
         400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/employee-attachments/:id',
+      responses: {
+        405: errorSchemas.validation,
       },
     },
     download: {

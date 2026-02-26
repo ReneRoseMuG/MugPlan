@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
 
-const toastDesktopPositionValues = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
-type ToastDesktopPosition = (typeof toastDesktopPositionValues)[number];
+type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 export type UserSettingKey =
   // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.

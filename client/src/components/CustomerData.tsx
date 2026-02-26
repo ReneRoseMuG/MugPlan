@@ -565,7 +565,9 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
 
               {!isEditMode ? (
                 <DocumentExtractionDropzone
-                  onFileSelected={runDocumentExtractionCustomer}
+                  onFileSelected={(file) => {
+                    void runDocumentExtractionCustomer(file);
+                  }}
                   isProcessing={documentExtractionLoading}
                 />
               ) : null}

@@ -21,13 +21,14 @@
 import express from "express";
 import { createServer as createHttpServer } from "http";
 import { createServer as createHttpsServer } from "https";
+import mysql from "mysql2/promise";
 import request, { type SuperAgentTest } from "supertest";
 import fs from "fs/promises";
 import path from "path";
 import ExcelJS from "exceljs";
 import selfsigned from "selfsigned";
 import { sql } from "drizzle-orm";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersRepository from "../../../server/repositories/customersRepository";
@@ -38,6 +39,8 @@ import * as backupRepository from "../../../server/repositories/backupRepository
 import { runBackupSchedulerTick } from "../../../server/services/backupScheduler";
 import { getAuthUserByUsername } from "../../../server/repositories/usersRepository";
 import * as userSettingsService from "../../../server/services/userSettingsService";
+import { getRuntimeConfig, getRuntimeMode } from "../../../server/config/runtimeEnv";
+import * as dbSafetyGuards from "../../../server/security/dbSafetyGuards";
 import { db } from "../../../server/db";
 
 let app: express.Express;
@@ -153,6 +156,22 @@ async function sleep(ms: number): Promise<void> {
 }
 
 async function clearBackupLogs(): Promise<void> {
+  const runtimeMode = getRuntimeMode();
+  const runtimeConfig = getRuntimeConfig();
+  const target = dbSafetyGuards.assertSafeDestructiveOperationTarget({
+    mode: runtimeMode,
+    databaseUrl: runtimeConfig.mysqlDatabaseUrl,
+    allowedDatabases: runtimeConfig.allowedDatabases,
+    allowedHosts: runtimeConfig.allowedHosts,
+  });
+
+  const safetyConnection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
+  try {
+    await dbSafetyGuards.assertSqlDatabaseIdentity(safetyConnection, target.dbName);
+  } finally {
+    await safetyConnection.end();
+  }
+
   try {
     await db.execute(sql`DELETE FROM backup_log`);
   } catch {
@@ -161,6 +180,17 @@ async function clearBackupLogs(): Promise<void> {
 }
 
 describe("FT07 integration: backup scheduler + caldav outbound", () => {
+  it("blocks backup-log cleanup when destructive target guard fails", async () => {
+    const guardSpy = vi
+      .spyOn(dbSafetyGuards, "assertSafeDestructiveOperationTarget")
+      .mockImplementation(() => {
+        throw new Error("UNSAFE_DATABASE_TARGET");
+      });
+
+    await expect(clearBackupLogs()).rejects.toThrow("UNSAFE_DATABASE_TARGET");
+    guardSpy.mockRestore();
+  });
+
   it("creates real backup files and logs success, then skips on no_changes", async () => {
     await clearBackupLogs();
     process.env.FT07_DISABLE_DB_LOCK = "1";

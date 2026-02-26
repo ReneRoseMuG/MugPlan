@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import mysql from "mysql2/promise";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
-import { assertSafeDatabaseTargetForMode, assertSqlDatabaseIdentity } from "../security/dbSafetyGuards";
+import { assertSafeDestructiveOperationTarget, assertSqlDatabaseIdentity } from "../security/dbSafetyGuards";
 import * as adminRepository from "../repositories/adminRepository";
 import { logError, logInfo } from "../lib/logger";
 
@@ -24,12 +24,12 @@ export async function resetDatabase(): Promise<ResetDatabaseResult> {
 
   const runtimeMode = getRuntimeMode();
   const runtimeConfig = getRuntimeConfig();
-  const expectedTarget = assertSafeDatabaseTargetForMode(
-    runtimeConfig.mysqlDatabaseUrl,
-    runtimeMode,
-    runtimeConfig.allowedDatabases,
-    runtimeConfig.allowedHosts,
-  );
+  const expectedTarget = assertSafeDestructiveOperationTarget({
+    mode: runtimeMode,
+    databaseUrl: runtimeConfig.mysqlDatabaseUrl,
+    allowedDatabases: runtimeConfig.allowedDatabases,
+    allowedHosts: runtimeConfig.allowedHosts,
+  });
   const safetyConnection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
   try {
     await assertSqlDatabaseIdentity(safetyConnection, expectedTarget.dbName);

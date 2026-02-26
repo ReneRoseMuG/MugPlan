@@ -28,7 +28,7 @@ describe("FT03 UI: week calendar notes hover wiring", () => {
     expect(source).toContain("<CalendarWeekAppointmentNotesHover");
     expect(source).toContain("customerId={appointment.customer.id}");
     expect(source).toContain("projectId={appointment.projectId}");
-    expect(source).toContain("customerNotesCount={appointment.customerNotesCount}");
-    expect(source).toContain("projectNotesCount={appointment.projectNotesCount}");
+    expect(source).toContain("customerNotesCount={appointment.customerNotesCount ?? 0}");
+    expect(source).toContain("projectNotesCount={appointment.projectNotesCount ?? 0}");
   });
 });

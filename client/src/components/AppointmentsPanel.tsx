@@ -26,7 +26,7 @@ export interface AppointmentPanelItem {
   employeeName?: string | null;
   icon?: ReactNode;
   color?: string | null;
-  previewAppointment?: CalendarAppointment | null;
+  previewAppointment: CalendarAppointment;
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
@@ -95,12 +95,9 @@ export function AppointmentsPanel({
               customerLabel={appointment.customerLabel}
               projectLabel={appointment.projectLabel}
               employeeLabel={appointment.employeeLabel}
-              customerName={appointment.customerName}
-              projectName={appointment.projectName}
-              employeeName={appointment.employeeName}
               icon={appointment.icon}
               color={appointment.color}
-              previewAppointment={appointment.previewAppointment ?? null}
+              previewAppointment={appointment.previewAppointment}
               action={appointment.action}
               onAdd={appointment.onAdd}
               onRemove={appointment.onRemove}

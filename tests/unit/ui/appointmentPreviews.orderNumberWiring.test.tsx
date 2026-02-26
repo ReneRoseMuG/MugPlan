@@ -8,7 +8,7 @@
  * - Weekly-Panel uebergibt die Projekt-Auftragsnummer in den Headerbereich.
  * - Header im Weekly-Panel rendert die Auftragsnummer als mittleren Wert.
  * - Projektbeschreibung im Weekly-Panel wird als HTML gerendert.
- * - Fallback-Preview zeigt die Auftragsnummer.
+ * - Termin-Info-Badge nutzt ausschliesslich die Weekly-Panel-Preview.
  *
  * Fehlerfaelle:
  * - Auftragsnummer wird im Preview-Datenfluss verloren.
@@ -45,14 +45,11 @@ describe("FT02 appointment preview order number wiring", () => {
     expect(source).toContain("[&_ul]:list-disc");
   });
 
-  it("wires order number into fallback appointment info preview", () => {
-    const previewFile = path.resolve(process.cwd(), "client/src/components/ui/badge-previews/appointment-info-badge-preview.tsx");
-    const previewSource = readFileSync(previewFile, "utf8");
-    expect(previewSource).toContain("projectOrderNumber?: string | null");
-    expect(previewSource).toContain("{projectOrderNumber && <div>Auftragsnr.: {projectOrderNumber}</div>}");
-
+  it("uses weekly-only preview in termin badge without legacy fallback", () => {
     const badgeFile = path.resolve(process.cwd(), "client/src/components/ui/termin-info-badge.tsx");
     const badgeSource = readFileSync(badgeFile, "utf8");
-    expect(badgeSource).toContain("projectOrderNumber: projectOrderNumber ?? null");
+
+    expect(badgeSource).toContain("createAppointmentWeeklyPanelPreview(previewAppointment)");
+    expect(badgeSource).not.toContain("createAppointmentInfoBadgePreview");
   });
 });

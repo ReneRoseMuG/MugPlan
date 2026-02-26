@@ -26,9 +26,9 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
+import { nextDeterministicToken, resetDeterministicTokens } from "../../helpers/deterministic";
 
 let app: express.Express;
-let customerCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -40,7 +40,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  customerCounter = 1;
+  resetDeterministicTokens("projects-delete-rules");
 });
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
@@ -53,11 +53,12 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 async function createProjectForTest() {
+  const token = nextDeterministicToken("projects-delete-rules");
   const customer = await customersService.createCustomer({
-    customerNumber: `DEL-${customerCounter}`,
+    customerNumber: `DEL-${token}`,
     firstName: "Test",
-    lastName: `Customer-${customerCounter}`,
-    fullName: `Customer-${customerCounter}, Test`,
+    lastName: `Customer-${token}`,
+    fullName: `Customer-${token}, Test`,
     company: null,
     email: null,
     phone: "12345",
@@ -67,9 +68,8 @@ async function createProjectForTest() {
     city: null,
     version: 1,
   });
-  customerCounter += 1;
   return projectsService.createProject({
-    name: `Delete-Projekt-${customerCounter}`,
+    name: `Delete-Projekt-${token}`,
     customerId: customer.id,
     descriptionMd: null,
     version: 1,

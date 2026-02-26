@@ -21,7 +21,7 @@ export function AppointmentWeeklyPanelPreview({ appointment }: AppointmentWeekly
 
   return (
     <div className="rounded-lg bg-white" style={{ width: previewWidthPx }}>
-      <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} />
+      <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} context="week-calendar" />
     </div>
   );
 }

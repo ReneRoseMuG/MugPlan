@@ -15,7 +15,7 @@ export async function listEmployeeAttachments(req: Request, res: Response, next:
   try {
     const employeeId = Number(req.params.employeeId);
     if (!Number.isFinite(employeeId)) {
-      res.status(400).json({ message: "Ungültige employeeId" });
+      res.status(400).json({ message: "Ungueltige employeeId" });
       return;
     }
     const attachments = await employeeAttachmentsService.listEmployeeAttachments(employeeId);
@@ -27,9 +27,24 @@ export async function listEmployeeAttachments(req: Request, res: Response, next:
 
 export async function createEmployeeAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
+
     const employeeId = Number(req.params.employeeId);
     if (!Number.isFinite(employeeId)) {
-      res.status(400).json({ message: "Ungültige employeeId" });
+      res.status(400).json({ message: "Ungueltige employeeId" });
+      return;
+    }
+    const exists = await employeeAttachmentsService.employeeExists(employeeId);
+    if (!exists) {
+      res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
       return;
     }
 
@@ -55,7 +70,7 @@ export async function createEmployeeAttachment(req: Request, res: Response, next
     res.status(201).json(created);
   } catch (err) {
     if (err instanceof Error && err.message === "Payload too large") {
-      res.status(413).json({ message: "Datei ist zu groß (max. 10 MB)." });
+      res.status(413).json({ message: "Datei ist zu gross (max. 10 MB)." });
       return;
     }
     next(err);
@@ -66,7 +81,7 @@ export async function downloadEmployeeAttachment(req: Request, res: Response, ne
   try {
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungültige Attachment-ID" });
+      res.status(400).json({ message: "Ungueltige Attachment-ID" });
       return;
     }
 
@@ -86,6 +101,15 @@ export async function downloadEmployeeAttachment(req: Request, res: Response, ne
       },
       forceDownload,
     );
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteEmployeeAttachment(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    // Deletion is intentionally disabled system-wide.
+    res.status(405).json({ message: "Attachment deletion is disabled" });
   } catch (err) {
     next(err);
   }

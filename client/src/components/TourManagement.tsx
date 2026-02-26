@@ -31,6 +31,7 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
   const [isCreating, setIsCreating] = useState(false);
   const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
   const isAdmin = effectiveUserRole === "ADMIN";
+  const canMutateTours = effectiveUserRole === "ADMIN" || effectiveUserRole === "DISPATCHER";
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -260,14 +261,16 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
           closeTestId="button-close-tours"
           footerSlot={(
             <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={handleOpenCreate}
-                disabled={createMutation.isPending}
-                data-testid="button-new-tour"
-              >
-                Neue Tour
-              </Button>
+              {canMutateTours ? (
+                <Button
+                  variant="outline"
+                  onClick={handleOpenCreate}
+                  disabled={createMutation.isPending}
+                  data-testid="button-new-tour"
+                >
+                  Neue Tour
+                </Button>
+              ) : null}
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-tours">
                   Schließen

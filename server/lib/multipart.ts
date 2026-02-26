@@ -54,19 +54,34 @@ export async function parseMultipartFile(
   const maxSizeBytes = options.maxSizeBytes;
   const chunks: Buffer[] = [];
   let totalSize = 0;
+  let abortedBySize = false;
+  let settled = false;
 
   await new Promise<void>((resolve, reject) => {
     req.on("data", (chunk: Buffer) => {
+      if (abortedBySize) {
+        return;
+      }
       totalSize += chunk.length;
       if (totalSize > maxSizeBytes) {
+        abortedBySize = true;
+        if (settled) return;
+        settled = true;
         reject(new Error("Payload too large"));
-        req.destroy();
         return;
       }
       chunks.push(chunk);
     });
-    req.on("end", () => resolve());
-    req.on("error", reject);
+    req.on("end", () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    });
+    req.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
   });
 
   const body = Buffer.concat(chunks);

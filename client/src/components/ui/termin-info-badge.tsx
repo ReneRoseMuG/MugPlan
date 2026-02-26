@@ -1,5 +1,4 @@
-﻿import { InfoBadge } from "@/components/ui/info-badge";
-import { createAppointmentInfoBadgePreview } from "@/components/ui/badge-previews/appointment-info-badge-preview";
+import { InfoBadge } from "@/components/ui/info-badge";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { Calendar } from "lucide-react";
 import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
@@ -17,10 +16,6 @@ interface TerminInfoBadgeProps {
   customerLabel?: string | null;
   projectLabel?: string | null;
   employeeLabel?: string | null;
-  customerName?: string | null;
-  projectName?: string | null;
-  projectOrderNumber?: string | null;
-  employeeName?: string | null;
   icon?: ReactNode;
   color?: string | null;
   previewAppointment?: CalendarAppointment | null;
@@ -65,10 +60,6 @@ export function TerminInfoBadge({
   customerLabel,
   projectLabel,
   employeeLabel,
-  customerName,
-  projectName,
-  projectOrderNumber,
-  employeeName,
   icon,
   color,
   previewAppointment,
@@ -142,17 +133,7 @@ export function TerminInfoBadge({
       size={size}
       fullWidth={fullWidth}
       onDoubleClick={onDoubleClick}
-      preview={previewAppointment
-        ? createAppointmentWeeklyPanelPreview(previewAppointment)
-        : createAppointmentInfoBadgePreview({
-            startDate,
-            endDate: endDate ?? null,
-            startTimeHour: startTimeHour ?? null,
-            projectName: projectName ?? projectLabel ?? null,
-            projectOrderNumber: projectOrderNumber ?? null,
-            customerName: customerName ?? customerLabel ?? null,
-            employeeName: employeeName ?? employeeLabel ?? null,
-          })}
+      preview={previewAppointment ? createAppointmentWeeklyPanelPreview(previewAppointment) : undefined}
     />
   );
 }

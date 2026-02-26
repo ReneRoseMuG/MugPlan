@@ -2,6 +2,10 @@
 import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as projectsService from "../services/projectsService";
+import * as projectStatusService from "../services/projectStatusService";
+import * as projectNotesService from "../services/projectNotesService";
+import * as projectAttachmentsService from "../services/projectAttachmentsService";
+import * as appointmentsService from "../services/appointmentsService";
 
 export async function listProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -40,12 +44,33 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
 
 export async function getProject(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await projectsService.getProjectWithCustomer(Number(req.params.id));
+    const projectId = Number(req.params.id);
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const result = await projectsService.getProjectWithCustomer(projectId);
     if (!result) {
       res.status(404).json({ message: "Projekt nicht gefunden" });
       return;
     }
-    res.json(result);
+
+    const [projectStatuses, projectNotes, projectAttachments, projectAppointments] = await Promise.all([
+      projectStatusService.listProjectStatusesByProject(projectId),
+      projectNotesService.listProjectNotes(projectId),
+      projectAttachmentsService.listProjectAttachments(projectId),
+      appointmentsService.listProjectAppointments(projectId, "1900-01-01", roleKey),
+    ]);
+
+    res.json({
+      ...result,
+      projectStatuses,
+      projectNotes,
+      projectAttachments,
+      projectAppointments,
+    });
   } catch (err) {
     next(err);
   }

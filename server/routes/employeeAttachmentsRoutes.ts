@@ -6,6 +6,7 @@ const router = Router();
 
 router.get(api.employeeAttachments.list.path, employeeAttachmentsController.listEmployeeAttachments);
 router.post(api.employeeAttachments.create.path, employeeAttachmentsController.createEmployeeAttachment);
+router.delete(api.employeeAttachments.delete.path, employeeAttachmentsController.deleteEmployeeAttachment);
 router.get(api.employeeAttachments.download.path, employeeAttachmentsController.downloadEmployeeAttachment);
 
 export default router;

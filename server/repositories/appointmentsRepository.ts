@@ -198,6 +198,25 @@ export async function getConflictingEmployeesTx(
   return rows.map((row) => ({ id: row.id, fullName: row.fullName }));
 }
 
+export async function getInactiveEmployeesByIdsTx(
+  tx: DbTx,
+  employeeIds: number[],
+): Promise<Array<{ id: number; fullName: string }>> {
+  const normalizedEmployeeIds = Array.from(new Set(employeeIds));
+  if (normalizedEmployeeIds.length === 0) return [];
+
+  const rows = await tx
+    .select({
+      id: employees.id,
+      fullName: employees.fullName,
+    })
+    .from(employees)
+    .where(and(inArray(employees.id, normalizedEmployeeIds), eq(employees.isActive, false)))
+    .orderBy(asc(employees.id));
+
+  return rows.map((row) => ({ id: row.id, fullName: row.fullName }));
+}
+
 export async function createAppointmentTx(tx: DbTx, data: InsertAppointment): Promise<number> {
   const result = await tx.insert(appointments).values(data);
   return Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId);

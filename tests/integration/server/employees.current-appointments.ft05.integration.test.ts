@@ -28,6 +28,7 @@ import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
+import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
 let seedCounter = 1;
@@ -53,7 +54,7 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 async function createDispatcherAgent(): Promise<SuperAgentTest> {
-  const username = `test-dispatcher-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const username = `test-dispatcher-${nextDeterministicToken("employees-current-dispatcher")}`;
   const password = "test-dispatcher-password";
   const passwordHash = await hashPassword(password);
   await createUser({
@@ -82,7 +83,7 @@ async function createEmployee(admin: SuperAgentTest, suffix = "emp") {
 
 async function createProjectWithCustomer() {
   const seq = nextSeed();
-  const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const uniqueKey = nextDeterministicToken("employees-current-project");
   const customer = await customersService.createCustomer({
     customerNumber: `EMP-CUR-${seq}-${uniqueKey}`,
     firstName: "Cur",
