@@ -3,6 +3,10 @@
 Datum: 2026-02-26  
 Bezug: `T-014` aus `logs/audit-report.md`
 
+## Status
+
+Umgesetzt.
+
 ## Problemzusammenfassung
 
 UC 02/20 ist als eigener Vertragspunkt zur denormalisierten Aktualisierung gefuehrt und scheitert aktuell mit `NOT_IMPLEMENTED_BY_SCOPE`.
@@ -11,18 +15,24 @@ Fachliche Soll-Erwartung:
 
 - Denormalisierte Daten sollen ueber Ansichten hinweg konsistent und nachweisbar aktualisiert werden.
 
-Ist-Zustand:
+Vorheriger Ist-Zustand:
 
-- Bestehende Projektionen zeigen Teilverhalten, liefern aber keinen vollstaendigen, direkten Backend-Nachweis fuer den gesamten UC-02/20-Vertrag.
+- Bestehende Projektionen zeigten Teilverhalten, lieferten aber keinen expliziten Backend-Nachweis fuer den separaten UC-02/20-Vertrag.
 
-## Warum der Test scheitert
+## Umsetzung
 
-Der Test zeigt eine Contract-Luecke im Nachweisweg, nicht einen instabilen Laufzeitfehler.
+UC 02/20 wurde in `tests/integration/server/ft02.full-uc-coverage.integration.test.ts` von einem Blocker in einen echten Integrationsnachweis ueberfuehrt:
 
-## Offene Entscheidung
+1. Additiver Backend-Contract:
+   - Appointment-Projektionen liefern zusaetzlich `projectVersion`.
+   - Betroffene Projection-Surfaces: Kalender- und Sidebar-/Entity-Appointment-Responses.
+2. UC-02/20-Nachweis:
+   - Projekt wird geaendert (`PATCH /api/projects/:id`).
+   - Danach werden Kalenderprojektion (`/api/calendar/appointments`) und Projekt-Terminprojektion (`/api/projects/:id/appointments`) erneut gelesen.
+   - Verifiziert wird:
+     - `projectName` ist aktualisiert,
+     - `projectVersion` ist in beiden Projektionen identisch zum aktuellen Detailzustand.
 
-Fuer UC 02/20 ist zu entscheiden:
+## Ergebnis
 
-1. dedizierter Nachweis im Backend-Vertrag (Endpoint/Felder/Invariante), oder
-2. explizite Scope-Abgrenzung, dass der Vollnachweis nicht serverseitig gefuehrt wird.
-
+Der denormalisierte Refresh-Contract ist jetzt als separater UC-02/20-Nachweis backendseitig reproduzierbar und ohne `NOT_IMPLEMENTED_BY_SCOPE` abgedeckt.

@@ -13,7 +13,7 @@
  * Fehlerfaelle:
  * - stale version bei Projektupdate.
  * - Loeschkonflikt bei vorhandenen Terminen.
- * - fachlicher Blocker fuer UC 02/20.
+ * - stale denormalisierte Projektdaten in abhaengigen Appointment-Projektionen.
  *
  * Ziel:
  * FT02-UC-Traceability in einer zentralen Integrationssuite herstellen.
@@ -462,9 +462,59 @@ describe("FT02 integration: full uc coverage", () => {
     expect(listIds(detailBody.projectAppointments)).toEqual(listIds(appointments.body));
   });
 
-  it("UC 02/20 blocker: duplicate denormalized refresh contract kept separate by traceability policy", () => {
-    throw new Error(
-      "NOT_IMPLEMENTED_BY_SCOPE | UC 02/20 | Separate trace entry for denormalized refresh contract retained. Existing projections partially cover behavior but not full cross-view contract.",
+  it("UC 02/20: denormalized refresh contract stays consistent across calendar and project appointment projections", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0220");
+    const project = await createProject(customer.id, "UC02-20 Base");
+
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-12-25",
+      employeeIds: [],
+    });
+
+    const initialCalendar = await admin
+      .get("/api/calendar/appointments?fromDate=2099-12-01&toDate=2099-12-31")
+      .expect(200);
+    const initialProjectAppointments = await admin
+      .get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`)
+      .expect(200);
+
+    const initialCalendarRow = (initialCalendar.body as Array<{ id: number; projectVersion: number }>).find(
+      (row) => row.id === appointment.id,
     );
+    const initialProjectRow = (initialProjectAppointments.body as Array<{ id: number; projectVersion: number }>).find(
+      (row) => row.id === appointment.id,
+    );
+    expect(initialCalendarRow?.projectVersion).toBe(project.version);
+    expect(initialProjectRow?.projectVersion).toBe(project.version);
+
+    const patched = await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, name: "UC02-20 Changed" })
+      .expect(200);
+
+    const [detail, refreshedCalendar, refreshedProjectAppointments] = await Promise.all([
+      admin.get(`/api/projects/${project.id}`).expect(200),
+      admin.get("/api/calendar/appointments?fromDate=2099-12-01&toDate=2099-12-31").expect(200),
+      admin.get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`).expect(200),
+    ]);
+
+    const detailVersion = Number((detail.body as { project: { version: number } }).project.version);
+    expect(detailVersion).toBe(Number(patched.body.version));
+
+    const calendarRow = (
+      refreshedCalendar.body as Array<{ id: number; projectName: string; projectVersion: number }>
+    ).find((row) => row.id === appointment.id);
+    const projectRow = (
+      refreshedProjectAppointments.body as Array<{ id: number; projectName: string; projectVersion: number }>
+    ).find((row) => row.id === appointment.id);
+
+    expect(calendarRow).toBeDefined();
+    expect(projectRow).toBeDefined();
+    expect(calendarRow?.projectName.includes("UC02-20 Changed")).toBe(true);
+    expect(projectRow?.projectName.includes("UC02-20 Changed")).toBe(true);
+    expect(calendarRow?.projectVersion).toBe(detailVersion);
+    expect(projectRow?.projectVersion).toBe(detailVersion);
   });
 });

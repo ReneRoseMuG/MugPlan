@@ -65,6 +65,7 @@ const entityAppointmentItemSchema = z.object({
   version: z.number().int().min(1),
   projectId: z.number(),
   projectName: z.string(),
+  projectVersion: z.number().int().min(1),
   projectOrderNumber: z.string().nullable(),
   projectDescription: z.string().nullable(),
   projectStatuses: z.array(
@@ -286,6 +287,7 @@ export const api = {
               id: z.number(),
               projectId: z.number(),
               projectName: z.string(),
+              projectVersion: z.number().int().min(1),
               projectOrderNumber: z.string().nullable(),
               projectDescription: z.string().nullable(),
               projectStatuses: z.array(
@@ -437,6 +439,7 @@ export const api = {
             version: z.number().int().min(1),
             projectId: z.number(),
             projectName: z.string(),
+            projectVersion: z.number().int().min(1),
             projectOrderNumber: z.string().nullable(),
             projectDescription: z.string().nullable(),
             projectStatuses: z.array(
@@ -1274,6 +1277,7 @@ export const api = {
           version: z.number().int().min(1),
           projectId: z.number(),
           projectName: z.string(),
+          projectVersion: z.number().int().min(1),
           projectDescription: z.string().nullable(),
           projectStatuses: z.array(
             z.object({
@@ -1318,6 +1322,7 @@ export const api = {
           id: z.number(),
           projectId: z.number(),
           projectName: z.string(),
+          projectVersion: z.number().int().min(1),
           projectOrderNumber: z.string().nullable(),
           projectDescription: z.string().nullable(),
           projectStatuses: z.array(
