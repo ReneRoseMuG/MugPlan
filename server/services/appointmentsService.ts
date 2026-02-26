@@ -107,6 +107,22 @@ function normalizeEmployeeIds(employeeIds?: number[]) {
   return Array.from(new Set(employeeIds ?? [])).filter((id) => Number.isFinite(id));
 }
 
+async function assertNoInactiveEmployeesTx(
+  tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
+  employeeIds: number[],
+): Promise<void> {
+  if (employeeIds.length === 0) return;
+  const inactiveEmployees = await appointmentsRepository.getInactiveEmployeesByIdsTx(tx, employeeIds);
+  if (inactiveEmployees.length > 0) {
+    throw new AppointmentError(
+      "Inaktive Mitarbeiter koennen keinem Termin zugewiesen werden",
+      409,
+      "BUSINESS_CONFLICT",
+      { conflictEmployees: inactiveEmployees },
+    );
+  }
+}
+
 type SidebarAppointmentRow = Awaited<
   ReturnType<typeof appointmentsRepository.listSidebarAppointmentsByProjectFromDate>
 >[number];
@@ -231,6 +247,7 @@ export async function createAppointment(
 
   const created = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const project = await ensureProjectExistsTx(tx, data.projectId);
+    await assertNoInactiveEmployeesTx(tx, employeeIds);
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
       startDate,
@@ -300,6 +317,7 @@ export async function updateAppointment(
     assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
     const project = await ensureProjectExistsTx(tx, data.projectId);
+    await assertNoInactiveEmployeesTx(tx, employeeIds);
 
     if (existing.tourId !== (data.tourId ?? null)) {
       logInfo(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
