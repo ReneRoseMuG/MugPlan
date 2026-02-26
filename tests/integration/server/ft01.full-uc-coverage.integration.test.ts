@@ -100,10 +100,26 @@ describe("FT01 UC coverage integration", () => {
     expect((afterList.body as Array<unknown>).length).toBe(beforeCount + 1);
   });
 
-  it("UC 01/01 blocker: startTime => initial standard duration (NOT_IMPLEMENTED_BY_SCOPE)", () => {
-    throw new Error(
-      "NOT_IMPLEMENTED_BY_SCOPE | UC 01/01 Termin anlegen | Testfall: Startzeit erzwingt initiale Standarddauer von 1h als persistenter, verifizierbarer API/DB-Zustand | Erforderliche Prod-Aenderung: server/services/appointmentsService.ts (Dauerableitung) + persistentes Feld/Projektion fuer Endzeit/Dauer | Grund: aktueller API/Schema-Vertrag liefert keine pruefbare Dauerinvariante",
-    );
+  it("UC 01/01 rule: startTime is only startTime and does not imply default duration", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("UC01-01-START-TIME");
+
+    const created = await agent
+      .post("/api/appointments")
+      .send({
+        projectId: project.id,
+        startDate: "2099-10-01",
+        startTime: "09:30:00",
+        employeeIds: [],
+      })
+      .expect(201);
+
+    const id = Number(created.body.id);
+    const detail = await agent.get(`/api/appointments/${id}`).expect(200);
+
+    expect(detail.body.startTime).toBe("09:30:00");
+    expect(detail.body.endDate ?? null).toBeNull();
+    expect(detail.body.endTime ?? null).toBeNull();
   });
 
   it("UC 01/02 happy+negative: update project/customer projection and overlap rollback", async () => {
@@ -487,10 +503,27 @@ describe("FT01 UC coverage integration", () => {
     expect(withoutTour?.tourColor ?? null).toBeNull();
   });
 
-  it("UC 01/13 blocker: invalid/empty tour color fallback in projection contract (NOT_IMPLEMENTED_BY_SCOPE)", () => {
-    throw new Error(
-      "NOT_IMPLEMENTED_BY_SCOPE | UC 01/13 Termin-Farbdarstellung ableiten | Testfall: robuste Fallback-Regel fuer Tour ohne gueltige Farbe in serverseitiger Projektion verifizieren | Erforderliche Prod-Aenderung: shared/schema.ts + tours validation + appointments projection fallback-branch | Grund: aktueller Vertrag liefert tourColor transparent als Datenfeld ohne validierte gueltig/ungueltig-Semantik",
-    );
+  it("UC 01/13 rule: missing tour color uses server default in projection contract", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("UC01-13-DEFAULT");
+
+    const tour = await agent.post("/api/tours").send({}).expect(201);
+    expect(tour.body.color).toBe("#2563eb");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-10-19",
+      tourId: Number(tour.body.id),
+      employeeIds: [],
+    });
+
+    const response = await agent
+      .get("/api/calendar/appointments?fromDate=2099-10-01&toDate=2099-10-31")
+      .expect(200);
+    const rows = response.body as Array<{ startDate: string; tourId: number | null; tourColor: string | null }>;
+    const withDefaultTour = rows.find((row) => row.startDate === "2099-10-19");
+    expect(withDefaultTour?.tourId).toBe(Number(tour.body.id));
+    expect(withDefaultTour?.tourColor).toBe("#2563eb");
   });
 
   it("UC 01/14 happy+negative: historical create and historical time are blocked", async () => {
@@ -520,10 +553,30 @@ describe("FT01 UC coverage integration", () => {
     expect([409, 422]).toContain(historicalTime.status);
   });
 
-  it("UC 01/14 blocker: historical delete for ADMIN is currently allowed (NOT_IMPLEMENTED_BY_SCOPE)", async () => {
-    throw new Error(
-      "NOT_IMPLEMENTED_BY_SCOPE | UC 01/14 Historische Termine sind read-only | Testfall: Loeschen historischer Termine fuer ADMIN muss blockieren | Erforderliche Prod-Aenderung: server/services/appointmentsService.ts deleteAppointment() historische Sperre auch fuer ADMIN erzwingen | Grund: aktuelles IST erlaubt ADMIN-Delete fuer historische Termine",
-    );
+  it("UC 01/14 rule: historical delete is blocked for ADMIN", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("UC01-14-DEL");
+
+    const created = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-10-20",
+      employeeIds: [],
+    });
+    expect(created).toBeTruthy();
+
+    await db
+      .update(appointments)
+      .set({ startDate: new Date("2000-01-01T00:00:00") })
+      .where(eq(appointments.id, created!.id));
+
+    const version = await getVersionFromApi(created!.id);
+    const blocked = await agent
+      .delete(`/api/appointments/${created!.id}`)
+      .send({ version });
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.code).toBe("BUSINESS_CONFLICT");
+
+    await agent.get(`/api/appointments/${created!.id}`).expect(200);
   });
 
   it("UC 01/15 happy+negative: optimistic locking success and stale conflict", async () => {

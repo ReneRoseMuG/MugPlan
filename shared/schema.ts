@@ -90,11 +90,17 @@ export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 export const tours = mysqlTable("tours", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  color: varchar("color", { length: 255 }).notNull(),
+  color: varchar("color", { length: 255 }).notNull().default("#2563eb"),
   version: int("version").notNull().default(1),
 });
 
-export const insertTourSchema = createInsertSchema(tours).omit({ id: true, name: true });
+export const TOUR_DEFAULT_COLOR = "#2563eb";
+
+export const insertTourSchema = createInsertSchema(tours)
+  .omit({ id: true, name: true })
+  .extend({
+    color: z.string().trim().min(1).default(TOUR_DEFAULT_COLOR),
+  });
 export const updateTourSchema = z.object({ color: z.string() });
 
 export type Tour = typeof tours.$inferSelect;

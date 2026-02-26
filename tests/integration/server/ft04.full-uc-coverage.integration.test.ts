@@ -217,7 +217,7 @@ describe("FT04 full UC coverage integration", () => {
     });
   });
 
-  it("UC 04/05 blocks READER mutation on tour-employee endpoints (NOT_IMPLEMENTED_BY_SCOPE)", async () => {
+  it("UC 04/05 blocks READER mutation on tour-employee endpoints", async () => {
     const admin = await loginAdminAgent();
     const reader = await createRoleAgent("READER");
     const tour = await createTour(admin, "#5511aa");

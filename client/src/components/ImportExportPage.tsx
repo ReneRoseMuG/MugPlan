@@ -3,6 +3,7 @@ import { FileText, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { queryClient } from "@/lib/queryClient";
 
 type ImportRowStatus = "IMPORTED" | "DUPLICATE" | "INVALID" | "ERROR";
 
@@ -66,6 +67,13 @@ export function ImportExportPage() {
 
       const payload = (await response.json()) as ImportResponse;
       setResult(payload);
+      await queryClient.invalidateQueries({
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/employees",
+      });
+      await queryClient.refetchQueries({
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/employees",
+        type: "active",
+      });
     } catch (uploadError) {
       const message = uploadError instanceof Error ? uploadError.message : "Unbekannter Fehler";
       setError(`Import fehlgeschlagen: ${message}`);

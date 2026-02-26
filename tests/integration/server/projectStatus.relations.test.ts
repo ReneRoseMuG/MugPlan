@@ -27,9 +27,9 @@ import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
+import { nextDeterministicToken, resetDeterministicTokens } from "../../helpers/deterministic";
 
 let app: express.Express;
-let customerCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -41,7 +41,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  customerCounter = 1;
+  resetDeterministicTokens("project-status-relations");
 });
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
@@ -54,11 +54,12 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 async function createProjectForTest() {
+  const token = nextDeterministicToken("project-status-relations");
   const customer = await customersService.createCustomer({
-    customerNumber: `REL-${customerCounter}`,
+    customerNumber: `REL-${token}`,
     firstName: "Rel",
-    lastName: `Customer-${customerCounter}`,
-    fullName: `Customer-${customerCounter}, Rel`,
+    lastName: `Customer-${token}`,
+    fullName: `Customer-${token}, Rel`,
     company: null,
     email: null,
     phone: "12345",
@@ -68,9 +69,8 @@ async function createProjectForTest() {
     city: null,
     version: 1,
   });
-  customerCounter += 1;
   return projectsService.createProject({
-    name: `RelProjekt-${customerCounter}`,
+    name: `RelProjekt-${token}`,
     customerId: customer.id,
     descriptionMd: null,
     version: 1,

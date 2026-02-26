@@ -27,9 +27,16 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
+import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
 
 let app: express.Express;
 let seq = 1;
+const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Berlin",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 beforeAll(async () => {
   app = express();
@@ -76,6 +83,29 @@ async function createProject(customerId: number, name: string) {
   });
 }
 
+function relativeBerlinDate(daysFromToday: number): string {
+  const now = new Date();
+  now.setDate(now.getDate() + daysFromToday);
+  return berlinFormatter.format(now);
+}
+
+async function insertAppointmentRaw(params: { projectId: number; startDate: string; title: string }) {
+  const created = await appointmentsRepository.createAppointment(
+    {
+      projectId: params.projectId,
+      tourId: null,
+      title: params.title,
+      description: null,
+      startDate: new Date(`${params.startDate}T00:00:00`),
+      startTime: null,
+      endDate: null,
+      endTime: null,
+    },
+    [],
+  );
+  return created.id as number;
+}
+
 describe("FT02 integration: projects scope and mengenlogik", () => {
   it("UC 02/07 + UC 02/17: keeps upcoming and noAppointments disjoint", async () => {
     const admin = await loginAdminAgent();
@@ -86,26 +116,30 @@ describe("FT02 integration: projects scope and mengenlogik", () => {
     const projectMixed = await createProject(customer.id, "Scope Mixed");
     const projectNone = await createProject(customer.id, "Scope None");
 
+    const futureDay1 = relativeBerlinDate(1);
+    const futureDay2 = relativeBerlinDate(2);
+    const pastDay1 = relativeBerlinDate(-1);
+
     await appointmentsService.createAppointment({
       projectId: projectFuture.id,
-      startDate: "2099-12-01",
+      startDate: futureDay1,
       employeeIds: [],
     });
 
-    await appointmentsService.createAppointment({
+    await insertAppointmentRaw({
       projectId: projectPast.id,
-      startDate: "2000-01-01",
-      employeeIds: [],
+      startDate: pastDay1,
+      title: "Scope Past",
     });
 
-    await appointmentsService.createAppointment({
+    await insertAppointmentRaw({
       projectId: projectMixed.id,
-      startDate: "2000-02-01",
-      employeeIds: [],
+      startDate: pastDay1,
+      title: "Scope Mixed Past",
     });
     await appointmentsService.createAppointment({
       projectId: projectMixed.id,
-      startDate: "2099-12-02",
+      startDate: futureDay2,
       employeeIds: [],
     });
 
@@ -137,9 +171,11 @@ describe("FT02 integration: projects scope and mengenlogik", () => {
     const projectWithFuture = await createProject(customer.id, "Scope Status Upcoming");
     const projectWithoutAppointments = await createProject(customer.id, "Scope Status None");
 
+    const futureDay1 = relativeBerlinDate(1);
+
     await appointmentsService.createAppointment({
       projectId: projectWithFuture.id,
-      startDate: "2099-12-10",
+      startDate: futureDay1,
       employeeIds: [],
     });
 

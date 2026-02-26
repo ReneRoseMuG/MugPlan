@@ -68,7 +68,7 @@ Nicht erlaubt:
 - destruktive SQL ohne vorgelagerten Guard-Check
 
 Setup/Teardown:
-- verbindlich ueber zentrales Integration-Setup (`tests/setup.integration.ts`)
+- verbindlich ueber zentrales Test-Setup (`tests/setup.env.ts`) mit guardiertem DB-Reset fuer Integration/E2E
 - Reset nur ueber guardierte Helfer
 
 Datenquelle:

@@ -3,6 +3,10 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as tourEmployeesService from "../services/tourEmployeesService";
 
+function canMutateTourEmployees(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function listTourEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tourId = Number(req.params.tourId);
@@ -15,6 +19,10 @@ export async function listTourEmployees(req: Request, res: Response, next: NextF
 
 export async function removeTourEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTourEmployees(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.tourEmployees.remove.input.parse(req.body);
     const employeeId = Number(req.params.employeeId);
     const employee = await tourEmployeesService.removeEmployeeFromTour(employeeId, input.version);
@@ -38,6 +46,10 @@ export async function removeTourEmployee(req: Request, res: Response, next: Next
 
 export async function assignTourEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTourEmployees(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const tourId = Number(req.params.tourId);
     const input = api.tourEmployees.assign.input.parse(req.body);
     const results = await tourEmployeesService.assignEmployeesToTour(tourId, input.items);

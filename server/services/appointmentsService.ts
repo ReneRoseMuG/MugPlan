@@ -630,9 +630,9 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
 
-    if (roleKey !== "ADMIN" && isStartDateLocked(existing.startDate)) {
+    if (isStartDateLocked(existing.startDate)) {
       logWarn(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-      throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+      throw new AppointmentError("Historische Termine koennen nicht geloescht werden", 409, "BUSINESS_CONFLICT");
     }
 
     logDebug(`${logPrefix} delete appointmentId=${appointmentId}`);
