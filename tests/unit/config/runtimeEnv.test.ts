@@ -113,49 +113,6 @@ describe("FT07 unit: runtime env loading", () => {
     expect(runtime.allowedDatabases).toEqual(["tenant_test_blue_42"]);
   });
 
-  it("loads optional .env.test.local override in local test mode", async () => {
-    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-local-");
-    await writeEnvFile(sharedDir, ".env.test", "mugplan_test", "TEST");
-    await fs.writeFile(
-      path.join(sharedDir, ".env.test.local"),
-      [
-        "MYSQL_DATABASE_URL=mysql://user:pass@localhost:3306/mugplan_test_local",
-        "DB_ALLOWED_DATABASES_TEST=mugplan_test_local",
-        "DB_ALLOWED_HOSTS_TEST=localhost",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-
-    process.chdir(releaseDir);
-    process.env.NODE_ENV = "test";
-    delete process.env.CI;
-
-    const { initializeRuntimeEnv } = await importRuntimeEnvModule();
-    const runtime = initializeRuntimeEnv();
-
-    expect(runtime.mode).toBe("test");
-    expect(runtime.mysqlDatabaseUrl).toContain("/mugplan_test_local");
-    expect(runtime.allowedDatabases).toEqual(["mugplan_test_local"]);
-    expect(runtime.envLocalFilePath).toBe(path.resolve(releaseDir, "../../shared/.env.test.local"));
-  });
-
-  it("fails in CI when optional .env.test.local exists", async () => {
-    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-local-ci-");
-    await writeEnvFile(sharedDir, ".env.test", "mugplan_test", "TEST");
-    await fs.writeFile(path.join(sharedDir, ".env.test.local"), "LOG_LEVEL=INFO\n", "utf8");
-
-    process.chdir(releaseDir);
-    process.env.NODE_ENV = "test";
-    process.env.CI = "true";
-
-    const { initializeRuntimeEnv } = await importRuntimeEnvModule();
-    const expectedPath = path.resolve(releaseDir, "../../shared/.env.test.local");
-    expect(() => initializeRuntimeEnv()).toThrow(
-      `Forbidden env file in CI for mode 'test'. cwd='${releaseDir}', file='${expectedPath}'`,
-    );
-  });
-
   it("fails fast with cwd and expected path for missing development env file", async () => {
     const { releaseDir } = await createReleaseLayout("mugplan-runtime-dev-missing-");
     process.chdir(releaseDir);

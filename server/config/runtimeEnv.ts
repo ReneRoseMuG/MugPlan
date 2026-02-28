@@ -8,7 +8,6 @@ export type RuntimeEnvSource = "dev_file" | "test_file" | "process";
 export type RuntimeConfig = {
   mode: RuntimeMode;
   envFilePath?: string;
-  envLocalFilePath?: string;
   envSource: RuntimeEnvSource;
   mysqlDatabaseUrl: string;
   allowedDatabases: string[];
@@ -63,7 +62,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
   const resolved = resolveEnvFile(mode);
   let envSource: RuntimeEnvSource = "process";
   let envFilePath: string | undefined;
-  let envLocalFilePath: string | undefined;
 
   if (resolved) {
     if (!fs.existsSync(resolved.path)) {
@@ -78,22 +76,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
     }
     envSource = resolved.source;
     envFilePath = resolved.path;
-
-    if (mode === "test") {
-      const localPath = path.resolve(process.cwd(), "../../shared/.env.test.local");
-      if (fs.existsSync(localPath)) {
-        if (process.env.CI && process.env.CI.toLowerCase() !== "false") {
-          throw new Error(
-            `Forbidden env file in CI for mode 'test'. cwd='${process.cwd()}', file='${localPath}'`,
-          );
-        }
-        const localResult = dotenv.config({ path: localPath, override: true, quiet: true });
-        if (localResult.error) {
-          throw localResult.error;
-        }
-        envLocalFilePath = localPath;
-      }
-    }
   }
 
   const mysqlDatabaseUrl = process.env.MYSQL_DATABASE_URL?.trim() ?? "";
@@ -115,7 +97,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
   cachedConfig = {
     mode,
     envFilePath,
-    envLocalFilePath,
     envSource,
     mysqlDatabaseUrl,
     allowedDatabases,
