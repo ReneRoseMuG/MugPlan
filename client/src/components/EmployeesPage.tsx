@@ -707,7 +707,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
                   );
                 }
 
-                return createAppointmentWeeklyPanelPreview(row.relevantAppointment);
+                return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
               }}
               emptyState={<p className="text-sm text-slate-400 py-4">Keine Mitarbeiter vorhanden</p>}
               stickyHeader

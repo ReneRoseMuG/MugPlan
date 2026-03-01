@@ -45,11 +45,11 @@ describe("FT02 appointment preview order number wiring", () => {
     expect(source).toContain("[&_ul]:list-disc");
   });
 
-  it("uses weekly-only preview in termin badge without legacy fallback", () => {
+  it("uses weekly-only preview in termin badge with sidebar/table size profile", () => {
     const badgeFile = path.resolve(process.cwd(), "client/src/components/ui/termin-info-badge.tsx");
     const badgeSource = readFileSync(badgeFile, "utf8");
 
-    expect(badgeSource).toContain("createAppointmentWeeklyPanelPreview(previewAppointment)");
+    expect(badgeSource).toContain('createAppointmentWeeklyPanelPreview(previewAppointment, { sizeProfile: "sidebarTable" })');
     expect(badgeSource).not.toContain("createAppointmentInfoBadgePreview");
   });
 });

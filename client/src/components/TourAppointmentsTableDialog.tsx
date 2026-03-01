@@ -122,7 +122,7 @@ export function TourAppointmentsTableDialog({
                   columns={tableColumns}
                   rows={sortedAppointments}
                   rowKey={(row) => row.id}
-                  rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row)}
+                  rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
                   emptyState={<p className="py-4 text-sm text-muted-foreground">Keine Termine vorhanden</p>}
                   stickyHeader
                 />

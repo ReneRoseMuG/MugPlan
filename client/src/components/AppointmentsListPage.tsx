@@ -314,7 +314,7 @@ export function AppointmentsListPage({
           rows={rows}
           rowKey={(row) => row.id}
           onRowDoubleClick={(row) => onOpenAppointment?.(row.id)}
-          rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row)}
+          rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
           emptyState={emptyStateOverride ?? <p className="py-4 text-sm text-slate-400">Keine Termine gefunden.</p>}
           stickyHeader
         />

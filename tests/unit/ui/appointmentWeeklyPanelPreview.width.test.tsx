@@ -15,9 +15,9 @@
  * Stabilitaet der Breitenauflösung fuer Weekly-Previews absichern.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resolveAppointmentWeeklyPanelPreviewWidthPx } from "../../../client/src/components/ui/badge-previews/appointment-weekly-panel-preview";
 import {
   WEEKLY_PREVIEW_WIDTH_FALLBACK_PX,
-  WEEKLY_PREVIEW_WIDTH_STORAGE_KEY,
   parseStoredWeeklyPreviewWidth,
   resolveWeeklyPreviewWidthPx,
   storeWeeklyPreviewWidth,
@@ -56,5 +56,14 @@ describe("FT03 weekly preview width resolution", () => {
     expect(parseStoredWeeklyPreviewWidth("abc")).toBeNull();
     expect(parseStoredWeeklyPreviewWidth("-20")).toBeNull();
     expect(parseStoredWeeklyPreviewWidth("9999")).toBeNull();
+  });
+
+  it("uses at least 320px for sidebar/table profile when no width is stored", () => {
+    expect(resolveAppointmentWeeklyPanelPreviewWidthPx("sidebarTable")).toBe(320);
+  });
+
+  it("uses measured width for sidebar/table profile when it is larger than 320px", () => {
+    storeWeeklyPreviewWidth(380);
+    expect(resolveAppointmentWeeklyPanelPreviewWidthPx("sidebarTable")).toBe(380);
   });
 });

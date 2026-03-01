@@ -133,7 +133,9 @@ export function TerminInfoBadge({
       size={size}
       fullWidth={fullWidth}
       onDoubleClick={onDoubleClick}
-      preview={previewAppointment ? createAppointmentWeeklyPanelPreview(previewAppointment) : undefined}
+      preview={previewAppointment
+        ? createAppointmentWeeklyPanelPreview(previewAppointment, { sizeProfile: "sidebarTable" })
+        : undefined}
     />
   );
 }

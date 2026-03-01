@@ -207,7 +207,7 @@ export function EntityAppointmentsSidebarWithDialog({
                           onOpenAppointment(row.id);
                         }
                       : undefined}
-                    rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row)}
+                    rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
                     emptyState={<p className="py-4 text-sm text-muted-foreground">Keine Termine vorhanden</p>}
                     stickyHeader
                   />

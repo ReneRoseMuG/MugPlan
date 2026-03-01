@@ -19,11 +19,11 @@ import { readFileSync } from "fs";
 import path from "path";
 
 describe("FT03 projects table preview wiring", () => {
-  it("uses createAppointmentWeeklyPanelPreview for relevant appointments", () => {
+  it("uses createAppointmentWeeklyPanelPreview with sidebar/table profile for relevant appointments", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("createAppointmentWeeklyPanelPreview(row.relevantAppointment)");
+    expect(source).toContain('createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" })');
   });
 
   it("keeps no-appointment fallback text", () => {

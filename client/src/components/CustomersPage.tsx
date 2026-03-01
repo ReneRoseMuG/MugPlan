@@ -431,7 +431,7 @@ export function CustomersPage({
                 );
               }
 
-              return createAppointmentWeeklyPanelPreview(row.relevantAppointment);
+              return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
             }}
             emptyState={<p className="text-sm text-slate-400 py-4">Keine Kunden gefunden.</p>}
             stickyHeader
