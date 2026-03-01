@@ -7,7 +7,7 @@ import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { User, Phone, MapPin, Mail } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
-import { EntityAppointmentsSidebarWithDialog } from "@/components/EntityAppointmentsSidebarWithDialog";
+import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
 import { CustomerAttachmentsPanel } from "@/components/CustomerAttachmentsPanel";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -604,11 +604,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         <div className="space-y-6">
           <LinkedProjectsPanel customerId={customerId} onOpenProject={onOpenProject} />
 
-          <EntityAppointmentsSidebarWithDialog
-            entityType="customer"
-            entityId={customerId}
-            entityLabel={customer?.fullName ?? null}
-          />
+          <CustomerAppointmentsPanel customerId={customerId} />
 
           {isEditMode && <CustomerAttachmentsPanel customerId={customerId} />}
         </div>

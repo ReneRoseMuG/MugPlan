@@ -94,6 +94,20 @@ Dialograhmen für fokussierte Bearbeitung ohne Seitenwechsel. Analog zu EntityFo
 
 ---
 
+### `AllAppointmentsPanel`
+**Datei:** `client/src/components/AllAppointmentsPanel.tsx`
+
+Strukturelles Sidebar-Panel für kompakte Terminlisten ohne Datenbeschaffung. Erwartet bereits sortierte Termine und trennt die Darstellung in:
+
+- aktuelle/zukünftige Termine
+- historische Termine mit Divider `Vergangene Termine` und leicht abgedunkeltem Hintergrundbereich
+
+Die Komponente rendert Termine über `TerminInfoBadge` innerhalb von `SidebarChildPanel`, unterstützt optional einen Header-Plus-Button via `addAction` und enthält keine Dialog-, Delete- oder Double-Click-Logik.
+
+**Eingesetzt in:** ProjectAppointmentsPanel, CustomerAppointmentsPanel
+
+---
+
 ## 3. Badge-System
 
 Das Badge-System ist hierarchisch aufgebaut. Neue fachliche Badges müssen immer als Ableitung einer bestehenden Stufe gebaut werden — niemals direkt mit eigenem Layout.
@@ -240,7 +254,7 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview (nächster Termin) |
 | Detailformular | EntityFormLayout (CustomerData) |
 | Badge in anderen Formularen | CustomerInfoBadge → CustomerInfoBadgePreview |
-| Sub-Panel in Projektformular | CustomerAppointmentsPanel, CustomerAttachmentsPanel |
+| Sub-Panel im Detailformular | CustomerAppointmentsPanel, CustomerAttachmentsPanel |
 
 ---
 
@@ -254,7 +268,7 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 | Detailformular | EntityFormLayout (ProjectForm) |
 | Badge in anderen Formularen | ProjectInfoBadge → ProjectInfoBadgePreview |
 | Status-Anzeige | ProjectStatusInfoBadge (keine Preview) |
-| Sub-Panels | ProjectAppointmentsPanel, ProjectAttachmentsPanel |
+| Sub-Panels | ProjectAppointmentsPanel (Wrapper über AllAppointmentsPanel), ProjectAttachmentsPanel |
 
 ---
 
@@ -268,7 +282,7 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 | Detailbearbeitung | EntityEditDialog (kein Seitenwechsel) |
 | Badge in anderen Formularen | EmployeeInfoBadge → EmployeeInfoBadgePreview |
 | Im Detail-Dialog | TourInfoBadge (fullWidth), TeamInfoBadge (fullWidth) |
-| Sub-Panel im Detail | EntityAppointmentsSidebarWithDialog, EmployeeAttachmentsPanel |
+| Sub-Panel im Detail | EntityAppointmentsSidebarWithDialog, EmployeeAttachmentsPanel (unverändert) |
 | Auswahl-Dialog | EmployeePickerDialogList (Board-Modus) |
 
 ---
@@ -281,6 +295,7 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview |
 | Detailformular | EntityFormLayout (AppointmentForm) |
 | Badge in Panels/Listen | TerminInfoBadge → AppointmentWeeklyPanelPreview |
+| Sidebar-Kompaktpanel | AllAppointmentsPanel (Gruppierung aktuell/historisch) |
 | Kalenderansichten | WeekGrid, CalendarGrid (separate Logik, kein ListLayout) |
 
 ---
