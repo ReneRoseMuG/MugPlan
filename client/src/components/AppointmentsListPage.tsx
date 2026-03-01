@@ -32,15 +32,25 @@ type AppointmentListResponse = {
 type AppointmentSortKey = "project" | "customer" | "tour";
 type SortDirection = "asc" | "desc";
 
+type AppointmentsListContext =
+  | { type: "standalone" }
+  | { type: "tour"; tourId: number | null }
+  | { type: "employee"; employeeId: number };
+
 interface AppointmentsListPageProps {
   onCancel?: () => void;
   onOpenAppointment?: (appointmentId: number) => void;
   title?: string;
   helpKey?: string;
+  context?: AppointmentsListContext;
   showCloseButton?: boolean;
+  // TODO(deprecated): use `context` instead.
   hideTourFilter?: boolean;
+  // TODO(deprecated): use `context` instead.
   lockedTourId?: number | null;
+  // TODO(deprecated): use `context` instead.
   hideTourColumn?: boolean;
+  // TODO(deprecated): use `context` instead.
   enforceFromToday?: boolean;
   emptyStateOverride?: ReactNode;
 }
@@ -65,8 +75,9 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
 export function AppointmentsListPage({
   onCancel,
   onOpenAppointment,
-  title = "Terminliste",
+  title = "Termine",
   helpKey = "appointments",
+  context,
   showCloseButton = true,
   hideTourFilter = false,
   lockedTourId,
@@ -74,39 +85,58 @@ export function AppointmentsListPage({
   enforceFromToday = false,
   emptyStateOverride,
 }: AppointmentsListPageProps) {
+  const contextType = context?.type ?? "standalone";
+  const isTourContext = contextType === "tour";
+  const isEmployeeContext = contextType === "employee";
+  const resolvedTourId = context?.type === "tour" ? context.tourId : lockedTourId;
+  const resolvedEmployeeId = context?.type === "employee" ? context.employeeId : undefined;
+  const resolvedHideTourFilter = isTourContext ? true : hideTourFilter;
+  const resolvedHideEmployeeFilter = isEmployeeContext;
+  const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;
+  const resolvedShowCloseButton = (isTourContext || isEmployeeContext) ? false : showCloseButton;
+  const resolvedEnforceFromToday = contextType === "standalone" ? true : (isTourContext || isEmployeeContext || enforceFromToday);
+
   const todayBerlin = getBerlinTodayDateString();
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<AppointmentSortKey>("project");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const [filters, setFilters] = useState<AppointmentListFilters>({
-    employeeId: undefined,
+    employeeId: resolvedEmployeeId,
     projectId: undefined,
     customerId: undefined,
-    tourId: lockedTourId ?? undefined,
-    dateFrom: enforceFromToday ? todayBerlin : undefined,
+    tourId: resolvedTourId ?? undefined,
+    dateFrom: todayBerlin,
     dateTo: undefined,
   });
 
   useEffect(() => {
-    setFilters((current) => ({ ...current, tourId: lockedTourId ?? undefined }));
+    setFilters((current) => ({ ...current, tourId: resolvedTourId ?? undefined }));
     setPage(1);
-  }, [lockedTourId]);
+  }, [resolvedTourId]);
 
   useEffect(() => {
-    if (hideTourColumn && sortKey === "tour") {
+    if (!isEmployeeContext) return;
+    setFilters((current) => ({ ...current, employeeId: resolvedEmployeeId }));
+    setPage(1);
+  }, [isEmployeeContext, resolvedEmployeeId]);
+
+  useEffect(() => {
+    if (resolvedHideTourColumn && sortKey === "tour") {
       setSortKey("project");
       setSortDirection("asc");
     }
-  }, [hideTourColumn, sortKey]);
+  }, [resolvedHideTourColumn, sortKey]);
 
   useEffect(() => {
-    if (!enforceFromToday) return;
+    if (showAllAppointments) return;
+    if (!resolvedEnforceFromToday) return;
     setFilters((current) => {
       if (current.dateFrom === todayBerlin) return current;
       return { ...current, dateFrom: todayBerlin };
     });
-  }, [enforceFromToday, todayBerlin]);
+  }, [resolvedEnforceFromToday, showAllAppointments, todayBerlin]);
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees", { scope: "active" }],
@@ -127,7 +157,7 @@ export function AppointmentsListPage({
 
   const { data, isLoading } = useQuery<AppointmentListResponse>({
     queryKey: ["appointments-list", filters, page, DEFAULT_PAGE_SIZE, userRole],
-    enabled: lockedTourId !== null,
+    enabled: resolvedTourId !== null,
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
@@ -153,7 +183,7 @@ export function AppointmentsListPage({
   });
 
   const rows = useMemo(() => {
-    if (lockedTourId === null) return [];
+    if (resolvedTourId === null) return [];
     const source = data?.items ?? [];
     const multiplier = sortDirection === "asc" ? 1 : -1;
     return [...source].sort((left, right) => {
@@ -165,7 +195,7 @@ export function AppointmentsListPage({
       }
       return left.projectName.localeCompare(right.projectName, "de") * multiplier;
     });
-  }, [data?.items, lockedTourId, sortDirection, sortKey]);
+  }, [data?.items, resolvedTourId, sortDirection, sortKey]);
 
   const handleSortToggle = (nextKey: AppointmentSortKey) => {
     if (sortKey === nextKey) {
@@ -217,7 +247,7 @@ export function AppointmentsListPage({
       },
     ];
 
-    if (!hideTourColumn) {
+    if (!resolvedHideTourColumn) {
       columns.push({
         id: "tour",
         header: renderSortHeader("Tour", "tour"),
@@ -237,16 +267,28 @@ export function AppointmentsListPage({
     });
 
     return columns;
-  }, [hideTourColumn, sortDirection, sortKey]);
+  }, [resolvedHideTourColumn, sortDirection, sortKey]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
-    const enforcedPatch = enforceFromToday
+    const patchWithDate = (!showAllAppointments && resolvedEnforceFromToday)
       ? { ...patch, dateFrom: todayBerlin }
       : patch;
-    const nextPatch = lockedTourId == null
-      ? enforcedPatch
-      : { ...enforcedPatch, tourId: lockedTourId };
+    const patchWithTour = resolvedTourId == null
+      ? patchWithDate
+      : { ...patchWithDate, tourId: resolvedTourId };
+    const nextPatch = resolvedEmployeeId == null
+      ? patchWithTour
+      : { ...patchWithTour, employeeId: resolvedEmployeeId };
     setFilters((current) => ({ ...current, ...nextPatch }));
+    setPage(1);
+  };
+
+  const handleShowAllAppointmentsChange = (checked: boolean) => {
+    setShowAllAppointments(checked);
+    setFilters((current) => ({
+      ...current,
+      dateFrom: checked ? undefined : todayBerlin,
+    }));
     setPage(1);
   };
 
@@ -262,17 +304,21 @@ export function AppointmentsListPage({
       helpKey={helpKey}
       isLoading={isLoading}
       onClose={onCancel}
-      showCloseButton={showCloseButton}
+      showCloseButton={resolvedShowCloseButton}
       closeTestId="button-close-appointments-list"
       filterSlot={
         <AppointmentsFilterPanel
           filters={filters}
           onChange={setFilterAndResetPage}
+          showAllAppointments={showAllAppointments}
+          onShowAllAppointmentsChange={handleShowAllAppointmentsChange}
+          showAllAppointmentsHelpKey="appointments.filter.showAll"
           employees={employees}
           projects={projects}
           customers={customers}
           tours={tours}
-          hideTourFilter={hideTourFilter}
+          hideEmployeeFilter={resolvedHideEmployeeFilter}
+          hideTourFilter={resolvedHideTourFilter}
         />
       }
       footerSlot={

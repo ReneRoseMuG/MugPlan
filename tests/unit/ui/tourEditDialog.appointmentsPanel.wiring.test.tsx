@@ -1,55 +1,40 @@
 /**
  * Test Scope:
  *
- * Feature: FT04 - Tourenverwaltung
- * Use Case: UC Tour bearbeiten mit Sidebar-Termine-Panel
+ * Feature: FT04/FT16 - Tourenverwaltung
+ * Use Case: UC Tour bearbeiten mit kontextbasierter Terminliste
  *
  * Abgedeckte Regeln:
- * - TourEditDialog bindet das TourAppointmentsPanel in den bestehenden Dialogaufbau ein.
- * - TourEditForm bindet AppointmentsListPage mit enforceFromToday und individuellem helpKey ein.
- * - Die Footer-Action fuer die Tabelle ist mit button-open-tour-appointments-view verdrahtet.
- * - Unterhalb ist ein zusaetzlicher (derzeit funktionsloser) Kalender-Button verdrahtet.
- * - TourAppointmentsTableDialog ist ueber lokalen Open-State angeschlossen.
+ * - TourEditForm bindet AppointmentsListPage ueber context={{ type: "tour", tourId }} ein.
+ * - Neue Tour (tourId=null) bleibt ueber emptyStateOverride im leeren Zustand.
+ * - Individueller helpKey fuer den Tour-Form-Kontext bleibt verdrahtet.
+ * - Legacy-Props hideTourFilter/lockedTourId/hideTourColumn/enforceFromToday werden im TourEditForm nicht mehr verwendet.
  *
  * Fehlerfaelle:
- * - Sidebar-Panel wird nicht eingebunden.
- * - Erwartete Action-Buttons fehlen im Tour-Panel.
+ * - TourEditForm nutzt weiterhin Legacy-Props statt context.
  *
  * Ziel:
- * Die UI-Verdrahtung fuer die wiederverwendete Sidebar-Termine-Struktur im Tour-Dialog regressionssicher absichern.
+ * Die UI-Verdrahtung fuer die neue kontextbasierte Terminliste im Tour-Form regressionssicher absichern.
  */
 import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
-describe("FT04 TourEditDialog appointments sidebar wiring", () => {
-  const tourDialogPath = path.resolve(process.cwd(), "client/src/components/ui/tour-edit-dialog.tsx");
-  const tourPanelPath = path.resolve(process.cwd(), "client/src/components/TourAppointmentsPanel.tsx");
+describe("FT04 TourEditForm appointments context wiring", () => {
   const tourFormPath = path.resolve(process.cwd(), "client/src/components/TourEditForm.tsx");
-  const dialogSource = readFileSync(tourDialogPath, "utf8");
-  const panelSource = readFileSync(tourPanelPath, "utf8");
   const tourFormSource = readFileSync(tourFormPath, "utf8");
 
-  it("wires TourAppointmentsPanel and TourAppointmentsTableDialog in tour edit dialog", () => {
-    expect(dialogSource).toContain("import { TourAppointmentsPanel } from \"@/components/TourAppointmentsPanel\";");
-    expect(dialogSource).toContain("import { TourAppointmentsTableDialog } from \"@/components/TourAppointmentsTableDialog\";");
-    expect(dialogSource).toContain("const [tourAppointmentsTableOpen, setTourAppointmentsTableOpen] = useState(false);");
-    expect(dialogSource).toContain("<TourAppointmentsPanel");
-    expect(dialogSource).toContain("onOpenTourAppointmentsView={() => setTourAppointmentsTableOpen(true)}");
-    expect(dialogSource).toContain("<TourAppointmentsTableDialog");
-  });
-
-  it("exposes expected footer actions in tour appointments panel", () => {
-    expect(panelSource).toContain("helpKey=\"tours.sidebar.appointments\"");
-    expect(panelSource).toContain("data-testid=\"button-open-tour-appointments-view\"");
-    expect(panelSource).toContain("Tabelle anzeigen");
-    expect(panelSource).toContain("data-testid=\"button-open-tour-calendar-view\"");
-    expect(panelSource).toContain("Kalender anzeigen");
-  });
-
-  it("wires AppointmentsListPage in tour form to enforce dateFrom today", () => {
+  it("wires AppointmentsListPage in tour form using context", () => {
     expect(tourFormSource).toContain("<AppointmentsListPage");
-    expect(tourFormSource).toContain("enforceFromToday");
     expect(tourFormSource).toContain("helpKey=\"appointments.list.tourForm\"");
+    expect(tourFormSource).toContain("context={{ type: \"tour\", tourId: tour?.id ?? null }}");
+    expect(tourFormSource).toContain("emptyStateOverride={leftEmptyState}");
+  });
+
+  it("does not use deprecated appointments list props in tour form", () => {
+    expect(tourFormSource).not.toContain("hideTourFilter");
+    expect(tourFormSource).not.toContain("lockedTourId");
+    expect(tourFormSource).not.toContain("hideTourColumn");
+    expect(tourFormSource).not.toContain("enforceFromToday");
   });
 });

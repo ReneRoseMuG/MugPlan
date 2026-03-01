@@ -112,7 +112,7 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
         <NavGroup title="Terminplanung">
           <NavButton icon={CalendarDays} label="Wochenübersicht" isActive={currentView === 'week'} onClick={() => onViewChange('week')} />
           <NavButton icon={Calendar} label="Monatsübersicht" isActive={currentView === 'month'} onClick={() => onViewChange('month')} />
-          <NavButton icon={Table2} label="Terminliste" isActive={currentView === 'appointmentsList'} onClick={() => onViewChange('appointmentsList')} />
+          <NavButton icon={Table2} label="Termine" isActive={currentView === 'appointmentsList'} onClick={() => onViewChange('appointmentsList')} />
         </NavGroup>
 
         <NavGroup title="Projektplanung">

@@ -224,6 +224,7 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === 'appointmentsList' ? (
             <AppointmentsListPage
               helpKey="appointments.list.mainNavigation"
+              context={{ type: "standalone" }}
               onOpenAppointment={(appointmentId) => {
                 setAppointmentContext({ appointmentId, returnView: "appointmentsList" });
                 setView('appointment');

@@ -5,11 +5,10 @@
  * Use Case: UC Terminliste im Tour-Formular mit fixierter Tour
  *
  * Abgedeckte Regeln:
- * - AppointmentsListPage unterstuetzt hideTourFilter, lockedTourId, hideTourColumn und enforceFromToday.
- * - AppointmentsListPage unterstuetzt einen individuellen helpKey mit kompatiblem Default.
- * - Bei hideTourColumn wird die Tour-Spalte nicht aufgebaut.
- * - Bei lockedTourId wird der Tour-Filter intern fixiert.
- * - Bei enforceFromToday wird dateFrom auf Berlin-heute initialisiert und erzwungen.
+ * - AppointmentsListPage unterstuetzt die neue context-Prop (standalone/tour/employee).
+ * - Legacy-Props hideTourFilter, lockedTourId, hideTourColumn und enforceFromToday bleiben kompatibel markiert.
+ * - Im Tour-Kontext wird Tour intern fixiert und die Tour-Spalte ausgeblendet.
+ * - Der Show-All-Switch ist verdrahtet und steuert dateFrom (undefined vs. Berlin-heute).
  *
  * Fehlerfaelle:
  * - Tour-Filter bleibt im Tour-Formular sichtbar.
@@ -23,10 +22,16 @@ import { readFileSync } from "fs";
 import path from "path";
 
 describe("FT04 appointments list page tour locking wiring", () => {
-  it("supports hideTourFilter, lockedTourId, hideTourColumn and enforceFromToday props", () => {
+  it("supports context prop and keeps legacy props as deprecated fallback", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
+    expect(source).toContain("type AppointmentsListContext =");
+    expect(source).toContain("context?: AppointmentsListContext;");
+    expect(source).toContain("type: \"standalone\"");
+    expect(source).toContain("type: \"tour\"; tourId: number | null");
+    expect(source).toContain("type: \"employee\"; employeeId: number");
+    expect(source).toContain("TODO(deprecated): use `context` instead.");
     expect(source).toContain("hideTourFilter?: boolean;");
     expect(source).toContain("lockedTourId?: number | null;");
     expect(source).toContain("hideTourColumn?: boolean;");
@@ -35,35 +40,39 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("helpKey = \"appointments\"");
   });
 
-  it("hides tour column when hideTourColumn is enabled and resets tour sort key", () => {
+  it("hides tour column in resolved context and resets tour sort key", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("if (hideTourColumn && sortKey === \"tour\")");
+    expect(source).toContain("const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;");
+    expect(source).toContain("if (resolvedHideTourColumn && sortKey === \"tour\")");
     expect(source).toContain("setSortKey(\"project\")");
-    expect(source).toContain("if (!hideTourColumn) {");
+    expect(source).toContain("if (!resolvedHideTourColumn) {");
     expect(source).toContain("id: \"tour\"");
   });
 
-  it("locks the tour filter value when lockedTourId is provided", () => {
+  it("locks tour and employee ids via resolved context", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("tourId: lockedTourId ?? undefined");
-    expect(source).toContain("enabled: lockedTourId !== null");
-    expect(source).toContain("const nextPatch = lockedTourId == null");
-    expect(source).toContain("hideTourFilter={hideTourFilter}");
+    expect(source).toContain("const resolvedTourId = context?.type === \"tour\" ? context.tourId : lockedTourId;");
+    expect(source).toContain("const resolvedEmployeeId = context?.type === \"employee\" ? context.employeeId : undefined;");
+    expect(source).toContain("enabled: resolvedTourId !== null");
+    expect(source).toContain("const patchWithTour = resolvedTourId == null");
+    expect(source).toContain("const nextPatch = resolvedEmployeeId == null");
+    expect(source).toContain("hideTourFilter={resolvedHideTourFilter}");
+    expect(source).toContain("hideEmployeeFilter={resolvedHideEmployeeFilter}");
   });
 
-  it("enforces dateFrom as Berlin-today when enforceFromToday is active", () => {
+  it("wires show-all switch to toggle dateFrom against Berlin-today", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("const todayBerlin = getBerlinTodayDateString();");
-    expect(source).toContain("dateFrom: enforceFromToday ? todayBerlin : undefined");
-    expect(source).toContain("if (!enforceFromToday) return;");
-    expect(source).toContain("const enforcedPatch = enforceFromToday");
-    expect(source).toContain("dateFrom: todayBerlin");
+    expect(source).toContain("const [showAllAppointments, setShowAllAppointments] = useState(false);");
+    expect(source).toContain("if (showAllAppointments) return;");
+    expect(source).toContain("dateFrom: checked ? undefined : todayBerlin");
+    expect(source).toContain("showAllAppointmentsHelpKey=\"appointments.filter.showAll\"");
   });
 
   it("forwards resolved helpKey into ListLayout", () => {

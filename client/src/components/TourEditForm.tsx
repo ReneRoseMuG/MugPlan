@@ -113,11 +113,7 @@ export function TourEditForm({
           <AppointmentsListPage
             title="Termine"
             helpKey="appointments.list.tourForm"
-            showCloseButton={false}
-            hideTourFilter
-            lockedTourId={tour?.id ?? null}
-            hideTourColumn
-            enforceFromToday
+            context={{ type: "tour", tourId: tour?.id ?? null }}
             emptyStateOverride={leftEmptyState}
           />
         </div>

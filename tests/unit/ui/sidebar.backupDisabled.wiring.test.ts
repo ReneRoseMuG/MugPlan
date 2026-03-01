@@ -32,6 +32,7 @@ describe("FT07 UI: sidebar backup disabled wiring", () => {
   it("wires main navigation appointments list with dedicated helpKey", () => {
     expect(homeSource).toContain("view === 'appointmentsList'");
     expect(homeSource).toContain("helpKey=\"appointments.list.mainNavigation\"");
+    expect(sidebarSource).toContain("label=\"Termine\"");
   });
 
   it("applies red border style in Sidebar when backupDisabled is true", () => {
