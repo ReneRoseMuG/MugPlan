@@ -29,7 +29,7 @@ Der universelle Seitenrahmen für alle Listen- und Übersichtsseiten. Er ordnet 
 | `onClose` | () => void | Aktiviert Schließen-Button im Header |
 | `viewModeKey` | string | Persistenzschlüssel für Settings |
 
-**Eingesetzt in:** CustomersPage, ProjectsPage, EmployeesPage, AppointmentsListPage, HelpTextsPage, NoteTemplatesPage, ProjectStatusPage, EmployeePickerDialogList, TourAppointmentsPanel
+**Eingesetzt in:** CustomersPage, ProjectsPage, EmployeesPage, AppointmentsListPage, HelpTextsPage, NoteTemplatesPage, ProjectStatusPage, EmployeePickerDialogList, TourManagement, TeamManagement
 
 ---
 
@@ -57,7 +57,7 @@ Generische, typsichere Tabellenkomponente mit Doppelklick-Interaktion und Hover-
 | `stickyHeader` | Fixiert Tabellenkopf beim Scrollen |
 | `density` | `"compact"` oder `"comfortable"` |
 
-**Eingesetzt in:** CustomersPage (Tabellen-Modus), ProjectsPage (Tabellen-Modus), EmployeesPage (Tabellen-Modus), AppointmentsListPage, TourAppointmentsTableDialog
+**Eingesetzt in:** CustomersPage (Tabellen-Modus), ProjectsPage (Tabellen-Modus), EmployeesPage (Tabellen-Modus), AppointmentsListPage
 
 ---
 
@@ -77,9 +77,9 @@ Einheitliche Karte für Board-Ansichten. Enthält Header mit Farbe und Icon, Con
 ### `EntityFormLayout`
 **Datei:** `client/src/components/ui/entity-form-layout.tsx`
 
-Formularrahmen für große Detail- und Bearbeitungsseiten mit Aktionsleiste (Speichern/Abbrechen). Verwaltet Submit-Zustand und optionales Auto-Close nach Erfolg.
+Formularrahmen für große Detail- und Bearbeitungsseiten mit Aktionsleiste (Speichern/Abbrechen). Verwaltet Submit-Zustand und optionales Auto-Close nach Erfolg. Alle domänenspezifischen Formulare werden als Komposition über diesen Rahmen gebaut — er ist die gemeinsame Basis für `ProjectForm`, `CustomerData`, `EmployeeForm` und `TourEditForm`.
 
-**Eingesetzt in:** ProjectForm, AppointmentForm, CustomerData
+**Eingesetzt in:** ProjectForm, AppointmentForm, CustomerData, EmployeeForm, TourEditForm
 
 ---
 
@@ -90,19 +90,18 @@ Dialograhmen für fokussierte Bearbeitung ohne Seitenwechsel. Analog zu EntityFo
 
 **Zusatz-Props:** `hideActions`, `leftActions`, `headerExtra`, `maxWidth`
 
-**Eingesetzt in:** EmployeesPage (Mitarbeiter-Detaildialog), TeamManagement, TourManagement, Projektstatus-Dialoge
+**Eingesetzt in:** TeamManagement, Projektstatus-Dialoge
 
 ---
 
 ### `AllAppointmentsPanel`
 **Datei:** `client/src/components/AllAppointmentsPanel.tsx`
 
-Strukturelles Sidebar-Panel für kompakte Terminlisten ohne Datenbeschaffung. Erwartet bereits sortierte Termine und trennt die Darstellung in:
+Reine Darstellungskomponente für kompakte Terminlisten im Sidebar-Bereich von Formularen. Übernimmt keine Datenbeschaffung — die aufrufende Komponente liefert eine fertig absteigend sortierte Terminliste sowie das heutige Berliner Datum.
 
-- aktuelle/zukünftige Termine
-- historische Termine mit Divider `Vergangene Termine` und leicht abgedunkeltem Hintergrundbereich
+Die Komponente teilt die Liste in zwei Gruppen auf: aktuelle und zukünftige Termine oben (normaler Hintergrund), historische Termine unten (leicht abgedunkelter Hintergrund). Zwischen den Gruppen erscheint ein Divider mit dem Label „Vergangene Termine", jedoch nur wenn historische Einträge vorhanden sind. Termine werden als `TerminInfoBadge` innerhalb von `SidebarChildPanel` dargestellt.
 
-Die Komponente rendert Termine über `TerminInfoBadge` innerhalb von `SidebarChildPanel`, unterstützt optional einen Header-Plus-Button via `addAction` und enthält keine Dialog-, Delete- oder Double-Click-Logik.
+Die Komponente kennt keinen Delete-Flow, keinen Dialog und keine Double-Click-Interaktion. Ein optionaler `addAction`-Slot ermöglicht einen Plus-Button im Panel-Header.
 
 **Eingesetzt in:** ProjectAppointmentsPanel, CustomerAppointmentsPanel
 
@@ -144,14 +143,14 @@ Nicht direkt für Fachinhalte einsetzen. Stellt die Badge-Hülle, Actions (add/r
 ### `PersonInfoBadge` — Personen-Wrapper
 **Datei:** `client/src/components/ui/person-info-badge.tsx`
 
-Erweitert InfoBadge um einen Avatar-Kreis mit Initialen und mehrzeiligem Label. Wird nicht direkt fachlich eingesetzt, nur über Kundenund Mitarbeiter-Badge.
+Erweitert InfoBadge um einen Avatar-Kreis mit Initialen und mehrzeiligem Label. Wird nicht direkt fachlich eingesetzt, nur über Kunden- und Mitarbeiter-Badge.
 
 ---
 
 ### `ColoredInfoBadge` — Farb-Wrapper
 **Datei:** `client/src/components/ui/colored-info-badge.tsx`
 
-Erweitert InfoBadge um einen farbigen linken Rand. Wird nicht direkt fachlich eingesetzt, nur über Team-, Tour- und Statuss-Badge.
+Erweitert InfoBadge um einen farbigen linken Rand. Wird nicht direkt fachlich eingesetzt, nur über Team-, Tour- und Status-Badge.
 
 ---
 
@@ -161,11 +160,11 @@ Erweitert InfoBadge um einen farbigen linken Rand. Wird nicht direkt fachlich ei
 |---|---|---|---|---|
 | `CustomerInfoBadge` | `customer-info-badge.tsx` | PersonInfoBadge | ✅ | AppointmentForm, Projektkontexte |
 | `EmployeeInfoBadge` | `employee-info-badge.tsx` | PersonInfoBadge | ✅ | AppointmentForm, Team/Tour-Verwaltung |
-| `TeamInfoBadge` | `team-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), Mitarbeiter-Detail |
-| `TourInfoBadge` | `tour-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), Mitarbeiter-Detail |
+| `TeamInfoBadge` | `team-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), EmployeeForm (Sidebar) |
+| `TourInfoBadge` | `tour-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), EmployeeForm (Sidebar) |
 | `ProjectStatusInfoBadge` | `project-status-info-badge.tsx` | ColoredInfoBadge | ❌ (keine Preview) | ProjectsPage (Board), ProjectForm |
 | `ProjectInfoBadge` | `project-info-badge.tsx` | InfoBadge (direkt) | ✅ | AppointmentForm |
-| `TerminInfoBadge` | `termin-info-badge.tsx` | InfoBadge (direkt) | ✅ (AppointmentWeeklyPanel) | Termin-Panels, Kalenderansichten |
+| `TerminInfoBadge` | `termin-info-badge.tsx` | InfoBadge (direkt) | ✅ (AppointmentWeeklyPanel) | AllAppointmentsPanel, Kalenderansichten |
 | `AttachmentInfoBadge` | `attachment-info-badge.tsx` | InfoBadge (direkt) | ✅ (Vollvorschau mit PDF/Bild) | AttachmentsPanels |
 
 ---
@@ -217,34 +216,58 @@ Layout-Container für Filterzeilen. Props: `title` (Screenreader-Label), `layout
 | `CustomerFilterPanel` | `customer-filter-panel.tsx` | Nachname, Kundennummer, Scope (aktiv/inaktiv, nur Admin) | CustomersPage |
 | `ProjectFilterPanel` | `project-filter-panel.tsx` | Titel, Kundename, Kundennummer, Auftragsnummer, Status-Picker, Scope-Switches | ProjectsPage |
 | `EmployeeFilterPanel` | `employee-filter-panel.tsx` | Nachname, Scope (aktiv/inaktiv, nur Admin) | EmployeesPage |
-| `AppointmentsFilterPanel` | `appointments-filter-panel.tsx` | Mitarbeiter, Projekt, Kunde, Tour, Datum von/bis | AppointmentsListPage, TourAppointmentsPanel |
+| `AppointmentsFilterPanel` | `appointments-filter-panel.tsx` | Mitarbeiter, Projekt, Kunde, Tour, Datum von/bis, Switch „Alle Termine" | AppointmentsListPage |
 | `CalendarFilterPanel` | `calendar-filter-panel.tsx` | Mitarbeiter-Selektion | Wochen-, Monats-, Jahreskalender |
 | `HelpTextsFilterPanel` | `help-texts-filter-panel.tsx` | Suchbegriff (Schlüssel oder Titel) | HelpTextsPage |
 | `EmployeePickerFilterPanel` | `employee-picker-filter-panel.tsx` | Name (Freitext) | EmployeePickerDialogList |
 
+**Hinweis zu `AppointmentsFilterPanel`:** Der Switch „Alle Termine" ist zustandslos — der Zustand wird in `AppointmentsListPage` gehalten und per Props gesteuert. Der Switch ist in allen Kontexten sichtbar und hat überall default Off. Off setzt `dateFrom` auf heute, On hebt die Datumseinschränkung auf. Ein optionaler `helpKey` aktiviert das Hilfe-Icon neben dem Switch-Label.
+
 ---
 
-## 6. Dialoglisten und Picker
+## 6. Terminliste: `AppointmentsListPage`
+
+**Datei:** `client/src/components/AppointmentsListPage.tsx`
+
+Die zentrale Terminübersicht mit Filterung, Sortierung und Paginierung. Wird in drei Kontexten eingesetzt, die über ein diskriminiertes `context`-Prop gesteuert werden. Die Komponente leitet daraus intern ab, welche Filter und Spalten sichtbar sind, ob Filterfelder gesperrt werden und ob der Schließen-Button erscheint.
+
+### Kontexte
+
+| Verhalten | `standalone` | `tour` | `employee` |
+|---|---|---|---|
+| Filter Mitarbeiter | sichtbar | sichtbar | ausgeblendet, intern auf `employeeId` gesetzt |
+| Filter Tour | sichtbar | ausgeblendet, intern auf `tourId` gesetzt | sichtbar |
+| Filter Projekt | sichtbar | sichtbar | sichtbar |
+| Filter Kunde | sichtbar | sichtbar | sichtbar |
+| Switch „Alle Termine" | sichtbar, default Off | sichtbar, default Off | sichtbar, default Off |
+| Spalte Tour | sichtbar | ausgeblendet | sichtbar |
+| Schließen-Button | sichtbar | ausgeblendet | ausgeblendet |
+| enforceFromToday | nein | ja, bis Switch On | ja, bis Switch On |
+
+### Eingesetzt in
+
+| Kontext | Aufrufer |
+|---|---|
+| `standalone` | Hauptnavigation „Termine" |
+| `tour` | TourEditForm (direkt eingebettet, kein Dialog) |
+| `employee` | EmployeeForm (direkt eingebettet, linke Spalte) |
+
+**Hinweis zu Legacy-Props:** Die Props `hideTourFilter`, `lockedTourId`, `hideTourColumn`, `enforceFromToday` sind deprecated (TODO-Kommentar im Code) und werden bei gleichzeitiger Verwendung von `context` ignoriert. Sie bleiben vorerst erhalten, damit nicht migrierte Altaufrufer nicht brechen.
+
+---
+
+## 7. Dialoglisten und Picker
 
 ### `EmployeePickerDialogList`
 **Datei:** `client/src/components/EmployeePickerDialogList.tsx`
 
 Auswahldialog für Mitarbeiter. Nutzt `ListLayout` + `BoardView` + `EntityCard` + `EmployeePickerFilterPanel`. Zeigt Karten, **keine Tabelle** (Abweichung von ursprünglicher Spezifikation, die Tabelle vorsah).
 
-**Eingesetzt in:** AppointmentForm (Mitarbeiterzuweisung)
+**Eingesetzt in:** AppointmentForm (Mitarbeiterzuweisung), TourEditForm (Mitarbeiterzuweisung)
 
 ---
 
-### `TourAppointmentsTableDialog`
-**Datei:** `client/src/components/TourAppointmentsTableDialog.tsx`
-
-Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` mit gesperrter Tour-ID.
-
-**Eingesetzt in:** TourManagement
-
----
-
-## 7. Domänenobjekte: Welche Komponenten für was
+## 8. Domänenobjekte: Welche Komponenten für was
 
 ### Kunden
 
@@ -254,7 +277,8 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview (nächster Termin) |
 | Detailformular | EntityFormLayout (CustomerData) |
 | Badge in anderen Formularen | CustomerInfoBadge → CustomerInfoBadgePreview |
-| Sub-Panel im Detailformular | CustomerAppointmentsPanel, CustomerAttachmentsPanel |
+| Sub-Panel Termine | CustomerAppointmentsPanel (Wrapper über AllAppointmentsPanel) |
+| Sub-Panel Anhänge | CustomerAttachmentsPanel |
 
 ---
 
@@ -268,7 +292,8 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 | Detailformular | EntityFormLayout (ProjectForm) |
 | Badge in anderen Formularen | ProjectInfoBadge → ProjectInfoBadgePreview |
 | Status-Anzeige | ProjectStatusInfoBadge (keine Preview) |
-| Sub-Panels | ProjectAppointmentsPanel (Wrapper über AllAppointmentsPanel), ProjectAttachmentsPanel |
+| Sub-Panel Termine | ProjectAppointmentsPanel (Wrapper über AllAppointmentsPanel, mit Add-Button) |
+| Sub-Panel Anhänge | ProjectAttachmentsPanel |
 
 ---
 
@@ -279,10 +304,12 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 | Übersichtsliste | ListLayout + BoardView/TableView + EntityCard + EmployeeFilterPanel |
 | Board-Karte | EntityCard mit TourInfoBadge (sm) + TeamInfoBadge (sm) |
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview (nächster Termin) |
-| Detailbearbeitung | EntityEditDialog (kein Seitenwechsel) |
+| Detailbearbeitung | EntityFormLayout (EmployeeForm) — kein Dialog, Vollseiten-Formular |
 | Badge in anderen Formularen | EmployeeInfoBadge → EmployeeInfoBadgePreview |
-| Im Detail-Dialog | TourInfoBadge (fullWidth), TeamInfoBadge (fullWidth) |
-| Sub-Panel im Detail | EntityAppointmentsSidebarWithDialog, EmployeeAttachmentsPanel (unverändert) |
+| Termine im Formular | AppointmentsListPage context="employee" (eingebettet, linke Spalte) |
+| Sub-Panel Tour | TourInfoBadge (fullWidth, read-only, rechte Spalte) |
+| Sub-Panel Team | TeamInfoBadge (fullWidth, read-only, rechte Spalte) |
+| Sub-Panel Anhänge | EmployeeAttachmentsPanel (rechte Spalte) |
 | Auswahl-Dialog | EmployeePickerDialogList (Board-Modus) |
 
 ---
@@ -291,11 +318,13 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 
 | Verwendungskontext | Komponenten |
 |---|---|
-| Terminliste (Hauptansicht) | ListLayout + TableView + AppointmentsFilterPanel |
+| Terminliste (Hauptnavigation) | AppointmentsListPage context="standalone" |
+| Terminliste im Tour-Formular | AppointmentsListPage context="tour" |
+| Terminliste im Mitarbeiter-Formular | AppointmentsListPage context="employee" |
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview |
 | Detailformular | EntityFormLayout (AppointmentForm) |
 | Badge in Panels/Listen | TerminInfoBadge → AppointmentWeeklyPanelPreview |
-| Sidebar-Kompaktpanel | AllAppointmentsPanel (Gruppierung aktuell/historisch) |
+| Sidebar-Kompaktpanel (Projekt, Kunde) | AllAppointmentsPanel (Basiskomponente, Gruppierung aktuell/historisch) |
 | Kalenderansichten | WeekGrid, CalendarGrid (separate Logik, kein ListLayout) |
 
 ---
@@ -306,9 +335,10 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 |---|---|
 | Verwaltungsliste | ListLayout + BoardView + EntityCard (via TeamManagement/TourManagement) |
 | Badge in Mitarbeiterkarte | TeamInfoBadge (sm) / TourInfoBadge (sm) → Preview mit Mitgliederliste |
-| Badge im Mitarbeiter-Detail | TeamInfoBadge (fullWidth) / TourInfoBadge (fullWidth) |
-| Bearbeitungsdialog | EntityEditDialog (team-edit-dialog, tour-edit-dialog) |
-| Tour-Terminliste | TourAppointmentsTableDialog → AppointmentsListPage |
+| Badge im Mitarbeiter-Formular | TeamInfoBadge (fullWidth) / TourInfoBadge (fullWidth), read-only |
+| Bearbeitungsdialog Teams | EntityEditDialog (team-edit-dialog) |
+| Tour-Bearbeitungsformular | EntityFormLayout (TourEditForm) |
+| Termine im Tour-Formular | AppointmentsListPage context="tour" (direkt eingebettet) |
 
 ---
 
@@ -321,7 +351,7 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 
 ---
 
-## 8. Regeln für Codex
+## 9. Regeln für Codex
 
 **Diese Regeln gelten verbindlich für alle neuen Komponenten und Screen-Erweiterungen.**
 
@@ -337,21 +367,25 @@ Tabellenfokussierter Termin-Dialog im Tourkontext. Nutzt `AppointmentsListPage` 
 
 6. **EntityCard** für alle Karten in BoardView. Keine eigenen Karten-Layouts.
 
-7. **EntityEditDialog** für modale Bearbeitungsmasken ohne Seitenwechsel. **EntityFormLayout** für Vollseiten-Formulare.
+7. **EntityFormLayout** für alle domänenspezifischen Vollseiten-Formulare. **EntityEditDialog** für modale Bearbeitungsmasken ohne Seitenwechsel. Neue Domänenformulare werden nicht als Dialog gebaut.
 
 8. **footerVisibility bei EntityCard:** Standardmäßig ist der Footer versteckt. Wenn er sichtbar sein soll, muss `footerVisibility="visible"` explizit gesetzt werden.
 
 9. **Keine neue Preview-Datei ohne Fabrikfunktion.** Jede Preview-Komponente braucht eine zugehörige `createXxxPreview(props): InfoBadgePreview`-Funktion.
 
-10. **Dieses Dokument nachpflegen** bei jeder neuen Komponente, die das System erweitert.
+10. **Neue Terminpanels im Sidebar-Bereich** werden als Wrapper über `AllAppointmentsPanel` gebaut. Kein eigenes Panel-Layout, kein Delete-Flow, keine Dialog-Logik im Panel.
+
+11. **Terminlisten in Formularen** werden über `AppointmentsListPage` mit dem passenden `context`-Prop eingebettet. Kein eigenes Tabellen-Layout erfinden.
+
+12. **Dieses Dokument nachpflegen** bei jeder neuen Komponente, die das System erweitert.
 
 ---
 
-## 9. Bekannte offene Punkte
+## 10. Bekannte offene Punkte
 
 - `appointment-info-badge-preview.tsx` existiert, ist aber nirgends angebunden. Vor erneutem Einsatz klären, ob sie `appointment-weekly-panel-preview` ersetzen oder ergänzen soll.
 - `colored-entity-card.tsx`, `relation-slot.tsx`, `sidebar-child-panel.tsx`, `members-section-header.tsx`, `customer-detail-card.tsx`, `project-detail-card.tsx` sind im Code vorhanden, aber noch nicht in dieser Referenz dokumentiert. Verwendung und Status prüfen.
 
 ---
 
-*Dokument basiert auf Code-Analyse von `client/src/components/` in version01, Stand Februar 2026.*
+*Dokument basiert auf Code-Analyse von `client/src/components/` in version01, Stand März 2026.*
