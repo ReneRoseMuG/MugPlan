@@ -597,7 +597,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
           disabled={deleteProjectMutation.isPending}
           data-testid="button-delete-project"
         >
-          {deleteProjectMutation.isPending ? "Projekt loeschen..." : "Projekt loeschen"}
+          {deleteProjectMutation.isPending ? "Projekt löschen..." : "Projekt löschen"}
         </Button>
       ) : undefined}
     >
@@ -638,8 +638,20 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
               </div>
 
               <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Beschreibung
+                </h3>
+                <RichTextEditor
+                  value={descriptionMd}
+                  onChange={setDescriptionMd}
+                  placeholder="Projektbeschreibung eingeben..."
+                />
+              </div>
+
+              <div className="space-y-4">
                 <RelationSlot
-                  title="Zugeordneter Kunde *"
+                  title="Kunde"
                   icon={<UserCircle className="w-4 h-4" />}
                   state={selectedCustomer ? "active" : "empty"}
                   onAdd={() => setCustomerDialogOpen(true)}
@@ -652,18 +664,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 >
                   {selectedCustomer ? <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" /> : null}
                 </RelationSlot>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Beschreibung
-                </h3>
-                <RichTextEditor
-                  value={descriptionMd}
-                  onChange={setDescriptionMd}
-                  placeholder="Projektbeschreibung eingeben..."
-                />
               </div>
 
               {!isEditing ? (
@@ -780,10 +780,10 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Projekt wirklich loeschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Diese Aktion ist endgueltig. Das Projekt wird nur geloescht, wenn keine Termine zugeordnet sind.
-            </AlertDialogDescription>
+          <AlertDialogTitle>Projekt wirklich loeschen?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Diese Aktion ist endgueltig. Das Projekt wird nur geloescht, wenn keine Termine zugeordnet sind.
+          </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
@@ -794,7 +794,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
               }}
               data-testid="button-confirm-delete-project"
             >
-              Projekt loeschen
+              Projekt löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

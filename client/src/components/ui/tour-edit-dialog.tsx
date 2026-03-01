@@ -103,7 +103,7 @@ export function TourEditDialog({
             disabled={isSaving || isDeleting}
             data-testid="button-delete-tour-dialog"
           >
-            {isDeleting ? "Loeschen..." : "Tour loeschen"}
+            {isDeleting ? "Löschen..." : "Tour löschen"}
           </Button>
         ) : undefined
       }

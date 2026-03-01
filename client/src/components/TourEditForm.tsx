@@ -103,7 +103,7 @@ export function TourEditForm({
             disabled={isSaving || isDeleting}
             data-testid="button-delete-tour-form"
           >
-            {isDeleting ? "Loeschen..." : "Tour loeschen"}
+            {isDeleting ? "Löschen..." : "Tour löschen"}
           </Button>
         ) : undefined
       }
