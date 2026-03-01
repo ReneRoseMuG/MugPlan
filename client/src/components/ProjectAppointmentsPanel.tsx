@@ -155,6 +155,7 @@ export function ProjectAppointmentsPanel({
       <AppointmentsPanel
         title="Termine"
         icon={<Calendar className="w-4 h-4" />}
+        helpKey="projects.sidebar.appointments"
         compact
         items={items}
         isLoading={upcomingLoading}
@@ -166,4 +167,3 @@ export function ProjectAppointmentsPanel({
     </BadgeInteractionProvider>
   );
 }
-

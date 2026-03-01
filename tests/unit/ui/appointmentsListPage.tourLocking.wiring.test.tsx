@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - AppointmentsListPage unterstuetzt hideTourFilter, lockedTourId, hideTourColumn und enforceFromToday.
+ * - AppointmentsListPage unterstuetzt einen individuellen helpKey mit kompatiblem Default.
  * - Bei hideTourColumn wird die Tour-Spalte nicht aufgebaut.
  * - Bei lockedTourId wird der Tour-Filter intern fixiert.
  * - Bei enforceFromToday wird dateFrom auf Berlin-heute initialisiert und erzwungen.
@@ -30,6 +31,8 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("lockedTourId?: number | null;");
     expect(source).toContain("hideTourColumn?: boolean;");
     expect(source).toContain("enforceFromToday?: boolean;");
+    expect(source).toContain("helpKey?: string;");
+    expect(source).toContain("helpKey = \"appointments\"");
   });
 
   it("hides tour column when hideTourColumn is enabled and resets tour sort key", () => {
@@ -61,5 +64,12 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("if (!enforceFromToday) return;");
     expect(source).toContain("const enforcedPatch = enforceFromToday");
     expect(source).toContain("dateFrom: todayBerlin");
+  });
+
+  it("forwards resolved helpKey into ListLayout", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("helpKey={helpKey}");
   });
 });

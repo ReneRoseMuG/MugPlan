@@ -10,6 +10,7 @@ interface AttachmentsPanelProps {
   title: string;
   items: AttachmentBadgeItem[];
   isLoading: boolean;
+  helpKey?: string;
   canUpload: boolean;
   isUploading: boolean;
   onUpload: (file: File) => void;
@@ -21,6 +22,7 @@ export function AttachmentsPanel({
   title,
   items,
   isLoading,
+  helpKey,
   canUpload,
   isUploading,
   onUpload,
@@ -41,6 +43,7 @@ export function AttachmentsPanel({
     <SidebarChildPanel
       title={`${title} (${items.length})`}
       icon={<Paperclip className="w-4 h-4" />}
+      helpKey={helpKey}
       addAction={addAction}
     >
       <input

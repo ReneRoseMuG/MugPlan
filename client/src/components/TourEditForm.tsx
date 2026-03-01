@@ -112,6 +112,7 @@ export function TourEditForm({
         <div className="col-span-2">
           <AppointmentsListPage
             title="Termine"
+            helpKey="appointments.list.tourForm"
             showCloseButton={false}
             hideTourFilter
             lockedTourId={tour?.id ?? null}

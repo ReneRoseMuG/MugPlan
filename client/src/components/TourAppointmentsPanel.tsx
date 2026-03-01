@@ -77,6 +77,7 @@ export function TourAppointmentsPanel({ tourId, onOpenTourAppointmentsView }: To
     <AppointmentsPanel
       title="Termine"
       icon={<Calendar className="w-4 h-4" />}
+      helpKey="tours.sidebar.appointments"
       compact
       items={items}
       isLoading={isLoading}

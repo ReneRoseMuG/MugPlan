@@ -47,6 +47,7 @@ export function EmployeeAttachmentsPanel({ employeeId }: EmployeeAttachmentsPane
   return (
     <AttachmentsPanel
       title="Dokumente"
+      helpKey="employees.sidebar.attachments"
       items={items}
       isLoading={isLoading}
       canUpload={Boolean(employeeId)}

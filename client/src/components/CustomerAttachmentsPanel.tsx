@@ -47,6 +47,7 @@ export function CustomerAttachmentsPanel({ customerId }: CustomerAttachmentsPane
   return (
     <AttachmentsPanel
       title="Dokumente"
+      helpKey="customers.sidebar.attachments"
       items={items}
       isLoading={isLoading}
       canUpload={Boolean(customerId)}

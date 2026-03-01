@@ -49,6 +49,7 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
   return (
     <AttachmentsPanel
       title="Dokumente"
+      helpKey="projects.sidebar.attachments"
       items={items}
       isLoading={isLoading}
       canUpload={isEditing && Boolean(projectId)}

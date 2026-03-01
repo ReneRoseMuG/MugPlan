@@ -37,4 +37,8 @@ describe("FT04 project appointments panel delete wiring", () => {
     expect(source).toContain("if (err.code === \"LOCK_VIOLATION\" || err.status === 403)");
     expect(source).toContain("Termin ist gesperrt.");
   });
+
+  it("sets panel-specific helpKey for project sidebar appointments", () => {
+    expect(source).toContain("helpKey=\"projects.sidebar.appointments\"");
+  });
 });

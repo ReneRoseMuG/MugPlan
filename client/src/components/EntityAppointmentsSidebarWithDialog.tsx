@@ -160,6 +160,7 @@ export function EntityAppointmentsSidebarWithDialog({
       <AppointmentsPanel
         title="Termine"
         icon={<Calendar className="w-4 h-4" />}
+        helpKey={entityType === "employee" ? "employees.sidebar.appointments" : "customers.sidebar.appointments"}
         compact
         items={sidebarItems}
         isLoading={sidebarLoading}

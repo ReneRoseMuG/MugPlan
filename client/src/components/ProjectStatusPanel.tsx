@@ -53,6 +53,7 @@ export function ProjectStatusPanel({
       <SidebarChildPanel
         title={`${title} (${assignedStatuses.length})`}
         icon={<Flag className="w-4 h-4" />}
+        helpKey="projects.sidebar.status"
         headerActions={canEdit ? (
           <Tooltip>
             <TooltipTrigger asChild>

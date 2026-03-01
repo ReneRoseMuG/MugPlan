@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Die gekapselte Komponente zeigt den Footer-Button mit Label "Alle Termine".
+ * - Die gekapselte Komponente setzt panel-spezifische HelpKeys je Entitaetstyp.
  * - Mitarbeiterpfad nutzt den einheitlichen Entity-Endpoint mit scope=upcoming/all.
  * - Kundenpfad nutzt denselben einheitlichen Entity-Endpoint mit scope=upcoming/all.
  * - Dialog-Open-State ist intern in der Komponente gekapselt.
@@ -36,6 +37,7 @@ describe("FT04 EntityAppointmentsSidebarWithDialog wiring", () => {
     expect(componentSource).toContain("const [allAppointmentsDialogOpen, setAllAppointmentsDialogOpen] = useState(false);");
     expect(componentSource).toContain("Alle Termine");
     expect(componentSource).toContain("<Dialog open={allAppointmentsDialogOpen} onOpenChange={setAllAppointmentsDialogOpen}>");
+    expect(componentSource).toContain("helpKey={entityType === \"employee\" ? \"employees.sidebar.appointments\" : \"customers.sidebar.appointments\"}");
   });
 
   it("wires unified entity endpoint for employee scopes", () => {

@@ -29,9 +29,13 @@ describe("FT07 UI: sidebar backup disabled wiring", () => {
     expect(homeSource).toContain("backupDisabled={backupDisabled}");
   });
 
+  it("wires main navigation appointments list with dedicated helpKey", () => {
+    expect(homeSource).toContain("view === 'appointmentsList'");
+    expect(homeSource).toContain("helpKey=\"appointments.list.mainNavigation\"");
+  });
+
   it("applies red border style in Sidebar when backupDisabled is true", () => {
     expect(sidebarSource).toContain("backupDisabled = false");
     expect(sidebarSource).toContain('backupDisabled ? "border-2 border-red-600" : ""');
   });
 });
-

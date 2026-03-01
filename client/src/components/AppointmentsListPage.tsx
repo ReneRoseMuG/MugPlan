@@ -36,6 +36,7 @@ interface AppointmentsListPageProps {
   onCancel?: () => void;
   onOpenAppointment?: (appointmentId: number) => void;
   title?: string;
+  helpKey?: string;
   showCloseButton?: boolean;
   hideTourFilter?: boolean;
   lockedTourId?: number | null;
@@ -65,6 +66,7 @@ export function AppointmentsListPage({
   onCancel,
   onOpenAppointment,
   title = "Terminliste",
+  helpKey = "appointments",
   showCloseButton = true,
   hideTourFilter = false,
   lockedTourId,
@@ -257,7 +259,7 @@ export function AppointmentsListPage({
       title={title}
       icon={<CalendarDays className="w-5 h-5" />}
       viewModeKey="appointments"
-      helpKey="appointments"
+      helpKey={helpKey}
       isLoading={isLoading}
       onClose={onCancel}
       showCloseButton={showCloseButton}

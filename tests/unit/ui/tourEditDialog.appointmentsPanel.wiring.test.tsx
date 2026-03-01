@@ -6,7 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - TourEditDialog bindet das TourAppointmentsPanel in den bestehenden Dialogaufbau ein.
- * - TourEditForm bindet AppointmentsListPage mit enforceFromToday ein.
+ * - TourEditForm bindet AppointmentsListPage mit enforceFromToday und individuellem helpKey ein.
  * - Die Footer-Action fuer die Tabelle ist mit button-open-tour-appointments-view verdrahtet.
  * - Unterhalb ist ein zusaetzlicher (derzeit funktionsloser) Kalender-Button verdrahtet.
  * - TourAppointmentsTableDialog ist ueber lokalen Open-State angeschlossen.
@@ -40,6 +40,7 @@ describe("FT04 TourEditDialog appointments sidebar wiring", () => {
   });
 
   it("exposes expected footer actions in tour appointments panel", () => {
+    expect(panelSource).toContain("helpKey=\"tours.sidebar.appointments\"");
     expect(panelSource).toContain("data-testid=\"button-open-tour-appointments-view\"");
     expect(panelSource).toContain("Tabelle anzeigen");
     expect(panelSource).toContain("data-testid=\"button-open-tour-calendar-view\"");
@@ -49,5 +50,6 @@ describe("FT04 TourEditDialog appointments sidebar wiring", () => {
   it("wires AppointmentsListPage in tour form to enforce dateFrom today", () => {
     expect(tourFormSource).toContain("<AppointmentsListPage");
     expect(tourFormSource).toContain("enforceFromToday");
+    expect(tourFormSource).toContain("helpKey=\"appointments.list.tourForm\"");
   });
 });
