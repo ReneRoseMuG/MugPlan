@@ -29,7 +29,6 @@ type AppointmentListResponse = {
   items: AppointmentListItem[];
 };
 
-type AppointmentSortKey = "project" | "customer" | "tour";
 type SortDirection = "asc" | "desc";
 
 type AppointmentsListContext =
@@ -53,6 +52,7 @@ interface AppointmentsListPageProps {
   // TODO(deprecated): use `context` instead.
   enforceFromToday?: boolean;
   emptyStateOverride?: ReactNode;
+  className?: string;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -84,22 +84,22 @@ export function AppointmentsListPage({
   hideTourColumn = false,
   enforceFromToday = false,
   emptyStateOverride,
+  className,
 }: AppointmentsListPageProps) {
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
   const isEmployeeContext = contextType === "employee";
   const resolvedTourId = context?.type === "tour" ? context.tourId : lockedTourId;
   const resolvedEmployeeId = context?.type === "employee" ? context.employeeId : undefined;
-  const resolvedHideTourFilter = isTourContext ? true : hideTourFilter;
+  const resolvedHideTourFilter = (isTourContext || isEmployeeContext) ? true : hideTourFilter;
   const resolvedHideEmployeeFilter = isEmployeeContext;
-  const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;
+  const resolvedHideTourColumn = (isTourContext || isEmployeeContext) ? true : hideTourColumn;
   const resolvedShowCloseButton = (isTourContext || isEmployeeContext) ? false : showCloseButton;
   const resolvedEnforceFromToday = contextType === "standalone" ? true : (isTourContext || isEmployeeContext || enforceFromToday);
 
   const todayBerlin = getBerlinTodayDateString();
   const [page, setPage] = useState(1);
-  const [sortKey, setSortKey] = useState<AppointmentSortKey>("project");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const [filters, setFilters] = useState<AppointmentListFilters>({
@@ -121,13 +121,6 @@ export function AppointmentsListPage({
     setFilters((current) => ({ ...current, employeeId: resolvedEmployeeId }));
     setPage(1);
   }, [isEmployeeContext, resolvedEmployeeId]);
-
-  useEffect(() => {
-    if (resolvedHideTourColumn && sortKey === "tour") {
-      setSortKey("project");
-      setSortDirection("asc");
-    }
-  }, [resolvedHideTourColumn, sortKey]);
 
   useEffect(() => {
     if (showAllAppointments) return;
@@ -187,58 +180,50 @@ export function AppointmentsListPage({
     const source = data?.items ?? [];
     const multiplier = sortDirection === "asc" ? 1 : -1;
     return [...source].sort((left, right) => {
-      if (sortKey === "customer") {
-        return left.customer.fullName.localeCompare(right.customer.fullName, "de") * multiplier;
-      }
-      if (sortKey === "tour") {
-        return (left.tourName ?? "").localeCompare(right.tourName ?? "", "de") * multiplier;
-      }
-      return left.projectName.localeCompare(right.projectName, "de") * multiplier;
+      const dateCompare = left.startDate.localeCompare(right.startDate) * multiplier;
+      if (dateCompare !== 0) return dateCompare;
+
+      const leftTime = left.startTimeHour ?? -1;
+      const rightTime = right.startTimeHour ?? -1;
+      const timeCompare = (leftTime - rightTime) * multiplier;
+      if (timeCompare !== 0) return timeCompare;
+
+      return (left.id - right.id) * multiplier;
     });
-  }, [data?.items, resolvedTourId, sortDirection, sortKey]);
+  }, [data?.items, resolvedTourId, sortDirection]);
 
-  const handleSortToggle = (nextKey: AppointmentSortKey) => {
-    if (sortKey === nextKey) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(nextKey);
-    setSortDirection("asc");
-  };
-
-  const renderSortHeader = (label: string, key: AppointmentSortKey) => {
-    const isActive = sortKey === key;
-    return (
-      <button
-        type="button"
-        className="inline-flex items-center gap-1 text-xs uppercase tracking-wide"
-        onClick={() => handleSortToggle(key)}
-      >
-        <span>{label}</span>
-        <SortIcon direction={isActive ? sortDirection : null} />
-      </button>
-    );
+  const handleDateSortToggle = () => {
+    setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
   };
 
   const tableColumns = useMemo<TableViewColumnDef<AppointmentListItem>[]>(() => {
     const columns: TableViewColumnDef<AppointmentListItem>[] = [
       {
         id: "date",
-        header: "Datum",
+        header: (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-xs uppercase tracking-wide"
+            onClick={handleDateSortToggle}
+          >
+            <span>Datum</span>
+            <SortIcon direction={sortDirection} />
+          </button>
+        ),
         accessor: (row) => row.startDate,
         minWidth: 140,
         cell: ({ row }) => <span>{formatDateLabel(row)}</span>,
       },
       {
         id: "project",
-        header: renderSortHeader("Projekt", "project"),
+        header: "Projekt",
         accessor: (row) => row.projectName,
         minWidth: 220,
         cell: ({ row }) => <span className="font-medium">{row.projectName}</span>,
       },
       {
         id: "customer",
-        header: renderSortHeader("Kunde", "customer"),
+        header: "Kunde",
         accessor: (row) => row.customer.fullName,
         minWidth: 220,
         cell: ({ row }) => (
@@ -250,24 +235,15 @@ export function AppointmentsListPage({
     if (!resolvedHideTourColumn) {
       columns.push({
         id: "tour",
-        header: renderSortHeader("Tour", "tour"),
+        header: "Tour",
         accessor: (row) => row.tourName ?? "",
         minWidth: 160,
         cell: ({ row }) => <span>{row.tourName ?? "---"}</span>,
       });
     }
 
-    columns.push({
-      id: "allDay",
-      header: "Ganztag",
-      accessor: (row) => row.allDay,
-      align: "center",
-      width: 110,
-      cell: ({ row }) => <span>{row.allDay ? "Ja" : "Nein"}</span>,
-    });
-
     return columns;
-  }, [resolvedHideTourColumn, sortDirection, sortKey]);
+  }, [resolvedHideTourColumn, sortDirection]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
     const patchWithDate = (!showAllAppointments && resolvedEnforceFromToday)
@@ -306,6 +282,7 @@ export function AppointmentsListPage({
       onClose={onCancel}
       showCloseButton={resolvedShowCloseButton}
       closeTestId="button-close-appointments-list"
+      className={className}
       filterSlot={
         <AppointmentsFilterPanel
           filters={filters}

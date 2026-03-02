@@ -4,6 +4,7 @@ import * as appointmentsRepository from "../../server/repositories/appointmentsR
 import * as customersService from "../../server/services/customersService";
 import * as employeesService from "../../server/services/employeesService";
 import * as projectsService from "../../server/services/projectsService";
+import * as toursService from "../../server/services/toursService";
 import { getBerlinTodayDateString } from "../../client/src/lib/project-appointments";
 
 let sequence = 1;
@@ -61,6 +62,10 @@ export async function createEmployeeFixture(prefix = "EMP") {
     phone: null,
     email: null,
   });
+}
+
+export async function createTourFixture(color = "#0088cc") {
+  return toursService.createTour({ color });
 }
 
 export async function createAppointmentFixture(params: {

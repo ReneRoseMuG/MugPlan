@@ -250,7 +250,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       testIdPrefix="employee"
     >
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-6">
+        <div className="col-span-2 space-y-6 min-h-0">
           <div className="space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
               <Users className="w-4 h-4" />
@@ -322,12 +322,15 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           </div>
 
           {employeeId ? (
-            <AppointmentsListPage
-              title="Termine"
-              helpKey="appointments.list.employeeForm"
-              context={{ type: "employee", employeeId }}
-              onOpenAppointment={onOpenAppointment}
-            />
+            <div className="min-h-0">
+              <AppointmentsListPage
+                title="Termine"
+                helpKey="appointments.list.employeeForm"
+                context={{ type: "employee", employeeId }}
+                onOpenAppointment={onOpenAppointment}
+                className="h-[560px] min-h-0"
+              />
+            </div>
           ) : null}
         </div>
 

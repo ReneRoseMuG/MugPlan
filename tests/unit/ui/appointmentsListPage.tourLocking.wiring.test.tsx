@@ -40,13 +40,11 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("helpKey = \"appointments\"");
   });
 
-  it("hides tour column in resolved context and resets tour sort key", () => {
+  it("hides tour column in tour and employee context", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;");
-    expect(source).toContain("if (resolvedHideTourColumn && sortKey === \"tour\")");
-    expect(source).toContain("setSortKey(\"project\")");
+    expect(source).toContain("const resolvedHideTourColumn = (isTourContext || isEmployeeContext) ? true : hideTourColumn;");
     expect(source).toContain("if (!resolvedHideTourColumn) {");
     expect(source).toContain("id: \"tour\"");
   });
@@ -60,8 +58,20 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("enabled: resolvedTourId !== null");
     expect(source).toContain("const patchWithTour = resolvedTourId == null");
     expect(source).toContain("const nextPatch = resolvedEmployeeId == null");
+    expect(source).toContain("const resolvedHideTourFilter = (isTourContext || isEmployeeContext) ? true : hideTourFilter;");
     expect(source).toContain("hideTourFilter={resolvedHideTourFilter}");
     expect(source).toContain("hideEmployeeFilter={resolvedHideEmployeeFilter}");
+  });
+
+  it("uses date as single sortable column with default descending direction", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("const [sortDirection, setSortDirection] = useState<SortDirection>(\"desc\");");
+    expect(source).toContain("const handleDateSortToggle = () => {");
+    expect(source).toContain("if (dateCompare !== 0) return dateCompare;");
+    expect(source).toContain("return (left.id - right.id) * multiplier;");
+    expect(source).toContain("onClick={handleDateSortToggle}");
   });
 
   it("wires show-all switch to toggle dateFrom against Berlin-today", () => {
