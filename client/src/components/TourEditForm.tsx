@@ -120,7 +120,7 @@ export function TourEditForm({
 
         <div className="space-y-4">
           <div className="sub-panel space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Route className="w-4 h-4" />
               Farbe
             </h3>

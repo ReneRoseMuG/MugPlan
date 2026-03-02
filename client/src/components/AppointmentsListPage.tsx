@@ -225,7 +225,7 @@ export function AppointmentsListPage({
         header: (
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-xs uppercase tracking-wide"
+            className="inline-flex items-center gap-1 text-xs tracking-wide"
             onClick={handleDateSortToggle}
           >
             <span>Datum</span>

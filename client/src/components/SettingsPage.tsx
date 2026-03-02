@@ -199,7 +199,7 @@ export function SettingsPage() {
   if (isLoading) {
     return (
       <div className="h-full rounded-lg border-2 border-foreground bg-white p-6">
-        <h3 className="mb-4 text-xl font-black uppercase tracking-tight text-primary">Einstellungen</h3>
+        <h3 className="mb-4 text-xl font-black tracking-tight text-primary">Einstellungen</h3>
         <p className="text-sm text-slate-500">Einstellungen werden geladen...</p>
       </div>
     );
@@ -208,7 +208,7 @@ export function SettingsPage() {
   if (isError) {
     return (
       <div className="h-full rounded-lg border-2 border-foreground bg-white p-6">
-        <h3 className="mb-4 text-xl font-black uppercase tracking-tight text-primary">Einstellungen</h3>
+        <h3 className="mb-4 text-xl font-black tracking-tight text-primary">Einstellungen</h3>
         <p className="mb-4 text-sm text-destructive">
           Einstellungen konnten nicht geladen werden: {errorMessage ?? "Unbekannter Fehler"}
         </p>
@@ -374,7 +374,7 @@ export function SettingsPage() {
 
   return (
     <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white p-6 flex flex-col" data-testid="settings-landing-page">
-      <h3 className="text-xl font-black uppercase tracking-tight text-primary">Einstellungen</h3>
+      <h3 className="text-xl font-black tracking-tight text-primary">Einstellungen</h3>
       <p className="mb-5 mt-1 text-sm text-slate-500">Direkte Bearbeitung globaler und benutzerspezifischer Settings.</p>
 
       <div className="flex-1 min-h-0 overflow-y-auto pr-1">

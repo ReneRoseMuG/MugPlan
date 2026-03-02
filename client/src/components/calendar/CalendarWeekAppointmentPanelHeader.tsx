@@ -35,7 +35,7 @@ export function CalendarWeekAppointmentPanelHeader({
           "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.14), 0 2px 6px rgba(15,23,42,0.2)",
       }}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 text-[10px] font-semibold uppercase tracking-wide">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 text-[10px] font-semibold tracking-wide">
         <span className="truncate">K: {resolvedCustomerNumber}</span>
         <span className="truncate text-center">{resolvedOrderNumber}</span>
         <span className="truncate text-right">PLZ: {resolvedPostalCode}</span>

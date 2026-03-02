@@ -308,7 +308,7 @@ export function DemoDataPage() {
 
   return (
     <div className="h-full rounded-lg border-2 border-foreground bg-white p-6 overflow-auto">
-      <h3 className="text-xl font-black uppercase tracking-tight text-primary">Demo-Daten</h3>
+      <h3 className="text-xl font-black tracking-tight text-primary">Demo-Daten</h3>
       <p className="mt-1 text-sm text-slate-500">Basisdaten und Termine getrennt seeden und gezielt purgen.</p>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">

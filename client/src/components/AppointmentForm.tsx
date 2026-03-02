@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
@@ -1060,7 +1060,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
         <div className="space-y-4">
           <div className="sub-panel space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Clock className="w-4 h-4" />
               Zeitpunkt und Dauer
             </h3>
@@ -1145,7 +1145,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
           </div>
 
           <div className="sub-panel space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Route className="w-4 h-4" />
               Tourzuordnung
             </h3>
@@ -1190,7 +1190,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       </div>
 
       <div className="mt-8 space-y-6">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+        <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
           <Users className="w-4 h-4" />
           Mitarbeiter zuweisen
         </h3>

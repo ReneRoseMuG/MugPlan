@@ -1,4 +1,4 @@
-﻿import { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ColorSelectEntityEditDialog, ColorSelectEntityEditDialogProps } from "./color-select-entity-edit-dialog";

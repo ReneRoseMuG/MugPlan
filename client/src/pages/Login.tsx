@@ -134,13 +134,13 @@ export default function Login({ onAuthenticated }: LoginProps) {
     <div className="min-h-screen w-full bg-slate-100 flex items-center justify-center px-6">
       <Card className="w-full max-w-md border-2 border-foreground">
         <CardHeader className="pb-3">
-          <CardTitle className="text-3xl font-black tracking-tight text-primary uppercase">MuG Plan</CardTitle>
+          <CardTitle className="text-3xl font-black tracking-tight text-primary ">MuG Plan</CardTitle>
           <CardDescription>Bitte melde dich mit Benutzername oder E-Mail und Passwort an.</CardDescription>
         </CardHeader>
         <CardContent>
           {quickLoginEnabled && (
             <div className="space-y-3 pb-6">
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Schnelllogin (Test)</div>
+              <div className="text-xs font-semibold tracking-wide text-slate-500">Schnelllogin (Test)</div>
               <div className="grid grid-cols-1 gap-2">
                 {quickRoleButtons.map((entry) => {
                   const target = quickTargetsByRole.get(entry.roleCode);

@@ -292,7 +292,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
     return (
       <button
         type="button"
-        className="inline-flex items-center gap-1 text-xs uppercase tracking-wide"
+        className="inline-flex items-center gap-1 text-xs tracking-wide"
         onClick={() => handleSortToggle(key)}
       >
         <span>{label}</span>

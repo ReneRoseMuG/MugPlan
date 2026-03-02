@@ -246,7 +246,7 @@ export function HelpTextsPage() {
     return (
       <button
         type="button"
-        className="inline-flex items-center gap-1 text-xs uppercase tracking-wide"
+        className="inline-flex items-center gap-1 text-xs tracking-wide"
         onClick={() => handleSortToggle(key)}
       >
         <span>{label}</span>
@@ -264,7 +264,7 @@ export function HelpTextsPage() {
         minWidth: 220,
         cell: ({ row }) => (
           <div className="space-y-0.5">
-            <p className="font-mono text-sm">{row.helpKey}</p>
+            <p className="text-sm">{row.helpKey}</p>
             <p className="text-xs text-muted-foreground">{row.title}</p>
           </div>
         ),
@@ -398,7 +398,7 @@ export function HelpTextsPage() {
               rowPreviewRenderer={(row) => (
                 <div className="rounded-md border border-border bg-card p-3 max-w-[420px] space-y-2">
                   <p className="font-semibold text-sm">{row.title}</p>
-                  <p className="font-mono text-xs text-muted-foreground">{row.helpKey}</p>
+                  <p className="text-xs text-muted-foreground">{row.helpKey}</p>
                   {row.body.trim().length > 0 ? (
                     <div className="text-sm text-slate-700 max-h-48 overflow-auto" dangerouslySetInnerHTML={{ __html: row.body }} />
                   ) : (
@@ -434,7 +434,6 @@ export function HelpTextsPage() {
                 value={formHelpKey}
                 onChange={(e) => setFormHelpKey(e.target.value)}
                 placeholder="z.B. kunde-stammdaten, termin-bearbeiten..."
-                className="font-mono"
                 data-testid="input-helptext-key"
               />
               <p className="text-xs text-slate-500">

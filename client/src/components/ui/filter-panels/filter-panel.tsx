@@ -20,7 +20,7 @@ export function FilterPanel({
   return (
     <div className="flex flex-col gap-2">
       {showTitle ? (
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground">
           {title}
         </p>
       ) : (

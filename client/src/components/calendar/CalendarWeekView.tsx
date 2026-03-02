@@ -567,7 +567,7 @@ export function CalendarWeekView({
                               ${isTodayDate ? "bg-primary/10" : isWeekend ? "bg-slate-200/70" : "bg-muted/20"}
                             `}
                           >
-                            <div className="text-[10px] font-bold uppercase text-muted-foreground">
+                            <div className="text-[10px] font-bold text-muted-foreground">
                               {format(day, "EEEE", { locale: de })}
                             </div>
                             <div

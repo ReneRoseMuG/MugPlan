@@ -76,7 +76,7 @@ export function HelpIcon({
         ) : (
           <div className="space-y-2">
             <h4 className="font-semibold text-sm">Hilfe</h4>
-            <p className="text-xs font-mono text-muted-foreground" data-testid={`text-help-key-${helpKey}`}>
+            <p className="text-xs text-muted-foreground" data-testid={`text-help-key-${helpKey}`}>
               Key: {helpKey}
             </p>
             <p className="text-sm text-muted-foreground">

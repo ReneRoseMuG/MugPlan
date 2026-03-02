@@ -50,7 +50,7 @@ export default function AdminSetup({ onCompleted, onSwitchToLogin }: AdminSetupP
     <div className="min-h-screen w-full bg-slate-100 flex items-center justify-center px-6">
       <Card className="w-full max-w-md border-2 border-foreground">
         <CardHeader className="pb-3">
-          <CardTitle className="text-3xl font-black tracking-tight text-primary uppercase">Ersteinrichtung</CardTitle>
+          <CardTitle className="text-3xl font-black tracking-tight text-primary ">Ersteinrichtung</CardTitle>
           <CardDescription>Es wurde noch kein Admin angelegt. Bitte initialen Admin erstellen.</CardDescription>
         </CardHeader>
         <CardContent>

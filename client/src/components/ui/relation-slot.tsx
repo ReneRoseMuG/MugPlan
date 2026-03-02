@@ -40,7 +40,7 @@ export function RelationSlot({
       <header className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-muted-foreground shrink-0">{icon}</span>
-          <h3 className="text-sm font-bold uppercase tracking-wider text-primary truncate">{title}</h3>
+          <h3 className="text-sm font-bold tracking-wider text-primary truncate">{title}</h3>
         </div>
         <div className="flex items-center gap-2 shrink-0 min-h-8">
           {canAdd && (

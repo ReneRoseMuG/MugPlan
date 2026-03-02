@@ -1,4 +1,4 @@
-﻿import { ReactNode } from "react";
+import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HelpIcon } from "@/components/ui/help/help-icon";
@@ -41,7 +41,7 @@ export function SidebarChildPanel({
     <div className="sub-panel flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center flex-wrap gap-3">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+          <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
             {icon}
             {title}
           </h3>

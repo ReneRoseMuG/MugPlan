@@ -91,7 +91,7 @@ export function ImportExportPage() {
       </div>
 
       <section className="rounded-md border border-border p-4 bg-slate-50 space-y-3" data-testid="import-section">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">CSV-Import Mitarbeiter</h3>
+        <h3 className="text-sm font-semibold tracking-wide text-slate-600">CSV-Import Mitarbeiter</h3>
         <div className="space-y-2">
           <Label htmlFor="employee-import-file">CSV-Datei</Label>
           <Input
@@ -121,13 +121,13 @@ export function ImportExportPage() {
       </section>
 
       <section className="rounded-md border border-border p-4 bg-slate-50 space-y-2" data-testid="export-section">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Export</h3>
+        <h3 className="text-sm font-semibold tracking-wide text-slate-600">Export</h3>
         <p className="text-sm text-slate-500">Noch nicht implementiert.</p>
       </section>
 
       {result && (
         <section className="rounded-md border border-border p-4 bg-white min-h-0 flex flex-col gap-3" data-testid="import-report-section">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Import-Report</h3>
+          <h3 className="text-sm font-semibold tracking-wide text-slate-600">Import-Report</h3>
           <div className="grid grid-cols-5 gap-2 text-xs">
             <div>Gesamt: {result.summary.totalRows}</div>
             <div>Importiert: {result.summary.importedRows}</div>

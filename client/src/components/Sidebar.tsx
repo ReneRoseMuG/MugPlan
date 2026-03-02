@@ -13,7 +13,7 @@ function NavGroup({ title, children }: { title: string; children: React.ReactNod
   return (
     <div className="border border-border rounded-lg overflow-hidden mb-2.5" data-testid={`nav-group-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <div 
-        className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary bg-secondary"
+        className="px-3 py-2 text-xs font-bold tracking-wider text-primary bg-secondary"
         data-testid={`nav-header-${title.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {title}
@@ -103,7 +103,7 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
       data-testid="sidebar"
     >
       <div className="mb-6">
-        <h1 className="text-xl font-bold font-display text-primary tracking-tight" data-testid="text-app-title">
+        <h1 className="text-xl font-bold text-primary tracking-tight" data-testid="text-app-title">
           MuG Plan
         </h1>
       </div>

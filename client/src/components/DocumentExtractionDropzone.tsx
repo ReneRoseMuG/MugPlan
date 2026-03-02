@@ -1,4 +1,4 @@
-﻿import { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 
@@ -24,7 +24,7 @@ export function DocumentExtractionDropzone({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Dokumentenextraktion (PDF)</h3>
+      <h3 className="text-sm font-bold tracking-wider text-primary">Dokumentenextraktion (PDF)</h3>
       <div
         className={`rounded-lg border-2 border-dashed p-5 transition-colors ${
           isDragging ? "border-primary bg-primary/5" : "border-slate-300 bg-slate-50"

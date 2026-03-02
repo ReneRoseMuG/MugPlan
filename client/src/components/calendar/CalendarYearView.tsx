@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   addDays,
   addMonths,
@@ -97,7 +97,7 @@ export function CalendarYearView({
 
         return (
           <div key={month.toString()} className="mini-month rounded-lg p-3 bg-white">
-            <h4 className="font-bold text-center mb-2 uppercase text-xs tracking-widest text-primary">
+            <h4 className="font-bold text-center mb-2 text-xs tracking-widest text-primary">
               {format(month, "MMMM", { locale: de })}
             </h4>
             <div className="grid grid-cols-7 gap-1">

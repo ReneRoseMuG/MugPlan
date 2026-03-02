@@ -60,7 +60,7 @@ export function LinkedProjectsPanel({ customerId, onOpenProject }: LinkedProject
   return (
     <div className="sub-panel space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+        <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
           <FolderKanban className="w-4 h-4" />
           Projekte ({sortedProjects.length})
         </h3>

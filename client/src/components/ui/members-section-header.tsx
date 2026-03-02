@@ -18,7 +18,7 @@ export function MembersSectionHeader({
     <div className={cn("flex items-center justify-between gap-2", className)}>
       <div
         className={cn(
-          "text-xs font-semibold uppercase tracking-wide leading-tight text-slate-600 dark:text-slate-300",
+          "text-xs font-semibold tracking-wide leading-tight text-slate-600 dark:text-slate-300",
           titleClassName,
         )}
       >

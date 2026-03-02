@@ -26,7 +26,7 @@ export function TourInfoBadgePreview({ name, members }: TourInfoBadgePreviewProp
         <span>{name}</span>
       </div>
       <div className="space-y-1">
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mitarbeiter</div>
+        <div className="text-xs font-semibold tracking-wide text-muted-foreground">Mitarbeiter</div>
         {sortedMembers.length > 0 ? (
           <ul className="space-y-1 text-xs text-muted-foreground">
             {sortedMembers.map((member) => (

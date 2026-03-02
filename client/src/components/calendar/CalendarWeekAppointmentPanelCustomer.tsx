@@ -18,7 +18,7 @@ export function CalendarWeekAppointmentPanelCustomer({
 
   return (
     <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
-      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">Kunde</div>}
+      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Kunde</div>}
       <div className="text-xs font-semibold text-slate-800">{fullName}</div>
       <div className="text-[11px] text-slate-600 leading-tight">{lineOne}</div>
       <div className="text-[11px] text-slate-600 leading-tight">{lineTwo}</div>

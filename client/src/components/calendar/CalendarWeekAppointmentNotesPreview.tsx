@@ -42,7 +42,7 @@ function NotesSection({
 
   return (
     <div className="space-y-1.5">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+      <div className="text-[10px] font-semibold tracking-wide text-slate-500">
         {title} ({notes.length})
       </div>
       <div className="space-y-1.5">

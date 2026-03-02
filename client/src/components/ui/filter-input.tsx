@@ -43,7 +43,7 @@ export function FilterInput({
   return (
     <div className={cn("space-y-1", className)}>
       <div className="flex items-center gap-1">
-        <Label htmlFor={id} className="text-xs uppercase tracking-wide text-slate-500">
+        <Label htmlFor={id} className="text-xs tracking-wide text-slate-500">
           {label}
         </Label>
         {labelAdornment}

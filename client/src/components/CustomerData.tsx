@@ -443,7 +443,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Stammdaten
                 </h3>
@@ -454,7 +454,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     value={formData.customerNumber}
                     onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value })}
                     readOnly={isEditMode}
-                    className="max-w-[200px] font-mono"
+                    className="max-w-[200px]"
                     data-testid="input-customernumber"
                   />
                 </div>
@@ -490,7 +490,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Kontakt
                 </h3>
@@ -519,7 +519,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
                   Adresse
                 </h3>
@@ -574,7 +574,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
 
               {isEditMode && isAdmin && (
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
+                  <h3 className="text-sm font-bold tracking-wider text-primary">
                     Status
                   </h3>
                   <div className="flex items-center gap-3">

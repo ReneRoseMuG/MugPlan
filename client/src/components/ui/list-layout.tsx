@@ -60,7 +60,7 @@ export function ListLayout({
       <CardHeader className="pb-4 flex-shrink-0 border-b border-border">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <CardTitle className="text-lg font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+            <CardTitle className="text-lg font-bold tracking-wider text-primary flex items-center gap-2">
               {icon}
               {title}
             </CardTitle>

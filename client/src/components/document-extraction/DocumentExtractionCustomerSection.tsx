@@ -28,7 +28,7 @@ export function DocumentExtractionCustomerSection({
 }: DocumentExtractionCustomerSectionProps) {
   return (
     <section className="space-y-3">
-      {showHeading ? <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Kundendaten</h3> : null}
+      {showHeading ? <h3 className="text-sm font-bold tracking-wider text-primary">Kundendaten</h3> : null}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label>Kundennummer</Label>

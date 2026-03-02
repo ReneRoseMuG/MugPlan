@@ -55,7 +55,7 @@ export function CalendarWeekTourLaneHeaderBar({
       <button
         type="button"
         onClick={interactive ? onClick : undefined}
-        className={`h-7 w-full rounded-md border px-3 text-xs font-semibold uppercase tracking-wide shadow-sm transition ${
+        className={`h-7 w-full rounded-md border px-3 text-xs font-semibold tracking-wide shadow-sm transition ${
           interactive ? "cursor-pointer hover:-translate-y-[1px] hover:shadow-md" : "cursor-default"
         }`}
         style={{

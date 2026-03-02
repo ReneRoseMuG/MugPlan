@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FolderKanban, Pencil, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -244,7 +244,7 @@ export function ProjectsPage({
     return (
       <button
         type="button"
-        className="inline-flex items-center gap-1 text-xs uppercase tracking-wide"
+        className="inline-flex items-center gap-1 text-xs tracking-wide"
         onClick={() => handleSortToggle(key)}
       >
         <span>{label}</span>
@@ -302,7 +302,7 @@ export function ProjectsPage({
         minWidth: 220,
         cell: ({ row }) => (
           <span>
-            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "â€”"}
+            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "—"}
           </span>
         ),
       },

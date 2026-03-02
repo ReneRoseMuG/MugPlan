@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   addDays,
   addMonths,
@@ -299,13 +299,13 @@ export function CalendarMonthView({
               >
                 <div className="h-full flex flex-col">
                   <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
-                    <div className="py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider border-r border-border/30">
+                    <div className="py-4 text-center text-sm font-semibold text-muted-foreground tracking-wider border-r border-border/30">
                       KW
                     </div>
                     {weekDays.map((day, dayIdx) => (
                       <div
                         key={`${monthKey}-${day}`}
-                        className={`py-4 text-center text-sm font-semibold text-muted-foreground font-display uppercase tracking-wider ${dayIdx >= 5 ? "bg-slate-200/70" : ""}`}
+                        className={`py-4 text-center text-sm font-semibold text-muted-foreground tracking-wider ${dayIdx >= 5 ? "bg-slate-200/70" : ""}`}
                       >
                         {day}
                       </div>

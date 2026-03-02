@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Phone, MapPin, Building2, Pencil, Mail, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -235,7 +235,7 @@ export function CustomersPage({
     return (
       <button
         type="button"
-        className="inline-flex items-center gap-1 text-xs uppercase tracking-wide"
+        className="inline-flex items-center gap-1 text-xs tracking-wide"
         onClick={() => handleSortToggle(key)}
       >
         <span>{label}</span>
@@ -251,7 +251,7 @@ export function CustomersPage({
         header: renderSortHeader("Kundennummer", "customerNumber"),
         accessor: (row) => row.customer.customerNumber,
         minWidth: 150,
-        cell: ({ row }) => <span className="font-mono">{row.customer.customerNumber}</span>,
+        cell: ({ row }) => <span>{row.customer.customerNumber}</span>,
       },
       {
         id: "lastName",

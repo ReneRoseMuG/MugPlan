@@ -18,7 +18,7 @@ export function CalendarWeekAppointmentPanelEmployee({
 
   return (
     <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
-      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">Mitarbeiter</div>}
+      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Mitarbeiter</div>}
       <div className="flex flex-wrap gap-1.5">
         {employees.map((employee) => (
           <EmployeeInfoBadge

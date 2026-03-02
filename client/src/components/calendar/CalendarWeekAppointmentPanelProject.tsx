@@ -27,7 +27,7 @@ export function CalendarWeekAppointmentPanelProject({
 
   return (
     <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
-      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">Projekt</div>}
+      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
       {projectStatuses.length > 0 && (
         <div className="mb-1 flex flex-wrap gap-1">
           {projectStatuses.map((status) => (

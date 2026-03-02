@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -638,7 +638,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Beschreibung
                 </h3>

@@ -94,7 +94,7 @@ export function AllAppointmentsPanel({
             {hasHistoricalItems ? (
               <>
                 <div className="border-t border-border/60 pt-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Vergangene Termine</p>
+                  <p className="text-xs font-medium tracking-wide text-slate-500">Vergangene Termine</p>
                 </div>
                 <div className="space-y-2 rounded-md bg-slate-50/60 dark:bg-slate-900/20 p-2">
                   {historicalItems.map((appointment) => (

@@ -252,7 +252,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6 min-h-0">
           <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Users className="w-4 h-4" />
               Stammdaten
             </h3>
