@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
 import {
-  assertSafeDestructiveOperationTarget,
+  assertSafeAdminDestructiveOperationTarget,
   parseDatabaseLogInfo,
 } from "../security/dbSafetyGuards";
 import { logWarn } from "../lib/logger";
@@ -67,7 +67,7 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
 
     const runtimeConfig = getRuntimeConfig();
     try {
-      assertSafeDestructiveOperationTarget({
+      assertSafeAdminDestructiveOperationTarget({
         mode,
         databaseUrl: runtimeConfig.mysqlDatabaseUrl,
         allowedDatabases: runtimeConfig.allowedDatabases,

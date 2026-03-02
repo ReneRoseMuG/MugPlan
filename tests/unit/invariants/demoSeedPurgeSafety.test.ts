@@ -5,7 +5,7 @@
  * Use Case: UC Guarding vor destruktivem Purge-Lauf
  *
  * Abgedeckte Regeln:
- * - Purge-Safety-Gate erzwingt Testmodus-Zielpruefung vor DB-Operation.
+ * - Purge-Safety-Gate erzwingt Admin-Destructive-Zielpruefung vor DB-Operation.
  * - SQL-Identity-Mismatch fuehrt zu Hard-Fail.
  * - Safety-Connection wird auch bei Fehlerfall geschlossen.
  *
@@ -34,7 +34,7 @@ describe("PKG-02 Invariant: demo seed purge safety gate", () => {
       })),
     }));
     vi.doMock("../../../server/security/dbSafetyGuards", () => ({
-      assertSafeDestructiveOperationTarget: vi.fn(() => ({ dbName: "mugplan_test", host: "localhost", port: 3306 })),
+      assertSafeAdminDestructiveOperationTarget: vi.fn(() => ({ dbName: "mugplan_test", host: "localhost", port: 3306 })),
       assertSqlDatabaseIdentity: vi.fn(async () => undefined),
     }));
     vi.doMock("mysql2/promise", () => ({
@@ -59,7 +59,7 @@ describe("PKG-02 Invariant: demo seed purge safety gate", () => {
       })),
     }));
     vi.doMock("../../../server/security/dbSafetyGuards", () => ({
-      assertSafeDestructiveOperationTarget: vi.fn(() => ({ dbName: "mugplan_test", host: "localhost", port: 3306 })),
+      assertSafeAdminDestructiveOperationTarget: vi.fn(() => ({ dbName: "mugplan_test", host: "localhost", port: 3306 })),
       assertSqlDatabaseIdentity: vi.fn(async () => {
         throw new Error("Active SQL database 'mugplan_dev' does not match expected 'mugplan_test'.");
       }),

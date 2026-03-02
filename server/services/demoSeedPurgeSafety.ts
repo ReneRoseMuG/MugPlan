@@ -1,14 +1,14 @@
 import mysql from "mysql2/promise";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
 import {
-  assertSafeDestructiveOperationTarget,
+  assertSafeAdminDestructiveOperationTarget,
   assertSqlDatabaseIdentity,
 } from "../security/dbSafetyGuards";
 
 export async function assertSafeDemoSeedPurgeTarget(): Promise<void> {
   const runtimeMode = getRuntimeMode();
   const runtimeConfig = getRuntimeConfig();
-  const expectedTarget = assertSafeDestructiveOperationTarget({
+  const expectedTarget = assertSafeAdminDestructiveOperationTarget({
     mode: runtimeMode,
     databaseUrl: runtimeConfig.mysqlDatabaseUrl,
     allowedDatabases: runtimeConfig.allowedDatabases,

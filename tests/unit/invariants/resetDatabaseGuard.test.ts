@@ -19,6 +19,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  assertSafeAdminDestructiveOperationTarget,
   assertRuntimeMode,
   assertSafeDatabaseTargetForMode,
   assertSafeDestructiveOperationTarget,
@@ -92,6 +93,65 @@ describe("PKG-02 Invariant: resetDatabase guardrails", () => {
         allowedHosts: ["localhost"],
       }),
     ).toEqual({ dbName: "mugplan_test", host: "localhost", port: 3306 });
+  });
+
+  it("allows admin destructive operations in development when target is allowlisted", () => {
+    expect(
+      assertSafeAdminDestructiveOperationTarget({
+        mode: "development",
+        databaseUrl: "mysql://u:p@localhost:3306/mugplan_dev",
+        allowedDatabases: ["mugplan_dev"],
+        allowedHosts: ["localhost"],
+      }),
+    ).toEqual({ dbName: "mugplan_dev", host: "localhost", port: 3306 });
+  });
+
+  it("rejects admin destructive operations in development when target is not allowlisted", () => {
+    expect(
+      () =>
+        assertSafeAdminDestructiveOperationTarget({
+          mode: "development",
+          databaseUrl: "mysql://u:p@localhost:3306/mugplan_dev",
+          allowedDatabases: ["other_dev"],
+          allowedHosts: ["localhost"],
+        }),
+    ).toThrow("Unsafe database target");
+  });
+
+  it("blocks admin destructive operations in production", () => {
+    expect(
+      () =>
+        assertSafeAdminDestructiveOperationTarget({
+          mode: "production",
+          databaseUrl: "mysql://u:p@localhost:3306/mugplan_prod",
+          allowedDatabases: ["mugplan_prod"],
+          allowedHosts: ["localhost"],
+        }),
+    ).toThrow("blocked in production");
+  });
+
+  it("requires strict test guards for admin destructive operations in test mode", () => {
+    expect(
+      () =>
+        assertSafeAdminDestructiveOperationTarget({
+          mode: "test",
+          mugplanModeRaw: "development",
+          databaseUrl: "mysql://u:p@localhost:3306/mugplan_test",
+          allowedDatabases: ["mugplan_test"],
+          allowedHosts: ["localhost"],
+        }),
+    ).toThrow("Invalid MUGPLAN_MODE");
+
+    expect(
+      () =>
+        assertSafeAdminDestructiveOperationTarget({
+          mode: "test",
+          mugplanModeRaw: "test",
+          databaseUrl: "mysql://u:p@localhost:3306/mugplan_testing",
+          allowedDatabases: ["mugplan_testing"],
+          allowedHosts: ["localhost"],
+        }),
+    ).toThrow("Expected '*_test' suffix");
   });
 
   it("accepts SQL identity when active database matches expected test db", async () => {

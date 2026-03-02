@@ -1161,6 +1161,10 @@ Zusammen mit `npm run check` bilden sie den technischen Minimalnachweis fuer FT 
 
 - Bei bestimmten DB-Setups kann mysql2 eine Warnung zu `ssl-mode` ausgeben; das beeinflusst die erfolgreiche Seed/Purge-Ausfuehrung nicht.
 - Seed-Runs sind absichtlich additiv. Bereinigung erfolgt explizit ueber Purge-Endpunkt oder Verifikationsscript.
+- Admin-Destructive-Guarding fuer Seed/Purge:
+  - `production`: weiterhin hart blockiert.
+  - `development`: erlaubt, wenn DB-Name und Host zur `DEV`-Allowlist passen.
+  - `test`: erlaubt nur mit den zusaetzlichen Test-Sicherheitsregeln (`MUGPLAN_MODE=test` und `*_test`-DB-Ziel) plus SQL-Identity-Check.
 
 ---
 

@@ -20,3 +20,5 @@ plans/
 reports/
 shared/uploads
 shared/backups
+.codex
+.codex/.tasks

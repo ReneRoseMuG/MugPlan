@@ -104,6 +104,27 @@ export function assertSafeDestructiveOperationTarget(params: {
   );
 }
 
+export function assertSafeAdminDestructiveOperationTarget(params: {
+  mode: RuntimeMode;
+  databaseUrl: string;
+  allowedDatabases: string[];
+  allowedHosts: string[];
+  mugplanModeRaw?: string;
+}): { dbName: string; host: string; port: number } {
+  if (params.mode === "production") {
+    throw new Error("Destructive admin operations are blocked in production.");
+  }
+  if (params.mode === "test") {
+    return assertSafeDestructiveOperationTarget(params);
+  }
+  return assertSafeDatabaseTargetForMode(
+    params.databaseUrl,
+    params.mode,
+    params.allowedDatabases,
+    params.allowedHosts,
+  );
+}
+
 export async function assertSqlDatabaseIdentity(
   connection: Connection,
   expectedDatabaseName: string,

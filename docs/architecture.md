@@ -1204,6 +1204,17 @@ Seed-Tabellen werden gezielt ueber die dedizierte Migration ausgerollt:
 
 Kein globales Schema-Sync als Pflichtschritt fuer diesen Use-Case. Dadurch werden unbeabsichtigte Nebeneffekte auf nicht betroffene Tabellen vermieden.
 
+## F10. Guard-Regel fuer Admin-Destructive-Endpoints (Seed/Purge)
+
+Die Admin-Endpunkte fuer Seed/Purge unterliegen einem zentralen Maintenance-Guard mit folgenden Invarianten:
+
+- Zugriff nur fuer `ADMIN`.
+- In `production` sind destruktive Admin-Operationen gesperrt.
+- In `development` sind sie nur erlaubt, wenn DB-Name und DB-Host zur `DEV`-Allowlist passen.
+- In `test` gelten zusaetzlich harte Testregeln (`MUGPLAN_MODE=test`, `*_test`-DB-Ziel) sowie die SQL-Identity-Pruefung (`SELECT DATABASE()`).
+
+Damit bleiben Demo-Seed-Workflows lokal nutzbar, ohne den Produktionsschutz aufzuweichen.
+
 
 
 
