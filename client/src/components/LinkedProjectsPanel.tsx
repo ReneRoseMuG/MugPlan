@@ -62,7 +62,7 @@ export function LinkedProjectsPanel({ customerId, onOpenProject }: LinkedProject
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
           <FolderKanban className="w-4 h-4" />
-          Verknüpfte Projekte ({sortedProjects.length})
+          Projekte ({sortedProjects.length})
         </h3>
       </div>
 
