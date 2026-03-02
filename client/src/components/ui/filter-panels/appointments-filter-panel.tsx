@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { parseProjectStoredName } from "@/lib/project-name-format";
 import type { Customer, Employee, Project, Tour } from "@shared/schema";
 
 export type AppointmentListFilters = {
@@ -27,6 +28,27 @@ interface AppointmentsFilterPanelProps {
   tours: Tour[];
   hideEmployeeFilter?: boolean;
   hideTourFilter?: boolean;
+}
+
+function resolveAppointmentProjectDisplayName(storedProjectName: string): string {
+  const normalized = storedProjectName.trim();
+  if (!normalized) return "";
+
+  const kPrefixed = normalized.startsWith("K: ");
+  const withoutKPrefix = kPrefixed ? normalized.slice(3).trim() : normalized;
+  const separator = " - ";
+  const separatorIndex = withoutKPrefix.indexOf(separator);
+
+  if (separatorIndex >= 0) {
+    const prefix = withoutKPrefix.slice(0, separatorIndex).trim();
+    const suffix = withoutKPrefix.slice(separatorIndex + separator.length).trim();
+    if (suffix && (kPrefixed || /\d/.test(prefix))) {
+      return suffix;
+    }
+  }
+
+  const parsed = parseProjectStoredName(normalized);
+  return parsed.isolatedProjectName || normalized;
 }
 
 export function AppointmentsFilterPanel({
@@ -80,7 +102,7 @@ export function AppointmentsFilterPanel({
               <SelectItem value="all">Alle Projekte</SelectItem>
               {projects.map((project) => (
                 <SelectItem key={project.id} value={String(project.id)}>
-                  {project.name}
+                  {resolveAppointmentProjectDisplayName(project.name)}
                 </SelectItem>
               ))}
             </SelectContent>

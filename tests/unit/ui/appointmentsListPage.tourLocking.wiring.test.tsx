@@ -9,10 +9,12 @@
  * - Legacy-Props hideTourFilter, lockedTourId, hideTourColumn und enforceFromToday bleiben kompatibel markiert.
  * - Im Tour-Kontext wird Tour intern fixiert und die Tour-Spalte ausgeblendet.
  * - Der Show-All-Switch ist verdrahtet und steuert dateFrom (undefined vs. Berlin-heute).
+ * - Projektnamen in der Terminliste werden ohne Kundennummer-Praefix gerendert.
  *
  * Fehlerfaelle:
  * - Tour-Filter bleibt im Tour-Formular sichtbar.
  * - Tour-Spalte bleibt trotz hideTourColumn sichtbar.
+ * - Projektspalte zeigt weiterhin den gespeicherten "K: ... - ..."-Praefix.
  *
  * Ziel:
  * Regressionssichere Verdrahtung der wiederverwendeten Terminliste fuer das Tour-Formular.
@@ -72,6 +74,17 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("if (dateCompare !== 0) return dateCompare;");
     expect(source).toContain("return (left.id - right.id) * multiplier;");
     expect(source).toContain("onClick={handleDateSortToggle}");
+  });
+
+  it("renders project column with isolated project name without customer prefix", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("function resolveAppointmentProjectDisplayName(storedProjectName: string): string");
+    expect(source).toContain("const separator = \" - \";");
+    expect(source).toContain("if (suffix && (kPrefixed || /\\d/.test(prefix)))");
+    expect(source).toContain("accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName)");
+    expect(source).toContain("cell: ({ row }) => <span className=\"font-medium\">{resolveAppointmentProjectDisplayName(row.projectName)}</span>");
   });
 
   it("wires show-all switch to toggle dateFrom against Berlin-today", () => {

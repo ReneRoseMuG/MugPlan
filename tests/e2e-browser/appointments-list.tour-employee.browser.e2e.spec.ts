@@ -9,11 +9,13 @@
  * - Umschaltung "Alle Termine" behaelt die gewaehlte Datumssortierung.
  * - Spalte "Ganztag" ist entfernt.
  * - Im Mitarbeiter-Formular sind Tour-Spalte und Tour-Filter entfernt.
+ * - Projektspalte zeigt den isolierten Projektnamen ohne Kundennummer-Praefix.
  * - Mitarbeiter-Terminliste scrollt vertikal innerhalb des Tabellenbereichs mit sticky Header.
  *
  * Fehlerfaelle:
  * - Sortierung springt nach "Alle Termine" auf Default zurueck.
  * - Verbotene Spalten/Filter sind weiterhin sichtbar.
+ * - Projektspalte zeigt weiterhin den gespeicherten Prefix "K: <Nr> - <Name>".
  * - Tabelle laeuft im Mitarbeiter-Formular nach unten aus.
  *
  * Ziel:
@@ -71,17 +73,17 @@ test("tour form appointments table: date sorting persists after show-all and no 
 
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0)).toContainText("Tour Far");
-  await expect(rows.nth(1)).toContainText("Tour Near");
+  await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Far");
+  await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Near");
 
   await page.getByRole("button", { name: "Datum" }).click();
-  await expect(rows.nth(0)).toContainText("Tour Near");
-  await expect(rows.nth(1)).toContainText("Tour Far");
+  await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Near");
+  await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Far");
 
   await page.getByRole("switch", { name: "Alle Termine" }).click();
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0)).toContainText("Tour Near");
-  await expect(rows.nth(1)).toContainText("Tour Far");
+  await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Near");
+  await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Far");
 });
 
 test("employee form appointments table: structure, sorting persistence and vertical inner scroll", async ({ page }) => {
@@ -123,12 +125,12 @@ test("employee form appointments table: structure, sorting persistence and verti
   await expect(page.getByText("Alle Touren")).toHaveCount(0);
 
   const rows = table.locator("tbody tr");
-  await expect(rows.first()).toContainText("Emp Filler");
+  await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Filler");
 
   await page.getByRole("button", { name: "Datum" }).click();
-  await expect(rows.first()).toContainText("Emp Near");
+  await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Near");
   await page.getByRole("switch", { name: "Alle Termine" }).click();
-  await expect(rows.first()).toContainText("Emp Near");
+  await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Near");
 
   const isScrollable = await table.evaluate((element) => element.scrollHeight > element.clientHeight);
   expect(isScrollable).toBe(true);

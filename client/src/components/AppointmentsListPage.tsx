@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { parseProjectStoredName } from "@/lib/project-name-format";
 import type { Customer, Employee, Project, Tour } from "@shared/schema";
 
 type AppointmentListItem = CalendarAppointment & {
@@ -70,6 +71,27 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
   if (direction === "asc") return <ArrowUp className="w-3.5 h-3.5" />;
   if (direction === "desc") return <ArrowDown className="w-3.5 h-3.5" />;
   return <ArrowUpDown className="w-3.5 h-3.5" />;
+}
+
+function resolveAppointmentProjectDisplayName(storedProjectName: string): string {
+  const normalized = storedProjectName.trim();
+  if (!normalized) return "";
+
+  const kPrefixed = normalized.startsWith("K: ");
+  const withoutKPrefix = kPrefixed ? normalized.slice(3).trim() : normalized;
+  const separator = " - ";
+  const separatorIndex = withoutKPrefix.indexOf(separator);
+
+  if (separatorIndex >= 0) {
+    const prefix = withoutKPrefix.slice(0, separatorIndex).trim();
+    const suffix = withoutKPrefix.slice(separatorIndex + separator.length).trim();
+    if (suffix && (kPrefixed || /\d/.test(prefix))) {
+      return suffix;
+    }
+  }
+
+  const parsed = parseProjectStoredName(normalized);
+  return parsed.isolatedProjectName || normalized;
 }
 
 export function AppointmentsListPage({
@@ -217,9 +239,9 @@ export function AppointmentsListPage({
       {
         id: "project",
         header: "Projekt",
-        accessor: (row) => row.projectName,
+        accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName),
         minWidth: 220,
-        cell: ({ row }) => <span className="font-medium">{row.projectName}</span>,
+        cell: ({ row }) => <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>,
       },
       {
         id: "customer",
