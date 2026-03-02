@@ -1079,6 +1079,24 @@ export const api = {
     },
   },
   helpTexts: {
+    seedMissingFromFrontend: {
+      method: "POST" as const,
+      path: "/api/help-texts/seed-missing-from-frontend",
+      responses: {
+        200: z.object({
+          scannedKeys: z.array(z.string()),
+          createdKeys: z.array(z.string()),
+          skippedExistingKeys: z.array(z.string()),
+          duplicateKeys: z.array(
+            z.object({
+              key: z.string(),
+              occurrences: z.number().int().min(2),
+            }),
+          ),
+          warnings: z.array(z.string()),
+        }),
+      },
+    },
     getByKey: {
       method: 'GET' as const,
       path: '/api/help-texts/:helpKey',

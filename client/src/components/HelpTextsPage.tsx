@@ -71,6 +71,28 @@ export function HelpTextsPage() {
     setViewMode(resolvedViewMode);
   }, [resolvedViewMode]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const seedMissingHelpTexts = async () => {
+      try {
+        await apiRequest("POST", "/api/help-texts/seed-missing-from-frontend");
+        if (!isMounted) return;
+        await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+      } catch (error) {
+        if (!isMounted) return;
+        toast({
+          title: "Fehler",
+          description: error instanceof Error ? error.message : "Hilfetext-Seed konnte nicht ausgefuehrt werden.",
+          variant: "destructive",
+        });
+      }
+    };
+    void seedMissingHelpTexts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const { data: helpTexts = [], isLoading } = useQuery<HelpText[]>({
     queryKey: ["/api/help-texts", searchQuery],
     queryFn: async () => {
@@ -366,6 +388,9 @@ export function HelpTextsPage() {
                   }
                 >
                   <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground" data-testid={`text-helptext-key-${helpText.id}`}>
+                      Key: {helpText.helpKey}
+                    </p>
                     <p className="font-medium text-sm" data-testid={`text-helptext-title-${helpText.id}`}>
                       {helpText.title}
                     </p>

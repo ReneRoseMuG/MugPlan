@@ -1,5 +1,6 @@
 import type { HelpText, InsertHelpText, UpdateHelpText } from "@shared/schema";
 import * as helpTextsRepository from "../repositories/helpTextsRepository";
+import { scanFrontendHelpKeys, type DuplicateHelpKey } from "./helpTextFrontendKeyScanService";
 
 export class HelpTextsError extends Error {
   status: number;
@@ -11,6 +12,14 @@ export class HelpTextsError extends Error {
     this.code = code;
   }
 }
+
+export type SeedMissingHelpTextsResult = {
+  scannedKeys: string[];
+  createdKeys: string[];
+  skippedExistingKeys: string[];
+  duplicateKeys: DuplicateHelpKey[];
+  warnings: string[];
+};
 
 export async function listHelpTexts(query?: string): Promise<HelpText[]> {
   return helpTextsRepository.getHelpTexts(query);
@@ -91,4 +100,45 @@ export async function deleteHelpText(id: number, version: number): Promise<void>
     }
     throw new HelpTextsError(409, "VERSION_CONFLICT");
   }
+}
+
+export async function seedMissingHelpTextsFromFrontend(): Promise<SeedMissingHelpTextsResult> {
+  const scanResult = scanFrontendHelpKeys();
+  if (scanResult.scannedKeys.length === 0) {
+    return {
+      scannedKeys: [],
+      createdKeys: [],
+      skippedExistingKeys: [],
+      duplicateKeys: scanResult.duplicateKeys,
+      warnings: scanResult.warnings,
+    };
+  }
+
+  const existing = await helpTextsRepository.getHelpTexts();
+  const existingKeys = new Set(existing.map((helpText) => helpText.helpKey));
+
+  const createdKeys: string[] = [];
+  const skippedExistingKeys: string[] = [];
+
+  for (const key of scanResult.scannedKeys) {
+    if (existingKeys.has(key)) {
+      skippedExistingKeys.push(key);
+      continue;
+    }
+    await helpTextsRepository.createHelpText({
+      helpKey: key,
+      title: key,
+      body: "",
+    });
+    existingKeys.add(key);
+    createdKeys.push(key);
+  }
+
+  return {
+    scannedKeys: scanResult.scannedKeys,
+    createdKeys,
+    skippedExistingKeys,
+    duplicateKeys: scanResult.duplicateKeys,
+    warnings: scanResult.warnings,
+  };
 }

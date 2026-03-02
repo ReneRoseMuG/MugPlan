@@ -38,6 +38,7 @@ export function HelpIcon({
     enabled: !!helpKey,
     staleTime: 5 * 60 * 1000,
   });
+  const hasEmptyBody = Boolean(helpText && helpText.body.trim().length === 0);
 
   return (
     <Popover>
@@ -64,7 +65,7 @@ export function HelpIcon({
             <h4 className="font-semibold text-sm">Hilfe</h4>
             <p className="text-sm text-destructive">Fehler beim Laden des Hilfetexts.</p>
           </div>
-        ) : helpText ? (
+        ) : helpText && !hasEmptyBody ? (
           <div className="space-y-2">
             <h4 className="font-semibold text-sm">{helpText.title}</h4>
             <div

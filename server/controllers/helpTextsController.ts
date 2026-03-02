@@ -31,6 +31,15 @@ export async function listHelpTexts(req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function seedMissingHelpTextsFromFrontend(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await helpTextsService.seedMissingHelpTextsFromFrontend();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getHelpTextById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = Number(req.params.id);
