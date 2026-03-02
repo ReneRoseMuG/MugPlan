@@ -4,22 +4,9 @@ import { Calendar } from "lucide-react";
 import { AllAppointmentsPanel, type AllAppointmentsPanelItem } from "@/components/AllAppointmentsPanel";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import { sortAppointmentsByDateDesc } from "@/lib/entity-appointments";
 
 type CustomerAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
-
-const sortAppointmentsDesc = (a: CustomerAppointmentSummary, b: CustomerAppointmentSummary) => {
-  if (a.startDate !== b.startDate) {
-    return a.startDate > b.startDate ? -1 : 1;
-  }
-
-  if (a.startTimeHour == null && b.startTimeHour != null) return 1;
-  if (a.startTimeHour != null && b.startTimeHour == null) return -1;
-  if (a.startTimeHour != null && b.startTimeHour != null && a.startTimeHour !== b.startTimeHour) {
-    return b.startTimeHour - a.startTimeHour;
-  }
-
-  return b.id - a.id;
-};
 
 async function fetchCustomerAppointments(url: string): Promise<CustomerAppointmentSummary[]> {
   const response = await fetch(url, { credentials: "include" });
@@ -45,7 +32,7 @@ export function CustomerAppointmentsPanel({ customerId }: CustomerAppointmentsPa
   });
 
   const sortedAppointments = useMemo(
-    () => [...appointments].sort(sortAppointmentsDesc),
+    () => [...appointments].sort(sortAppointmentsByDateDesc),
     [appointments],
   );
 

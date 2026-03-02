@@ -8,6 +8,7 @@ import {
   PROJECT_APPOINTMENTS_ALL_FROM_DATE,
 } from "@/lib/project-appointments";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import { sortAppointmentsByDateDesc } from "@/lib/entity-appointments";
 
 interface ProjectAppointmentsPanelProps {
   projectId?: number | null;
@@ -19,20 +20,6 @@ interface ProjectAppointmentsPanelProps {
 type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
 
 const appointmentsLogPrefix = "[ProjectAppointmentsPanel]";
-
-const sortAppointmentsDesc = (a: ProjectAppointmentSummary, b: ProjectAppointmentSummary) => {
-  if (a.startDate !== b.startDate) {
-    return a.startDate > b.startDate ? -1 : 1;
-  }
-
-  if (a.startTimeHour == null && b.startTimeHour != null) return 1;
-  if (a.startTimeHour != null && b.startTimeHour == null) return -1;
-  if (a.startTimeHour != null && b.startTimeHour != null && a.startTimeHour !== b.startTimeHour) {
-    return b.startTimeHour - a.startTimeHour;
-  }
-
-  return b.id - a.id;
-};
 
 export function ProjectAppointmentsPanel({
   projectId,
@@ -77,7 +64,7 @@ export function ProjectAppointmentsPanel({
   });
 
   const sortedAppointments = useMemo(
-    () => [...allAppointments].sort(sortAppointmentsDesc),
+    () => [...allAppointments].sort(sortAppointmentsByDateDesc),
     [allAppointments],
   );
 

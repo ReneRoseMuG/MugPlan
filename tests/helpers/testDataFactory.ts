@@ -1,8 +1,10 @@
 import type { InsertCustomer } from "@shared/schema";
 import * as appointmentsService from "../../server/services/appointmentsService";
+import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
 import * as customersService from "../../server/services/customersService";
 import * as employeesService from "../../server/services/employeesService";
 import * as projectsService from "../../server/services/projectsService";
+import { getBerlinTodayDateString } from "../../client/src/lib/project-appointments";
 
 let sequence = 1;
 
@@ -73,4 +75,178 @@ export async function createAppointmentFixture(params: {
     employeeIds: params.employeeIds ?? [],
     tourId: params.tourId ?? null,
   });
+}
+
+const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Berlin",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function addDaysToDateOnly(dateOnly: string, days: number): string {
+  const [year, month, day] = dateOnly.split("-").map((value) => Number(value));
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  date.setUTCDate(date.getUTCDate() + days);
+  return berlinFormatter.format(date);
+}
+
+export function getRelativeBerlinDate(daysFromToday: number): string {
+  return addDaysToDateOnly(getBerlinTodayDateString(), daysFromToday);
+}
+
+export async function createProjectWithPastAndFutureAppointmentsFixture(params?: {
+  prefix?: string;
+  customerId?: number;
+  projectName?: string;
+  pastOffsetDays?: number;
+  futureOffsetDays?: number;
+}) {
+  const project = await createProjectFixture({
+    prefix: params?.prefix ?? "PROJ-APPT",
+    customerId: params?.customerId,
+    name: params?.projectName,
+  });
+
+  const pastDate = getRelativeBerlinDate(params?.pastOffsetDays ?? -1);
+  const futureDate = getRelativeBerlinDate(params?.futureOffsetDays ?? 1);
+
+  const pastAppointment = await appointmentsRepository.createAppointment(
+    {
+      projectId: project.id,
+      tourId: null,
+      title: `${project.name} past`,
+      description: null,
+      startDate: new Date(`${pastDate}T00:00:00`),
+      startTime: null,
+      endDate: null,
+      endTime: null,
+    },
+    [],
+  );
+
+  const futureAppointment = await appointmentsRepository.createAppointment(
+    {
+      projectId: project.id,
+      tourId: null,
+      title: `${project.name} future`,
+      description: null,
+      startDate: new Date(`${futureDate}T00:00:00`),
+      startTime: null,
+      endDate: null,
+      endTime: null,
+    },
+    [],
+  );
+
+  return {
+    project,
+    pastDate,
+    futureDate,
+    pastAppointmentId: Number(pastAppointment.id),
+    futureAppointmentId: Number(futureAppointment.id),
+  };
+}
+
+export async function createRawAppointmentFixture(params: {
+  projectId: number;
+  startDate: string;
+  title: string;
+}) {
+  const created = await appointmentsRepository.createAppointment(
+    {
+      projectId: params.projectId,
+      tourId: null,
+      title: params.title,
+      description: null,
+      startDate: new Date(`${params.startDate}T00:00:00`),
+      startTime: null,
+      endDate: null,
+      endTime: null,
+    },
+    [],
+  );
+  return Number(created.id);
+}
+
+export async function createCustomerProjectsTimelineFixture(params?: {
+  prefix?: string;
+  includeProjectWithoutAppointments?: boolean;
+}) {
+  const prefix = params?.prefix ?? "CUST-TIMELINE";
+  const customer = await createCustomerFixture(`${prefix}-CUST`);
+
+  const projectFutureNewest = await createProjectFixture({
+    prefix: `${prefix}-PROJ-A`,
+    customerId: customer.id,
+    name: `${prefix} Future Newest`,
+  });
+  const projectFutureOlder = await createProjectFixture({
+    prefix: `${prefix}-PROJ-B`,
+    customerId: customer.id,
+    name: `${prefix} Future Older`,
+  });
+  const projectPast = await createProjectFixture({
+    prefix: `${prefix}-PROJ-C`,
+    customerId: customer.id,
+    name: `${prefix} Past`,
+  });
+
+  const newestFutureDate = getRelativeBerlinDate(3);
+  const olderFutureDate = getRelativeBerlinDate(1);
+  const pastDate = getRelativeBerlinDate(-2);
+
+  const futureNewestAppointmentId = await createRawAppointmentFixture({
+    projectId: projectFutureNewest.id,
+    startDate: newestFutureDate,
+    title: `${projectFutureNewest.name} appt`,
+  });
+  const futureOlderAppointmentId = await createRawAppointmentFixture({
+    projectId: projectFutureOlder.id,
+    startDate: olderFutureDate,
+    title: `${projectFutureOlder.name} appt`,
+  });
+  const pastAppointmentId = await createRawAppointmentFixture({
+    projectId: projectPast.id,
+    startDate: pastDate,
+    title: `${projectPast.name} appt`,
+  });
+
+  const projectWithoutAppointments = params?.includeProjectWithoutAppointments === false
+    ? null
+    : await createProjectFixture({
+        prefix: `${prefix}-PROJ-D`,
+        customerId: customer.id,
+        name: `${prefix} No Appointments`,
+      });
+
+  return {
+    customer,
+    projects: {
+      futureNewest: projectFutureNewest,
+      futureOlder: projectFutureOlder,
+      past: projectPast,
+      withoutAppointments: projectWithoutAppointments,
+    },
+    appointments: {
+      futureNewest: {
+        id: futureNewestAppointmentId,
+        startDate: newestFutureDate,
+      },
+      futureOlder: {
+        id: futureOlderAppointmentId,
+        startDate: olderFutureDate,
+      },
+      past: {
+        id: pastAppointmentId,
+        startDate: pastDate,
+      },
+    },
+    expectedProjectOrderByAppointmentDateDesc: [
+      projectFutureNewest.id,
+      projectFutureOlder.id,
+      projectPast.id,
+      ...(projectWithoutAppointments ? [projectWithoutAppointments.id] : []),
+    ],
+  };
 }
