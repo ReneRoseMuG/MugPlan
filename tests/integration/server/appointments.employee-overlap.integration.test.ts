@@ -8,6 +8,8 @@
  * - Tour-Vorbelegung meldet konfliktierende Mitarbeiter explizit und bricht den Save ohne Persistierung ab.
  * - Team-Zuweisung meldet konfliktierende Mitarbeiter explizit und bricht den Save ohne Persistierung ab.
  * - Manuelle Zuweisung meldet konfliktierende Mitarbeiter explizit und verhindert Persistierung.
+ * - Ganztag und zeitgebundener Termin am selben Tag sind konfliktfrei.
+ * - Zeitgebundene Termine kollidieren nur bei gleicher Stunde.
  * - Join-Tabelle enthaelt keine doppelten appointment/employee-Paare.
  *
  * Fehlerfaelle:
@@ -159,5 +161,56 @@ describe("FT01 integration: employee overlap base scenarios", () => {
     expect(assignmentIds).toEqual([]);
 
     await assertNoDuplicateAppointmentEmployeePairs();
+  });
+
+  it("Case 4: all-day and timed appointment on same day are allowed", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("MIXED-BASE");
+    const employee = await createEmployeeFixture("MIXED");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-05-04",
+      employeeIds: [employee.id],
+    });
+
+    const response = await agent.post("/api/appointments").send({
+      projectId: project.id,
+      startDate: "2099-05-04",
+      startTime: "10:00:00",
+      employeeIds: [employee.id],
+    });
+
+    expect(response.status).toBe(201);
+  });
+
+  it("Case 5: timed appointments conflict only when start hour is equal", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("TIME-HOUR");
+    const employee = await createEmployeeFixture("TIME");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-05-05",
+      startTime: "10:15:00",
+      employeeIds: [employee.id],
+    });
+
+    const blocked = await agent.post("/api/appointments").send({
+      projectId: project.id,
+      startDate: "2099-05-05",
+      startTime: "10:59:00",
+      employeeIds: [employee.id],
+    });
+    expect(blocked.status).toBe(409);
+    expectConflictPayloadContainsEmployees(blocked.body, [{ id: employee.id, fullName: employee.fullName }]);
+
+    const allowed = await agent.post("/api/appointments").send({
+      projectId: project.id,
+      startDate: "2099-05-05",
+      startTime: "11:00:00",
+      employeeIds: [employee.id],
+    });
+    expect(allowed.status).toBe(201);
   });
 });

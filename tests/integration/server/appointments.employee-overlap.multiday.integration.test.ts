@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - Overlap-Pruefung wird ueber jeden Tag der Terminspanne angewendet.
  * - Konflikt an einem einzelnen Tag blockiert den Save vollstaendig.
+ * - Zeitgebundene Konflikte entstehen nur bei gleicher Stunde.
  * - Konfliktmeldung nennt den blockierten Mitarbeiter explizit.
  *
  * Fehlerfaelle:
@@ -155,5 +156,52 @@ describe("FT01 integration: employee overlap multiday scenarios", () => {
 
     const assigned = await getAppointmentEmployeeIds(base.id);
     expect(assigned).toEqual([]);
+  });
+
+  it("multiday timed: overlap day with different hour is allowed", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("MULTI-TIME-ALLOW");
+    const employee = await createEmployeeFixture("T1");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-06-08",
+      startTime: "11:00:00",
+      employeeIds: [employee.id],
+    });
+
+    const response = await agent.post("/api/appointments").send({
+      projectId: project.id,
+      startDate: "2099-06-06",
+      endDate: "2099-06-09",
+      startTime: "10:00:00",
+      employeeIds: [employee.id],
+    });
+
+    expect(response.status).toBe(201);
+  });
+
+  it("multiday timed: overlap day with equal hour is blocked", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("MULTI-TIME-BLOCK");
+    const employee = await createEmployeeFixture("T2");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-06-10",
+      startTime: "10:05:00",
+      employeeIds: [employee.id],
+    });
+
+    const response = await agent.post("/api/appointments").send({
+      projectId: project.id,
+      startDate: "2099-06-09",
+      endDate: "2099-06-12",
+      startTime: "10:59:00",
+      employeeIds: [employee.id],
+    });
+
+    expect(response.status).toBe(409);
+    expectConflictPayloadContainsEmployees(response.body, [{ id: employee.id, fullName: employee.fullName }]);
   });
 });

@@ -162,6 +162,56 @@ describe("FT01 UC coverage integration", () => {
     expect(await getAppointmentEmployeeIds(appt.id)).toEqual(beforeEmployees);
   });
 
+  it("UC 01/02 rule: overlap uses all-day category and timed start hour", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("UC01-02-TIME");
+    const employee = await createEmployeeFixture("UC01-02-TIME-E");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-10-02",
+      employeeIds: [employee.id],
+    });
+
+    const mixedAllowed = await agent
+      .post("/api/appointments")
+      .send({
+        projectId: project.id,
+        startDate: "2099-10-02",
+        startTime: "10:00:00",
+        employeeIds: [employee.id],
+      });
+    expect(mixedAllowed.status).toBe(201);
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-10-03",
+      startTime: "10:15:00",
+      employeeIds: [employee.id],
+    });
+
+    const sameHourBlocked = await agent
+      .post("/api/appointments")
+      .send({
+        projectId: project.id,
+        startDate: "2099-10-03",
+        startTime: "10:45:00",
+        employeeIds: [employee.id],
+      });
+    expect(sameHourBlocked.status).toBe(409);
+    expectConflictPayloadContainsEmployees(sameHourBlocked.body, [{ id: employee.id }]);
+
+    const otherHourAllowed = await agent
+      .post("/api/appointments")
+      .send({
+        projectId: project.id,
+        startDate: "2099-10-03",
+        startTime: "11:00:00",
+        employeeIds: [employee.id],
+      });
+    expect(otherHourAllowed.status).toBe(201);
+  });
+
   it("UC 01/03 happy+negative: move keeps time and blocks historical move", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("UC01-03");

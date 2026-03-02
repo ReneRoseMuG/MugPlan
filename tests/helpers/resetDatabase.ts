@@ -41,7 +41,7 @@ export async function resetDatabase() {
       const tableKey = Object.keys(tableRows[0])[0];
       for (const row of tableRows) {
         const tableName = row[tableKey];
-        await connection.query(`TRUNCATE TABLE \`${tableName}\``);
+        await connection.query(`DELETE FROM \`${tableName}\``);
       }
     }
 

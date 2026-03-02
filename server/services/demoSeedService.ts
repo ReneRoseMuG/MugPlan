@@ -1023,7 +1023,26 @@ async function createAppointmentRecord(
   data: InsertAppointment,
   employeeIds: number[],
 ) {
-  return appointmentsRepository.createAppointment(data, employeeIds);
+  const startTimeHour = data.startTime == null ? null : Number(data.startTime.slice(0, 2));
+  const endDate = data.endDate ?? data.startDate;
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
+      employeeIds,
+      startDate: data.startDate,
+      endDate,
+      startTimeHour,
+    });
+    if (conflictEmployees.length > 0) {
+      throw createBadRequestError("Seed-Termin kollidiert mit bestehender Mitarbeiterzuweisung");
+    }
+    const appointmentId = await appointmentsRepository.createAppointmentTx(tx, data);
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
+    const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    if (!appointment) {
+      throw createBadRequestError("Seed-Termin konnte nicht geladen werden");
+    }
+    return appointment;
+  });
 }
 
 export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummary> {

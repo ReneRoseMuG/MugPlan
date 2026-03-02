@@ -87,6 +87,15 @@ function parseTimeToSeconds(startTime: string): number | null {
   return hour * 3600 + minute * 60 + second;
 }
 
+function resolveOverlapStartTimeHour(startTime?: string | null): number | null {
+  if (!startTime) return null;
+  const seconds = parseTimeToSeconds(startTime);
+  if (seconds == null) {
+    throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
+  }
+  return Math.floor(seconds / 3600);
+}
+
 function assertNotHistoricalInput(data: { startDate: string; startTime?: string | null }) {
   if (isStartDateLocked(data.startDate)) {
     throw new AppointmentError("Datum in der Vergangenheit", 409, "BUSINESS_CONFLICT");
@@ -245,6 +254,7 @@ export async function createAppointment(
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
   const startDate = parseDateOnly(data.startDate);
   const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
+  const startTimeHour = resolveOverlapStartTimeHour(data.startTime ?? null);
 
   const created = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const project = await ensureProjectExistsTx(tx, data.projectId);
@@ -253,6 +263,7 @@ export async function createAppointment(
       employeeIds,
       startDate,
       endDate,
+      startTimeHour,
     });
     if (conflictEmployees.length > 0) {
       logWarn(
@@ -302,6 +313,7 @@ export async function updateAppointment(
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
   const startDate = parseDateOnly(data.startDate);
   const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
+  const startTimeHour = resolveOverlapStartTimeHour(data.startTime ?? null);
 
   const updated = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
@@ -328,6 +340,7 @@ export async function updateAppointment(
       employeeIds,
       startDate,
       endDate,
+      startTimeHour,
       excludeAppointmentId: appointmentId,
     });
     if (conflictEmployees.length > 0) {

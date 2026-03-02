@@ -134,6 +134,7 @@ export async function hasEmployeeDateOverlapTx(
     employeeIds: number[];
     startDate: Date;
     endDate: Date | null;
+    startTimeHour: number | null;
     excludeAppointmentId?: number;
   },
 ): Promise<boolean> {
@@ -146,6 +147,12 @@ export async function hasEmployeeDateOverlapTx(
     lte(appointments.startDate, effectiveEndDate),
     gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
   ];
+  if (params.startTimeHour == null) {
+    conditions.push(isNull(appointments.startTime));
+  } else {
+    conditions.push(isNotNull(appointments.startTime));
+    conditions.push(sql`hour(${appointments.startTime}) = ${params.startTimeHour}`);
+  }
 
   if (typeof params.excludeAppointmentId === "number") {
     conditions.push(sql`${appointments.id} <> ${params.excludeAppointmentId}`);
@@ -166,6 +173,7 @@ export async function getConflictingEmployeesTx(
     employeeIds: number[];
     startDate: Date;
     endDate: Date | null;
+    startTimeHour: number | null;
     excludeAppointmentId?: number;
   },
 ): Promise<Array<{ id: number; fullName: string }>> {
@@ -178,6 +186,12 @@ export async function getConflictingEmployeesTx(
     lte(appointments.startDate, effectiveEndDate),
     gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
   ];
+  if (params.startTimeHour == null) {
+    conditions.push(isNull(appointments.startTime));
+  } else {
+    conditions.push(isNotNull(appointments.startTime));
+    conditions.push(sql`hour(${appointments.startTime}) = ${params.startTimeHour}`);
+  }
 
   if (typeof params.excludeAppointmentId === "number") {
     conditions.push(sql`${appointments.id} <> ${params.excludeAppointmentId}`);

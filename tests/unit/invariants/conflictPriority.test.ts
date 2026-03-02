@@ -5,6 +5,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   getAppointmentTx: vi.fn(),
   getProjectTx: vi.fn(),
   getConflictingEmployeesTx: vi.fn(),
+  getInactiveEmployeesByIdsTx: vi.fn(),
   hasEmployeeDateOverlapTx: vi.fn(),
   updateAppointmentWithVersionTx: vi.fn(),
   replaceAppointmentEmployeesTx: vi.fn(),
@@ -48,6 +49,7 @@ describe("PKG-01 Invariant: conflict priority", () => {
       id: 201,
       name: "Project 201",
     });
+    appointmentsRepoMock.getInactiveEmployeesByIdsTx.mockResolvedValue([]);
   });
 
   it("throws BUSINESS_CONFLICT with conflictEmployees metadata when overlap exists", async () => {
@@ -76,6 +78,10 @@ describe("PKG-01 Invariant: conflict priority", () => {
       code: "BUSINESS_CONFLICT",
       conflictEmployees: [{ id: 1, fullName: "Emp One" }],
     });
+    expect(appointmentsRepoMock.getConflictingEmployeesTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ startTimeHour: null }),
+    );
   });
 
   it("aborts before version-update path and employee writes when overlap exists", async () => {
@@ -121,5 +127,29 @@ describe("PKG-01 Invariant: conflict priority", () => {
 
     expect(isAppointmentError(error)).toBe(true);
     expect(error).toMatchObject({ status: 409, code: "VERSION_CONFLICT" });
+  });
+
+  it("uses hour-based overlap key for timed updates", async () => {
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
+    appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
+    appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
+    appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 101, projectId: 201, employees: [] } as any);
+
+    await updateAppointment(
+      101,
+      {
+        version: 5,
+        projectId: 201,
+        startDate: "2099-01-10",
+        startTime: "10:45:00",
+        employeeIds: [1],
+      },
+      "DISPONENT",
+    );
+
+    expect(appointmentsRepoMock.getConflictingEmployeesTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ startTimeHour: 10 }),
+    );
   });
 });

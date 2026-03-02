@@ -8,6 +8,7 @@
  * - Nachtraegliche Tour-Zuweisung darf keine unzulaessige Doppelverplanung erzeugen und persistiert bei Konflikt nichts.
  * - Tour-Entfernung und Tour-Wechsel bleiben join-konsistent.
  * - Team- und manuelle Zuweisung werden durch dieselbe Join-Konfliktlogik abgesichert.
+ * - Zeitgebundene Termine in unterschiedlichen Stunden bleiben konfliktfrei.
  * - appointment_employee enthaelt keine doppelten Zuordnungen.
  *
  * Fehlerfaelle:
@@ -192,5 +193,36 @@ describe("FT01 integration: employee overlap follow-up flows", () => {
     expect(secondTry.body.version).toBe(base.version + 1);
     const assigned = await getAppointmentEmployeeIds(base.id);
     expect(assigned).toEqual([employeeA.id, employeeB.id]);
+  });
+
+  it("allows follow-up update when target hour differs from existing timed assignment", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("FLOW-TIME");
+    const employee = await createEmployeeFixture("FLOW-TIME-E");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-08-20",
+      startTime: "09:00:00",
+      employeeIds: [employee.id],
+    });
+
+    const base = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-08-20",
+      startTime: "10:00:00",
+      employeeIds: [],
+    });
+
+    const update = await agent.patch(`/api/appointments/${base.id}`).send({
+      version: await loadAppointmentVersion(agent, base.id),
+      projectId: project.id,
+      startDate: "2099-08-20",
+      startTime: "10:30:00",
+      employeeIds: [employee.id],
+    });
+
+    expect(update.status).toBe(200);
+    expect(await getAppointmentEmployeeIds(base.id)).toEqual([employee.id]);
   });
 });
