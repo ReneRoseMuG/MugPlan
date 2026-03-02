@@ -674,6 +674,72 @@ export const projectProjectStatus = mysqlTable("project_project_status", {
   pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),
 }));
 
+// Tags - universelles Tagging (FT 28)
+export const tags = mysqlTable("tags", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  color: varchar("color", { length: 7 }).notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  byIsDefault: index("idx_tags_is_default").on(table.isDefault),
+}));
+
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateTagSchema = z.object({
+  name: z.string().optional(),
+  color: z.string().optional(),
+  isDefault: z.boolean().optional(),
+  version: z.number().int().optional(),
+}).partial();
+
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = z.infer<typeof insertTagSchema>;
+export type UpdateTag = z.infer<typeof updateTagSchema>;
+
+export const projectTags = mysqlTable("project_tags", {
+  projectId: bigint("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
+  tagId: bigint("tag_id", { mode: "number" }).notNull().references(() => tags.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.projectId, table.tagId] }),
+  byTagProject: index("idx_project_tags_tag_project").on(table.tagId, table.projectId),
+}));
+
+export const customerTags = mysqlTable("customer_tags", {
+  customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "cascade" }),
+  tagId: bigint("tag_id", { mode: "number" }).notNull().references(() => tags.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.customerId, table.tagId] }),
+  byTagCustomer: index("idx_customer_tags_tag_customer").on(table.tagId, table.customerId),
+}));
+
+export const employeeTags = mysqlTable("employee_tags", {
+  employeeId: bigint("employee_id", { mode: "number" }).notNull().references(() => employees.id, { onDelete: "cascade" }),
+  tagId: bigint("tag_id", { mode: "number" }).notNull().references(() => tags.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.employeeId, table.tagId] }),
+  byTagEmployee: index("idx_employee_tags_tag_employee").on(table.tagId, table.employeeId),
+}));
+
+export const appointmentTags = mysqlTable("appointment_tags", {
+  appointmentId: bigint("appointment_id", { mode: "number" }).notNull().references(() => appointments.id, { onDelete: "cascade" }),
+  tagId: bigint("tag_id", { mode: "number" }).notNull().references(() => tags.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.appointmentId, table.tagId] }),
+  byTagAppointment: index("idx_appointment_tags_tag_appointment").on(table.tagId, table.appointmentId),
+}));
+
 // Employee - Mitarbeiterverwaltung (FT 05)
 export const employees = mysqlTable("employee", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
