@@ -69,16 +69,16 @@ export function ProjectFilterPanel({
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex min-w-[150px] flex-col gap-1">
             <div className="flex items-center gap-1 min-h-5">
-              <Label htmlFor="project-scope-upcoming" className="text-xs font-semibold text-muted-foreground">
-                Aktuelle Projekte
+              <Label htmlFor="project-scope-all" className="text-xs font-semibold text-muted-foreground">
+                Alle Projekte
               </Label>
               <HelpIcon helpKey="projects.filter.scope.upcoming" size="sm" />
             </div>
             <Switch
-              id="project-scope-upcoming"
-              checked={projectScope === "upcoming"}
+              id="project-scope-all"
+              checked={projectScope === "all"}
               onCheckedChange={(checked) => {
-                onProjectScopeChange(checked ? "upcoming" : "all");
+                onProjectScopeChange(checked ? "all" : "upcoming");
               }}
             />
           </div>
