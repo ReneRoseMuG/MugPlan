@@ -228,7 +228,17 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     }
     await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
     await queryClient.invalidateQueries({
-      predicate: (query) => query.queryKey[0] === "customerAppointments",
+      predicate: (query) => {
+        const firstKey = query.queryKey[0];
+        return firstKey === "appointments-list"
+          || firstKey === "projects-page-appointments"
+          || firstKey === "customers-page-appointments"
+          || firstKey === "employees-page-appointments"
+          || firstKey === "customerAppointments"
+          || firstKey === "projectAppointments"
+          || firstKey === "entityAppointments"
+          || firstKey === "tour-management-appointments-count";
+      },
     });
     await queryClient.invalidateQueries({
       predicate: (query) => {
