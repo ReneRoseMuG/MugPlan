@@ -9,6 +9,7 @@
  * - CustomerData invalidiert appointment-bezogene Query-Familien per Predicate.
  * - CustomerData invalidiert URL-basierte current-appointments-Queries.
  * - updateMutation.onSuccess ruft die zentrale Appointment-Invalidierung auf.
+ * - Kundennotiz-Mutationen invalidieren ebenfalls die appointment-basierten Projektionen.
  *
  * Fehlerfaelle:
  * - Nach Kunden-Update bleiben stale Kundennamen in Wochenkarte/Terminlisten sichtbar.
@@ -45,5 +46,13 @@ describe("FT04/FT05+ customer data appointment cache invalidation wiring", () =>
   it("wires appointment invalidation in update success flow", () => {
     expect(source).toContain("const invalidateAppointmentProjectionQueries = async () => {");
     expect(source).toContain("void invalidateAppointmentProjectionQueries();");
+  });
+
+  it("wires appointment invalidation in all customer note mutations", () => {
+    expect(source).toContain("apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body, templateId })");
+    expect(source).toContain("apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned, version })");
+    expect(source).toContain("apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`, { version })");
+    const invalidationCalls = source.match(/void invalidateAppointmentProjectionQueries\(\);/g) ?? [];
+    expect(invalidationCalls.length).toBeGreaterThanOrEqual(5);
   });
 });

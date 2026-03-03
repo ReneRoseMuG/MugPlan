@@ -33,7 +33,8 @@ describe("FT20 appointment form document extraction flow wiring", () => {
   it("wires dropzone and extraction dialog", () => {
     expect(source).toContain("{selectedProjectId === null ? (");
     expect(source).toContain("<DocumentExtractionDropzone");
-    expect(source).toContain("onFileSelected={runDocumentExtraction}");
+    expect(source).toContain("onFileSelected={(file) => {");
+    expect(source).toContain("void runDocumentExtraction(file);");
     expect(source).toContain("<DocumentExtractionDialog");
     expect(source).toContain("open={documentExtractionOpen}");
     expect(source).toContain("data={documentExtractionData}");

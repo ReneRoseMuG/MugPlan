@@ -11,6 +11,7 @@ import {
   listAllTours,
   type ExportAppointmentRow,
 } from "../repositories/backupRuntimeRepository";
+import { getGlobalSettingValue } from "./userSettingsService";
 
 type ExportResult = {
   excelBuffer: Buffer;
@@ -33,11 +34,25 @@ function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-function formatDate(input: Date): string {
+function formatDateIso(input: Date): string {
   const y = input.getFullYear();
   const m = String(input.getMonth() + 1).padStart(2, "0");
   const d = String(input.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function formatDateGerman(input: Date): string {
+  const d = String(input.getDate()).padStart(2, "0");
+  const m = String(input.getMonth() + 1).padStart(2, "0");
+  const y = input.getFullYear();
+  return `${d}.${m}.${y}`;
+}
+
+function formatDateForDisplay(value: string | null): string {
+  if (!value) return "-";
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return formatDateGerman(parsed);
 }
 
 function formatTime(value: string | null): string {
@@ -71,9 +86,26 @@ function groupBy<T, K>(rows: T[], keySelector: (row: T) => K): Map<K, T[]> {
   return map;
 }
 
+function parseBackupLaneTourIds(raw: unknown): number[] {
+  if (typeof raw !== "string") return [];
+  const parts = raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  const parsed = parts
+    .map((part) => Number.parseInt(part, 10))
+    .filter((id) => Number.isInteger(id) && id > 0);
+  return Array.from(new Set(parsed)).slice(0, 3);
+}
+
+function normalizeDateOnly(input: Date): Date {
+  return new Date(input.getFullYear(), input.getMonth(), input.getDate());
+}
+
 async function buildExcelBuffer(input: {
   calendarAppointments: ExportAppointmentRow[];
   allAppointments: ExportAppointmentRow[];
+  laneTourIds: number[];
 }): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const calendarSheet = workbook.addWorksheet("Kalender");
@@ -83,6 +115,10 @@ async function buildExcelBuffer(input: {
   const employeesSheet = workbook.addWorksheet("Mitarbeiter");
 
   const allTours = await listAllTours();
+  const selectedTours = input.laneTourIds.length > 0
+    ? allTours.filter((tour) => input.laneTourIds.includes(tour.id)).slice(0, 3)
+    : allTours.slice(0, 3);
+  const selectedTourIds = new Set(selectedTours.map((tour) => tour.id));
   const calendarStart = startOfWeek(new Date());
   const weeks = 26;
   const totalColumns = weeks * 7;
@@ -100,20 +136,54 @@ async function buildExcelBuffer(input: {
 
     calendarSheet.mergeCells(currentRow, startCol, currentRow, endCol);
     const weekTitleCell = calendarSheet.getCell(currentRow, startCol);
-    weekTitleCell.value = `Woche ${formatDate(weekStart)} bis ${formatDate(weekEnd)}`;
+    weekTitleCell.value = `Woche ${formatDateGerman(weekStart)} bis ${formatDateGerman(weekEnd)}`;
     weekTitleCell.font = { bold: true };
     weekTitleCell.alignment = { horizontal: "center" };
   }
   currentRow += 1;
 
-  for (const tour of allTours) {
+  for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
+    for (let day = 0; day < 7; day += 1) {
+      const date = addDays(addDays(calendarStart, weekIndex * 7), day);
+      const cell = calendarSheet.getCell(currentRow, weekIndex * 7 + day + 1);
+      cell.value = formatDateGerman(date);
+      cell.font = { bold: true };
+    }
+  }
+  currentRow += 1;
+
+  const appointmentsByDate = groupBy(input.calendarAppointments, (row) => row.startDate ?? "");
+  const findDetailRowRef = (appointmentId: number) =>
+    `A${2 + input.allAppointments.findIndex((a) => a.appointmentId === appointmentId)}`;
+
+  type LaneConfig = {
+    title: string;
+    color: string | null;
+    matches: (appointment: ExportAppointmentRow) => boolean;
+  };
+
+  const lanes: LaneConfig[] = [
+    ...selectedTours.map((tour) => ({
+      title: tour.name,
+      color: tour.color,
+      matches: (appointment: ExportAppointmentRow) => appointment.tourId === tour.id,
+    })),
+    {
+      title: "Ohne Tour",
+      color: null,
+      matches: (appointment: ExportAppointmentRow) =>
+        appointment.tourId == null || !selectedTourIds.has(appointment.tourId),
+    },
+  ];
+
+  for (const lane of lanes) {
     for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
       const startCol = weekIndex * 7 + 1;
       const endCol = startCol + 6;
       calendarSheet.mergeCells(currentRow, startCol, currentRow, endCol);
       const cell = calendarSheet.getCell(currentRow, startCol);
-      cell.value = `${tour.name}`;
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: colorToArgb(tour.color) } };
+      cell.value = lane.title;
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: colorToArgb(lane.color) } };
       cell.font = { bold: true };
       cell.alignment = { horizontal: "center" };
     }
@@ -121,40 +191,39 @@ async function buildExcelBuffer(input: {
 
     for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
       for (let day = 0; day < 7; day += 1) {
-        const date = addDays(addDays(calendarStart, weekIndex * 7), day);
-        calendarSheet.getCell(currentRow, weekIndex * 7 + day + 1).value = formatDate(date);
-        calendarSheet.getCell(currentRow, weekIndex * 7 + day + 1).font = { bold: true };
-      }
-    }
-    currentRow += 1;
+        const date = formatDateIso(addDays(addDays(calendarStart, weekIndex * 7), day));
+        const dayAppointments = (appointmentsByDate.get(date) ?? [])
+          .filter((appointment) => lane.matches(appointment));
+        const slotAppointments = dayAppointments.slice(0, 2);
 
-    const tourAppointments = input.calendarAppointments.filter((row) => row.tourId === tour.id);
-    const byDate = groupBy(tourAppointments, (row) => row.startDate ?? "");
-    for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
-      for (let day = 0; day < 7; day += 1) {
-        const date = formatDate(addDays(addDays(calendarStart, weekIndex * 7), day));
-        const dayAppointments = byDate.get(date) ?? [];
-        let writeRow = currentRow;
-        for (const appointment of dayAppointments) {
-          const detailRowRef = `A${2 + input.allAppointments.findIndex((a) => a.appointmentId === appointment.appointmentId)}`;
+        for (let slot = 0; slot < slotAppointments.length; slot += 1) {
+          const appointment = slotAppointments[slot];
+          const line1Row = currentRow + slot * 2;
+          const line2Row = line1Row + 1;
+          const detailRowRef = findDetailRowRef(appointment.appointmentId);
           const firstLine = `${appointment.customerNumber} - ${appointment.customerName ?? "-"} - ${appointment.postalCode ?? "-"}`;
           const secondLine = `${appointment.orderNumber ?? "-"} - ${appointment.projectName}`;
-          const firstCell = calendarSheet.getCell(writeRow, weekIndex * 7 + day + 1);
-          firstCell.value = {
+          calendarSheet.getCell(line1Row, weekIndex * 7 + day + 1).value = {
             text: firstLine,
             hyperlink: `#'Termine'!${detailRowRef}`,
           };
-          const secondCell = calendarSheet.getCell(writeRow + 1, weekIndex * 7 + day + 1);
-          secondCell.value = {
+          calendarSheet.getCell(line2Row, weekIndex * 7 + day + 1).value = {
             text: secondLine,
             hyperlink: `#'Termine'!${detailRowRef}`,
           };
-          writeRow += 2;
+        }
+
+        if (dayAppointments.length > 2) {
+          const overflowCount = dayAppointments.length - 2;
+          const overflowCell = calendarSheet.getCell(currentRow + 4, weekIndex * 7 + day + 1);
+          overflowCell.value = `+${overflowCount}`;
+          overflowCell.font = { bold: true };
+          overflowCell.alignment = { horizontal: "center" };
         }
       }
     }
 
-    currentRow += Math.max(2, tourAppointments.length * 2);
+    currentRow += 5;
   }
 
   const appointmentIds = input.allAppointments.map((row) => row.appointmentId);
@@ -185,8 +254,8 @@ async function buildExcelBuffer(input: {
     const statusList = (statusesByProject.get(row.projectId) ?? []).map((s) => s.statusTitle).join(", ");
     detailSheet.addRow({
       appointmentId: row.appointmentId,
-      startDate: row.startDate ?? "-",
-      endDate: row.endDate ?? "-",
+      startDate: formatDateForDisplay(row.startDate),
+      endDate: formatDateForDisplay(row.endDate),
       time: row.startTime ? `${row.startTime.slice(0, 5)}${row.endTime ? `-${row.endTime.slice(0, 5)}` : ""}` : "Ganztag",
       projectId: row.projectId,
       projectName: row.projectName,
@@ -287,7 +356,9 @@ async function buildPdfBuffer(appointments: ExportAppointmentRow[]): Promise<Buf
   const sortedDates = Array.from(byDate.keys()).filter(Boolean).sort((a, b) => a.localeCompare(b));
 
   for (const date of sortedDates) {
-    doc.fontSize(12).fillColor("#111827").text(date);
+    const parsedDate = new Date(`${date}T00:00:00`);
+    const dateLabel = Number.isNaN(parsedDate.getTime()) ? date : formatDateGerman(parsedDate);
+    doc.fontSize(12).fillColor("#111827").text(dateLabel);
     doc.moveDown(0.2);
     const dayRows = byDate.get(date) ?? [];
     for (const row of dayRows) {
@@ -312,8 +383,9 @@ async function buildPdfBuffer(appointments: ExportAppointmentRow[]): Promise<Buf
 
 export async function generateBackupDocuments(): Promise<ExportResult> {
   const now = new Date();
-  const rangeStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, now.getDate());
+  const rangeStart = normalizeDateOnly(now);
+  const laneTourIdsRaw = await getGlobalSettingValue("backup_lane_tour_ids");
+  const laneTourIds = parseBackupLaneTourIds(laneTourIdsRaw);
 
   const calendarAppointments = await getExportAppointmentRows({
     fromDate: startOfWeek(now),
@@ -323,11 +395,11 @@ export async function generateBackupDocuments(): Promise<ExportResult> {
   const allAppointments = await getAllExportAppointmentRows();
   const upcomingAppointments = allAppointments.filter((row) => {
     if (!row.startDate) return false;
-    const d = new Date(`${row.startDate}T00:00:00`);
-    return d >= rangeStart && d <= rangeEnd;
+    const d = normalizeDateOnly(new Date(`${row.startDate}T00:00:00`));
+    return d >= rangeStart;
   });
 
-  const excelBuffer = await buildExcelBuffer({ calendarAppointments, allAppointments });
+  const excelBuffer = await buildExcelBuffer({ calendarAppointments, allAppointments, laneTourIds });
   const pdfBuffer = await buildPdfBuffer(upcomingAppointments);
 
   return {

@@ -52,7 +52,7 @@ describe("PKG-01 Invariant: conflict priority", () => {
     appointmentsRepoMock.getInactiveEmployeesByIdsTx.mockResolvedValue([]);
   });
 
-  it("throws BUSINESS_CONFLICT with conflictEmployees metadata when overlap exists", async () => {
+  it("throws EMPLOYEE_OVERLAP_CONFLICT with conflictEmployees metadata when overlap exists", async () => {
     appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([{ id: 1, fullName: "Emp One" }]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
 
@@ -75,7 +75,7 @@ describe("PKG-01 Invariant: conflict priority", () => {
     expect(isAppointmentError(error)).toBe(true);
     expect(error).toMatchObject({
       status: 409,
-      code: "BUSINESS_CONFLICT",
+      code: "EMPLOYEE_OVERLAP_CONFLICT",
       conflictEmployees: [{ id: 1, fullName: "Emp One" }],
     });
     expect(appointmentsRepoMock.getConflictingEmployeesTx).toHaveBeenCalledWith(
@@ -99,7 +99,7 @@ describe("PKG-01 Invariant: conflict priority", () => {
         employeeIds: [1, 2],
       },
       "DISPONENT",
-    )).rejects.toMatchObject({ code: "BUSINESS_CONFLICT" });
+    )).rejects.toMatchObject({ code: "EMPLOYEE_OVERLAP_CONFLICT" });
 
     expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
     expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).not.toHaveBeenCalled();

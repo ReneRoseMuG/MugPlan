@@ -5,9 +5,22 @@ import { formatProjectStoredName, parseProjectStoredName } from "../lib/project-
 
 export class ProjectsError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "BUSINESS_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
+  code:
+    | "VERSION_CONFLICT"
+    | "BUSINESS_CONFLICT"
+    | "NOT_FOUND"
+    | "VALIDATION_ERROR"
+    | "INACTIVE_ENTITY_ASSIGNMENT";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "BUSINESS_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
+  constructor(
+    status: number,
+    code:
+      | "VERSION_CONFLICT"
+      | "BUSINESS_CONFLICT"
+      | "NOT_FOUND"
+      | "VALIDATION_ERROR"
+      | "INACTIVE_ENTITY_ASSIGNMENT",
+  ) {
     super(code);
     this.status = status;
     this.code = code;
@@ -52,6 +65,9 @@ export async function createProject(data: InsertProject): Promise<Project> {
   if (!customer) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
+  if (!customer.isActive) {
+    throw new ProjectsError(409, "INACTIVE_ENTITY_ASSIGNMENT");
+  }
 
   const isolatedProjectName = parseProjectStoredName(data.name).isolatedProjectName;
   return projectsRepository.createProject({
@@ -78,6 +94,9 @@ export async function updateProject(
     const targetCustomer = await customersRepository.getCustomer(targetCustomerId);
     if (!targetCustomer) {
       throw new ProjectsError(422, "VALIDATION_ERROR");
+    }
+    if (!targetCustomer.isActive) {
+      throw new ProjectsError(409, "INACTIVE_ENTITY_ASSIGNMENT");
     }
 
     const sourceProjectName = data.name ?? existing.name;

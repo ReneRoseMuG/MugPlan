@@ -6,11 +6,11 @@
  *
  * Abgedeckte Regeln:
  * - Save-Flow parst Fehlerpayload robust per response.text + JSON-Parsing.
- * - BUSINESS_CONFLICT wird mit Kontext-Toast inkl. Konfliktmitarbeiter behandelt.
+ * - EMPLOYEE_OVERLAP_CONFLICT wird mit Kontext-Toast inkl. Konfliktmitarbeiter behandelt.
  * - VERSION_CONFLICT wird mit dedizierter Reload-Meldung behandelt.
  *
  * Fehlerfaelle:
- * - Save-Fehler ohne Kontext bei BUSINESS_CONFLICT.
+ * - Save-Fehler ohne Kontext bei EMPLOYEE_OVERLAP_CONFLICT.
  * - VERSION_CONFLICT wird nur generisch als unbekannter Fehler angezeigt.
  *
  * Ziel:
@@ -29,8 +29,8 @@ describe("FT01 appointment form overlap conflict toast wiring", () => {
     expect(source).toContain("const parsed = parseErrorPayload(rawBody);");
   });
 
-  it("maps BUSINESS_CONFLICT to context toast with conflict employee names", () => {
-    expect(source).toContain("if (parsed?.code === \"BUSINESS_CONFLICT\")");
+  it("maps EMPLOYEE_OVERLAP_CONFLICT to context toast with conflict employee names", () => {
+    expect(source).toContain("if (parsed?.code === \"EMPLOYEE_OVERLAP_CONFLICT\")");
     expect(source).toContain("const conflictNames = formatConflictEmployees(parsed.conflictEmployees);");
     expect(source).toContain("Konflikt mit:");
     expect(source).toContain("Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen.");

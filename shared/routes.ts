@@ -377,7 +377,13 @@ export const api = {
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
         }),
-        409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+        409: z.object({
+          code: z.enum([
+            "EMPLOYEE_OVERLAP_CONFLICT",
+            "INACTIVE_ENTITY_ASSIGNMENT",
+            "PAST_APPOINTMENT_READONLY",
+          ]),
+        }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -406,9 +412,16 @@ export const api = {
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
         }),
-        403: z.object({ code: z.literal("LOCK_VIOLATION") }),
+        403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "VERSION_CONFLICT"]) }),
+        409: z.object({
+          code: z.enum([
+            "VERSION_CONFLICT",
+            "EMPLOYEE_OVERLAP_CONFLICT",
+            "INACTIVE_ENTITY_ASSIGNMENT",
+            "PAST_APPOINTMENT_READONLY",
+          ]),
+        }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -420,9 +433,9 @@ export const api = {
       }),
       responses: {
         204: z.void(),
-        403: z.object({ code: z.literal("LOCK_VIOLATION") }),
+        403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -897,14 +910,11 @@ export const api = {
     delete: {
       method: "DELETE" as const,
       path: "/api/employees/:id",
-      input: z.object({
-        version: z.number().int().min(1),
-      }),
+      input: z.object({}).passthrough().optional(),
       responses: {
-        204: z.void(),
+        405: z.object({ code: z.literal("METHOD_NOT_ALLOWED") }),
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -1282,6 +1292,7 @@ export const api = {
       responses: {
         201: z.custom<typeof projects.$inferSelect>(),
         400: errorSchemas.validation,
+        409: z.object({ code: z.literal("INACTIVE_ENTITY_ASSIGNMENT") }),
       },
     },
     update: {
@@ -1293,7 +1304,9 @@ export const api = {
       responses: {
         200: z.custom<typeof projects.$inferSelect>(),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        409: z.object({
+          code: z.enum(["VERSION_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]),
+        }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -1825,6 +1838,21 @@ export const api = {
     },
   },
   backups: {
+    runNow: {
+      method: "POST" as const,
+      path: "/api/admin/backups/run",
+      responses: {
+        200: z.object({
+          status: z.enum(["success", "error", "skipped"]),
+          logId: z.number().int().positive().nullable(),
+          exportedRecordCount: z.number().int().min(0),
+          filePath: z.string().nullable(),
+          cleanupDeletedCount: z.number().int().min(0),
+          reason: z.string().nullable(),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
     listLogs: {
       method: "GET" as const,
       path: "/api/admin/backups/logs",

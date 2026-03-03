@@ -109,6 +109,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -130,6 +131,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
       const code = extractErrorCode(error);
@@ -151,6 +153,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
       const code = extractErrorCode(error);

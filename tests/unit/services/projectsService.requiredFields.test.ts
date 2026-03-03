@@ -75,6 +75,7 @@ describe("FT02 unit: projects service required-field behavior", () => {
     getCustomerMock.mockResolvedValueOnce({
       id: 1,
       customerNumber: "4711",
+      isActive: true,
     });
     createProjectMock.mockResolvedValueOnce({
       id: 100,

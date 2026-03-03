@@ -24,6 +24,24 @@ export async function listBackupLogs(req: Request, res: Response, next: NextFunc
   }
 }
 
+export async function runBackupNow(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const payload = await backupService.runBackupNow({ roleKey });
+    res.json(payload);
+  } catch (error) {
+    if (backupService.isBackupServiceError(error)) {
+      res.status(error.status).json({ code: error.code, message: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
 export async function downloadBackupFile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = getRoleKeyFromRequest(req);

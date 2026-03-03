@@ -867,8 +867,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
         const rawBody = await response.text();
         const parsed = parseErrorPayload(rawBody);
-        if (parsed?.code === "LOCK_VIOLATION") {
-          throw buildApiError("Termin ist gesperrt.", response.status, "LOCK_VIOLATION");
+        if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
+          throw buildApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
         }
         if (parsed?.code === "VERSION_CONFLICT") {
           throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
@@ -916,7 +916,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
     },
     onError: (error) => {
       const err = error as AppointmentApiError;
-      if (err.code === "LOCK_VIOLATION" || err.status === 403) {
+      if (err.code === "PAST_APPOINTMENT_READONLY" || err.status === 403) {
         toast({
           title: "Löschen nicht möglich",
           description: "Termin ist gesperrt.",
@@ -1005,18 +1005,34 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
           : (rawBody.trim().length > 0 ? { message: rawBody } : null);
       console.info(`${logPrefix} submit response`, { status: response.status });
       if (!response.ok) {
-        if (parsed?.code === "BUSINESS_CONFLICT") {
+        if (parsed?.code === "EMPLOYEE_OVERLAP_CONFLICT") {
           const conflictNames = formatConflictEmployees(parsed.conflictEmployees);
           const conflictDetail = conflictNames
             ? `Konflikt mit: ${conflictNames}.`
             : "Mindestens ein Mitarbeiter ist in diesem Zeitraum bereits geplant.";
-          console.info(`${logPrefix} submit blocked: BUSINESS_CONFLICT`, {
+          console.info(`${logPrefix} submit blocked: EMPLOYEE_OVERLAP_CONFLICT`, {
             status: response.status,
             conflictEmployees: parsed.conflictEmployees?.length ?? 0,
           });
           toast({
             title: "Speichern nicht moeglich",
             description: `${parsed.message ?? "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen."} ${conflictDetail}`,
+            variant: "destructive",
+          });
+          return;
+        }
+        if (parsed?.code === "INACTIVE_ENTITY_ASSIGNMENT") {
+          toast({
+            title: "Speichern nicht moeglich",
+            description: "Mindestens ein zugewiesener Mitarbeiter ist inaktiv.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
+          toast({
+            title: "Speichern nicht moeglich",
+            description: "Historische Termine koennen nicht geaendert werden.",
             variant: "destructive",
           });
           return;
@@ -1124,6 +1140,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
             emptyText="Kein Projekt ausgewählt"
             testId="slot-project-relation"
             addActionTestId="button-select-project"
+            className="min-h-[18rem]"
           >
             {selectedProject ? (
               <ProjectDetailCard

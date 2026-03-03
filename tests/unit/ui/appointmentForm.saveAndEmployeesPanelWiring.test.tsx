@@ -62,7 +62,7 @@ describe("FT01 appointment form save and employees panel wiring", () => {
   it("maps delete errors by API code instead of raw status text", () => {
     expect(source).toContain("if (parsed?.code === \"VALIDATION_ERROR\")");
     expect(source).toContain("body: JSON.stringify({ version })");
-    expect(source).toContain("if (err.code === \"LOCK_VIOLATION\" || err.status === 403)");
+    expect(source).toContain("if (err.code === \"PAST_APPOINTMENT_READONLY\" || err.status === 403)");
     expect(source).toContain("if (err.code === \"VERSION_CONFLICT\")");
     expect(source).toContain("if (err.code === \"VALIDATION_ERROR\")");
   });

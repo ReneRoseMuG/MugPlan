@@ -510,6 +510,8 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
             {filteredEmployees.map((employee) => {
               const tourInfo = getTourName(employee.tourId);
               const teamInfo = getTeamName(employee.teamId);
+              const appointments = appointmentsByEmployeeId.get(employee.id) ?? [];
+              const currentAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
 
               return (
                 <EntityCard
@@ -539,18 +541,27 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
                     </Button>
                   }
                   footer={
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleOpenDetail(employee);
-                      }}
-                      data-testid={`button-edit-employee-${employee.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <span
+                        className="text-xs text-slate-600"
+                        data-testid={`text-employee-current-appointments-${employee.id}`}
+                      >
+                        Aktuelle Termine: {currentAppointmentsCount}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOpenDetail(employee);
+                        }}
+                        data-testid={`button-edit-employee-${employee.id}`}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </div>
                   }
+                  footerVisibility="visible"
                 >
                   <div className="space-y-2 text-sm">
                     {employee.phone && (

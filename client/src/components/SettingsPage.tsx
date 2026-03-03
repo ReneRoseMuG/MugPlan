@@ -177,6 +177,9 @@ export function SettingsPage() {
   const [hoverPreviewOpenDelaySaved, setHoverPreviewOpenDelaySaved] = useState(false);
   const [cardListColumnsSaved, setCardListColumnsSaved] = useState(false);
   const [backupEnabledSaved, setBackupEnabledSaved] = useState(false);
+  const [isRunningBackupNow, setIsRunningBackupNow] = useState(false);
+  const [backupRunInfo, setBackupRunInfo] = useState<string | null>(null);
+  const [backupRunError, setBackupRunError] = useState<string | null>(null);
 
   useEffect(() => {
     setPreviewValue(resolvedPreviewValue);
@@ -404,6 +407,42 @@ export function SettingsPage() {
   };
 
   const backupRows = backupsQuery.data ?? [];
+
+  const handleRunBackupNow = async () => {
+    setBackupRunInfo(null);
+    setBackupRunError(null);
+    setIsRunningBackupNow(true);
+    try {
+      const response = await fetch(api.backups.runNow.path, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Backup-Lauf konnte nicht gestartet werden");
+      }
+      const payload = await response.json() as {
+        status: "success" | "error" | "skipped";
+        reason?: string | null;
+        cleanupDeletedCount?: number;
+      };
+      const base = payload.status === "success"
+        ? "Backup erfolgreich erzeugt."
+        : payload.status === "skipped"
+          ? "Backup-Lauf uebersprungen."
+          : "Backup-Lauf mit Fehler beendet.";
+      const reason = payload.reason ? ` Grund: ${payload.reason}.` : "";
+      const cleanup = typeof payload.cleanupDeletedCount === "number"
+        ? ` Retention geloeschte Dateien: ${payload.cleanupDeletedCount}.`
+        : "";
+      setBackupRunInfo(`${base}${reason}${cleanup}`);
+      await backupsQuery.refetch();
+    } catch (error) {
+      setBackupRunError(error instanceof Error ? error.message : "Backup-Lauf fehlgeschlagen");
+    } finally {
+      setIsRunningBackupNow(false);
+    }
+  };
 
   return (
     <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white p-6 flex flex-col" data-testid="settings-landing-page">
@@ -639,10 +678,23 @@ export function SettingsPage() {
         <div className="rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
           <div className="mb-3 flex items-center justify-between">
             <p className="font-semibold text-slate-900">Backups (Read-Only Monitoring)</p>
-            <Button variant="outline" size="sm" onClick={() => void backupsQuery.refetch()} data-testid="button-backups-refresh">
-              Aktualisieren
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => void handleRunBackupNow()}
+                disabled={isRunningBackupNow}
+                data-testid="button-backups-run-now"
+              >
+                {isRunningBackupNow ? "Backup laeuft..." : "Backup jetzt erzeugen"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => void backupsQuery.refetch()} data-testid="button-backups-refresh">
+                Aktualisieren
+              </Button>
+            </div>
           </div>
+          {backupRunInfo && <p className="mb-2 text-xs text-emerald-700">{backupRunInfo}</p>}
+          {backupRunError && <p className="mb-2 text-xs text-destructive">{backupRunError}</p>}
 
           {backupsQuery.isLoading ? (
             <p className="text-sm text-slate-500">Backups werden geladen...</p>

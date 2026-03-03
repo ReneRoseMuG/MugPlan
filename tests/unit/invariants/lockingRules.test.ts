@@ -35,7 +35,7 @@ describe("PKG-02 Invariant: locking rules", () => {
     });
   });
 
-  it("blocks update for non-admin on locked appointment with deterministic LOCK_VIOLATION", async () => {
+  it("blocks update for non-admin on locked appointment with deterministic PAST_APPOINTMENT_READONLY", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 201,
       version: 3,
@@ -62,12 +62,12 @@ describe("PKG-02 Invariant: locking rules", () => {
         },
         "DISPONENT",
       ),
-    ).rejects.toMatchObject({ status: 403, code: "LOCK_VIOLATION" });
+    ).rejects.toMatchObject({ status: 409, code: "PAST_APPOINTMENT_READONLY" });
 
     expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 
-  it("blocks delete for non-admin on locked appointment with deterministic LOCK_VIOLATION", async () => {
+  it("blocks delete for non-admin on locked appointment with deterministic PAST_APPOINTMENT_READONLY", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 202,
       version: 4,
@@ -91,11 +91,11 @@ describe("PKG-02 Invariant: locking rules", () => {
     }
 
     expect(isAppointmentError(error)).toBe(true);
-    expect(error).toMatchObject({ status: 403, code: "LOCK_VIOLATION" });
+    expect(error).toMatchObject({ status: 409, code: "PAST_APPOINTMENT_READONLY" });
     expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 
-  it("blocks admin update on locked appointment with BUSINESS_CONFLICT", async () => {
+  it("blocks admin update on locked appointment with PAST_APPOINTMENT_READONLY", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 203,
       version: 5,
@@ -121,11 +121,11 @@ describe("PKG-02 Invariant: locking rules", () => {
         },
         "ADMIN",
       ),
-    ).rejects.toMatchObject({ status: 409, code: "BUSINESS_CONFLICT" });
+    ).rejects.toMatchObject({ status: 409, code: "PAST_APPOINTMENT_READONLY" });
     expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 
-  it("allows admin delete on locked appointment", async () => {
+  it("blocks admin delete on locked appointment", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 204,
       version: 6,
@@ -140,11 +140,10 @@ describe("PKG-02 Invariant: locking rules", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
-    appointmentsRepoMock.deleteAppointmentWithVersionTx.mockResolvedValue({ kind: "deleted" });
-
-    const result = await deleteAppointment(204, 6, "ADMIN");
-
-    expect(result).toMatchObject({ id: 204 });
-    expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).toHaveBeenCalledOnce();
+    await expect(deleteAppointment(204, 6, "ADMIN")).rejects.toMatchObject({
+      status: 409,
+      code: "PAST_APPOINTMENT_READONLY",
+    });
+    expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 });

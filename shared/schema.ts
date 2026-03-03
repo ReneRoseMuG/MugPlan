@@ -610,6 +610,7 @@ export const appointments = mysqlTable("appointments", {
   startTime: time("start_time"),
   endDate: date("end_date"),
   endTime: time("end_time"),
+  externalEventId: varchar("external_event_id", { length: 255 }),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
@@ -917,3 +918,20 @@ export const backupLog = mysqlTable("backup_log", {
 }));
 
 export type BackupLog = typeof backupLog.$inferSelect;
+
+export const calendarSyncLog = mysqlTable("calendar_sync_log", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  appointmentId: bigint("appointment_id", { mode: "number" }),
+  action: varchar("action", { length: 32 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull(),
+  message: text("message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  byAppointmentCreated: index("idx_calendar_sync_appointment_created").on(
+    table.appointmentId,
+    table.createdAt,
+  ),
+  byStatusCreated: index("idx_calendar_sync_status_created").on(table.status, table.createdAt),
+}));
+
+export type CalendarSyncLog = typeof calendarSyncLog.$inferSelect;

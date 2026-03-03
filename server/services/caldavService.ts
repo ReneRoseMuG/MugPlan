@@ -19,6 +19,10 @@ function buildUid(appointmentId: number): string {
   return `mugplan-appointment-${appointmentId}@mugplan.local`;
 }
 
+function buildDefaultExternalEventId(appointmentId: number): string {
+  return buildUid(appointmentId);
+}
+
 function formatDateIcs(date: string): string {
   return date.replace(/-/g, "");
 }
@@ -65,20 +69,23 @@ function buildIcsEvent(input: {
   ].join("\r\n");
 }
 
-function buildEventUrl(config: CaldavConfig, appointmentId: number): string {
-  return `${config.baseUrl}/${encodeURIComponent(buildUid(appointmentId))}.ics`;
+function buildEventUrl(config: CaldavConfig, externalEventId: string): string {
+  return `${config.baseUrl}/${encodeURIComponent(externalEventId)}.ics`;
 }
 
 function authHeader(config: CaldavConfig): string {
   return `Basic ${Buffer.from(`${config.username}:${config.password}`).toString("base64")}`;
 }
 
-export async function upsertAppointmentInCaldav(appointmentId: number): Promise<void> {
+export async function upsertAppointmentInCaldav(appointmentId: number): Promise<{ externalEventId: string } | null> {
   const config = loadConfig();
-  if (!config) return;
+  if (!config) return null;
 
   const row = await backupRuntimeRepository.getAppointmentByIdForSync(appointmentId);
-  if (!row || !row.startDate) return;
+  if (!row || !row.startDate) return null;
+  const externalEventId = (typeof row.externalEventId === "string" && row.externalEventId.trim().length > 0)
+    ? row.externalEventId.trim()
+    : buildDefaultExternalEventId(appointmentId);
 
   const title = row.title?.trim() || row.projectName || `Termin ${appointmentId}`;
   const descriptionParts = [
@@ -101,7 +108,7 @@ export async function upsertAppointmentInCaldav(appointmentId: number): Promise<
     endTime: row.endTime ?? null,
   });
 
-  const response = await fetch(buildEventUrl(config, appointmentId), {
+  const response = await fetch(buildEventUrl(config, externalEventId), {
     method: "PUT",
     headers: {
       Authorization: authHeader(config),
@@ -113,13 +120,20 @@ export async function upsertAppointmentInCaldav(appointmentId: number): Promise<
   if (!response.ok) {
     throw new Error(`CalDAV upsert failed (${response.status})`);
   }
+  return { externalEventId };
 }
 
-export async function deleteAppointmentInCaldav(appointmentId: number): Promise<void> {
+export async function deleteAppointmentInCaldav(
+  appointmentId: number,
+  externalEventIdOverride?: string | null,
+): Promise<{ externalEventId: string } | null> {
   const config = loadConfig();
-  if (!config) return;
+  if (!config) return null;
+  const externalEventId = (typeof externalEventIdOverride === "string" && externalEventIdOverride.trim().length > 0)
+    ? externalEventIdOverride.trim()
+    : buildDefaultExternalEventId(appointmentId);
 
-  const response = await fetch(buildEventUrl(config, appointmentId), {
+  const response = await fetch(buildEventUrl(config, externalEventId), {
     method: "DELETE",
     headers: {
       Authorization: authHeader(config),
@@ -129,5 +143,5 @@ export async function deleteAppointmentInCaldav(appointmentId: number): Promise<
   if (!response.ok && response.status !== 404) {
     throw new Error(`CalDAV delete failed (${response.status})`);
   }
+  return { externalEventId };
 }
-

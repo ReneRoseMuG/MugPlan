@@ -145,7 +145,7 @@ export function expectConflictPayloadContainsEmployees(
   expected: Array<{ id: number; fullName?: string }>,
 ) {
   const body = payload as { code?: string; message?: string; conflictEmployees?: Array<{ id?: number; fullName?: string }> };
-  expect(body.code).toBe("BUSINESS_CONFLICT");
+  expect(body.code).toBe("EMPLOYEE_OVERLAP_CONFLICT");
   expect(typeof body.message).toBe("string");
   expect((body.message ?? "").trim().length).toBeGreaterThan(0);
   expect(Array.isArray(body.conflictEmployees)).toBe(true);

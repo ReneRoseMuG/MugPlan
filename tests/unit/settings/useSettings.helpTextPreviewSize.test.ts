@@ -16,7 +16,8 @@
  * Sichere Fallback-Logik fuer helpTextPreviewSize im Frontend garantieren.
  */
 import { describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { useSetting } from "../../../client/src/hooks/useSettings";
 
 const useSettingsContextMock = vi.fn();
@@ -26,6 +27,16 @@ vi.mock("../../../client/src/providers/SettingsProvider", () => ({
 }));
 
 describe("FT16 useSettings helpTextPreviewSize", () => {
+  const readResolvedValue = () => {
+    let resolved: unknown;
+    function Probe() {
+      resolved = useSetting("helpTextPreviewSize");
+      return null;
+    }
+    renderToString(createElement(Probe));
+    return resolved;
+  };
+
   it("returns valid enum values unchanged", () => {
     useSettingsContextMock.mockReturnValue({
       settingsByKey: new Map([
@@ -33,8 +44,7 @@ describe("FT16 useSettings helpTextPreviewSize", () => {
       ]),
     });
 
-    const { result } = renderHook(() => useSetting("helpTextPreviewSize"));
-    expect(result.current).toBe("large");
+    expect(readResolvedValue()).toBe("large");
   });
 
   it("falls back to medium for missing values", () => {
@@ -42,8 +52,7 @@ describe("FT16 useSettings helpTextPreviewSize", () => {
       settingsByKey: new Map(),
     });
 
-    const { result } = renderHook(() => useSetting("helpTextPreviewSize"));
-    expect(result.current).toBe("medium");
+    expect(readResolvedValue()).toBe("medium");
   });
 
   it("falls back to medium for invalid values", () => {
@@ -53,7 +62,6 @@ describe("FT16 useSettings helpTextPreviewSize", () => {
       ]),
     });
 
-    const { result } = renderHook(() => useSetting("helpTextPreviewSize"));
-    expect(result.current).toBe("medium");
+    expect(readResolvedValue()).toBe("medium");
   });
 });

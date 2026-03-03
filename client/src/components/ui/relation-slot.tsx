@@ -17,6 +17,7 @@ export interface RelationSlotProps {
   testId?: string;
   addActionTestId?: string;
   removeActionTestId?: string;
+  className?: string;
 }
 
 export function RelationSlot({
@@ -31,12 +32,13 @@ export function RelationSlot({
   testId,
   addActionTestId,
   removeActionTestId,
+  className,
 }: RelationSlotProps) {
   const canAdd = state === "empty" && !!onAdd;
   const canRemove = state === "active" && !!onRemove;
 
   return (
-    <section className="sub-panel flex flex-col gap-4" data-testid={testId}>
+    <section className={`sub-panel flex flex-col gap-4 ${className ?? ""}`.trim()} data-testid={testId}>
       <header className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-muted-foreground shrink-0">{icon}</span>

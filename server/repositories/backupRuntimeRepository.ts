@@ -31,13 +31,36 @@ export type ExportAppointmentRow = {
   addressLine2: string | null;
 };
 
+function toDateOnlyString(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) return null;
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  return null;
+}
+
 export async function getLatestRelevantDataChangeAt(): Promise<Date | null> {
   const result = await db.execute(sql`
     SELECT GREATEST(
       IFNULL((SELECT MAX(updated_at) FROM appointments), '1970-01-01 00:00:00'),
       IFNULL((SELECT MAX(updated_at) FROM project), '1970-01-01 00:00:00'),
       IFNULL((SELECT MAX(updated_at) FROM customer), '1970-01-01 00:00:00'),
-      IFNULL((SELECT MAX(updated_at) FROM employee), '1970-01-01 00:00:00')
+      IFNULL((SELECT MAX(updated_at) FROM employee), '1970-01-01 00:00:00'),
+      IFNULL((SELECT MAX(updated_at) FROM tours), '1970-01-01 00:00:00')
     ) AS latest_change
   `);
 
@@ -85,8 +108,8 @@ export async function getExportAppointmentRows(range: { fromDate: Date; toDate: 
 
   return rows.map((row) => ({
     appointmentId: row.appointmentId,
-    startDate: row.startDate ? String(row.startDate).slice(0, 10) : null,
-    endDate: row.endDate ? String(row.endDate).slice(0, 10) : null,
+    startDate: toDateOnlyString(row.startDate),
+    endDate: toDateOnlyString(row.endDate),
     startTime: row.startTime ?? null,
     endTime: row.endTime ?? null,
     tourId: row.tourId ?? null,
@@ -133,8 +156,8 @@ export async function getAllExportAppointmentRows(): Promise<ExportAppointmentRo
 
   return rows.map((row) => ({
     appointmentId: row.appointmentId,
-    startDate: row.startDate ? String(row.startDate).slice(0, 10) : null,
-    endDate: row.endDate ? String(row.endDate).slice(0, 10) : null,
+    startDate: toDateOnlyString(row.startDate),
+    endDate: toDateOnlyString(row.endDate),
     startTime: row.startTime ?? null,
     endTime: row.endTime ?? null,
     tourId: row.tourId ?? null,
@@ -205,6 +228,7 @@ export async function getAppointmentByIdForSync(appointmentId: number) {
       endDate: appointments.endDate,
       startTime: appointments.startTime,
       endTime: appointments.endTime,
+      externalEventId: appointments.externalEventId,
       projectName: projects.name,
       orderNumber: projects.orderNumber,
       customerNumber: customers.customerNumber,
