@@ -1838,6 +1838,21 @@ export const api = {
     },
   },
   backups: {
+    runNow: {
+      method: "POST" as const,
+      path: "/api/admin/backups/run",
+      responses: {
+        200: z.object({
+          status: z.enum(["success", "error", "skipped"]),
+          logId: z.number().int().positive().nullable(),
+          exportedRecordCount: z.number().int().min(0),
+          filePath: z.string().nullable(),
+          cleanupDeletedCount: z.number().int().min(0),
+          reason: z.string().nullable(),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
     listLogs: {
       method: "GET" as const,
       path: "/api/admin/backups/logs",

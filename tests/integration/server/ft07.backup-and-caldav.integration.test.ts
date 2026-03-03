@@ -7,8 +7,10 @@
  * Abgedeckte Regeln:
  * - Scheduler erzeugt bei relevanten Datenaenderungen ein success-Backup mit Excel/PDF-Dateien.
  * - Zweiter Lauf ohne relevante Datenaenderung erzeugt skipped (no_changes).
+ * - Manueller Admin-Backup-Run erzeugt erzwungen einen Exportlauf.
  * - Admin-Backuplog-API und Download-Endpunkte liefern echte Daten aus backup_log/file_path.
  * - CalDAV-Outbound-Sync sendet PUT/DELETE bei Termin create/update/delete an HTTPS-Endpoint.
+ * - CalDAV-Persistenz schreibt external_event_id und calendar_sync_log.
  *
  * Fehlerfaelle:
  * - Fehlende Dateierzeugung trotz success-Log.
@@ -36,6 +38,8 @@ import * as projectsRepository from "../../../server/repositories/projectsReposi
 import * as toursRepository from "../../../server/repositories/toursRepository";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import * as backupRepository from "../../../server/repositories/backupRepository";
+import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import * as calendarSyncRepository from "../../../server/repositories/calendarSyncRepository";
 import { runBackupSchedulerTick } from "../../../server/services/backupScheduler";
 import { getAuthUserByUsername } from "../../../server/repositories/usersRepository";
 import * as userSettingsService from "../../../server/services/userSettingsService";
@@ -177,6 +181,11 @@ async function clearBackupLogs(): Promise<void> {
   } catch {
     // Ignore when table does not exist yet; scheduler/repo creates it lazily.
   }
+  try {
+    await db.execute(sql`DELETE FROM calendar_sync_log`);
+  } catch {
+    // Ignore when table does not exist yet.
+  }
 }
 
 describe("FT07 integration: backup scheduler + caldav outbound", () => {
@@ -249,6 +258,23 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
     await agent.get(`/api/admin/backups/${success.id}/download/pdf`).expect(200);
   });
 
+  it("runs forced backup via admin API even without data changes", async () => {
+    await clearBackupLogs();
+    process.env.FT07_DISABLE_DB_LOCK = "1";
+    await setGlobalSetting("backup_enabled", false);
+    process.env.BACKUP_BASE_PATH = backupBaseDir;
+    await sleep(1200);
+    await seedDomainData();
+
+    const agent = await loginAdminAgent();
+    const runResponse = await agent.post("/api/admin/backups/run").expect(200);
+    expect(runResponse.body.status).toBe("success");
+    expect(runResponse.body.reason).toBeNull();
+
+    const logsResponse = await agent.get("/api/admin/backups/logs").expect(200);
+    expect(logsResponse.body[0]?.status).toBe("success");
+  });
+
   it("dispatches CalDAV PUT/DELETE on appointment create/update/delete against HTTPS test endpoint", async () => {
     process.env.FT07_DISABLE_DB_LOCK = "1";
     const requests: Array<{ method: string; url: string; body: string }> = [];
@@ -288,6 +314,12 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
       const createdCountBefore = requests.length;
       await waitFor(() => requests.length > createdCountBefore);
       expect(requests.some((r) => r.method === "PUT" && r.url.includes("mugplan-appointment"))).toBe(true);
+      await waitFor(async () => {
+        const appointment = await appointmentsRepository.getAppointment(seeded.appointmentId);
+        return Boolean(appointment?.externalEventId);
+      });
+      const afterCreate = await appointmentsRepository.getAppointment(seeded.appointmentId);
+      expect(afterCreate?.externalEventId).toContain(`mugplan-appointment-${seeded.appointmentId}`);
 
       const details = await appointmentsService.getAppointmentDetails(seeded.appointmentId);
       if (!details) throw new Error("details missing");
@@ -310,6 +342,10 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
       if (!latest) throw new Error("latest missing");
       await appointmentsService.deleteAppointment(seeded.appointmentId, latest.version, "ADMIN");
       await waitFor(() => requests.some((r) => r.method === "DELETE"));
+      await waitFor(async () => {
+        const rows = await calendarSyncRepository.listCalendarSyncLogs(10);
+        return rows.length >= 3;
+      });
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }

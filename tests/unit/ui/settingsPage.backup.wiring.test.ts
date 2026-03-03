@@ -32,6 +32,7 @@ describe("FT07 UI: settings page backup wiring", () => {
 
   it("contains backup monitoring table with required columns", () => {
     expect(source).toContain("Backups (Read-Only Monitoring)");
+    expect(source).toContain('data-testid="button-backups-run-now"');
     expect(source).toContain("<th className=\"px-2 py-2\">Created</th>");
     expect(source).toContain("<th className=\"px-2 py-2\">Status</th>");
     expect(source).toContain("<th className=\"px-2 py-2\">Fehlermeldung</th>");

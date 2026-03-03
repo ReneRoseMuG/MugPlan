@@ -21,10 +21,6 @@ vi.mock("../../../server/services/userSettingsService", () => ({
   getGlobalSettingValue: vi.fn(),
 }));
 
-vi.mock("../../../server/services/backupService", () => ({
-  createSkippedBackupLog: vi.fn(),
-}));
-
 vi.mock("../../../server/repositories/backupRepository", () => ({
   createBackupLogEntry: vi.fn(),
   getLastSuccessfulExportAt: vi.fn(async () => new Date("2026-01-01T00:00:00.000Z")),
@@ -48,8 +44,12 @@ vi.mock("../../../server/services/backupStorageService", () => ({
   persistBackupFiles: vi.fn(),
 }));
 
+vi.mock("../../../server/services/backupRetentionService", () => ({
+  cleanupOldBackups: vi.fn(async () => ({ deletedCount: 0 })),
+}));
+
 import { getGlobalSettingValue } from "../../../server/services/userSettingsService";
-import { createSkippedBackupLog } from "../../../server/services/backupService";
+import { createBackupLogEntry } from "../../../server/repositories/backupRepository";
 import { runBackupSchedulerTick } from "../../../server/services/backupScheduler";
 
 describe("FT07 service: backup scheduler disabled handling", () => {
@@ -63,7 +63,12 @@ describe("FT07 service: backup scheduler disabled handling", () => {
     await runBackupSchedulerTick();
 
     expect(getGlobalSettingValue).toHaveBeenCalledWith("backup_enabled");
-    expect(createSkippedBackupLog).toHaveBeenCalledWith("disabled");
+    expect(createBackupLogEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "skipped",
+        errorMessage: "disabled",
+      }),
+    );
   });
 
   it("does not write disabled skipped log when backup_enabled is true", async () => {
@@ -71,6 +76,11 @@ describe("FT07 service: backup scheduler disabled handling", () => {
 
     await runBackupSchedulerTick();
 
-    expect(createSkippedBackupLog).not.toHaveBeenCalledWith("disabled");
+    expect(createBackupLogEntry).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "skipped",
+        errorMessage: "disabled",
+      }),
+    );
   });
 });

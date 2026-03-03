@@ -37,7 +37,8 @@ export async function getLatestRelevantDataChangeAt(): Promise<Date | null> {
       IFNULL((SELECT MAX(updated_at) FROM appointments), '1970-01-01 00:00:00'),
       IFNULL((SELECT MAX(updated_at) FROM project), '1970-01-01 00:00:00'),
       IFNULL((SELECT MAX(updated_at) FROM customer), '1970-01-01 00:00:00'),
-      IFNULL((SELECT MAX(updated_at) FROM employee), '1970-01-01 00:00:00')
+      IFNULL((SELECT MAX(updated_at) FROM employee), '1970-01-01 00:00:00'),
+      IFNULL((SELECT MAX(updated_at) FROM tours), '1970-01-01 00:00:00')
     ) AS latest_change
   `);
 
@@ -205,6 +206,7 @@ export async function getAppointmentByIdForSync(appointmentId: number) {
       endDate: appointments.endDate,
       startTime: appointments.startTime,
       endTime: appointments.endTime,
+      externalEventId: appointments.externalEventId,
       projectName: projects.name,
       orderNumber: projects.orderNumber,
       customerNumber: customers.customerNumber,

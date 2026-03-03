@@ -37,3 +37,22 @@ describe("FT07 settings registry: backup_enabled", () => {
     expect(setting.validate(null)).toBe(false);
   });
 });
+
+describe("FT07 settings registry: backup_lane_tour_ids", () => {
+  it("defines backup_lane_tour_ids as GLOBAL string", () => {
+    const setting = userSettingsRegistry.backupLaneTourIds;
+    expect(setting.key).toBe("backup_lane_tour_ids");
+    expect(setting.type).toBe("string");
+    expect(setting.defaultValue).toBe("");
+    expect(setting.allowedScopes).toEqual(["GLOBAL"]);
+  });
+
+  it("accepts only csv values with max 3 positive unique ids", () => {
+    const setting = userSettingsRegistry.backupLaneTourIds;
+    expect(setting.validate("")).toBe(true);
+    expect(setting.validate("1,2,3")).toBe(true);
+    expect(setting.validate("1,1")).toBe(false);
+    expect(setting.validate("1,2,3,4")).toBe(false);
+    expect(setting.validate("abc")).toBe(false);
+  });
+});

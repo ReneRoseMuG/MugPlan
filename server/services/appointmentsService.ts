@@ -698,7 +698,7 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
     return existing;
   });
   if (deleted?.id) {
-    dispatchCalDavDelete(deleted.id);
+    dispatchCalDavDelete(deleted.id, deleted.externalEventId ?? null);
   }
   return deleted;
 }

@@ -85,6 +85,17 @@ function isValidTemplateValue(value: unknown): value is string {
   return placeholders.every((placeholder) => allowed.has(placeholder));
 }
 
+function isValidBackupLaneTourIds(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return true;
+  const parts = trimmed.split(",").map((part) => part.trim()).filter((part) => part.length > 0);
+  if (parts.length > 3) return false;
+  const parsed = parts.map((part) => Number.parseInt(part, 10));
+  if (parsed.some((id) => !Number.isInteger(id) || id <= 0)) return false;
+  return new Set(parsed).size === parsed.length;
+}
+
 export const userSettingsRegistry = {
   attachmentPreviewSize: {
     key: "attachmentPreviewSize",
@@ -127,6 +138,16 @@ export const userSettingsRegistry = {
     defaultValue: true,
     allowedScopes: ["GLOBAL"],
     validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
+  backupLaneTourIds: {
+    key: "backup_lane_tour_ids",
+    label: "Backup Tour-Lanes (CSV)",
+    description: "Feste Tour-IDs fuer FT07-Exportlanes als CSV (max. 3 IDs, z. B. 1,2,3).",
+    type: "string",
+    defaultValue: "",
+    allowedScopes: ["GLOBAL"],
+    placeholderWhitelist: [],
+    validate: isValidBackupLaneTourIds,
   },
   calendarWeekendColumnPercent: {
     key: "calendarWeekendColumnPercent",

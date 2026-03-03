@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import * as backupRepository from "../repositories/backupRepository";
+import { runBackupManualTick } from "./backupScheduler";
 
 export type BackupDownloadKind = "excel" | "pdf";
 
@@ -90,7 +91,11 @@ export async function createSkippedBackupLog(reason: string): Promise<void> {
   });
 }
 
+export async function runBackupNow(context: RequestContext) {
+  requireAdmin(context);
+  return runBackupManualTick();
+}
+
 export function isBackupServiceError(error: unknown): error is BackupServiceError {
   return error instanceof BackupServiceError;
 }
-

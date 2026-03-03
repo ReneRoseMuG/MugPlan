@@ -313,6 +313,16 @@ export async function getAppointmentWithEmployees(id: number) {
   return { ...appointment, employees: employeeRows };
 }
 
+export async function setAppointmentExternalEventId(
+  appointmentId: number,
+  externalEventId: string | null,
+): Promise<void> {
+  await db
+    .update(appointments)
+    .set({ externalEventId })
+    .where(eq(appointments.id, appointmentId));
+}
+
 export async function createAppointment(data: InsertAppointment, employeeIds: number[]) {
   return withAppointmentTransaction(async (tx) => {
     logDebug(`${logPrefix} create appointment for projectId=${data.projectId}`);
