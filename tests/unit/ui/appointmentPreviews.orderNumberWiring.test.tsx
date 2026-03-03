@@ -52,4 +52,14 @@ describe("FT02 appointment preview order number wiring", () => {
     expect(badgeSource).toContain('createAppointmentWeeklyPanelPreview(previewAppointment, { sizeProfile: "sidebarTable" })');
     expect(badgeSource).not.toContain("createAppointmentInfoBadgePreview");
   });
+
+  it("enables tour name row only in weekly panel previews", () => {
+    const previewFile = path.resolve(process.cwd(), "client/src/components/ui/badge-previews/appointment-weekly-panel-preview.tsx");
+    const previewSource = readFileSync(previewFile, "utf8");
+    const weekViewFile = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekView.tsx");
+    const weekViewSource = readFileSync(weekViewFile, "utf8");
+
+    expect(previewSource).toContain("showPreviewTourNameLine");
+    expect(weekViewSource).not.toContain("showPreviewTourNameLine");
+  });
 });

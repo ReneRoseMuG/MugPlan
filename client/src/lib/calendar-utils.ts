@@ -2,6 +2,7 @@ import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import type { CalendarAppointment } from "./calendar-appointments";
 
 export const CALENDAR_NEUTRAL_COLOR = "#CBD5E1";
+export const CALENDAR_UNASSIGNED_TOUR_COLOR = "#64748b";
 
 export function getAppointmentEndDate(appointment: CalendarAppointment) {
   return appointment.endDate ?? appointment.startDate;
