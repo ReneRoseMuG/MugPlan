@@ -177,6 +177,99 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     city: customer.city?.trim() || null,
   });
 
+  const normalizeOptionalExtractionText = (value: string | null | undefined): string | null => {
+    if (value == null) return null;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  };
+
+  const isBlankCustomerValue = (value: string | null | undefined): boolean =>
+    value == null || value.trim().length === 0;
+
+  const buildExistingCustomerMergePayload = (existingCustomer: Customer, customerDraft: ExtractionCustomerDraft) => {
+    const mergedFields: Record<string, string | null> = {};
+    const maybeAssign = (key: keyof ExtractionCustomerDraft, existingValue: string | null | undefined) => {
+      const incomingValue = normalizeOptionalExtractionText(customerDraft[key]);
+      if (!incomingValue) return;
+      if (!isBlankCustomerValue(existingValue)) return;
+      mergedFields[key] = incomingValue;
+    };
+
+    maybeAssign("firstName", existingCustomer.firstName);
+    maybeAssign("lastName", existingCustomer.lastName);
+    maybeAssign("company", existingCustomer.company);
+    maybeAssign("email", existingCustomer.email);
+    maybeAssign("phone", existingCustomer.phone);
+    maybeAssign("addressLine1", existingCustomer.addressLine1);
+    maybeAssign("addressLine2", existingCustomer.addressLine2);
+    maybeAssign("postalCode", existingCustomer.postalCode);
+    maybeAssign("city", existingCustomer.city);
+
+    if (Object.keys(mergedFields).length === 0) {
+      return null;
+    }
+
+    return {
+      ...mergedFields,
+      version: existingCustomer.version,
+    };
+  };
+
+  const tryPatchExistingCustomerFromExtraction = async (
+    existingCustomer: Customer,
+    customerDraft: ExtractionCustomerDraft,
+  ): Promise<Customer> => {
+    const updatePayload = buildExistingCustomerMergePayload(existingCustomer, customerDraft);
+    if (!updatePayload) {
+      return existingCustomer;
+    }
+
+    const sendUpdate = async (customer: Customer, payload: Record<string, string | number | null>) =>
+      fetch(`/api/customers/${customer.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+    let response = await sendUpdate(existingCustomer, updatePayload);
+    if (response.ok) {
+      const updatedCustomer = (await response.json()) as Customer;
+      await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      return updatedCustomer;
+    }
+
+    const firstErrorPayload = await response.json().catch(() => null);
+    if (firstErrorPayload?.code !== "VERSION_CONFLICT") {
+      return existingCustomer;
+    }
+
+    const freshResponse = await fetch(`/api/customers/${existingCustomer.id}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (!freshResponse.ok) {
+      return existingCustomer;
+    }
+
+    const freshCustomer = (await freshResponse.json()) as Customer;
+    const retryPayload = buildExistingCustomerMergePayload(freshCustomer, customerDraft);
+    if (!retryPayload) {
+      return freshCustomer;
+    }
+
+    response = await sendUpdate(freshCustomer, retryPayload);
+    if (!response.ok) {
+      return freshCustomer;
+    }
+
+    const updatedCustomer = (await response.json()) as Customer;
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    return updatedCustomer;
+  };
+
   const resolveCustomerByNumber = async (customerNumber: string) => {
     const response = await fetch("/api/document-extraction/resolve-customer-by-number", {
       method: "POST",
@@ -520,10 +613,6 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       if (!resolution.customer) {
         throw new Error("Dateninkonsistenz: Vorhandener Kunde konnte nicht geladen werden.");
       }
-      const confirmed = window.confirm("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");
-      if (!confirmed) {
-        return null;
-      }
       return resolution.customer;
     }
     return createCustomerFromDraft(customerDraft);
@@ -540,7 +629,8 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       if (!resolvedCustomer) {
         return;
       }
-      setCustomerId(resolvedCustomer.id);
+      const mergedCustomer = await tryPatchExistingCustomerFromExtraction(resolvedCustomer, payload.customer);
+      setCustomerId(mergedCustomer.id);
 
       const hasExistingValues = name.trim().length > 0 || descriptionMd.trim().length > 0;
       if (hasExistingValues) {

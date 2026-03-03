@@ -119,6 +119,25 @@ export async function getProject(id: number): Promise<Project | null> {
   return project || null;
 }
 
+export async function existsProjectByOrderNumber(orderNumber: string): Promise<boolean> {
+  const normalizedOrderNumber = orderNumber.trim();
+  if (normalizedOrderNumber.length === 0) {
+    return false;
+  }
+
+  const rows = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      sql`${projects.orderNumber} is not null
+          and char_length(trim(${projects.orderNumber})) > 0
+          and trim(${projects.orderNumber}) = ${normalizedOrderNumber}`,
+    )
+    .limit(1);
+
+  return rows.length > 0;
+}
+
 export async function getProjectWithCustomer(
   id: number,
 ): Promise<{ project: Project; customer: typeof customers.$inferSelect } | null> {

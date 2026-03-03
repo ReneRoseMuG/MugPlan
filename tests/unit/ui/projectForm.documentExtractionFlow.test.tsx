@@ -51,11 +51,12 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("readOnly={isEditing}");
   });
 
-  it("resolves duplicate customer numbers via confirm and existing customer reuse", () => {
+  it("resolves duplicate customer numbers silently and reuses existing customers", () => {
     expect(source).toContain("if (resolution.resolution === \"single\")");
-    expect(source).toContain("const confirmed = window.confirm(\"Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?\")");
     expect(source).toContain("return resolution.customer;");
-    expect(source).toContain("setCustomerId(resolvedCustomer.id);");
+    expect(source).toContain("tryPatchExistingCustomerFromExtraction");
+    expect(source).toContain("setCustomerId(mergedCustomer.id);");
+    expect(source).not.toContain("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");
     expect(source).not.toContain("if (resolution.resolution !== \"none\")");
   });
 });

@@ -37,6 +37,10 @@ export async function getProject(id: number): Promise<Project | null> {
   return projectsRepository.getProject(id);
 }
 
+export async function isOrderNumberAlreadyImported(orderNumber: string): Promise<boolean> {
+  return projectsRepository.existsProjectByOrderNumber(orderNumber);
+}
+
 export async function getProjectWithCustomer(
   id: number,
 ): Promise<{ project: Project; customer: Customer } | null> {

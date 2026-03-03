@@ -5,6 +5,7 @@ import { validateAndNormalizeExtraction } from "./extractionValidator";
 import { parseDocumentHeaderDeterministically } from "./documentHeaderDeterministicParser";
 import { parseDocumentArticleItemsDeterministically } from "./documentArticleDeterministicParser";
 import * as customersService from "./customersService";
+import * as projectsService from "./projectsService";
 
 export type DocumentExtractionResult = ReturnType<typeof validateAndNormalizeExtraction>;
 
@@ -17,6 +18,15 @@ export class DocumentExtractionDeterministicError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "DocumentExtractionDeterministicError";
+  }
+}
+
+export class DocumentExtractionOrderConflictError extends Error {
+  readonly code = "ORDER_NUMBER_ALREADY_IMPORTED";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "DocumentExtractionOrderConflictError";
   }
 }
 
@@ -39,6 +49,14 @@ export async function extractFromPdf(params: {
 
   try {
     const header = parseDocumentHeaderDeterministically(extractedText);
+    const normalizedOrderNumber = header.orderNumber?.trim() ?? "";
+    const shouldCheckOrderConflict = params.scope === "project_form" || params.scope === "appointment_form";
+    if (shouldCheckOrderConflict && normalizedOrderNumber.length > 0) {
+      const alreadyImported = await projectsService.isOrderNumberAlreadyImported(normalizedOrderNumber);
+      if (alreadyImported) {
+        throw new DocumentExtractionOrderConflictError("Auftrag schon importiert");
+      }
+    }
     const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
 
     return validateAndNormalizeExtraction({
@@ -64,6 +82,9 @@ export async function extractFromPdf(params: {
       warnings: [],
     });
   } catch (error) {
+    if (error instanceof DocumentExtractionOrderConflictError) {
+      throw error;
+    }
     const message = error instanceof Error ? error.message : String(error);
     throw new DocumentExtractionDeterministicError(message);
   }

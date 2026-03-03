@@ -54,6 +54,10 @@ export async function extractDocument(req: Request, res: Response, next: NextFun
       res.status(422).json({ message: err.message, field: "file" });
       return;
     }
+    if (err instanceof documentProcessingService.DocumentExtractionOrderConflictError) {
+      res.status(409).json({ code: err.code, message: err.message });
+      return;
+    }
     if (err instanceof Error && err.message.includes("extrahierbaren Text")) {
       res.status(422).json({ message: err.message, field: "file" });
       return;
@@ -83,4 +87,3 @@ export async function resolveCustomerByNumber(req: Request, res: Response, next:
     next(err);
   }
 }
-

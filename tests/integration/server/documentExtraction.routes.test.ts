@@ -120,6 +120,24 @@ describe("FT20 integration: document extraction routes", () => {
       });
   });
 
+  it("returns 409 when order number was already imported", async () => {
+    const agent = await loginAdminAgent();
+    vi.spyOn(documentProcessingService, "extractFromPdf").mockRejectedValueOnce(
+      new documentProcessingService.DocumentExtractionOrderConflictError("Auftrag schon importiert"),
+    );
+
+    await agent
+      .post("/api/document-extraction/extract?scope=project_form")
+      .attach("file", Buffer.from("%PDF-1.4"), { filename: "sample.pdf", contentType: "application/pdf" })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          code: "ORDER_NUMBER_ALREADY_IMPORTED",
+          message: "Auftrag schon importiert",
+        });
+      });
+  });
+
   it("returns 500 on unexpected service errors", async () => {
     const agent = await loginAdminAgent();
     vi.spyOn(documentProcessingService, "extractFromPdf").mockRejectedValueOnce(new Error("unexpected"));

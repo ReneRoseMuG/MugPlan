@@ -23,10 +23,12 @@ const {
   extractTextFromPdfBufferMock,
   parseDocumentHeaderDeterministicallyMock,
   parseDocumentArticleItemsDeterministicallyMock,
+  isOrderNumberAlreadyImportedMock,
 } = vi.hoisted(() => ({
   extractTextFromPdfBufferMock: vi.fn(),
   parseDocumentHeaderDeterministicallyMock: vi.fn(),
   parseDocumentArticleItemsDeterministicallyMock: vi.fn(),
+  isOrderNumberAlreadyImportedMock: vi.fn(),
 }));
 
 vi.mock("../../../server/services/documentTextExtractor", () => ({
@@ -46,10 +48,15 @@ vi.mock("../../../server/services/customersService", () => ({
   createCustomer: vi.fn(),
 }));
 
+vi.mock("../../../server/services/projectsService", () => ({
+  isOrderNumberAlreadyImported: isOrderNumberAlreadyImportedMock,
+}));
+
 import { handleZodError } from "../../../server/controllers/validation";
 import * as customersService from "../../../server/services/customersService";
 import {
   DocumentExtractionDeterministicError,
+  DocumentExtractionOrderConflictError,
   extractFromPdf,
 } from "../../../server/services/documentProcessingService";
 
@@ -97,6 +104,7 @@ describe("PKG-04 Validation & DTO: handleZodError", () => {
 describe("FT21 Validation & DTO: deterministic extraction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isOrderNumberAlreadyImportedMock.mockResolvedValue(false);
   });
 
   it("extractFromPdf returns normalized extraction and never persists customer data", async () => {
@@ -145,5 +153,28 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     ).rejects.toBeInstanceOf(DocumentExtractionDeterministicError);
 
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
+  });
+
+  it("aborts extraction with order conflict when order number already exists", async () => {
+    extractTextFromPdfBufferMock.mockResolvedValue("doc text");
+    parseDocumentHeaderDeterministicallyMock.mockReturnValue({
+      orderNumber: "A-1",
+      customerNumber: "K-1",
+      mobile: null,
+      firstName: "Max",
+      lastName: "Mustermann",
+      company: "Muster GmbH",
+      addressLine1: "Musterstrasse 1",
+      postalCode: "12345",
+      city: "Leipzig",
+    });
+    isOrderNumberAlreadyImportedMock.mockResolvedValueOnce(true);
+
+    await expect(
+      extractFromPdf({
+        scope: "project_form",
+        fileBuffer: Buffer.from("dummy"),
+      }),
+    ).rejects.toBeInstanceOf(DocumentExtractionOrderConflictError);
   });
 });

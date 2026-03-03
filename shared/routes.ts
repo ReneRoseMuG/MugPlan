@@ -213,6 +213,10 @@ export const api = {
           warnings: z.array(z.string()),
         }),
         400: errorSchemas.validation,
+        409: z.object({
+          code: z.literal("ORDER_NUMBER_ALREADY_IMPORTED"),
+          message: z.string(),
+        }),
         422: errorSchemas.validation,
       },
     },
