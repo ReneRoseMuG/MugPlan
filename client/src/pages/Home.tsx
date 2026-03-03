@@ -19,12 +19,11 @@ import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
-import { ImportExportPage } from "@/components/ImportExportPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
 import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'importExport' | 'settings' | 'demoData' | 'users';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData' | 'users';
 export type CalendarNavCommand = {
   id: number;
   direction: "next" | "prev";
@@ -241,8 +240,6 @@ export default function Home({ onLogout }: HomeProps) {
             <ProjectStatusPage />
           ) : view === 'helpTexts' && isAdmin ? (
             <HelpTextsPage />
-          ) : view === 'importExport' && isAdmin ? (
-            <ImportExportPage />
           ) : view === 'settings' && isAdmin ? (
             <SettingsPage />
           ) : view === 'demoData' && isAdmin ? (

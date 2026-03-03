@@ -42,5 +42,10 @@ describe("FT03 UI: Home week scroll restore wiring", () => {
     expect(source).toContain("onCancel={returnFromAppointment}");
     expect(source).toContain("onSaved={returnFromAppointment}");
   });
-});
 
+  it("removes import-export view path from Home", () => {
+    expect(source).not.toContain("importExport");
+    expect(source).not.toContain("ImportExportPage");
+    expect(source).not.toContain("view === 'importExport'");
+  });
+});

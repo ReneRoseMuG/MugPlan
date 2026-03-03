@@ -35,6 +35,11 @@ describe("FT07 UI: sidebar backup disabled wiring", () => {
     expect(sidebarSource).toContain("label=\"Termine\"");
   });
 
+  it("removes admin import-export navigation entry", () => {
+    expect(sidebarSource).not.toContain("label=\"Import/Export\"");
+    expect(sidebarSource).not.toContain("onViewChange('importExport')");
+  });
+
   it("applies red border style in Sidebar when backupDisabled is true", () => {
     expect(sidebarSource).toContain("backupDisabled = false");
     expect(sidebarSource).toContain('backupDisabled ? "border-2 border-red-600" : ""');
