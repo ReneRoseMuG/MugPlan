@@ -69,7 +69,7 @@ describe("FT01 integration: historical appointment guards", () => {
     });
 
     expect(response.status).toBe(409);
-    expect(response.body).toMatchObject({ code: "BUSINESS_CONFLICT" });
+    expect(response.body).toMatchObject({ code: "PAST_APPOINTMENT_READONLY" });
 
     const afterCount = await countProjectAppointments(agent, project.id);
     expect(afterCount).toBe(beforeCount);
@@ -94,7 +94,7 @@ describe("FT01 integration: historical appointment guards", () => {
     });
 
     expect(response.status).toBe(409);
-    expect(response.body).toMatchObject({ code: "BUSINESS_CONFLICT" });
+    expect(response.body).toMatchObject({ code: "PAST_APPOINTMENT_READONLY" });
 
     const reloaded = await agent.get(`/api/appointments/${existing.id}`).expect(200);
     expect(reloaded.body.startDate).toBe("2000-01-02");

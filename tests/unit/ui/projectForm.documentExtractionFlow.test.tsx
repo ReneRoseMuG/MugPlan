@@ -33,7 +33,8 @@ describe("FT20 project form document extraction flow wiring", () => {
   it("wires dropzone and dialog state", () => {
     expect(source).toContain("{!isEditing ? (");
     expect(source).toContain("<DocumentExtractionDropzone");
-    expect(source).toContain("onFileSelected={runDocumentExtraction}");
+    expect(source).toContain("onFileSelected={(file) => {");
+    expect(source).toContain("void runDocumentExtraction(file);");
     expect(source).toContain("<DocumentExtractionDialog");
     expect(source).toContain("open={documentExtractionOpen}");
     expect(source).toContain("data={documentExtractionData}");

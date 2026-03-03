@@ -28,7 +28,12 @@ vi.mock("../../../server/repositories/notesRepository", () => ({
   getNote: vi.fn(),
 }));
 
+vi.mock("../../../server/repositories/customersRepository", () => ({
+  getCustomer: vi.fn(),
+}));
+
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import * as customersRepository from "../../../server/repositories/customersRepository";
 import * as notesRepository from "../../../server/repositories/notesRepository";
 import * as projectsRepository from "../../../server/repositories/projectsRepository";
 import {
@@ -40,6 +45,7 @@ import { deleteNote, updateNote } from "../../../server/services/notesService";
 import { deleteProject, updateProject } from "../../../server/services/projectsService";
 
 const appointmentsRepoMock = vi.mocked(appointmentsRepository);
+const customersRepoMock = vi.mocked(customersRepository);
 const projectsRepoMock = vi.mocked(projectsRepository);
 const notesRepoMock = vi.mocked(notesRepository);
 
@@ -163,7 +169,8 @@ describe("PKG-01 Invariant: optimistic locking", () => {
 
   it("project update returns 409 VERSION_CONFLICT when repository reports version_conflict", async () => {
     projectsRepoMock.updateProjectWithVersion.mockResolvedValue({ kind: "version_conflict" });
-    projectsRepoMock.getProject.mockResolvedValue({ id: 30 } as any);
+    projectsRepoMock.getProject.mockResolvedValue({ id: 30, customerId: 4 } as any);
+    customersRepoMock.getCustomer.mockResolvedValue({ id: 4, customerNumber: "4711", isActive: true } as any);
 
     await expect(
       updateProject(30, { version: 2, customerId: 4, name: "Changed" } as any),

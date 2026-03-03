@@ -51,7 +51,7 @@ describe("FT02 projects service project name normalization", () => {
   });
 
   it("formats project name on create with customer number prefix", async () => {
-    getCustomerMock.mockResolvedValueOnce({ id: 11, customerNumber: "4711" });
+    getCustomerMock.mockResolvedValueOnce({ id: 11, customerNumber: "4711", isActive: true });
     createProjectMock.mockResolvedValueOnce({ id: 1, name: "K: 4711 - Sauna Modern" });
 
     await createProject({
@@ -71,7 +71,7 @@ describe("FT02 projects service project name normalization", () => {
 
   it("normalizes update input name against current customer number", async () => {
     getProjectMock.mockResolvedValueOnce({ id: 2, customerId: 11, name: "K: 4711 - Alt" });
-    getCustomerMock.mockResolvedValueOnce({ id: 11, customerNumber: "4711" });
+    getCustomerMock.mockResolvedValueOnce({ id: 11, customerNumber: "4711", isActive: true });
     updateProjectWithVersionMock.mockResolvedValueOnce({
       kind: "updated",
       project: { id: 2, name: "K: 4711 - Neu" },
@@ -93,7 +93,7 @@ describe("FT02 projects service project name normalization", () => {
 
   it("rebuilds prefixed name when customer changes without explicit name update", async () => {
     getProjectMock.mockResolvedValueOnce({ id: 3, customerId: 11, name: "K: 4711 - Sauna XL" });
-    getCustomerMock.mockResolvedValueOnce({ id: 12, customerNumber: "5000" });
+    getCustomerMock.mockResolvedValueOnce({ id: 12, customerNumber: "5000", isActive: true });
     updateProjectWithVersionMock.mockResolvedValueOnce({
       kind: "updated",
       project: { id: 3, name: "K: 5000 - Sauna XL" },

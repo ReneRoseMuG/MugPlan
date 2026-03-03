@@ -624,7 +624,7 @@ describe("FT01 UC coverage integration", () => {
       .delete(`/api/appointments/${created!.id}`)
       .send({ version });
     expect(blocked.status).toBe(409);
-    expect(blocked.body.code).toBe("BUSINESS_CONFLICT");
+    expect(blocked.body.code).toBe("PAST_APPOINTMENT_READONLY");
 
     await agent.get(`/api/appointments/${created!.id}`).expect(200);
   });

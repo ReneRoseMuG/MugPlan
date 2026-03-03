@@ -9,11 +9,11 @@
  * - Detail-, Attachment- und Terminansicht sind konsistent lesbar.
  * - Parallelfaelle fuer Reaktivierung/Bearbeitung triggern VERSION_CONFLICT.
  * - Listen-/Dialog-Query fuer aktive Mitarbeiter bleibt konsistent.
- * - DELETE blockiert bei bestehenden Terminreferenzen und ist nur fuer ADMIN erlaubt.
+ * - DELETE ist serverseitig deaktiviert und bleibt nur fuer ADMIN erreichbar.
  *
  * Fehlerfaelle:
  * - Konfliktfall Deaktivierung vor Terminspeicherung muss Save blockieren.
- * - DELETE liefert BUSINESS_CONFLICT bei Referenzen und FORBIDDEN fuer unberechtigte Rollen.
+ * - DELETE liefert METHOD_NOT_ALLOWED fuer ADMIN und FORBIDDEN fuer unberechtigte Rollen.
  *
  * Ziel:
  * FT05-Use-Cases mit Integrationsfokus inklusive DELETE-Regeln absichern.
@@ -266,7 +266,7 @@ describe("FT05 integration: full UC coverage", () => {
     expect(listIds).not.toContain(inactive.id);
   });
 
-  it("UC 05/10: deletion with existing appointment references is blocked with 409 BUSINESS_CONFLICT", async () => {
+  it("UC 05/10: deletion is disabled and returns 405 METHOD_NOT_ALLOWED for ADMIN", async () => {
     const admin = await loginAdminAgent();
     const employee = await createEmployee(admin, "uc0510");
     const project = await createProjectFixture("uc0510");
@@ -280,9 +280,9 @@ describe("FT05 integration: full UC coverage", () => {
     await admin
       .delete(`/api/employees/${employee.id}`)
       .send({ version: employee.version })
-      .expect(409)
+      .expect(405)
       .expect((res) => {
-        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+        expect(res.body.code).toBe("METHOD_NOT_ALLOWED");
       });
   });
 

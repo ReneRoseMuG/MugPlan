@@ -2,40 +2,36 @@
  * Test Scope:
  *
  * Feature: FT04 - Terminverwaltung
- * Use Case: UC Termin aus Projektseiten-Panel loeschen
+ * Use Case: UC Projektseiten-Panel lädt Termine read-only
  *
  * Abgedeckte Regeln:
- * - Delete aus ProjectAppointmentsPanel sendet version im DELETE-Body.
- * - VERSION_CONFLICT wird mit fachlicher Meldung statt rohem HTTP-Text behandelt.
- * - LOCK_VIOLATION wird mit gesperrt-Meldung behandelt.
+ * - Das Panel laedt alle Termine ueber den Sidebar-Endpunkt mit fromDate-Override.
+ * - Das Panel bietet keinen eigenen Delete-Mutationspfad.
+ * - Das Panel setzt den projektspezifischen helpKey.
  *
  * Fehlerfaelle:
- * - Delete ohne Version fuehrt zu VALIDATION_ERROR oder VERSION_CONFLICT.
- * - Konflikte werden als generisches "Conflict" angezeigt.
+ * - Fehlender fromDate-Override fuehrt zu unvollstaendiger Terminliste.
+ * - Ein versehentlich eingefuehrter Delete-Pfad umgeht den zentralen Termin-Flow.
  *
  * Ziel:
- * Sicherstellen, dass der Panel-Loeschpfad den Optimistic-Locking-Contract einhaelt.
+ * Sicherstellen, dass das Projektseiten-Panel als read-only Liste korrekt verdrahtet bleibt.
  */
 import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
-describe("FT04 project appointments panel delete wiring", () => {
+describe("FT04 project appointments panel wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/ProjectAppointmentsPanel.tsx");
   const source = readFileSync(filePath, "utf8");
 
-  it("sends delete payload with appointment version", () => {
-    expect(source).toContain("mutationFn: async ({ appointmentId, version }: { appointmentId: number; version: number }) => {");
-    expect(source).toContain("\"Content-Type\": \"application/json\"");
-    expect(source).toContain("body: JSON.stringify({ version })");
-    expect(source).toContain("deleteAppointmentMutation.mutate({ appointmentId: appointment.id, version: appointment.version })");
+  it("uses all-appointments fromDate override for sidebar list", () => {
+    expect(source).toContain("const queryFromDate = PROJECT_APPOINTMENTS_ALL_FROM_DATE;");
+    expect(source).toContain("const url = `/api/projects/${projectId}/appointments?fromDate=${queryFromDate}`;");
   });
 
-  it("maps VERSION_CONFLICT and LOCK_VIOLATION to explicit toasts", () => {
-    expect(source).toContain("if (err.code === \"VERSION_CONFLICT\")");
-    expect(source).toContain("zwischenzeitlich geaendert");
-    expect(source).toContain("if (err.code === \"LOCK_VIOLATION\" || err.status === 403)");
-    expect(source).toContain("Termin ist gesperrt.");
+  it("does not define local delete mutation path", () => {
+    expect(source).not.toContain("deleteAppointmentMutation");
+    expect(source).not.toContain("JSON.stringify({ version })");
   });
 
   it("sets panel-specific helpKey for project sidebar appointments", () => {
