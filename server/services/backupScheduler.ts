@@ -5,8 +5,8 @@ import * as backupRuntimeRepository from "../repositories/backupRuntimeRepositor
 import { generateBackupDocuments } from "./exportService";
 import { persistBackupFiles } from "./backupStorageService";
 import { cleanupOldBackups } from "./backupRetentionService";
-import { db } from "../db";
-import { sql } from "drizzle-orm";
+import { pool } from "../db";
+import type { PoolConnection } from "mysql2/promise";
 import { logError, logInfo } from "../lib/logger";
 
 const logPrefix = "[backup-scheduler]";
@@ -25,16 +25,17 @@ export type BackupRunResult = {
   reason: string | null;
 };
 
-async function acquireSchedulerLock(): Promise<boolean> {
+async function acquireSchedulerLock(connection: PoolConnection): Promise<boolean> {
   if (process.env.FT07_DISABLE_DB_LOCK === "1") {
     return true;
   }
-  const [row] = await db.execute(sql`SELECT GET_LOCK(${schedulerLockKey}, 0) AS lock_ok`) as unknown as Array<{ lock_ok?: number }>;
-  return Number(row?.lock_ok ?? 0) === 1;
+  const [rows] = await connection.query("SELECT GET_LOCK(?, 0) AS lock_ok", [schedulerLockKey]);
+  const firstRow = Array.isArray(rows) ? (rows[0] as { lock_ok?: number } | undefined) : undefined;
+  return Number(firstRow?.lock_ok ?? 0) === 1;
 }
 
-async function releaseSchedulerLock(): Promise<void> {
-  await db.execute(sql`SELECT RELEASE_LOCK(${schedulerLockKey})`);
+async function releaseSchedulerLock(connection: PoolConnection): Promise<void> {
+  await connection.query("SELECT RELEASE_LOCK(?)", [schedulerLockKey]);
 }
 
 async function createSkippedLog(reason: string): Promise<number | null> {
@@ -161,8 +162,10 @@ export async function runBackupSchedulerTick(): Promise<void> {
 
   isRunning = true;
   let lockAcquired = false;
+  let lockConnection: PoolConnection | null = null;
   try {
-    lockAcquired = await acquireSchedulerLock();
+    lockConnection = await pool.getConnection();
+    lockAcquired = await acquireSchedulerLock(lockConnection);
     if (!lockAcquired) {
       logInfo(`${logPrefix} tick skipped (db lock busy)`);
       return;
@@ -171,13 +174,14 @@ export async function runBackupSchedulerTick(): Promise<void> {
   } catch (error) {
     logError(`${logPrefix} tick failed`, { error });
   } finally {
-    if (lockAcquired) {
+    if (lockAcquired && lockConnection) {
       try {
-        await releaseSchedulerLock();
+        await releaseSchedulerLock(lockConnection);
       } catch {
         // Keep scheduler alive even if lock release fails.
       }
     }
+    lockConnection?.release();
     isRunning = false;
   }
 }
@@ -197,8 +201,10 @@ export async function runBackupManualTick(): Promise<BackupRunResult> {
 
   isRunning = true;
   let lockAcquired = false;
+  let lockConnection: PoolConnection | null = null;
   try {
-    lockAcquired = await acquireSchedulerLock();
+    lockConnection = await pool.getConnection();
+    lockAcquired = await acquireSchedulerLock(lockConnection);
     if (!lockAcquired) {
       logInfo(`${logPrefix} manual run skipped (db lock busy)`);
       return {
@@ -212,13 +218,14 @@ export async function runBackupManualTick(): Promise<BackupRunResult> {
     }
     return await runBackupCycle({ trigger: "manual", force: true });
   } finally {
-    if (lockAcquired) {
+    if (lockAcquired && lockConnection) {
       try {
-        await releaseSchedulerLock();
+        await releaseSchedulerLock(lockConnection);
       } catch {
         // Keep service alive even if lock release fails.
       }
     }
+    lockConnection?.release();
     isRunning = false;
   }
 }

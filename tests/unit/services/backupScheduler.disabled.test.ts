@@ -27,8 +27,14 @@ vi.mock("../../../server/repositories/backupRepository", () => ({
 }));
 
 vi.mock("../../../server/db", () => ({
-  db: {
-    execute: vi.fn(async () => [{ lock_ok: 1 }]),
+  pool: {
+    getConnection: vi.fn(async () => ({
+      query: vi.fn(async (query: string) => {
+        if (query.includes("GET_LOCK")) return [[{ lock_ok: 1 }]];
+        return [[{ ok: 1 }]];
+      }),
+      release: vi.fn(),
+    })),
   },
 }));
 
