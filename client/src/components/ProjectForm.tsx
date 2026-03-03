@@ -445,6 +445,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void invalidateAppointmentProjectionQueries();
     },
   });
 
@@ -455,6 +456,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void invalidateAppointmentProjectionQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);
@@ -474,6 +476,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void invalidateAppointmentProjectionQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);
