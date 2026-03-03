@@ -34,11 +34,25 @@ function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-function formatDate(input: Date): string {
+function formatDateIso(input: Date): string {
   const y = input.getFullYear();
   const m = String(input.getMonth() + 1).padStart(2, "0");
   const d = String(input.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function formatDateGerman(input: Date): string {
+  const d = String(input.getDate()).padStart(2, "0");
+  const m = String(input.getMonth() + 1).padStart(2, "0");
+  const y = input.getFullYear();
+  return `${d}.${m}.${y}`;
+}
+
+function formatDateForDisplay(value: string | null): string {
+  if (!value) return "-";
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return formatDateGerman(parsed);
 }
 
 function formatTime(value: string | null): string {
@@ -122,9 +136,19 @@ async function buildExcelBuffer(input: {
 
     calendarSheet.mergeCells(currentRow, startCol, currentRow, endCol);
     const weekTitleCell = calendarSheet.getCell(currentRow, startCol);
-    weekTitleCell.value = `Woche ${formatDate(weekStart)} bis ${formatDate(weekEnd)}`;
+    weekTitleCell.value = `Woche ${formatDateGerman(weekStart)} bis ${formatDateGerman(weekEnd)}`;
     weekTitleCell.font = { bold: true };
     weekTitleCell.alignment = { horizontal: "center" };
+  }
+  currentRow += 1;
+
+  for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
+    for (let day = 0; day < 7; day += 1) {
+      const date = addDays(addDays(calendarStart, weekIndex * 7), day);
+      const cell = calendarSheet.getCell(currentRow, weekIndex * 7 + day + 1);
+      cell.value = formatDateGerman(date);
+      cell.font = { bold: true };
+    }
   }
   currentRow += 1;
 
@@ -167,16 +191,7 @@ async function buildExcelBuffer(input: {
 
     for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
       for (let day = 0; day < 7; day += 1) {
-        const date = addDays(addDays(calendarStart, weekIndex * 7), day);
-        calendarSheet.getCell(currentRow, weekIndex * 7 + day + 1).value = formatDate(date);
-        calendarSheet.getCell(currentRow, weekIndex * 7 + day + 1).font = { bold: true };
-      }
-    }
-    currentRow += 1;
-
-    for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
-      for (let day = 0; day < 7; day += 1) {
-        const date = formatDate(addDays(addDays(calendarStart, weekIndex * 7), day));
+        const date = formatDateIso(addDays(addDays(calendarStart, weekIndex * 7), day));
         const dayAppointments = (appointmentsByDate.get(date) ?? [])
           .filter((appointment) => lane.matches(appointment));
         const slotAppointments = dayAppointments.slice(0, 2);
@@ -239,8 +254,8 @@ async function buildExcelBuffer(input: {
     const statusList = (statusesByProject.get(row.projectId) ?? []).map((s) => s.statusTitle).join(", ");
     detailSheet.addRow({
       appointmentId: row.appointmentId,
-      startDate: row.startDate ?? "-",
-      endDate: row.endDate ?? "-",
+      startDate: formatDateForDisplay(row.startDate),
+      endDate: formatDateForDisplay(row.endDate),
       time: row.startTime ? `${row.startTime.slice(0, 5)}${row.endTime ? `-${row.endTime.slice(0, 5)}` : ""}` : "Ganztag",
       projectId: row.projectId,
       projectName: row.projectName,
@@ -341,7 +356,9 @@ async function buildPdfBuffer(appointments: ExportAppointmentRow[]): Promise<Buf
   const sortedDates = Array.from(byDate.keys()).filter(Boolean).sort((a, b) => a.localeCompare(b));
 
   for (const date of sortedDates) {
-    doc.fontSize(12).fillColor("#111827").text(date);
+    const parsedDate = new Date(`${date}T00:00:00`);
+    const dateLabel = Number.isNaN(parsedDate.getTime()) ? date : formatDateGerman(parsedDate);
+    doc.fontSize(12).fillColor("#111827").text(dateLabel);
     doc.moveDown(0.2);
     const dayRows = byDate.get(date) ?? [];
     for (const row of dayRows) {
