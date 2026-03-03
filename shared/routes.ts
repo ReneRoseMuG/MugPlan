@@ -1079,6 +1079,59 @@ export const api = {
     },
   },
   helpTexts: {
+    exportYaml: {
+      method: "GET" as const,
+      path: "/api/help-texts/export-yaml",
+      responses: {
+        200: z.any(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    importYamlPreview: {
+      method: "POST" as const,
+      path: "/api/help-texts/import-yaml/preview",
+      responses: {
+        200: z.object({
+          fileHash: z.string().min(1),
+          summary: z.object({
+            totalItems: z.number().int().min(0),
+            createCount: z.number().int().min(0),
+            silentOverwriteCount: z.number().int().min(0),
+            conflictCount: z.number().int().min(0),
+          }),
+          conflicts: z.array(
+            z.object({
+              helpKey: z.string(),
+              existingTitle: z.string(),
+              existingBody: z.string().nullable(),
+              importedTitle: z.string(),
+              importedBody: z.string().nullable(),
+            }),
+          ),
+        }),
+        400: z.object({ code: z.literal("INVALID_IMPORT_FILE") }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        413: z.object({ code: z.literal("PAYLOAD_TOO_LARGE") }),
+        422: z.object({ code: z.enum(["INVALID_IMPORT_FORMAT", "VALIDATION_ERROR"]) }),
+      },
+    },
+    importYamlApply: {
+      method: "POST" as const,
+      path: "/api/help-texts/import-yaml/apply",
+      responses: {
+        200: z.object({
+          createdCount: z.number().int().min(0),
+          silentOverwrittenCount: z.number().int().min(0),
+          decisionOverwrittenCount: z.number().int().min(0),
+          skippedCount: z.number().int().min(0),
+        }),
+        400: z.object({ code: z.literal("INVALID_IMPORT_FILE") }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        409: z.object({ code: z.literal("FILE_HASH_MISMATCH") }),
+        413: z.object({ code: z.literal("PAYLOAD_TOO_LARGE") }),
+        422: z.object({ code: z.enum(["INVALID_IMPORT_FORMAT", "VALIDATION_ERROR"]) }),
+      },
+    },
     seedMissingFromFrontend: {
       method: "POST" as const,
       path: "/api/help-texts/seed-missing-from-frontend",

@@ -7,6 +7,11 @@ export interface ParsedMultipartFile {
   buffer: Buffer;
 }
 
+export interface ParsedMultipartForm {
+  fields: Record<string, string>;
+  file: ParsedMultipartFile | null;
+}
+
 interface MultipartOptions {
   fieldName: string;
   maxSizeBytes: number;
@@ -46,6 +51,17 @@ export async function parseMultipartFile(
   req: IncomingMessage,
   options: MultipartOptions,
 ): Promise<ParsedMultipartFile> {
+  const parsed = await parseMultipartForm(req, options);
+  if (!parsed.file) {
+    throw new Error("No file found in multipart payload");
+  }
+  return parsed.file;
+}
+
+export async function parseMultipartForm(
+  req: IncomingMessage,
+  options: MultipartOptions,
+): Promise<ParsedMultipartForm> {
   const boundary = getBoundary(req.headers["content-type"]);
   if (!boundary) {
     throw new Error("Missing multipart boundary");
@@ -87,6 +103,8 @@ export async function parseMultipartFile(
   const body = Buffer.concat(chunks);
   const boundaryBuffer = Buffer.from(`--${boundary}`);
   const rawParts = splitBuffer(body, boundaryBuffer);
+  const fields: Record<string, string> = {};
+  let file: ParsedMultipartFile | null = null;
 
   for (const rawPart of rawParts) {
     const part = normalizePart(rawPart);
@@ -115,18 +133,26 @@ export async function parseMultipartFile(
     const fieldName = nameMatch?.[1];
     const filename = filenameMatch?.[1];
 
-    if (!fieldName || fieldName !== options.fieldName || !filename) {
+    if (!fieldName) {
       continue;
     }
 
-    const contentType = headers["content-type"] ?? null;
-    return {
+    if (!filename) {
+      fields[fieldName] = content.toString("utf8");
+      continue;
+    }
+
+    if (fieldName !== options.fieldName) {
+      continue;
+    }
+
+    file = {
       fieldName,
       filename,
-      contentType,
+      contentType: headers["content-type"] ?? null,
       buffer: content,
     };
   }
 
-  throw new Error("No file found in multipart payload");
+  return { fields, file };
 }

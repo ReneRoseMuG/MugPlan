@@ -2,6 +2,22 @@ import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as helpTextsService from "../services/helpTextsService";
+import * as helpTextsYamlService from "../services/helpTextsYamlService";
+import { MAX_UPLOAD_BYTES } from "../lib/attachmentFiles";
+import { parseMultipartForm } from "../lib/multipart";
+
+function getRoleKeyFromRequest(req: Request) {
+  return req.userContext?.roleKey;
+}
+
+function requireAdmin(req: Request, res: Response): boolean {
+  const roleKey = getRoleKeyFromRequest(req);
+  if (roleKey !== "ADMIN") {
+    res.status(403).json({ code: "FORBIDDEN" });
+    return false;
+  }
+  return true;
+}
 
 export async function getHelpTextByKey(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -27,6 +43,104 @@ export async function listHelpTexts(req: Request, res: Response, next: NextFunct
     const helpTexts = await helpTextsService.listHelpTexts(query);
     res.json(helpTexts);
   } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportHelpTextsYaml(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!requireAdmin(req, res)) return;
+    const yamlContent = await helpTextsYamlService.exportHelpTextsAsYaml();
+    res.setHeader("Content-Type", "text/yaml; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="helptexts.yaml"');
+    res.status(200).send(yamlContent);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function previewHelpTextsYamlImport(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!requireAdmin(req, res)) return;
+    const parsed = await parseMultipartForm(req, {
+      fieldName: "file",
+      maxSizeBytes: MAX_UPLOAD_BYTES,
+    });
+    if (!parsed.file) {
+      res.status(400).json({ code: "INVALID_IMPORT_FILE" });
+      return;
+    }
+    const result = await helpTextsYamlService.previewHelpTextsImport(parsed.file.buffer);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error && err.message === "Payload too large") {
+      res.status(413).json({ code: "PAYLOAD_TOO_LARGE" });
+      return;
+    }
+    if (
+      err instanceof Error &&
+      (err.message === "Missing multipart boundary" || err.message === "No file found in multipart payload")
+    ) {
+      res.status(400).json({ code: "INVALID_IMPORT_FILE" });
+      return;
+    }
+    if (err instanceof helpTextsYamlService.HelpTextImportError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function applyHelpTextsYamlImport(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!requireAdmin(req, res)) return;
+    const parsed = await parseMultipartForm(req, {
+      fieldName: "file",
+      maxSizeBytes: MAX_UPLOAD_BYTES,
+    });
+    if (!parsed.file) {
+      res.status(400).json({ code: "INVALID_IMPORT_FILE" });
+      return;
+    }
+
+    const rawFileHash = parsed.fields.fileHash;
+    const rawDecisions = parsed.fields.decisions;
+    if (typeof rawFileHash !== "string" || rawFileHash.trim().length === 0 || typeof rawDecisions !== "string") {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+
+    let decisions: unknown;
+    try {
+      decisions = JSON.parse(rawDecisions);
+    } catch {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+
+    const result = await helpTextsYamlService.applyHelpTextsImport(
+      parsed.file.buffer,
+      rawFileHash.trim(),
+      decisions,
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error && err.message === "Payload too large") {
+      res.status(413).json({ code: "PAYLOAD_TOO_LARGE" });
+      return;
+    }
+    if (
+      err instanceof Error &&
+      (err.message === "Missing multipart boundary" || err.message === "No file found in multipart payload")
+    ) {
+      res.status(400).json({ code: "INVALID_IMPORT_FILE" });
+      return;
+    }
+    if (err instanceof helpTextsYamlService.HelpTextImportError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }

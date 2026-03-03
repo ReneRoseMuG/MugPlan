@@ -12,8 +12,9 @@ import { BoardView } from "@/components/ui/board-view";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HelpTextsFilterPanel } from "@/components/ui/filter-panels/help-texts-filter-panel";
+import { HelpTextsImportExportDialog } from "@/components/HelpTextsImportExportDialog";
 import { useSettings } from "@/hooks/useSettings";
-import { HelpCircle, Pencil, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { HelpCircle, Pencil, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown, Upload } from "lucide-react";
 import type { HelpText } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -61,6 +62,7 @@ export function HelpTextsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<HelpTextSortKey>("helpKey");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
   const extractApiCode = (error: unknown): string | null => {
     if (!(error instanceof Error)) return null;
     const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
@@ -339,16 +341,27 @@ export function HelpTextsPage() {
         }
         footerSlot={
           <div className="flex justify-between items-center">
-            <Button
-              variant="outline"
-              onClick={handleOpenCreate}
-              disabled={createMutation.isPending}
-              className="flex items-center gap-2"
-              data-testid="button-new-helptext"
-            >
-              <Plus className="w-4 h-4" />
-              Neuer Hilfetext
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setImportExportDialogOpen(true)}
+                className="flex items-center gap-2"
+                data-testid="button-helptexts-import-export"
+              >
+                <Upload className="w-4 h-4" />
+                Import/Export
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleOpenCreate}
+                disabled={createMutation.isPending}
+                className="flex items-center gap-2"
+                data-testid="button-new-helptext"
+              >
+                <Plus className="w-4 h-4" />
+                Neuer Hilfetext
+              </Button>
+            </div>
           </div>
         }
         contentSlot={
@@ -513,6 +526,15 @@ export function HelpTextsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <HelpTextsImportExportDialog
+        open={importExportDialogOpen}
+        onOpenChange={setImportExportDialogOpen}
+        totalHelpTextsCount={helpTexts.length}
+        onImportApplied={() => {
+          void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+        }}
+      />
     </>
   );
 }
