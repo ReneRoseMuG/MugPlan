@@ -17,13 +17,27 @@ const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
 
 class AppointmentError extends Error {
   status: number;
-  code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR";
+  code:
+    | "LOCK_VIOLATION"
+    | "BUSINESS_CONFLICT"
+    | "VERSION_CONFLICT"
+    | "VALIDATION_ERROR"
+    | "EMPLOYEE_OVERLAP_CONFLICT"
+    | "INACTIVE_ENTITY_ASSIGNMENT"
+    | "PAST_APPOINTMENT_READONLY";
   conflictEmployees?: Array<{ id: number; fullName: string }>;
 
   constructor(
     message: string,
     status: number,
-    code: "LOCK_VIOLATION" | "BUSINESS_CONFLICT" | "VERSION_CONFLICT" | "VALIDATION_ERROR",
+    code:
+      | "LOCK_VIOLATION"
+      | "BUSINESS_CONFLICT"
+      | "VERSION_CONFLICT"
+      | "VALIDATION_ERROR"
+      | "EMPLOYEE_OVERLAP_CONFLICT"
+      | "INACTIVE_ENTITY_ASSIGNMENT"
+      | "PAST_APPOINTMENT_READONLY",
     options?: { conflictEmployees?: Array<{ id: number; fullName: string }> },
   ) {
     super(message);
@@ -98,7 +112,7 @@ function resolveOverlapStartTimeHour(startTime?: string | null): number | null {
 
 function assertNotHistoricalInput(data: { startDate: string; startTime?: string | null }) {
   if (isStartDateLocked(data.startDate)) {
-    throw new AppointmentError("Datum in der Vergangenheit", 409, "BUSINESS_CONFLICT");
+    throw new AppointmentError("Datum in der Vergangenheit", 409, "PAST_APPOINTMENT_READONLY");
   }
   if (!data.startTime) return;
   if (data.startDate !== getBerlinTodayDateString()) return;
@@ -126,7 +140,7 @@ async function assertNoInactiveEmployeesTx(
     throw new AppointmentError(
       "Inaktive Mitarbeiter koennen keinem Termin zugewiesen werden",
       409,
-      "BUSINESS_CONFLICT",
+      "INACTIVE_ENTITY_ASSIGNMENT",
       { conflictEmployees: inactiveEmployees },
     );
   }
@@ -269,7 +283,7 @@ export async function createAppointment(
       logWarn(
         `${logPrefix} create blocked by overlap projectId=${data.projectId} startDate=${data.startDate} endDate=${data.endDate ?? data.startDate} conflictEmployees=${conflictEmployees.length}`,
       );
-      throw new AppointmentError(overlapConflictMessage, 409, "BUSINESS_CONFLICT", { conflictEmployees });
+      throw new AppointmentError(overlapConflictMessage, 409, "EMPLOYEE_OVERLAP_CONFLICT", { conflictEmployees });
     }
 
     const appointmentData: InsertAppointment = {
@@ -322,10 +336,10 @@ export async function updateAppointment(
     if (isStartDateLocked(existing.startDate)) {
       if (roleKey !== "ADMIN") {
         logWarn(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-        throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 403, "LOCK_VIOLATION");
+        throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 409, "PAST_APPOINTMENT_READONLY");
       }
       logWarn(`${logPrefix} update blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "BUSINESS_CONFLICT");
+      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
     }
     assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
@@ -347,7 +361,7 @@ export async function updateAppointment(
       logWarn(
         `${logPrefix} update blocked by overlap appointmentId=${appointmentId} startDate=${data.startDate} endDate=${data.endDate ?? data.startDate} conflictEmployees=${conflictEmployees.length}`,
       );
-      throw new AppointmentError(overlapConflictMessage, 409, "BUSINESS_CONFLICT", { conflictEmployees });
+      throw new AppointmentError(overlapConflictMessage, 409, "EMPLOYEE_OVERLAP_CONFLICT", { conflictEmployees });
     }
 
     const appointmentData: Partial<InsertAppointment> = {
@@ -669,7 +683,7 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
 
     if (isStartDateLocked(existing.startDate)) {
       logWarn(`${logPrefix} delete blocked: appointmentId=${appointmentId} startDate=${existing.startDate}`);
-      throw new AppointmentError("Historische Termine koennen nicht geloescht werden", 409, "BUSINESS_CONFLICT");
+      throw new AppointmentError("Historische Termine koennen nicht geloescht werden", 409, "PAST_APPOINTMENT_READONLY");
     }
 
     logDebug(`${logPrefix} delete appointmentId=${appointmentId}`);

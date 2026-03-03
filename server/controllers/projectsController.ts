@@ -86,6 +86,10 @@ export async function createProject(req: Request, res: Response, next: NextFunct
       res.status(422).json({ code: "VALIDATION_ERROR" });
       return;
     }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     next(err);
   }
 }

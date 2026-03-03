@@ -383,7 +383,16 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
       void invalidateProjectQueries();
       toast({ title: "Projekt erstellt" });
     },
-    onError: () => {
+    onError: (error) => {
+      const code = extractApiCode(error);
+      if (code === "INACTIVE_ENTITY_ASSIGNMENT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Der ausgewaehlte Kunde ist inaktiv. Bitte einen aktiven Kunden zuordnen.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Fehler beim Erstellen", variant: "destructive" });
     },
   });
@@ -400,6 +409,14 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     },
     onError: (error) => {
       const code = extractApiCode(error);
+      if (code === "INACTIVE_ENTITY_ASSIGNMENT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Der ausgewaehlte Kunde ist inaktiv. Bitte einen aktiven Kunden zuordnen.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Speichern nicht moeglich",
