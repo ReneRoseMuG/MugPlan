@@ -3,11 +3,13 @@ export function CalendarWeekAppointmentPanelHeader({
   orderNumber,
   postalCode,
   color,
+  connectedToNextRow = false,
 }: {
   customerNumber: string;
   orderNumber: string | null;
   postalCode: string | null;
   color: string;
+  connectedToNextRow?: boolean;
 }) {
   const resolvedCustomerNumber = customerNumber.trim() || "-";
   const resolvedOrderNumber = orderNumber?.trim() || "-";
@@ -24,7 +26,7 @@ export function CalendarWeekAppointmentPanelHeader({
 
   return (
     <div
-      className="rounded-md border px-2 py-1"
+      className={connectedToNextRow ? "rounded-t-md rounded-b-none border px-2 py-1" : "rounded-md border px-2 py-1"}
       style={{
         backgroundColor: color,
         color: textColor,

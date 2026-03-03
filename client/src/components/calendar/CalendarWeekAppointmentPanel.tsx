@@ -84,25 +84,28 @@ export function CalendarWeekAppointmentPanel({
     >
       {!isContinuation && (
         <div className="space-y-1.5">
-          <CalendarWeekAppointmentPanelHeader
-            customerNumber={appointment.customer.customerNumber}
-            orderNumber={appointment.projectOrderNumber}
-            postalCode={appointment.customer.postalCode}
-            color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
-          />
-          {showPreviewTourNameLine && (
-            <div
-              className="rounded-md border px-2 py-1 text-[10px] font-semibold tracking-wide"
-              style={{
-                backgroundColor: resolvedTourColor,
-                color: tourNameLineTextColor,
-                borderColor: "rgba(255,255,255,0.22)",
-              }}
-              data-testid={`week-appointment-tour-name-${appointment.id}`}
-            >
-              <span className="block truncate">{resolvedTourName}</span>
-            </div>
-          )}
+          <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
+            <CalendarWeekAppointmentPanelHeader
+              customerNumber={appointment.customer.customerNumber}
+              orderNumber={appointment.projectOrderNumber}
+              postalCode={appointment.customer.postalCode}
+              color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
+              connectedToNextRow={showPreviewTourNameLine}
+            />
+            {showPreviewTourNameLine && (
+              <div
+                className="rounded-b-md rounded-t-none border border-t-0 px-2 py-1 text-[10px] font-semibold tracking-wide"
+                style={{
+                  backgroundColor: resolvedTourColor,
+                  color: tourNameLineTextColor,
+                  borderColor: "rgba(255,255,255,0.22)",
+                }}
+                data-testid={`week-appointment-tour-name-${appointment.id}`}
+              >
+                <span className="block truncate">{resolvedTourName}</span>
+              </div>
+            )}
+          </div>
           <CalendarWeekAppointmentPanelCustomer
             fullName={appointment.customer.fullName}
             addressLine1={appointment.customer.addressLine1}
