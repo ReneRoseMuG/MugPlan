@@ -42,6 +42,7 @@ describe("FT20 project form document extraction flow wiring", () => {
   it("wires single data apply callback", () => {
     expect(source).toContain("dataApplyLabel=\"Daten übernehmen\"");
     expect(source).toContain("onApplyData={applyExtractedData}");
+    expect(source).toContain("setDocumentExtractionOpen(false);");
     expect(source).not.toContain("onApplyCustomer={");
     expect(source).not.toContain("onApplyProject={");
   });

@@ -653,6 +653,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
           }
         }
       }
+      setDocumentExtractionOpen(false);
       toast({ title: "Daten übernommen" });
     } catch (error) {
       toast({

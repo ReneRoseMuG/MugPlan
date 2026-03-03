@@ -131,7 +131,8 @@ export async function existsProjectByOrderNumber(orderNumber: string): Promise<b
     .where(
       sql`${projects.orderNumber} is not null
           and char_length(trim(${projects.orderNumber})) > 0
-          and trim(${projects.orderNumber}) = ${normalizedOrderNumber}`,
+          and trim(${projects.orderNumber}) = ${normalizedOrderNumber}
+          and ${projects.isActive} = true`,
     )
     .limit(1);
 
