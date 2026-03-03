@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CircleHelp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useSetting } from "@/hooks/useSettings";
 import { cn } from "@/lib/utils";
 
 interface HelpText {
@@ -27,18 +28,30 @@ const iconSizeClass: Record<NonNullable<HelpIconProps["size"]>, string> = {
   md: "h-5 w-5",
 };
 
+function resolvePreviewSizeClass(previewSize: unknown): string {
+  if (previewSize === "small") return "w-80 max-h-64 overflow-y-auto";
+  if (previewSize === "large") return "w-[38rem] max-h-[32rem] overflow-y-auto";
+  return "w-96 max-h-80 overflow-y-auto";
+}
+
 export function HelpIcon({
   helpKey,
   className,
   align = "start",
   size = "md",
 }: HelpIconProps) {
+  const helpTextPreviewSize = useSetting("helpTextPreviewSize");
+  const popoverClassName = resolvePreviewSizeClass(helpTextPreviewSize);
   const { data: helpText, isLoading, isError } = useQuery<HelpText | null>({
     queryKey: ["/api/help-texts", helpKey],
     enabled: !!helpKey,
     staleTime: 5 * 60 * 1000,
   });
-  const hasEmptyBody = Boolean(helpText && helpText.body.trim().length === 0);
+
+  const resolvedHelpText = helpText && helpText.body.trim().length > 0 ? helpText : null;
+  if (isLoading || isError || !resolvedHelpText) {
+    return null;
+  }
 
   return (
     <Popover>
@@ -54,37 +67,15 @@ export function HelpIcon({
           <CircleHelp className={iconSizeClass[size]} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 max-h-80 overflow-y-auto" align={align}>
-        {isLoading ? (
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm">Hilfe</h4>
-            <p className="text-sm text-muted-foreground">Hilfetext wird geladen...</p>
-          </div>
-        ) : isError ? (
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm">Hilfe</h4>
-            <p className="text-sm text-destructive">Fehler beim Laden des Hilfetexts.</p>
-          </div>
-        ) : helpText && !hasEmptyBody ? (
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm">{helpText.title}</h4>
-            <div
-              className="prose prose-sm max-w-none text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: helpText.body }}
-              data-testid={`text-help-body-${helpKey}`}
-            />
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm">Hilfe</h4>
-            <p className="text-xs text-muted-foreground" data-testid={`text-help-key-${helpKey}`}>
-              Key: {helpKey}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Kein Hilfetext fuer "{helpKey}" verfuegbar.
-            </p>
-          </div>
-        )}
+      <PopoverContent className={popoverClassName} align={align}>
+        <div className="space-y-2">
+          <h4 className="font-semibold text-sm">{resolvedHelpText.title}</h4>
+          <div
+            className="prose prose-sm max-w-none text-muted-foreground"
+            dangerouslySetInnerHTML={{ __html: resolvedHelpText.body }}
+            data-testid={`text-help-body-${helpKey}`}
+          />
+        </div>
       </PopoverContent>
     </Popover>
   );

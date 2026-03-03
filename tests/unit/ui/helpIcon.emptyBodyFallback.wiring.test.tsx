@@ -5,14 +5,14 @@
  * Use Case: UC HelpIcon mit leerem Hilfetext-Inhalt
  *
  * Abgedeckte Regeln:
- * - HelpIcon behandelt leeren body wie fehlenden Hilfetext.
- * - Empty-Body faellt in denselben Fallback wie null.
+ * - HelpIcon behandelt leeren body als "kein Inhalt".
+ * - Empty-Body blendet das Icon aus.
  *
  * Fehlerfaelle:
- * - Leerer body wird als gueltiger Inhalt dargestellt und verschleiert fehlende Texte.
+ * - Leerer body wird als gueltiger Inhalt gewertet.
  *
  * Ziel:
- * Sicherstellen, dass leere Seed-Eintraege im UI als fehlender Hilfetext kenntlich bleiben.
+ * Sicherstellen, dass leere Seed-Eintraege das HelpIcon nicht anzeigen.
  */
 import { readFileSync } from "fs";
 import path from "path";
@@ -24,12 +24,12 @@ describe("FT28 help icon empty-body fallback wiring", () => {
     "utf8",
   );
 
-  it("treats empty body as fallback condition", () => {
-    expect(source).toContain("const hasEmptyBody = Boolean(helpText && helpText.body.trim().length === 0);");
-    expect(source).toContain("helpText && !hasEmptyBody");
+  it("treats empty body as missing content", () => {
+    expect(source).toContain("const resolvedHelpText = helpText && helpText.body.trim().length > 0 ? helpText : null;");
+    expect(source).toContain("if (isLoading || isError || !resolvedHelpText)");
   });
 
-  it("keeps fallback message path active", () => {
-    expect(source).toContain("Kein Hilfetext fuer \"{helpKey}\" verfuegbar.");
+  it("renders help body only for non-empty content", () => {
+    expect(source).toContain("dangerouslySetInnerHTML={{ __html: resolvedHelpText.body }}");
   });
 });

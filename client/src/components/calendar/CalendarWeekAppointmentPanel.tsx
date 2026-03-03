@@ -1,6 +1,6 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { parseProjectStoredName } from "@/lib/project-name-format";
-import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
+import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
@@ -24,6 +24,7 @@ export function CalendarWeekAppointmentPanel({
   segment = "start",
   context = "default",
   continuationHeightPx,
+  showPreviewTourNameLine = false,
   containerRef,
   testId,
 }: {
@@ -40,6 +41,7 @@ export function CalendarWeekAppointmentPanel({
   segment?: "start" | "continuation";
   context?: "default" | "week-calendar";
   continuationHeightPx?: number | null;
+  showPreviewTourNameLine?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
 }) {
@@ -53,6 +55,18 @@ export function CalendarWeekAppointmentPanel({
   const resolvedProjectName = context === "week-calendar"
     ? parseProjectStoredName(appointment.projectName).isolatedProjectName
     : appointment.projectName;
+  const resolvedTourName = appointment.tourName?.trim() || "Ohne Tour";
+  const resolvedTourColor = appointment.tourName?.trim()
+    ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)
+    : CALENDAR_UNASSIGNED_TOUR_COLOR;
+  const tourNameLineTextColor = (() => {
+    if (!resolvedTourColor.startsWith("#")) return "#1a1a1a";
+    const r = parseInt(resolvedTourColor.slice(1, 3), 16);
+    const g = parseInt(resolvedTourColor.slice(3, 5), 16);
+    const b = parseInt(resolvedTourColor.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? "#1a1a1a" : "#ffffff";
+  })();
 
   return (
     <div
@@ -70,12 +84,28 @@ export function CalendarWeekAppointmentPanel({
     >
       {!isContinuation && (
         <div className="space-y-1.5">
-          <CalendarWeekAppointmentPanelHeader
-            customerNumber={appointment.customer.customerNumber}
-            orderNumber={appointment.projectOrderNumber}
-            postalCode={appointment.customer.postalCode}
-            color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
-          />
+          <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
+            <CalendarWeekAppointmentPanelHeader
+              customerNumber={appointment.customer.customerNumber}
+              orderNumber={appointment.projectOrderNumber}
+              postalCode={appointment.customer.postalCode}
+              color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
+              connectedToNextRow={showPreviewTourNameLine}
+            />
+            {showPreviewTourNameLine && (
+              <div
+                className="rounded-b-md rounded-t-none border border-t-0 px-2 py-1 text-[10px] font-semibold tracking-wide"
+                style={{
+                  backgroundColor: resolvedTourColor,
+                  color: tourNameLineTextColor,
+                  borderColor: "rgba(255,255,255,0.22)",
+                }}
+                data-testid={`week-appointment-tour-name-${appointment.id}`}
+              >
+                <span className="block truncate">{resolvedTourName}</span>
+              </div>
+            )}
+          </div>
           <CalendarWeekAppointmentPanelCustomer
             fullName={appointment.customer.fullName}
             addressLine1={appointment.customer.addressLine1}

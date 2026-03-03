@@ -5,6 +5,7 @@ import {
   Phone,
   Mail,
   Plus,
+  Upload,
   LayoutGrid,
   Table2,
   ArrowDown,
@@ -25,6 +26,8 @@ import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { EntityCard } from "@/components/ui/entity-card";
 import { EmployeeForm } from "@/components/EmployeeForm";
+import { EmployeeImportPanel } from "@/components/ImportExportPage";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-filters";
 import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
@@ -109,6 +112,8 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
   const berlinToday = getBerlinTodayDateString();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importResetSignal, setImportResetSignal] = useState(0);
 
   useEffect(() => {
     setViewMode(resolvedViewMode);
@@ -396,6 +401,22 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
     setIsCreating(false);
   };
 
+  const openImportDialog = () => {
+    setImportResetSignal((current) => current + 1);
+    setIsImportDialogOpen(true);
+  };
+
+  const handleImportDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setImportResetSignal((current) => current + 1);
+      setIsImportDialogOpen(true);
+      return;
+    }
+
+    setIsImportDialogOpen(false);
+    setImportResetSignal((current) => current + 1);
+  };
+
   if (isCreating || selectedEmployeeId !== null) {
     return (
       <EmployeeForm
@@ -414,54 +435,68 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
   }
 
   return (
-    <ListLayout
-      title="Mitarbeiter"
-      icon={<Users className="w-5 h-5" />}
-      viewModeKey={viewModeKey}
-      helpKey="employees"
-      isLoading={isLoading}
-      onClose={handleClose}
-      closeTestId="button-close-employees"
-      filterSlot={
-        <EmployeeFilterPanel
-          title="Mitarbeiterfilter"
-          employeeLastName={filters.lastName}
-          onEmployeeLastNameChange={(value) => setFilter("lastName", value)}
-          onEmployeeLastNameClear={() => setFilter("lastName", "")}
-          employeeScope={isAdmin ? employeeScope : undefined}
-          onEmployeeScopeChange={isAdmin ? setEmployeeScope : undefined}
-        />
-      }
-      viewModeToggle={
-        <ToggleGroup
-          type="single"
-          value={viewMode}
-          onValueChange={handleViewModeChange}
-          variant="outline"
-          size="sm"
-          data-testid="toggle-employees-view-mode"
-        >
-          <ToggleGroupItem value="board" aria-label="Board-Ansicht" data-testid="toggle-employees-board">
-            <LayoutGrid className="w-4 h-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="table" aria-label="Tabellen-Ansicht" data-testid="toggle-employees-table">
-            <Table2 className="w-4 h-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
-      }
-      footerSlot={
-        <Button
-          variant="outline"
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2"
-          data-testid="button-new-employee"
-        >
-          <Plus className="w-4 h-4" />
-          Neuer Mitarbeiter
-        </Button>
-      }
-      contentSlot={
-        viewMode === "board" ? (
+    <>
+      <ListLayout
+        title="Mitarbeiter"
+        icon={<Users className="w-5 h-5" />}
+        viewModeKey={viewModeKey}
+        helpKey="employees"
+        isLoading={isLoading}
+        onClose={handleClose}
+        closeTestId="button-close-employees"
+        filterSlot={
+          <EmployeeFilterPanel
+            title="Mitarbeiterfilter"
+            employeeLastName={filters.lastName}
+            onEmployeeLastNameChange={(value) => setFilter("lastName", value)}
+            onEmployeeLastNameClear={() => setFilter("lastName", "")}
+            employeeScope={isAdmin ? employeeScope : undefined}
+            onEmployeeScopeChange={isAdmin ? setEmployeeScope : undefined}
+          />
+        }
+        viewModeToggle={
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={handleViewModeChange}
+            variant="outline"
+            size="sm"
+            data-testid="toggle-employees-view-mode"
+          >
+            <ToggleGroupItem value="board" aria-label="Board-Ansicht" data-testid="toggle-employees-board">
+              <LayoutGrid className="w-4 h-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" aria-label="Tabellen-Ansicht" data-testid="toggle-employees-table">
+              <Table2 className="w-4 h-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        }
+        footerSlot={
+          <div className="flex flex-wrap items-center gap-2">
+            {isAdmin && (
+              <Button
+                variant="outline"
+                onClick={openImportDialog}
+                className="flex items-center gap-2"
+                data-testid="button-open-employee-import-dialog"
+              >
+                <Upload className="w-4 h-4" />
+                Import
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={handleOpenCreate}
+              className="flex items-center gap-2"
+              data-testid="button-new-employee"
+            >
+              <Plus className="w-4 h-4" />
+              Neuer Mitarbeiter
+            </Button>
+          </div>
+        }
+        contentSlot={
+          viewMode === "board" ? (
           <BoardView
             gridTestId="list-employees"
             gridCols="3"
@@ -564,29 +599,39 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
               );
             })}
           </BoardView>
-        ) : (
-          <TableView
-            testId="table-employees"
-            columns={tableColumns}
-            rows={sortedEmployeeRows}
-            rowKey={(row) => row.employee.id}
-            onRowDoubleClick={(row) => handleOpenDetail(row.employee)}
-            rowPreviewRenderer={(row) => {
-              if (!row.relevantAppointment) {
-                return (
-                  <div className="rounded-md border border-border bg-card p-3">
-                    Keine Termine geplant
-                  </div>
-                );
-              }
+          ) : (
+            <TableView
+              testId="table-employees"
+              columns={tableColumns}
+              rows={sortedEmployeeRows}
+              rowKey={(row) => row.employee.id}
+              onRowDoubleClick={(row) => handleOpenDetail(row.employee)}
+              rowPreviewRenderer={(row) => {
+                if (!row.relevantAppointment) {
+                  return (
+                    <div className="rounded-md border border-border bg-card p-3">
+                      Keine Termine geplant
+                    </div>
+                  );
+                }
 
-              return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
-            }}
-            emptyState={<p className="text-sm text-slate-400 py-4">Keine Mitarbeiter vorhanden</p>}
-            stickyHeader
-          />
-        )
-      }
-    />
+                return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
+              }}
+              emptyState={<p className="text-sm text-slate-400 py-4">Keine Mitarbeiter vorhanden</p>}
+              stickyHeader
+            />
+          )
+        }
+      />
+
+      <Dialog open={isImportDialogOpen} onOpenChange={handleImportDialogOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="employee-import-dialog">
+          <DialogHeader>
+            <DialogTitle>Mitarbeiter importieren</DialogTitle>
+          </DialogHeader>
+          <EmployeeImportPanel resetSignal={importResetSignal} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

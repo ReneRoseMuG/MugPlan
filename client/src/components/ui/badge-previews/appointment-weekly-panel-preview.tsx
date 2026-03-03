@@ -34,7 +34,12 @@ export function resolveAppointmentWeeklyPanelPreviewWidthPx(
 export function AppointmentWeeklyPanelPreview({ appointment, widthPx }: AppointmentWeeklyPanelPreviewProps) {
   return (
     <div className="rounded-lg bg-white" style={{ width: widthPx }}>
-      <CalendarWeekAppointmentPanel appointment={appointment} interactive={false} context="week-calendar" />
+      <CalendarWeekAppointmentPanel
+        appointment={appointment}
+        interactive={false}
+        context="week-calendar"
+        showPreviewTourNameLine
+      />
     </div>
   );
 }

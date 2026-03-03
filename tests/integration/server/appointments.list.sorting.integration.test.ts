@@ -7,10 +7,12 @@
  * Abgedeckte Regeln:
  * - /api/appointments/list liefert im Tour-Kontext standardmaessig abwaerts nach Datum/Zeit/ID.
  * - /api/appointments/list liefert im Mitarbeiter-Kontext standardmaessig abwaerts nach Datum.
+ * - /api/appointments/list filtert optional ueber Auftragsnummer per Teiltreffer.
  *
  * Fehlerfaelle:
  * - Liste wird nicht abwaerts ausgeliefert.
  * - Filterkontext (tourId/employeeId) liefert Fremdtermine.
+ * - Auftragsnummer-Filter schliesst gueltige Teiltreffer aus.
  *
  * Ziel:
  * Serverseitigen Sortiervertrag der Formular-Terminlisten regressionssicher absichern.
@@ -21,6 +23,7 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
+import * as projectsService from "../../../server/services/projectsService";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
@@ -131,5 +134,48 @@ describe("FT28 integration: appointments list default sorting", () => {
     expect(items.map((entry) => entry.id)).toEqual([newest.id, middle.id, oldest.id]);
     expect(items.every((entry) => entry.employees.some((assigned) => assigned.id === employee.id))).toBe(true);
   });
-});
 
+  it("filters list by orderNumber using partial matches", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project: targetProject } = await createProjectFixture("FT28-ORD-TARGET");
+    const { project: nonTargetProject } = await createProjectFixture("FT28-ORD-OTHER");
+
+    const updatedTargetProject = await projectsService.updateProject(targetProject.id, {
+      version: targetProject.version,
+      orderNumber: "AUF-123-XYZ",
+    });
+    expect(updatedTargetProject).not.toBeNull();
+
+    const updatedNonTargetProject = await projectsService.updateProject(nonTargetProject.id, {
+      version: nonTargetProject.version,
+      orderNumber: "BST-999",
+    });
+    expect(updatedNonTargetProject).not.toBeNull();
+
+    const matching = await createAppointmentFixture({
+      projectId: targetProject.id,
+      startDate: "2099-12-01",
+      startTime: "09:00:00",
+      employeeIds: [],
+    });
+    await createAppointmentFixture({
+      projectId: nonTargetProject.id,
+      startDate: "2099-12-02",
+      startTime: "10:00:00",
+      employeeIds: [],
+    });
+
+    const matchResponse = await agent
+      .get("/api/appointments/list?orderNumber=123&page=1&pageSize=50")
+      .expect(200);
+    const matchItems = matchResponse.body.items as Array<{ id: number; projectOrderNumber: string | null }>;
+    expect(matchItems.map((entry) => entry.id)).toEqual([matching.id]);
+    expect(matchItems[0]?.projectOrderNumber).toBe("AUF-123-XYZ");
+
+    const noMatchResponse = await agent
+      .get("/api/appointments/list?orderNumber=NOPE&page=1&pageSize=50")
+      .expect(200);
+    const noMatchItems = noMatchResponse.body.items as Array<{ id: number }>;
+    expect(noMatchItems).toHaveLength(0);
+  });
+});

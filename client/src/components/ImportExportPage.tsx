@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { FileText, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,11 +33,22 @@ function statusLabel(status: ImportRowStatus): string {
   return "Fehler";
 }
 
-export function ImportExportPage() {
+type EmployeeImportPanelProps = {
+  resetSignal?: number;
+};
+
+export function EmployeeImportPanel({ resetSignal = 0 }: EmployeeImportPanelProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResponse | null>(null);
+
+  useEffect(() => {
+    setSelectedFile(null);
+    setError(null);
+    setResult(null);
+    setIsUploading(false);
+  }, [resetSignal]);
 
   const sortedRows = useMemo(() => {
     if (!result) return [];
@@ -84,12 +95,7 @@ export function ImportExportPage() {
   };
 
   return (
-    <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white p-6 flex flex-col gap-6" data-testid="import-export-page">
-      <div className="flex items-center gap-3">
-        <FileText className="w-5 h-5 text-primary" />
-        <h2 className="text-lg font-semibold">Import/Export</h2>
-      </div>
-
+    <div className="flex flex-col gap-4" data-testid="employee-import-panel">
       <section className="rounded-md border border-border p-4 bg-slate-50 space-y-3" data-testid="import-section">
         <h3 className="text-sm font-semibold tracking-wide text-slate-600">CSV-Import Mitarbeiter</h3>
         <div className="space-y-2">
@@ -118,11 +124,6 @@ export function ImportExportPage() {
             {error}
           </p>
         )}
-      </section>
-
-      <section className="rounded-md border border-border p-4 bg-slate-50 space-y-2" data-testid="export-section">
-        <h3 className="text-sm font-semibold tracking-wide text-slate-600">Export</h3>
-        <p className="text-sm text-slate-500">Noch nicht implementiert.</p>
       </section>
 
       {result && (

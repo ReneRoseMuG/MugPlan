@@ -1,41 +1,62 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { RichTextEditor } from "@/components/RichTextEditor";
 import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HelpTextsFilterPanel } from "@/components/ui/filter-panels/help-texts-filter-panel";
-import { useSettings } from "@/hooks/useSettings";
-import { HelpCircle, Pencil, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { HelpTextsImportExportDialog } from "@/components/HelpTextsImportExportDialog";
+import { useSetting, useSettings } from "@/hooks/useSettings";
+import { HelpCircle, Pencil, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown, Upload } from "lucide-react";
 import type { HelpText } from "@shared/schema";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+interface HelpTextsPageProps {
+  onCreateHelpText: () => void;
+  onEditHelpText: (id: number) => void;
+}
 
 type ViewMode = "board" | "table";
 type HelpTextSortKey = "helpKey" | "hasContent";
 type SortDirection = "asc" | "desc";
+type HelpTextPreviewSize = "small" | "medium" | "large";
 
 function parseViewMode(value: unknown): ViewMode {
   return value === "table" ? "table" : "board";
+}
+
+function parseHelpTextPreviewSize(value: unknown): HelpTextPreviewSize {
+  if (value === "small" || value === "medium" || value === "large") {
+    return value;
+  }
+  return "medium";
 }
 
 function hasHelpTextContent(helpText: HelpText): boolean {
   return helpText.body.trim().length > 0;
 }
 
-function formatDate(date: Date | string | null) {
-  if (!date) return "";
-  const parsed = typeof date === "string" ? new Date(date) : date;
-  return format(parsed, "dd.MM.yyyy", { locale: de });
+function resolvePreviewClass(size: HelpTextPreviewSize) {
+  if (size === "small") {
+    return {
+      shell: "rounded-md border border-border bg-card p-3 max-w-[360px] space-y-2",
+      content: "text-sm text-slate-700 max-h-40 overflow-auto",
+    };
+  }
+  if (size === "large") {
+    return {
+      shell: "rounded-md border border-border bg-card p-3 max-w-[720px] space-y-2",
+      content: "text-sm text-slate-700 max-h-96 overflow-auto",
+    };
+  }
+  return {
+    shell: "rounded-md border border-border bg-card p-3 max-w-[480px] space-y-2",
+    content: "text-sm text-slate-700 max-h-60 overflow-auto",
+  };
 }
 
 function SortIcon({ direction }: { direction: SortDirection | null }) {
@@ -44,23 +65,21 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
   return <ArrowUpDown className="w-3.5 h-3.5" />;
 }
 
-export function HelpTextsPage() {
+export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPageProps) {
   const { toast } = useToast();
   const { settingsByKey, setSetting } = useSettings();
   const viewModeKey = "helptexts";
   const settingsViewModeKey = `${viewModeKey}.viewMode`;
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
+  const helpTextPreviewSize = parseHelpTextPreviewSize(useSetting("helpTextPreviewSize"));
+  const previewClass = resolvePreviewClass(helpTextPreviewSize);
 
   const [viewMode, setViewMode] = useState<ViewMode>(resolvedViewMode);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingHelpText, setEditingHelpText] = useState<HelpText | null>(null);
-  const [formHelpKey, setFormHelpKey] = useState("");
-  const [formTitle, setFormTitle] = useState("");
-  const [formBody, setFormBody] = useState("");
-  const [formIsActive, setFormIsActive] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<HelpTextSortKey>("helpKey");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
+
   const extractApiCode = (error: unknown): string | null => {
     if (!(error instanceof Error)) return null;
     const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
@@ -91,7 +110,7 @@ export function HelpTextsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [toast]);
 
   const { data: helpTexts = [], isLoading } = useQuery<HelpText[]>({
     queryKey: ["/api/help-texts", searchQuery],
@@ -120,53 +139,6 @@ export function HelpTextsPage() {
     return data;
   }, [helpTexts, sortDirection, sortKey]);
 
-  const createMutation = useMutation({
-    mutationFn: async (data: { helpKey: string; title: string; body: string; isActive: boolean }) => {
-      const response = await apiRequest("POST", "/api/help-texts", data);
-      return response;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
-      handleCloseDialog();
-      toast({ title: "Hilfetext erstellt" });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Fehler",
-        description: error.message.includes("409") ? "Der Hilfe-Schluessel ist bereits vergeben" : error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { helpKey?: string; title?: string; body?: string; isActive?: boolean; version: number } }) => {
-      const response = await apiRequest("PUT", `/api/help-texts/${id}`, data);
-      return response;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
-      handleCloseDialog();
-      toast({ title: "Hilfetext aktualisiert" });
-    },
-    onError: (error: Error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Speichern nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({
-        title: "Fehler",
-        description: error.message.includes("409") ? "Der Hilfe-Schluessel ist bereits vergeben" : error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: async ({ id, version }: { id: number; version: number }) => {
       return apiRequest("DELETE", `/api/help-texts/${id}`, { version });
@@ -186,46 +158,6 @@ export function HelpTextsPage() {
       }
     },
   });
-
-  const handleOpenCreate = () => {
-    setEditingHelpText(null);
-    setFormHelpKey("");
-    setFormTitle("");
-    setFormBody("");
-    setFormIsActive(true);
-    setDialogOpen(true);
-  };
-
-  const handleOpenEdit = (helpText: HelpText) => {
-    setEditingHelpText(helpText);
-    setFormHelpKey(helpText.helpKey);
-    setFormTitle(helpText.title);
-    setFormBody(helpText.body);
-    setFormIsActive(helpText.isActive);
-    setDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    setEditingHelpText(null);
-    setFormHelpKey("");
-    setFormTitle("");
-    setFormBody("");
-    setFormIsActive(true);
-  };
-
-  const handleSave = () => {
-    if (!formHelpKey.trim() || !formTitle.trim()) return;
-
-    if (editingHelpText) {
-      updateMutation.mutate({
-        id: editingHelpText.id,
-        data: { helpKey: formHelpKey, title: formTitle, body: formBody, isActive: formIsActive, version: editingHelpText.version },
-      });
-    } else {
-      createMutation.mutate({ helpKey: formHelpKey, title: formTitle, body: formBody, isActive: formIsActive });
-    }
-  };
 
   const handleDelete = (helpText: HelpText) => {
     if (window.confirm(`Wollen Sie den Hilfetext ${helpText.title} wirklich loeschen?`)) {
@@ -339,26 +271,36 @@ export function HelpTextsPage() {
         }
         footerSlot={
           <div className="flex justify-between items-center">
-            <Button
-              variant="outline"
-              onClick={handleOpenCreate}
-              disabled={createMutation.isPending}
-              className="flex items-center gap-2"
-              data-testid="button-new-helptext"
-            >
-              <Plus className="w-4 h-4" />
-              Neuer Hilfetext
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setImportExportDialogOpen(true)}
+                className="flex items-center gap-2"
+                data-testid="button-helptexts-import-export"
+              >
+                <Upload className="w-4 h-4" />
+                Import/Export
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onCreateHelpText}
+                className="flex items-center gap-2"
+                data-testid="button-new-helptext"
+              >
+                <Plus className="w-4 h-4" />
+                Neuer Hilfetext
+              </Button>
+            </div>
           </div>
         }
         contentSlot={
           viewMode === "board" ? (
             <BoardView
               gridTestId="list-helptexts"
-              gridCols="2"
+              dynamicMinCols={3}
               isEmpty={helpTexts.length === 0}
               emptyState={
-                <p className="text-sm text-slate-400 text-center py-8 col-span-2">
+                <p className="text-sm text-slate-400 text-center py-8 col-span-full">
                   {searchQuery ? "Keine Hilfetexte gefunden" : "Keine Hilfetexte vorhanden"}
                 </p>
               }
@@ -372,14 +314,14 @@ export function HelpTextsPage() {
                   className={!helpText.isActive ? "opacity-60" : ""}
                   onDelete={() => handleDelete(helpText)}
                   isDeleting={deleteMutation.isPending}
-                  onDoubleClick={() => handleOpenEdit(helpText)}
+                  onDoubleClick={() => onEditHelpText(helpText.id)}
                   footer={
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenEdit(helpText);
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEditHelpText(helpText.id);
                       }}
                       data-testid={`button-edit-helptext-${helpText.id}`}
                     >
@@ -401,14 +343,11 @@ export function HelpTextsPage() {
                         data-testid={`text-helptext-body-${helpText.id}`}
                       />
                     )}
-                    <div className="flex items-center gap-2 pt-1">
-                      {!helpText.isActive && (
+                    {!helpText.isActive ? (
+                      <div className="pt-1">
                         <Badge variant="secondary" className="text-xs">Inaktiv</Badge>
-                      )}
-                      <span className="text-xs text-slate-400" data-testid={`text-helptext-date-${helpText.id}`}>
-                        Aktualisiert: {formatDate(helpText.updatedAt)}
-                      </span>
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
                 </EntityCard>
               ))}
@@ -419,13 +358,13 @@ export function HelpTextsPage() {
               columns={tableColumns}
               rows={sortedHelpTexts}
               rowKey={(row) => row.id}
-              onRowDoubleClick={(row) => handleOpenEdit(row)}
+              onRowDoubleClick={(row) => onEditHelpText(row.id)}
               rowPreviewRenderer={(row) => (
-                <div className="rounded-md border border-border bg-card p-3 max-w-[420px] space-y-2">
+                <div className={previewClass.shell}>
                   <p className="font-semibold text-sm">{row.title}</p>
                   <p className="text-xs text-muted-foreground">{row.helpKey}</p>
                   {row.body.trim().length > 0 ? (
-                    <div className="text-sm text-slate-700 max-h-48 overflow-auto" dangerouslySetInnerHTML={{ __html: row.body }} />
+                    <div className={previewClass.content} dangerouslySetInnerHTML={{ __html: row.body }} />
                   ) : (
                     <p className="text-sm text-muted-foreground">Kein Inhalt vorhanden.</p>
                   )}
@@ -442,77 +381,14 @@ export function HelpTextsPage() {
         }
       />
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <HelpCircle className="w-5 h-5" />
-              {editingHelpText ? "Hilfetext bearbeiten" : "Neuer Hilfetext"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="helptext-key">Hilfe-Schluessel *</Label>
-              <Input
-                id="helptext-key"
-                value={formHelpKey}
-                onChange={(e) => setFormHelpKey(e.target.value)}
-                placeholder="z.B. kunde-stammdaten, termin-bearbeiten..."
-                data-testid="input-helptext-key"
-              />
-              <p className="text-xs text-slate-500">
-                Eindeutiger Schluessel zur Identifizierung im UI (Beispiel: kunde-stammdaten)
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="helptext-title">Titel *</Label>
-              <Input
-                id="helptext-title"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="Titel des Hilfetextes..."
-                data-testid="input-helptext-title"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Inhalt</Label>
-              <RichTextEditor
-                value={formBody}
-                onChange={setFormBody}
-                placeholder="Hilfetext-Inhalt eingeben..."
-                className="min-h-[150px]"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="helptext-active"
-                checked={formIsActive}
-                disabled={true}
-                className="w-4 h-4 cursor-not-allowed"
-                data-testid="checkbox-helptext-active"
-              />
-              <Label htmlFor="helptext-active" className="text-muted-foreground">
-                Aktiv <span className="text-xs">(nur durch Administrator aenderbar)</span>
-              </Label>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleCloseDialog} data-testid="button-cancel-helptext">
-              Abbrechen
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!formHelpKey.trim() || !formTitle.trim() || createMutation.isPending || updateMutation.isPending}
-              data-testid="button-save-helptext"
-            >
-              {createMutation.isPending || updateMutation.isPending ? "Speichern..." : "Speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <HelpTextsImportExportDialog
+        open={importExportDialogOpen}
+        onOpenChange={setImportExportDialogOpen}
+        totalHelpTextsCount={helpTexts.length}
+        onImportApplied={() => {
+          void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+        }}
+      />
     </>
   );
 }

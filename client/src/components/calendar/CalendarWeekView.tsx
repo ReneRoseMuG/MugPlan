@@ -16,7 +16,12 @@ import { useSetting, useSettings } from "@/hooks/useSettings";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
-import { getAppointmentDurationDays, getAppointmentEndDate, getAppointmentSortValue } from "@/lib/calendar-utils";
+import {
+  CALENDAR_UNASSIGNED_TOUR_COLOR,
+  getAppointmentDurationDays,
+  getAppointmentEndDate,
+  getAppointmentSortValue,
+} from "@/lib/calendar-utils";
 import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
 import { CalendarWeekAppointmentPanel, DEFAULT_CONTINUATION_HEIGHT_PX } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
@@ -230,7 +235,7 @@ export function CalendarWeekView({
       const unassignedLane: WeekTourLane = {
         laneKey: "tour-unassigned",
         label: "Ohne Tour",
-        color: "#64748b",
+        color: CALENDAR_UNASSIGNED_TOUR_COLOR,
         tourId: null,
         members: unassignedMembers,
         dayBuckets: Array.from({ length: 7 }, (_, dayIndex) => ({
@@ -527,12 +532,12 @@ export function CalendarWeekView({
             const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
             const dayHeaderBadges = Array.from({ length: 7 }, (_, dayIdx) =>
               weekLanes
-                .map((lane) => ({
-                  laneKey: lane.laneKey,
-                  tourId: lane.tourId,
-                  color: lane.color ?? "#64748b",
-                  count: lane.dayBuckets[dayIdx]?.appointments.length ?? 0,
-                }))
+                  .map((lane) => ({
+                    laneKey: lane.laneKey,
+                    tourId: lane.tourId,
+                    color: lane.color ?? CALENDAR_UNASSIGNED_TOUR_COLOR,
+                    count: lane.dayBuckets[dayIdx]?.appointments.length ?? 0,
+                  }))
                 .filter((entry) => entry.count > 0)
                 .sort((a, b) => {
                   if (a.tourId === null && b.tourId === null) return 0;

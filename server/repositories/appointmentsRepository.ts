@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
@@ -21,6 +21,7 @@ export type AppointmentListFilters = {
   employeeId?: number;
   projectId?: number;
   customerId?: number;
+  orderNumber?: string;
   tourId?: number;
   dateFrom?: Date;
   dateTo?: Date;
@@ -505,6 +506,9 @@ function buildAppointmentListConditions(filters: AppointmentListFilters) {
   }
   if (filters.customerId) {
     conditions.push(eq(projects.customerId, filters.customerId));
+  }
+  if (filters.orderNumber) {
+    conditions.push(like(projects.orderNumber, `%${filters.orderNumber}%`));
   }
   if (filters.tourId) {
     conditions.push(eq(appointments.tourId, filters.tourId));

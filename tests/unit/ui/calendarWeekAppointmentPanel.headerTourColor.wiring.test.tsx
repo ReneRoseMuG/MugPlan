@@ -24,9 +24,19 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
     const panelPath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanel.tsx");
     const source = readFileSync(panelPath, "utf8");
 
-    expect(source).toContain("import { CALENDAR_NEUTRAL_COLOR } from \"@/lib/calendar-utils\"");
+    expect(source).toContain("CALENDAR_NEUTRAL_COLOR");
     expect(source).toContain("color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}");
     expect(source).toContain("orderNumber={appointment.projectOrderNumber}");
+  });
+
+  it("wires preview-only tour name line with unassigned fallback color", () => {
+    const panelPath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanel.tsx");
+    const source = readFileSync(panelPath, "utf8");
+
+    expect(source).toContain("showPreviewTourNameLine?: boolean;");
+    expect(source).toContain("const resolvedTourName = appointment.tourName?.trim() || \"Ohne Tour\";");
+    expect(source).toContain("CALENDAR_UNASSIGNED_TOUR_COLOR");
+    expect(source).toContain("backgroundColor: resolvedTourColor");
   });
 
   it("applies provided color to header background and computes readable text color", () => {

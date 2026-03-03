@@ -8,6 +8,7 @@
  * - Resolved-Mapping liefert Scope-Versionen und resolvedVersion korrekt.
  * - Neues Global-Setting fuer Hover-Delay wird inkl. Version aufgeloest.
  * - Neues Global-Setting fuer Toast-Desktop-Position wird inkl. Version aufgeloest.
+ * - Neues USER-Setting fuer Hilfetext-Preview-Groesse wird inkl. Version aufgeloest.
  * - FT03-Settings fuer boolean/string werden im USER-Scope korrekt aufgeloest.
  *
  * Fehlerfälle:
@@ -184,5 +185,33 @@ describe("PKG-08 user settings resolved mapping", () => {
     expect(expandedLaneSetting?.resolvedValue).toBe("tour-42");
     expect(expandedLaneSetting?.resolvedScope).toBe("USER");
     expect(expandedLaneSetting?.resolvedVersion).toBe(3);
+  });
+
+  it("maps user version and resolved value for helpTextPreviewSize", async () => {
+    usersRepoMock.getUserWithRole.mockResolvedValue({
+      id: 1,
+      isActive: true,
+      roleCode: "ADMIN",
+    } as any);
+    settingsRepoMock.listSettingCandidates.mockResolvedValue([
+      {
+        settingKey: "helpTextPreviewSize",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: "large",
+        version: 7,
+        updatedAt: new Date("2026-03-03T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+    ] as any);
+
+    const result = await getResolvedSettingsForUser(1);
+    const helpTextPreviewSize = result.find((entry) => entry.key === "helpTextPreviewSize");
+
+    expect(helpTextPreviewSize).toBeDefined();
+    expect(helpTextPreviewSize?.userVersion).toBe(7);
+    expect(helpTextPreviewSize?.resolvedValue).toBe("large");
+    expect(helpTextPreviewSize?.resolvedScope).toBe("USER");
+    expect(helpTextPreviewSize?.resolvedVersion).toBe(7);
   });
 });

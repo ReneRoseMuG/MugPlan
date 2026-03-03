@@ -6,6 +6,7 @@ type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-r
 export type UserSettingKey =
   // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
   | "attachmentPreviewSize"
+  | "helpTextPreviewSize"
   | "toastDesktopPosition"
   | "backup_enabled"
   | "calendarWeekendColumnPercent"
@@ -18,6 +19,7 @@ export type UserSettingKey =
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
+  helpTextPreviewSize: "small" | "medium" | "large";
   toastDesktopPosition: ToastDesktopPosition;
   backup_enabled: boolean;
   calendarWeekendColumnPercent: number;
@@ -58,6 +60,13 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
         return value as UserSettingValueByKey[K];
       }
       return 4 as UserSettingValueByKey[K];
+    }
+    if (key === "helpTextPreviewSize") {
+      const value = setting?.resolvedValue;
+      if (value === "small" || value === "medium" || value === "large") {
+        return value as UserSettingValueByKey[K];
+      }
+      return "medium" as UserSettingValueByKey[K];
     }
     if (key === "hoverPreviewOpenDelayMs") {
       const value = setting?.resolvedValue;
