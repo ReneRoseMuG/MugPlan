@@ -1140,6 +1140,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
             emptyText="Kein Projekt ausgewählt"
             testId="slot-project-relation"
             addActionTestId="button-select-project"
+            className="min-h-[18rem]"
           >
             {selectedProject ? (
               <ProjectDetailCard

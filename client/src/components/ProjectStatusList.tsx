@@ -54,8 +54,8 @@ export function ProjectStatusListView({
       icon={<ListChecks className="w-5 h-5" />}
       helpKey={helpKey}
       isLoading={isLoading}
-      onClose={onCancel}
-      closeTestId="button-close-project-status"
+      onClose={isPicker ? undefined : onCancel}
+      closeTestId={isPicker ? undefined : "button-close-project-status"}
       footerSlot={(
         <div className="flex items-center justify-between">
           {!isPicker && canEdit && onCreateStatus ? (
