@@ -16,6 +16,7 @@ import { AppointmentsListPage } from "@/components/AppointmentsListPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
+import { HelpTextForm } from "@/components/HelpTextForm";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
@@ -23,7 +24,7 @@ import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
 import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'settings' | 'demoData' | 'users';
+export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'helpTextForm' | 'settings' | 'demoData' | 'users';
 export type CalendarNavCommand = {
   id: number;
   direction: "next" | "prev";
@@ -38,6 +39,7 @@ export default function Home({ onLogout }: HomeProps) {
   const [view, setView] = useState<ViewType>('week');
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedHelpTextId, setSelectedHelpTextId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
   const { filters: calendarFilters, setFilter: setCalendarFilter } = useListFilters({
     initialFilters: { employeeId: null as number | null },
@@ -239,7 +241,28 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === 'projectStatus' && isAdmin ? (
             <ProjectStatusPage />
           ) : view === 'helpTexts' && isAdmin ? (
-            <HelpTextsPage />
+            <HelpTextsPage
+              onCreateHelpText={() => {
+                setSelectedHelpTextId(null);
+                setView("helpTextForm");
+              }}
+              onEditHelpText={(id) => {
+                setSelectedHelpTextId(id);
+                setView("helpTextForm");
+              }}
+            />
+          ) : view === "helpTextForm" && isAdmin ? (
+            <HelpTextForm
+              helpTextId={selectedHelpTextId ?? undefined}
+              onCancel={() => {
+                setSelectedHelpTextId(null);
+                setView("helpTexts");
+              }}
+              onSaved={() => {
+                setSelectedHelpTextId(null);
+                setView("helpTexts");
+              }}
+            />
           ) : view === 'settings' && isAdmin ? (
             <SettingsPage />
           ) : view === 'demoData' && isAdmin ? (

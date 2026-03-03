@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 export interface BoardViewProps {
   children: ReactNode;
   gridCols?: "2" | "3";
+  dynamicMinCols?: 2 | 3;
   toolbar?: ReactNode;
   emptyState?: ReactNode;
   isEmpty?: boolean;
@@ -16,6 +17,7 @@ export interface BoardViewProps {
 export function BoardView({
   children,
   gridCols = "3",
+  dynamicMinCols = 2,
   toolbar,
   emptyState,
   isEmpty = false,
@@ -25,13 +27,15 @@ export function BoardView({
 }: BoardViewProps) {
   const preferredCardListColumns = useSetting("cardListColumns");
 
-  const resolvedDynamicGridCols =
+  const preferredGridCols =
     typeof preferredCardListColumns === "number"
     && Number.isInteger(preferredCardListColumns)
     && preferredCardListColumns >= 2
     && preferredCardListColumns <= 6
       ? preferredCardListColumns
       : 4;
+
+  const resolvedDynamicGridCols = Math.max(dynamicMinCols, preferredGridCols);
 
   const gridColsClass = (() => {
     if (gridCols === "2") return "grid-cols-1 md:grid-cols-2";

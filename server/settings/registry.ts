@@ -37,6 +37,8 @@ export type SettingDefinition =
 
 const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
+const helpTextPreviewSizeOptions = ["small", "medium", "large"] as const;
+type HelpTextPreviewSize = (typeof helpTextPreviewSizeOptions)[number];
 const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
 type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const listViewModeOptions = ["board", "table"] as const;
@@ -94,6 +96,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL", "USER"],
     validate: (value: unknown): value is AttachmentPreviewSize =>
       typeof value === "string" && attachmentPreviewSizeOptions.includes(value as AttachmentPreviewSize),
+  },
+  helpTextPreviewSize: {
+    key: "helpTextPreviewSize",
+    label: "Hilfetext Vorschau Groesse",
+    description: "Steuert die Groesse von Hilfetext-Previews (Help-Icon und Hilfetext-Tabelle).",
+    type: "enum",
+    options: helpTextPreviewSizeOptions,
+    defaultValue: "medium",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is HelpTextPreviewSize =>
+      typeof value === "string" && helpTextPreviewSizeOptions.includes(value as HelpTextPreviewSize),
   },
   toastDesktopPosition: {
     key: "toastDesktopPosition",

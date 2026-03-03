@@ -19,6 +19,8 @@ function stringifyValue(value: unknown): string {
 
 const previewOptions = ["small", "medium", "large"] as const;
 type PreviewSize = (typeof previewOptions)[number];
+const helpTextPreviewOptions = ["small", "medium", "large"] as const;
+type HelpTextPreviewSize = (typeof helpTextPreviewOptions)[number];
 const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
 type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const defaultWeekendColumnPercent = 33;
@@ -56,6 +58,7 @@ export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
+  const helpTextPreviewSetting = settingsByKey.get("helpTextPreviewSize");
   const toastDesktopPositionSetting = settingsByKey.get("toastDesktopPosition");
   const weekendWidthSetting = settingsByKey.get("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = settingsByKey.get("calendarWeekScrollRange");
@@ -85,6 +88,14 @@ export function SettingsPage() {
     }
     return "medium" as PreviewSize;
   }, [previewSetting?.resolvedValue]);
+
+  const resolvedHelpTextPreviewValue = useMemo(() => {
+    const value = helpTextPreviewSetting?.resolvedValue;
+    if (value === "small" || value === "medium" || value === "large") {
+      return value;
+    }
+    return "medium" as HelpTextPreviewSize;
+  }, [helpTextPreviewSetting?.resolvedValue]);
 
   const resolvedToastDesktopPosition = useMemo(() => {
     const value = toastDesktopPositionSetting?.resolvedValue;
@@ -140,6 +151,7 @@ export function SettingsPage() {
   }, [backupEnabledSetting?.resolvedValue]);
 
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
+  const [helpTextPreviewValue, setHelpTextPreviewValue] = useState<HelpTextPreviewSize>(resolvedHelpTextPreviewValue);
   const [toastDesktopPositionValue, setToastDesktopPositionValue] = useState<ToastDesktopPosition>(resolvedToastDesktopPosition);
   const [weekendColumnPercentValue, setWeekendColumnPercentValue] = useState<string>(String(resolvedWeekendColumnPercent));
   const [weekScrollRangeValue, setWeekScrollRangeValue] = useState<string>(String(resolvedWeekScrollRange));
@@ -148,6 +160,7 @@ export function SettingsPage() {
   const [cardListColumnsValue, setCardListColumnsValue] = useState<string>(String(resolvedCardListColumns));
   const [backupEnabledValue, setBackupEnabledValue] = useState<boolean>(resolvedBackupEnabled);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [helpTextPreviewError, setHelpTextPreviewError] = useState<string | null>(null);
   const [toastDesktopPositionError, setToastDesktopPositionError] = useState<string | null>(null);
   const [weekendError, setWeekendError] = useState<string | null>(null);
   const [weekScrollRangeError, setWeekScrollRangeError] = useState<string | null>(null);
@@ -156,6 +169,7 @@ export function SettingsPage() {
   const [cardListColumnsError, setCardListColumnsError] = useState<string | null>(null);
   const [backupEnabledError, setBackupEnabledError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
+  const [helpTextPreviewSaved, setHelpTextPreviewSaved] = useState(false);
   const [toastDesktopPositionSaved, setToastDesktopPositionSaved] = useState(false);
   const [weekendSaved, setWeekendSaved] = useState(false);
   const [weekScrollRangeSaved, setWeekScrollRangeSaved] = useState(false);
@@ -167,6 +181,10 @@ export function SettingsPage() {
   useEffect(() => {
     setPreviewValue(resolvedPreviewValue);
   }, [resolvedPreviewValue]);
+
+  useEffect(() => {
+    setHelpTextPreviewValue(resolvedHelpTextPreviewValue);
+  }, [resolvedHelpTextPreviewValue]);
 
   useEffect(() => {
     setToastDesktopPositionValue(resolvedToastDesktopPosition);
@@ -231,6 +249,21 @@ export function SettingsPage() {
       setPreviewSaved(true);
     } catch (error) {
       setPreviewError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveHelpTextPreview = async () => {
+    setHelpTextPreviewError(null);
+    setHelpTextPreviewSaved(false);
+    try {
+      await setSetting({
+        key: "helpTextPreviewSize",
+        scopeType: "USER",
+        value: helpTextPreviewValue,
+      });
+      setHelpTextPreviewSaved(true);
+    } catch (error) {
+      setHelpTextPreviewError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
 
@@ -404,6 +437,33 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(previewSetting?.resolvedValue)} ({previewSetting?.resolvedScope ?? "-"})</p>
           {previewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {previewError && <p className="mt-1 text-xs text-destructive">{previewError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-helpTextPreviewSize">
+          <p className="font-semibold text-slate-900">{helpTextPreviewSetting?.label ?? "Hilfetext Vorschau Groesse"}</p>
+          <p className="mb-3 text-xs text-slate-500">{helpTextPreviewSetting?.description ?? "Steuert die Groesse von Hilfetext-Previews."}</p>
+
+          <div className="flex items-center gap-3">
+            <select
+              value={helpTextPreviewValue}
+              onChange={(event) => setHelpTextPreviewValue(event.target.value as HelpTextPreviewSize)}
+              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+              data-testid="select-setting-helpTextPreviewSize"
+            >
+              {helpTextPreviewOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <Button onClick={() => void handleSaveHelpTextPreview()} disabled={isSaving} data-testid="button-save-helpTextPreviewSize">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(helpTextPreviewSetting?.resolvedValue ?? "medium")} ({helpTextPreviewSetting?.resolvedScope ?? "-"})</p>
+          {helpTextPreviewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {helpTextPreviewError && <p className="mt-1 text-xs text-destructive">{helpTextPreviewError}</p>}
         </div>
 
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-toastDesktopPosition">
