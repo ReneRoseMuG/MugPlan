@@ -2,6 +2,7 @@ import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseProjectStoredName } from "@/lib/project-name-format";
@@ -11,6 +12,7 @@ export type AppointmentListFilters = {
   employeeId?: number;
   projectId?: number;
   customerId?: number;
+  orderNumber: string;
   tourId?: number;
   dateFrom?: string;
   dateTo?: string;
@@ -128,6 +130,16 @@ export function AppointmentsFilterPanel({
             </SelectContent>
           </Select>
         </div>
+
+        <SearchFilterInput
+          id="appointments-filter-order-number"
+          label="Auftragsnummer"
+          value={filters.orderNumber}
+          onChange={(value) => onChange({ orderNumber: value })}
+          onClear={() => onChange({ orderNumber: "" })}
+          maxLength={12}
+          className="w-[120px] min-w-[120px] max-w-[120px]"
+        />
 
         {!hideTourFilter && (
           <div className="flex min-w-[150px] flex-col gap-1">

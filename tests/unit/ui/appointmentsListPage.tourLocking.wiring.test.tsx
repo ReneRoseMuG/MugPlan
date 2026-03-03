@@ -10,6 +10,7 @@
  * - Im Tour-Kontext wird Tour intern fixiert und die Tour-Spalte ausgeblendet.
  * - Der Show-All-Switch ist verdrahtet und steuert dateFrom (undefined vs. Berlin-heute).
  * - Projektnamen in der Terminliste werden ohne Kundennummer-Praefix gerendert.
+ * - Auftragsnummer wird in der Projektspalte als Suffix "(<Auftragsnummer>)" angezeigt und als Listenfilter uebergeben.
  *
  * Fehlerfaelle:
  * - Tour-Filter bleibt im Tour-Formular sichtbar.
@@ -83,8 +84,11 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("function resolveAppointmentProjectDisplayName(storedProjectName: string): string");
     expect(source).toContain("const separator = \" - \";");
     expect(source).toContain("if (suffix && (kPrefixed || /\\d/.test(prefix)))");
-    expect(source).toContain("accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName)");
-    expect(source).toContain("cell: ({ row }) => <span className=\"font-medium\">{resolveAppointmentProjectDisplayName(row.projectName)}</span>");
+    expect(source).toContain("function resolveAppointmentProjectColumnValue(row: AppointmentListItem): string");
+    expect(source).toContain("const orderNumber = row.projectOrderNumber?.trim();");
+    expect(source).toContain("return `${projectName} (${orderNumber})`;");
+    expect(source).toContain("accessor: (row) => resolveAppointmentProjectColumnValue(row)");
+    expect(source).toContain("cell: ({ row }) => <span className=\"font-medium\">{resolveAppointmentProjectColumnValue(row)}</span>");
   });
 
   it("wires show-all switch to toggle dateFrom against Berlin-today", () => {
@@ -96,6 +100,14 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("if (showAllAppointments) return;");
     expect(source).toContain("dateFrom: checked ? undefined : todayBerlin");
     expect(source).toContain("showAllAppointmentsHelpKey=\"appointments.filter.showAll\"");
+  });
+
+  it("forwards optional orderNumber filter into appointments list query", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("orderNumber: \"\",");
+    expect(source).toContain("if (filters.orderNumber.trim().length > 0) params.set(\"orderNumber\", filters.orderNumber.trim());");
   });
 
   it("forwards resolved helpKey into ListLayout", () => {

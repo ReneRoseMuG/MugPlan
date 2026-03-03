@@ -94,6 +94,15 @@ function resolveAppointmentProjectDisplayName(storedProjectName: string): string
   return parsed.isolatedProjectName || normalized;
 }
 
+function resolveAppointmentProjectColumnValue(row: AppointmentListItem): string {
+  const projectName = resolveAppointmentProjectDisplayName(row.projectName);
+  const orderNumber = row.projectOrderNumber?.trim();
+  if (!orderNumber) {
+    return projectName;
+  }
+  return `${projectName} (${orderNumber})`;
+}
+
 export function AppointmentsListPage({
   onCancel,
   onOpenAppointment,
@@ -123,11 +132,13 @@ export function AppointmentsListPage({
   const [page, setPage] = useState(1);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [showAllAppointments, setShowAllAppointments] = useState(false);
+  const [hasLoadedAtLeastOnce, setHasLoadedAtLeastOnce] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const [filters, setFilters] = useState<AppointmentListFilters>({
     employeeId: resolvedEmployeeId,
     projectId: undefined,
     customerId: undefined,
+    orderNumber: "",
     tourId: resolvedTourId ?? undefined,
     dateFrom: todayBerlin,
     dateTo: undefined,
@@ -182,6 +193,7 @@ export function AppointmentsListPage({
       if (filters.employeeId) params.set("employeeId", String(filters.employeeId));
       if (filters.projectId) params.set("projectId", String(filters.projectId));
       if (filters.customerId) params.set("customerId", String(filters.customerId));
+      if (filters.orderNumber.trim().length > 0) params.set("orderNumber", filters.orderNumber.trim());
       if (filters.tourId) params.set("tourId", String(filters.tourId));
       if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
       if (filters.dateTo) params.set("dateTo", filters.dateTo);
@@ -196,6 +208,12 @@ export function AppointmentsListPage({
       return (await response.json()) as AppointmentListResponse;
     },
   });
+
+  useEffect(() => {
+    if (data) {
+      setHasLoadedAtLeastOnce(true);
+    }
+  }, [data]);
 
   const rows = useMemo(() => {
     if (resolvedTourId === null) return [];
@@ -239,9 +257,9 @@ export function AppointmentsListPage({
       {
         id: "project",
         header: "Projekt",
-        accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName),
+        accessor: (row) => resolveAppointmentProjectColumnValue(row),
         minWidth: 220,
-        cell: ({ row }) => <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>,
+        cell: ({ row }) => <span className="font-medium">{resolveAppointmentProjectColumnValue(row)}</span>,
       },
       {
         id: "customer",
@@ -300,7 +318,7 @@ export function AppointmentsListPage({
       icon={<CalendarDays className="w-5 h-5" />}
       viewModeKey="appointments"
       helpKey={helpKey}
-      isLoading={isLoading}
+      isLoading={isLoading && !hasLoadedAtLeastOnce}
       onClose={onCancel}
       showCloseButton={resolvedShowCloseButton}
       closeTestId="button-close-appointments-list"

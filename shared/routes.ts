@@ -254,6 +254,7 @@ export const api = {
         employeeId: z.coerce.number().int().positive().optional(),
         projectId: z.coerce.number().int().positive().optional(),
         customerId: z.coerce.number().int().positive().optional(),
+        orderNumber: z.string().trim().optional(),
         tourId: z.coerce.number().int().positive().optional(),
         dateFrom: z.string().optional(),
         dateTo: z.string().optional(),

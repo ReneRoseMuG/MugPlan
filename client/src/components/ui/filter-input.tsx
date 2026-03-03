@@ -12,6 +12,7 @@ interface FilterInputProps {
   onChange: (value: string) => void;
   onClear: () => void;
   placeholder?: string;
+  maxLength?: number;
   numericOnly?: boolean;
   labelAdornment?: ReactNode;
   className?: string;
@@ -24,6 +25,7 @@ export function FilterInput({
   onChange,
   onClear,
   placeholder,
+  maxLength,
   numericOnly = false,
   labelAdornment,
   className,
@@ -53,6 +55,7 @@ export function FilterInput({
           id={id}
           value={value}
           placeholder={placeholder}
+          maxLength={maxLength}
           onChange={(event) => handleChange(event.target.value)}
           className="pr-10"
         />

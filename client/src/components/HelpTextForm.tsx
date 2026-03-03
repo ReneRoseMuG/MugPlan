@@ -42,6 +42,9 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
       return response.json();
     },
     enabled: isEditing,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
   });
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/help-texts/by-id", helpTextId] });
       toast({ title: "Hilfetext erstellt" });
       onSaved?.();
     },
@@ -75,11 +79,13 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
         helpKey: payload.helpKey,
         title: payload.title,
         body: payload.body,
+        isActive: true,
         version: payload.version,
       });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/help-texts/by-id", helpTextId] });
       toast({ title: "Hilfetext aktualisiert" });
       onSaved?.();
     },
@@ -107,6 +113,7 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/help-texts/by-id", helpTextId] });
       toast({ title: "Hilfetext geloescht" });
       onSaved?.();
     },
@@ -195,16 +202,23 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
       ) : (
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="helptext-key">Hilfe-Schluessel *</Label>
-            <Input
-              id="helptext-key"
-              value={helpKey}
-              onChange={(event) => setHelpKey(event.target.value)}
-              readOnly={isEditing}
-              className={isEditing ? "bg-muted" : undefined}
-              placeholder="z.B. kunde-stammdaten"
-              data-testid="input-helptext-key"
-            />
+            <Label htmlFor={isEditing ? undefined : "helptext-key"}>Hilfe-Schlüssel</Label>
+            {isEditing ? (
+              <div
+                className="h-10 rounded-md border border-border/50 bg-[hsl(var(--sub-panel-background))] px-3 flex items-center text-sm"
+                data-testid="text-helptext-key"
+              >
+                {helpKey}
+              </div>
+            ) : (
+              <Input
+                id="helptext-key"
+                value={helpKey}
+                onChange={(event) => setHelpKey(event.target.value)}
+                placeholder="z.B. kunde-stammdaten"
+                data-testid="input-helptext-key"
+              />
+            )}
           </div>
 
           <div className="space-y-2">

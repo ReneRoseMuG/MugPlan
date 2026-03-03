@@ -572,6 +572,7 @@ export async function listAppointmentsList(params: {
   employeeId?: number;
   projectId?: number;
   customerId?: number;
+  orderNumber?: string;
   tourId?: number;
   dateFrom?: string;
   dateTo?: string;
@@ -590,12 +591,14 @@ export async function listAppointmentsList(params: {
   }
 
   const berlinToday = parseDateOnly(getBerlinTodayDateString());
+  const normalizedOrderNumber = params.orderNumber?.trim();
 
   const { rows, total } = await appointmentsRepository.listAppointmentsForList(
     {
       employeeId: params.employeeId,
       projectId: params.projectId,
       customerId: params.customerId,
+      orderNumber: normalizedOrderNumber && normalizedOrderNumber.length > 0 ? normalizedOrderNumber : undefined,
       tourId: params.tourId,
       dateFrom,
       dateTo,

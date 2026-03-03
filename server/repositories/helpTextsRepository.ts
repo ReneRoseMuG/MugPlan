@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import { helpTexts, type HelpText, type InsertHelpText, type UpdateHelpText } from "@shared/schema";
 
@@ -23,7 +23,7 @@ export async function getHelpTextByKey(helpKey: string): Promise<HelpText | null
   const [helpText] = await db
     .select()
     .from(helpTexts)
-    .where(and(eq(helpTexts.helpKey, helpKey), eq(helpTexts.isActive, true)));
+    .where(eq(helpTexts.helpKey, helpKey));
   return helpText || null;
 }
 
