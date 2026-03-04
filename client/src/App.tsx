@@ -20,6 +20,7 @@ type AuthStage = "loading" | "setup" | "login" | "authed";
 function Router({ onLogout }: RouterProps) {
   return (
     <Switch>
+      <Route path="/calendar">{() => <Home onLogout={onLogout} />}</Route>
       <Route path="/">{() => <Home onLogout={onLogout} />}</Route>
       <Route component={NotFound} />
     </Switch>

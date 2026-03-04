@@ -1,7 +1,6 @@
-import { useCallback, useState } from "react";
+﻿import { useCallback, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { CalendarGrid } from "@/components/CalendarGrid";
-import { WeekGrid } from "@/components/WeekGrid";
+import { CalendarWorkspace } from "@/components/CalendarWorkspace";
 import { CalendarYearView } from "@/components/calendar/CalendarYearView";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { CustomerData } from "@/components/CustomerData";
@@ -22,12 +21,41 @@ import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
-import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns";
+import { addMonths, subMonths } from "date-fns";
 
-export type ViewType = 'month' | 'week' | 'year' | 'customer' | 'customerList' | 'tours' | 'teams' | 'employees' | 'project' | 'projectList' | 'appointment' | 'appointmentsList' | 'noteTemplates' | 'projectStatus' | 'helpTexts' | 'helpTextForm' | 'settings' | 'demoData' | 'users';
+export type ViewType =
+  | "month"
+  | "week"
+  | "year"
+  | "calendarContextual"
+  | "customer"
+  | "customerList"
+  | "tours"
+  | "teams"
+  | "employees"
+  | "project"
+  | "projectList"
+  | "appointment"
+  | "appointmentsList"
+  | "noteTemplates"
+  | "projectStatus"
+  | "helpTexts"
+  | "helpTextForm"
+  | "settings"
+  | "demoData"
+  | "users";
+
 export type CalendarNavCommand = {
   id: number;
   direction: "next" | "prev";
+};
+
+type CalendarWorkspaceView = "week" | "month";
+
+type ReturnContext = {
+  targetView: ViewType;
+  projectId?: number | null;
+  customerId?: number | null;
 };
 
 type HomeProps = {
@@ -36,11 +64,17 @@ type HomeProps = {
 
 export default function Home({ onLogout }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<ViewType>('week');
+  const [view, setView] = useState<ViewType>("week");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedHelpTextId, setSelectedHelpTextId] = useState<number | null>(null);
-  const [projectReturnView, setProjectReturnView] = useState<ViewType>('projectList');
+  const [projectReturnView, setProjectReturnView] = useState<ViewType>("projectList");
+  const [calendarContext, setCalendarContext] = useState<{
+    projectId: number;
+    activeView: CalendarWorkspaceView;
+    currentDate: Date;
+    returnContext: ReturnContext;
+  } | null>(null);
   const { filters: calendarFilters, setFilter: setCalendarFilter } = useListFilters({
     initialFilters: { employeeId: null as number | null },
   });
@@ -50,6 +84,8 @@ export default function Home({ onLogout }: HomeProps) {
     projectId?: number;
     appointmentId?: number;
     returnView?: ViewType;
+    returnContext?: ReturnContext;
+    readOnlyFields?: Array<"project" | "customer">;
     weekScrollLeft?: number | null;
   } | null>(null);
   const [pendingWeekScrollRestore, setPendingWeekScrollRestore] = useState<number | null>(null);
@@ -57,11 +93,45 @@ export default function Home({ onLogout }: HomeProps) {
   const isAdmin = userRole === "ADMIN";
   const backupEnabled = useSetting("backup_enabled");
   const backupDisabled = backupEnabled === false;
+
   const handleWeekScrollRestoreApplied = useCallback(() => {
     setPendingWeekScrollRestore(null);
   }, []);
+
+  const applyReturnContext = useCallback((context: ReturnContext) => {
+    if (typeof context.projectId === "number") {
+      setSelectedProjectId(context.projectId);
+    }
+    if (typeof context.customerId === "number") {
+      setSelectedCustomerId(context.customerId);
+    }
+
+    if (context.targetView !== "calendarContextual") {
+      setCalendarContext(null);
+    }
+
+    setView(context.targetView);
+  }, []);
+
   const returnFromAppointment = () => {
     const context = appointmentContext;
+
+    if (context?.returnContext) {
+      if (
+        context.returnContext.targetView === "week"
+        && typeof context.weekScrollLeft === "number"
+        && Number.isFinite(context.weekScrollLeft)
+        && context.weekScrollLeft >= 0
+      ) {
+        setPendingWeekScrollRestore(context.weekScrollLeft);
+      } else {
+        setPendingWeekScrollRestore(null);
+      }
+      setAppointmentContext(null);
+      applyReturnContext(context.returnContext);
+      return;
+    }
+
     const returnToProject = Boolean(context?.projectId);
     const returnView = context?.returnView ?? "month";
     const weekScrollLeft = context?.weekScrollLeft;
@@ -74,134 +144,73 @@ export default function Home({ onLogout }: HomeProps) {
     setView(returnToProject ? "project" : returnView);
   };
 
-  // Handlers for navigation
-  const next = () => {
-    if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
-    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
-    if (view === 'year') setCurrentDate(addMonths(currentDate, 12));
+  const nextYear = () => {
+    setCurrentDate(addMonths(currentDate, 12));
   };
-  
-  const prev = () => {
-    if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
-    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
-    if (view === 'year') setCurrentDate(subMonths(currentDate, 12));
+
+  const prevYear = () => {
+    setCurrentDate(subMonths(currentDate, 12));
   };
 
   const handleViewChange = (newView: ViewType) => {
     console.info("[navigation] view change", { from: view, to: newView });
+    if (newView !== "calendarContextual") {
+      setCalendarContext(null);
+    }
     setView(newView);
   };
 
-
-  const isCalendarView = view === 'month' || view === 'week' || view === 'year';
-
-  const renderCalendarContent = () => {
-    if (view === 'week') {
-      return (
-        <WeekGrid
-          currentDate={currentDate}
-          employeeFilterId={calendarFilters.employeeId}
-          onNewAppointment={(date, options) => {
-            console.info("[calendar] new appointment", { date, tourId: options?.tourId ?? null, view: "week" });
-            setAppointmentContext({
-              initialDate: date,
-              initialTourId: options?.tourId ?? null,
-              returnView: "week",
-              weekScrollLeft: options?.scrollLeft ?? null,
-            });
-            setView('appointment');
-          }}
-          onOpenAppointment={(appointmentId) => {
-            setAppointmentContext({ appointmentId, returnView: "week" });
-            setView('appointment');
-          }}
-          restoreScrollLeft={pendingWeekScrollRestore}
-          onScrollRestoreApplied={handleWeekScrollRestoreApplied}
-        />
-      );
-    }
-
-    if (view === 'year') {
-      return (
-        <CalendarYearView
-          currentDate={currentDate}
-          employeeFilterId={calendarFilters.employeeId}
-          onNewAppointment={(date) => {
-            console.info("[calendar] new appointment", { date, view: "year" });
-            setAppointmentContext({ initialDate: date });
-            setView('appointment');
-          }}
-          onOpenAppointment={(appointmentId) => {
-            setAppointmentContext({ appointmentId, returnView: "year" });
-            setView('appointment');
-          }}
-        />
-      );
-    }
-
-    return (
-      <CalendarGrid
-        currentDate={currentDate}
-        employeeFilterId={calendarFilters.employeeId}
-        onNewAppointment={(date) => {
-          console.info("[calendar] new appointment", { date, view: "month" });
-          setAppointmentContext({ initialDate: date });
-          setView('appointment');
-        }}
-        onOpenAppointment={(appointmentId) => {
-          setAppointmentContext({ appointmentId, returnView: "month" });
-          setView('appointment');
-        }}
-      />
-    );
-  };
+  const isGlobalCalendarView = view === "month" || view === "week" || view === "year";
+  const isContextualCalendarView = view === "calendarContextual" && calendarContext !== null;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
-      {/* Left Sidebar - content width with desktop clamp */}
-      <aside className="h-full flex-shrink-0 z-10 relative">
-        <Sidebar
-          onViewChange={handleViewChange}
-          onLogout={onLogout}
-          currentView={view}
-          userRole={userRole}
-          backupDisabled={backupDisabled}
-        />
-      </aside>
+      {isContextualCalendarView ? null : (
+        <aside className="h-full flex-shrink-0 z-10 relative">
+          <Sidebar
+            onViewChange={handleViewChange}
+            onLogout={onLogout}
+            currentView={view}
+            userRole={userRole}
+            backupDisabled={backupDisabled}
+          />
+        </aside>
+      )}
 
-      {/* Main Content - fills remaining width */}
       <main className="flex-1 min-w-0 h-full flex flex-col relative">
-        {/* Content Area */}
         <div className="flex-1 p-8 overflow-hidden bg-slate-100">
-          {view === 'customer' ? (
-            <CustomerData 
+          {view === "customer" ? (
+            <CustomerData
               customerId={selectedCustomerId}
-              onCancel={() => { setSelectedCustomerId(null); setView('customerList'); }} 
-              onSave={() => { setSelectedCustomerId(null); setView('customerList'); }}
+              onCancel={() => { setSelectedCustomerId(null); setView("customerList"); }}
+              onSave={() => { setSelectedCustomerId(null); setView("customerList"); }}
               onOpenProject={(id) => {
                 setSelectedProjectId(id);
-                setProjectReturnView('customer');
-                setView('project');
+                setProjectReturnView("customer");
+                setView("project");
               }}
             />
-          ) : view === 'customerList' ? (
+          ) : view === "customerList" ? (
             <CustomersPage
-              onNewCustomer={() => { setSelectedCustomerId(null); setView('customer'); }}
-              onSelectCustomer={(id) => { setSelectedCustomerId(id); setView('customer'); }}
+              onNewCustomer={() => { setSelectedCustomerId(null); setView("customer"); }}
+              onSelectCustomer={(id) => { setSelectedCustomerId(id); setView("customer"); }}
             />
-          ) : view === 'tours' ? (
+          ) : view === "tours" ? (
             <TourManagement userRole={userRole} />
-          ) : view === 'teams' ? (
+          ) : view === "teams" ? (
             <TeamManagement />
-          ) : view === 'employees' ? (
+          ) : view === "employees" ? (
             <EmployeesPage
               onOpenAppointment={(appointmentId) => {
-                setAppointmentContext({ appointmentId, returnView: "employees" });
-                setView('appointment');
+                setAppointmentContext({
+                  appointmentId,
+                  returnContext: { targetView: "employees" },
+                });
+                setView("appointment");
               }}
             />
-          ) : view === 'project' ? (
-            <ProjectForm 
+          ) : view === "project" ? (
+            <ProjectForm
               projectId={selectedProjectId || undefined}
               onCancel={() => { setSelectedProjectId(null); setView(projectReturnView); }}
               onSaved={() => { setSelectedProjectId(null); setView(projectReturnView); }}
@@ -209,38 +218,52 @@ export default function Home({ onLogout }: HomeProps) {
                 setAppointmentContext({
                   projectId: context.projectId,
                   appointmentId: context.appointmentId,
+                  returnContext: { targetView: "project", projectId: context.projectId ?? selectedProjectId },
                 });
-                setView('appointment');
+                setView("appointment");
+              }}
+              onOpenCalendarWorkspace={(context) => {
+                setCalendarContext({
+                  projectId: context.projectId,
+                  activeView: "week",
+                  currentDate,
+                  returnContext: { targetView: "project", projectId: context.projectId },
+                });
+                setView("calendarContextual");
               }}
             />
-          ) : view === 'appointment' ? (
+          ) : view === "appointment" ? (
             <AppointmentForm
               appointmentId={appointmentContext?.appointmentId}
               initialDate={appointmentContext?.initialDate}
               initialTourId={appointmentContext?.initialTourId}
               projectId={appointmentContext?.projectId}
+              readOnlyFields={appointmentContext?.readOnlyFields}
               onCancel={returnFromAppointment}
               onSaved={returnFromAppointment}
             />
-          ) : view === 'appointmentsList' ? (
+          ) : view === "appointmentsList" ? (
             <AppointmentsListPage
               helpKey="appointments.list.mainNavigation"
               context={{ type: "standalone" }}
               onOpenAppointment={(appointmentId) => {
-                setAppointmentContext({ appointmentId, returnView: "appointmentsList" });
-                setView('appointment');
+                setAppointmentContext({
+                  appointmentId,
+                  returnContext: { targetView: "appointmentsList" },
+                });
+                setView("appointment");
               }}
             />
-          ) : view === 'projectList' ? (
+          ) : view === "projectList" ? (
             <ProjectsPage
-              onNewProject={() => { setSelectedProjectId(null); setProjectReturnView('projectList'); setView('project'); }}
-              onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView('projectList'); setView('project'); }}
+              onNewProject={() => { setSelectedProjectId(null); setProjectReturnView("projectList"); setView("project"); }}
+              onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView("projectList"); setView("project"); }}
             />
-          ) : view === 'noteTemplates' && isAdmin ? (
+          ) : view === "noteTemplates" && isAdmin ? (
             <NoteTemplatesPage />
-          ) : view === 'projectStatus' && isAdmin ? (
+          ) : view === "projectStatus" && isAdmin ? (
             <ProjectStatusPage />
-          ) : view === 'helpTexts' && isAdmin ? (
+          ) : view === "helpTexts" && isAdmin ? (
             <HelpTextsPage
               onCreateHelpText={() => {
                 setSelectedHelpTextId(null);
@@ -263,37 +286,104 @@ export default function Home({ onLogout }: HomeProps) {
                 setView("helpTexts");
               }}
             />
-          ) : view === 'settings' && isAdmin ? (
+          ) : view === "settings" && isAdmin ? (
             <SettingsPage />
-          ) : view === 'demoData' && isAdmin ? (
+          ) : view === "demoData" && isAdmin ? (
             <DemoDataPage />
-          ) : view === 'users' && isAdmin ? (
+          ) : view === "users" && isAdmin ? (
             <UsersPage />
-          ) : isCalendarView ? (
+          ) : isContextualCalendarView ? (
+            <CalendarWorkspace
+              mode="contextual"
+              activeView={calendarContext.activeView}
+              currentDate={calendarContext.currentDate}
+              employeeFilterId={calendarFilters.employeeId}
+              onEmployeeFilterChange={(employeeId) => setCalendarFilter("employeeId", employeeId)}
+              onViewChange={(activeView) => {
+                setCalendarContext((prev) => (prev ? { ...prev, activeView } : prev));
+              }}
+              onDateChange={(date) => {
+                setCalendarContext((prev) => (prev ? { ...prev, currentDate: date } : prev));
+              }}
+              onOpenAppointmentForm={(ctx) => {
+                const isNewAppointment = !ctx.appointmentId;
+                setAppointmentContext({
+                  initialDate: ctx.initialDate,
+                  initialTourId: ctx.initialTourId,
+                  appointmentId: ctx.appointmentId,
+                  projectId: isNewAppointment ? calendarContext.projectId : undefined,
+                  readOnlyFields: isNewAppointment ? ["project", "customer"] : undefined,
+                  returnContext: { targetView: "calendarContextual", projectId: calendarContext.projectId },
+                  returnView: ctx.returnView,
+                  weekScrollLeft: ctx.weekScrollLeft,
+                });
+                setView("appointment");
+              }}
+              onBack={() => {
+                applyReturnContext(calendarContext.returnContext);
+              }}
+              projectId={calendarContext.projectId}
+              hideMainNavigation
+            />
+          ) : isGlobalCalendarView && (view === "week" || view === "month") ? (
+            <CalendarWorkspace
+              mode="global"
+              activeView={view}
+              currentDate={currentDate}
+              employeeFilterId={calendarFilters.employeeId}
+              onEmployeeFilterChange={(employeeId) => setCalendarFilter("employeeId", employeeId)}
+              onViewChange={(activeView) => {
+                setView(activeView);
+              }}
+              onDateChange={setCurrentDate}
+              onOpenAppointmentForm={(ctx) => {
+                setAppointmentContext({
+                  initialDate: ctx.initialDate,
+                  initialTourId: ctx.initialTourId,
+                  appointmentId: ctx.appointmentId,
+                  projectId: ctx.projectId,
+                  returnContext: { targetView: ctx.returnView ?? "month" },
+                  returnView: ctx.returnView,
+                  weekScrollLeft: ctx.weekScrollLeft,
+                });
+                setView("appointment");
+              }}
+              restoreScrollLeft={pendingWeekScrollRestore}
+              onScrollRestoreApplied={handleWeekScrollRestoreApplied}
+            />
+          ) : isGlobalCalendarView && view === "year" ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground flex flex-col">
               <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
-                {/* UI-ONLY:
-                 * Diese Navigationsfläche triggert ausschließlich die bestehende
-                 * Vor/Zurück-Navigation.
-                 * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
-                 */}
                 <button
-                  onClick={prev}
+                  onClick={prevYear}
                   className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
                   data-testid="button-prev"
-                  aria-label="Zurück"
+                  aria-label="Zurueck"
                 >
                   {"<"}
                 </button>
-                {/* Kalenderansicht benötigt gemeinsames Filter/Popup-Verhalten, daher hier zentral gerendert. */}
-                <div className="min-w-0 h-full overflow-hidden">{renderCalendarContent()}</div>
-                {/* UI-ONLY:
-                 * Diese Navigationsfläche triggert ausschließlich die bestehende
-                 * Vor/Zurück-Navigation.
-                 * Keine eigene Logik, kein Scroll, keine Zeitfenster-Änderung.
-                 */}
+                <div className="min-w-0 h-full overflow-hidden">
+                  <CalendarYearView
+                    currentDate={currentDate}
+                    employeeFilterId={calendarFilters.employeeId}
+                    onNewAppointment={(date) => {
+                      setAppointmentContext({
+                        initialDate: date,
+                        returnContext: { targetView: "year" },
+                      });
+                      setView("appointment");
+                    }}
+                    onOpenAppointment={(appointmentId) => {
+                      setAppointmentContext({
+                        appointmentId,
+                        returnContext: { targetView: "year" },
+                      });
+                      setView("appointment");
+                    }}
+                  />
+                </div>
                 <button
-                  onClick={next}
+                  onClick={nextYear}
                   className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
                   data-testid="button-next"
                   aria-label="Vor"
@@ -310,7 +400,6 @@ export default function Home({ onLogout }: HomeProps) {
             </div>
           ) : null}
         </div>
-
       </main>
     </div>
   );

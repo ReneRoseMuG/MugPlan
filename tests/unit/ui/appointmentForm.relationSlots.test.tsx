@@ -8,12 +8,12 @@
  * - Projektrelation im Terminformular nutzt RelationSlot.
  * - ProjectDetailCard erhaelt Kundennummer aus der selektierten Kundenrelation.
  * - Projektdatenquelle des Formulars nutzt scope=all, damit ausgewaehlte Projekte aus allen Picker-Sichten angezeigt werden.
- * - Lock-Zustand erzwingt readonly fuer den Projekt-Slot.
+ * - Projekt-Readonly wird ueber Lock und explizite readOnlyFields gesteuert.
  * - Tour-Auswahlbadges werden nur angezeigt, wenn keine Tour zugeordnet ist.
  * - Kunden-Slot ist readonly und links in der Hauptspalte verortet.
  *
  * Fehlerfaelle:
- * - Projekt-Slot zeigt trotz Lock Add/Remove.
+ * - Projekt-Slot zeigt trotz ReadOnly Add/Remove.
  * - Kunden-Slot wird nicht aus Projektrelation angezeigt.
  *
  * Ziel:
@@ -27,11 +27,11 @@ describe("FT01 appointment form relation slot wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentForm.tsx");
   const source = readFileSync(filePath, "utf8");
 
-  it("uses project relation slot with lock-aware readonly state", () => {
+  it("uses project relation slot with readonly-aware state", () => {
     expect(source).toContain("testId=\"slot-project-relation\"");
-    expect(source).toContain("state={isLocked ? \"readonly\" : selectedProject ? \"active\" : \"empty\"}");
-    expect(source).toContain("onAdd={isLocked ? undefined : () => setProjectPickerOpen(true)}");
-    expect(source).toContain("onRemove={isLocked ? undefined : () => setSelectedProjectId(null)}");
+    expect(source).toContain("state={isProjectReadOnly ? \"readonly\" : selectedProject ? \"active\" : \"empty\"}");
+    expect(source).toContain("onAdd={isProjectReadOnly ? undefined : () => setProjectPickerOpen(true)}");
+    expect(source).toContain("onRemove={isProjectReadOnly ? undefined : () => setSelectedProjectId(null)}");
   });
 
   it("keeps legacy project select test id", () => {

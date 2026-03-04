@@ -51,6 +51,7 @@ interface AppointmentFormProps {
   initialTourId?: number | null;
   projectId?: number;
   appointmentId?: number;
+  readOnlyFields?: Array<"project" | "customer">;
 }
 
 interface AppointmentDetail {
@@ -153,7 +154,15 @@ const fetchJson = async <T,>(url: string) => {
   return payload as T;
 };
 
-export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId, projectId, appointmentId }: AppointmentFormProps) {
+export function AppointmentForm({
+  onCancel,
+  onSaved,
+  initialDate,
+  initialTourId,
+  projectId,
+  appointmentId,
+  readOnlyFields,
+}: AppointmentFormProps) {
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
@@ -427,6 +436,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
+  const isProjectReadOnly = isLocked || readOnlyFields?.includes("project") === true;
   const isFormDirty = initialFormSnapshot !== null && buildFormSnapshot({
     projectId: selectedProjectId,
     tourId: selectedTourId,
@@ -1174,9 +1184,9 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
           <RelationSlot
             title="Projektzuordnung"
             icon={<FolderKanban className="w-4 h-4" />}
-            state={isLocked ? "readonly" : selectedProject ? "active" : "empty"}
-            onAdd={isLocked ? undefined : () => setProjectPickerOpen(true)}
-            onRemove={isLocked ? undefined : () => setSelectedProjectId(null)}
+            state={isProjectReadOnly ? "readonly" : selectedProject ? "active" : "empty"}
+            onAdd={isProjectReadOnly ? undefined : () => setProjectPickerOpen(true)}
+            onRemove={isProjectReadOnly ? undefined : () => setSelectedProjectId(null)}
             addLabel="Projekt auswählen"
             emptyText="Kein Projekt ausgewählt"
             testId="slot-project-relation"
