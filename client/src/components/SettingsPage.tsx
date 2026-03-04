@@ -451,15 +451,19 @@ export function SettingsPage() {
 
       <div className="flex-1 min-h-0 overflow-y-auto pr-1">
         <div className="space-y-4">
+          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-other">
+            <h4 className="font-bold text-slate-900">Weitere Einstellungen</h4>
+            <p className="mt-1 text-xs text-slate-500">Allgemeine Oberflaechen- und Verhaltensoptionen.</p>
+            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-attachmentPreviewSize">
           <p className="font-semibold text-slate-900">{previewSetting?.label ?? "Datei Vorschau Groesse"}</p>
           <p className="mb-3 text-xs text-slate-500">{previewSetting?.description ?? "Steuert die Groesse der Dateivorschau."}</p>
 
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
             <select
               value={previewValue}
               onChange={(event) => setPreviewValue(event.target.value as PreviewSize)}
-              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
               data-testid="select-setting-attachmentPreviewSize"
             >
               {previewOptions.map((option) => (
@@ -482,11 +486,11 @@ export function SettingsPage() {
           <p className="font-semibold text-slate-900">{helpTextPreviewSetting?.label ?? "Hilfetext Vorschau Groesse"}</p>
           <p className="mb-3 text-xs text-slate-500">{helpTextPreviewSetting?.description ?? "Steuert die Groesse von Hilfetext-Previews."}</p>
 
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
             <select
               value={helpTextPreviewValue}
               onChange={(event) => setHelpTextPreviewValue(event.target.value as HelpTextPreviewSize)}
-              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
               data-testid="select-setting-helpTextPreviewSize"
             >
               {helpTextPreviewOptions.map((option) => (
@@ -509,11 +513,11 @@ export function SettingsPage() {
           <p className="font-semibold text-slate-900">{toastDesktopPositionSetting?.label ?? "Toast Position Desktop"}</p>
           <p className="mb-3 text-xs text-slate-500">{toastDesktopPositionSetting?.description ?? "Steuert die Position von Info-Popups auf Desktop."}</p>
 
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
             <select
               value={toastDesktopPositionValue}
               onChange={(event) => setToastDesktopPositionValue(event.target.value as ToastDesktopPosition)}
-              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
               data-testid="select-setting-toastDesktopPosition"
             >
               {toastDesktopPositionOptions.map((option) => (
@@ -532,83 +536,11 @@ export function SettingsPage() {
           {toastDesktopPositionError && <p className="mt-1 text-xs text-destructive">{toastDesktopPositionError}</p>}
         </div>
 
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekendColumnPercent">
-          <p className="font-semibold text-slate-900">{weekendWidthSetting?.label ?? "Kalender Wochenende Breite (%)"}</p>
-          <p className="mb-3 text-xs text-slate-500">{weekendWidthSetting?.description ?? "Breite von Samstag/Sonntag relativ zu Werktagen."}</p>
-
-          <div className="flex items-center gap-3">
-            <Input
-              type="number"
-              min={1}
-              max={100}
-              step={1}
-              value={weekendColumnPercentValue}
-              onChange={(event) => setWeekendColumnPercentValue(event.target.value)}
-              data-testid="input-setting-calendarWeekendColumnPercent"
-            />
-            <Button onClick={() => void handleSaveWeekendColumnPercent()} disabled={isSaving} data-testid="button-save-calendarWeekendColumnPercent">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(weekendWidthSetting?.resolvedValue ?? defaultWeekendColumnPercent)} ({weekendWidthSetting?.resolvedScope ?? "-"})</p>
-          {weekendSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {weekendError && <p className="mt-1 text-xs text-destructive">{weekendError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekScrollRange">
-          <p className="font-semibold text-slate-900">{weekScrollRangeSetting?.label ?? "Scrollbereich Wochen"}</p>
-          <p className="mb-3 text-xs text-slate-500">{weekScrollRangeSetting?.description ?? "Anzahl zusaetzlicher Wochen im horizontalen Kalender-Scrollbereich."}</p>
-
-          <div className="flex items-center gap-3">
-            <Input
-              type="number"
-              min={0}
-              max={12}
-              step={1}
-              value={weekScrollRangeValue}
-              onChange={(event) => setWeekScrollRangeValue(event.target.value)}
-              data-testid="input-setting-calendarWeekScrollRange"
-            />
-            <Button onClick={() => void handleSaveWeekScrollRange()} disabled={isSaving} data-testid="button-save-calendarWeekScrollRange">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(weekScrollRangeSetting?.resolvedValue ?? defaultWeekScrollRange)} ({weekScrollRangeSetting?.resolvedScope ?? "-"})</p>
-          {weekScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {weekScrollRangeError && <p className="mt-1 text-xs text-destructive">{weekScrollRangeError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarMonthScrollRange">
-          <p className="font-semibold text-slate-900">{monthScrollRangeSetting?.label ?? "Scrollbereich Monate"}</p>
-          <p className="mb-3 text-xs text-slate-500">{monthScrollRangeSetting?.description ?? "Anzahl zusaetzlicher Monate im horizontalen Kalender-Scrollbereich."}</p>
-
-          <div className="flex items-center gap-3">
-            <Input
-              type="number"
-              min={0}
-              max={12}
-              step={1}
-              value={monthScrollRangeValue}
-              onChange={(event) => setMonthScrollRangeValue(event.target.value)}
-              data-testid="input-setting-calendarMonthScrollRange"
-            />
-            <Button onClick={() => void handleSaveMonthScrollRange()} disabled={isSaving} data-testid="button-save-calendarMonthScrollRange">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(monthScrollRangeSetting?.resolvedValue ?? defaultMonthScrollRange)} ({monthScrollRangeSetting?.resolvedScope ?? "-"})</p>
-          {monthScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {monthScrollRangeError && <p className="mt-1 text-xs text-destructive">{monthScrollRangeError}</p>}
-        </div>
-
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-hoverPreviewOpenDelayMs">
           <p className="font-semibold text-slate-900">{hoverPreviewOpenDelaySetting?.label ?? "Hover Vorschau Verzoegerung (ms)"}</p>
           <p className="mb-3 text-xs text-slate-500">{hoverPreviewOpenDelaySetting?.description ?? "Verzoegerung bis Hover-Previews geoeffnet werden."}</p>
 
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
             <Input
               type="number"
               min={0}
@@ -632,7 +564,7 @@ export function SettingsPage() {
           <p className="font-semibold text-slate-900">{cardListColumnsSetting?.label ?? "Karten Spalten"}</p>
           <p className="mb-3 text-xs text-slate-500">{cardListColumnsSetting?.description ?? "Anzahl der Spalten in Kartenlisten."}</p>
 
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
             <Input
               type="number"
               min={2}
@@ -652,17 +584,105 @@ export function SettingsPage() {
           {cardListColumnsError && <p className="mt-1 text-xs text-destructive">{cardListColumnsError}</p>}
         </div>
 
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-enabled">
+            </div>
+          </section>
+
+          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-calendar">
+            <h4 className="font-bold text-slate-900">Kalendereinstellungen</h4>
+            <p className="mt-1 text-xs text-slate-500">Konfigurationen fuer Kalenderansichten und Navigation.</p>
+            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekendColumnPercent">
+          <p className="font-semibold text-slate-900">{weekendWidthSetting?.label ?? "Kalender Wochenende Breite (%)"}</p>
+          <p className="mb-3 text-xs text-slate-500">{weekendWidthSetting?.description ?? "Breite von Samstag/Sonntag relativ zu Werktagen."}</p>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+            <Input
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              value={weekendColumnPercentValue}
+              onChange={(event) => setWeekendColumnPercentValue(event.target.value)}
+              data-testid="input-setting-calendarWeekendColumnPercent"
+            />
+            <Button onClick={() => void handleSaveWeekendColumnPercent()} disabled={isSaving} data-testid="button-save-calendarWeekendColumnPercent">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(weekendWidthSetting?.resolvedValue ?? defaultWeekendColumnPercent)} ({weekendWidthSetting?.resolvedScope ?? "-"})</p>
+          {weekendSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {weekendError && <p className="mt-1 text-xs text-destructive">{weekendError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekScrollRange">
+          <p className="font-semibold text-slate-900">{weekScrollRangeSetting?.label ?? "Scrollbereich Wochen"}</p>
+          <p className="mb-3 text-xs text-slate-500">{weekScrollRangeSetting?.description ?? "Anzahl zusaetzlicher Wochen im horizontalen Kalender-Scrollbereich."}</p>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+            <Input
+              type="number"
+              min={0}
+              max={12}
+              step={1}
+              value={weekScrollRangeValue}
+              onChange={(event) => setWeekScrollRangeValue(event.target.value)}
+              data-testid="input-setting-calendarWeekScrollRange"
+            />
+            <Button onClick={() => void handleSaveWeekScrollRange()} disabled={isSaving} data-testid="button-save-calendarWeekScrollRange">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(weekScrollRangeSetting?.resolvedValue ?? defaultWeekScrollRange)} ({weekScrollRangeSetting?.resolvedScope ?? "-"})</p>
+          {weekScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {weekScrollRangeError && <p className="mt-1 text-xs text-destructive">{weekScrollRangeError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarMonthScrollRange">
+          <p className="font-semibold text-slate-900">{monthScrollRangeSetting?.label ?? "Scrollbereich Monate"}</p>
+          <p className="mb-3 text-xs text-slate-500">{monthScrollRangeSetting?.description ?? "Anzahl zusaetzlicher Monate im horizontalen Kalender-Scrollbereich."}</p>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+            <Input
+              type="number"
+              min={0}
+              max={12}
+              step={1}
+              value={monthScrollRangeValue}
+              onChange={(event) => setMonthScrollRangeValue(event.target.value)}
+              data-testid="input-setting-calendarMonthScrollRange"
+            />
+            <Button onClick={() => void handleSaveMonthScrollRange()} disabled={isSaving} data-testid="button-save-calendarMonthScrollRange">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(monthScrollRangeSetting?.resolvedValue ?? defaultMonthScrollRange)} ({monthScrollRangeSetting?.resolvedScope ?? "-"})</p>
+          {monthScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {monthScrollRangeError && <p className="mt-1 text-xs text-destructive">{monthScrollRangeError}</p>}
+        </div>
+
+            </div>
+          </section>
+
+          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-backups">
+            <h4 className="font-bold text-slate-900">Backups</h4>
+            <p className="mt-1 text-xs text-slate-500">Steuerung und Monitoring aller Backup-Funktionen.</p>
+
+            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-enabled">
           <p className="font-semibold text-slate-900">{backupEnabledSetting?.label ?? "Backups aktiv"}</p>
           <p className="mb-3 text-xs text-slate-500">{backupEnabledSetting?.description ?? "Aktiviert den automatischen Backup-Job."}</p>
 
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={backupEnabledValue}
-              onCheckedChange={setBackupEnabledValue}
-              data-testid="switch-setting-backup-enabled"
-            />
-            <span className="text-sm text-slate-700">{backupEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="flex h-10 items-center gap-3">
+              <Switch
+                checked={backupEnabledValue}
+                onCheckedChange={setBackupEnabledValue}
+                data-testid="switch-setting-backup-enabled"
+              />
+              <span className="text-sm text-slate-700">{backupEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+            </div>
             <Button onClick={() => void handleSaveBackupEnabled()} disabled={isSaving} data-testid="button-save-backup-enabled">
               Speichern
             </Button>
@@ -675,7 +695,7 @@ export function SettingsPage() {
           {backupEnabledError && <p className="mt-1 text-xs text-destructive">{backupEnabledError}</p>}
         </div>
 
-        <div className="rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
+            <div className="mt-4 rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
           <div className="mb-3 flex items-center justify-between">
             <p className="font-semibold text-slate-900">Backups (Read-Only Monitoring)</p>
             <div className="flex items-center gap-2">
@@ -745,7 +765,8 @@ export function SettingsPage() {
               </table>
             </div>
           )}
-        </div>
+            </div>
+          </section>
 
         </div>
       </div>
