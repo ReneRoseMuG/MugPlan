@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Mitarbeiter koennen Touren zugewiesen und wieder entfernt werden.
+ * - Explizites Setzen einer Mitarbeiterliste erfolgt ueber Assign-Calls; Leeren ueber Remove-Calls.
  * - Ein Mitarbeiter kann gleichzeitig nur einer Tour zugeordnet sein (Ablosung bei neuer Zuweisung).
  * - Entfernen des letzten Mitarbeiters fuehrt zu leerer Tour-Liste.
  *
@@ -65,6 +66,43 @@ async function createEmployee(agent: SuperAgentTest) {
 }
 
 describe("FT04 integration: EmployeeTourRelationshipTests", () => {
+  it("sets two employees on a tour and clears the list via remove operations", async () => {
+    const admin = await loginAdminAgent();
+    const tour = await createTour(admin, "#335577");
+    const employeeA = await createEmployee(admin);
+    const employeeB = await createEmployee(admin);
+
+    const assigned = await admin
+      .post(`/api/tours/${tour.id}/employees`)
+      .send({
+        items: [
+          { employeeId: employeeA.id, version: employeeA.version },
+          { employeeId: employeeB.id, version: employeeB.version },
+        ],
+      })
+      .expect(200);
+
+    const assignedA = assigned.body.find((entry: { id: number; version: number }) => entry.id === employeeA.id);
+    const assignedB = assigned.body.find((entry: { id: number; version: number }) => entry.id === employeeB.id);
+    expect(assignedA).toBeTruthy();
+    expect(assignedB).toBeTruthy();
+    expect(assignedA?.tourId).toBe(tour.id);
+    expect(assignedB?.tourId).toBe(tour.id);
+
+    await admin
+      .delete(`/api/tours/${tour.id}/employees/${employeeA.id}`)
+      .send({ version: assignedA!.version })
+      .expect(200);
+    await admin
+      .delete(`/api/tours/${tour.id}/employees/${employeeB.id}`)
+      .send({ version: assignedB!.version })
+      .expect(200);
+
+    await admin.get(`/api/tours/${tour.id}/employees`).expect(200).expect((res) => {
+      expect(res.body).toHaveLength(0);
+    });
+  });
+
   it("assigns and removes an employee from a tour", async () => {
     const admin = await loginAdminAgent();
     const tour = await createTour(admin, "#1188aa");
