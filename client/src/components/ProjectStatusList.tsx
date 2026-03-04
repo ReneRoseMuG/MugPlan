@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
+﻿import { Button } from "@/components/ui/button";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { getProjectStatusColor } from "@/lib/project-status";
-import { ListChecks, Pencil, Shield, GripVertical, Power, Trash2 } from "lucide-react";
+import { ListChecks, Shield, GripVertical } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { ProjectStatus } from "@shared/schema";
 
@@ -33,11 +33,8 @@ export function ProjectStatusListView({
   isLoading = false,
   onCreateStatus,
   onEditStatus,
-  onToggleStatusActive,
-  onDeleteStatus,
   onSelectStatus,
   isCreatePending,
-  isActionPending = false,
   mode = "list",
   selectedStatusId = null,
   title,
@@ -116,49 +113,6 @@ export function ProjectStatusListView({
                         </span>
                       )}
                     </div>
-                    {!isPicker && canEdit && (
-                      <div className="flex items-center">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleStatusActive?.(status);
-                          }}
-                          data-testid={`button-toggle-status-${status.id}`}
-                          title={status.isActive ? "Deaktivieren" : "Aktivieren"}
-                          disabled={isActionPending || (status.isDefault && status.isActive)}
-                        >
-                          <Power className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditStatus?.(status);
-                          }}
-                          data-testid={`button-edit-status-${status.id}`}
-                          title="Bearbeiten"
-                          disabled={isActionPending}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteStatus?.(status);
-                          }}
-                          data-testid={`button-delete-status-${status.id}`}
-                          title={status.isDefault ? "Standard-Status kann nicht gelöscht werden" : "Löschen"}
-                          disabled={isActionPending || status.isDefault}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 )}
               >

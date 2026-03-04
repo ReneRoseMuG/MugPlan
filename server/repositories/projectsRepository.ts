@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointments,
@@ -52,7 +52,7 @@ export async function getProjects(
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
   scope: ProjectScope = "upcoming",
-): Promise<Project[]> {
+): Promise<ProjectListItem[]> {
   const conditions = [];
   if (filter === "active") {
     conditions.push(eq(projects.isActive, true));
@@ -78,15 +78,31 @@ export async function getProjects(
     ? db.select().from(projects).where(and(...conditions))
     : db.select().from(projects);
 
-  return query.orderBy(desc(projects.updatedAt));
+  const rows = await query.orderBy(desc(projects.updatedAt));
+  const projectIds = rows.map((row) => row.id);
+  if (projectIds.length === 0) return [];
+
+  const noteCountRows = await db
+    .select({
+      projectId: projectNotes.projectId,
+      count: sql<number>`count(*)`,
+    })
+    .from(projectNotes)
+    .where(inArray(projectNotes.projectId, projectIds))
+    .groupBy(projectNotes.projectId);
+
+  const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+  return rows.map((row) => ({ ...row, notesCount: notesCountByProjectId.get(row.id) ?? 0 }));
 }
+
+export type ProjectListItem = Project & { notesCount: number };
 
 export async function getProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
   scope: ProjectScope = "upcoming",
-): Promise<Project[]> {
+): Promise<ProjectListItem[]> {
   const conditions = [eq(projects.customerId, customerId)];
   if (filter === "active") {
     conditions.push(eq(projects.isActive, true));
@@ -107,11 +123,26 @@ export async function getProjectsByCustomer(
   if (scopeCondition) {
     conditions.push(scopeCondition);
   }
-  return db
+  const rows = await db
     .select()
     .from(projects)
     .where(and(...conditions))
     .orderBy(desc(projects.updatedAt));
+
+  const projectIds = rows.map((row) => row.id);
+  if (projectIds.length === 0) return [];
+
+  const noteCountRows = await db
+    .select({
+      projectId: projectNotes.projectId,
+      count: sql<number>`count(*)`,
+    })
+    .from(projectNotes)
+    .where(inArray(projectNotes.projectId, projectIds))
+    .groupBy(projectNotes.projectId);
+
+  const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+  return rows.map((row) => ({ ...row, notesCount: notesCountByProjectId.get(row.id) ?? 0 }));
 }
 
 export async function getProject(id: number): Promise<Project | null> {

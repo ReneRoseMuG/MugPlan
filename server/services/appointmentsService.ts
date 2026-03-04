@@ -182,8 +182,11 @@ const buildStatusesByProject = async (projectIds: number[]) => {
 const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: CanonicalRoleKey) => {
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+  const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
   const statusesByProject = await buildStatusesByProject(projectIds);
+  const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
+  const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
 
   return rows.map((row) => ({
     id: row.appointment.id,
@@ -211,6 +214,8 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       city: row.customer.city ?? null,
     },
     employees: employeesByAppointment.get(row.appointment.id) ?? [],
+    customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
+    projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0,
     isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
   }));
 };
@@ -630,8 +635,11 @@ export async function listAppointmentsList(params: {
 
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project.id)));
+  const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
   const statusesByProject = await buildStatusesByProject(projectIds);
+  const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
+  const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
 
   const items = rows.map((row) => {
     const rowEmployees = employeesByAppointment.get(row.appointment.id) ?? [];
@@ -660,6 +668,8 @@ export async function listAppointmentsList(params: {
         city: row.customer.city ?? null,
       },
       employees: rowEmployees,
+      customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
+      projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0,
       isLocked: params.roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
       allDay: row.appointment.startTime == null,
       singleEmployee: rowEmployees.length === 1,

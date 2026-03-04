@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
-import { FileText, Pencil } from "lucide-react";
+import { FileText } from "lucide-react";
 import type { NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -39,19 +39,7 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
         className={!template.isActive ? "opacity-60" : ""}
         onDelete={onDelete}
         isDeleting={isDeleting}
-        footer={
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            data-testid={`button-edit-template-${template.id}`}
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
-        }
+        onDoubleClick={onEdit}
       >
         <div className="space-y-2">
           {!template.isActive && (

@@ -1,6 +1,7 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  customerNotes,
   customerAttachments,
   customers,
   type Customer,
@@ -10,12 +11,29 @@ import {
   type UpdateCustomer,
 } from "@shared/schema";
 
-export async function getCustomers(scope: "active" | "inactive" = "active"): Promise<Customer[]> {
-  return db
+export type CustomerListItem = Customer & { notesCount: number };
+
+export async function getCustomers(scope: "active" | "inactive" = "active"): Promise<CustomerListItem[]> {
+  const rows = await db
     .select()
     .from(customers)
     .where(eq(customers.isActive, scope === "active"))
     .orderBy(customers.id);
+
+  const customerIds = rows.map((row) => row.id);
+  if (customerIds.length === 0) return [];
+
+  const noteCountRows = await db
+    .select({
+      customerId: customerNotes.customerId,
+      count: sql<number>`count(*)`,
+    })
+    .from(customerNotes)
+    .where(inArray(customerNotes.customerId, customerIds))
+    .groupBy(customerNotes.customerId);
+
+  const notesCountByCustomerId = new Map(noteCountRows.map((row) => [row.customerId, Number(row.count)] as const));
+  return rows.map((row) => ({ ...row, notesCount: notesCountByCustomerId.get(row.id) ?? 0 }));
 }
 
 export async function getCustomer(id: number): Promise<Customer | null> {

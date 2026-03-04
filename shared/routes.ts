@@ -97,6 +97,8 @@ const entityAppointmentItemSchema = z.object({
       fullName: z.string(),
     }),
   ),
+  customerNotesCount: z.number().int().min(0),
+  projectNotesCount: z.number().int().min(0),
   isLocked: z.boolean(),
 });
 
@@ -324,6 +326,8 @@ export const api = {
                   fullName: z.string(),
                 }),
               ),
+              customerNotesCount: z.number().int().min(0),
+              projectNotesCount: z.number().int().min(0),
               isLocked: z.boolean(),
               allDay: z.boolean(),
               singleEmployee: z.boolean(),
@@ -603,7 +607,7 @@ export const api = {
         scope: z.enum(["active", "inactive"]).default("active"),
       }).strict(),
       responses: {
-        200: z.array(z.custom<typeof customers.$inferSelect>()),
+        200: z.array(z.custom<typeof customers.$inferSelect & { notesCount: number }>()),
       },
     },
     get: {
@@ -1262,7 +1266,7 @@ export const api = {
         scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
       }),
       responses: {
-        200: z.array(z.custom<typeof projects.$inferSelect>()),
+        200: z.array(z.custom<typeof projects.$inferSelect & { notesCount: number }>()),
       },
     },
     get: {
@@ -1397,6 +1401,8 @@ export const api = {
               fullName: z.string(),
             }),
           ),
+          customerNotesCount: z.number().int().min(0),
+          projectNotesCount: z.number().int().min(0),
           isLocked: z.boolean(),
         })),
       },
@@ -1443,6 +1449,8 @@ export const api = {
               fullName: z.string(),
             }),
           ),
+          customerNotesCount: z.number().int().min(0),
+          projectNotesCount: z.number().int().min(0),
           isLocked: z.boolean(),
         })),
       },

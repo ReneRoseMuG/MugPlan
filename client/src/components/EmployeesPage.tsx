@@ -11,7 +11,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Pencil,
   Power,
   PowerOff,
 } from "lucide-react";
@@ -541,24 +540,13 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
                     </Button>
                   }
                   footer={
-                    <div className="flex w-full items-center justify-between gap-2">
+                    <div className="flex w-full items-center">
                       <span
                         className="text-xs text-slate-600"
                         data-testid={`text-employee-current-appointments-${employee.id}`}
                       >
-                        Aktuelle Termine: {currentAppointmentsCount}
+                        Geplante Termine: {currentAppointmentsCount}
                       </span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleOpenDetail(employee);
-                        }}
-                        data-testid={`button-edit-employee-${employee.id}`}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
                     </div>
                   }
                   footerVisibility="visible"

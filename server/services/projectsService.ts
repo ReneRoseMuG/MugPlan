@@ -28,12 +28,13 @@ export class ProjectsError extends Error {
 }
 
 export type ProjectScope = "upcoming" | "noAppointments" | "all";
+export type ProjectListItem = projectsRepository.ProjectListItem;
 
 export async function listProjects(
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
   scope: ProjectScope = "upcoming",
-): Promise<Project[]> {
+): Promise<ProjectListItem[]> {
   return projectsRepository.getProjects(filter, statusIds, scope);
 }
 
@@ -42,7 +43,7 @@ export async function listProjectsByCustomer(
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
   scope: ProjectScope = "upcoming",
-): Promise<Project[]> {
+): Promise<ProjectListItem[]> {
   return projectsRepository.getProjectsByCustomer(customerId, filter, statusIds, scope);
 }
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Pencil } from "lucide-react";
+import { Users } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
@@ -230,19 +230,6 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
                   isDeleting={deleteMutation.isPending}
                   testId={`card-team-${team.id}`}
                   onDoubleClick={() => handleOpenEdit(team)}
-                  footer={
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleOpenEdit(team);
-                      }}
-                      data-testid={`button-edit-team-members-${team.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  }
                 >
                   <MembersSectionHeader className="px-0 py-1 mb-1 border-b border-border" />
                   <div className="space-y-2">

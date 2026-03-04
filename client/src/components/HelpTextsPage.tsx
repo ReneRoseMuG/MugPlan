@@ -10,7 +10,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HelpTextsFilterPanel } from "@/components/ui/filter-panels/help-texts-filter-panel";
 import { HelpTextsImportExportDialog } from "@/components/HelpTextsImportExportDialog";
 import { useSetting, useSettings } from "@/hooks/useSettings";
-import { HelpCircle, Pencil, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown, Upload } from "lucide-react";
+import { HelpCircle, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown, Upload } from "lucide-react";
 import type { HelpText } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -315,19 +315,6 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
                   onDelete={() => handleDelete(helpText)}
                   isDeleting={deleteMutation.isPending}
                   onDoubleClick={() => onEditHelpText(helpText.id)}
-                  footer={
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onEditHelpText(helpText.id);
-                      }}
-                      data-testid={`button-edit-helptext-${helpText.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  }
                 >
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground" data-testid={`text-helptext-key-${helpText.id}`}>

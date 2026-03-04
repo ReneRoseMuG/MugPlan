@@ -16,6 +16,8 @@ export class CustomersError extends Error {
   }
 }
 
+export type CustomerListItem = customersRepository.CustomerListItem;
+
 function isCustomerNumberDuplicateError(error: unknown): boolean {
   const mysqlError = error as { code?: string; errno?: number; sqlMessage?: string } | null;
   if (!(mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062)) {
@@ -50,7 +52,7 @@ function buildCustomerFullName(data: { firstName?: string | null; lastName?: str
   return null;
 }
 
-export async function listCustomers(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<Customer[]> {
+export async function listCustomers(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<CustomerListItem[]> {
   return customersRepository.getCustomers(resolveScope(roleKey, scope));
 }
 

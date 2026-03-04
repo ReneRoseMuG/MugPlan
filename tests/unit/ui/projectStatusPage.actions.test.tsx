@@ -5,16 +5,16 @@
  * Use Case: UC Projektstatus verwalten
  *
  * Abgedeckte Regeln:
- * - Admin-UI bietet Aktionen fuer Aktivieren/Deaktivieren und Loeschen.
+ * - API-Mutationen fuer Toggle/Delete bleiben in der Page verdrahtet.
  * - Edit-Entry-Points sind zentral ueber canEdit verdrahtet.
  * - Update/Toggle/Delete senden Versionsinformationen fuer Optimistic Locking.
- * - Default-Status ist in der UI fuer Loeschen deaktiviert.
+ * - ListView rendert keine Footer-Action-Buttons (Toggle/Edit/Delete).
  *
  * Fehlerfaelle:
  * - Keine Laufzeitfehler, Fokus auf Verdrahtung der FT15-UI-Aktionslogik.
  *
  * Ziel:
- * Sicherstellen, dass die Projektstatus-Adminseite die geforderten FT15-Aktionen verdrahtet.
+ * Sicherstellen, dass die Projektstatus-Page weiterhin korrekt verdrahtet ist, waehrend die Card-Actions entfernt bleiben.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
@@ -37,13 +37,13 @@ describe("FT15 project status page action wiring", () => {
     expect(source).toContain("version: status.version");
   });
 
-  it("keeps default status delete disabled in list view", () => {
+  it("removes footer action buttons in list view while keeping double-click edit wiring", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusList.tsx");
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("onDoubleClick={!isPicker && canEdit ? () => onEditStatus?.(status) : undefined}");
-    expect(source).toContain("!isPicker && canEdit && (");
-    expect(source).toContain("disabled={isActionPending || status.isDefault}");
-    expect(source).toContain("button-delete-status-");
+    expect(source).not.toContain("button-toggle-status-");
+    expect(source).not.toContain("button-edit-status-");
+    expect(source).not.toContain("button-delete-status-");
   });
 });

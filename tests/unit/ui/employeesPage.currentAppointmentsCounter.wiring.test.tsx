@@ -2,10 +2,10 @@
  * Test Scope:
  *
  * Feature: FT05+ - Mitarbeiterverwaltung
- * Use Case: UC Mitarbeiterkarte zeigt aktuelle Termine im Footer
+ * Use Case: UC Mitarbeiterkarte zeigt geplante Termine im Footer
  *
  * Abgedeckte Regeln:
- * - Die Mitarbeiterkarte zeigt den Footer-Text "Aktuelle Termine".
+ * - Die Mitarbeiterkarte zeigt den Footer-Text "Geplante Termine".
  * - Der Counter basiert auf Terminen ab heute (startDate >= berlinToday).
  * - Der Kartenfooter ist explizit sichtbar geschaltet.
  *
@@ -14,7 +14,7 @@
  * - Footer bleibt unsichtbar und der Counter wird nicht angezeigt.
  *
  * Ziel:
- * Sicherstellen, dass der Footer-Counter in EmployeesPage korrekt verdrahtet ist.
+ * Sicherstellen, dass der Footer-Counter "Geplante Termine" in EmployeesPage korrekt verdrahtet ist.
  */
 import { readFileSync } from "fs";
 import path from "path";
@@ -25,7 +25,7 @@ describe("FT05+ employees page current appointments counter wiring", () => {
   const source = readFileSync(filePath, "utf8");
 
   it("renders the current appointments footer label", () => {
-    expect(source).toContain("Aktuelle Termine:");
+    expect(source).toContain("Geplante Termine:");
     expect(source).toContain("data-testid={`text-employee-current-appointments-${employee.id}`}");
   });
 
@@ -36,6 +36,6 @@ describe("FT05+ employees page current appointments counter wiring", () => {
 
   it("forces the entity card footer to be visible", () => {
     expect(source).toContain("footerVisibility=\"visible\"");
+    expect(source).not.toContain("button-edit-employee-");
   });
 });
-

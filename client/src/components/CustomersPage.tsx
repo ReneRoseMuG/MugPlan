@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User, Phone, MapPin, Building2, Pencil, Mail, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { User, Phone, MapPin, Building2, Mail, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
@@ -24,6 +24,7 @@ type SortDirection = "asc" | "desc";
 type CustomerSortKey = "customerNumber" | "lastName" | "firstName" | "relevantAppointment";
 
 type CustomerAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
+type CustomerListItem = Customer & { notesCount: number };
 
 interface CustomersPageProps {
   onCancel?: () => void;
@@ -102,7 +103,7 @@ export function CustomersPage({
 
   const effectiveCustomerScope = isAdmin ? customerScope : "active";
 
-  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
+  const { data: customers = [], isLoading: customersLoading } = useQuery<CustomerListItem[]>({
     queryKey: ["/api/customers", { scope: effectiveCustomerScope }],
     queryFn: () => fetch(`/api/customers?scope=${effectiveCustomerScope}`).then((response) => response.json()),
   });
@@ -114,6 +115,11 @@ export function CustomersPage({
   const filteredCustomers = useMemo(
     () => applyCustomerFilters(customers, filters),
     [customers, filters],
+  );
+
+  const notesCountByCustomerId = useMemo(
+    () => new Map(customers.map((customer) => [customer.id, customer.notesCount] as const)),
+    [customers],
   );
 
   const filteredCustomerIds = useMemo(
@@ -365,6 +371,8 @@ export function CustomersPage({
             }
           >
             {filteredCustomers.map((customer) => {
+              const appointments = appointmentsByCustomerId.get(customer.id) ?? [];
+              const plannedAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
               const handleSelect = () => onSelectCustomer?.(customer.id);
 
               return (
@@ -376,18 +384,22 @@ export function CustomersPage({
                   testId={`customer-card-${customer.id}`}
                   onDoubleClick={handleSelect}
                   footer={
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleSelect();
-                      }}
-                      data-testid={`button-edit-customer-${customer.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
+                    <div className="flex w-full flex-col gap-0.5">
+                      <span
+                        className="text-xs text-slate-600"
+                        data-testid={`text-customer-planned-appointments-${customer.id}`}
+                      >
+                        Geplante Termine: {plannedAppointmentsCount}
+                      </span>
+                      <span
+                        className="text-xs text-slate-600"
+                        data-testid={`text-customer-notes-count-${customer.id}`}
+                      >
+                        Notizen: {notesCountByCustomerId.get(customer.id) ?? 0}
+                      </span>
+                    </div>
                   }
+                  footerVisibility="visible"
                 >
                   <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
                     {customer.company && (

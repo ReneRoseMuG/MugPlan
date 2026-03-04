@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FolderKanban, Pencil, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { FolderKanban, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityCard } from "@/components/ui/entity-card";
@@ -28,6 +28,7 @@ type SortDirection = "asc" | "desc";
 type ProjectSortKey = "title" | "customer";
 
 type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
+type ProjectListItem = Project & { notesCount: number };
 
 interface ProjectsPageProps {
   onCancel?: () => void;
@@ -112,7 +113,7 @@ export function ProjectsPage({
     [projectQueryParams],
   );
 
-  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<ProjectListItem[]>({
     queryKey: [projectQueryKey],
   });
 
@@ -131,6 +132,11 @@ export function ProjectsPage({
 
   const activeProjects = useMemo(
     () => projects.filter((project) => project.isActive),
+    [projects],
+  );
+
+  const notesCountByProjectId = useMemo(
+    () => new Map(projects.map((project) => [project.id, project.notesCount] as const)),
     [projects],
   );
 
@@ -414,6 +420,8 @@ export function ProjectsPage({
             {filteredProjects.map((project) => {
               const customer = customersById.get(project.customerId);
               const assignedStatuses = projectStatusRelationsByProjectId.get(project.id) ?? [];
+              const appointments = appointmentsByProjectId.get(project.id) ?? [];
+              const plannedAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
               const handleSelect = () => onSelectProject?.(project.id);
 
               return (
@@ -425,18 +433,22 @@ export function ProjectsPage({
                   testId={`project-card-${project.id}`}
                   onDoubleClick={handleSelect}
                   footer={
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleSelect();
-                      }}
-                      data-testid={`button-edit-project-${project.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
+                    <div className="flex w-full flex-col gap-0.5">
+                      <span
+                        className="text-xs text-slate-600"
+                        data-testid={`text-project-planned-appointments-${project.id}`}
+                      >
+                        Geplante Termine: {plannedAppointmentsCount}
+                      </span>
+                      <span
+                        className="text-xs text-slate-600"
+                        data-testid={`text-project-notes-count-${project.id}`}
+                      >
+                        Notizen: {notesCountByProjectId.get(project.id) ?? 0}
+                      </span>
+                    </div>
                   }
+                  footerVisibility="visible"
                 >
                   <div className="space-y-2">
                     <div className="text-xs text-slate-600">
