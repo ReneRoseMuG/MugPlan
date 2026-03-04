@@ -8,6 +8,7 @@
  * - Das Panel laedt alle Termine ueber den Sidebar-Endpunkt mit fromDate-Override.
  * - Das Panel bietet keinen eigenen Delete-Mutationspfad.
  * - Das Panel setzt den projektspezifischen helpKey.
+ * - Der Plus-Button oeffnet den Kontextkalender mit fixer Projekt-ID.
  *
  * Fehlerfaelle:
  * - Fehlender fromDate-Override fuehrt zu unvollstaendiger Terminliste.
@@ -36,5 +37,12 @@ describe("FT04 project appointments panel wiring", () => {
 
   it("sets panel-specific helpKey for project sidebar appointments", () => {
     expect(source).toContain("helpKey=\"projects.sidebar.appointments\"");
+  });
+
+  it("wires add action to contextual calendar callback with project id", () => {
+    expect(source).toContain("onOpenCalendarWorkspace?: (ctx: { projectId: number }) => void;");
+    expect(source).toContain("const addAction = isEditing && onOpenCalendarWorkspace && projectId");
+    expect(source).toContain("onClick: () => onOpenCalendarWorkspace({ projectId })");
+    expect(source).toContain("testId: \"button-new-appointment-from-project\"");
   });
 });

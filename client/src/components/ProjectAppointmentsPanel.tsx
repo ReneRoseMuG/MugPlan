@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 import { AllAppointmentsPanel, type AllAppointmentsPanelItem } from "@/components/AllAppointmentsPanel";
@@ -15,6 +15,7 @@ interface ProjectAppointmentsPanelProps {
   projectName?: string | null;
   isEditing: boolean;
   onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
+  onOpenCalendarWorkspace?: (ctx: { projectId: number }) => void;
 }
 
 type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
@@ -25,7 +26,7 @@ export function ProjectAppointmentsPanel({
   projectId,
   projectName,
   isEditing,
-  onOpenAppointment,
+  onOpenCalendarWorkspace,
 }: ProjectAppointmentsPanelProps) {
   const [userRole] = useState(() =>
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
@@ -81,10 +82,10 @@ export function ProjectAppointmentsPanel({
     }));
   }, [sortedAppointments, projectName]);
 
-  const addAction = isEditing && onOpenAppointment && projectId
+  const addAction = isEditing && onOpenCalendarWorkspace && projectId
     ? {
-        onClick: () => onOpenAppointment({ projectId }),
-        ariaLabel: "Termin hinzufügen",
+        onClick: () => onOpenCalendarWorkspace({ projectId }),
+        ariaLabel: "Termin hinzufuegen",
         testId: "button-new-appointment-from-project",
       }
     : undefined;

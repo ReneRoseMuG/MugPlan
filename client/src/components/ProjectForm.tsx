@@ -897,18 +897,8 @@ export function ProjectForm({
                 projectName={projectNamePreview}
                 isEditing={isEditing}
                 onOpenAppointment={onOpenAppointment}
+                onOpenCalendarWorkspace={onOpenCalendarWorkspace}
               />
-
-              {isEditing && projectId && onOpenCalendarWorkspace ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenCalendarWorkspace({ projectId })}
-                  data-testid="button-open-calendar-workspace"
-                >
-                  Kalender oeffnen
-                </Button>
-              ) : null}
 
               {/* Dokumente - nur bei Bearbeitung */}
               {isEditing && (
