@@ -2,6 +2,7 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, getAppointmentEndDate } from "@/lib/calendar-utils";
+import { CalendarDays, Clock3 } from "lucide-react";
 
 type CompactBarProps = {
   appointment: CalendarAppointment;
@@ -34,6 +35,8 @@ export function CalendarAppointmentCompactBar({
 }: CompactBarProps) {
   const endDate = getAppointmentEndDate(appointment);
   const isMultiDay = appointment.startDate !== endDate;
+  const hasStartTime = Boolean(appointment.startTime && appointment.startTime.trim());
+  const TimingIcon = hasStartTime ? Clock3 : CalendarDays;
   const customerNumber = appointment.customer.customerNumber?.trim() || "-";
   const customerName = appointment.customer.fullName?.trim() || "-";
   const orderNumber = appointment.projectOrderNumber?.trim() || "-";
@@ -85,15 +88,18 @@ export function CalendarAppointmentCompactBar({
           width: "100%",
         }}
       >
-        <span className={`inline-flex min-w-0 items-center text-[10px] ${isMultiDay ? "max-w-[75%]" : "max-w-[42%]"}`}>
+        <span className="inline-flex items-center justify-center" title={hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}>
+          <TimingIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        </span>
+        <span className={`inline-flex min-w-0 items-center text-[10px] ${isMultiDay ? "max-w-[72%]" : "max-w-[38%]"}`}>
           <span className="truncate">{leftContent}</span>
         </span>
         {!isMultiDay && (
-          <span className="inline-flex min-w-0 max-w-[28%] items-center justify-center text-[10px] text-center">
+          <span className="inline-flex min-w-0 max-w-[27%] items-center justify-center text-[10px] text-center">
             <span className="truncate">{middleContent}</span>
           </span>
         )}
-        <span className="ml-auto inline-flex min-w-0 max-w-[35%] items-center justify-end text-[10px] text-right">
+        <span className="ml-auto inline-flex min-w-0 max-w-[34%] items-center justify-end text-[10px] text-right">
           <span className="truncate">{rightContent}</span>
         </span>
       </div>

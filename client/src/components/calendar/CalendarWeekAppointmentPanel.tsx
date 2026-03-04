@@ -47,6 +47,7 @@ export function CalendarWeekAppointmentPanel({
 }) {
   const isContinuation = segment === "continuation";
   const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
+  const hasStartTime = Boolean(appointment.startTime && appointment.startTime.trim());
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
@@ -90,6 +91,7 @@ export function CalendarWeekAppointmentPanel({
               orderNumber={appointment.projectOrderNumber}
               postalCode={appointment.customer.postalCode}
               color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
+              hasStartTime={hasStartTime}
               connectedToNextRow={showPreviewTourNameLine}
             />
             {showPreviewTourNameLine && (
