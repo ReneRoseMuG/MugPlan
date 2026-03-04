@@ -31,7 +31,8 @@ describe("FT03 UI: week appointment notes hover/preview wiring", () => {
     expect(source).toContain("const safeProjectNotesCount = Number.isFinite(projectNotesCount) ? Math.max(0, projectNotesCount) : 0;");
     expect(source).toContain("const totalNotesCount = safeCustomerNotesCount + safeProjectNotesCount;");
     expect(source).toContain("if (totalNotesCount <= 0) return null;");
-    expect(source).toContain("Notizen anzeigen ({totalNotesCount})");
+    expect(source).toContain("Notizen");
+    expect(source).toContain("<span>{totalNotesCount}</span>");
     expect(source).toContain('data-testid="week-appointment-notes-hover-trigger"');
   });
 

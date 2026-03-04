@@ -1,6 +1,7 @@
 import { FileText, Image as ImageIcon, Paperclip } from "lucide-react";
 import { InfoBadge } from "@/components/ui/info-badge";
 import { createAttachmentInfoBadgePreview } from "@/components/ui/badge-previews/attachment-info-badge-preview";
+import { useSetting } from "@/hooks/useSettings";
 
 export interface AttachmentBadgeItem {
   id: number;
@@ -40,6 +41,8 @@ export function AttachmentInfoBadge({
   openUrl,
   testId,
 }: AttachmentInfoBadgeProps) {
+  const previewSize = useSetting("attachmentPreviewSize");
+
   return (
     <InfoBadge
       icon={resolveAttachmentIcon(attachment)}
@@ -54,6 +57,7 @@ export function AttachmentInfoBadge({
         mimeType: attachment.mimeType,
         openUrl,
         downloadUrl,
+        previewSize,
       })}
     />
   );

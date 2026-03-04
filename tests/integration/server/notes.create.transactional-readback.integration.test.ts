@@ -80,6 +80,36 @@ async function createProject(agent: SuperAgentTest, customerId: number): Promise
 }
 
 describe("FT09/FT13 integration: notes create transactional readback", () => {
+  it("returns 422 VALIDATION_ERROR when creating customer note without title", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent);
+
+    await agent
+      .post(`/api/customers/${customerId}/notes`)
+      .send({
+        body: "<p>Inhalt</p>",
+      })
+      .expect(422)
+      .expect((res) => {
+        expect(res.body).toEqual({ code: "VALIDATION_ERROR" });
+      });
+  });
+
+  it("returns 422 VALIDATION_ERROR when creating customer note without body", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent);
+
+    await agent
+      .post(`/api/customers/${customerId}/notes`)
+      .send({
+        title: "Neue Kundennotiz",
+      })
+      .expect(422)
+      .expect((res) => {
+        expect(res.body).toEqual({ code: "VALIDATION_ERROR" });
+      });
+  });
+
   it("creates customer note and returns 201 with persisted note payload", async () => {
     const agent = await loginAdminAgent();
     const customerId = await createCustomer(agent);

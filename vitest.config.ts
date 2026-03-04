@@ -13,7 +13,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./tests/setup.env.ts"],
-    exclude: ["node_modules", "dist"],
+    exclude: ["node_modules", "dist", "tests/e2e-browser/**"],
     fileParallelism: false,
     sequence: {
       concurrent: false

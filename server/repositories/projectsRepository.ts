@@ -250,7 +250,29 @@ export async function deleteProjectWithVersion(
       return { kind: "business_conflict" as const };
     }
 
+    const projectNoteRows = await tx
+      .select({ noteId: projectNotes.noteId })
+      .from(projectNotes)
+      .where(eq(projectNotes.projectId, id));
+    const candidateNoteIds = projectNoteRows.map((row) => Number(row.noteId));
+
     await tx.delete(projectNotes).where(eq(projectNotes.projectId, id));
+    if (candidateNoteIds.length > 0) {
+      await tx.execute(sql`
+        delete from note
+        where id in (${sql.join(candidateNoteIds.map((noteId) => sql`${noteId}`), sql`, `)})
+          and not exists (
+            select 1
+            from project_note pn
+            where pn.note_id = note.id
+          )
+          and not exists (
+            select 1
+            from customer_note cn
+            where cn.note_id = note.id
+          )
+      `);
+    }
     await tx.delete(projectAttachments).where(eq(projectAttachments.projectId, id));
     await tx.delete(projectProjectStatus).where(eq(projectProjectStatus.projectId, id));
 

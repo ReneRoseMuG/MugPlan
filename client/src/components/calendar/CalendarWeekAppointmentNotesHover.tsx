@@ -46,8 +46,9 @@ export function CalendarWeekAppointmentNotesHover({
         <div className="flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1">
             <StickyNote className="h-3 w-3" />
-            Notizen anzeigen ({totalNotesCount})
+            Notizen
           </span>
+          <span>{totalNotesCount}</span>
         </div>
       </div>
     </HoverPreview>

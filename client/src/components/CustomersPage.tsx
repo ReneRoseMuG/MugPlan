@@ -14,6 +14,7 @@ import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
+import { CustomerBulkImportDialog } from "@/components/CustomerBulkImportDialog";
 import type { Customer, Project } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { format } from "date-fns";
@@ -95,6 +96,7 @@ export function CustomersPage({
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const [customerScope, setCustomerScope] = useState<"active" | "inactive">("active");
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
@@ -298,7 +300,8 @@ export function CustomersPage({
   const resolvedTitle = title ?? "Kunden";
 
   return (
-    <ListLayout
+    <>
+      <ListLayout
       title={resolvedTitle}
       icon={<User className="w-5 h-5" />}
       viewModeKey={viewModeKey}
@@ -340,15 +343,26 @@ export function CustomersPage({
       footerSlot={
         <div className="flex justify-between items-center">
           {onNewCustomer ? (
-            <Button
-              variant="outline"
-              onClick={onNewCustomer}
-              className="flex items-center gap-2"
-              data-testid="button-new-customer"
-            >
-              <Plus className="w-4 h-4" />
-              Neuer Kunde
-            </Button>
+            <div className="flex items-center gap-2">
+              {!tableOnly && isAdmin ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setBulkImportOpen(true)}
+                  data-testid="button-open-customer-bulk-import"
+                >
+                  Bulk Import Kunden
+                </Button>
+              ) : null}
+              <Button
+                variant="outline"
+                onClick={onNewCustomer}
+                className="flex items-center gap-2"
+                data-testid="button-new-customer"
+              >
+                <Plus className="w-4 h-4" />
+                Neuer Kunde
+              </Button>
+            </div>
           ) : <span />}
 
           {onCancel ? (
@@ -451,5 +465,7 @@ export function CustomersPage({
         )
       }
     />
+      <CustomerBulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
+    </>
   );
 }

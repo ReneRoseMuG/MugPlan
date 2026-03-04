@@ -20,7 +20,7 @@
  */
 import express from "express";
 import { createServer } from "http";
-import request, { type Response, type SuperAgentTest } from "supertest";
+import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { registerRoutes } from "../../../server/routes";
@@ -199,20 +199,19 @@ describe("FT05 integration: full UC coverage", () => {
       .expect(200);
     expect(deactivated.body.isActive).toBe(false);
 
-    const createResponse: Response = await admin
+    const createResponse = await admin
       .post("/api/appointments")
       .send({
         projectId: project.id,
         startDate: "2099-10-01",
         employeeIds: [employee.id],
-      });
+      })
+      .expect(409);
 
-    if (createResponse.status !== 409 && createResponse.status !== 400) {
-      throw new Error(
-        `UC 05/09 violated: expected 409/400 when assigning deactivated employee, got ${createResponse.status}. ` +
-          "Required production extension: enforce active-employee validation on appointment save.",
-      );
-    }
+    expect(createResponse.body).toMatchObject({ code: "INACTIVE_ENTITY_ASSIGNMENT" });
+    expect(Array.isArray(createResponse.body.conflictEmployees)).toBe(true);
+    const conflictEmployees = createResponse.body.conflictEmployees as Array<{ id?: number; fullName?: string }>;
+    expect(conflictEmployees.some((entry) => entry.id === employee.id)).toBe(true);
   });
 
   it("UC 05/11: stale update after reactivation returns 409 VERSION_CONFLICT", async () => {

@@ -6,9 +6,12 @@
  *
  * Abgedeckte Regeln:
  * - Tour-CRUD ueber API mit Versionierung fuer Update/Delete.
+ * - Tour-Create folgt dem Contract: Name wird serverseitig erzeugt, Farbe hat Default.
+ * - Tour-Create erzeugt keine impliziten Mitarbeiterzuweisungen.
  * - Mehrfache Farbaenderung erhoeht Version deterministisch.
  * - Tour-Delete ist gesperrt, solange Termine mit tour_id verknuepft sind.
  * - Loeschen einer Tour setzt employee.tourId auf NULL.
+ * - Tour-Update veraendert referenzierte Termine nicht ausser fortbestehender tour_id-Verknuepfung.
  * - Nicht existierende Tour-IDs liefern NOT_FOUND.
  *
  * Fehlerfaelle:
@@ -118,6 +121,17 @@ describe("FT04 integration: TourTests", () => {
     });
   });
 
+  it("creates a tour without employee payload and keeps member list empty", async () => {
+    const admin = await loginAdminAgent();
+
+    const created = await admin.post("/api/tours").send({ color: "#446688" }).expect(201);
+
+    await admin.get(`/api/tours/${created.body.id}/employees`).expect(200).expect((res) => {
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(0);
+    });
+  });
+
   it("documents empty-name request handling on create", async () => {
     const admin = await loginAdminAgent();
 
@@ -163,6 +177,42 @@ describe("FT04 integration: TourTests", () => {
 
     expect(response.body.name).toBe(created.body.name);
     expect(response.body.color).toBe("#ccbb11");
+  });
+
+  it("updates tour color without side effects on referenced appointment data", async () => {
+    const admin = await loginAdminAgent();
+    const tour = await admin.post("/api/tours").send({ color: "#cc8800" }).expect(201);
+    const project = await createProjectForTourDeleteTest();
+
+    const createdAppointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-02-15",
+      endDate: "2099-02-16",
+      startTime: "08:30",
+      tourId: tour.body.id,
+      employeeIds: [],
+    });
+    expect(createdAppointment).toBeTruthy();
+
+    const appointmentId = (createdAppointment as { id: number }).id;
+
+    const before = await admin.get(`/api/appointments/${appointmentId}`).expect(200);
+
+    await admin
+      .patch(`/api/tours/${tour.body.id}`)
+      .send({ color: "#00aa99", version: tour.body.version })
+      .expect(200);
+
+    await admin.get(`/api/appointments/${appointmentId}`).expect(200).expect((res) => {
+      expect(res.body.id).toBe(before.body.id);
+      expect(res.body.version).toBe(before.body.version);
+      expect(res.body.projectId).toBe(before.body.projectId);
+      expect(res.body.startDate).toBe(before.body.startDate);
+      expect(res.body.endDate).toBe(before.body.endDate);
+      expect(res.body.startTime).toBe(before.body.startTime);
+      expect(res.body.endTime).toBe(before.body.endTime);
+      expect(res.body.tourId).toBe(before.body.tourId);
+    });
   });
 
   it("deletes a tour and resets assigned employee tourId to null", async () => {

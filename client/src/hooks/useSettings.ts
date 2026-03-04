@@ -47,6 +47,13 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
 
   return useMemo(() => {
     const setting = settingsByKey.get(key);
+    if (key === "attachmentPreviewSize") {
+      const value = setting?.resolvedValue;
+      if (value === "small" || value === "medium" || value === "large") {
+        return value as UserSettingValueByKey[K];
+      }
+      return "medium" as UserSettingValueByKey[K];
+    }
     if (key === "calendarWeekendColumnPercent") {
       const value = setting?.resolvedValue;
       if (typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 100) {

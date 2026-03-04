@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AttachmentsPanel } from "@/components/AttachmentsPanel";
+import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { ProjectAttachment } from "@shared/schema";
+import type { CustomerAttachment, ProjectAttachment } from "@shared/schema";
 
 interface ProjectAttachmentsPanelProps {
   projectId?: number | null;
@@ -16,6 +16,18 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
   const { data: attachments = [], isLoading } = useQuery<ProjectAttachment[]>({
     queryKey: ["/api/projects", projectId, "attachments"],
     enabled: isEditing && Boolean(projectId),
+  });
+  const { data: projectWithCustomer } = useQuery<{
+    project: { customerId: number };
+    customer: { fullName: string | null };
+  }>({
+    queryKey: ["/api/projects", projectId],
+    enabled: isEditing && Boolean(projectId),
+  });
+  const customerId = projectWithCustomer?.project.customerId ?? null;
+  const { data: customerAttachments = [], isLoading: isCustomerAttachmentsLoading } = useQuery<CustomerAttachment[]>({
+    queryKey: ["/api/customers", customerId, "attachments"],
+    enabled: isEditing && Boolean(customerId),
   });
 
   const uploadMutation = useMutation({
@@ -45,18 +57,37 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
   });
 
   const items = useMemo(() => attachments, [attachments]);
+  const customerItems = useMemo(() => customerAttachments, [customerAttachments]);
+  const customerName = projectWithCustomer?.customer.fullName?.trim() || "Unbekannt";
 
   return (
-    <AttachmentsPanel
+    <SplitAttachmentsPanel
       title="Dokumente"
       helpKey="projects.sidebar.attachments"
-      items={items}
-      isLoading={isLoading}
-      canUpload={isEditing && Boolean(projectId)}
-      isUploading={uploadMutation.isPending}
-      onUpload={(file) => uploadMutation.mutate(file)}
-      buildOpenUrl={(id) => `/api/project-attachments/${id}/download`}
-      buildDownloadUrl={(id) => `/api/project-attachments/${id}/download?download=1`}
+      sections={[
+        {
+          id: "project",
+          title: "Projektdokumente",
+          items,
+          isLoading,
+          emptyText: "Keine Dokumente vorhanden",
+          canUpload: isEditing && Boolean(projectId),
+          isUploading: uploadMutation.isPending,
+          onUpload: (file) => uploadMutation.mutate(file),
+          buildOpenUrl: (id) => `/api/project-attachments/${id}/download`,
+          buildDownloadUrl: (id) => `/api/project-attachments/${id}/download?download=1`,
+        },
+        {
+          id: "customer",
+          title: "Kundendokumente",
+          subtitle: `(von Kunde: ${customerName})`,
+          items: customerItems,
+          isLoading: isCustomerAttachmentsLoading,
+          emptyText: "Keine Kundendokumente vorhanden",
+          buildOpenUrl: (id) => `/api/customer-attachments/${id}/download`,
+          buildDownloadUrl: (id) => `/api/customer-attachments/${id}/download?download=1`,
+        },
+      ]}
     />
   );
 }
