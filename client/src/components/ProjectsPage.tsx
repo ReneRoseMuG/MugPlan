@@ -16,6 +16,7 @@ import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
+import { ProjectBulkImportDialog } from "@/components/ProjectBulkImportDialog";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -98,6 +99,8 @@ export function ProjectsPage({
   const [sortKey, setSortKey] = useState<ProjectSortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
@@ -333,7 +336,8 @@ export function ProjectsPage({
   const resolvedTitle = title ?? "Projekte";
 
   return (
-    <ListLayout
+    <>
+      <ListLayout
       title={resolvedTitle}
       icon={<FolderKanban className="w-5 h-5" />}
       viewModeKey={viewModeKey}
@@ -387,15 +391,26 @@ export function ProjectsPage({
       footerSlot={
         <div className="flex justify-between items-center">
           {onNewProject ? (
-            <Button
-              variant="outline"
-              onClick={onNewProject}
-              className="flex items-center gap-2"
-              data-testid="button-new-project"
-            >
-              <Plus className="w-4 h-4" />
-              Neues Projekt
-            </Button>
+            <div className="flex items-center gap-2">
+              {!tableOnly && isAdmin ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setBulkImportOpen(true)}
+                  data-testid="button-open-project-bulk-import"
+                >
+                  Bulk Import Projekte
+                </Button>
+              ) : null}
+              <Button
+                variant="outline"
+                onClick={onNewProject}
+                className="flex items-center gap-2"
+                data-testid="button-new-project"
+              >
+                <Plus className="w-4 h-4" />
+                Neues Projekt
+              </Button>
+            </div>
           ) : <span />}
 
           {onCancel ? (
@@ -519,5 +534,7 @@ export function ProjectsPage({
         )
       }
     />
+      <ProjectBulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
+    </>
   );
 }

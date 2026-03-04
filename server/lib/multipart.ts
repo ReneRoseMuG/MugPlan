@@ -10,6 +10,7 @@ export interface ParsedMultipartFile {
 export interface ParsedMultipartForm {
   fields: Record<string, string>;
   file: ParsedMultipartFile | null;
+  files: ParsedMultipartFile[];
 }
 
 interface MultipartOptions {
@@ -56,6 +57,14 @@ export async function parseMultipartFile(
     throw new Error("No file found in multipart payload");
   }
   return parsed.file;
+}
+
+export async function parseMultipartFiles(
+  req: IncomingMessage,
+  options: MultipartOptions,
+): Promise<ParsedMultipartFile[]> {
+  const parsed = await parseMultipartForm(req, options);
+  return parsed.files;
 }
 
 export async function parseMultipartForm(
@@ -105,6 +114,7 @@ export async function parseMultipartForm(
   const rawParts = splitBuffer(body, boundaryBuffer);
   const fields: Record<string, string> = {};
   let file: ParsedMultipartFile | null = null;
+  const files: ParsedMultipartFile[] = [];
 
   for (const rawPart of rawParts) {
     const part = normalizePart(rawPart);
@@ -152,7 +162,8 @@ export async function parseMultipartForm(
       contentType: headers["content-type"] ?? null,
       buffer: content,
     };
+    files.push(file);
   }
 
-  return { fields, file };
+  return { fields, file, files };
 }

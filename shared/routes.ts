@@ -102,6 +102,69 @@ const entityAppointmentItemSchema = z.object({
   isLocked: z.boolean(),
 });
 
+const attachmentDuplicateHitSchema = z.object({
+  domain: z.enum(["customer", "project", "employee"]),
+  attachmentId: z.number().int().positive(),
+  ownerId: z.number().int().positive(),
+  ownerLabel: z.string(),
+  originalName: z.string(),
+  createdAt: z.string(),
+});
+
+const customerProjectAttachmentGroupSchema = z.object({
+  projectId: z.number().int().positive(),
+  projectName: z.string(),
+  attachments: z.array(z.custom<typeof projectAttachments.$inferSelect>()),
+});
+
+const appointmentAttachmentContextSchema = z.object({
+  appointmentId: z.number().int().positive(),
+  project: z.object({
+    id: z.number().int().positive(),
+    name: z.string(),
+    orderNumber: z.string().nullable(),
+  }),
+  customer: z.object({
+    id: z.number().int().positive(),
+    customerNumber: z.string(),
+    fullName: z.string().nullable(),
+  }),
+  projectAttachments: z.array(z.custom<typeof projectAttachments.$inferSelect>()),
+  customerAttachments: z.array(z.custom<typeof customerAttachments.$inferSelect>()),
+});
+
+const bulkImportCustomerAnalyzeItemSchema = z.object({
+  id: z.string(),
+  fileName: z.string(),
+  customerNumber: z.string(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  company: z.string().nullable(),
+  city: z.string().nullable(),
+});
+
+const bulkImportCustomerDuplicateItemSchema = bulkImportCustomerAnalyzeItemSchema.extend({
+  existingCustomerId: z.number().int().positive(),
+});
+
+const bulkImportProjectAnalyzeItemSchema = z.object({
+  id: z.string(),
+  fileName: z.string(),
+  orderNumber: z.string(),
+  title: z.string(),
+  customerNumber: z.string(),
+  customerName: z.string().nullable(),
+  articleListHtml: z.string(),
+});
+
+const bulkImportProjectDuplicateItemSchema = bulkImportProjectAnalyzeItemSchema.extend({
+  existingProjectId: z.number().int().positive(),
+});
+
+const bulkImportProjectSpecialItemSchema = bulkImportProjectAnalyzeItemSchema.extend({
+  extractedCustomer: extractedCustomerSchema,
+});
+
 export const api = {
   auth: {
     setupStatus: {
@@ -1598,6 +1661,58 @@ export const api = {
       },
     },
   },
+  customerAttachmentAggregates: {
+    projectAttachmentsByCustomer: {
+      method: "GET" as const,
+      path: "/api/customers/:customerId/project-attachments",
+      input: z.object({
+        page: z.coerce.number().int().min(1).default(1),
+        pageSize: z.coerce.number().int().min(1).max(50).default(20),
+      }).strict(),
+      responses: {
+        200: z.object({
+          items: z.array(customerProjectAttachmentGroupSchema),
+          totalProjects: z.number().int().min(0),
+          totalAttachments: z.number().int().min(0),
+          page: z.number().int().min(1),
+          pageSize: z.number().int().min(1),
+          hasMore: z.boolean(),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  appointmentAttachmentContext: {
+    get: {
+      method: "GET" as const,
+      path: "/api/appointments/:appointmentId/attachment-context",
+      responses: {
+        200: appointmentAttachmentContextSchema,
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  attachmentDuplicates: {
+    checkOriginalName: {
+      method: "POST" as const,
+      path: "/api/attachments/duplicates/check-original-name",
+      input: z.object({
+        originalName: z.string().trim().min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          duplicate: z.boolean(),
+          summary: z.object({
+            customer: z.number().int().min(0),
+            project: z.number().int().min(0),
+            employee: z.number().int().min(0),
+          }),
+          hits: z.array(attachmentDuplicateHitSchema),
+        }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   demoSeed: {
     createRun: {
       method: "POST" as const,
@@ -1842,6 +1957,137 @@ export const api = {
           durationMs: z.number(),
         }),
         400: errorSchemas.validation,
+      },
+    },
+    customerBulkImportAnalyze: {
+      method: "POST" as const,
+      path: "/api/admin/customers/bulk-import/analyze",
+      responses: {
+        200: z.object({
+          bulkImportSessionId: z.string(),
+          newCustomers: z.array(bulkImportCustomerAnalyzeItemSchema),
+          duplicates: z.array(bulkImportCustomerDuplicateItemSchema),
+          errors: z.array(z.object({ fileName: z.string(), reason: z.string() })),
+          log: z.array(z.object({ fileName: z.string(), status: z.string() })),
+          limits: z.object({
+            maxFiles: z.number().int().positive(),
+            maxFileSizeBytes: z.number().int().positive(),
+            maxTotalBytes: z.number().int().positive(),
+          }),
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
+      },
+    },
+    customerBulkImportApplyNew: {
+      method: "POST" as const,
+      path: "/api/admin/customers/bulk-import/apply-new",
+      input: z.object({
+        bulkImportSessionId: z.string().min(1),
+        selectedIds: z.array(z.string().min(1)).min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          created: z.number().int().min(0),
+          createdCustomerIds: z.array(z.number().int().positive()),
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({
+          code: z.literal("VALIDATION_ERROR"),
+          details: z.array(z.object({
+            id: z.string(),
+            field: z.string(),
+            message: z.string(),
+          })),
+        }),
+      },
+    },
+    customerBulkImportApplyDuplicates: {
+      method: "POST" as const,
+      path: "/api/admin/customers/bulk-import/apply-duplicates",
+      input: z.object({
+        bulkImportSessionId: z.string().min(1),
+        selectedIds: z.array(z.string().min(1)).min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          updated: z.number().int().min(0),
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    projectBulkImportAnalyze: {
+      method: "POST" as const,
+      path: "/api/admin/projects/bulk-import/analyze",
+      responses: {
+        200: z.object({
+          bulkImportSessionId: z.string(),
+          newProjects: z.array(bulkImportProjectAnalyzeItemSchema),
+          duplicates: z.array(bulkImportProjectDuplicateItemSchema),
+          specialCases: z.array(bulkImportProjectSpecialItemSchema),
+          errors: z.array(z.object({ fileName: z.string(), reason: z.string() })),
+          log: z.array(z.object({ fileName: z.string(), status: z.string() })),
+          limits: z.object({
+            maxFiles: z.number().int().positive(),
+            maxFileSizeBytes: z.number().int().positive(),
+            maxTotalBytes: z.number().int().positive(),
+          }),
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
+      },
+    },
+    projectBulkImportApplyNew: {
+      method: "POST" as const,
+      path: "/api/admin/projects/bulk-import/apply-new",
+      input: z.object({
+        bulkImportSessionId: z.string().min(1),
+        selectedIds: z.array(z.string().min(1)).min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          created: z.number().int().min(0),
+          createdProjectIds: z.array(z.number().int().positive()),
+          attachmentLinked: z.number().int().min(0),
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({
+          code: z.literal("VALIDATION_ERROR"),
+          details: z.array(z.object({
+            id: z.string(),
+            field: z.string(),
+            message: z.string(),
+          })),
+        }),
+      },
+    },
+    projectBulkImportApplySpecialCase: {
+      method: "POST" as const,
+      path: "/api/admin/projects/bulk-import/apply-special-case",
+      input: z.object({
+        bulkImportSessionId: z.string().min(1),
+        id: z.string().min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          customerId: z.number().int().positive(),
+          projectId: z.number().int().positive(),
+          attachmentLinked: z.boolean(),
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({
+          code: z.literal("VALIDATION_ERROR"),
+          details: z.array(z.object({
+            field: z.string(),
+            message: z.string(),
+          })),
+        }),
       },
     },
   },

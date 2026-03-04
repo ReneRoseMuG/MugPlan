@@ -90,6 +90,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
+  const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(null);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
@@ -306,6 +307,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
 
   const runDocumentExtraction = async (file: File) => {
     setDocumentExtractionLoading(true);
+    setDocumentExtractionFile(file);
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -581,6 +583,7 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
     const storedProjectName = formatProjectStoredName(selectedCustomerNumber, name);
     const normalizedOrderNumber = orderNumber.trim() || null;
 
+    let createdProjectId: number | null = null;
     if (isEditing) {
       if (!projectVersion || !Number.isInteger(projectVersion) || projectVersion < 1) {
         toast({ title: "Projektversion fehlt, bitte neu laden", variant: "destructive" });
@@ -594,14 +597,72 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
         descriptionMd: descriptionMd || undefined,
       });
     } else {
-      await createMutation.mutateAsync({
+      const createdProject = await createMutation.mutateAsync({
         name: storedProjectName,
         orderNumber: normalizedOrderNumber,
         customerId,
         descriptionMd: descriptionMd || undefined,
       });
+      createdProjectId = createdProject.id;
     }
     setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, descriptionMd, customerId }));
+
+    if (createdProjectId && documentExtractionFile) {
+      try {
+        const duplicateResponse = await fetch("/api/attachments/duplicates/check-original-name", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ originalName: documentExtractionFile.name }),
+        });
+        const duplicatePayload = await duplicateResponse.json().catch(() => null);
+        if (!duplicateResponse.ok) {
+          throw new Error(duplicatePayload?.message ?? "Duplikatpruefung fehlgeschlagen");
+        }
+
+        const duplicateInfo = duplicatePayload as {
+          duplicate: boolean;
+          summary: { customer: number; project: number; employee: number };
+        };
+        if (duplicateInfo.duplicate) {
+          const confirmed = window.confirm(
+            `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknuepfen?`,
+          );
+          if (!confirmed) {
+            toast({ title: "Dokumentverknuepfung uebersprungen" });
+            setDocumentExtractionFile(null);
+            if (onSaved && onSaved !== onCancel) {
+              onSaved();
+            }
+            return;
+          }
+        }
+
+        const uploadData = new FormData();
+        uploadData.append("file", documentExtractionFile);
+        const uploadResponse = await fetch(`/api/projects/${createdProjectId}/attachments`, {
+          method: "POST",
+          credentials: "include",
+          body: uploadData,
+        });
+        if (!uploadResponse.ok) {
+          const uploadPayload = await uploadResponse.json().catch(() => null);
+          throw new Error(uploadPayload?.message ?? "Dokumentverknuepfung fehlgeschlagen");
+        }
+        await queryClient.invalidateQueries({ queryKey: ["/api/projects", createdProjectId, "attachments"] });
+        toast({ title: "Projekt angelegt und Dokument verknuepft" });
+      } catch (error) {
+        toast({
+          title: "Projekt angelegt, aber Dokumentverknuepfung fehlgeschlagen",
+          description: error instanceof Error ? error.message : "Unbekannter Fehler",
+          variant: "destructive",
+        });
+      } finally {
+        setDocumentExtractionFile(null);
+      }
+    }
 
     if (onSaved && onSaved !== onCancel) {
       onSaved();

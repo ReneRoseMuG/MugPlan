@@ -29,6 +29,8 @@ import toursRoutes from "./routes/toursRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
 import usersRoutes from "./routes/usersRoutes";
 import authRoutes from "./routes/authRoutes";
+import attachmentQueriesRoutes from "./routes/attachmentQueriesRoutes";
+import adminBulkImportRoutes from "./routes/adminBulkImportRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   app.use("/api", sessionAuth);
@@ -61,6 +63,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(projectNotesRoutes);
   app.use(projectAttachmentsRoutes);
   app.use(projectStatusRelationsRoutes);
+  app.use(attachmentQueriesRoutes);
+  app.use(adminBulkImportRoutes);
   app.use(userSettingsRoutes);
   app.use(usersRoutes);
 

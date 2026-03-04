@@ -28,6 +28,7 @@ import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { AppointmentAttachmentsPanel } from "@/components/AppointmentAttachmentsPanel";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
   DocumentExtractionDialog,
@@ -181,6 +182,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
+  const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(null);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string | null>(null);
   const weekTourPrefillAppliedRef = useRef(false);
 
@@ -651,6 +653,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
 
   const runDocumentExtraction = async (file: File) => {
     setDocumentExtractionLoading(true);
+    setDocumentExtractionFile(file);
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -740,6 +743,43 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       }
 
       const createdProject = projectPayload as Project;
+      if (documentExtractionFile) {
+        const duplicateResponse = await fetch("/api/attachments/duplicates/check-original-name", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ originalName: documentExtractionFile.name }),
+        });
+        const duplicatePayload = await duplicateResponse.json().catch(() => null);
+        if (!duplicateResponse.ok) {
+          throw new Error(duplicatePayload?.message ?? "Duplikatpruefung fehlgeschlagen");
+        }
+        const duplicateInfo = duplicatePayload as {
+          duplicate: boolean;
+          summary: { customer: number; project: number; employee: number };
+        };
+        const shouldAttach = !duplicateInfo.duplicate || window.confirm(
+          `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknuepfen?`,
+        );
+        if (shouldAttach) {
+          const uploadData = new FormData();
+          uploadData.append("file", documentExtractionFile);
+          const uploadResponse = await fetch(`/api/projects/${createdProject.id}/attachments`, {
+            method: "POST",
+            credentials: "include",
+            body: uploadData,
+          });
+          if (!uploadResponse.ok) {
+            const uploadPayload = await uploadResponse.json().catch(() => null);
+            throw new Error(uploadPayload?.message ?? "Dokumentverknuepfung fehlgeschlagen");
+          }
+          await queryClient.invalidateQueries({ queryKey: ["/api/projects", createdProject.id, "attachments"] });
+        } else {
+          toast({ title: "Dokumentverknuepfung uebersprungen" });
+        }
+      }
       queryClient.setQueryData<Project[]>(projectsQueryKey, (current) => {
         if (!Array.isArray(current)) return [createdProject];
         if (current.some((project) => project.id === createdProject.id)) {
@@ -751,6 +791,7 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
       setSelectedProjectId(createdProject.id);
       toast({ title: "Projekt übernommen", description: "Neues Projekt wurde erzeugt und dem Termin zugeordnet." });
       setDocumentExtractionOpen(false);
+      setDocumentExtractionFile(null);
     } catch (error) {
       toast({
         title: "Projekt konnte nicht übernommen werden",
@@ -1302,6 +1343,8 @@ export function AppointmentForm({ onCancel, onSaved, initialDate, initialTourId,
               </div>
             )}
           </div>
+
+          {appointmentId ? <AppointmentAttachmentsPanel appointmentId={appointmentId} /> : null}
 
         </div>
       </div>
