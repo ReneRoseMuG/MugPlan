@@ -165,6 +165,38 @@ const bulkImportProjectSpecialItemSchema = bulkImportProjectAnalyzeItemSchema.ex
   extractedCustomer: extractedCustomerSchema,
 });
 
+const saunaTourPreviewYearSchema = z.enum(["2025", "2026"]);
+
+const saunaTourPreviewWeekRowSchema = z.object({
+  rowIndex: z.number().int().min(0),
+  cells: z.array(z.string()),
+});
+
+const saunaTourPreviewWeekSchema = z.object({
+  weekId: z.string().min(1),
+  startDate: z.string(),
+  endDate: z.string(),
+  startColumn: z.number().int().min(1),
+  endColumn: z.number().int().min(1),
+  totalRows: z.number().int().min(0),
+});
+
+const saunaTourPreviewYearDataSchema = z.object({
+  year: saunaTourPreviewYearSchema,
+  weeks: z.array(saunaTourPreviewWeekSchema),
+});
+
+const saunaTourPreviewChunkSchema = z.object({
+  year: saunaTourPreviewYearSchema,
+  weekId: z.string().min(1),
+  offset: z.number().int().min(0),
+  limit: z.number().int().min(1),
+  totalRows: z.number().int().min(0),
+  hasMore: z.boolean(),
+  nextOffset: z.number().int().min(0),
+  rows: z.array(saunaTourPreviewWeekRowSchema),
+});
+
 export const api = {
   auth: {
     setupStatus: {
@@ -2088,6 +2120,58 @@ export const api = {
             message: z.string(),
           })),
         }),
+      },
+    },
+    saunaTourImportPreview: {
+      method: "POST" as const,
+      path: "/api/admin/sauna-tour-import/preview",
+      responses: {
+        200: z.object({
+          previewSessionId: z.string().min(1),
+          years: z.array(saunaTourPreviewYearDataSchema),
+          initialChunk: saunaTourPreviewChunkSchema,
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({
+          code: z.enum([
+            "VALIDATION_ERROR",
+            "UNSUPPORTED_FILE_TYPE",
+            "MISSING_REQUIRED_SHEETS",
+            "PREVIEW_PARSE_FAILED",
+          ]),
+          message: z.string(),
+        }),
+      },
+    },
+    saunaTourImportPreviewWeekRows: {
+      method: "POST" as const,
+      path: "/api/admin/sauna-tour-import/preview/week-rows",
+      input: z.object({
+        previewSessionId: z.string().min(1),
+        year: saunaTourPreviewYearSchema,
+        weekId: z.string().min(1),
+        offset: z.number().int().min(0),
+        limit: z.number().int().min(1).max(500),
+      }).strict(),
+      responses: {
+        200: saunaTourPreviewChunkSchema,
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: z.object({ code: z.literal("PREVIEW_SESSION_NOT_FOUND"), message: z.string() }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR"), message: z.string() }),
+      },
+    },
+    saunaTourImportPreviewCleanup: {
+      method: "POST" as const,
+      path: "/api/admin/sauna-tour-import/preview/cleanup",
+      input: z.object({
+        previewSessionId: z.string().min(1),
+      }).strict(),
+      responses: {
+        200: z.object({ ok: z.literal(true) }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
       },
     },
   },

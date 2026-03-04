@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { api } from "@shared/routes";
 import * as adminBulkImportController from "../controllers/adminBulkImportController";
+import * as adminSaunaTourImportController from "../controllers/adminSaunaTourImportController";
 
 const router = Router();
 
@@ -11,5 +12,9 @@ router.post(api.admin.customerBulkImportApplyDuplicates.path, adminBulkImportCon
 router.post(api.admin.projectBulkImportAnalyze.path, adminBulkImportController.analyzeProjectsBulkImport);
 router.post(api.admin.projectBulkImportApplyNew.path, adminBulkImportController.applyProjectsBulkImportNew);
 router.post(api.admin.projectBulkImportApplySpecialCase.path, adminBulkImportController.applyProjectsBulkImportSpecialCase);
+
+router.post(api.admin.saunaTourImportPreview.path, adminSaunaTourImportController.createSaunaTourPreview);
+router.post(api.admin.saunaTourImportPreviewWeekRows.path, adminSaunaTourImportController.getSaunaTourPreviewWeekRows);
+router.post(api.admin.saunaTourImportPreviewCleanup.path, adminSaunaTourImportController.cleanupSaunaTourPreview);
 
 export default router;
