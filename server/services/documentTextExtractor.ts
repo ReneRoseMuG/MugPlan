@@ -1,4 +1,6 @@
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 function normalizeWhitespace(value: string): string {
   return value
@@ -15,12 +17,19 @@ type TextContentLike = {
   }>;
 };
 
+function resolveStandardFontDataUrl(): string {
+  const standardFontsDir = path.resolve(process.cwd(), "node_modules", "pdfjs-dist", "standard_fonts");
+  const standardFontsUrl = pathToFileURL(standardFontsDir).href;
+  return standardFontsUrl.endsWith("/") ? standardFontsUrl : `${standardFontsUrl}/`;
+}
+
 export async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {
   const loadingTask = getDocument({
     data: new Uint8Array(buffer),
     useWorkerFetch: false,
     isEvalSupported: false,
     useSystemFonts: false,
+    standardFontDataUrl: resolveStandardFontDataUrl(),
   } as any);
 
   const pdf = await loadingTask.promise;

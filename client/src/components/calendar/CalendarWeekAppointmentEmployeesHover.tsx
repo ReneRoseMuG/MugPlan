@@ -27,7 +27,7 @@ export function CalendarWeekAppointmentEmployeesHover({
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1">
           <Users className="h-3 w-3" />
-          {hasEmployees ? "Mitarbeiter anzeigen" : "Keine Mitarbeiter"}
+          {hasEmployees ? "Mitarbeiter" : "Keine Mitarbeiter"}
         </span>
         <span>{hasEmployees ? employees.length : 0}</span>
       </div>
