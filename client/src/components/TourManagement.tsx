@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Route } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
 import type { Tour, Employee } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 
 interface TourWithMembers extends Tour {
   members: Employee[];
@@ -23,9 +24,11 @@ interface TourWithMembers extends Tour {
 interface TourManagementProps {
   onCancel?: () => void;
   userRole?: string;
+  onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
+  initialTourId?: number | null;
 }
 
-export function TourManagement({ onCancel, userRole }: TourManagementProps) {
+export function TourManagement({ onCancel, userRole, onOpenAppointment, initialTourId = null }: TourManagementProps) {
   const { toast } = useToast();
   const [editingTour, setEditingTour] = useState<TourWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -231,6 +234,15 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
     ? (toursWithMembers.find((tour) => tour.id === editingTour.id) ?? editingTour)
     : null;
 
+  useEffect(() => {
+    if (isCreating) return;
+    if (editingTour) return;
+    if (typeof initialTourId !== "number") return;
+    const initialTour = toursWithMembers.find((tour) => tour.id === initialTourId);
+    if (!initialTour) return;
+    setEditingTour(initialTour);
+  }, [initialTourId, isCreating, editingTour, toursWithMembers]);
+
   if (activeTour || isCreating) {
     return (
       <TourEditForm
@@ -245,6 +257,7 @@ export function TourManagement({ onCancel, userRole }: TourManagementProps) {
         defaultName={getNextTourName()}
         defaultColor={defaultEntityColor}
         onCancel={handleCloseDialog}
+        onOpenAppointment={onOpenAppointment}
       />
     );
   }

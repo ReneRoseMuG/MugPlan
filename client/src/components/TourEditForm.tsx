@@ -5,9 +5,10 @@ import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
-import { AppointmentsListPage } from "@/components/AppointmentsListPage";
+import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import type { Tour, Employee } from "@shared/schema";
 
@@ -27,6 +28,7 @@ interface TourEditFormProps {
   defaultName?: string;
   defaultColor?: string;
   onCancel: () => void;
+  onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
 }
 
 export function TourEditForm({
@@ -41,6 +43,7 @@ export function TourEditForm({
   defaultName = "Neue Tour",
   defaultColor = "#60a5fa",
   onCancel,
+  onOpenAppointment,
 }: TourEditFormProps) {
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
   const [selectedColor, setSelectedColor] = useState<string>(defaultColor);
@@ -108,68 +111,77 @@ export function TourEditForm({
         ) : undefined
       }
     >
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2">
+      <Tabs defaultValue="stammdaten" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
+          <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stammdaten">
+          <div className="max-w-xl space-y-4">
+            <div className="sub-panel space-y-3">
+              <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+                <Route className="w-4 h-4" />
+                Farbe
+              </h3>
+              <ColorSelectButton
+                color={selectedColor}
+                onChange={setSelectedColor}
+                testId="button-tour-color-picker"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div
+              className="border-l-4 border border-border bg-slate-50 overflow-hidden"
+              style={{ borderLeftColor: selectedColor }}
+            >
+              <MembersSectionHeader
+                className="px-3 py-1.5 border-b border-border bg-slate-50"
+                action={(
+                  <PlusActionButton
+                    onClick={() => setEmployeePickerOpen(true)}
+                    aria-label="Mitarbeiter hinzufügen"
+                    data-testid="button-add-tour-member"
+                    disabled={isSaving}
+                  />
+                )}
+              />
+              <div className="space-y-2 p-3 bg-slate-50">
+                {assignedEmployees.map((employee) => (
+                  <EmployeeInfoBadge
+                    key={employee.id}
+                    id={employee.id}
+                    firstName={employee.firstName}
+                    lastName={employee.lastName}
+                    action="remove"
+                    onRemove={() => setSelectedMembers((prev) => prev.filter((id) => id !== employee.id))}
+                    size="sm"
+                    fullWidth
+                    testId={`badge-tour-member-${employee.id}`}
+                  />
+                ))}
+                {assignedEmployees.length === 0 && (
+                  <div className="text-sm text-slate-400 italic">
+                    Keine Mitarbeiter zugewiesen
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="termine">
           <AppointmentsListPage
             title="Termine"
             helpKey="appointments.list.tourForm"
             context={{ type: "tour", tourId: tour?.id ?? null }}
             emptyStateOverride={leftEmptyState}
+            onOpenAppointment={onOpenAppointment}
+            className="min-h-[620px]"
           />
-        </div>
-
-        <div className="space-y-4">
-          <div className="sub-panel space-y-3">
-            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-              <Route className="w-4 h-4" />
-              Farbe
-            </h3>
-            <ColorSelectButton
-              color={selectedColor}
-              onChange={setSelectedColor}
-              testId="button-tour-color-picker"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div
-            className="border-l-4 border border-border bg-slate-50 overflow-hidden"
-            style={{ borderLeftColor: selectedColor }}
-          >
-            <MembersSectionHeader
-              className="px-3 py-1.5 border-b border-border bg-slate-50"
-              action={(
-                <PlusActionButton
-                  onClick={() => setEmployeePickerOpen(true)}
-                  aria-label="Mitarbeiter hinzufügen"
-                  data-testid="button-add-tour-member"
-                  disabled={isSaving}
-                />
-              )}
-            />
-            <div className="space-y-2 p-3 bg-slate-50">
-              {assignedEmployees.map((employee) => (
-                <EmployeeInfoBadge
-                  key={employee.id}
-                  id={employee.id}
-                  firstName={employee.firstName}
-                  lastName={employee.lastName}
-                  action="remove"
-                  onRemove={() => setSelectedMembers((prev) => prev.filter((id) => id !== employee.id))}
-                  size="sm"
-                  fullWidth
-                  testId={`badge-tour-member-${employee.id}`}
-                />
-              ))}
-              {assignedEmployees.length === 0 && (
-                <div className="text-sm text-slate-400 italic">
-                  Keine Mitarbeiter zugewiesen
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">

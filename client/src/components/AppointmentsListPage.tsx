@@ -32,14 +32,14 @@ type AppointmentListResponse = {
 
 type SortDirection = "asc" | "desc";
 
-type AppointmentsListContext =
+export type AppointmentsListContext =
   | { type: "standalone" }
   | { type: "tour"; tourId: number | null }
   | { type: "employee"; employeeId: number };
 
 interface AppointmentsListPageProps {
   onCancel?: () => void;
-  onOpenAppointment?: (appointmentId: number) => void;
+  onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
   title?: string;
   helpKey?: string;
   context?: AppointmentsListContext;
@@ -376,7 +376,7 @@ export function AppointmentsListPage({
           columns={tableColumns}
           rows={rows}
           rowKey={(row) => row.id}
-          onRowDoubleClick={(row) => onOpenAppointment?.(row.id)}
+          onRowDoubleClick={(row) => onOpenAppointment?.(row.id, context ?? { type: "standalone" })}
           rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
           emptyState={emptyStateOverride ?? <p className="py-4 text-sm text-slate-400">Keine Termine gefunden.</p>}
           stickyHeader

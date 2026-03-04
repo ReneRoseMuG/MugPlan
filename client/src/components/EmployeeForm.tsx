@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Phone, Route, Users } from "lucide-react";
-import { AppointmentsListPage } from "@/components/AppointmentsListPage";
+import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeAttachmentsPanel } from "@/components/EmployeeAttachmentsPanel";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +31,7 @@ interface EmployeeFormProps {
   employeeId?: number;
   onCancel?: () => void;
   onSaved?: () => void;
-  onOpenAppointment?: (appointmentId: number) => void;
+  onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
 }
 
 function extractApiCode(error: unknown): string | null {
@@ -249,139 +250,152 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       saveLabel="Speichern"
       testIdPrefix="employee"
     >
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-6 min-h-0">
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Stammdaten
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Vorname *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, firstName: event.target.value }))}
-                  placeholder="Vorname..."
-                  data-testid="input-employee-firstname"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Nachname *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, lastName: event.target.value }))}
-                  placeholder="Nachname..."
-                  data-testid="input-employee-lastname"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center gap-1">
-                  <Phone className="w-3 h-3" />
-                  Telefon
-                </Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
-                  placeholder="Telefonnummer..."
-                  data-testid="input-employee-phone"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-1">
-                  <Mail className="w-3 h-3" />
-                  E-Mail
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
-                  placeholder="E-Mail-Adresse..."
-                  data-testid="input-employee-email"
-                />
-              </div>
-            </div>
-            {isAdmin && isEditing && employeeDetails ? (
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="employee-is-active"
-                  checked={employeeDetails.employee.isActive}
-                  onCheckedChange={(checked) => handleToggleActive(checked === true)}
-                />
-                <Label htmlFor="employee-is-active" className="text-muted-foreground text-sm">
-                  Aktiv
-                </Label>
-              </div>
-            ) : null}
-          </div>
+      <Tabs defaultValue="stammdaten" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
+          <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="stammdaten">
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2 space-y-6 min-h-0">
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Stammdaten
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Vorname *</Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, firstName: event.target.value }))}
+                      placeholder="Vorname..."
+                      data-testid="input-employee-firstname"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nachname *</Label>
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, lastName: event.target.value }))}
+                      placeholder="Nachname..."
+                      data-testid="input-employee-lastname"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-1">
+                      <Phone className="w-3 h-3" />
+                      Telefon
+                    </Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
+                      placeholder="Telefonnummer..."
+                      data-testid="input-employee-phone"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
+                      E-Mail
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
+                      placeholder="E-Mail-Adresse..."
+                      data-testid="input-employee-email"
+                    />
+                  </div>
+                </div>
+                {isAdmin && isEditing && employeeDetails ? (
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="employee-is-active"
+                      checked={employeeDetails.employee.isActive}
+                      onCheckedChange={(checked) => handleToggleActive(checked === true)}
+                    />
+                    <Label htmlFor="employee-is-active" className="text-muted-foreground text-sm">
+                      Aktiv
+                    </Label>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {employeeId ? <EmployeeAttachmentsPanel employeeId={employeeId} /> : null}
+
+              <div className="space-y-2">
+                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                  <Route className="w-4 h-4" />
+                  Tour
+                </h4>
+                {isEditing && employeeDetails?.tour ? (
+                  <TourInfoBadge
+                    id={employeeDetails.tour.id}
+                    name={employeeDetails.tour.name}
+                    color={employeeDetails.tour.color}
+                    members={tourMembers}
+                    action="none"
+                    fullWidth
+                    testId="badge-employee-tour"
+                  />
+                ) : (
+                  <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
+                    <p className="text-sm text-slate-400 italic">Keiner Tour zugewiesen</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                  <Users className="w-4 h-4" />
+                  Team
+                </h4>
+                {isEditing && employeeDetails?.team ? (
+                  <TeamInfoBadge
+                    id={employeeDetails.team.id}
+                    name={employeeDetails.team.name}
+                    color={employeeDetails.team.color}
+                    members={teamMembers}
+                    action="none"
+                    fullWidth
+                    testId="badge-employee-team"
+                  />
+                ) : (
+                  <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
+                    <p className="text-sm text-slate-400 italic">Keinem Team zugewiesen</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="termine">
           {employeeId ? (
-            <div className="min-h-0">
-              <AppointmentsListPage
-                title="Termine"
-                helpKey="appointments.list.employeeForm"
-                context={{ type: "employee", employeeId }}
-                onOpenAppointment={onOpenAppointment}
-                className="h-[560px] min-h-0"
-              />
-            </div>
-          ) : null}
-        </div>
-
-        <div className="space-y-6">
-          {employeeId ? <EmployeeAttachmentsPanel employeeId={employeeId} /> : null}
-
-          <div className="space-y-2">
-            <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-              <Route className="w-4 h-4" />
-              Tour
-            </h4>
-            {isEditing && employeeDetails?.tour ? (
-              <TourInfoBadge
-                id={employeeDetails.tour.id}
-                name={employeeDetails.tour.name}
-                color={employeeDetails.tour.color}
-                members={tourMembers}
-                action="none"
-                fullWidth
-                testId="badge-employee-tour"
-              />
-            ) : (
-              <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                <p className="text-sm text-slate-400 italic">Keiner Tour zugewiesen</p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-              <Users className="w-4 h-4" />
-              Team
-            </h4>
-            {isEditing && employeeDetails?.team ? (
-              <TeamInfoBadge
-                id={employeeDetails.team.id}
-                name={employeeDetails.team.name}
-                color={employeeDetails.team.color}
-                members={teamMembers}
-                action="none"
-                fullWidth
-                testId="badge-employee-team"
-              />
-            ) : (
-              <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                <p className="text-sm text-slate-400 italic">Keinem Team zugewiesen</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+            <AppointmentsListPage
+              title="Termine"
+              helpKey="appointments.list.employeeForm"
+              context={{ type: "employee", employeeId }}
+              onOpenAppointment={onOpenAppointment}
+              className="min-h-[620px]"
+            />
+          ) : (
+            <p className="py-4 text-sm text-slate-400">
+              Nach dem Speichern des Mitarbeiters werden Termine angezeigt.
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {isEditing && employeeDetailsLoading ? (
         <div className="mt-6 text-sm text-muted-foreground">

@@ -35,12 +35,14 @@ import { useListFilters } from "@/hooks/useListFilters";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 import type { Employee, Team, Tour } from "@shared/schema";
 
 interface EmployeesPageProps {
   onClose?: () => void;
   onCancel?: () => void;
-  onOpenAppointment?: (appointmentId: number) => void;
+  onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
+  initialEmployeeId?: number | null;
 }
 
 type ViewMode = "board" | "table";
@@ -91,7 +93,7 @@ function extractApiCode(error: unknown): string | null {
   return match?.[1] ?? null;
 }
 
-export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: EmployeesPageProps) {
+export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmployeeId = null }: EmployeesPageProps) {
   const handleClose = onClose || onCancel;
   const { toast } = useToast();
   const { settingsByKey, setSetting } = useSettings();
@@ -113,6 +115,12 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment }: Employee
   const [isCreating, setIsCreating] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importResetSignal, setImportResetSignal] = useState(0);
+
+  useEffect(() => {
+    if (typeof initialEmployeeId !== "number") return;
+    setSelectedEmployeeId(initialEmployeeId);
+    setIsCreating(false);
+  }, [initialEmployeeId]);
 
   useEffect(() => {
     setViewMode(resolvedViewMode);

@@ -6,23 +6,23 @@ import type { ComponentProps } from "react";
 
 type PlusActionButtonProps = Omit<ComponentProps<typeof Button>, "children">;
 
-export function PlusActionButton({
-  onClick,
-  disabled,
-  className,
-  ...props
-}: PlusActionButtonProps) {
-  return (
-    <Button
-      type="button"
-      size="icon"
-      variant="ghost"
-      className={cn("h-7 w-7", className)}
-      onClick={onClick}
-      disabled={disabled}
-      {...props}
-    >
-      <Plus className="w-3 h-3" />
-    </Button>
-  );
-}
+export const PlusActionButton = React.forwardRef<HTMLButtonElement, PlusActionButtonProps>(
+  ({ onClick, disabled, className, ...props }, ref) => {
+    return (
+      <Button
+        ref={ref}
+        type="button"
+        size="icon"
+        variant="ghost"
+        className={cn("h-7 w-7", className)}
+        onClick={onClick}
+        disabled={disabled}
+        {...props}
+      >
+        <Plus className="w-3 h-3" />
+      </Button>
+    );
+  },
+);
+
+PlusActionButton.displayName = "PlusActionButton";

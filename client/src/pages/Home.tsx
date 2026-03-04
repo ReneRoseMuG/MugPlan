@@ -56,6 +56,8 @@ type ReturnContext = {
   targetView: ViewType;
   projectId?: number | null;
   customerId?: number | null;
+  employeeId?: number | null;
+  tourId?: number | null;
 };
 
 type HomeProps = {
@@ -67,6 +69,8 @@ export default function Home({ onLogout }: HomeProps) {
   const [view, setView] = useState<ViewType>("week");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [selectedHelpTextId, setSelectedHelpTextId] = useState<number | null>(null);
   const [projectReturnView, setProjectReturnView] = useState<ViewType>("projectList");
   const [calendarContext, setCalendarContext] = useState<{
@@ -105,6 +109,8 @@ export default function Home({ onLogout }: HomeProps) {
     if (typeof context.customerId === "number") {
       setSelectedCustomerId(context.customerId);
     }
+    setSelectedEmployeeId(typeof context.employeeId === "number" ? context.employeeId : null);
+    setSelectedTourId(typeof context.tourId === "number" ? context.tourId : null);
 
     if (context.targetView !== "calendarContextual") {
       setCalendarContext(null);
@@ -154,6 +160,12 @@ export default function Home({ onLogout }: HomeProps) {
 
   const handleViewChange = (newView: ViewType) => {
     console.info("[navigation] view change", { from: view, to: newView });
+    if (newView !== "employees") {
+      setSelectedEmployeeId(null);
+    }
+    if (newView !== "tours") {
+      setSelectedTourId(null);
+    }
     if (newView !== "calendarContextual") {
       setCalendarContext(null);
     }
@@ -196,15 +208,32 @@ export default function Home({ onLogout }: HomeProps) {
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView("customer"); }}
             />
           ) : view === "tours" ? (
-            <TourManagement userRole={userRole} />
+            <TourManagement
+              userRole={userRole}
+              initialTourId={selectedTourId}
+              onOpenAppointment={(appointmentId, context) => {
+                setAppointmentContext({
+                  appointmentId,
+                  returnContext: {
+                    targetView: "tours",
+                    tourId: context.type === "tour" && typeof context.tourId === "number" ? context.tourId : null,
+                  },
+                });
+                setView("appointment");
+              }}
+            />
           ) : view === "teams" ? (
             <TeamManagement />
           ) : view === "employees" ? (
             <EmployeesPage
-              onOpenAppointment={(appointmentId) => {
+              initialEmployeeId={selectedEmployeeId}
+              onOpenAppointment={(appointmentId, context) => {
                 setAppointmentContext({
                   appointmentId,
-                  returnContext: { targetView: "employees" },
+                  returnContext: {
+                    targetView: "employees",
+                    employeeId: context.type === "employee" ? context.employeeId : selectedEmployeeId,
+                  },
                 });
                 setView("appointment");
               }}
