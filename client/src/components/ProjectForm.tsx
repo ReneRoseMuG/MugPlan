@@ -45,10 +45,17 @@ interface ProjectFormProps {
   onCancel?: () => void;
   onSaved?: () => void;
   onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
+  onOpenCalendarWorkspace?: (ctx: { projectId: number }) => void;
 }
 
 
-export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }: ProjectFormProps) {
+export function ProjectForm({
+  projectId,
+  onCancel,
+  onSaved,
+  onOpenAppointment,
+  onOpenCalendarWorkspace,
+}: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
   const invalidateAppointmentProjectionQueries = async () => {
@@ -891,6 +898,17 @@ export function ProjectForm({ projectId, onCancel, onSaved, onOpenAppointment }:
                 isEditing={isEditing}
                 onOpenAppointment={onOpenAppointment}
               />
+
+              {isEditing && projectId && onOpenCalendarWorkspace ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenCalendarWorkspace({ projectId })}
+                  data-testid="button-open-calendar-workspace"
+                >
+                  Kalender oeffnen
+                </Button>
+              ) : null}
 
               {/* Dokumente - nur bei Bearbeitung */}
               {isEditing && (
