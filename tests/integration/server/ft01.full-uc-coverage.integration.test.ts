@@ -96,6 +96,15 @@ describe("FT01 UC coverage integration", () => {
 
     const invalid = await agent.post("/api/appointments").send({ startDate: "2099-10-01", employeeIds: [] });
     expect([400, 422]).toContain(invalid.status);
+
+    const invalidProject = await agent.post("/api/appointments").send({
+      projectId: 9_999_999_999,
+      startDate: "2099-10-01",
+      employeeIds: [],
+    });
+    expect(invalidProject.status).toBe(422);
+    expect(invalidProject.body).toMatchObject({ code: "VALIDATION_ERROR" });
+
     const afterList = await agent.get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`).expect(200);
     expect((afterList.body as Array<unknown>).length).toBe(beforeCount + 1);
   });
