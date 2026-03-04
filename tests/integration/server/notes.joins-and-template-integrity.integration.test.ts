@@ -30,7 +30,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import { db } from "../../../server/db";
-import { customerNotes, noteTemplates, notes, projectNotes } from "@shared/schema";
+import { customerNotes, customers, noteTemplates, notes, projectNotes, projects } from "@shared/schema";
 
 let app: express.Express;
 let sequence = 1;
@@ -60,6 +60,14 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 async function createCustomer(agent: SuperAgentTest, marker: string): Promise<number> {
+  const created = await createCustomerEntity(agent, marker);
+  return created.id;
+}
+
+async function createCustomerEntity(
+  agent: SuperAgentTest,
+  marker: string,
+): Promise<{ id: number; version: number }> {
   const res = await agent
     .post("/api/customers")
     .send({
@@ -76,10 +84,19 @@ async function createCustomer(agent: SuperAgentTest, marker: string): Promise<nu
       version: 1,
     })
     .expect(201);
-  return Number(res.body.id);
+  return { id: Number(res.body.id), version: Number(res.body.version) };
 }
 
 async function createProject(agent: SuperAgentTest, customerId: number, marker: string): Promise<number> {
+  const created = await createProjectEntity(agent, customerId, marker);
+  return created.id;
+}
+
+async function createProjectEntity(
+  agent: SuperAgentTest,
+  customerId: number,
+  marker: string,
+): Promise<{ id: number; version: number }> {
   const res = await agent
     .post("/api/projects")
     .send({
@@ -90,7 +107,7 @@ async function createProject(agent: SuperAgentTest, customerId: number, marker: 
       version: 1,
     })
     .expect(201);
-  return Number(res.body.id);
+  return { id: Number(res.body.id), version: Number(res.body.version) };
 }
 
 async function createTemplate(agent: SuperAgentTest, input: { marker: string; isActive: boolean; color: string }) {
@@ -161,6 +178,80 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
     expect(projectJoin).toHaveLength(1);
     expect(customerJoin).toHaveLength(0);
+  });
+
+  it("updates note title/body and exposes the changed values via readback", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent, "UPDATE-READBACK");
+    const projectId = await createProject(agent, customerId, "UPDATE-READBACK");
+
+    const created = await agent
+      .post(`/api/projects/${projectId}/notes`)
+      .send({ title: "Vorher", body: "<p>Vorher</p>" })
+      .expect(201);
+
+    const noteId = Number(created.body.id);
+    const version = Number(created.body.version);
+
+    await agent
+      .put(`/api/notes/${noteId}`)
+      .send({ title: "Nachher", body: "<p>Nachher</p>", version })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.title).toBe("Nachher");
+        expect(res.body.body).toBe("<p>Nachher</p>");
+      });
+
+    const list = await agent.get(`/api/projects/${projectId}/notes`).expect(200);
+    const updated = (list.body as Array<{ id: number; title: string; body: string }>).find(
+      (entry) => Number(entry.id) === noteId,
+    );
+    expect(updated?.title).toBe("Nachher");
+    expect(updated?.body).toBe("<p>Nachher</p>");
+  });
+
+  it("returns VERSION_CONFLICT on stale note update", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent, "UPDATE-CONFLICT");
+    const projectId = await createProject(agent, customerId, "UPDATE-CONFLICT");
+
+    const created = await agent
+      .post(`/api/projects/${projectId}/notes`)
+      .send({ title: "Initial", body: "<p>Initial</p>" })
+      .expect(201);
+
+    const noteId = Number(created.body.id);
+    const staleVersion = Number(created.body.version);
+
+    await agent
+      .put(`/api/notes/${noteId}`)
+      .send({ title: "Erstes Update", body: "<p>Eins</p>", version: staleVersion })
+      .expect(200);
+
+    await agent
+      .put(`/api/notes/${noteId}`)
+      .send({ title: "Stale", body: "<p>Zwei</p>", version: staleVersion })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body).toEqual({ code: "VERSION_CONFLICT" });
+      });
+  });
+
+  it("rejects duplicate project_note relation for the same project and note", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent, "DUP-PROJECT-NOTE");
+    const projectId = await createProject(agent, customerId, "DUP-PROJECT-NOTE");
+
+    const created = await agent
+      .post(`/api/projects/${projectId}/notes`)
+      .send({ title: "Duplikat", body: "<p>Duplikat</p>" })
+      .expect(201);
+
+    const noteId = Number(created.body.id);
+
+    await expect(
+      db.insert(projectNotes).values({ projectId, noteId, version: 1 }),
+    ).rejects.toThrow();
   });
 
   it("isolates customer notes by parent customer", async () => {
@@ -278,29 +369,118 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
     expect(idsB).toContain(noteId);
   });
 
-  it("deletes note rows and both joins when note is actually deleted", async () => {
+  it("deletes note rows and both joins when note is actually deleted while parent entities remain", async () => {
     const agent = await loginAdminAgent();
-    const customerId = await createCustomer(agent, "DEL-JOIN");
+    const customer = await createCustomerEntity(agent, "DEL-JOIN");
+    const project = await createProjectEntity(agent, customer.id, "DEL-JOIN");
 
     const note = await agent
-      .post(`/api/customers/${customerId}/notes`)
+      .post(`/api/customers/${customer.id}/notes`)
       .send({ title: "delete-me", body: "delete-me" })
       .expect(201);
     const noteId = Number(note.body.id);
     const version = Number(note.body.version);
+    await db.insert(projectNotes).values({ projectId: project.id, noteId, version: 1 });
 
     await agent
-      .delete(`/api/customers/${customerId}/notes/${noteId}`)
+      .delete(`/api/customers/${customer.id}/notes/${noteId}`)
       .send({ version })
       .expect(204);
 
     const noteRow = await db.select().from(notes).where(eq(notes.id, noteId));
     const customerJoin = await db.select().from(customerNotes).where(eq(customerNotes.noteId, noteId));
     const projectJoin = await db.select().from(projectNotes).where(eq(projectNotes.noteId, noteId));
+    const customerRow = await db.select().from(customers).where(eq(customers.id, customer.id));
+    const projectRow = await db.select().from(projects).where(eq(projects.id, project.id));
 
     expect(noteRow).toHaveLength(0);
     expect(customerJoin).toHaveLength(0);
     expect(projectJoin).toHaveLength(0);
+    expect(customerRow).toHaveLength(1);
+    expect(projectRow).toHaveLength(1);
+  });
+
+  it("deletes orphan project notes when deleting a project", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent, "DEL-PROJECT-ORPHAN");
+    const project = await createProjectEntity(agent, customerId, "DEL-PROJECT-ORPHAN");
+
+    const note = await agent
+      .post(`/api/projects/${project.id}/notes`)
+      .send({ title: "orphan", body: "<p>orphan</p>" })
+      .expect(201);
+    const noteId = Number(note.body.id);
+
+    await agent
+      .delete(`/api/projects/${project.id}`)
+      .send({ version: project.version })
+      .expect(204);
+
+    const noteRow = await db.select().from(notes).where(eq(notes.id, noteId));
+    const projectJoin = await db.select().from(projectNotes).where(eq(projectNotes.noteId, noteId));
+    expect(projectJoin).toHaveLength(0);
+    expect(noteRow).toHaveLength(0);
+  });
+
+  it("keeps note when deleting project if note is still linked to customer", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent, "DEL-PROJECT-SHARED");
+    const project = await createProjectEntity(agent, customerId, "DEL-PROJECT-SHARED");
+
+    const note = await agent
+      .post(`/api/customers/${customerId}/notes`)
+      .send({ title: "shared", body: "<p>shared</p>" })
+      .expect(201);
+    const noteId = Number(note.body.id);
+
+    await db.insert(projectNotes).values({ projectId: project.id, noteId, version: 1 });
+
+    await agent
+      .delete(`/api/projects/${project.id}`)
+      .send({ version: project.version })
+      .expect(204);
+
+    const noteRow = await db.select().from(notes).where(eq(notes.id, noteId));
+    const projectJoin = await db
+      .select()
+      .from(projectNotes)
+      .where(and(eq(projectNotes.projectId, project.id), eq(projectNotes.noteId, noteId)));
+    const customerJoin = await db
+      .select()
+      .from(customerNotes)
+      .where(and(eq(customerNotes.customerId, customerId), eq(customerNotes.noteId, noteId)));
+
+    expect(projectJoin).toHaveLength(0);
+    expect(customerJoin).toHaveLength(1);
+    expect(noteRow).toHaveLength(1);
+  });
+
+  it("keeps customer_note relation when customer is archived", async () => {
+    const agent = await loginAdminAgent();
+    const customer = await createCustomerEntity(agent, "ARCHIVE-CUSTOMER");
+
+    const note = await agent
+      .post(`/api/customers/${customer.id}/notes`)
+      .send({ title: "archive", body: "<p>archive</p>" })
+      .expect(201);
+    const noteId = Number(note.body.id);
+
+    const archived = await agent
+      .patch(`/api/customers/${customer.id}`)
+      .send({ isActive: false, version: customer.version })
+      .expect(200);
+
+    expect(archived.body.isActive).toBe(false);
+
+    const relation = await db
+      .select()
+      .from(customerNotes)
+      .where(and(eq(customerNotes.customerId, customer.id), eq(customerNotes.noteId, noteId)));
+    expect(relation).toHaveLength(1);
+
+    const list = await agent.get(`/api/customers/${customer.id}/notes`).expect(200);
+    const ids = list.body.map((entry: { id: number }) => Number(entry.id));
+    expect(ids).toContain(noteId);
   });
 
   it("persists template creation in note_template table with versioning defaults", async () => {
