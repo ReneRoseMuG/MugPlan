@@ -1,22 +1,70 @@
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, FileText, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSetting } from "@/hooks/useSettings";
 import type { InfoBadgePreview } from "@/components/ui/info-badge";
+
+const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
+export type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
+
+type AttachmentPreviewDimensions = {
+  popoverMaxWidth: number;
+  popoverMaxHeight: number;
+  contentMaxHeight: number;
+  iframeHeight: number;
+};
 
 type AttachmentInfoBadgePreviewProps = {
   originalName: string;
   mimeType?: string | null;
   openUrl: string;
   downloadUrl: string;
+  previewSize?: AttachmentPreviewSize;
 };
 
-export const attachmentInfoBadgePreviewOptions = {
+const attachmentInfoBadgePreviewBaseOptions = {
   openDelayMs: 380,
   side: "right" as const,
   align: "start" as const,
-  maxWidth: 760,
-  maxHeight: 600,
 };
+
+const mediumAttachmentPreviewDimensions: AttachmentPreviewDimensions = {
+  popoverMaxWidth: 988,
+  popoverMaxHeight: 923,
+  contentMaxHeight: 708,
+  iframeHeight: 677,
+};
+
+const attachmentPreviewModeFactors: Record<AttachmentPreviewSize, number> = {
+  small: 0.85,
+  medium: 1,
+  large: 1.15,
+};
+
+function useOptionalAttachmentPreviewSizeSetting(): unknown {
+  try {
+    return useSetting("attachmentPreviewSize");
+  } catch {
+    return undefined;
+  }
+}
+
+export function parseAttachmentPreviewSize(value: unknown): AttachmentPreviewSize {
+  if (value === "small" || value === "medium" || value === "large") {
+    return value;
+  }
+  return "medium";
+}
+
+export function resolveAttachmentPreviewDimensions(size: AttachmentPreviewSize): AttachmentPreviewDimensions {
+  const factor = attachmentPreviewModeFactors[size];
+  return {
+    popoverMaxWidth: Math.round(mediumAttachmentPreviewDimensions.popoverMaxWidth * factor),
+    popoverMaxHeight: Math.round(mediumAttachmentPreviewDimensions.popoverMaxHeight * factor),
+    contentMaxHeight: Math.round(mediumAttachmentPreviewDimensions.contentMaxHeight * factor),
+    iframeHeight: Math.round(mediumAttachmentPreviewDimensions.iframeHeight * factor),
+  };
+}
 
 function resolveAbsoluteUrl(value: string): string {
   if (typeof window === "undefined") return value;
@@ -36,7 +84,11 @@ export function AttachmentInfoBadgePreview({
   mimeType,
   openUrl,
   downloadUrl,
+  previewSize,
 }: AttachmentInfoBadgePreviewProps) {
+  const attachmentPreviewSizeSetting = useOptionalAttachmentPreviewSizeSetting();
+  const effectivePreviewSize = parseAttachmentPreviewSize(previewSize ?? attachmentPreviewSizeSetting);
+  const dimensions = resolveAttachmentPreviewDimensions(effectivePreviewSize);
   const resolvedMimeType = mimeType ?? "";
   const lowerName = originalName.toLowerCase();
   const isPdf = resolvedMimeType === "application/pdf" || lowerName.endsWith(".pdf");
@@ -112,12 +164,16 @@ export function AttachmentInfoBadgePreview({
         </div>
       </div>
 
-      <div className="max-h-[460px] overflow-auto rounded-md border border-border bg-background p-2">
+      <div
+        className="overflow-auto rounded-md border border-border bg-background p-2"
+        style={{ maxHeight: dimensions.contentMaxHeight }}
+      >
         {isPdf ? (
           <iframe
             title={`Vorschau ${originalName}`}
             src={openUrl}
-            className="h-[440px] w-full border-0"
+            className="w-full border-0"
+            style={{ height: dimensions.iframeHeight }}
           />
         ) : isImage ? (
           <img
@@ -129,7 +185,8 @@ export function AttachmentInfoBadgePreview({
           <iframe
             title={`Word-Vorschau ${originalName}`}
             src={officeEmbedUrl}
-            className="h-[440px] w-full border-0"
+            className="w-full border-0"
+            style={{ height: dimensions.iframeHeight }}
           />
         ) : isTxt ? (
           <div className="text-sm text-muted-foreground">
@@ -154,8 +211,14 @@ export function AttachmentInfoBadgePreview({
 export function createAttachmentInfoBadgePreview(
   props: AttachmentInfoBadgePreviewProps,
 ): InfoBadgePreview {
+  const previewSize = parseAttachmentPreviewSize(props.previewSize);
+  const dimensions = resolveAttachmentPreviewDimensions(previewSize);
   return {
     content: <AttachmentInfoBadgePreview {...props} />,
-    options: attachmentInfoBadgePreviewOptions,
+    options: {
+      ...attachmentInfoBadgePreviewBaseOptions,
+      maxWidth: dimensions.popoverMaxWidth,
+      maxHeight: dimensions.popoverMaxHeight,
+    },
   };
 }
