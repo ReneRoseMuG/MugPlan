@@ -15,6 +15,7 @@ router.post(api.admin.projectBulkImportApplySpecialCase.path, adminBulkImportCon
 
 router.post(api.admin.saunaTourImportPreview.path, adminSaunaTourImportController.createSaunaTourPreview);
 router.post(api.admin.saunaTourImportPreviewWeekRows.path, adminSaunaTourImportController.getSaunaTourPreviewWeekRows);
+router.post(api.admin.saunaTourImportPreviewSheetRows.path, adminSaunaTourImportController.getSaunaTourPreviewSheetRows);
 router.post(api.admin.saunaTourImportPreviewCleanup.path, adminSaunaTourImportController.cleanupSaunaTourPreview);
 
 export default router;

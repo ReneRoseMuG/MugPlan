@@ -22,6 +22,7 @@ import {
   SaunaTourPreviewError,
   cleanupSaunaTourPreviewSession,
   createSaunaTourPreview,
+  getSaunaTourPreviewSheetRows,
   getSaunaTourPreviewWeekRows,
 } from "../../../server/services/saunaTourPreviewService";
 
@@ -72,8 +73,22 @@ describe("TBD unit: sauna tour preview service", () => {
     expect(year2025?.weeks[1].startColumn).toBe(10);
     expect(year2025?.weeks[1].endColumn).toBe(10);
 
+    expect(preview.initialSheetChunk.rows.length).toBeGreaterThan(0);
+    expect(preview.initialSheetChunk.columnCount).toBeGreaterThanOrEqual(10);
+
+    const sheetChunk = await getSaunaTourPreviewSheetRows({
+      previewSessionId: preview.previewSessionId,
+      year: "2025",
+      offset: 0,
+      limit: 2,
+    });
+
+    expect(sheetChunk.rows.length).toBe(2);
+    expect(sheetChunk.totalRows).toBeGreaterThanOrEqual(4);
+    expect(sheetChunk.hasMore).toBe(true);
+
     const firstWeekId = year2025!.weeks[0].weekId;
-    const firstChunk = await getSaunaTourPreviewWeekRows({
+    const firstWeekChunk = await getSaunaTourPreviewWeekRows({
       previewSessionId: preview.previewSessionId,
       year: "2025",
       weekId: firstWeekId,
@@ -81,9 +96,8 @@ describe("TBD unit: sauna tour preview service", () => {
       limit: 2,
     });
 
-    expect(firstChunk.rows.length).toBe(2);
-    expect(firstChunk.totalRows).toBeGreaterThanOrEqual(4);
-    expect(firstChunk.hasMore).toBe(true);
+    expect(firstWeekChunk.rows.length).toBe(2);
+    expect(firstWeekChunk.rows[0].cells.length).toBe(7);
   });
 
   it("rejects workbook without required 2025/2026 sheets", async () => {

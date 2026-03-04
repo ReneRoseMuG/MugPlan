@@ -54,6 +54,22 @@ export async function getSaunaTourPreviewWeekRows(req: Request, res: Response, n
   }
 }
 
+export async function getSaunaTourPreviewSheetRows(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!assertAdmin(req, res)) return;
+    const input = api.admin.saunaTourImportPreviewSheetRows.input.parse(req.body);
+    const result = await saunaTourPreviewService.getSaunaTourPreviewSheetRows(input);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof saunaTourPreviewService.SaunaTourPreviewError) {
+      res.status(error.status).json({ code: error.code, message: error.message });
+      return;
+    }
+    if (handleZodError(error, res)) return;
+    next(error);
+  }
+}
+
 export async function cleanupSaunaTourPreview(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!assertAdmin(req, res)) return;

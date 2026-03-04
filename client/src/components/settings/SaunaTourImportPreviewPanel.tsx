@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type SupportedYear = "2025" | "2026";
+type ViewMode = "full" | "week";
 
 type WeekMeta = {
   weekId: string;
@@ -17,45 +18,56 @@ type WeekMeta = {
 
 type YearData = {
   year: SupportedYear;
+  rowCount: number;
+  columnCount: number;
   weeks: WeekMeta[];
 };
 
-type WeekRow = {
+type SheetRow = {
   rowIndex: number;
   cells: string[];
 };
 
-type WeekChunk = {
+type SheetChunk = {
   year: SupportedYear;
-  weekId: string;
   offset: number;
   limit: number;
   totalRows: number;
   hasMore: boolean;
   nextOffset: number;
-  rows: WeekRow[];
+  columnCount: number;
+  rows: SheetRow[];
 };
 
 type UploadResponse = {
   previewSessionId: string;
   years: YearData[];
-  initialChunk: WeekChunk;
+  initialSheetChunk: SheetChunk;
 };
 
-type WeekState = {
-  rows: WeekRow[];
+type SheetState = {
+  rows: SheetRow[];
   totalRows: number;
   nextOffset: number;
   hasMore: boolean;
   loadingMore: boolean;
+  columnCount: number;
 };
 
-function getWeekKey(year: SupportedYear, weekId: string): string {
-  return `${year}:${weekId}`;
+function getColumnLabel(columnIndex: number): string {
+  let index = columnIndex + 1;
+  let label = "";
+  while (index > 0) {
+    const remainder = (index - 1) % 26;
+    label = String.fromCharCode(65 + remainder) + label;
+    index = Math.floor((index - 1) / 26);
+  }
+  return label;
 }
 
 export function SaunaTourImportPreviewPanel() {
   const [isWorking, setIsWorking] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("full");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,25 +75,25 @@ export function SaunaTourImportPreviewPanel() {
   const [years, setYears] = useState<YearData[]>([]);
   const [selectedYear, setSelectedYear] = useState<SupportedYear | null>(null);
   const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
-  const [weekStates, setWeekStates] = useState<Record<string, WeekState>>({});
-  const [isLoadingWeek, setIsLoadingWeek] = useState(false);
+  const [sheetStates, setSheetStates] = useState<Record<SupportedYear, SheetState | undefined>>({
+    "2025": undefined,
+    "2026": undefined,
+  });
 
-  const selectedWeeks = useMemo(
-    () => years.find((entry) => entry.year === selectedYear)?.weeks ?? [],
+  const selectedYearData = useMemo(
+    () => years.find((entry) => entry.year === selectedYear) ?? null,
     [years, selectedYear],
   );
 
   const selectedWeekMeta = useMemo(
-    () => selectedWeeks.find((week) => week.weekId === selectedWeekId) ?? null,
-    [selectedWeeks, selectedWeekId],
+    () => selectedYearData?.weeks.find((week) => week.weekId === selectedWeekId) ?? null,
+    [selectedWeekId, selectedYearData],
   );
 
-  const selectedWeekState = useMemo(() => {
-    if (!selectedYear || !selectedWeekId) return null;
-    return weekStates[getWeekKey(selectedYear, selectedWeekId)] ?? null;
-  }, [selectedWeekId, selectedYear, weekStates]);
+  const selectedSheetState = selectedYear ? sheetStates[selectedYear] ?? null : null;
 
   const resetWorkingState = () => {
+    setViewMode("full");
     setSelectedFile(null);
     setIsUploading(false);
     setError(null);
@@ -89,8 +101,10 @@ export function SaunaTourImportPreviewPanel() {
     setYears([]);
     setSelectedYear(null);
     setSelectedWeekId(null);
-    setWeekStates({});
-    setIsLoadingWeek(false);
+    setSheetStates({
+      "2025": undefined,
+      "2026": undefined,
+    });
   };
 
   const cleanupSession = async () => {
@@ -121,6 +135,29 @@ export function SaunaTourImportPreviewPanel() {
     return "Vorschau konnte nicht erstellt werden.";
   };
 
+  const fetchSheetChunk = async (year: SupportedYear, offset: number, limit: number): Promise<SheetChunk> => {
+    if (!previewSessionId) {
+      throw new Error("Preview-Session fehlt.");
+    }
+    const response = await fetch(api.admin.saunaTourImportPreviewSheetRows.path, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        previewSessionId,
+        year,
+        offset,
+        limit,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+    return await response.json() as SheetChunk;
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) return;
     setError(null);
@@ -141,16 +178,26 @@ export function SaunaTourImportPreviewPanel() {
       const payload = await response.json() as UploadResponse;
       setPreviewSessionId(payload.previewSessionId);
       setYears(payload.years);
-      setSelectedYear(payload.initialChunk.year);
-      setSelectedWeekId(payload.initialChunk.weekId);
-      setWeekStates({
-        [getWeekKey(payload.initialChunk.year, payload.initialChunk.weekId)]: {
-          rows: payload.initialChunk.rows,
-          totalRows: payload.initialChunk.totalRows,
-          nextOffset: payload.initialChunk.nextOffset,
-          hasMore: payload.initialChunk.hasMore,
+      setSelectedYear(payload.initialSheetChunk.year);
+      const firstWeek = payload.years.find((entry) => entry.year === payload.initialSheetChunk.year)?.weeks[0];
+      setSelectedWeekId(firstWeek?.weekId ?? null);
+      setSheetStates({
+        "2025": payload.initialSheetChunk.year === "2025" ? {
+          rows: payload.initialSheetChunk.rows,
+          totalRows: payload.initialSheetChunk.totalRows,
+          nextOffset: payload.initialSheetChunk.nextOffset,
+          hasMore: payload.initialSheetChunk.hasMore,
           loadingMore: false,
-        },
+          columnCount: payload.initialSheetChunk.columnCount,
+        } : undefined,
+        "2026": payload.initialSheetChunk.year === "2026" ? {
+          rows: payload.initialSheetChunk.rows,
+          totalRows: payload.initialSheetChunk.totalRows,
+          nextOffset: payload.initialSheetChunk.nextOffset,
+          hasMore: payload.initialSheetChunk.hasMore,
+          loadingMore: false,
+          columnCount: payload.initialSheetChunk.columnCount,
+        } : undefined,
       });
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Vorschau konnte nicht erstellt werden.");
@@ -159,108 +206,89 @@ export function SaunaTourImportPreviewPanel() {
     }
   };
 
-  const fetchWeekChunk = async (year: SupportedYear, weekId: string, offset: number, limit: number) => {
-    if (!previewSessionId) return;
-    const response = await fetch(api.admin.saunaTourImportPreviewWeekRows.path, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        previewSessionId,
-        year,
-        weekId,
-        offset,
-        limit,
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(await readErrorMessage(response));
-    }
-    return await response.json() as WeekChunk;
-  };
-
-  const ensureWeekLoaded = async (year: SupportedYear, weekId: string) => {
-    const key = getWeekKey(year, weekId);
-    if (weekStates[key]) return;
+  const ensureYearLoaded = async (year: SupportedYear) => {
+    if (sheetStates[year]) return;
     setError(null);
-    setIsLoadingWeek(true);
     try {
-      const chunk = await fetchWeekChunk(year, weekId, 0, 60);
-      if (!chunk) return;
-      setWeekStates((current) => ({
+      const chunk = await fetchSheetChunk(year, 0, 60);
+      setSheetStates((current) => ({
         ...current,
-        [key]: {
+        [year]: {
           rows: chunk.rows,
           totalRows: chunk.totalRows,
           nextOffset: chunk.nextOffset,
           hasMore: chunk.hasMore,
           loadingMore: false,
+          columnCount: chunk.columnCount,
         },
       }));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Woche konnte nicht geladen werden.");
-    } finally {
-      setIsLoadingWeek(false);
+      setError(loadError instanceof Error ? loadError.message : "Jahresblatt konnte nicht geladen werden.");
     }
   };
 
   const handleYearChange = async (year: SupportedYear) => {
     setSelectedYear(year);
     const firstWeek = years.find((entry) => entry.year === year)?.weeks[0];
-    if (!firstWeek) {
-      setSelectedWeekId(null);
-      return;
-    }
-    setSelectedWeekId(firstWeek.weekId);
-    await ensureWeekLoaded(year, firstWeek.weekId);
+    setSelectedWeekId(firstWeek?.weekId ?? null);
+    await ensureYearLoaded(year);
   };
 
-  const handleWeekChange = async (weekId: string) => {
-    if (!selectedYear) return;
+  const handleWeekChange = (weekId: string) => {
     setSelectedWeekId(weekId);
-    await ensureWeekLoaded(selectedYear, weekId);
   };
 
   const handleLoadMore = async () => {
-    if (!selectedYear || !selectedWeekId || !selectedWeekState || !selectedWeekState.hasMore) return;
-    const key = getWeekKey(selectedYear, selectedWeekId);
-    setWeekStates((current) => ({
+    if (!selectedYear || !selectedSheetState || !selectedSheetState.hasMore) return;
+    setSheetStates((current) => ({
       ...current,
-      [key]: {
-        ...current[key],
+      [selectedYear]: {
+        ...selectedSheetState,
         loadingMore: true,
       },
     }));
     setError(null);
     try {
-      const chunk = await fetchWeekChunk(selectedYear, selectedWeekId, selectedWeekState.nextOffset, 60);
-      if (!chunk) return;
-      setWeekStates((current) => {
-        const existing = current[key];
+      const chunk = await fetchSheetChunk(selectedYear, selectedSheetState.nextOffset, 60);
+      setSheetStates((current) => {
+        const existing = current[selectedYear];
+        if (!existing) return current;
         return {
           ...current,
-          [key]: {
+          [selectedYear]: {
             rows: [...existing.rows, ...chunk.rows],
             totalRows: chunk.totalRows,
             nextOffset: chunk.nextOffset,
             hasMore: chunk.hasMore,
             loadingMore: false,
+            columnCount: chunk.columnCount,
           },
         };
       });
     } catch (loadError) {
-      setWeekStates((current) => ({
+      setSheetStates((current) => ({
         ...current,
-        [key]: {
-          ...current[key],
-          loadingMore: false,
-        },
+        [selectedYear]: current[selectedYear]
+          ? { ...current[selectedYear], loadingMore: false }
+          : current[selectedYear],
       }));
       setError(loadError instanceof Error ? loadError.message : "Weitere Zeilen konnten nicht geladen werden.");
     }
   };
+
+  const visibleColumnRange = useMemo(() => {
+    if (!selectedSheetState) return { start: 0, end: 0, count: 0 };
+    if (viewMode === "week" && selectedWeekMeta) {
+      const start = selectedWeekMeta.startColumn - 1;
+      const end = selectedWeekMeta.endColumn - 1;
+      return { start, end, count: end - start + 1 };
+    }
+    return {
+      start: 0,
+      end: Math.max(0, selectedSheetState.columnCount - 1),
+      count: selectedSheetState.columnCount,
+    };
+  }, [selectedSheetState, selectedWeekMeta, viewMode]);
 
   return (
     <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-sauna-tour-import">
@@ -318,7 +346,7 @@ export function SaunaTourImportPreviewPanel() {
                           type="button"
                           size="sm"
                           variant={selectedWeekId === week.weekId ? "default" : "outline"}
-                          onClick={() => void handleWeekChange(week.weekId)}
+                          onClick={() => handleWeekChange(week.weekId)}
                           data-testid={`sauna-tour-week-${yearData.year}-${week.weekId}`}
                         >
                           {week.startDate} - {week.endDate}
@@ -329,31 +357,81 @@ export function SaunaTourImportPreviewPanel() {
                 ))}
               </Tabs>
 
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={viewMode === "full" ? "default" : "outline"}
+                  onClick={() => setViewMode("full")}
+                  data-testid="button-sauna-tour-view-fullsheet"
+                >
+                  Vollblatt
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === "week" ? "default" : "outline"}
+                  onClick={() => setViewMode("week")}
+                  data-testid="button-sauna-tour-view-weekwindow"
+                  disabled={!selectedWeekMeta}
+                >
+                  Wochenfenster
+                </Button>
+              </div>
+
               {selectedWeekMeta ? (
                 <div className="rounded-md border border-slate-200 bg-white p-3">
                   <p className="text-sm font-semibold text-slate-900">
                     Woche: {selectedWeekMeta.startDate} bis {selectedWeekMeta.endDate}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    Startspalte: {selectedWeekMeta.startColumn}, Endspalte: {selectedWeekMeta.endColumn}
+                    Markierter Bereich: Spalte {selectedWeekMeta.startColumn} bis {selectedWeekMeta.endColumn}
                   </p>
                 </div>
               ) : null}
 
-              {isLoadingWeek ? (
-                <p className="text-sm text-slate-500">Woche wird geladen...</p>
-              ) : selectedWeekState ? (
+              {selectedSheetState ? (
                 <div className="space-y-3">
                   <div className="overflow-auto rounded-md border border-slate-200 bg-white">
-                    <table className="min-w-full text-xs" data-testid="table-sauna-tour-week-preview">
+                    <table className="min-w-full text-xs" data-testid="table-sauna-tour-sheet-preview">
+                      <thead className="sticky top-0 z-10 bg-slate-100">
+                        <tr>
+                          <th className="sticky left-0 z-20 border-b border-r border-slate-200 bg-slate-100 px-2 py-1 text-left">#</th>
+                          {Array.from({ length: visibleColumnRange.count }, (_, index) => {
+                            const absoluteIndex = visibleColumnRange.start + index;
+                            const isHighlighted = selectedWeekMeta
+                              && absoluteIndex >= selectedWeekMeta.startColumn - 1
+                              && absoluteIndex <= selectedWeekMeta.endColumn - 1;
+                            return (
+                              <th
+                                key={absoluteIndex}
+                                className={`border-b border-slate-200 px-2 py-1 text-left ${isHighlighted ? "bg-amber-100" : ""}`}
+                              >
+                                {getColumnLabel(absoluteIndex)}
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
                       <tbody>
-                        {selectedWeekState.rows.map((row) => (
+                        {selectedSheetState.rows.map((row) => (
                           <tr key={`${row.rowIndex}-${row.cells.length}`} className="border-b border-slate-100">
-                            {row.cells.map((cell, index) => (
-                              <td key={`${row.rowIndex}-${index}`} className="px-2 py-1 whitespace-pre-wrap align-top">
-                                {cell || "\u00A0"}
-                              </td>
-                            ))}
+                            <td className="sticky left-0 z-10 border-r border-slate-100 bg-white px-2 py-1 font-medium text-slate-600">
+                              {row.rowIndex + 1}
+                            </td>
+                            {Array.from({ length: visibleColumnRange.count }, (_, index) => {
+                              const absoluteIndex = visibleColumnRange.start + index;
+                              const cell = row.cells[absoluteIndex] ?? "";
+                              const isHighlighted = selectedWeekMeta
+                                && absoluteIndex >= selectedWeekMeta.startColumn - 1
+                                && absoluteIndex <= selectedWeekMeta.endColumn - 1;
+                              return (
+                                <td
+                                  key={`${row.rowIndex}-${absoluteIndex}`}
+                                  className={`px-2 py-1 whitespace-pre-wrap align-top ${isHighlighted ? "bg-amber-50" : ""}`}
+                                >
+                                  {cell || "\u00A0"}
+                                </td>
+                              );
+                            })}
                           </tr>
                         ))}
                       </tbody>
@@ -362,22 +440,24 @@ export function SaunaTourImportPreviewPanel() {
 
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-slate-500">
-                      Angezeigt: {selectedWeekState.rows.length} / {selectedWeekState.totalRows} Zeilen
+                      Zeilen: {selectedSheetState.rows.length} / {selectedSheetState.totalRows} | Spalten: {selectedSheetState.columnCount}
                     </p>
-                    {selectedWeekState.hasMore ? (
+                    {selectedSheetState.hasMore ? (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => void handleLoadMore()}
-                        disabled={selectedWeekState.loadingMore}
+                        disabled={selectedSheetState.loadingMore}
                         data-testid="button-sauna-tour-load-more-rows"
                       >
-                        {selectedWeekState.loadingMore ? "Lade..." : "Mehr Zeilen laden"}
+                        {selectedSheetState.loadingMore ? "Lade..." : "Mehr Zeilen laden"}
                       </Button>
                     ) : null}
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <p className="text-sm text-slate-500">Jahresblatt wird geladen...</p>
+              )}
             </div>
           ) : null}
         </div>

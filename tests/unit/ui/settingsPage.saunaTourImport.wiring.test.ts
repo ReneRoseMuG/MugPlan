@@ -6,8 +6,8 @@
  *
  * Abgedeckte Regeln:
  * - SettingsPage bindet die neue Admin-Gruppe fuer den Saunatouren-Import ein.
- * - Das Arbeitsformular bietet Start, Upload, Wochenpreview und Abbrechen.
- * - API-Verdrahtung umfasst Preview, Week-Chunk und Cleanup.
+ * - Das Arbeitsformular bietet Start, Upload, Vollblatt-/Wochenfenster und Abbrechen.
+ * - API-Verdrahtung umfasst Preview, Sheet-Chunk und Cleanup.
  *
  * Fehlerfaelle:
  * - Fehlende Einbindung der Gruppe in der SettingsPage.
@@ -37,9 +37,11 @@ describe("TBD UI: settings sauna tour import wiring", () => {
     expect(panelSource).toContain("button-open-sauna-tour-import-workmode");
     expect(panelSource).toContain("button-cancel-sauna-tour-workmode");
     expect(panelSource).toContain("button-run-sauna-tour-preview");
+    expect(panelSource).toContain("button-sauna-tour-view-fullsheet");
+    expect(panelSource).toContain("button-sauna-tour-view-weekwindow");
     expect(panelSource).toContain("button-sauna-tour-load-more-rows");
+    expect(panelSource).toContain("api.admin.saunaTourImportPreviewSheetRows.path");
     expect(panelSource).toContain("api.admin.saunaTourImportPreview.path");
-    expect(panelSource).toContain("api.admin.saunaTourImportPreviewWeekRows.path");
     expect(panelSource).toContain("api.admin.saunaTourImportPreviewCleanup.path");
   });
 });

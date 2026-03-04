@@ -2,10 +2,26 @@ import fs from "fs";
 import path from "path";
 import type { ModelOvenMappingRow, OvenRow, SaunaModelRow } from "./types";
 
+const ATTACHMENT_STORAGE_PATH_KEY = "ATTACHMENT_STORAGE_PATH";
+
+function resolveAttachmentStoragePathFromEnv() {
+  const raw = process.env[ATTACHMENT_STORAGE_PATH_KEY];
+  if (typeof raw !== "string") {
+    throw new Error(`Fehlende Env-Variable: ${ATTACHMENT_STORAGE_PATH_KEY}`);
+  }
+  const value = raw.trim();
+  if (value.length === 0) {
+    throw new Error(`Leere Env-Variable: ${ATTACHMENT_STORAGE_PATH_KEY}`);
+  }
+  if (path.isAbsolute(value)) return value;
+  return path.resolve(process.cwd(), value);
+}
+
 function resolveDemoDataDir() {
+  const attachmentStoragePath = resolveAttachmentStoragePathFromEnv();
   const candidates = [
-    path.resolve(process.cwd(), ".ai", "Demodaten"),
-    path.resolve(process.cwd(), ".ai", "demodata"),
+    path.resolve(attachmentStoragePath, "demodata"),
+    path.resolve(attachmentStoragePath, "Demodaten"),
   ];
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) return candidate;

@@ -10,7 +10,7 @@ export const SAUNA_TOUR_PREVIEW_LIMITS = {
 
 type SupportedYear = "2025" | "2026";
 
-type WeekRow = {
+type SheetRow = {
   rowIndex: number;
   cells: string[];
 };
@@ -21,11 +21,13 @@ type WeekPreview = {
   endDate: string;
   startColumn: number;
   endColumn: number;
-  rows: WeekRow[];
 };
 
 type YearPreview = {
   year: SupportedYear;
+  rowCount: number;
+  columnCount: number;
+  rows: SheetRow[];
   weeks: WeekPreview[];
 };
 
@@ -34,7 +36,7 @@ type PreviewSession = {
   years: Record<SupportedYear, YearPreview>;
 };
 
-type ChunkResult = {
+type WeekChunkResult = {
   year: SupportedYear;
   weekId: string;
   offset: number;
@@ -42,7 +44,18 @@ type ChunkResult = {
   totalRows: number;
   hasMore: boolean;
   nextOffset: number;
-  rows: WeekRow[];
+  rows: SheetRow[];
+};
+
+type SheetChunkResult = {
+  year: SupportedYear;
+  offset: number;
+  limit: number;
+  totalRows: number;
+  hasMore: boolean;
+  nextOffset: number;
+  columnCount: number;
+  rows: SheetRow[];
 };
 
 const REQUIRED_YEARS: SupportedYear[] = ["2025", "2026"];
@@ -81,9 +94,16 @@ function parseDateValue(value: unknown): Date | null {
   }
 
   if (typeof value === "number" && Number.isFinite(value) && value >= 20000 && value <= 90000) {
-    const date = XLSX.SSF.parse_date_code(value);
-    if (!date) return null;
-    return new Date(date.y, date.m - 1, date.d);
+    const ssfDate = XLSX.SSF?.parse_date_code?.(value);
+    if (ssfDate) {
+      return new Date(ssfDate.y, ssfDate.m - 1, ssfDate.d);
+    }
+
+    const excelEpochUtcMs = Date.UTC(1899, 11, 30);
+    const utcMs = excelEpochUtcMs + Math.round(value * 86400000);
+    const parsed = new Date(utcMs);
+    if (!Number.isFinite(parsed.getTime())) return null;
+    return new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
   }
 
   if (typeof value !== "string") return null;
@@ -127,7 +147,7 @@ function toSheetRows(sheet: XLSX.WorkSheet): unknown[][] {
     header: 1,
     raw: true,
     defval: null,
-    blankrows: false,
+    blankrows: true,
   }) as unknown[][];
 }
 
@@ -159,33 +179,43 @@ function detectDateRowIndex(rows: unknown[][]): number {
   return bestIndex;
 }
 
-function findLastUsedRow(rows: unknown[][], startColumn: number, endColumn: number): number {
-  for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
+function findUsedRange(rows: unknown[][]): { lastUsedRow: number; lastUsedColumn: number } {
+  let lastUsedRow = 0;
+  let lastUsedColumn = 0;
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
     const row = rows[rowIndex] ?? [];
-    for (let col = startColumn; col <= endColumn; col += 1) {
+    for (let col = 0; col < row.length; col += 1) {
       const value = row[col];
       if (value != null && String(value).trim().length > 0) {
-        return rowIndex;
+        if (rowIndex > lastUsedRow) lastUsedRow = rowIndex;
+        if (col > lastUsedColumn) lastUsedColumn = col;
       }
     }
   }
-  return 0;
+
+  return { lastUsedRow, lastUsedColumn };
 }
 
-function buildWeekRows(rows: unknown[][], startColumn: number, endColumn: number): WeekRow[] {
-  const lastUsedRow = findLastUsedRow(rows, startColumn, endColumn);
-  const result: WeekRow[] = [];
+function normalizeSheetRows(rows: unknown[][]): { rows: SheetRow[]; rowCount: number; columnCount: number } {
+  const { lastUsedRow, lastUsedColumn } = findUsedRange(rows);
+  const normalizedRows: SheetRow[] = [];
+  const columnCount = lastUsedColumn + 1;
 
   for (let rowIndex = 0; rowIndex <= lastUsedRow; rowIndex += 1) {
     const row = rows[rowIndex] ?? [];
     const cells: string[] = [];
-    for (let col = startColumn; col <= endColumn; col += 1) {
+    for (let col = 0; col < columnCount; col += 1) {
       cells.push(toCellDisplay(row[col]));
     }
-    result.push({ rowIndex, cells });
+    normalizedRows.push({ rowIndex, cells });
   }
 
-  return result;
+  return {
+    rows: normalizedRows,
+    rowCount: normalizedRows.length,
+    columnCount,
+  };
 }
 
 function detectWeeksForYear(year: SupportedYear, rows: unknown[][]): WeekPreview[] {
@@ -230,14 +260,12 @@ function detectWeeksForYear(year: SupportedYear, rows: unknown[][]): WeekPreview
     }
 
     const endColumn = lastDateColumn;
-    const rowsForWeek = buildWeekRows(rows, currentColumn, endColumn);
     weeks.push({
       weekId: `${year}-w${weekCounter}`,
       startDate: normalizeToIsoDate(startDate),
       endDate: normalizeToIsoDate(endDate),
       startColumn: currentColumn + 1,
       endColumn: endColumn + 1,
-      rows: rowsForWeek,
     });
     weekCounter += 1;
 
@@ -252,21 +280,21 @@ function detectWeeksForYear(year: SupportedYear, rows: unknown[][]): WeekPreview
   return weeks;
 }
 
-function buildChunk(week: WeekPreview, year: SupportedYear, offset: number, limit: number): ChunkResult {
+function buildSheetChunk(yearData: YearPreview, offset: number, limit: number): SheetChunkResult {
   const normalizedOffset = Math.max(0, offset);
   const normalizedLimit = Math.max(1, Math.min(limit, SAUNA_TOUR_PREVIEW_LIMITS.maxChunkLimit));
-  const totalRows = week.rows.length;
-  const rows = week.rows.slice(normalizedOffset, normalizedOffset + normalizedLimit);
+  const totalRows = yearData.rows.length;
+  const rows = yearData.rows.slice(normalizedOffset, normalizedOffset + normalizedLimit);
   const nextOffset = normalizedOffset + rows.length;
 
   return {
-    year,
-    weekId: week.weekId,
+    year: yearData.year,
     offset: normalizedOffset,
     limit: normalizedLimit,
     totalRows,
     hasMore: nextOffset < totalRows,
     nextOffset,
+    columnCount: yearData.columnCount,
     rows,
   };
 }
@@ -280,9 +308,12 @@ function getSession(sessionId: string): PreviewSession {
   return session;
 }
 
-function resolveWeek(session: PreviewSession, year: SupportedYear, weekId: string): WeekPreview {
-  const yearEntry = session.years[year];
-  const week = yearEntry.weeks.find((entry) => entry.weekId === weekId);
+function resolveYear(session: PreviewSession, year: SupportedYear): YearPreview {
+  return session.years[year];
+}
+
+function resolveWeek(yearData: YearPreview, weekId: string): WeekPreview {
+  const week = yearData.weeks.find((entry) => entry.weekId === weekId);
   if (!week) {
     throw new SaunaTourPreviewError(422, "VALIDATION_ERROR", "Angeforderte Woche wurde nicht gefunden.");
   }
@@ -303,6 +334,8 @@ export async function createSaunaTourPreview(input: {
   previewSessionId: string;
   years: Array<{
     year: SupportedYear;
+    rowCount: number;
+    columnCount: number;
     weeks: Array<{
       weekId: string;
       startDate: string;
@@ -312,7 +345,7 @@ export async function createSaunaTourPreview(input: {
       totalRows: number;
     }>;
   }>;
-  initialChunk: ChunkResult;
+  initialSheetChunk: SheetChunkResult;
 }> {
   cleanupExpiredSessions();
   assertSupportedFile(input.filename);
@@ -341,15 +374,19 @@ export async function createSaunaTourPreview(input: {
 
   for (const year of REQUIRED_YEARS) {
     const sheet = workbook.Sheets[year];
-    const rows = toSheetRows(sheet);
+    const rawRows = toSheetRows(sheet);
+    const normalized = normalizeSheetRows(rawRows);
+    const weeks = detectWeeksForYear(year, rawRows);
     yearsRecord[year] = {
       year,
-      weeks: detectWeeksForYear(year, rows),
+      rowCount: normalized.rowCount,
+      columnCount: normalized.columnCount,
+      rows: normalized.rows,
+      weeks,
     };
   }
 
   const firstYear = REQUIRED_YEARS[0];
-  const firstWeek = yearsRecord[firstYear].weeks[0];
   const previewSessionId = randomUUID();
 
   sessionStore.set(previewSessionId, {
@@ -361,17 +398,30 @@ export async function createSaunaTourPreview(input: {
     previewSessionId,
     years: REQUIRED_YEARS.map((year) => ({
       year,
+      rowCount: yearsRecord[year].rowCount,
+      columnCount: yearsRecord[year].columnCount,
       weeks: yearsRecord[year].weeks.map((week) => ({
         weekId: week.weekId,
         startDate: week.startDate,
         endDate: week.endDate,
         startColumn: week.startColumn,
         endColumn: week.endColumn,
-        totalRows: week.rows.length,
+        totalRows: yearsRecord[year].rowCount,
       })),
     })),
-    initialChunk: buildChunk(firstWeek, firstYear, 0, SAUNA_TOUR_PREVIEW_LIMITS.initialLimit),
+    initialSheetChunk: buildSheetChunk(yearsRecord[firstYear], 0, SAUNA_TOUR_PREVIEW_LIMITS.initialLimit),
   };
+}
+
+export async function getSaunaTourPreviewSheetRows(input: {
+  previewSessionId: string;
+  year: SupportedYear;
+  offset: number;
+  limit: number;
+}): Promise<SheetChunkResult> {
+  const session = getSession(input.previewSessionId);
+  const yearData = resolveYear(session, input.year);
+  return buildSheetChunk(yearData, input.offset, input.limit);
 }
 
 export async function getSaunaTourPreviewWeekRows(input: {
@@ -380,10 +430,26 @@ export async function getSaunaTourPreviewWeekRows(input: {
   weekId: string;
   offset: number;
   limit: number;
-}): Promise<ChunkResult> {
+}): Promise<WeekChunkResult> {
   const session = getSession(input.previewSessionId);
-  const week = resolveWeek(session, input.year, input.weekId);
-  return buildChunk(week, input.year, input.offset, input.limit);
+  const yearData = resolveYear(session, input.year);
+  const week = resolveWeek(yearData, input.weekId);
+  const sheetChunk = buildSheetChunk(yearData, input.offset, input.limit);
+  const startIndex = week.startColumn - 1;
+  const endIndex = week.endColumn - 1;
+  return {
+    year: input.year,
+    weekId: input.weekId,
+    offset: sheetChunk.offset,
+    limit: sheetChunk.limit,
+    totalRows: sheetChunk.totalRows,
+    hasMore: sheetChunk.hasMore,
+    nextOffset: sheetChunk.nextOffset,
+    rows: sheetChunk.rows.map((row) => ({
+      rowIndex: row.rowIndex,
+      cells: row.cells.slice(startIndex, endIndex + 1),
+    })),
+  };
 }
 
 export async function cleanupSaunaTourPreviewSession(previewSessionId: string): Promise<void> {

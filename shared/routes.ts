@@ -172,6 +172,17 @@ const saunaTourPreviewWeekRowSchema = z.object({
   cells: z.array(z.string()),
 });
 
+const saunaTourPreviewSheetChunkSchema = z.object({
+  year: saunaTourPreviewYearSchema,
+  offset: z.number().int().min(0),
+  limit: z.number().int().min(1),
+  totalRows: z.number().int().min(0),
+  hasMore: z.boolean(),
+  nextOffset: z.number().int().min(0),
+  columnCount: z.number().int().min(0),
+  rows: z.array(saunaTourPreviewWeekRowSchema),
+});
+
 const saunaTourPreviewWeekSchema = z.object({
   weekId: z.string().min(1),
   startDate: z.string(),
@@ -183,6 +194,8 @@ const saunaTourPreviewWeekSchema = z.object({
 
 const saunaTourPreviewYearDataSchema = z.object({
   year: saunaTourPreviewYearSchema,
+  rowCount: z.number().int().min(0),
+  columnCount: z.number().int().min(0),
   weeks: z.array(saunaTourPreviewWeekSchema),
 });
 
@@ -2129,7 +2142,7 @@ export const api = {
         200: z.object({
           previewSessionId: z.string().min(1),
           years: z.array(saunaTourPreviewYearDataSchema),
-          initialChunk: saunaTourPreviewChunkSchema,
+          initialSheetChunk: saunaTourPreviewSheetChunkSchema,
         }),
         400: errorSchemas.validation,
         403: z.object({ code: z.literal("FORBIDDEN") }),
@@ -2156,6 +2169,23 @@ export const api = {
       }).strict(),
       responses: {
         200: saunaTourPreviewChunkSchema,
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: z.object({ code: z.literal("PREVIEW_SESSION_NOT_FOUND"), message: z.string() }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR"), message: z.string() }),
+      },
+    },
+    saunaTourImportPreviewSheetRows: {
+      method: "POST" as const,
+      path: "/api/admin/sauna-tour-import/preview/sheet-rows",
+      input: z.object({
+        previewSessionId: z.string().min(1),
+        year: saunaTourPreviewYearSchema,
+        offset: z.number().int().min(0),
+        limit: z.number().int().min(1).max(500),
+      }).strict(),
+      responses: {
+        200: saunaTourPreviewSheetChunkSchema,
         400: errorSchemas.validation,
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: z.object({ code: z.literal("PREVIEW_SESSION_NOT_FOUND"), message: z.string() }),
