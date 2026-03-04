@@ -103,6 +103,24 @@ describe("FT02 integration: full uc coverage", () => {
       .expect(422);
   });
 
+  it("UC 02/03: create project rejects inactive customer assignment", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0203");
+
+    await admin
+      .patch(`/api/customers/${customer.id}`)
+      .send({ isActive: false, version: customer.version })
+      .expect(200);
+
+    await admin
+      .post("/api/projects")
+      .send({ customerId: customer.id, name: "UC02-03 Inactive Customer", descriptionMd: null })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("INACTIVE_ENTITY_ASSIGNMENT");
+      });
+  });
+
   it("UC 02/02 project update with optimistic lock conflict", async () => {
     const admin = await loginAdminAgent();
     const customer = await createCustomer("UC0202");
@@ -122,6 +140,43 @@ describe("FT02 integration: full uc coverage", () => {
       });
 
     expect(updated.body.version).toBeGreaterThan(project.version);
+  });
+
+  it("UC 02/04b: project customer reassignment to active customer succeeds", async () => {
+    const admin = await loginAdminAgent();
+    const sourceCustomer = await createCustomer("UC0204B-A");
+    const targetCustomer = await createCustomer("UC0204B-B");
+    const project = await createProject(sourceCustomer.id, "UC02-04b Base");
+
+    const updated = await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, customerId: targetCustomer.id })
+      .expect(200);
+
+    expect(updated.body.customerId).toBe(targetCustomer.id);
+
+    const detail = await admin.get(`/api/projects/${project.id}`).expect(200);
+    expect(detail.body.project.customerId).toBe(targetCustomer.id);
+  });
+
+  it("UC 02/04c: project customer reassignment to inactive customer is blocked", async () => {
+    const admin = await loginAdminAgent();
+    const sourceCustomer = await createCustomer("UC0204C-A");
+    const inactiveTargetCustomer = await createCustomer("UC0204C-B");
+    const project = await createProject(sourceCustomer.id, "UC02-04c Base");
+
+    await admin
+      .patch(`/api/customers/${inactiveTargetCustomer.id}`)
+      .send({ isActive: false, version: inactiveTargetCustomer.version })
+      .expect(200);
+
+    await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, customerId: inactiveTargetCustomer.id })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("INACTIVE_ENTITY_ASSIGNMENT");
+      });
   });
 
   it("UC 02/04 status relation add/remove with inactive block", async () => {

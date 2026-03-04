@@ -1358,7 +1358,7 @@ export const api = {
       input: insertProjectSchema,
       responses: {
         201: z.custom<typeof projects.$inferSelect>(),
-        400: errorSchemas.validation,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         409: z.object({ code: z.literal("INACTIVE_ENTITY_ASSIGNMENT") }),
       },
     },
