@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -177,6 +177,16 @@ export function DemoDataPage() {
     () => runs.filter((run) => (run.runType ?? run.summary.runType) === "base"),
     [runs],
   );
+  const latestBaseRunId = useMemo(() => {
+    if (baseRuns.length === 0) return "";
+    return baseRuns[baseRuns.length - 1]?.seedRunId ?? "";
+  }, [baseRuns]);
+
+  useEffect(() => {
+    if (appointmentBaseSeedRunId.trim().length > 0) return;
+    if (!latestBaseRunId) return;
+    setAppointmentBaseSeedRunId(latestBaseRunId);
+  }, [appointmentBaseSeedRunId, latestBaseRunId]);
 
   const createMutation = useMutation({
     mutationFn: async (config: SeedConfig) => {
@@ -281,7 +291,8 @@ export function DemoDataPage() {
   };
 
   const submitAppointmentsConfig = () => {
-    if (!appointmentBaseSeedRunId) {
+    const baseSeedRunId = appointmentBaseSeedRunId.trim() || latestBaseRunId;
+    if (!baseSeedRunId) {
       toast({
         title: "Basis-Run fehlt",
         description: "Bitte zuerst einen Basisdaten-Run auswaehlen.",
@@ -292,7 +303,7 @@ export function DemoDataPage() {
     const numericSeed = appointmentsRandomSeed.trim() === "" ? undefined : Number(appointmentsRandomSeed);
     createMutation.mutate({
       runType: "appointments",
-      baseSeedRunId: appointmentBaseSeedRunId,
+      baseSeedRunId,
       appointmentsPerProject,
       randomSeed: Number.isFinite(numericSeed) ? numericSeed : undefined,
       seedWindowDaysMin,

@@ -183,6 +183,12 @@ type MaterializedAppointment = {
 
 type InternalSeedConfig = ReturnType<typeof defaults>;
 
+type TourDaySlotState = {
+  totalCount: number;
+  hasAllDay: boolean;
+  intradayStartTimes: Set<string>;
+};
+
 type SeedRunLike = {
   id: string;
   createdAt: Date;
@@ -818,11 +824,118 @@ function buildCandidateDatesForIntent(params: {
   return candidates;
 }
 
+function resolveCandidateWindowEndDate(params: {
+  intent: AppointmentIntent;
+  config: InternalSeedConfig;
+  anchorDate: Date;
+}) {
+  const { intent, config, anchorDate } = params;
+  if (intent.kind === "rekl") {
+    return addDays(
+      anchorDate,
+      config.seedWindowDaysMax + Math.max(0, config.reklDelayDaysMax) + 7,
+    );
+  }
+  return addDays(anchorDate, config.seedWindowDaysMax);
+}
+
+function resolveExtensionStartDate(params: {
+  baseCandidates: Date[];
+  intent: AppointmentIntent;
+  config: InternalSeedConfig;
+  anchorDate: Date;
+}) {
+  const { baseCandidates, intent, config, anchorDate } = params;
+  const windowEnd = resolveCandidateWindowEndDate({ intent, config, anchorDate });
+  if (baseCandidates.length === 0) {
+    return addDays(windowEnd, 1);
+  }
+  const maxCandidateTime = baseCandidates.reduce((max, date) => Math.max(max, date.getTime()), Number.NEGATIVE_INFINITY);
+  const maxCandidateDate = new Date(maxCandidateTime);
+  const later = maxCandidateDate > windowEnd ? maxCandidateDate : windowEnd;
+  return addDays(later, 1);
+}
+
+function getReklStartTimeForAttempt(attempt: number) {
+  const options = ["10:00:00", "11:00:00", "13:00:00", "15:00:00"] as const;
+  return options[attempt % options.length] ?? "11:00:00";
+}
+
+function getOrCreateTourDaySlotState(
+  tourDaySlots: Map<string, TourDaySlotState>,
+  key: string,
+) {
+  const existing = tourDaySlots.get(key);
+  if (existing) return existing;
+  const created: TourDaySlotState = {
+    totalCount: 0,
+    hasAllDay: false,
+    intradayStartTimes: new Set<string>(),
+  };
+  tourDaySlots.set(key, created);
+  return created;
+}
+
+function canPlaceOnTourDay(
+  state: TourDaySlotState,
+  startTime: string | null,
+) {
+  if (state.totalCount >= 2) return false;
+  if (startTime == null) {
+    return !state.hasAllDay;
+  }
+  if (state.intradayStartTimes.has(startTime)) return false;
+  return true;
+}
+
+function canPlaceOnTourDays(params: {
+  tourDaySlots: Map<string, TourDaySlotState>;
+  tourId: number;
+  startDate: Date;
+  durationDays: number;
+  startTime: string | null;
+}) {
+  const { tourDaySlots, tourId, startDate, durationDays, startTime } = params;
+  for (const dateKey of dateRangeKeys(startDate, durationDays)) {
+    const key = `${tourId}:${dateKey}`;
+    const state = tourDaySlots.get(key) ?? {
+      totalCount: 0,
+      hasAllDay: false,
+      intradayStartTimes: new Set<string>(),
+    };
+    if (!canPlaceOnTourDay(state, startTime)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function markTourDayPlacement(params: {
+  tourDaySlots: Map<string, TourDaySlotState>;
+  tourId: number;
+  startDate: Date;
+  durationDays: number;
+  startTime: string | null;
+}) {
+  const { tourDaySlots, tourId, startDate, durationDays, startTime } = params;
+  for (const dateKey of dateRangeKeys(startDate, durationDays)) {
+    const key = `${tourId}:${dateKey}`;
+    const state = getOrCreateTourDaySlotState(tourDaySlots, key);
+    state.totalCount += 1;
+    if (startTime == null) {
+      state.hasAllDay = true;
+    } else {
+      state.intradayStartTimes.add(startTime);
+    }
+  }
+}
+
 function assignAvailableEmployees(params: {
   random: DeterministicRandom;
   employees: number[];
   employeeTourById: Map<number, number>;
   employeeDaySlots: Map<number, Set<string>>;
+  strictTourBinding: boolean;
   tourId: number;
   startDate: Date;
   durationDays: number;
@@ -834,6 +947,7 @@ function assignAvailableEmployees(params: {
     employees,
     employeeTourById,
     employeeDaySlots,
+    strictTourBinding,
     tourId,
     startDate,
     durationDays,
@@ -842,7 +956,10 @@ function assignAvailableEmployees(params: {
   } = params;
   const keys = dateRangeKeys(startDate, durationDays);
   const preferred = employees.filter((employeeId) => employeeTourById.get(employeeId) === tourId);
-  const fallback = employees.filter((employeeId) => employeeTourById.get(employeeId) !== tourId);
+  if (preferred.length === 0 && strictTourBinding) return [];
+  const fallback = strictTourBinding
+    ? []
+    : employees.filter((employeeId) => employeeTourById.get(employeeId) !== tourId);
   const ordered = [...seededShuffle(preferred, random), ...seededShuffle(fallback, random)];
   const available = ordered.filter((employeeId) => {
     const slots = employeeDaySlots.get(employeeId);
@@ -864,6 +981,7 @@ async function materializeAppointmentIntents(params: {
   employees: number[];
   employeeTourById: Map<number, number>;
   employeeDaySlots: Map<number, Set<string>>;
+  tourDaySlots: Map<string, TourDaySlotState>;
   templates: Record<string, string>;
 }) {
   const {
@@ -874,6 +992,7 @@ async function materializeAppointmentIntents(params: {
     employees,
     employeeTourById,
     employeeDaySlots,
+    tourDaySlots,
     templates,
   } = params;
   const out: MaterializedAppointment[] = [];
@@ -881,36 +1000,64 @@ async function materializeAppointmentIntents(params: {
     appointments: 0,
     reklSkippedConstraints: 0,
   };
+  const enforceAppointmentsRules = config.runType === "appointments";
   const localRandom = new DeterministicRandom(hashInt(`${seedRunId}:materialize`));
 
   for (const intent of intents) {
-    const candidates = buildCandidateDatesForIntent({
+    const baseCandidates = buildCandidateDatesForIntent({
       seedRunId,
       intent,
       config,
       anchorDate,
     });
+    const extensionStartDate = resolveExtensionStartDate({
+      baseCandidates,
+      intent,
+      config,
+      anchorDate,
+    });
     let created: MaterializedAppointment | null = null;
-    for (let d = 0; d < candidates.length && !created; d += 1) {
-      const startDate = candidates[d];
+    let attempt = 0;
+    const maxAttempts = enforceAppointmentsRules ? Number.POSITIVE_INFINITY : baseCandidates.length;
+    while (!created) {
+      if (attempt >= maxAttempts) break;
+      const startDate =
+        attempt < baseCandidates.length
+          ? baseCandidates[attempt]
+          : addDays(extensionStartDate, attempt - baseCandidates.length);
+      if (touchesWeekend(startDate, intent.durationDays)) {
+        attempt += 1;
+        continue;
+      }
+      const startTime = intent.kind === "rekl" ? getReklStartTimeForAttempt(attempt) : null;
+      if (enforceAppointmentsRules && !canPlaceOnTourDays({
+        tourDaySlots,
+        tourId: intent.tourId,
+        startDate,
+        durationDays: intent.durationDays,
+        startTime,
+      })) {
+        attempt += 1;
+        continue;
+      }
       const employeeIds = assignAvailableEmployees({
         random: localRandom,
         employees,
         employeeTourById,
         employeeDaySlots,
+        strictTourBinding: enforceAppointmentsRules,
         tourId: intent.tourId,
         startDate,
         durationDays: intent.durationDays,
         minCount: intent.kind === "rekl" ? 1 : 1,
         maxCount: intent.kind === "rekl" ? 2 : 3,
       });
-      if (employeeIds.length === 0) continue;
+      if (employeeIds.length === 0) {
+        attempt += 1;
+        continue;
+      }
       const ctx = createSaunaContext(intent.project.model, intent.project.selectedOven);
       const endDate = intent.durationDays > 1 ? addDays(startDate, intent.durationDays - 1) : null;
-      const startTime =
-        intent.kind === "rekl"
-          ? (["10:00:00", "11:00:00", "13:00:00", "15:00:00"][d % 4] ?? "11:00:00")
-          : null;
       const titleTemplate = intent.kind === "rekl" ? TEMPLATE_KEYS.reklTitle : TEMPLATE_KEYS.mountTitle;
       const fallbackTitle =
         intent.kind === "rekl"
@@ -936,6 +1083,15 @@ async function materializeAppointmentIntents(params: {
         }
         employeeDaySlots.set(employeeId, slots);
       }
+      if (enforceAppointmentsRules) {
+        markTourDayPlacement({
+          tourDaySlots,
+          tourId: intent.tourId,
+          startDate,
+          durationDays: intent.durationDays,
+          startTime,
+        });
+      }
       created = {
         id: appointment.id,
         kind: intent.kind,
@@ -944,6 +1100,7 @@ async function materializeAppointmentIntents(params: {
         tourId: intent.tourId,
       };
       out.push(created);
+      attempt += 1;
     }
     if (!created) {
       if (intent.kind === "rekl") {
@@ -1133,13 +1290,25 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       for (const employeeId of baseEmployeeIds) {
         const employee = await employeesRepository.getEmployee(employeeId);
         if (!employee) continue;
+        if (!employee.tourId) continue;
+        const assignedTourId = Number(employee.tourId);
+        if (!baseTourIds.includes(assignedTourId)) continue;
         employees.push(Number(employee.id));
-        const assignedTourId = Number(employee.tourId ?? tours[0]);
         employeeTourById.set(Number(employee.id), assignedTourId);
       }
       if (employees.length === 0) {
         throw createBadRequestError("Keine gueltigen Mitarbeitenden aus dem Basis-Run verfuegbar.");
       }
+
+      const toursWithEmployees = new Set<number>(Array.from(employeeTourById.values()));
+      const filteredTours = tours.filter((tourId) => toursWithEmployees.has(tourId));
+      if (filteredTours.length === 0) {
+        throw createBadRequestError("Keine Touren mit zugewiesenen Mitarbeitenden verfuegbar.");
+      }
+      if (filteredTours.length !== tours.length) {
+        warnings.push("Touren ohne zugewiesene Mitarbeitende wurden fuer den Termine-Seed ausgeschlossen.");
+      }
+      tours.splice(0, tours.length, ...filteredTours);
 
       projectSeedContexts.push(
         ...(await buildProjectSeedContextsFromBaseRun(baseRun, baseProjectIds, saunaData)),
@@ -1313,6 +1482,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     for (const employeeId of employees) {
       employeeDaySlots.set(employeeId, new Set<string>());
     }
+    const tourDaySlots = new Map<string, TourDaySlotState>();
 
     if (config.runType !== "base") {
       const mountIntents = planMountAppointmentIntents({
@@ -1329,6 +1499,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         employees,
         employeeTourById,
         employeeDaySlots,
+        tourDaySlots,
         templates,
       });
       const mountAppointments = mountResult.createdAppointments.filter((appointment) => appointment.kind === "mount");
@@ -1345,6 +1516,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         employees,
         employeeTourById,
         employeeDaySlots,
+        tourDaySlots,
         templates,
       });
 
