@@ -39,6 +39,7 @@ SELECT DATABASE() AS active_database;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `appointment_employee`;
+DROP TABLE IF EXISTS `appointment_note`;
 DROP TABLE IF EXISTS `appointments`;
 DROP TABLE IF EXISTS `backup_log`;
 DROP TABLE IF EXISTS `customer_attachment`;
@@ -88,6 +89,13 @@ CREATE TABLE `appointments` (
   `created_at` timestamp DEFAULT (now()),
   `updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `appointments_id` PRIMARY KEY(`id`)
+);
+
+CREATE TABLE `appointment_note` (
+  `appointment_id` bigint NOT NULL,
+  `note_id` bigint NOT NULL,
+  `version` int NOT NULL DEFAULT 1,
+  CONSTRAINT `appointment_note_appointment_id_note_id_pk` PRIMARY KEY(`appointment_id`,`note_id`)
 );
 
 CREATE TABLE `backup_log` (
@@ -343,6 +351,8 @@ CREATE TABLE `users` (
 
 ALTER TABLE `appointment_employee` ADD CONSTRAINT `appointment_employee_appointment_id_appointments_id_fk` FOREIGN KEY (`appointment_id`) REFERENCES `appointments`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `appointment_employee` ADD CONSTRAINT `appointment_employee_employee_id_employee_id_fk` FOREIGN KEY (`employee_id`) REFERENCES `employee`(`id`) ON DELETE cascade ON UPDATE no action;
+ALTER TABLE `appointment_note` ADD CONSTRAINT `appointment_note_appointment_id_appointments_id_fk` FOREIGN KEY (`appointment_id`) REFERENCES `appointments`(`id`) ON DELETE cascade ON UPDATE no action;
+ALTER TABLE `appointment_note` ADD CONSTRAINT `appointment_note_note_id_note_id_fk` FOREIGN KEY (`note_id`) REFERENCES `note`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `appointments` ADD CONSTRAINT `appointments_project_id_project_id_fk` FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `appointments` ADD CONSTRAINT `appointments_tour_id_tours_id_fk` FOREIGN KEY (`tour_id`) REFERENCES `tours`(`id`) ON DELETE restrict ON UPDATE restrict;
 ALTER TABLE `customer_attachment` ADD CONSTRAINT `customer_attachment_customer_id_customer_id_fk` FOREIGN KEY (`customer_id`) REFERENCES `customer`(`id`) ON DELETE cascade ON UPDATE no action;
@@ -361,6 +371,7 @@ ALTER TABLE `seed_run_entity` ADD CONSTRAINT `seed_run_entity_seed_run_id_seed_r
 ALTER TABLE `users` ADD CONSTRAINT `users_role_id_roles_id_fk` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE restrict ON UPDATE no action;
 
 CREATE INDEX `idx_ae_employee_appointment` ON `appointment_employee` (`employee_id`,`appointment_id`);
+CREATE INDEX `idx_an_note_appointment` ON `appointment_note` (`note_id`,`appointment_id`);
 CREATE INDEX `idx_appt_start_date` ON `appointments` (`start_date`);
 CREATE INDEX `idx_appt_project_start_time_id` ON `appointments` (`project_id`,`start_date`,`start_time`,`id`);
 CREATE INDEX `idx_appt_tour_start_time_id` ON `appointments` (`tour_id`,`start_date`,`start_time`,`id`);
@@ -389,6 +400,7 @@ FROM information_schema.tables t
 WHERE t.table_schema = DATABASE()
   AND t.table_name IN (
     'appointment_employee',
+    'appointment_note',
     'appointments',
     'backup_log',
     'customer',

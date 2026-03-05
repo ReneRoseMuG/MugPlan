@@ -1,12 +1,12 @@
 /**
  * Test Scope:
  *
- * Feature: FT03/FT09/FT13 - Wochenkalender Notiz-Footer
+ * Feature: FT01/FT03/FT09/FT13 - Wochenkalender Notiz-Footer
  * Use Case: UC Wochenkarte zeigt Notiz-Hover nur im week-calendar Kontext
  *
  * Abgedeckte Regeln:
  * - CalendarWeekAppointmentPanel bindet den Notes-Hover nur im week-calendar Kontext ein.
- * - Notes-Hover erhaelt customerId, projectId sowie beide Notizzaehler aus dem Termin.
+ * - Notes-Hover erhaelt customerId, projectId, appointmentId und alle drei Notizzaehler aus dem Termin.
  *
  * Fehlerfaelle:
  * - Notiz-Hover erscheint ausserhalb des week-calendar Kontexts.
@@ -28,7 +28,9 @@ describe("FT03 UI: week calendar notes hover wiring", () => {
     expect(source).toContain("<CalendarWeekAppointmentNotesHover");
     expect(source).toContain("customerId={appointment.customer.id}");
     expect(source).toContain("projectId={appointment.projectId}");
+    expect(source).toContain("appointmentId={appointment.id}");
     expect(source).toContain("customerNotesCount={appointment.customerNotesCount ?? 0}");
     expect(source).toContain("projectNotesCount={appointment.projectNotesCount ?? 0}");
+    expect(source).toContain("appointmentNotesCount={appointment.appointmentNotesCount ?? 0}");
   });
 });

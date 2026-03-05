@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  appointmentNotes,
   appointmentEmployees,
   appointments,
   customerNotes,
@@ -102,6 +103,22 @@ export async function getProjectNoteCountsByProjectIds(projectIds: number[]): Pr
     .groupBy(projectNotes.projectId);
 
   return new Map(rows.map((row) => [row.projectId, Number(row.count)] as const));
+}
+
+export async function getAppointmentNoteCountsByAppointmentIds(appointmentIds: number[]): Promise<Map<number, number>> {
+  const uniqueAppointmentIds = Array.from(new Set(appointmentIds));
+  if (uniqueAppointmentIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      appointmentId: appointmentNotes.appointmentId,
+      count: sql<number>`count(*)`,
+    })
+    .from(appointmentNotes)
+    .where(inArray(appointmentNotes.appointmentId, uniqueAppointmentIds))
+    .groupBy(appointmentNotes.appointmentId);
+
+  return new Map(rows.map((row) => [row.appointmentId, Number(row.count)] as const));
 }
 
 export async function getAppointment(id: number): Promise<Appointment | null> {

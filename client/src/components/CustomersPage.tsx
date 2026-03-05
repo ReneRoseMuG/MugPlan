@@ -15,6 +15,7 @@ import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previ
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { CustomerBulkImportDialog } from "@/components/CustomerBulkImportDialog";
+import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import type { Customer, Project } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { format } from "date-fns";
@@ -117,11 +118,6 @@ export function CustomersPage({
   const filteredCustomers = useMemo(
     () => applyCustomerFilters(customers, filters),
     [customers, filters],
-  );
-
-  const notesCountByCustomerId = useMemo(
-    () => new Map(customers.map((customer) => [customer.id, customer.notesCount] as const)),
-    [customers],
   );
 
   const filteredCustomerIds = useMemo(
@@ -409,7 +405,11 @@ export function CustomersPage({
                         className="text-xs text-slate-600"
                         data-testid={`text-customer-notes-count-${customer.id}`}
                       >
-                        Notizen: {notesCountByCustomerId.get(customer.id) ?? 0}
+                        <EntityNotesHoverPreview
+                          sourceMode="single-parent"
+                          sources={{ type: "customer", id: customer.id, count: (customer as CustomerListItem).notesCount ?? 0 }}
+                          triggerTestId={`text-customer-notes-count-${customer.id}`}
+                        />
                       </span>
                     </div>
                   }

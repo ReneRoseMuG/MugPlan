@@ -1,12 +1,12 @@
 /**
  * Test Scope:
  *
- * Feature: FT02 - Projektverwaltung
+ * Feature: FT02/FT13 - Projektverwaltung
  * Use Case: UC Projektkarte zeigt geplante Termine im Footer
  *
  * Abgedeckte Regeln:
  * - Die Projektkarte zeigt den Footer-Text "Geplante Termine".
- * - Die Projektkarte zeigt zusaetzlich den Footer-Text "Notizen".
+ * - Die Projektkarte bindet fuer Notizen den wiederverwendbaren EntityNotesHoverPreview-Trigger.
  * - Der Counter basiert auf Terminen ab heute (startDate >= berlinToday).
  * - Der Kartenfooter ist explizit sichtbar geschaltet.
  *
@@ -28,7 +28,10 @@ describe("FT02 projects page current appointments counter wiring", () => {
   it("renders the planned appointments footer label", () => {
     expect(source).toContain("Geplante Termine:");
     expect(source).toContain("data-testid={`text-project-planned-appointments-${project.id}`}");
-    expect(source).toContain("Notizen:");
+    expect(source).toContain("<EntityNotesHoverPreview");
+    expect(source).toContain('sourceMode="single-parent"');
+    expect(source).toContain('type: "project", id: project.id');
+    expect(source).toContain("notesCount");
     expect(source).toContain("data-testid={`text-project-notes-count-${project.id}`}");
   });
 

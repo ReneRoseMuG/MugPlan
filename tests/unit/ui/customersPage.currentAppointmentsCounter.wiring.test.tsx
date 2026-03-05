@@ -1,12 +1,12 @@
 /**
  * Test Scope:
  *
- * Feature: FT05+ - Kundenverwaltung
+ * Feature: FT05+/FT13 - Kundenverwaltung
  * Use Case: UC Kundenkarte zeigt geplante Termine im Footer
  *
  * Abgedeckte Regeln:
  * - Die Kundenkarte zeigt den Footer-Text "Geplante Termine".
- * - Die Kundenkarte zeigt zusaetzlich den Footer-Text "Notizen".
+ * - Die Kundenkarte bindet fuer Notizen den wiederverwendbaren EntityNotesHoverPreview-Trigger.
  * - Der Counter basiert auf Terminen ab heute (startDate >= berlinToday).
  * - Der Kartenfooter ist explizit sichtbar geschaltet.
  *
@@ -28,7 +28,10 @@ describe("FT05+ customers page current appointments counter wiring", () => {
   it("renders the planned appointments footer label", () => {
     expect(source).toContain("Geplante Termine:");
     expect(source).toContain("data-testid={`text-customer-planned-appointments-${customer.id}`}");
-    expect(source).toContain("Notizen:");
+    expect(source).toContain("<EntityNotesHoverPreview");
+    expect(source).toContain('sourceMode="single-parent"');
+    expect(source).toContain('type: "customer", id: customer.id');
+    expect(source).toContain("notesCount");
     expect(source).toContain("data-testid={`text-customer-notes-count-${customer.id}`}");
   });
 

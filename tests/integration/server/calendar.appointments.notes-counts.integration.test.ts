@@ -1,13 +1,14 @@
 /**
  * Test Scope:
  *
- * Feature: FT03/FT09/FT13 - Wochenkalender Termin-Karten mit Notiz-Footer
- * Use Case: UC Wochenkalender zeigt pro Termin Kunden-/Projektnotiz-Zaehler
+ * Feature: FT01/FT03/FT09/FT13 - Wochenkalender Termin-Karten mit Notiz-Footer
+ * Use Case: UC Wochenkalender zeigt pro Termin Kunden-/Projekt-/Terminnotiz-Zaehler
  *
  * Abgedeckte Regeln:
- * - /api/calendar/appointments liefert customerNotesCount und projectNotesCount fuer jeden Termin.
- * - Termine ohne Notizen liefern 0/0.
+ * - /api/calendar/appointments liefert customerNotesCount, projectNotesCount und appointmentNotesCount fuer jeden Termin.
+ * - Termine ohne Notizen liefern 0/0/0.
  * - Nur Kunden- oder nur Projektnotizen werden getrennt korrekt gezaehlt.
+ * - Termin-Notizen werden appointment-spezifisch separat gezaehlt.
  * - Mehrere Termine mit gleichem Kunde/Projekt teilen sich konsistente Zaehler.
  *
  * Fehlerfaelle:
@@ -116,8 +117,18 @@ async function createProjectNote(agent: SuperAgentTest, projectId: number, title
     .expect(201);
 }
 
+async function createAppointmentNote(agent: SuperAgentTest, appointmentId: number, title: string) {
+  await agent
+    .post(`/api/appointments/${appointmentId}/notes`)
+    .send({
+      title,
+      body: `<p>${title}</p>`,
+    })
+    .expect(201);
+}
+
 describe("FT03 integration: calendar appointments note counts", () => {
-  it("returns customer/project note counts per appointment with zero and mixed scenarios", async () => {
+  it("returns customer/project/appointment note counts per appointment with zero and mixed scenarios", async () => {
     const admin = await loginAdminAgent();
     const customerA = await createCustomer("A");
     const customerB = await createCustomer("B");
@@ -140,6 +151,9 @@ describe("FT03 integration: calendar appointments note counts", () => {
     await createProjectNote(admin, projectA1.id, "Projekt A1 2");
     await createProjectNote(admin, projectA1.id, "Projekt A1 3");
     await createProjectNote(admin, projectB1.id, "Projekt B1 1");
+    await createAppointmentNote(admin, appointmentA1, "Termin A1 1");
+    await createAppointmentNote(admin, appointmentA1, "Termin A1 2");
+    await createAppointmentNote(admin, appointmentB1, "Termin B1 1");
 
     const response = await admin
       .get("/api/calendar/appointments?fromDate=2098-07-01&toDate=2098-07-31&detail=full")
@@ -149,13 +163,14 @@ describe("FT03 integration: calendar appointments note counts", () => {
       id: number;
       customerNotesCount: number;
       projectNotesCount: number;
+      appointmentNotesCount: number;
     }>;
 
     const byId = new Map(items.map((item) => [item.id, item] as const));
-    expect(byId.get(appointmentA1)).toEqual(expect.objectContaining({ customerNotesCount: 2, projectNotesCount: 3 }));
-    expect(byId.get(appointmentA2)).toEqual(expect.objectContaining({ customerNotesCount: 2, projectNotesCount: 3 }));
-    expect(byId.get(appointmentA3)).toEqual(expect.objectContaining({ customerNotesCount: 2, projectNotesCount: 0 }));
-    expect(byId.get(appointmentB1)).toEqual(expect.objectContaining({ customerNotesCount: 0, projectNotesCount: 1 }));
-    expect(byId.get(appointmentC1)).toEqual(expect.objectContaining({ customerNotesCount: 0, projectNotesCount: 0 }));
+    expect(byId.get(appointmentA1)).toEqual(expect.objectContaining({ customerNotesCount: 2, projectNotesCount: 3, appointmentNotesCount: 2 }));
+    expect(byId.get(appointmentA2)).toEqual(expect.objectContaining({ customerNotesCount: 2, projectNotesCount: 3, appointmentNotesCount: 0 }));
+    expect(byId.get(appointmentA3)).toEqual(expect.objectContaining({ customerNotesCount: 2, projectNotesCount: 0, appointmentNotesCount: 0 }));
+    expect(byId.get(appointmentB1)).toEqual(expect.objectContaining({ customerNotesCount: 0, projectNotesCount: 1, appointmentNotesCount: 1 }));
+    expect(byId.get(appointmentC1)).toEqual(expect.objectContaining({ customerNotesCount: 0, projectNotesCount: 0, appointmentNotesCount: 0 }));
   });
 });

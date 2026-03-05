@@ -16,6 +16,7 @@ import masterDataRoutes from "./routes/masterDataRoutes";
 import noteTemplatesRoutes from "./routes/noteTemplatesRoutes";
 import notesRoutes from "./routes/notesRoutes";
 import appointmentsRoutes from "./routes/appointmentsRoutes";
+import appointmentNotesRoutes from "./routes/appointmentNotesRoutes";
 import demoSeedRoutes from "./routes/demoSeedRoutes";
 import documentExtractionRoutes from "./routes/documentExtractionRoutes";
 import projectAttachmentsRoutes from "./routes/projectAttachmentsRoutes";
@@ -45,6 +46,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(adminRoutes);
   app.use(backupRoutes);
   app.use(appointmentsRoutes);
+  app.use(appointmentNotesRoutes);
   app.use(demoSeedRoutes);
   app.use(documentExtractionRoutes);
   app.use(toursRoutes);

@@ -29,6 +29,7 @@ import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { AppointmentAttachmentsPanel } from "@/components/AppointmentAttachmentsPanel";
+import { NotesSection } from "@/components/NotesSection";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
   DocumentExtractionDialog,
@@ -36,12 +37,13 @@ import {
   type ExtractionDialogData,
 } from "@/components/DocumentExtractionDialog";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   PROJECT_APPOINTMENTS_ALL_FROM_DATE,
   getBerlinTodayDateString,
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
+import type { Note } from "@shared/schema";
 
 interface AppointmentFormProps {
   onCancel?: () => void;
@@ -296,6 +298,12 @@ export function AppointmentForm({
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnReconnect: true,
+  });
+
+  const { data: appointmentNotes = [], isLoading: appointmentNotesLoading } = useQuery<Note[]>({
+    queryKey: ["/api/appointments", appointmentId, "notes"],
+    queryFn: () => fetchJson<Note[]>(`/api/appointments/${appointmentId}/notes`),
+    enabled: Boolean(appointmentId),
   });
 
   const isLoading =
@@ -810,6 +818,87 @@ export function AppointmentForm({
     }
   };
 
+  const extractApiCode = (error: unknown): string | null => {
+    if (!(error instanceof Error)) return null;
+    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
+    return match?.[1] ?? null;
+  };
+
+  const getAppointmentNoteVersion = (noteId: number): number => {
+    const note = appointmentNotes.find((entry) => entry.id === noteId);
+    if (!note || !Number.isInteger(note.version) || note.version < 1) {
+      throw new Error("422: {\"code\":\"VALIDATION_ERROR\"}");
+    }
+    return note.version;
+  };
+
+  const invalidateAppointmentNotesQueries = async (targetAppointmentId: number) => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/appointments", targetAppointmentId, "notes"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/notes-preview"] });
+  };
+
+  const createAppointmentNoteMutation = useMutation({
+    mutationFn: async ({ title, body, templateId }: { title: string; body: string; templateId?: number }) => {
+      const res = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, { title, body, templateId });
+      return res.json();
+    },
+    onSuccess: () => {
+      if (!appointmentId) return;
+      void invalidateAppointmentNotesQueries(appointmentId);
+      void invalidateRelatedAppointmentQueries(selectedProjectId);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const toggleAppointmentNotePinMutation = useMutation({
+    mutationFn: async ({ noteId, isPinned, version }: { noteId: number; isPinned: boolean; version: number }) => {
+      const res = await apiRequest("PATCH", `/api/notes/${noteId}/pin`, { isPinned, version });
+      return res.json();
+    },
+    onSuccess: () => {
+      if (!appointmentId) return;
+      void invalidateAppointmentNotesQueries(appointmentId);
+      void invalidateRelatedAppointmentQueries(selectedProjectId);
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteAppointmentNoteMutation = useMutation({
+    mutationFn: async ({ noteId, version }: { noteId: number; version: number }) => {
+      await apiRequest("DELETE", `/api/appointments/${appointmentId}/notes/${noteId}`, { version });
+    },
+    onSuccess: () => {
+      if (!appointmentId) return;
+      void invalidateAppointmentNotesQueries(appointmentId);
+      void invalidateRelatedAppointmentQueries(selectedProjectId);
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht geloescht werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
   const validateForm = () => {
     if (!selectedProjectId) {
       console.info(`${logPrefix} validation blocked: project missing`);
@@ -1221,6 +1310,22 @@ export function AppointmentForm({
               }}
               disabled={isLocked}
               isProcessing={documentExtractionLoading}
+            />
+          ) : null}
+
+          {isEditing && appointmentId ? (
+            <NotesSection
+              notes={appointmentNotes}
+              isLoading={appointmentNotesLoading}
+              onAdd={(data) => createAppointmentNoteMutation.mutate(data)}
+              onTogglePin={(id, isPinned) => {
+                const version = getAppointmentNoteVersion(id);
+                toggleAppointmentNotePinMutation.mutate({ noteId: id, isPinned, version });
+              }}
+              onDelete={(noteId) => {
+                const version = getAppointmentNoteVersion(noteId);
+                deleteAppointmentNoteMutation.mutate({ noteId, version });
+              }}
             />
           ) : null}
         </div>

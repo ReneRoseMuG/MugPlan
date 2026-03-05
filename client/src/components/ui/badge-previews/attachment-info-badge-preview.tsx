@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useSetting } from "@/hooks/useSettings";
 import type { InfoBadgePreview } from "@/components/ui/info-badge";
 
-const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
-export type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
+export type AttachmentPreviewSize = "small" | "medium" | "large";
 
 type AttachmentPreviewDimensions = {
   popoverMaxWidth: number;

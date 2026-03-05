@@ -230,7 +230,7 @@ Neue Funktionalität folgt den bestehenden Pfaden:
 
 ## 11. Bekannte Risiken / Architekturhinweise
 
-- In einzelnen Dateien sind Mojibake-Spuren sichtbar (z. B. `UngÃ¼ltig`, `NÃ¤chster`), also ein bestehendes Encoding-/Textkonsistenz-Risiko.
+- In einzelnen Dateien sind Mojibake-Spuren sichtbar (z. B. `Ungültig`, `Nächster`), also ein bestehendes Encoding-/Textkonsistenz-Risiko.
 - Historische Terminregeln sind strenger als reine Admin-Ausnahmeannahmen; maßgeblich ist der aktuelle Service-Code.
 
 ## 12. Nicht-Ziele dieses Dokuments

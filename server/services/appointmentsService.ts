@@ -187,6 +187,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
   const statusesByProject = await buildStatusesByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
+  const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
 
   return rows.map((row) => ({
     id: row.appointment.id,
@@ -216,6 +217,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     employees: employeesByAppointment.get(row.appointment.id) ?? [],
     customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
     projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0,
+    appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
     isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
   }));
 };
@@ -534,6 +536,7 @@ export async function listCalendarAppointments({
   const statusesByProject = await buildStatusesByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
+  const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
 
   return rows.map((row) => {
     const baseAppointment = {
@@ -560,6 +563,7 @@ export async function listCalendarAppointments({
         },
         customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
         projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0,
+        appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
         employees: employeesByAppointment.get(row.appointment.id) ?? [],
         isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
       };
@@ -640,6 +644,7 @@ export async function listAppointmentsList(params: {
   const statusesByProject = await buildStatusesByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
+  const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
 
   const items = rows.map((row) => {
     const rowEmployees = employeesByAppointment.get(row.appointment.id) ?? [];
@@ -670,6 +675,7 @@ export async function listAppointmentsList(params: {
       employees: rowEmployees,
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0,
+      appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
       isLocked: params.roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
       allDay: row.appointment.startTime == null,
       singleEmployee: rowEmployees.length === 1,
