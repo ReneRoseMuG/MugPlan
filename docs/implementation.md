@@ -260,6 +260,24 @@ Praktische Leitplanke:
 * Neue Listen verwenden `setFilter(...)` für Feldupdates.
 * Wenn komplexe Feldtransformationen nötig sind (z. B. Array-Filter), bleibt die Semantik identisch: Ergebnisfilter setzen und Pagination auf `1`.
 
+## 3.15 EntityFormWithTabsLayout Pattern
+
+Fuer tabbasierte Entity-Formulare steht im Ist-Stand zusaetzlich eine additive Basiskomponente bereit:
+
+- `client/src/components/ui/entity-form-with-tabs-layout.tsx`
+
+Die Komponente ist ein Wrapper um `EntityFormLayout` und erweitert nur die Body-Komposition um Tabs. Header/Footer-Semantik (Close/Cancel/Submit/SaveLabel/FooterActions) bleibt identisch.
+
+Leitplanken:
+
+1. Kein Ersatz bestehender Formulare per stiller Massenmigration.
+2. Keine URL-basierte Tab-Navigation in diesem Basispfad; aktiver Tab wird lokal gefuehrt.
+3. Keine impliziten Dirty-/Validierungs-Guards beim Tab-Wechsel.
+4. `visible !== false` steuert Sichtbarkeit von Tabs.
+5. Bei ungueltigem aktiven Tab wird deterministisch auf den ersten sichtbaren Tab zurueckgefallen.
+6. Bei leerer sichtbarer Tab-Menge rendert die Komponente defensiv einen Empty-State statt zu crashen.
+7. `keepMounted` ist standardmaessig aktiv, damit lokaler Tab-State beim Wechsel erhalten bleibt.
+
 ---
 
 # 4. Fehlerbehandlung und Debugging
