@@ -49,6 +49,11 @@ function isRowReferencedError(error: unknown): boolean {
   );
 }
 
+function isMissingReferenceError(error: unknown): boolean {
+  const mysqlError = error as { code?: string; errno?: number } | null;
+  return mysqlError?.code === "ER_NO_REFERENCED_ROW_2" || mysqlError?.errno === 1452;
+}
+
 function normalizeFilter(filter: "active" | "inactive" | "all" | undefined): masterDataRepository.ActiveFilter {
   if (filter === "inactive" || filter === "all") return filter;
   return "active";
@@ -169,7 +174,7 @@ export async function createProduct(input: InsertProduct, roleKey: CanonicalRole
   try {
     return await masterDataRepository.createProduct(input);
   } catch (error) {
-    if (isDuplicateKeyError(error) || isRowReferencedError(error)) {
+    if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
       throw new MasterDataError(409, "BUSINESS_CONFLICT");
     }
     throw error;
@@ -189,7 +194,7 @@ export async function updateProduct(
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
     return result.row;
   } catch (error) {
-    if (isDuplicateKeyError(error) || isRowReferencedError(error)) {
+    if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
       throw new MasterDataError(409, "BUSINESS_CONFLICT");
     }
     throw error;
@@ -227,7 +232,7 @@ export async function createComponent(input: InsertComponent, roleKey: Canonical
   try {
     return await masterDataRepository.createComponent(input);
   } catch (error) {
-    if (isDuplicateKeyError(error) || isRowReferencedError(error)) {
+    if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
       throw new MasterDataError(409, "BUSINESS_CONFLICT");
     }
     throw error;
@@ -247,7 +252,7 @@ export async function updateComponent(
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
     return result.row;
   } catch (error) {
-    if (isDuplicateKeyError(error) || isRowReferencedError(error)) {
+    if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
       throw new MasterDataError(409, "BUSINESS_CONFLICT");
     }
     throw error;
@@ -266,6 +271,31 @@ export async function deleteComponent(
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
   } catch (error) {
     if (isRowReferencedError(error)) {
+      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+}
+
+export async function listComponentProducts(roleKey: CanonicalRoleKey) {
+  requireAdmin(roleKey);
+  return masterDataRepository.listComponentProducts();
+}
+
+export async function replaceComponentProducts(
+  componentId: number,
+  expectedVersion: number,
+  productIds: number[],
+  roleKey: CanonicalRoleKey,
+): Promise<Component> {
+  requireAdmin(roleKey);
+  try {
+    const result = await masterDataRepository.replaceComponentProductsWithVersion(componentId, expectedVersion, productIds);
+    if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
+    if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
+    return result.row;
+  } catch (error) {
+    if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
       throw new MasterDataError(409, "BUSINESS_CONFLICT");
     }
     throw error;

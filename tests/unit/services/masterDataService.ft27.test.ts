@@ -8,6 +8,7 @@
  * - Nur ADMIN darf FT27-Stammdatenoperationen ausfuehren.
  * - Duplicate-/FK-Fehler werden als BUSINESS_CONFLICT gemappt.
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
+ * - Component-Product m:n-Operationen folgen derselben Fehlersemantik.
  * - Ohne Filter wird serverseitig auf active normalisiert.
  *
  * Fehlerfaelle:
@@ -25,6 +26,8 @@ const repositoryMocks = vi.hoisted(() => ({
   updateProductWithVersion: vi.fn(),
   deleteProductCategoryWithVersion: vi.fn(),
   createProduct: vi.fn(),
+  listComponentProducts: vi.fn(),
+  replaceComponentProductsWithVersion: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
@@ -33,14 +36,18 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   updateProductWithVersion: repositoryMocks.updateProductWithVersion,
   deleteProductCategoryWithVersion: repositoryMocks.deleteProductCategoryWithVersion,
   createProduct: repositoryMocks.createProduct,
+  listComponentProducts: repositoryMocks.listComponentProducts,
+  replaceComponentProductsWithVersion: repositoryMocks.replaceComponentProductsWithVersion,
 }));
 
 import {
   createProduct,
   createProductCategory,
   deleteProductCategory,
+  listComponentProducts,
   listProductCategories,
   MasterDataError,
+  replaceComponentProducts,
   updateProduct,
 } from "../../../server/services/masterDataService";
 
@@ -128,6 +135,37 @@ describe("FT27 unit: masterDataService", () => {
         "ADMIN",
       ),
     ).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+  });
+
+  it("maps non-admin access for component-products list to FORBIDDEN", async () => {
+    await expect(listComponentProducts("LESER")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 403,
+      code: "FORBIDDEN",
+    });
+    expect(repositoryMocks.listComponentProducts).not.toHaveBeenCalled();
+  });
+
+  it("maps component-products version conflict to VERSION_CONFLICT", async () => {
+    repositoryMocks.replaceComponentProductsWithVersion.mockResolvedValueOnce({
+      kind: "version_conflict",
+    });
+
+    await expect(replaceComponentProducts(5, 2, [1, 2], "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "VERSION_CONFLICT",
+    });
+  });
+
+  it("maps component-products missing FK to BUSINESS_CONFLICT", async () => {
+    repositoryMocks.replaceComponentProductsWithVersion.mockRejectedValueOnce({
+      code: "ER_NO_REFERENCED_ROW_2",
+      errno: 1452,
+    });
+
+    await expect(replaceComponentProducts(5, 2, [999999], "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
       status: 409,
       code: "BUSINESS_CONFLICT",
     });

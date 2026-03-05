@@ -1,12 +1,11 @@
 ﻿import { useMemo, useState } from "react";
 import { Boxes } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Component, ComponentCategory, Product, ProductCategory } from "@shared/schema";
+import type { Component, ComponentCategory, Product, ProductCategory, ProductComponent } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +19,10 @@ type ProductMutationInput = {
   categoryId?: number;
   description?: string | null;
   isActive?: boolean;
+};
+
+type ComponentMutationInput = ProductMutationInput & {
+  productIds?: number[];
 };
 
 function extractApiCode(error: unknown): string | null {
@@ -43,12 +46,18 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function formatProductNames(productIds: number[] | undefined, productNameById: Map<number, string>): string {
+  if (!productIds || productIds.length === 0) return "-";
+  return productIds.map((id) => productNameById.get(id) ?? `#${id}`).join(", ");
+}
+
 async function invalidateMasterDataQueries(activeScope: ActiveScope): Promise<void> {
   const urls = [
     `/api/admin/master-data/product-categories?active=${activeScope}`,
     `/api/admin/master-data/component-categories?active=${activeScope}`,
     `/api/admin/master-data/products?active=${activeScope}`,
     `/api/admin/master-data/components?active=${activeScope}`,
+    "/api/admin/master-data/component-products",
     "/api/admin/master-data/product-categories?active=all",
     "/api/admin/master-data/component-categories?active=all",
     "/api/admin/master-data/products?active=all",
@@ -70,13 +79,17 @@ export function MasterDataPage() {
   const [newProduct, setNewProduct] = useState({ name: "", categoryId: "", description: "" });
   const [editProduct, setEditProduct] = useState<Product | null>(null);
 
-  const [newComponent, setNewComponent] = useState({ name: "", categoryId: "", description: "" });
+  const [newComponent, setNewComponent] = useState({ name: "", categoryId: "", description: "", productIds: [] as number[] });
+  const [newComponentProductId, setNewComponentProductId] = useState("");
   const [editComponent, setEditComponent] = useState<Component | null>(null);
+  const [editComponentProductIds, setEditComponentProductIds] = useState<number[]>([]);
+  const [editComponentProductId, setEditComponentProductId] = useState("");
 
   const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${activeScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${activeScope}`;
   const productsUrl = `/api/admin/master-data/products?active=${activeScope}`;
   const componentsUrl = `/api/admin/master-data/components?active=${activeScope}`;
+  const componentProductsUrl = "/api/admin/master-data/component-products";
 
   const productCategoriesQuery = useQuery<ProductCategory[]>({
     queryKey: [productCategoriesUrl],
@@ -98,10 +111,16 @@ export function MasterDataPage() {
     queryFn: () => fetchJson(componentsUrl),
   });
 
+  const componentProductsQuery = useQuery<ProductComponent[]>({
+    queryKey: [componentProductsUrl],
+    queryFn: () => fetchJson(componentProductsUrl),
+  });
+
   const productCategories = productCategoriesQuery.data ?? [];
   const componentCategories = componentCategoriesQuery.data ?? [];
   const products = productsQuery.data ?? [];
   const components = componentsQuery.data ?? [];
+  const componentProducts = componentProductsQuery.data ?? [];
 
   const productCategoryNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -114,6 +133,25 @@ export function MasterDataPage() {
     for (const row of componentCategories) map.set(row.id, row.name);
     return map;
   }, [componentCategories]);
+
+  const productNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const row of products) map.set(row.id, row.name);
+    return map;
+  }, [products]);
+
+  const productIdsByComponentId = useMemo(() => {
+    const map = new Map<number, number[]>();
+    for (const row of componentProducts) {
+      const current = map.get(row.componentId);
+      if (current) {
+        current.push(row.productId);
+      } else {
+        map.set(row.componentId, [row.productId]);
+      }
+    }
+    return map;
+  }, [componentProducts]);
 
   const createProductCategoryMutation = useMutation({
     mutationFn: async () =>
@@ -285,38 +323,62 @@ export function MasterDataPage() {
   });
 
   const createComponentMutation = useMutation({
-    mutationFn: async () =>
-      apiRequest("POST", "/api/admin/master-data/components", {
+    mutationFn: async () => {
+      const componentResponse = await apiRequest("POST", "/api/admin/master-data/components", {
         name: newComponent.name.trim(),
         categoryId: Number(newComponent.categoryId),
         description: newComponent.description.trim() || null,
         isActive: true,
         version: 1,
-      }),
+      });
+      const createdComponent = await componentResponse.json() as Component;
+      const relationResponse = await apiRequest(
+        "PUT",
+        `/api/admin/master-data/components/${createdComponent.id}/products`,
+        {
+          version: createdComponent.version,
+          productIds: Array.from(new Set(newComponent.productIds)),
+        },
+      );
+      return relationResponse.json() as Promise<Component>;
+    },
     onSuccess: async () => {
-      setNewComponent({ name: "", categoryId: "", description: "" });
+      setNewComponent({ name: "", categoryId: "", description: "", productIds: [] });
+      setNewComponentProductId("");
       await invalidateMasterDataQueries(activeScope);
     },
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "BUSINESS_CONFLICT" ? "Komponente konnte nicht angelegt werden (Name/Kategorie prüfen)" : "Komponente konnte nicht angelegt werden",
+        title: code === "BUSINESS_CONFLICT" ? "Komponente konnte nicht angelegt werden (Werte prüfen)" : "Komponente konnte nicht angelegt werden",
         variant: "destructive",
       });
     },
   });
 
   const updateComponentMutation = useMutation({
-    mutationFn: async (input: ProductMutationInput) =>
-      apiRequest("PUT", `/api/admin/master-data/components/${input.id}`, {
+    mutationFn: async (input: ComponentMutationInput) => {
+      const componentResponse = await apiRequest("PUT", `/api/admin/master-data/components/${input.id}`, {
         version: input.version,
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
         ...(input.description !== undefined ? { description: input.description } : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-      }),
+      });
+      let updatedComponent = await componentResponse.json() as Component;
+      if (input.productIds !== undefined) {
+        const relationResponse = await apiRequest("PUT", `/api/admin/master-data/components/${input.id}/products`, {
+          version: updatedComponent.version,
+          productIds: Array.from(new Set(input.productIds)),
+        });
+        updatedComponent = await relationResponse.json() as Component;
+      }
+      return updatedComponent;
+    },
     onSuccess: async () => {
       setEditComponent(null);
+      setEditComponentProductIds([]);
+      setEditComponentProductId("");
       await invalidateMasterDataQueries(activeScope);
     },
     onError: (error) => {
@@ -346,7 +408,8 @@ export function MasterDataPage() {
   const isLoading = productCategoriesQuery.isLoading
     || componentCategoriesQuery.isLoading
     || productsQuery.isLoading
-    || componentsQuery.isLoading;
+    || componentsQuery.isLoading
+    || componentProductsQuery.isLoading;
 
   return (
     <ListLayout
@@ -370,14 +433,10 @@ export function MasterDataPage() {
         </div>
       )}
       contentSlot={(
-        <Tabs defaultValue="categories" className="h-full min-h-0 flex flex-col gap-4">
-          <TabsList className="w-fit">
-            <TabsTrigger value="categories">Kategorien</TabsTrigger>
-            <TabsTrigger value="entities">Produkte & Komponenten</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="categories" className="space-y-6">
-            <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-product-categories">
+        <div className="flex h-full min-h-0 flex-col gap-4">
+          <div className="order-2 min-h-0 basis-1/3 overflow-hidden">
+            <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
+            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-product-categories">
               <h4 className="font-bold text-slate-900">Produktkategorien</h4>
               <div className="mt-3 flex items-end gap-2">
                 <Input
@@ -396,7 +455,7 @@ export function MasterDataPage() {
                   Anlegen
                 </Button>
               </div>
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -464,7 +523,7 @@ export function MasterDataPage() {
               </div>
             </section>
 
-            <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-component-categories">
+            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-component-categories">
               <h4 className="font-bold text-slate-900">Komponenten-Kategorien</h4>
               <div className="mt-3 flex items-end gap-2">
                 <Input
@@ -483,7 +542,7 @@ export function MasterDataPage() {
                   Anlegen
                 </Button>
               </div>
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -550,10 +609,12 @@ export function MasterDataPage() {
                 </Table>
               </div>
             </section>
-          </TabsContent>
+            </div>
+          </div>
 
-          <TabsContent value="entities" className="space-y-6">
-            <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-products">
+          <div className="order-1 min-h-0 basis-2/3 overflow-hidden">
+            <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
+            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-products">
               <h4 className="font-bold text-slate-900">Produkte</h4>
               <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[1fr_220px_1fr_auto] lg:items-end">
                 <Input value={newProduct.name} onChange={(event) => setNewProduct((current) => ({ ...current, name: event.target.value }))} placeholder="Produktname" />
@@ -570,7 +631,7 @@ export function MasterDataPage() {
                 }}>Anlegen</Button>
               </div>
 
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -620,9 +681,9 @@ export function MasterDataPage() {
               </div>
             </section>
 
-            <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-components">
+            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-components">
               <h4 className="font-bold text-slate-900">Komponenten</h4>
-              <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[1fr_220px_1fr_auto] lg:items-end">
+              <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[1fr_220px_1fr_280px_auto] lg:items-end">
                 <Input value={newComponent.name} onChange={(event) => setNewComponent((current) => ({ ...current, name: event.target.value }))} placeholder="Komponentenname" />
                 <select value={newComponent.categoryId} onChange={(event) => setNewComponent((current) => ({ ...current, categoryId: event.target.value }))} className="h-10 rounded border border-slate-300 bg-white px-2 text-sm">
                   <option value="">Kategorie wählen</option>
@@ -631,21 +692,70 @@ export function MasterDataPage() {
                   ))}
                 </select>
                 <Textarea value={newComponent.description} onChange={(event) => setNewComponent((current) => ({ ...current, description: event.target.value }))} placeholder="Beschreibung (optional)" className="min-h-[40px]" />
+                <div className="flex items-center gap-2">
+                  <select
+                    value={newComponentProductId}
+                    onChange={(event) => setNewComponentProductId(event.target.value)}
+                    className="h-10 w-full rounded border border-slate-300 bg-white px-2 text-sm"
+                    data-testid="input-new-component-products"
+                  >
+                    <option value="">Produkt wählen</option>
+                    {products
+                      .filter((product) => !newComponent.productIds.includes(product.id))
+                      .map((product) => (
+                        <option key={product.id} value={product.id}>{product.name}</option>
+                      ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const selectedId = Number(newComponentProductId);
+                      if (!Number.isFinite(selectedId) || selectedId <= 0) return;
+                      setNewComponent((current) => ({
+                        ...current,
+                        productIds: current.productIds.includes(selectedId)
+                          ? current.productIds
+                          : [...current.productIds, selectedId],
+                      }));
+                      setNewComponentProductId("");
+                    }}
+                  >
+                    +
+                  </Button>
+                </div>
                 <Button onClick={() => {
                   if (!newComponent.name.trim() || !newComponent.categoryId) return;
                   createComponentMutation.mutate();
                 }}>Anlegen</Button>
               </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {newComponent.productIds.map((productId) => (
+                  <button
+                    key={productId}
+                    type="button"
+                    onClick={() => setNewComponent((current) => ({
+                      ...current,
+                      productIds: current.productIds.filter((id) => id !== productId),
+                    }))}
+                    className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                    data-testid={`selected-new-component-product-${productId}`}
+                  >
+                    {productNameById.get(productId) ?? `#${productId}`} ×
+                  </button>
+                ))}
+              </div>
 
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Kategorie</TableHead>
                       <TableHead>Beschreibung</TableHead>
+                      <TableHead>Produkte</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-[360px]">Aktionen</TableHead>
+                      <TableHead className="w-[420px]">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -662,16 +772,82 @@ export function MasterDataPage() {
                           ) : (componentCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`)}
                         </TableCell>
                         <TableCell>{editComponent?.id === row.id ? <Textarea value={editComponent.description ?? ""} onChange={(event) => setEditComponent({ ...editComponent, description: event.target.value || null })} className="min-h-[40px]" /> : (row.description ?? "-")}</TableCell>
+                        <TableCell>
+                          {editComponent?.id === row.id ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={editComponentProductId}
+                                  onChange={(event) => setEditComponentProductId(event.target.value)}
+                                  className="h-9 w-full rounded border border-slate-300 bg-white px-2 text-sm"
+                                  data-testid={`input-edit-component-products-${row.id}`}
+                                >
+                                  <option value="">Produkt wählen</option>
+                                  {products
+                                    .filter((product) => !editComponentProductIds.includes(product.id))
+                                    .map((product) => (
+                                      <option key={product.id} value={product.id}>{product.name}</option>
+                                    ))}
+                                </select>
+                                <Button
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const selectedId = Number(editComponentProductId);
+                                    if (!Number.isFinite(selectedId) || selectedId <= 0) return;
+                                    setEditComponentProductIds((current) => (
+                                      current.includes(selectedId) ? current : [...current, selectedId]
+                                    ));
+                                    setEditComponentProductId("");
+                                  }}
+                                >
+                                  +
+                                </Button>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {editComponentProductIds.map((productId) => (
+                                  <button
+                                    key={productId}
+                                    type="button"
+                                    onClick={() => setEditComponentProductIds((current) => current.filter((id) => id !== productId))}
+                                    className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                                    data-testid={`selected-edit-component-product-${row.id}-${productId}`}
+                                  >
+                                    {productNameById.get(productId) ?? `#${productId}`} ×
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            formatProductNames(productIdsByComponentId.get(row.id), productNameById)
+                          )}
+                        </TableCell>
                         <TableCell>{row.isActive ? "Aktiv" : "Inaktiv"}</TableCell>
                         <TableCell className="space-x-2">
                           {editComponent?.id === row.id ? (
                             <>
-                              <Button size="sm" onClick={() => updateComponentMutation.mutate({ id: row.id, version: row.version, name: editComponent.name.trim(), categoryId: editComponent.categoryId, description: editComponent.description ?? null })}>Speichern</Button>
-                              <Button size="sm" variant="outline" onClick={() => setEditComponent(null)}>Abbrechen</Button>
+                              <Button size="sm" onClick={() => updateComponentMutation.mutate({
+                                id: row.id,
+                                version: row.version,
+                                name: editComponent.name.trim(),
+                                categoryId: editComponent.categoryId,
+                                description: editComponent.description ?? null,
+                                productIds: editComponentProductIds,
+                              })}>Speichern</Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                setEditComponent(null);
+                                setEditComponentProductIds([]);
+                                setEditComponentProductId("");
+                              }}>Abbrechen</Button>
                             </>
                           ) : (
                             <>
-                              <Button size="sm" variant="outline" onClick={() => setEditComponent({ ...row })}>Bearbeiten</Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                setEditComponent({ ...row });
+                                setEditComponentProductIds(productIdsByComponentId.get(row.id) ?? []);
+                                setEditComponentProductId("");
+                              }}>Bearbeiten</Button>
                               <Button size="sm" variant="outline" onClick={() => updateComponentMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive })}>{row.isActive ? "Deaktivieren" : "Aktivieren"}</Button>
                               <Button size="sm" variant="destructive" onClick={() => {
                                 if (!window.confirm(`Komponente "${row.name}" löschen?`)) return;
@@ -686,8 +862,9 @@ export function MasterDataPage() {
                 </Table>
               </div>
             </section>
-          </TabsContent>
-        </Tabs>
+            </div>
+          </div>
+        </div>
       )}
     />
   );

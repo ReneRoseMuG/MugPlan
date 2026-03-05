@@ -23,5 +23,7 @@ router.get(api.masterData.components.list.path, masterDataController.listCompone
 router.post(api.masterData.components.create.path, masterDataController.createComponent);
 router.put(api.masterData.components.update.path, masterDataController.updateComponent);
 router.delete(api.masterData.components.delete.path, masterDataController.deleteComponent);
+router.get(api.masterData.componentProducts.list.path, masterDataController.listComponentProducts);
+router.put(api.masterData.componentProducts.replaceByComponent.path, masterDataController.replaceComponentProducts);
 
 export default router;

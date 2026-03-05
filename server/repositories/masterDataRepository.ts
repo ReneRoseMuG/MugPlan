@@ -17,6 +17,7 @@ import {
   componentCategories,
   components,
   productCategories,
+  productComponent,
   products,
 } from "@shared/schema";
 import { db } from "../db";
@@ -267,5 +268,52 @@ export async function deleteComponentWithVersion(id: number, expectedVersion: nu
   if (outcome === "not_found") return { kind: "not_found" };
   if (outcome === "version_conflict") return { kind: "version_conflict" };
   return { kind: "deleted" };
+}
+
+export async function listComponentProducts() {
+  return db
+    .select()
+    .from(productComponent)
+    .orderBy(asc(productComponent.componentId), asc(productComponent.productId));
+}
+
+export async function replaceComponentProductsWithVersion(
+  componentId: number,
+  expectedVersion: number,
+  productIds: number[],
+): Promise<VersionedUpdateResult<Component>> {
+  const uniqueProductIds = Array.from(new Set(productIds.filter((value) => Number.isFinite(value) && value > 0)));
+
+  return db.transaction(async (tx) => {
+    const versionUpdate = await tx.execute(sql`
+      update components
+      set
+        updated_at = now(),
+        version = version + 1
+      where id = ${componentId}
+        and version = ${expectedVersion}
+    `);
+
+    const affectedRows = Number((versionUpdate as any)?.[0]?.affectedRows ?? (versionUpdate as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      const [existing] = await tx.select({ id: components.id }).from(components).where(eq(components.id, componentId)).limit(1);
+      return existing ? { kind: "version_conflict" as const } : { kind: "not_found" as const };
+    }
+
+    await tx.delete(productComponent).where(eq(productComponent.componentId, componentId));
+
+    if (uniqueProductIds.length > 0) {
+      await tx.insert(productComponent).values(
+        uniqueProductIds.map((productId) => ({
+          componentId,
+          productId,
+          version: 1,
+        })),
+      );
+    }
+
+    const [updatedComponent] = await tx.select().from(components).where(eq(components.id, componentId));
+    return { kind: "updated" as const, row: updatedComponent };
+  });
 }
 

@@ -16,6 +16,7 @@ import {
   insertComponentCategorySchema, updateComponentCategorySchema, componentCategories,
   insertProductSchema, updateProductSchema, products,
   insertComponentSchema, updateComponentSchema, components,
+  productComponent,
 } from './schema';
 
 export const errorSchemas = {
@@ -1334,6 +1335,31 @@ export const api = {
         }).strict(),
         responses: {
           204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    componentProducts: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/master-data/component-products",
+        responses: {
+          200: z.array(z.custom<typeof productComponent.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+        },
+      },
+      replaceByComponent: {
+        method: "PUT" as const,
+        path: "/api/admin/master-data/components/:id/products",
+        input: z.object({
+          version: z.number().int().min(1),
+          productIds: z.array(z.number().int().positive()),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof components.$inferSelect>(),
           403: z.object({ code: z.literal("FORBIDDEN") }),
           404: z.object({ code: z.literal("NOT_FOUND") }),
           409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
