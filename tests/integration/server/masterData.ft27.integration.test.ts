@@ -8,6 +8,7 @@
  * - FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only.
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
+ * - Default-Kategorien (Alle Produkte/Alle Modelle) sind nicht loeschbar.
  * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
  *
  * Fehlerfaelle:
@@ -139,6 +140,42 @@ describe("FT27 integration: master data admin API", () => {
     await admin
       .delete(`/api/admin/master-data/product-categories/${category.body.id}`)
       .send({ version: category.body.version })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+  });
+
+  it("blocks deleting default categories with BUSINESS_CONFLICT", async () => {
+    const admin = await loginAdminAgent();
+
+    const productCategoriesResponse = await admin
+      .get("/api/admin/master-data/product-categories?active=all")
+      .expect(200);
+    const defaultProductCategory = (productCategoriesResponse.body as Array<{ id: number; name: string; version: number }>)
+      .find((row) => row.name === "Alle Produkte");
+
+    expect(defaultProductCategory).toBeDefined();
+
+    await admin
+      .delete(`/api/admin/master-data/product-categories/${defaultProductCategory!.id}`)
+      .send({ version: defaultProductCategory!.version })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    const modelCategoriesResponse = await admin
+      .get("/api/admin/master-data/component-categories?active=all")
+      .expect(200);
+    const defaultModelCategory = (modelCategoriesResponse.body as Array<{ id: number; name: string; version: number }>)
+      .find((row) => row.name === "Alle Modelle");
+
+    expect(defaultModelCategory).toBeDefined();
+
+    await admin
+      .delete(`/api/admin/master-data/component-categories/${defaultModelCategory!.id}`)
+      .send({ version: defaultModelCategory!.version })
       .expect(409)
       .expect((res) => {
         expect(res.body.code).toBe("BUSINESS_CONFLICT");

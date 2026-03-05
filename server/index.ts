@@ -101,8 +101,9 @@ process.on("SIGTERM", () => {
 
 void (async () => {
   try {
-    const [{ ensureSystemRoles }, { getBootstrapState }, { registerRoutes }, { startBackupScheduler }, { initStoragePathsFromEnv }] = await Promise.all([
+    const [{ ensureSystemRoles }, { ensureMasterDataDefaults }, { getBootstrapState }, { registerRoutes }, { startBackupScheduler }, { initStoragePathsFromEnv }] = await Promise.all([
       import("./bootstrap/ensureSystemRoles"),
+      import("./bootstrap/ensureMasterDataDefaults"),
       import("./bootstrap/getBootstrapState"),
       import("./routes"),
       import("./services/backupScheduler"),
@@ -110,6 +111,7 @@ void (async () => {
     ]);
 
     await ensureSystemRoles();
+    await ensureMasterDataDefaults();
     await initStoragePathsFromEnv();
     const bootstrapState = await getBootstrapState();
     await registerRoutes(httpServer, app);

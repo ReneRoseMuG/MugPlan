@@ -70,6 +70,11 @@ export async function createProductCategory(input: InsertProductCategory): Promi
   return row;
 }
 
+export async function getProductCategoryById(id: number): Promise<ProductCategory | undefined> {
+  const [row] = await db.select().from(productCategories).where(eq(productCategories.id, id));
+  return row;
+}
+
 export async function updateProductCategoryWithVersion(
   id: number,
   expectedVersion: number,
@@ -119,6 +124,11 @@ export async function listComponentCategories(filter: ActiveFilter): Promise<Com
 export async function createComponentCategory(input: InsertComponentCategory): Promise<ComponentCategory> {
   const result = await db.insert(componentCategories).values(input);
   const id = toInsertId(result);
+  const [row] = await db.select().from(componentCategories).where(eq(componentCategories.id, id));
+  return row;
+}
+
+export async function getComponentCategoryById(id: number): Promise<ComponentCategory | undefined> {
   const [row] = await db.select().from(componentCategories).where(eq(componentCategories.id, id));
   return row;
 }

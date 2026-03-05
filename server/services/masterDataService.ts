@@ -15,6 +15,9 @@
 import type { CanonicalRoleKey } from "../settings/registry";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 
+const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
+const DEFAULT_MODEL_CATEGORY_NAME = "Alle Modelle";
+
 export class MasterDataError extends Error {
   status: number;
   code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN" | "BUSINESS_CONFLICT";
@@ -98,6 +101,11 @@ export async function deleteProductCategory(
   roleKey: CanonicalRoleKey,
 ): Promise<void> {
   requireAdmin(roleKey);
+  const category = await masterDataRepository.getProductCategoryById(id);
+  if (!category) throw new MasterDataError(404, "NOT_FOUND");
+  if (category.name === DEFAULT_PRODUCT_CATEGORY_NAME) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  }
   try {
     const result = await masterDataRepository.deleteProductCategoryWithVersion(id, expectedVersion);
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
@@ -149,6 +157,11 @@ export async function deleteComponentCategory(
   roleKey: CanonicalRoleKey,
 ): Promise<void> {
   requireAdmin(roleKey);
+  const category = await masterDataRepository.getComponentCategoryById(id);
+  if (!category) throw new MasterDataError(404, "NOT_FOUND");
+  if (category.name === DEFAULT_MODEL_CATEGORY_NAME) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  }
   try {
     const result = await masterDataRepository.deleteComponentCategoryWithVersion(id, expectedVersion);
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");

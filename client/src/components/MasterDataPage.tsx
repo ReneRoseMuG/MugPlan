@@ -222,7 +222,7 @@ export function MasterDataPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "BUSINESS_CONFLICT" ? "Komponenten-Kategorie existiert bereits" : "Komponenten-Kategorie konnte nicht angelegt werden",
+        title: code === "BUSINESS_CONFLICT" ? "Modellkategorie existiert bereits" : "Modellkategorie konnte nicht angelegt werden",
         variant: "destructive",
       });
     },
@@ -242,7 +242,7 @@ export function MasterDataPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "VERSION_CONFLICT" ? "Komponenten-Kategorie wurde zwischenzeitlich geändert" : "Komponenten-Kategorie konnte nicht aktualisiert werden",
+        title: code === "VERSION_CONFLICT" ? "Modellkategorie wurde zwischenzeitlich geändert" : "Modellkategorie konnte nicht aktualisiert werden",
         variant: "destructive",
       });
     },
@@ -257,7 +257,7 @@ export function MasterDataPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "BUSINESS_CONFLICT" ? "Komponenten-Kategorie wird noch verwendet" : "Komponenten-Kategorie konnte nicht gelöscht werden",
+        title: code === "BUSINESS_CONFLICT" ? "Modellkategorie wird noch verwendet" : "Modellkategorie konnte nicht gelöscht werden",
         variant: "destructive",
       });
     },
@@ -350,7 +350,7 @@ export function MasterDataPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "BUSINESS_CONFLICT" ? "Komponente konnte nicht angelegt werden (Werte prüfen)" : "Komponente konnte nicht angelegt werden",
+        title: code === "BUSINESS_CONFLICT" ? "Modell konnte nicht angelegt werden (Werte prüfen)" : "Modell konnte nicht angelegt werden",
         variant: "destructive",
       });
     },
@@ -384,7 +384,7 @@ export function MasterDataPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "VERSION_CONFLICT" ? "Komponente wurde zwischenzeitlich geändert" : "Komponente konnte nicht aktualisiert werden",
+        title: code === "VERSION_CONFLICT" ? "Modell wurde zwischenzeitlich geändert" : "Modell konnte nicht aktualisiert werden",
         variant: "destructive",
       });
     },
@@ -399,7 +399,7 @@ export function MasterDataPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "BUSINESS_CONFLICT" ? "Komponente wird noch verwendet" : "Komponente konnte nicht gelöscht werden",
+        title: code === "BUSINESS_CONFLICT" ? "Modell wird noch verwendet" : "Modell konnte nicht gelöscht werden",
         variant: "destructive",
       });
     },
@@ -524,12 +524,12 @@ export function MasterDataPage() {
             </section>
 
             <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-component-categories">
-              <h4 className="font-bold text-slate-900">Komponenten-Kategorien</h4>
+              <h4 className="font-bold text-slate-900">Modellkategorien</h4>
               <div className="mt-3 flex items-end gap-2">
                 <Input
                   value={newComponentCategoryName}
                   onChange={(event) => setNewComponentCategoryName(event.target.value)}
-                  placeholder="Neue Komponenten-Kategorie"
+                  placeholder="Neue Modellkategorie"
                   data-testid="input-new-component-category"
                 />
                 <Button
@@ -594,7 +594,7 @@ export function MasterDataPage() {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => {
-                                  if (!window.confirm(`Komponenten-Kategorie "${row.name}" löschen?`)) return;
+                                  if (!window.confirm(`Modellkategorie "${row.name}" löschen?`)) return;
                                   deleteComponentCategoryMutation.mutate({ id: row.id, version: row.version });
                                 }}
                               >
@@ -682,9 +682,9 @@ export function MasterDataPage() {
             </section>
 
             <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-components">
-              <h4 className="font-bold text-slate-900">Komponenten</h4>
+              <h4 className="font-bold text-slate-900">Modelle</h4>
               <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[1fr_220px_1fr_280px_auto] lg:items-end">
-                <Input value={newComponent.name} onChange={(event) => setNewComponent((current) => ({ ...current, name: event.target.value }))} placeholder="Komponentenname" />
+                <Input value={newComponent.name} onChange={(event) => setNewComponent((current) => ({ ...current, name: event.target.value }))} placeholder="Modellname" />
                 <select value={newComponent.categoryId} onChange={(event) => setNewComponent((current) => ({ ...current, categoryId: event.target.value }))} className="h-10 rounded border border-slate-300 bg-white px-2 text-sm">
                   <option value="">Kategorie wählen</option>
                   {componentCategories.map((category) => (
@@ -850,7 +850,7 @@ export function MasterDataPage() {
                               }}>Bearbeiten</Button>
                               <Button size="sm" variant="outline" onClick={() => updateComponentMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive })}>{row.isActive ? "Deaktivieren" : "Aktivieren"}</Button>
                               <Button size="sm" variant="destructive" onClick={() => {
-                                if (!window.confirm(`Komponente "${row.name}" löschen?`)) return;
+                                if (!window.confirm(`Modell "${row.name}" löschen?`)) return;
                                 deleteComponentMutation.mutate({ id: row.id, version: row.version });
                               }}>Löschen</Button>
                             </>

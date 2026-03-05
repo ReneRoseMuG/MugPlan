@@ -8,6 +8,7 @@
  * - Nur ADMIN darf FT27-Stammdatenoperationen ausfuehren.
  * - Duplicate-/FK-Fehler werden als BUSINESS_CONFLICT gemappt.
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
+ * - Default-Kategorien (Alle Produkte/Alle Modelle) sind nicht loeschbar.
  * - Component-Product m:n-Operationen folgen derselben Fehlersemantik.
  * - Ohne Filter wird serverseitig auf active normalisiert.
  *
@@ -23,8 +24,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const repositoryMocks = vi.hoisted(() => ({
   listProductCategories: vi.fn(),
   createProductCategory: vi.fn(),
+  getProductCategoryById: vi.fn(),
+  getComponentCategoryById: vi.fn(),
   updateProductWithVersion: vi.fn(),
   deleteProductCategoryWithVersion: vi.fn(),
+  deleteComponentCategoryWithVersion: vi.fn(),
   createProduct: vi.fn(),
   listComponentProducts: vi.fn(),
   replaceComponentProductsWithVersion: vi.fn(),
@@ -33,8 +37,11 @@ const repositoryMocks = vi.hoisted(() => ({
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
   listProductCategories: repositoryMocks.listProductCategories,
   createProductCategory: repositoryMocks.createProductCategory,
+  getProductCategoryById: repositoryMocks.getProductCategoryById,
+  getComponentCategoryById: repositoryMocks.getComponentCategoryById,
   updateProductWithVersion: repositoryMocks.updateProductWithVersion,
   deleteProductCategoryWithVersion: repositoryMocks.deleteProductCategoryWithVersion,
+  deleteComponentCategoryWithVersion: repositoryMocks.deleteComponentCategoryWithVersion,
   createProduct: repositoryMocks.createProduct,
   listComponentProducts: repositoryMocks.listComponentProducts,
   replaceComponentProductsWithVersion: repositoryMocks.replaceComponentProductsWithVersion,
@@ -43,6 +50,7 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
 import {
   createProduct,
   createProductCategory,
+  deleteComponentCategory,
   deleteProductCategory,
   listComponentProducts,
   listProductCategories,
@@ -106,6 +114,7 @@ describe("FT27 unit: masterDataService", () => {
   });
 
   it("maps referenced category delete to BUSINESS_CONFLICT", async () => {
+    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 2, name: "Kategorie A" });
     repositoryMocks.deleteProductCategoryWithVersion.mockRejectedValueOnce({
       code: "ER_ROW_IS_REFERENCED_2",
       errno: 1451,
@@ -115,6 +124,26 @@ describe("FT27 unit: masterDataService", () => {
       status: 409,
       code: "BUSINESS_CONFLICT",
     });
+  });
+
+  it("blocks deleting default product category as BUSINESS_CONFLICT", async () => {
+    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 1, name: "Alle Produkte" });
+
+    await expect(deleteProductCategory(1, 3, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+    expect(repositoryMocks.deleteProductCategoryWithVersion).not.toHaveBeenCalled();
+  });
+
+  it("blocks deleting default model category as BUSINESS_CONFLICT", async () => {
+    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: "Alle Modelle" });
+
+    await expect(deleteComponentCategory(1, 7, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+    expect(repositoryMocks.deleteComponentCategoryWithVersion).not.toHaveBeenCalled();
   });
 
   it("maps product create FK conflict to BUSINESS_CONFLICT", async () => {
