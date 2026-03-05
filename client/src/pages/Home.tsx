@@ -12,8 +12,6 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { AppointmentsListPage } from "@/components/AppointmentsListPage";
-import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
-import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { HelpTextForm } from "@/components/HelpTextForm";
 import { SettingsPage } from "@/components/SettingsPage";
@@ -291,9 +289,9 @@ export default function Home({ onLogout }: HomeProps) {
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView("projectList"); setView("project"); }}
             />
           ) : view === "noteTemplates" && isAdmin ? (
-            <NoteTemplatesPage />
+            <MasterDataPage initialTabId="note-templates" />
           ) : view === "projectStatus" && isAdmin ? (
-            <ProjectStatusPage />
+            <MasterDataPage initialTabId="project-status" />
           ) : view === "helpTexts" && isAdmin ? (
             <HelpTextsPage
               onCreateHelpText={() => {
@@ -322,7 +320,7 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === "demoData" && isAdmin ? (
             <DemoDataPage />
           ) : view === "masterData" && isAdmin ? (
-            <MasterDataPage />
+            <MasterDataPage initialTabId="products" />
           ) : view === "users" && isAdmin ? (
             <UsersPage />
           ) : isContextualCalendarView ? (

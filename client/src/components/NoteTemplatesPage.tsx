@@ -202,6 +202,7 @@ export function NoteTemplatesPage() {
         icon={<FileText className="w-5 h-5" />}
         helpKey="note-templates"
         isLoading={isLoading}
+        hideHeader
         footerSlot={(
           <Button
             variant="outline"

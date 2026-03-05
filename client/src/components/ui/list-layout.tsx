@@ -19,6 +19,7 @@ export interface ListLayoutProps {
   isLoading?: boolean;
   onClose?: () => void;
   showCloseButton?: boolean;
+  hideHeader?: boolean;
   closeTestId?: string;
   className?: string;
   contentClassName?: string;
@@ -38,6 +39,7 @@ export function ListLayout({
   isLoading = false,
   onClose,
   showCloseButton = true,
+  hideHeader = false,
   closeTestId,
   className,
   contentClassName,
@@ -57,27 +59,29 @@ export function ListLayout({
       className={cn("bg-card h-full flex flex-col overflow-hidden", className)}
       data-view-mode-key={viewModeKey}
     >
-      <CardHeader className="pb-4 flex-shrink-0 border-b border-border">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <CardTitle className="text-lg font-bold tracking-wider text-primary flex items-center gap-2">
-              {icon}
-              {title}
-            </CardTitle>
-            {helpKey && <HelpIcon helpKey={helpKey} />}
-          </div>
+      {!hideHeader && (
+        <CardHeader className="pb-4 flex-shrink-0 border-b border-border">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <CardTitle className="text-lg font-bold tracking-wider text-primary flex items-center gap-2">
+                {icon}
+                {title}
+              </CardTitle>
+              {helpKey && <HelpIcon helpKey={helpKey} />}
+            </div>
 
-          <div className="flex items-center gap-2">
-            {viewModeToggle}
-            {headerActions}
-            {onClose && showCloseButton && (
-              <Button size="lg" variant="ghost" onClick={onClose} data-testid={closeTestId}>
-                <X className="w-6 h-6" />
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {viewModeToggle}
+              {headerActions}
+              {onClose && showCloseButton && (
+                <Button size="lg" variant="ghost" onClick={onClose} data-testid={closeTestId}>
+                  <X className="w-6 h-6" />
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
+      )}
 
       {filterSlot && filterPlacement === "top" && (
         <div className="flex-shrink-0 border-b border-border px-6 py-4 bg-card">

@@ -21,6 +21,7 @@ interface ProjectStatusListProps {
   helpKey?: string;
   onCancel?: () => void;
   canEdit?: boolean;
+  hideHeader?: boolean;
 }
 
 interface ProjectStatusListViewProps extends ProjectStatusListProps {
@@ -41,6 +42,7 @@ export function ProjectStatusListView({
   helpKey = "project-status",
   onCancel,
   canEdit = true,
+  hideHeader = false,
 }: ProjectStatusListViewProps) {
   const isPicker = mode === "picker";
   const resolvedTitle = title ?? (isPicker ? "Projektstatus auswählen" : "Projekt Status");
@@ -51,6 +53,7 @@ export function ProjectStatusListView({
       icon={<ListChecks className="w-5 h-5" />}
       helpKey={helpKey}
       isLoading={isLoading}
+      hideHeader={hideHeader}
       onClose={isPicker ? undefined : onCancel}
       closeTestId={isPicker ? undefined : "button-close-project-status"}
       footerSlot={(
@@ -62,7 +65,7 @@ export function ProjectStatusListView({
               disabled={isCreatePending}
               data-testid="button-new-status"
             >
-              Neuer Status
+              Neu
             </Button>
           ) : <span />}
           {onCancel ? (

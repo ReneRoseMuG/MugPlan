@@ -163,6 +163,7 @@ export function ProjectStatusPage() {
         statuses={statuses}
         isLoading={isLoading}
         canEdit={true}
+        hideHeader
         onCreateStatus={handleOpenCreate}
         onEditStatus={handleOpenEdit}
         onToggleStatusActive={handleToggleStatusActive}
