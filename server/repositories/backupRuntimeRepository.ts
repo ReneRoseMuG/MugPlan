@@ -20,7 +20,7 @@ export type ExportAppointmentRow = {
   tourId: number | null;
   tourName: string | null;
   tourColor: string | null;
-  projectId: number;
+  projectId: number | null;
   projectName: string;
   orderNumber: string | null;
   customerId: number;
@@ -94,8 +94,8 @@ export async function getExportAppointmentRows(range: { fromDate: Date; toDate: 
       addressLine2: customers.addressLine2,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(
       and(
@@ -114,8 +114,8 @@ export async function getExportAppointmentRows(range: { fromDate: Date; toDate: 
     tourId: row.tourId ?? null,
     tourName: row.tourName ?? null,
     tourColor: row.tourColor ?? null,
-    projectId: row.projectId,
-    projectName: row.projectName,
+    projectId: row.projectId ?? null,
+    projectName: row.projectName ?? "Ohne Projekt",
     orderNumber: row.orderNumber ?? null,
     customerId: row.customerId,
     customerNumber: row.customerNumber,
@@ -148,8 +148,8 @@ export async function getAllExportAppointmentRows(): Promise<ExportAppointmentRo
       addressLine2: customers.addressLine2,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 
@@ -162,8 +162,8 @@ export async function getAllExportAppointmentRows(): Promise<ExportAppointmentRo
     tourId: row.tourId ?? null,
     tourName: row.tourName ?? null,
     tourColor: row.tourColor ?? null,
-    projectId: row.projectId,
-    projectName: row.projectName,
+    projectId: row.projectId ?? null,
+    projectName: row.projectName ?? "Ohne Projekt",
     orderNumber: row.orderNumber ?? null,
     customerId: row.customerId,
     customerNumber: row.customerNumber,
@@ -235,8 +235,8 @@ export async function getAppointmentByIdForSync(appointmentId: number) {
       tourName: tours.name,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(eq(appointments.id, appointmentId))
     .limit(1);

@@ -2,6 +2,7 @@ import { mysqlTable, text, int, date, time, boolean, bigint, decimal, primaryKey
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { defaultAppointmentDisplayMode } from "./appointmentDisplayMode";
 
 // Customer - Kundenverwaltung (FT 09)
 export const customers = mysqlTable("customer", {
@@ -626,9 +627,12 @@ export type InsertCustomerAttachment = z.infer<typeof insertCustomerAttachmentSc
 export const appointments = mysqlTable("appointments", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   projectId: bigint("project_id", { mode: "number" })
+    .references(() => projects.id, { onDelete: "set null" }),
+  customerId: bigint("customer_id", { mode: "number" })
     .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
+    .references(() => customers.id, { onDelete: "restrict" }),
   tourId: int("tour_id").references(() => tours.id, { onDelete: "restrict", onUpdate: "restrict" }),
+  displayMode: varchar("display_mode", { length: 32 }).notNull().default(defaultAppointmentDisplayMode),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   startDate: date("start_date").notNull(),
@@ -643,6 +647,12 @@ export const appointments = mysqlTable("appointments", {
   byStartDate: index("idx_appt_start_date").on(table.startDate),
   byProjectStartTimeId: index("idx_appt_project_start_time_id").on(
     table.projectId,
+    table.startDate,
+    table.startTime,
+    table.id,
+  ),
+  byCustomerStartTimeId: index("idx_appt_customer_start_time_id").on(
+    table.customerId,
     table.startDate,
     table.startTime,
     table.id,

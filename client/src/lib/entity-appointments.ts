@@ -22,7 +22,7 @@ export function sortAppointmentsByDateDesc<T extends AppointmentSortInput>(a: T,
 
 export function buildLatestAppointmentByProjectId(
   appointments: ReadonlyArray<{
-    projectId: number;
+    projectId: number | null;
     startDate: string;
     startTimeHour?: number | null;
     id: number;
@@ -34,9 +34,13 @@ export function buildLatestAppointmentByProjectId(
   >();
 
   for (const appointment of appointments) {
+    if (appointment.projectId == null) continue;
     const current = latestByProjectId.get(appointment.projectId);
     if (!current || sortAppointmentsByDateDesc(appointment, current) < 0) {
-      latestByProjectId.set(appointment.projectId, appointment);
+      latestByProjectId.set(appointment.projectId, {
+        ...appointment,
+        projectId: appointment.projectId,
+      });
     }
   }
 

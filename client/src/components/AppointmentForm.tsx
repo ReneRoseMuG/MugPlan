@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
@@ -27,6 +27,7 @@ import { RelationSlot } from "@/components/ui/relation-slot";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { ProjectsPage } from "@/components/ProjectsPage";
+import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { AppointmentAttachmentsPanel } from "@/components/AppointmentAttachmentsPanel";
 import { NotesSection } from "@/components/NotesSection";
@@ -58,7 +59,9 @@ interface AppointmentFormProps {
 interface AppointmentDetail {
   id: number;
   version: number;
-  projectId: number;
+  projectId: number | null;
+  customerId: number;
+  displayMode: "standard" | "compact" | "detail";
   tourId: number | null;
   title: string;
   description: string | null;
@@ -167,6 +170,7 @@ export function AppointmentForm({
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [assignedEmployeeIds, setAssignedEmployeeIds] = useState<number[]>([]);
   const [startDate, setStartDate] = useState<string>(
@@ -179,6 +183,7 @@ export function AppointmentForm({
   const [startTimeEnabled, setStartTimeEnabled] = useState(false);
   const [startTimeHour, setStartTimeHour] = useState("");
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
   const [tourConfirmOpen, setTourConfirmOpen] = useState(false);
   const [pendingTourChange, setPendingTourChange] = useState<{
@@ -198,6 +203,7 @@ export function AppointmentForm({
 
   const buildFormSnapshot = (input: {
     projectId: number | null;
+    customerId: number | null;
     tourId: number | null;
     startDate: string;
     endDate: string;
@@ -208,6 +214,7 @@ export function AppointmentForm({
   }) =>
     JSON.stringify({
       projectId: input.projectId,
+      customerId: input.customerId,
       tourId: input.tourId,
       startDate: input.startDate,
       endDate: input.isEndDateEnabled ? input.endDate : null,
@@ -313,6 +320,7 @@ export function AppointmentForm({
     if (!appointmentDetail) return;
     console.info(`${logPrefix} appointment detail loaded`, { appointmentId: appointmentDetail.id });
     setSelectedProjectId(appointmentDetail.projectId);
+    setSelectedCustomerId(appointmentDetail.customerId);
     setSelectedTourId(appointmentDetail.tourId ?? null);
     setStartDate(appointmentDetail.startDate);
     setEndDate(appointmentDetail.endDate ?? appointmentDetail.startDate);
@@ -325,6 +333,7 @@ export function AppointmentForm({
     setInitialFormSnapshot(
       buildFormSnapshot({
         projectId: appointmentDetail.projectId,
+        customerId: appointmentDetail.customerId,
         tourId: appointmentDetail.tourId ?? null,
         startDate: appointmentDetail.startDate,
         endDate: appointmentDetail.endDate ?? appointmentDetail.startDate,
@@ -341,6 +350,7 @@ export function AppointmentForm({
       setInitialFormSnapshot(
         buildFormSnapshot({
           projectId: selectedProjectId,
+          customerId: selectedCustomerId,
           tourId: selectedTourId,
           startDate,
           endDate,
@@ -352,7 +362,7 @@ export function AppointmentForm({
       );
     }
     // Intentionally only initialize once for create mode.
-  }, [isEditing]);
+  }, [isEditing, selectedProjectId, selectedCustomerId, selectedTourId, startDate, endDate, isEndDateEnabled, startTimeHour, startTimeEnabled, assignedEmployeeIds]);
   useEffect(() => {
     if (isEditing) return;
     if (initialTourId === null || initialTourId === undefined) return;
@@ -384,10 +394,11 @@ export function AppointmentForm({
     [projects, selectedProjectId],
   );
 
+  const resolvedCustomerId = selectedProject?.customerId ?? selectedCustomerId;
   const selectedCustomer = useMemo(() => {
-    if (!selectedProject) return null;
-    return customers.find((customer) => customer.id === selectedProject.customerId) ?? null;
-  }, [customers, selectedProject]);
+    if (!resolvedCustomerId) return null;
+    return customers.find((customer) => customer.id === resolvedCustomerId) ?? null;
+  }, [customers, resolvedCustomerId]);
 
   const selectedTour = useMemo(
     () => tours.find((tour) => tour.id === selectedTourId) ?? null,
@@ -444,8 +455,10 @@ export function AppointmentForm({
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
   const isProjectReadOnly = isLocked || readOnlyFields?.includes("project") === true;
+  const isCustomerReadOnly = isLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
   const isFormDirty = initialFormSnapshot !== null && buildFormSnapshot({
     projectId: selectedProjectId,
+    customerId: selectedCustomerId,
     tourId: selectedTourId,
     startDate,
     endDate,
@@ -506,9 +519,17 @@ export function AppointmentForm({
   };
 
   const handleProjectSelect = (id: number) => {
+    const project = projects.find((item) => item.id === id) ?? null;
     setSelectedProjectId(id);
+    setSelectedCustomerId(project?.customerId ?? null);
     setProjectPickerOpen(false);
     console.info(`${logPrefix} project selected`, { projectId: id });
+  };
+
+  const handleCustomerSelect = (id: number) => {
+    setSelectedCustomerId(id);
+    setCustomerPickerOpen(false);
+    console.info(`${logPrefix} customer selected`, { customerId: id });
   };
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
@@ -900,9 +921,9 @@ export function AppointmentForm({
   });
 
   const validateForm = () => {
-    if (!selectedProjectId) {
-      console.info(`${logPrefix} validation blocked: project missing`);
-      toast({ title: "Projekt ist erforderlich", variant: "destructive" });
+    if (!selectedProjectId && !selectedCustomerId) {
+      console.info(`${logPrefix} validation blocked: relation missing`);
+      toast({ title: "Kunde oder Projekt ist erforderlich", variant: "destructive" });
       return false;
     }
     if (isEndDateEnabled && endDate < startDate) {
@@ -1085,9 +1106,18 @@ export function AppointmentForm({
   });
 
   const persistAppointment = async () => {
-    if (!selectedProjectId) return;
+    const resolvedPayloadCustomerId = selectedProject?.customerId ?? selectedCustomerId;
+    if (!resolvedPayloadCustomerId) {
+      toast({
+        title: "Speichern nicht moeglich",
+        description: "Bitte Kunde oder Projekt zuordnen.",
+        variant: "destructive",
+      });
+      return;
+    }
     const basePayload = {
       projectId: selectedProjectId,
+      customerId: resolvedPayloadCustomerId,
       tourId: selectedTourId,
       startDate,
       endDate: isEndDateEnabled ? endDate : null,
@@ -1190,23 +1220,25 @@ export function AppointmentForm({
       const savedAppointmentId = data?.id ?? appointmentId ?? null;
       console.info(`${logPrefix} save success`, {
         action: isEditing ? "edit" : "create",
-        projectId: payload.projectId,
+        projectId: payload.projectId ?? null,
         appointmentId: savedAppointmentId,
       });
-      const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
-        projectId: payload.projectId,
-        fromDate: projectAppointmentsUpcomingFromDate,
-        userRole,
-      });
-      const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
-        projectId: payload.projectId,
-        fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
-        userRole,
-      });
-      console.info(`${logPrefix} cache invalidate`, {
-        upcomingQueryKey: upcomingAppointmentsQueryKey,
-        allQueryKey: allAppointmentsQueryKey,
-      });
+      if (payload.projectId) {
+        const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+          projectId: payload.projectId,
+          fromDate: projectAppointmentsUpcomingFromDate,
+          userRole,
+        });
+        const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+          projectId: payload.projectId,
+          fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
+          userRole,
+        });
+        console.info(`${logPrefix} cache invalidate`, {
+          upcomingQueryKey: upcomingAppointmentsQueryKey,
+          allQueryKey: allAppointmentsQueryKey,
+        });
+      }
       await invalidateRelatedAppointmentQueries(payload.projectId);
       if (isEditing && appointmentId) {
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
@@ -1216,6 +1248,7 @@ export function AppointmentForm({
       });
       setInitialFormSnapshot(buildFormSnapshot({
         projectId: selectedProjectId,
+        customerId: selectedCustomerId,
         tourId: selectedTourId,
         startDate,
         endDate,
@@ -1294,8 +1327,11 @@ export function AppointmentForm({
           <RelationSlot
             title="Kunde"
             icon={<Users className="w-4 h-4" />}
-            state="readonly"
-            emptyText="Kunde wird über das Projekt bestimmt"
+            state={isCustomerReadOnly ? "readonly" : selectedCustomer ? "active" : "empty"}
+            onAdd={isCustomerReadOnly ? undefined : () => setCustomerPickerOpen(true)}
+            onRemove={isCustomerReadOnly ? undefined : () => setSelectedCustomerId(null)}
+            addLabel="Kunde auswählen"
+            emptyText={selectedProjectId ? "Kunde wird über das Projekt bestimmt" : "Kein Kunde ausgewählt"}
             testId="slot-customer-relation"
           >
             {selectedCustomer ? (
@@ -1543,6 +1579,18 @@ export function AppointmentForm({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
+        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
+          <CustomersPage
+            showCloseButton={false}
+            tableOnly
+            title="Kunde auswählen"
+            onSelectCustomer={handleCustomerSelect}
+            onCancel={() => setCustomerPickerOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
@@ -1661,3 +1709,5 @@ export function AppointmentForm({
     </EntityFormLayout>
   );
 }
+
+

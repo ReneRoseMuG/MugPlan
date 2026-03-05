@@ -56,6 +56,7 @@ type WeekTourLane = {
 };
 
 const logPrefix = "[calendar-week]";
+const displayModeCycle: Array<"standard" | "compact" | "detail"> = ["standard", "compact", "detail"];
 
 export function CalendarWeekView({
   currentDate,
@@ -444,6 +445,7 @@ export function CalendarWeekView({
         body: JSON.stringify({
           version: appointment.version,
           projectId: appointment.projectId,
+          customerId: appointment.customer.id,
           tourId: appointment.tourId ?? null,
           startDate: newStartDate,
           endDate: newEndDate,
@@ -474,6 +476,39 @@ export function CalendarWeekView({
       });
     } finally {
       setDraggedAppointmentId(null);
+    }
+  };
+
+  const cycleAppointmentDisplayMode = async (appointment: (typeof appointments)[number]) => {
+    const currentIndex = displayModeCycle.indexOf(appointment.displayMode);
+    const nextMode = displayModeCycle[(currentIndex + 1) % displayModeCycle.length];
+    try {
+      const response = await fetch(`/api/appointments/${appointment.id}/display-mode`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          version: appointment.version,
+          displayMode: nextMode,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        if (error?.code === "VERSION_CONFLICT") {
+          throw new Error("Termin wurde zwischenzeitlich geaendert. Bitte neu laden.");
+        }
+        throw new Error(error?.message ?? "Darstellungsmodus konnte nicht gespeichert werden");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+    } catch (error) {
+      toast({
+        title: "Fehler beim Speichern",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
     }
   };
 
@@ -753,6 +788,9 @@ export function CalendarWeekView({
                                         onMouseLeave={() =>
                                           setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
                                         }
+                                        onCycleDisplayMode={() => {
+                                          void cycleAppointmentDisplayMode(appointment);
+                                        }}
                                         testId={
                                           isContinuationSegment
                                             ? `week-appointment-continuation-${appointment.id}-${dayIdx}`

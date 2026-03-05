@@ -20,6 +20,7 @@ export function CalendarWeekAppointmentPanel({
   highlighted = false,
   onMouseEnter,
   onMouseLeave,
+  onCycleDisplayMode,
   segment = "start",
   context = "default",
   continuationHeightPx,
@@ -37,6 +38,7 @@ export function CalendarWeekAppointmentPanel({
   highlighted?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  onCycleDisplayMode?: () => void;
   segment?: "start" | "continuation";
   context?: "default" | "week-calendar";
   continuationHeightPx?: number | null;
@@ -47,6 +49,7 @@ export function CalendarWeekAppointmentPanel({
   const isContinuation = segment === "continuation";
   const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
   const hasStartTime = Boolean(appointment.startTime && appointment.startTime.trim());
+  const isCompact = appointment.displayMode === "compact";
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
@@ -82,6 +85,21 @@ export function CalendarWeekAppointmentPanel({
     >
       {!isContinuation && (
         <div className="space-y-1.5">
+          {interactive && context === "week-calendar" ? (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCycleDisplayMode?.();
+                }}
+                data-testid={`button-week-display-mode-${appointment.id}`}
+              >
+                Modus: {appointment.displayMode}
+              </button>
+            </div>
+          ) : null}
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}
@@ -105,34 +123,38 @@ export function CalendarWeekAppointmentPanel({
               </div>
             )}
           </div>
-          <CalendarWeekAppointmentPanelCustomer
-            fullName={appointment.customer.fullName}
-            addressLine1={appointment.customer.addressLine1}
-            addressLine2={appointment.customer.addressLine2}
-            postalCode={appointment.customer.postalCode}
-            city={appointment.customer.city}
-          />
-          <CalendarWeekAppointmentPanelProject
-            projectName={resolvedProjectName}
-            projectDescription={appointment.projectDescription}
-            projectStatuses={appointment.projectStatuses}
-            enableFullDescriptionPreview={context === "week-calendar"}
-          />
-          {context === "week-calendar" ? (
+          {!isCompact ? (
             <>
-              <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-              <CalendarWeekAppointmentNotesHover
-                appointmentId={appointment.id}
-                customerId={appointment.customer.id}
-                projectId={appointment.projectId}
-                customerNotesCount={appointment.customerNotesCount ?? 0}
-                projectNotesCount={appointment.projectNotesCount ?? 0}
-                appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+              <CalendarWeekAppointmentPanelCustomer
+                fullName={appointment.customer.fullName ?? ""}
+                addressLine1={appointment.customer.addressLine1}
+                addressLine2={appointment.customer.addressLine2}
+                postalCode={appointment.customer.postalCode}
+                city={appointment.customer.city}
               />
+              <CalendarWeekAppointmentPanelProject
+                projectName={resolvedProjectName}
+                projectDescription={appointment.projectDescription}
+                projectStatuses={appointment.projectStatuses}
+                enableFullDescriptionPreview={context === "week-calendar"}
+              />
+              {context === "week-calendar" ? (
+                <>
+                  <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+                  <CalendarWeekAppointmentNotesHover
+                    appointmentId={appointment.id}
+                    customerId={appointment.customer.id}
+                    projectId={appointment.projectId}
+                    customerNotesCount={appointment.customerNotesCount ?? 0}
+                    projectNotesCount={appointment.projectNotesCount ?? 0}
+                    appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+                  />
+                </>
+              ) : (
+                <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+              )}
             </>
-          ) : (
-            <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
-          )}
+          ) : null}
         </div>
       )}
       {isContinuation && (
