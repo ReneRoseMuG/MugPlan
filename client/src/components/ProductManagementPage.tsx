@@ -24,6 +24,9 @@ type ComponentMutationInput = ProductMutationInput & {
   productIds?: number[];
 };
 
+const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
+const DEFAULT_COMPONENT_CATEGORY_NAME = "Alle Modelle";
+
 function extractApiCode(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
   const start = error.message.indexOf("{");
@@ -121,6 +124,8 @@ export function ProductManagementPage() {
   const products = productsQuery.data ?? [];
   const components = componentsQuery.data ?? [];
   const componentProducts = componentProductsQuery.data ?? [];
+  const isDefaultProductCategory = (category: ProductCategory): boolean => category.name === DEFAULT_PRODUCT_CATEGORY_NAME;
+  const isDefaultComponentCategory = (category: ComponentCategory): boolean => category.name === DEFAULT_COMPONENT_CATEGORY_NAME;
 
   const productCategoryNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -425,75 +430,86 @@ export function ProductManagementPage() {
               <h4 className="font-bold text-slate-900">Produktkategorien</h4>
               <div className="mt-3 flex items-end gap-2">
                 <Input
-                  value={newProductCategoryName}
-                  onChange={(event) => setNewProductCategoryName(event.target.value)}
-                  placeholder="Neue Produktkategorie"
+                  value={editProductCategory ? editProductCategory.name : newProductCategoryName}
+                  onChange={(event) => {
+                    if (editProductCategory) {
+                      setEditProductCategory({ ...editProductCategory, name: event.target.value });
+                    } else {
+                      setNewProductCategoryName(event.target.value);
+                    }
+                  }}
+                  placeholder={editProductCategory ? "Produktkategorie bearbeiten" : "Neue Produktkategorie"}
                   data-testid="input-new-product-category"
                 />
                   <Button
                     variant="outline"
                     onClick={() => {
+                      if (editProductCategory) {
+                        if (!editProductCategory.name.trim() || isDefaultProductCategory(editProductCategory)) return;
+                        updateProductCategoryMutation.mutate({
+                          id: editProductCategory.id,
+                          version: editProductCategory.version,
+                          name: editProductCategory.name.trim(),
+                        });
+                        return;
+                      }
                       if (!newProductCategoryName.trim()) return;
                       createProductCategoryMutation.mutate();
                     }}
                     data-testid="button-create-product-category"
                   >
-                  Neu
+                  {editProductCategory ? "Speichern" : "Neu"}
                   </Button>
+                  {editProductCategory ? (
+                    <Button variant="outline" onClick={() => setEditProductCategory(null)}>
+                      Abbrechen
+                    </Button>
+                  ) : null}
               </div>
               <div className="mt-4 min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[330px]">Aktionen</TableHead>
+                      <TableHead className="w-[330px] text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {productCategories.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell>
-                          {editProductCategory?.id === row.id ? (
-                            <Input
-                              value={editProductCategory.name}
-                              onChange={(event) => setEditProductCategory({ ...editProductCategory, name: event.target.value })}
-                            />
-                          ) : row.name}
-                        </TableCell>
-                        <TableCell>{row.isActive ? "Aktiv" : "Inaktiv"}</TableCell>
-                        <TableCell className="space-x-2">
-                          {editProductCategory?.id === row.id ? (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => updateProductCategoryMutation.mutate({
-                                  id: row.id,
-                                  version: row.version,
-                                  name: editProductCategory.name.trim(),
-                                })}
-                              >
-                                Speichern
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => setEditProductCategory(null)}>
-                                Abbrechen
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button size="sm" variant="outline" onClick={() => setEditProductCategory({ ...row })}>Bearbeiten</Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => {
-                                  if (!window.confirm(`Produktkategorie "${row.name}" löschen?`)) return;
-                                  deleteProductCategoryMutation.mutate({ id: row.id, version: row.version });
-                                }}
-                              >
-                                Löschen
-                              </Button>
-                            </>
-                          )}
+                      <TableRow
+                        key={row.id}
+                        className={editProductCategory?.id === row.id ? "bg-slate-50" : undefined}
+                        onClick={() => {
+                          if (isDefaultProductCategory(row)) return;
+                          setEditProductCategory({ ...row });
+                        }}
+                      >
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell className="space-x-2 text-right whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isDefaultProductCategory(row)}
+                            title={isDefaultProductCategory(row) ? "Default-Kategorie ist nicht bearbeitbar" : undefined}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (isDefaultProductCategory(row)) return;
+                              setEditProductCategory({ ...row });
+                            }}
+                          >
+                            {editProductCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (!window.confirm(`Produktkategorie "${row.name}" löschen?`)) return;
+                              deleteProductCategoryMutation.mutate({ id: row.id, version: row.version });
+                            }}
+                          >
+                            Löschen
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -506,75 +522,86 @@ export function ProductManagementPage() {
               <h4 className="font-bold text-slate-900">Modellkategorien</h4>
               <div className="mt-3 flex items-end gap-2">
                 <Input
-                  value={newComponentCategoryName}
-                  onChange={(event) => setNewComponentCategoryName(event.target.value)}
-                  placeholder="Neue Modellkategorie"
+                  value={editComponentCategory ? editComponentCategory.name : newComponentCategoryName}
+                  onChange={(event) => {
+                    if (editComponentCategory) {
+                      setEditComponentCategory({ ...editComponentCategory, name: event.target.value });
+                    } else {
+                      setNewComponentCategoryName(event.target.value);
+                    }
+                  }}
+                  placeholder={editComponentCategory ? "Modellkategorie bearbeiten" : "Neue Modellkategorie"}
                   data-testid="input-new-component-category"
                 />
                   <Button
                     variant="outline"
                     onClick={() => {
+                      if (editComponentCategory) {
+                        if (!editComponentCategory.name.trim() || isDefaultComponentCategory(editComponentCategory)) return;
+                        updateComponentCategoryMutation.mutate({
+                          id: editComponentCategory.id,
+                          version: editComponentCategory.version,
+                          name: editComponentCategory.name.trim(),
+                        });
+                        return;
+                      }
                       if (!newComponentCategoryName.trim()) return;
                       createComponentCategoryMutation.mutate();
                     }}
                     data-testid="button-create-component-category"
                   >
-                  Neu
+                  {editComponentCategory ? "Speichern" : "Neu"}
                   </Button>
+                  {editComponentCategory ? (
+                    <Button variant="outline" onClick={() => setEditComponentCategory(null)}>
+                      Abbrechen
+                    </Button>
+                  ) : null}
               </div>
               <div className="mt-4 min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[330px]">Aktionen</TableHead>
+                      <TableHead className="w-[330px] text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {componentCategories.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell>
-                          {editComponentCategory?.id === row.id ? (
-                            <Input
-                              value={editComponentCategory.name}
-                              onChange={(event) => setEditComponentCategory({ ...editComponentCategory, name: event.target.value })}
-                            />
-                          ) : row.name}
-                        </TableCell>
-                        <TableCell>{row.isActive ? "Aktiv" : "Inaktiv"}</TableCell>
-                        <TableCell className="space-x-2">
-                          {editComponentCategory?.id === row.id ? (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => updateComponentCategoryMutation.mutate({
-                                  id: row.id,
-                                  version: row.version,
-                                  name: editComponentCategory.name.trim(),
-                                })}
-                              >
-                                Speichern
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => setEditComponentCategory(null)}>
-                                Abbrechen
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button size="sm" variant="outline" onClick={() => setEditComponentCategory({ ...row })}>Bearbeiten</Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => {
-                                  if (!window.confirm(`Modellkategorie "${row.name}" löschen?`)) return;
-                                  deleteComponentCategoryMutation.mutate({ id: row.id, version: row.version });
-                                }}
-                              >
-                                Löschen
-                              </Button>
-                            </>
-                          )}
+                      <TableRow
+                        key={row.id}
+                        className={editComponentCategory?.id === row.id ? "bg-slate-50" : undefined}
+                        onClick={() => {
+                          if (isDefaultComponentCategory(row)) return;
+                          setEditComponentCategory({ ...row });
+                        }}
+                      >
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell className="space-x-2 text-right whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isDefaultComponentCategory(row)}
+                            title={isDefaultComponentCategory(row) ? "Default-Kategorie ist nicht bearbeitbar" : undefined}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (isDefaultComponentCategory(row)) return;
+                              setEditComponentCategory({ ...row });
+                            }}
+                          >
+                            {editComponentCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (!window.confirm(`Modellkategorie "${row.name}" löschen?`)) return;
+                              deleteComponentCategoryMutation.mutate({ id: row.id, version: row.version });
+                            }}
+                          >
+                            Löschen
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -591,19 +618,66 @@ export function ProductManagementPage() {
               <h4 className="font-bold text-slate-900">Produkte</h4>
               <div className="mt-3 space-y-2">
                 <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_132px_auto] lg:items-end">
-                  <Input value={newProduct.name} onChange={(event) => setNewProduct((current) => ({ ...current, name: event.target.value }))} placeholder="Produktname" />
-                  <select value={newProduct.categoryId} onChange={(event) => setNewProduct((current) => ({ ...current, categoryId: event.target.value }))} className="h-10 rounded border border-slate-300 bg-white px-2 text-sm">
+                  <Input
+                    value={editProduct ? editProduct.name : newProduct.name}
+                    onChange={(event) => {
+                      if (editProduct) {
+                        setEditProduct({ ...editProduct, name: event.target.value });
+                      } else {
+                        setNewProduct((current) => ({ ...current, name: event.target.value }));
+                      }
+                    }}
+                    placeholder={editProduct ? "Produkt bearbeiten" : "Produktname"}
+                  />
+                  <select
+                    value={editProduct ? String(editProduct.categoryId) : newProduct.categoryId}
+                    onChange={(event) => {
+                      if (editProduct) {
+                        setEditProduct({ ...editProduct, categoryId: Number(event.target.value) });
+                      } else {
+                        setNewProduct((current) => ({ ...current, categoryId: event.target.value }));
+                      }
+                    }}
+                    className="h-10 rounded border border-slate-300 bg-white px-2 text-sm"
+                  >
                     <option value="">Kategorie</option>
                     {productCategories.map((category) => (
                       <option key={category.id} value={category.id}>{category.name}</option>
                     ))}
                   </select>
                   <Button variant="outline" onClick={() => {
+                    if (editProduct) {
+                      if (!editProduct.name.trim()) return;
+                      updateProductMutation.mutate({
+                        id: editProduct.id,
+                        version: editProduct.version,
+                        name: editProduct.name.trim(),
+                        categoryId: editProduct.categoryId,
+                        description: editProduct.description ?? null,
+                      });
+                      return;
+                    }
                     if (!newProduct.name.trim() || !newProduct.categoryId) return;
                     createProductMutation.mutate();
-                  }}>Neu</Button>
+                  }}>{editProduct ? "Speichern" : "Neu"}</Button>
+                  {editProduct ? (
+                    <Button variant="outline" onClick={() => setEditProduct(null)}>
+                      Abbrechen
+                    </Button>
+                  ) : null}
                 </div>
-                <Textarea value={newProduct.description} onChange={(event) => setNewProduct((current) => ({ ...current, description: event.target.value }))} placeholder="Beschreibung (optional)" className="min-h-[40px]" />
+                <Textarea
+                  value={editProduct ? (editProduct.description ?? "") : newProduct.description}
+                  onChange={(event) => {
+                    if (editProduct) {
+                      setEditProduct({ ...editProduct, description: event.target.value || null });
+                    } else {
+                      setNewProduct((current) => ({ ...current, description: event.target.value }));
+                    }
+                  }}
+                  placeholder="Beschreibung (optional)"
+                  className="min-h-[40px]"
+                />
               </div>
 
               <div className="mt-4 min-h-0 flex-1 overflow-auto">
@@ -612,42 +686,50 @@ export function ProductManagementPage() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Kategorie</TableHead>
-                      <TableHead>Beschreibung</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[360px]">Aktionen</TableHead>
+                      <TableHead className="w-[360px] text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {products.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell>{editProduct?.id === row.id ? <Input value={editProduct.name} onChange={(event) => setEditProduct({ ...editProduct, name: event.target.value })} /> : row.name}</TableCell>
-                        <TableCell>
-                          {editProduct?.id === row.id ? (
-                            <select value={String(editProduct.categoryId)} onChange={(event) => setEditProduct({ ...editProduct, categoryId: Number(event.target.value) })} className="h-9 rounded border border-slate-300 bg-white px-2 text-sm">
-                              {productCategories.map((category) => (
-                                <option key={category.id} value={category.id}>{category.name}</option>
-                              ))}
-                            </select>
-                          ) : (productCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`)}
-                        </TableCell>
-                        <TableCell>{editProduct?.id === row.id ? <Textarea value={editProduct.description ?? ""} onChange={(event) => setEditProduct({ ...editProduct, description: event.target.value || null })} className="min-h-[40px]" /> : (row.description ?? "-")}</TableCell>
-                        <TableCell>{row.isActive ? "Aktiv" : "Inaktiv"}</TableCell>
-                        <TableCell className="space-x-2">
-                          {editProduct?.id === row.id ? (
-                            <>
-                              <Button size="sm" onClick={() => updateProductMutation.mutate({ id: row.id, version: row.version, name: editProduct.name.trim(), categoryId: editProduct.categoryId, description: editProduct.description ?? null })}>Speichern</Button>
-                              <Button size="sm" variant="outline" onClick={() => setEditProduct(null)}>Abbrechen</Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button size="sm" variant="outline" onClick={() => setEditProduct({ ...row })}>Bearbeiten</Button>
-                              <Button size="sm" variant="outline" onClick={() => updateProductMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive })}>{row.isActive ? "Deaktivieren" : "Aktivieren"}</Button>
-                              <Button size="sm" variant="destructive" onClick={() => {
-                                if (!window.confirm(`Produkt "${row.name}" löschen?`)) return;
-                                deleteProductMutation.mutate({ id: row.id, version: row.version });
-                              }}>Löschen</Button>
-                            </>
-                          )}
+                      <TableRow
+                        key={row.id}
+                        className={editProduct?.id === row.id ? "bg-slate-50" : undefined}
+                        onClick={() => setEditProduct({ ...row })}
+                      >
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell>{productCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`}</TableCell>
+                        <TableCell className="space-x-2 text-right whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setEditProduct({ ...row });
+                            }}
+                          >
+                            {editProduct?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              updateProductMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive });
+                            }}
+                          >
+                            {row.isActive ? "Deaktivieren" : "Aktivieren"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (!window.confirm(`Produkt "${row.name}" löschen?`)) return;
+                              deleteProductMutation.mutate({ id: row.id, version: row.version });
+                            }}
+                          >
+                            Löschen
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -660,8 +742,28 @@ export function ProductManagementPage() {
               <h4 className="font-bold text-slate-900">Modelle</h4>
               <div className="mt-3 space-y-2">
                 <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_132px_168px_auto] lg:items-end">
-                  <Input value={newComponent.name} onChange={(event) => setNewComponent((current) => ({ ...current, name: event.target.value }))} placeholder="Modellname" />
-                  <select value={newComponent.categoryId} onChange={(event) => setNewComponent((current) => ({ ...current, categoryId: event.target.value }))} className="h-10 rounded border border-slate-300 bg-white px-2 text-sm">
+                  <Input
+                    value={editComponent ? editComponent.name : newComponent.name}
+                    onChange={(event) => {
+                      if (editComponent) {
+                        setEditComponent({ ...editComponent, name: event.target.value });
+                      } else {
+                        setNewComponent((current) => ({ ...current, name: event.target.value }));
+                      }
+                    }}
+                    placeholder={editComponent ? "Modell bearbeiten" : "Modellname"}
+                  />
+                  <select
+                    value={editComponent ? String(editComponent.categoryId) : newComponent.categoryId}
+                    onChange={(event) => {
+                      if (editComponent) {
+                        setEditComponent({ ...editComponent, categoryId: Number(event.target.value) });
+                      } else {
+                        setNewComponent((current) => ({ ...current, categoryId: event.target.value }));
+                      }
+                    }}
+                    className="h-10 rounded border border-slate-300 bg-white px-2 text-sm"
+                  >
                     <option value="">Kategorie</option>
                     {componentCategories.map((category) => (
                       <option key={category.id} value={category.id}>{category.name}</option>
@@ -669,14 +771,20 @@ export function ProductManagementPage() {
                   </select>
                   <div className="flex items-center gap-2">
                     <select
-                      value={newComponentProductId}
-                      onChange={(event) => setNewComponentProductId(event.target.value)}
+                      value={editComponent ? editComponentProductId : newComponentProductId}
+                      onChange={(event) => {
+                        if (editComponent) {
+                          setEditComponentProductId(event.target.value);
+                        } else {
+                          setNewComponentProductId(event.target.value);
+                        }
+                      }}
                       className="h-10 w-full rounded border border-slate-300 bg-white px-2 text-sm"
                       data-testid="input-new-component-products"
                     >
                       <option value="">Produkt</option>
                       {products
-                        .filter((product) => !newComponent.productIds.includes(product.id))
+                        .filter((product) => !(editComponent ? editComponentProductIds : newComponent.productIds).includes(product.id))
                         .map((product) => (
                           <option key={product.id} value={product.id}>{product.name}</option>
                         ))}
@@ -685,36 +793,81 @@ export function ProductManagementPage() {
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        const selectedId = Number(newComponentProductId);
+                        const selectedId = Number(editComponent ? editComponentProductId : newComponentProductId);
                         if (!Number.isFinite(selectedId) || selectedId <= 0) return;
-                        setNewComponent((current) => ({
-                          ...current,
-                          productIds: current.productIds.includes(selectedId)
-                            ? current.productIds
-                            : [...current.productIds, selectedId],
-                        }));
-                        setNewComponentProductId("");
+                        if (editComponent) {
+                          setEditComponentProductIds((current) => (
+                            current.includes(selectedId) ? current : [...current, selectedId]
+                          ));
+                          setEditComponentProductId("");
+                        } else {
+                          setNewComponent((current) => ({
+                            ...current,
+                            productIds: current.productIds.includes(selectedId)
+                              ? current.productIds
+                              : [...current.productIds, selectedId],
+                          }));
+                          setNewComponentProductId("");
+                        }
                       }}
                     >
                       +
                     </Button>
                   </div>
                   <Button variant="outline" onClick={() => {
+                    if (editComponent) {
+                      if (!editComponent.name.trim()) return;
+                      updateComponentMutation.mutate({
+                        id: editComponent.id,
+                        version: editComponent.version,
+                        name: editComponent.name.trim(),
+                        categoryId: editComponent.categoryId,
+                        description: editComponent.description ?? null,
+                        productIds: editComponentProductIds,
+                      });
+                      return;
+                    }
                     if (!newComponent.name.trim() || !newComponent.categoryId) return;
                     createComponentMutation.mutate();
-                  }}>Neu</Button>
+                  }}>{editComponent ? "Speichern" : "Neu"}</Button>
+                  {editComponent ? (
+                    <Button variant="outline" onClick={() => {
+                      setEditComponent(null);
+                      setEditComponentProductIds([]);
+                      setEditComponentProductId("");
+                    }}>
+                      Abbrechen
+                    </Button>
+                  ) : null}
                 </div>
-                <Textarea value={newComponent.description} onChange={(event) => setNewComponent((current) => ({ ...current, description: event.target.value }))} placeholder="Beschreibung (optional)" className="min-h-[40px]" />
+                <Textarea
+                  value={editComponent ? (editComponent.description ?? "") : newComponent.description}
+                  onChange={(event) => {
+                    if (editComponent) {
+                      setEditComponent({ ...editComponent, description: event.target.value || null });
+                    } else {
+                      setNewComponent((current) => ({ ...current, description: event.target.value }));
+                    }
+                  }}
+                  placeholder="Beschreibung (optional)"
+                  className="min-h-[40px]"
+                />
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {newComponent.productIds.map((productId) => (
+                {(editComponent ? editComponentProductIds : newComponent.productIds).map((productId) => (
                   <button
                     key={productId}
                     type="button"
-                    onClick={() => setNewComponent((current) => ({
-                      ...current,
-                      productIds: current.productIds.filter((id) => id !== productId),
-                    }))}
+                    onClick={() => {
+                      if (editComponent) {
+                        setEditComponentProductIds((current) => current.filter((id) => id !== productId));
+                      } else {
+                        setNewComponent((current) => ({
+                          ...current,
+                          productIds: current.productIds.filter((id) => id !== productId),
+                        }));
+                      }
+                    }}
                     className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
                     data-testid={`selected-new-component-product-${productId}`}
                   >
@@ -729,109 +882,58 @@ export function ProductManagementPage() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Kategorie</TableHead>
-                      <TableHead>Beschreibung</TableHead>
                       <TableHead>Produkte</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[420px]">Aktionen</TableHead>
+                      <TableHead className="w-[420px] text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {components.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell>{editComponent?.id === row.id ? <Input value={editComponent.name} onChange={(event) => setEditComponent({ ...editComponent, name: event.target.value })} /> : row.name}</TableCell>
-                        <TableCell>
-                          {editComponent?.id === row.id ? (
-                            <select value={String(editComponent.categoryId)} onChange={(event) => setEditComponent({ ...editComponent, categoryId: Number(event.target.value) })} className="h-9 rounded border border-slate-300 bg-white px-2 text-sm">
-                              {componentCategories.map((category) => (
-                                <option key={category.id} value={category.id}>{category.name}</option>
-                              ))}
-                            </select>
-                          ) : (componentCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`)}
-                        </TableCell>
-                        <TableCell>{editComponent?.id === row.id ? <Textarea value={editComponent.description ?? ""} onChange={(event) => setEditComponent({ ...editComponent, description: event.target.value || null })} className="min-h-[40px]" /> : (row.description ?? "-")}</TableCell>
-                        <TableCell>
-                          {editComponent?.id === row.id ? (
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <select
-                                  value={editComponentProductId}
-                                  onChange={(event) => setEditComponentProductId(event.target.value)}
-                                  className="h-9 w-full rounded border border-slate-300 bg-white px-2 text-sm"
-                                  data-testid={`input-edit-component-products-${row.id}`}
-                                >
-                                  <option value="">Produkt</option>
-                                  {products
-                                    .filter((product) => !editComponentProductIds.includes(product.id))
-                                    .map((product) => (
-                                      <option key={product.id} value={product.id}>{product.name}</option>
-                                    ))}
-                                </select>
-                                <Button
-                                  size="sm"
-                                  type="button"
-                                  variant="outline"
-                                  onClick={() => {
-                                    const selectedId = Number(editComponentProductId);
-                                    if (!Number.isFinite(selectedId) || selectedId <= 0) return;
-                                    setEditComponentProductIds((current) => (
-                                      current.includes(selectedId) ? current : [...current, selectedId]
-                                    ));
-                                    setEditComponentProductId("");
-                                  }}
-                                >
-                                  +
-                                </Button>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {editComponentProductIds.map((productId) => (
-                                  <button
-                                    key={productId}
-                                    type="button"
-                                    onClick={() => setEditComponentProductIds((current) => current.filter((id) => id !== productId))}
-                                    className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
-                                    data-testid={`selected-edit-component-product-${row.id}-${productId}`}
-                                  >
-                                    {productNameById.get(productId) ?? `#${productId}`} ×
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            formatProductNames(productIdsByComponentId.get(row.id), productNameById)
-                          )}
-                        </TableCell>
-                        <TableCell>{row.isActive ? "Aktiv" : "Inaktiv"}</TableCell>
-                        <TableCell className="space-x-2">
-                          {editComponent?.id === row.id ? (
-                            <>
-                              <Button size="sm" onClick={() => updateComponentMutation.mutate({
-                                id: row.id,
-                                version: row.version,
-                                name: editComponent.name.trim(),
-                                categoryId: editComponent.categoryId,
-                                description: editComponent.description ?? null,
-                                productIds: editComponentProductIds,
-                              })}>Speichern</Button>
-                              <Button size="sm" variant="outline" onClick={() => {
-                                setEditComponent(null);
-                                setEditComponentProductIds([]);
-                                setEditComponentProductId("");
-                              }}>Abbrechen</Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button size="sm" variant="outline" onClick={() => {
-                                setEditComponent({ ...row });
-                                setEditComponentProductIds(productIdsByComponentId.get(row.id) ?? []);
-                                setEditComponentProductId("");
-                              }}>Bearbeiten</Button>
-                              <Button size="sm" variant="outline" onClick={() => updateComponentMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive })}>{row.isActive ? "Deaktivieren" : "Aktivieren"}</Button>
-                              <Button size="sm" variant="destructive" onClick={() => {
-                                if (!window.confirm(`Modell "${row.name}" löschen?`)) return;
-                                deleteComponentMutation.mutate({ id: row.id, version: row.version });
-                              }}>Löschen</Button>
-                            </>
-                          )}
+                      <TableRow
+                        key={row.id}
+                        className={editComponent?.id === row.id ? "bg-slate-50" : undefined}
+                        onClick={() => {
+                          setEditComponent({ ...row });
+                          setEditComponentProductIds(productIdsByComponentId.get(row.id) ?? []);
+                          setEditComponentProductId("");
+                        }}
+                      >
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell>{componentCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`}</TableCell>
+                        <TableCell>{formatProductNames(productIdsByComponentId.get(row.id), productNameById)}</TableCell>
+                        <TableCell className="space-x-2 text-right whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setEditComponent({ ...row });
+                              setEditComponentProductIds(productIdsByComponentId.get(row.id) ?? []);
+                              setEditComponentProductId("");
+                            }}
+                          >
+                            {editComponent?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              updateComponentMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive });
+                            }}
+                          >
+                            {row.isActive ? "Deaktivieren" : "Aktivieren"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (!window.confirm(`Modell "${row.name}" löschen?`)) return;
+                              deleteComponentMutation.mutate({ id: row.id, version: row.version });
+                            }}
+                          >
+                            Löschen
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

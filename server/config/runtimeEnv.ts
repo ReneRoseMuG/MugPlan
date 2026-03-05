@@ -57,7 +57,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
   }
 
   const mode = normalizeMode(process.env.NODE_ENV);
-  process.env.NODE_ENV = mode;
 
   const resolved = resolveEnvFile(mode);
   let envSource: RuntimeEnvSource = "process";
