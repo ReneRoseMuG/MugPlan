@@ -322,6 +322,79 @@ export async function deleteComponent(req: Request, res: Response, next: NextFun
   }
 }
 
+export async function listTags(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = ensureRoleKey(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const rows = await masterDataService.listTags(roleKey);
+    res.json(rows);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+export async function createTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = ensureRoleKey(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const input = api.masterData.tags.create.input.parse(req.body);
+    const row = await masterDataService.createTag(input, roleKey);
+    res.status(201).json(row);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+export async function updateTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = parseId(req.params.id);
+    const roleKey = ensureRoleKey(req);
+    if (!Number.isFinite(id) || id <= 0) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const input = api.masterData.tags.update.input.parse(req.body);
+    const row = await masterDataService.updateTag(id, input.version, input, roleKey);
+    res.json(row);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+export async function deleteTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = parseId(req.params.id);
+    const roleKey = ensureRoleKey(req);
+    if (!Number.isFinite(id) || id <= 0) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const input = api.masterData.tags.delete.input.parse(req.body);
+    await masterDataService.deleteTag(id, input.version, roleKey);
+    res.status(204).send();
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
 export async function listComponentProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = ensureRoleKey(req);

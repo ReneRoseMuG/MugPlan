@@ -1,4 +1,6 @@
 import type { InsertCustomer } from "@shared/schema";
+import { projectTags, tags } from "@shared/schema";
+import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
 import * as customersService from "../../server/services/customersService";
@@ -38,6 +40,26 @@ export function buildCustomerPayload(prefix = "CUST"): InsertCustomer {
 
 export async function createCustomerFixture(prefix = "CUST") {
   return customersService.createCustomer(buildCustomerPayload(prefix));
+}
+
+export async function createTagFixture(prefix = "TAG") {
+  const token = nextToken(prefix);
+  const result = await db.insert(tags).values({
+    name: token,
+    color: "#2563eb",
+    isDefault: false,
+    version: 1,
+  });
+  const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
+  return { id: insertedId };
+}
+
+export async function attachProjectTagFixture(projectId: number, tagId: number) {
+  await db.insert(projectTags).values({
+    projectId,
+    tagId,
+    version: 1,
+  });
 }
 
 export async function createProjectFixture(params?: {

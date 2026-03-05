@@ -5,6 +5,7 @@
   InsertComponentCategory,
   InsertProduct,
   InsertProductCategory,
+  Tag,
   Product,
   ProductCategory,
   UpdateComponent,
@@ -288,6 +289,62 @@ export async function deleteComponent(
     }
     throw error;
   }
+}
+
+export async function listTags(roleKey: CanonicalRoleKey): Promise<Tag[]> {
+  requireAdmin(roleKey);
+  return masterDataRepository.listTags();
+}
+
+export async function createTag(input: { name: string; color: string }, roleKey: CanonicalRoleKey): Promise<Tag> {
+  requireAdmin(roleKey);
+  try {
+    return await masterDataRepository.createTag(input);
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+}
+
+export async function updateTag(
+  id: number,
+  expectedVersion: number,
+  input: { name?: string; color?: string },
+  roleKey: CanonicalRoleKey,
+): Promise<Tag> {
+  requireAdmin(roleKey);
+  try {
+    const result = await masterDataRepository.updateTagWithVersion(id, expectedVersion, input);
+    if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
+    if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
+    return result.row;
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+}
+
+export async function deleteTag(
+  id: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<void> {
+  requireAdmin(roleKey);
+  const relationCounts = await masterDataRepository.getTagRelationCounts(id);
+  const relationTotal = relationCounts.projectCount
+    + relationCounts.customerCount
+    + relationCounts.employeeCount
+    + relationCounts.appointmentCount;
+  if (relationTotal > 0) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  }
+  const result = await masterDataRepository.deleteTagWithVersion(id, expectedVersion);
+  if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
+  if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
 }
 
 export async function listComponentProducts(roleKey: CanonicalRoleKey) {

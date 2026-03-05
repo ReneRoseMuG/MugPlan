@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from "react";
 import { Boxes } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Component, ComponentCategory, Product, ProductCategory, ProductComponent } from "@shared/schema";
+import type { Component, ComponentCategory, Product, ProductCategory, ProductComponent, Tag } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,7 @@ async function invalidateMasterDataQueries(activeScope: ActiveScope): Promise<vo
     `/api/admin/master-data/component-categories?active=${activeScope}`,
     `/api/admin/master-data/products?active=${activeScope}`,
     `/api/admin/master-data/components?active=${activeScope}`,
+    "/api/admin/master-data/tags",
     "/api/admin/master-data/component-products",
     "/api/admin/master-data/product-categories?active=all",
     "/api/admin/master-data/component-categories?active=all",
@@ -78,6 +79,8 @@ export function MasterDataPage() {
 
   const [newProduct, setNewProduct] = useState({ name: "", categoryId: "", description: "" });
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [newTag, setNewTag] = useState({ name: "", color: "#2563eb" });
+  const [editTag, setEditTag] = useState<Tag | null>(null);
 
   const [newComponent, setNewComponent] = useState({ name: "", categoryId: "", description: "", productIds: [] as number[] });
   const [newComponentProductId, setNewComponentProductId] = useState("");
@@ -89,6 +92,7 @@ export function MasterDataPage() {
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${activeScope}`;
   const productsUrl = `/api/admin/master-data/products?active=${activeScope}`;
   const componentsUrl = `/api/admin/master-data/components?active=${activeScope}`;
+  const tagsUrl = "/api/admin/master-data/tags";
   const componentProductsUrl = "/api/admin/master-data/component-products";
 
   const productCategoriesQuery = useQuery<ProductCategory[]>({
@@ -111,6 +115,11 @@ export function MasterDataPage() {
     queryFn: () => fetchJson(componentsUrl),
   });
 
+  const tagsQuery = useQuery<Tag[]>({
+    queryKey: [tagsUrl],
+    queryFn: () => fetchJson(tagsUrl),
+  });
+
   const componentProductsQuery = useQuery<ProductComponent[]>({
     queryKey: [componentProductsUrl],
     queryFn: () => fetchJson(componentProductsUrl),
@@ -120,6 +129,7 @@ export function MasterDataPage() {
   const componentCategories = componentCategoriesQuery.data ?? [];
   const products = productsQuery.data ?? [];
   const components = componentsQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
   const componentProducts = componentProductsQuery.data ?? [];
 
   const productCategoryNameById = useMemo(() => {
@@ -322,6 +332,64 @@ export function MasterDataPage() {
     },
   });
 
+  const createTagMutation = useMutation({
+    mutationFn: async () =>
+      apiRequest("POST", "/api/admin/master-data/tags", {
+        name: newTag.name.trim(),
+        color: newTag.color,
+      }),
+    onSuccess: async () => {
+      setNewTag({ name: "", color: "#2563eb" });
+      await invalidateMasterDataQueries(activeScope);
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "BUSINESS_CONFLICT" ? "Tag-Name existiert bereits" : "Tag konnte nicht angelegt werden",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateTagMutation = useMutation({
+    mutationFn: async (input: { id: number; version: number; name?: string; color?: string }) =>
+      apiRequest("PUT", `/api/admin/master-data/tags/${input.id}`, {
+        version: input.version,
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.color !== undefined ? { color: input.color } : {}),
+      }),
+    onSuccess: async () => {
+      setEditTag(null);
+      await invalidateMasterDataQueries(activeScope);
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "VERSION_CONFLICT"
+          ? "Tag wurde zwischenzeitlich geändert"
+          : code === "BUSINESS_CONFLICT"
+            ? "Tag-Name existiert bereits"
+            : "Tag konnte nicht aktualisiert werden",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTagMutation = useMutation({
+    mutationFn: async (input: { id: number; version: number }) =>
+      apiRequest("DELETE", `/api/admin/master-data/tags/${input.id}`, { version: input.version }),
+    onSuccess: async () => {
+      await invalidateMasterDataQueries(activeScope);
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "BUSINESS_CONFLICT" ? "Tag hat Relationen und kann nicht gelöscht werden" : "Tag konnte nicht gelöscht werden",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createComponentMutation = useMutation({
     mutationFn: async () => {
       const componentResponse = await apiRequest("POST", "/api/admin/master-data/components", {
@@ -409,6 +477,7 @@ export function MasterDataPage() {
     || componentCategoriesQuery.isLoading
     || productsQuery.isLoading
     || componentsQuery.isLoading
+    || tagsQuery.isLoading
     || componentProductsQuery.isLoading;
 
   return (
@@ -435,7 +504,7 @@ export function MasterDataPage() {
       contentSlot={(
         <div className="flex h-full min-h-0 flex-col gap-4">
           <div className="order-2 min-h-0 basis-1/3 overflow-hidden">
-            <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-3">
             <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-product-categories">
               <h4 className="font-bold text-slate-900">Produktkategorien</h4>
               <div className="mt-3 flex items-end gap-2">
@@ -596,6 +665,107 @@ export function MasterDataPage() {
                                 onClick={() => {
                                   if (!window.confirm(`Modellkategorie "${row.name}" löschen?`)) return;
                                   deleteComponentCategoryMutation.mutate({ id: row.id, version: row.version });
+                                }}
+                              >
+                                Löschen
+                              </Button>
+                            </>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </section>
+
+            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-tags">
+              <h4 className="font-bold text-slate-900">Tags</h4>
+              <div className="mt-3 grid grid-cols-[1fr_auto_auto] items-end gap-2">
+                <Input
+                  value={newTag.name}
+                  onChange={(event) => setNewTag((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="Neuer Tag"
+                  data-testid="input-new-tag-name"
+                />
+                <Input
+                  type="color"
+                  value={newTag.color}
+                  onChange={(event) => setNewTag((current) => ({ ...current, color: event.target.value }))}
+                  className="h-10 w-14 p-1"
+                  data-testid="input-new-tag-color"
+                />
+                <Button
+                  onClick={() => {
+                    if (!newTag.name.trim()) return;
+                    createTagMutation.mutate();
+                  }}
+                  data-testid="button-create-tag"
+                >
+                  Anlegen
+                </Button>
+              </div>
+              <div className="mt-4 min-h-0 flex-1 overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Farbe</TableHead>
+                      <TableHead className="w-[220px]">Aktionen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tags.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell>
+                          {editTag?.id === row.id ? (
+                            <Input
+                              value={editTag.name}
+                              onChange={(event) => setEditTag({ ...editTag, name: event.target.value })}
+                              data-testid={`input-edit-tag-name-${row.id}`}
+                            />
+                          ) : row.name}
+                        </TableCell>
+                        <TableCell>
+                          {editTag?.id === row.id ? (
+                            <Input
+                              type="color"
+                              value={editTag.color}
+                              onChange={(event) => setEditTag({ ...editTag, color: event.target.value })}
+                              className="h-9 w-14 p-1"
+                              data-testid={`input-edit-tag-color-${row.id}`}
+                            />
+                          ) : (
+                            <div className="h-6 w-8 rounded border border-slate-300" style={{ backgroundColor: row.color }} title={row.color} />
+                          )}
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          {editTag?.id === row.id ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => updateTagMutation.mutate({
+                                  id: row.id,
+                                  version: row.version,
+                                  name: editTag.name.trim(),
+                                  color: editTag.color,
+                                })}
+                              >
+                                Speichern
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditTag(null)}>
+                                Abbrechen
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button size="sm" variant="outline" onClick={() => setEditTag({ ...row })}>Bearbeiten</Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  if (!window.confirm(`Tag "${row.name}" löschen?`)) return;
+                                  deleteTagMutation.mutate({ id: row.id, version: row.version });
                                 }}
                               >
                                 Löschen

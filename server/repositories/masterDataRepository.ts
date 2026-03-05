@@ -6,6 +6,7 @@ import type {
   InsertComponentCategory,
   InsertProduct,
   InsertProductCategory,
+  Tag,
   Product,
   ProductCategory,
   UpdateComponent,
@@ -14,11 +15,16 @@ import type {
   UpdateProductCategory,
 } from "@shared/schema";
 import {
+  appointmentTags,
   componentCategories,
   components,
+  customerTags,
+  employeeTags,
   productCategories,
   productComponent,
+  projectTags,
   products,
+  tags,
 } from "@shared/schema";
 import { db } from "../db";
 
@@ -280,6 +286,93 @@ export async function deleteComponentWithVersion(id: number, expectedVersion: nu
   return { kind: "deleted" };
 }
 
+export async function listTags(): Promise<Tag[]> {
+  return db
+    .select()
+    .from(tags)
+    .orderBy(asc(tags.name), asc(tags.id));
+}
+
+export async function createTag(input: { name: string; color: string }): Promise<Tag> {
+  const result = await db.insert(tags).values({
+    name: input.name,
+    color: input.color,
+    isDefault: false,
+    version: 1,
+  });
+  const id = toInsertId(result);
+  const [row] = await db.select().from(tags).where(eq(tags.id, id));
+  return row;
+}
+
+export async function updateTagWithVersion(
+  id: number,
+  expectedVersion: number,
+  input: { name?: string; color?: string },
+): Promise<VersionedUpdateResult<Tag>> {
+  const result = await db.execute(sql`
+    update tags
+    set
+      name = if(${input.name === undefined}, name, ${input.name ?? null}),
+      color = if(${input.color === undefined}, color, ${input.color ?? null}),
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+
+  const outcome = await classifyVersionedMutation("tags", id, toAffectedRows(result));
+  if (outcome === "not_found") return { kind: "not_found" };
+  if (outcome === "version_conflict") return { kind: "version_conflict" };
+
+  const [row] = await db.select().from(tags).where(eq(tags.id, id));
+  return { kind: "updated", row };
+}
+
+export async function deleteTagWithVersion(id: number, expectedVersion: number): Promise<VersionedDeleteResult> {
+  const result = await db.execute(sql`
+    delete from tags
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+
+  const outcome = await classifyVersionedMutation("tags", id, toAffectedRows(result));
+  if (outcome === "not_found") return { kind: "not_found" };
+  if (outcome === "version_conflict") return { kind: "version_conflict" };
+  return { kind: "deleted" };
+}
+
+export async function getTagRelationCounts(tagId: number): Promise<{
+  projectCount: number;
+  customerCount: number;
+  employeeCount: number;
+  appointmentCount: number;
+}> {
+  const [projectCountRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(projectTags)
+    .where(eq(projectTags.tagId, tagId));
+  const [customerCountRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(customerTags)
+    .where(eq(customerTags.tagId, tagId));
+  const [employeeCountRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(employeeTags)
+    .where(eq(employeeTags.tagId, tagId));
+  const [appointmentCountRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(appointmentTags)
+    .where(eq(appointmentTags.tagId, tagId));
+
+  return {
+    projectCount: Number(projectCountRow?.count ?? 0),
+    customerCount: Number(customerCountRow?.count ?? 0),
+    employeeCount: Number(employeeCountRow?.count ?? 0),
+    appointmentCount: Number(appointmentCountRow?.count ?? 0),
+  };
+}
+
 export async function listComponentProducts() {
   return db
     .select()
@@ -326,4 +419,3 @@ export async function replaceComponentProductsWithVersion(
     return { kind: "updated" as const, row: updatedComponent };
   });
 }
-

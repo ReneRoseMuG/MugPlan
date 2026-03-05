@@ -12,6 +12,7 @@ import {
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts,
+  tags,
   insertProductCategorySchema, updateProductCategorySchema, productCategories,
   insertComponentCategorySchema, updateComponentCategorySchema, componentCategories,
   insertProductSchema, updateProductSchema, products,
@@ -59,6 +60,8 @@ const extractedArticleCategorySchema = z.object({
 });
 
 const entityAppointmentsScopeSchema = z.enum(["upcoming", "all"]);
+const tagNameSchema = z.string().min(1).max(100);
+const tagColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 
 const entityAppointmentsQuerySchema = z.object({
   scope: entityAppointmentsScopeSchema.default("upcoming"),
@@ -1330,6 +1333,60 @@ export const api = {
       delete: {
         method: "DELETE" as const,
         path: "/api/admin/master-data/components/:id",
+        input: z.object({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    tags: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/master-data/tags",
+        responses: {
+          200: z.array(z.custom<typeof tags.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/tags",
+        input: z.object({
+          name: tagNameSchema,
+          color: tagColorSchema,
+        }).strict(),
+        responses: {
+          201: z.custom<typeof tags.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/admin/master-data/tags/:id",
+        input: z.object({
+          version: z.number().int().min(1),
+          name: tagNameSchema.optional(),
+          color: tagColorSchema.optional(),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof tags.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/tags/:id",
         input: z.object({
           version: z.number().int().min(1),
         }).strict(),
