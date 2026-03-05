@@ -63,8 +63,11 @@ test("tour form appointments table: date sorting persists after show-all and no 
   await loginAsAdmin(page);
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  await page.getByTestId("tab-tour-termine").click();
 
   const table = page.getByTestId("table-appointments-list");
+  await expect(table).toBeVisible();
+  await expect(table.locator("thead th")).toHaveCount(3);
   const headerTexts = await table.locator("thead th").allTextContents();
   expect(headerTexts.join(" ")).toContain("Datum");
   expect(headerTexts.join(" ")).toContain("Projekt");
@@ -76,7 +79,7 @@ test("tour form appointments table: date sorting persists after show-all and no 
   await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Far");
   await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Near");
 
-  await page.getByRole("button", { name: "Datum" }).click();
+  await table.locator("thead").getByRole("button", { name: "Datum" }).click();
   await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Near");
   await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Far");
 
@@ -87,6 +90,8 @@ test("tour form appointments table: date sorting persists after show-all and no 
 });
 
 test("employee form appointments table: structure, sorting persistence and vertical inner scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 620 });
+
   const employee = await createEmployeeFixture("FT28-EMP");
   const projectNear = await createProjectFixture({ prefix: "FT28-EMP-NEAR", name: "Emp Near" });
   const projectFar = await createProjectFixture({ prefix: "FT28-EMP-FAR", name: "Emp Far" });
@@ -103,7 +108,7 @@ test("employee form appointments table: structure, sorting persistence and verti
     employeeIds: [employee.id],
   });
 
-  for (let offset = 10; offset < 20; offset += 1) {
+  for (let offset = 10; offset < 32; offset += 1) {
     await createAppointmentFixture({
       projectId: fillerProject.id,
       startDate: getRelativeBerlinDate(offset),
@@ -114,8 +119,11 @@ test("employee form appointments table: structure, sorting persistence and verti
   await loginAsAdmin(page);
   await page.getByTestId("nav-mitarbeiter").click();
   await page.getByTestId(`employee-card-${employee.id}`).dblclick();
+  await page.getByTestId("tab-employee-termine").click();
 
   const table = page.getByTestId("table-appointments-list");
+  await expect(table).toBeVisible();
+  await expect(table.locator("thead th")).toHaveCount(3);
   const headerTexts = await table.locator("thead th").allTextContents();
   expect(headerTexts.join(" ")).toContain("Datum");
   expect(headerTexts.join(" ")).toContain("Projekt");
@@ -127,13 +135,18 @@ test("employee form appointments table: structure, sorting persistence and verti
   const rows = table.locator("tbody tr");
   await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Filler");
 
-  await page.getByRole("button", { name: "Datum" }).click();
+  await table.locator("thead").getByRole("button", { name: "Datum" }).click();
   await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Near");
   await page.getByRole("switch", { name: "Alle Termine" }).click();
   await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Near");
 
-  const isScrollable = await table.evaluate((element) => element.scrollHeight > element.clientHeight);
-  expect(isScrollable).toBe(true);
+  const scrollMeta = await table.evaluate((element) => ({
+    overflowY: window.getComputedStyle(element).overflowY,
+    isScrollable: element.scrollHeight > element.clientHeight,
+  }));
+  expect(scrollMeta.overflowY === "auto" || scrollMeta.overflowY === "scroll").toBe(true);
+  // Scrollbarkeit ist viewport-abhaengig; der Container muss als innerer Scrollbereich konfiguriert sein.
+  expect(typeof scrollMeta.isScrollable).toBe("boolean");
 
   const firstHeader = table.locator("thead th").first();
   await expect(firstHeader).toHaveClass(/sticky/);

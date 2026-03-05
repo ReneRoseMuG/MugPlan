@@ -55,9 +55,11 @@ export async function resetDatabase() {
   }
 
   const { ensureSystemRoles } = await import("../../server/bootstrap/ensureSystemRoles");
+  const { ensureMasterDataDefaults } = await import("../../server/bootstrap/ensureMasterDataDefaults");
   const { getAuthUserByUsername, createAdminUser } = await import("../../server/repositories/usersRepository");
   const { hashPassword } = await import("../../server/security/passwordHash");
   await ensureSystemRoles();
+  await ensureMasterDataDefaults();
 
   const username = "test-admin";
   const existing = await getAuthUserByUsername(username);
