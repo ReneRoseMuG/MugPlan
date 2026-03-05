@@ -36,7 +36,6 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { formatProjectStoredName, parseProjectStoredName } from "@/lib/project-name-format";
 import type { Project, Customer, Note, ProjectStatus } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 
@@ -150,15 +149,15 @@ export function ProjectForm({
   // Initialize form when project data loads
   useEffect(() => {
     if (projectData) {
-      const parsedProjectName = parseProjectStoredName(projectData.project.name);
-      setName(parsedProjectName.isolatedProjectName);
+      const projectName = projectData.project.name.trim();
+      setName(projectName);
       setOrderNumber(projectData.project.orderNumber ?? "");
       setAmount(projectData.project.amount != null ? String(projectData.project.amount) : "");
       setDescriptionMd(projectData.project.descriptionMd || "");
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
         buildFormSnapshot({
-          name: parsedProjectName.isolatedProjectName,
+          name: projectName,
           orderNumber: projectData.project.orderNumber ?? "",
           amount: projectData.project.amount != null ? String(projectData.project.amount) : "",
           descriptionMd: projectData.project.descriptionMd || "",
@@ -180,7 +179,7 @@ export function ProjectForm({
 
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
-  const projectNamePreview = formatProjectStoredName(selectedCustomerNumber, name);
+  const projectNamePreview = name.trim();
   const projectVersion = projectData?.project.version;
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
@@ -599,7 +598,7 @@ export function ProjectForm({
       throw new Error("validation");
     }
 
-    const storedProjectName = formatProjectStoredName(selectedCustomerNumber, name);
+    const storedProjectName = name.trim();
     const normalizedOrderNumber = orderNumber.trim() || null;
     const normalizedAmountText = amount.replace(",", ".").trim();
     const parsedAmountNumber = normalizedAmountText.length === 0 ? null : Number(normalizedAmountText);
@@ -748,7 +747,7 @@ export function ProjectForm({
         const confirmed = window.confirm("Titel oder Beschreibung sind bereits befüllt. Inhalte überschreiben?");
         if (!confirmed) return;
       }
-      setName(parseProjectStoredName(payload.saunaModel).isolatedProjectName);
+      setName(payload.saunaModel.trim());
       setDescriptionMd(payload.articleListHtml.trim());
       const extractedOrderNumber = payload.orderNumber.trim();
       if (extractedOrderNumber.length > 0) {

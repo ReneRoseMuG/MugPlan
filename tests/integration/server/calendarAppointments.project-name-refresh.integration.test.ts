@@ -74,7 +74,7 @@ async function createCustomerAndProject() {
 describe("FT04/FT02 integration: calendar appointments reflect updated project names", () => {
   it("returns updated projectName for the same appointment after project patch", async () => {
     const agent = await loginAdminAgent();
-    const { customer, project } = await createCustomerAndProject();
+    const { project } = await createCustomerAndProject();
 
     const createdAppointment = await appointmentsService.createAppointment({
       projectId: project.id,
@@ -96,7 +96,7 @@ describe("FT04/FT02 integration: calendar appointments reflect updated project n
     expect(initialItem).toMatchObject({
       id: createdAppointment.id,
       projectId: project.id,
-      projectName: `K: ${customer.customerNumber} - Sauna Alt`,
+      projectName: "Sauna Alt",
     });
 
     const updatedIsolatedName = "Sauna Neu";
@@ -125,7 +125,7 @@ describe("FT04/FT02 integration: calendar appointments reflect updated project n
     expect(refreshedItem).toMatchObject({
       id: createdAppointment.id,
       projectId: project.id,
-      projectName: `K: ${customer.customerNumber} - ${updatedIsolatedName}`,
+      projectName: updatedIsolatedName,
     });
   });
 });

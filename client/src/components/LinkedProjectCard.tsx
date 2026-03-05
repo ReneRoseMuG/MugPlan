@@ -2,21 +2,20 @@ import { Flag, FolderKanban } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { getProjectStatusColor } from "@/lib/project-status";
-import { parseProjectStoredName } from "@/lib/project-name-format";
 import type { Project } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 
 interface LinkedProjectCardProps {
   project: Project;
+  customerNumber: string | null;
   onOpenProject?: (id: number) => void;
 }
 
-export function LinkedProjectCard({ project, onOpenProject }: LinkedProjectCardProps) {
+export function LinkedProjectCard({ project, customerNumber, onOpenProject }: LinkedProjectCardProps) {
   const { data: statuses = [], isLoading, isError } = useQuery<ProjectStatusRelationItem[]>({
     queryKey: ["/api/projects", project.id, "statuses"],
   });
-  const parsedName = parseProjectStoredName(project.name);
-  const customerNumberLabel = parsedName.customerNumberFromName ?? "-";
+  const customerNumberLabel = customerNumber?.trim() || "-";
   const orderNumberLabel = project.orderNumber?.trim() || "-";
 
   return (
@@ -28,7 +27,7 @@ export function LinkedProjectCard({ project, onOpenProject }: LinkedProjectCardP
       <div className="flex items-center gap-2 mb-2">
         <FolderKanban className="w-4 h-4 text-slate-400" />
         <p className="font-medium text-sm text-slate-700 dark:text-slate-300" data-testid={`text-linked-project-name-${project.id}`}>
-          {parsedName.isolatedProjectName || project.name}
+          {project.name}
         </p>
       </div>
 

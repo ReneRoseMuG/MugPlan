@@ -82,8 +82,9 @@ describe("FT04 appointments list page tour locking wiring", () => {
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("function resolveAppointmentProjectDisplayName(storedProjectName: string): string");
-    expect(source).toContain("const separator = \" - \";");
-    expect(source).toContain("if (suffix && (kPrefixed || /\\d/.test(prefix)))");
+    expect(source).toContain("return storedProjectName.trim();");
+    expect(source).not.toContain("const separator = \" - \";");
+    expect(source).not.toContain("if (suffix && (kPrefixed || /\\\\d/.test(prefix)))");
     expect(source).toContain("function resolveAppointmentProjectColumnValue(row: AppointmentListItem): string");
     expect(source).toContain("const orderNumber = row.projectOrderNumber?.trim();");
     expect(source).toContain("return `${projectName} (${orderNumber})`;");

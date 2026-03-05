@@ -7,6 +7,7 @@ import { buildLatestAppointmentByProjectId, sortAppointmentsByDateDesc } from "@
 
 interface LinkedProjectsPanelProps {
   customerId?: number | null;
+  customerNumber?: string | null;
   onOpenProject?: (id: number) => void;
 }
 
@@ -17,7 +18,7 @@ type CustomerAppointmentProjectSummary = {
   startTimeHour: number | null;
 };
 
-export function LinkedProjectsPanel({ customerId, onOpenProject }: LinkedProjectsPanelProps) {
+export function LinkedProjectsPanel({ customerId, customerNumber, onOpenProject }: LinkedProjectsPanelProps) {
   const projectsQueryUrl = customerId
     ? `/api/projects?customerId=${customerId}&filter=active&scope=all`
     : null;
@@ -89,6 +90,7 @@ export function LinkedProjectsPanel({ customerId, onOpenProject }: LinkedProject
             <LinkedProjectCard
               key={project.id}
               project={project}
+              customerNumber={customerNumber ?? null}
               onOpenProject={onOpenProject}
             />
           ))

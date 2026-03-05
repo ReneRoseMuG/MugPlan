@@ -5,7 +5,7 @@
  * Use Case: UC Verknuepfte Projekte zeigen Kundennummer und Auftragsnummer
  *
  * Abgedeckte Regeln:
- * - LinkedProjectCard parst den gespeicherten Projektnamen fuer isolierten Titel + Kundennummer.
+ * - LinkedProjectCard rendert den Projektnamen direkt und erhaelt Kundennummer als explizite Prop.
  * - Kundennummer wird als eigene Zeile gerendert.
  * - Auftragsnummer wird unter der Kundennummer als eigene Zeile gerendert.
  *
@@ -24,9 +24,11 @@ describe("FT02 linked project card customer and order number wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/LinkedProjectCard.tsx");
   const source = readFileSync(filePath, "utf8");
 
-  it("parses stored project name and renders isolated project title", () => {
-    expect(source).toContain("parseProjectStoredName(project.name)");
-    expect(source).toContain("{parsedName.isolatedProjectName || project.name}");
+  it("uses explicit customer number prop and renders project title directly", () => {
+    expect(source).toContain("customerNumber: string | null;");
+    expect(source).toContain("const customerNumberLabel = customerNumber?.trim() || \"-\";");
+    expect(source).toContain("{project.name}");
+    expect(source).not.toContain("parseProjectStoredName(");
   });
 
   it("renders customer number and order number on separate lines", () => {

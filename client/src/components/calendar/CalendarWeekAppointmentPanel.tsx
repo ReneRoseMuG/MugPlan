@@ -1,5 +1,4 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
-import { parseProjectStoredName } from "@/lib/project-name-format";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
@@ -53,9 +52,7 @@ export function CalendarWeekAppointmentPanel({
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
     : "";
   const highlightClass = highlighted ? "border-primary shadow-md ring-1 ring-primary/30" : "border-slate-200";
-  const resolvedProjectName = context === "week-calendar"
-    ? parseProjectStoredName(appointment.projectName).isolatedProjectName
-    : appointment.projectName;
+  const resolvedProjectName = appointment.projectName;
   const resolvedTourName = appointment.tourName?.trim() || "Ohne Tour";
   const resolvedTourColor = appointment.tourName?.trim()
     ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)

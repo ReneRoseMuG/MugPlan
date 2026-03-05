@@ -346,15 +346,6 @@ async function getNextCustomerNumberStart() {
   return max + 1;
 }
 
-function formatProjectNameWithCustomerNumber(customerNumber: string, projectName: string) {
-  const customerNumberTrimmed = customerNumber.trim();
-  const projectNameTrimmed = projectName.trim();
-  if (!customerNumberTrimmed || !projectNameTrimmed) {
-    return projectNameTrimmed;
-  }
-  return `K: ${customerNumberTrimmed} - ${projectNameTrimmed}`;
-}
-
 function createSaunaContext(model: SaunaModelRow, oven: OvenRow | null) {
   return {
     sauna_model_name: model.saunaModelName,
@@ -1245,7 +1236,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     const employees: number[] = [];
     const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
-    const customerNumberById = new Map<number, string>();
     const projectSeedContexts: ProjectSeedContext[] = [];
 
     if (config.runType === "appointments") {
@@ -1384,7 +1374,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         });
         nextCustomerNumber += 1;
         customers.push(customer.id);
-        customerNumberById.set(customer.id, customer.customerNumber);
         created.customers += 1;
         await demoSeedRepository.addSeedRunEntity(seedRunId, "customer", customer.id);
       }
@@ -1435,8 +1424,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           warnings.push("Keine Kunden erzeugt; Projektanlage uebersprungen.");
           break;
         }
-        const customerNumber = customerNumberById.get(customerId) ?? "";
-
         const possibleOvenIds = ovenIdsByModelId.get(model.modelId) ?? [];
         const selectedOven = resolveSelectedOven(
           seedRunId,
@@ -1452,7 +1439,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           model.saunaModelName ||
           `Sauna ${i + 1}`;
         const project = await projectsService.createProject({
-          name: formatProjectNameWithCustomerNumber(customerNumber, rawProjectName),
+          name: rawProjectName.trim(),
           customerId,
           descriptionMd: renderTemplate(templates[TEMPLATE_KEYS.projectDescription], ctx, { allowedKeys: allowedTemplateKeys }),
         });

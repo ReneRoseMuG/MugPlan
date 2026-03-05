@@ -8,7 +8,7 @@
  * - Doc-Extract kann mit echter DB zu Customer-Resolve/Create und Project-Create verkettet werden.
  * - Bei bestehender Kundennummer wird der vorhandene Kunde verwendet und nur das Projekt neu angelegt.
  * - Bei Race-Conflict (CUSTOMER_NUMBER_CONFLICT) wird per erneutem Resolve auf bestehenden Kunden aufgeloest.
- * - Projektname wird serverseitig als "K: <kundennummer> - <saunaModel>" persistiert.
+ * - Projektname wird serverseitig als reiner saunaModel-Name persistiert.
  * - Resolve multiple bleibt ein harter Abbruchpfad.
  *
  * Fehlerfaelle:
@@ -207,7 +207,7 @@ describe("FT21 integration: document extraction project conflict flow", () => {
     expect(result.customer.customerNumber).toBe(number);
     expect(result.project.customerId).toBe(result.customer.id);
     expect(result.project.orderNumber).toBe(extraction.orderNumber);
-    expect(result.project.name).toBe(`K: ${number} - ${extraction.saunaModel}`);
+    expect(result.project.name).toBe(extraction.saunaModel);
   });
 
   it("uses existing customer and only creates a new project when customerNumber already exists", async () => {
@@ -225,7 +225,7 @@ describe("FT21 integration: document extraction project conflict flow", () => {
     expect(result.customerSource).toBe("existing");
     expect(result.customer.id).toBe(existingCustomer.id);
     expect(result.project.customerId).toBe(existingCustomer.id);
-    expect(result.project.name).toBe(`K: ${number} - ${extraction.saunaModel}`);
+    expect(result.project.name).toBe(extraction.saunaModel);
   });
 
   it("resolves race conflict on customer create and still links project to existing customer", async () => {
@@ -277,7 +277,7 @@ describe("FT21 integration: document extraction project conflict flow", () => {
 
     expect(projectResponse.body.customerId).toBe(existingCustomer.id);
     expect(projectResponse.body.orderNumber).toBe(extraction.orderNumber);
-    expect(projectResponse.body.name).toBe(`K: ${number} - ${extraction.saunaModel}`);
+    expect(projectResponse.body.name).toBe(extraction.saunaModel);
   });
 
   it("aborts deterministically when resolve endpoint reports multiple", async () => {

@@ -9,7 +9,6 @@ import { validateAndNormalizeExtraction } from "./extractionValidator";
 import * as documentProcessingService from "./documentProcessingService";
 import * as projectsService from "./projectsService";
 import * as customersRepository from "../repositories/customersRepository";
-import { formatProjectStoredName, parseProjectStoredName } from "../lib/project-name-format";
 import { buildStoredFilename, resolveMimeType, sanitizeFilename, writeAttachmentBuffer } from "../lib/attachmentFiles";
 import * as attachmentQueriesService from "./attachmentQueriesService";
 
@@ -389,7 +388,7 @@ export async function analyzeProjectBulkImport(files: BulkFileInput[]) {
         id: randomUUID(),
         fileName: file.fileName,
         orderNumber,
-        title: parseProjectStoredName(extraction.saunaModel).isolatedProjectName,
+        title: extraction.saunaModel.trim(),
         customerNumber,
         customerName: normalizeOptional(extraction.customer.company)
           ?? [normalizeOptional(extraction.customer.lastName), normalizeOptional(extraction.customer.firstName)].filter(Boolean).join(", ")
@@ -525,7 +524,7 @@ export async function applyNewProjects(sessionId: string, selectedIds: string[])
         ]);
       }
       const payload = {
-        name: formatProjectStoredName(customerResolution.customer.customerNumber, row.title),
+        name: row.title.trim(),
         orderNumber: row.orderNumber,
         customerId: customerResolution.customer.id,
         descriptionMd: row.articleListHtml,
@@ -585,7 +584,7 @@ export async function applyProjectSpecialCase(sessionId: string, id: string) {
     const customerId = Number((customerResult as any)?.[0]?.insertId ?? (customerResult as any)?.insertId ?? 0);
 
     const projectPayload = {
-      name: formatProjectStoredName(row.customerNumber, row.title),
+      name: row.title.trim(),
       orderNumber: row.orderNumber,
       customerId,
       descriptionMd: row.articleListHtml,

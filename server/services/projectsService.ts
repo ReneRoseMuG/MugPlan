@@ -1,7 +1,6 @@
 import type { Customer, InsertProject, Project, UpdateProject } from "@shared/schema";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as customersRepository from "../repositories/customersRepository";
-import { formatProjectStoredName, parseProjectStoredName } from "../lib/project-name-format";
 
 export class ProjectsError extends Error {
   status: number;
@@ -70,10 +69,10 @@ export async function createProject(data: InsertProject): Promise<Project> {
     throw new ProjectsError(409, "INACTIVE_ENTITY_ASSIGNMENT");
   }
 
-  const isolatedProjectName = parseProjectStoredName(data.name).isolatedProjectName;
+  const normalizedProjectName = data.name.trim();
   return projectsRepository.createProject({
     ...data,
-    name: formatProjectStoredName(customer.customerNumber, isolatedProjectName),
+    name: normalizedProjectName,
   });
 }
 
@@ -85,9 +84,10 @@ export async function updateProject(
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
   let normalizedData = { ...data };
-  const shouldNormalizeName = data.name !== undefined || data.customerId !== undefined;
+  const shouldValidateCustomer = data.customerId !== undefined;
+  const shouldNormalizeName = data.name !== undefined;
 
-  if (shouldNormalizeName) {
+  if (shouldValidateCustomer) {
     const existing = await projectsRepository.getProject(id);
     if (!existing) return null;
 
@@ -100,11 +100,12 @@ export async function updateProject(
       throw new ProjectsError(409, "INACTIVE_ENTITY_ASSIGNMENT");
     }
 
-    const sourceProjectName = data.name ?? existing.name;
-    const isolatedProjectName = parseProjectStoredName(sourceProjectName).isolatedProjectName;
+  }
+
+  if (shouldNormalizeName) {
     normalizedData = {
       ...normalizedData,
-      name: formatProjectStoredName(targetCustomer.customerNumber, isolatedProjectName),
+      name: data.name?.trim(),
     };
   }
 

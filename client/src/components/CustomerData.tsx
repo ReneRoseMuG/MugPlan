@@ -605,7 +605,11 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         </div>
 
         <div className="space-y-6">
-          <LinkedProjectsPanel customerId={customerId} onOpenProject={onOpenProject} />
+          <LinkedProjectsPanel
+            customerId={customerId}
+            customerNumber={formData.customerNumber}
+            onOpenProject={onOpenProject}
+          />
 
           <CustomerAppointmentsPanel customerId={customerId} />
 

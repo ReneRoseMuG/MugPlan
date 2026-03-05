@@ -1,6 +1,5 @@
 import React from "react";
 import type { Project } from "@shared/schema";
-import { parseProjectStoredName } from "@/lib/project-name-format";
 
 export interface ProjectDetailCardProps {
   project: Pick<Project, "name" | "orderNumber" | "descriptionMd" | "isActive">;
@@ -27,9 +26,8 @@ const resolveValue = (value: string | null | undefined) => {
 };
 
 export function ProjectDetailCard({ project, customerNumber, projectStatusTitles = [], testId }: ProjectDetailCardProps) {
-  const parsedProjectName = parseProjectStoredName(project.name);
-  const customerNumberValue = resolveValue(customerNumber ?? parsedProjectName.customerNumberFromName);
-  const projectNameValue = resolveValue(parsedProjectName.isolatedProjectName);
+  const customerNumberValue = resolveValue(customerNumber);
+  const projectNameValue = resolveValue(project.name);
   const orderNumberValue = resolveValue(project.orderNumber);
   const statusLine = projectStatusTitles.length > 0 ? projectStatusTitles.join(" | ") : fallbackText;
   const descriptionHtml = project.descriptionMd ?? "";

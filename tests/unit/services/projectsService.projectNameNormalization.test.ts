@@ -2,12 +2,12 @@
  * Test Scope:
  *
  * Feature: FT02 - Projektverwaltung
- * Use Case: UC Projektnamen-Normalisierung mit Kundennummer
+ * Use Case: UC Projektnamen-Speicherung ohne Kundennummer-Praefix
  *
  * Abgedeckte Regeln:
- * - createProject speichert Projektnamen immer als "K: <kundennummer> - <projektname>".
- * - updateProject normalisiert Namen bei Aenderung von name und/oder customerId.
- * - Vorhandene oder falsche Prefixe im Input werden nicht blind uebernommen.
+ * - createProject speichert den fachlichen Projektnamen direkt (getrimmt).
+ * - updateProject trimmt Namen bei expliziter Namensaenderung.
+ * - updateProject aendert den Namen nicht implizit bei reinem customerId-Wechsel.
  *
  * Fehlerfaelle:
  * - Fehlender Zielkunde bei Create/Update liefert VALIDATION_ERROR.
@@ -50,12 +50,12 @@ describe("FT02 projects service project name normalization", () => {
     vi.clearAllMocks();
   });
 
-  it("formats project name on create with customer number prefix", async () => {
+  it("persists plain project name on create", async () => {
     getCustomerMock.mockResolvedValueOnce({ id: 11, customerNumber: "4711", isActive: true });
-    createProjectMock.mockResolvedValueOnce({ id: 1, name: "K: 4711 - Sauna Modern" });
+    createProjectMock.mockResolvedValueOnce({ id: 1, name: "Sauna Modern" });
 
     await createProject({
-      name: "Sauna Modern",
+      name: "  Sauna Modern  ",
       customerId: 11,
       descriptionMd: null,
       version: 1,
@@ -63,40 +63,38 @@ describe("FT02 projects service project name normalization", () => {
 
     expect(createProjectMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: "K: 4711 - Sauna Modern",
+        name: "Sauna Modern",
         customerId: 11,
       }),
     );
   });
 
-  it("normalizes update input name against current customer number", async () => {
-    getProjectMock.mockResolvedValueOnce({ id: 2, customerId: 11, name: "K: 4711 - Alt" });
-    getCustomerMock.mockResolvedValueOnce({ id: 11, customerNumber: "4711", isActive: true });
+  it("trims name on explicit update", async () => {
     updateProjectWithVersionMock.mockResolvedValueOnce({
       kind: "updated",
-      project: { id: 2, name: "K: 4711 - Neu" },
+      project: { id: 2, name: "Neu" },
     });
 
     await updateProject(2, {
       version: 1,
-      name: "K: 9999 - Neu",
+      name: "  Neu  ",
     });
 
     expect(updateProjectWithVersionMock).toHaveBeenCalledWith(
       2,
       1,
       expect.objectContaining({
-        name: "K: 4711 - Neu",
+        name: "Neu",
       }),
     );
   });
 
-  it("rebuilds prefixed name when customer changes without explicit name update", async () => {
-    getProjectMock.mockResolvedValueOnce({ id: 3, customerId: 11, name: "K: 4711 - Sauna XL" });
+  it("keeps name unchanged when only customer changes", async () => {
+    getProjectMock.mockResolvedValueOnce({ id: 3, customerId: 11, name: "Sauna XL" });
     getCustomerMock.mockResolvedValueOnce({ id: 12, customerNumber: "5000", isActive: true });
     updateProjectWithVersionMock.mockResolvedValueOnce({
       kind: "updated",
-      project: { id: 3, name: "K: 5000 - Sauna XL" },
+      project: { id: 3, name: "Sauna XL" },
     });
 
     await updateProject(3, {
@@ -107,10 +105,12 @@ describe("FT02 projects service project name normalization", () => {
     expect(updateProjectWithVersionMock).toHaveBeenCalledWith(
       3,
       4,
-      expect.objectContaining({
-        customerId: 12,
-        name: "K: 5000 - Sauna XL",
-      }),
+      expect.objectContaining({ customerId: 12 }),
+    );
+    expect(updateProjectWithVersionMock).not.toHaveBeenCalledWith(
+      3,
+      4,
+      expect.objectContaining({ name: expect.any(String) }),
     );
   });
 

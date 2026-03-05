@@ -37,7 +37,6 @@ import {
 } from "@/components/DocumentExtractionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { formatProjectStoredName } from "@/lib/project-name-format";
 import {
   PROJECT_APPOINTMENTS_ALL_FROM_DATE,
   getBerlinTodayDateString,
@@ -741,7 +740,7 @@ export function AppointmentForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: formatProjectStoredName(mergedCustomer.customerNumber, payload.saunaModel),
+          name: payload.saunaModel.trim(),
           orderNumber: payload.orderNumber.trim() || null,
           customerId: mergedCustomer.id,
           descriptionMd: payload.articleListHtml.trim(),

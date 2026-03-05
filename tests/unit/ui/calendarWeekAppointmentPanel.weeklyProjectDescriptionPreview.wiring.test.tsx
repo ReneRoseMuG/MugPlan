@@ -5,7 +5,7 @@
  * Use Case: UC FT03 - Weekly-only Projektname und Vollbeschreibung-Preview
  *
  * Abgedeckte Regeln:
- * - CalendarWeekAppointmentPanel nutzt parseProjectStoredName fuer den Wochenkalender-Kontext.
+ * - CalendarWeekAppointmentPanel nutzt den Projektname direkt ohne Parsing.
  * - Weekly-Kontext aktiviert den Full-Description-Hover ueber enableFullDescriptionPreview.
  * - Project-Panel enthaelt die HoverPreview-Verdrahtung fuer den Description-Block.
  * - Vollbeschreibung rendert weiterhin HTML via dangerouslySetInnerHTML.
@@ -22,11 +22,12 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 
 describe("FT03 UI: weekly project description preview wiring", () => {
-  it("parses project name for weekly context and wires weekly-only preview flag", () => {
+  it("uses raw project name and wires weekly-only preview flag", () => {
     const panelPath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanel.tsx");
     const source = readFileSync(panelPath, "utf8");
 
-    expect(source).toContain("parseProjectStoredName(appointment.projectName).isolatedProjectName");
+    expect(source).toContain("const resolvedProjectName = appointment.projectName;");
+    expect(source).not.toContain("parseProjectStoredName(");
     expect(source).toContain('context === "week-calendar"');
     expect(source).toContain("enableFullDescriptionPreview={context === \"week-calendar\"}");
   });

@@ -6,12 +6,12 @@
  *
  * Abgedeckte Regeln:
  * - ProjectDetailCard zeigt im Termin-Relationslot eine 3-Felder-Kopfzeile (Kunde Nr., Projektname, Auftragsnummer).
- * - Kundennummer wird priorisiert aus Prop gelesen und faellt sonst auf geparsten Projektnamen zurueck.
+ * - Kundennummer wird direkt aus Prop gelesen (kein Parsing-Fallback).
  * - Projektbeschreibung wird vollstaendig als HTML im Slot gerendert.
  *
  * Fehlerfaelle:
  * - Kopfzeile zeigt Felder nicht getrennt.
- * - Kundennummer-Fallback aus Projektname fehlt.
+ * - Projektnamen-Parsing beeinflusst Kundennummerdarstellung.
  * - HTML-Inhalt der Beschreibung wird nicht gerendert.
  *
  * Ziel:
@@ -32,12 +32,13 @@ describe("FT02 project detail card order number", () => {
     expect(source).toContain("md:grid-cols-[150px,minmax(200px,1fr),150px]");
   });
 
-  it("renders description as full html and keeps customer number fallback parsing", () => {
+  it("renders description as full html without project-name parsing fallback", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/ui/project-detail-card.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("parseProjectStoredName(project.name)");
-    expect(source).toContain("customerNumber ?? parsedProjectName.customerNumberFromName");
+    expect(source).toContain("const customerNumberValue = resolveValue(customerNumber);");
+    expect(source).toContain("const projectNameValue = resolveValue(project.name);");
+    expect(source).not.toContain("parseProjectStoredName(");
     expect(source).toContain("dangerouslySetInnerHTML");
   });
 });
