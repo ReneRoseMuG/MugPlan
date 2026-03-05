@@ -231,9 +231,6 @@ Am Anfang jeder Testdatei muss ein erklärender Blockkommentar stehen:
 /**
  * Test Scope:
  *
- * Feature: FTxx – <Feature-Name>
- * Use Case: UCxx – <Use-Case-Titel>
- *
  * Abgedeckte Regeln:
  * - <Regel 1>
  * - <Regel 2>
@@ -269,7 +266,6 @@ Fehlt die Aktualisierung der Test-Matrix, gilt die Teständerung als unvollstän
 
 Unzulässig:
 - Testdateien ohne Kopfkommentar
-- Tests ohne Zuordnung zu Feature oder Use Case
 - „misc", „new", „tmp" Testdateien
 
 ---
