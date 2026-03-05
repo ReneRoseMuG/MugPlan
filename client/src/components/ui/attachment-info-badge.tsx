@@ -46,7 +46,7 @@ export function AttachmentInfoBadge({
   return (
     <InfoBadge
       icon={resolveAttachmentIcon(attachment)}
-      label={<span className="truncate">{attachment.originalName}</span>}
+      label={<span className="block max-w-full truncate">{attachment.originalName}</span>}
       action={onRemove ? "remove" : "none"}
       onRemove={onRemove}
       actionDisabled={actionDisabled}

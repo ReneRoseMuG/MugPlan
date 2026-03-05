@@ -19,6 +19,7 @@ import { HelpTextForm } from "@/components/HelpTextForm";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
+import { MasterDataPage } from "@/components/MasterDataPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
 import { addMonths, subMonths } from "date-fns";
@@ -43,6 +44,7 @@ export type ViewType =
   | "helpTextForm"
   | "settings"
   | "demoData"
+  | "masterData"
   | "users";
 
 export type CalendarNavCommand = {
@@ -319,6 +321,8 @@ export default function Home({ onLogout }: HomeProps) {
             <SettingsPage />
           ) : view === "demoData" && isAdmin ? (
             <DemoDataPage />
+          ) : view === "masterData" && isAdmin ? (
+            <MasterDataPage />
           ) : view === "users" && isAdmin ? (
             <UsersPage />
           ) : isContextualCalendarView ? (

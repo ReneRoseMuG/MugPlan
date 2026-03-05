@@ -12,6 +12,7 @@ import customersRoutes from "./routes/customersRoutes";
 import employeeAttachmentsRoutes from "./routes/employeeAttachmentsRoutes";
 import employeesRoutes from "./routes/employeesRoutes";
 import helpTextsRoutes from "./routes/helpTextsRoutes";
+import masterDataRoutes from "./routes/masterDataRoutes";
 import noteTemplatesRoutes from "./routes/noteTemplatesRoutes";
 import notesRoutes from "./routes/notesRoutes";
 import appointmentsRoutes from "./routes/appointmentsRoutes";
@@ -55,6 +56,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(noteTemplatesRoutes);
   app.use(projectStatusRoutes);
   app.use(helpTextsRoutes);
+  app.use(masterDataRoutes);
   app.use(employeesRoutes);
   app.use(employeeAttachmentsRoutes);
   app.use(tourEmployeesRoutes);

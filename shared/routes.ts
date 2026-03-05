@@ -11,7 +11,11 @@ import {
   employeeAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
-  insertHelpTextSchema, updateHelpTextSchema, helpTexts
+  insertHelpTextSchema, updateHelpTextSchema, helpTexts,
+  insertProductCategorySchema, updateProductCategorySchema, productCategories,
+  insertComponentCategorySchema, updateComponentCategorySchema, componentCategories,
+  insertProductSchema, updateProductSchema, products,
+  insertComponentSchema, updateComponentSchema, components,
 } from './schema';
 
 export const errorSchemas = {
@@ -59,6 +63,8 @@ const entityAppointmentsQuerySchema = z.object({
   scope: entityAppointmentsScopeSchema.default("upcoming"),
   fromDate: z.string().optional(),
 }).strict();
+
+const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active");
 
 const entityAppointmentItemSchema = z.object({
   id: z.number(),
@@ -1123,6 +1129,216 @@ export const api = {
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
+  masterData: {
+    productCategories: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/master-data/product-categories",
+        input: z.object({
+          active: activeScopeSchema.optional(),
+        }).strict(),
+        responses: {
+          200: z.array(z.custom<typeof productCategories.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/product-categories",
+        input: insertProductCategorySchema,
+        responses: {
+          201: z.custom<typeof productCategories.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/admin/master-data/product-categories/:id",
+        input: updateProductCategorySchema.extend({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof productCategories.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/product-categories/:id",
+        input: z.object({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    componentCategories: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/master-data/component-categories",
+        input: z.object({
+          active: activeScopeSchema.optional(),
+        }).strict(),
+        responses: {
+          200: z.array(z.custom<typeof componentCategories.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/component-categories",
+        input: insertComponentCategorySchema,
+        responses: {
+          201: z.custom<typeof componentCategories.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/admin/master-data/component-categories/:id",
+        input: updateComponentCategorySchema.extend({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof componentCategories.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/component-categories/:id",
+        input: z.object({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    products: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/master-data/products",
+        input: z.object({
+          active: activeScopeSchema.optional(),
+        }).strict(),
+        responses: {
+          200: z.array(z.custom<typeof products.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/products",
+        input: insertProductSchema,
+        responses: {
+          201: z.custom<typeof products.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/admin/master-data/products/:id",
+        input: updateProductSchema.extend({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof products.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/products/:id",
+        input: z.object({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    components: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/master-data/components",
+        input: z.object({
+          active: activeScopeSchema.optional(),
+        }).strict(),
+        responses: {
+          200: z.array(z.custom<typeof components.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/components",
+        input: insertComponentSchema,
+        responses: {
+          201: z.custom<typeof components.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/admin/master-data/components/:id",
+        input: updateComponentSchema.extend({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof components.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/components/:id",
+        input: z.object({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
       },
     },
   },

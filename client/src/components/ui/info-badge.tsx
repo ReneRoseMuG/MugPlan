@@ -88,7 +88,7 @@ export function InfoBadge({
     >
       <div className={`flex items-center flex-1 min-w-0 ${size === "sm" ? "gap-1" : "gap-2"}`}>
         <span className="text-muted-foreground">{icon}</span>
-        <div className={`font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}>{label}</div>
+        <div className={`min-w-0 flex-1 font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}>{label}</div>
       </div>
       <div className={`flex items-center justify-end shrink-0 ${actionColumnClass}`}>
         {resolvedAction === "add" && (

@@ -1,4 +1,4 @@
-import { CalendarDays, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, HelpCircle, Table2, LogOut } from "lucide-react";
+import { CalendarDays, Calendar, MapPin, FolderKanban, UserCircle, ListChecks, UsersRound, Layers, FileText, Settings, HelpCircle, Table2, LogOut, Boxes } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 
 interface SidebarProps {
@@ -136,6 +136,7 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
           <NavGroup title="Administration">
             <NavButton icon={FileText} label="Notiz Vorlagen" isActive={currentView === 'noteTemplates'} onClick={() => onViewChange('noteTemplates')} />
             <NavButton icon={ListChecks} label="Projekt Status" isActive={currentView === 'projectStatus'} onClick={() => onViewChange('projectStatus')} />
+            <NavButton icon={Boxes} label="Stammdaten" isActive={currentView === 'masterData'} onClick={() => onViewChange('masterData')} />
             <NavButton icon={HelpCircle} label="Hilfetexte" isActive={currentView === 'helpTexts'} onClick={() => onViewChange('helpTexts')} />
             <NavButton icon={UsersRound} label="Benutzerverwaltung" isActive={currentView === 'users'} onClick={() => onViewChange('users')} />
             <NavButton icon={Settings} label="Einstellungen" isActive={currentView === 'settings'} onClick={() => onViewChange('settings')} />
