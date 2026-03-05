@@ -253,6 +253,7 @@ CREATE TABLE `project` (
   `id` bigint AUTO_INCREMENT NOT NULL,
   `name` varchar(255) NOT NULL,
   `order_number` varchar(255),
+  `amount` decimal(12,2),
   `customer_id` bigint NOT NULL,
   `description_md` text,
   `is_active` boolean NOT NULL DEFAULT true,

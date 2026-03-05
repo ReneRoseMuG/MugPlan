@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - ProjectsPage verdrahtet den Auftragsnummer-Filter in das Projektfilterpanel.
  * - Auftragsnummer wird in Tabellen- und Board-Ansicht angezeigt.
+ * - Betrag wird als eigene Tabellenspalte mit EUR-Formatierung angezeigt.
  * - Board-Karten zeigen verknuepfte Projektstatus als gestapelte Badges unter der Auftragsnummer.
  * - PLZ/Ort werden in Projektkarten nicht mehr angezeigt.
  * - Projektbeschreibung in Board-Karten rendert HTML statt roher Tags.
@@ -14,6 +15,7 @@
  * Fehlerfaelle:
  * - Filter ist vorhanden, aber nicht mit State verbunden.
  * - Auftragsnummer erscheint nur in einer der beiden Ansichten.
+ * - Betragsspalte fehlt oder nutzt keine EUR-Formatierung.
  * - Projektstatus-Badges fehlen oder sind nicht aus den Projekt-Status-Relationen verdrahtet.
  * - Ort/PLZ-Block wird weiterhin in der Karte gerendert.
  * - HTML-Tags werden in der Projektkarte als Text angezeigt.
@@ -42,6 +44,16 @@ describe("FT02 projects page order number wiring", () => {
     expect(source).toContain("header: \"Auftragsnummer\"");
     expect(source).toContain("<span className=\"font-semibold\">Auftrag:</span>");
     expect(source).toContain("project.orderNumber?.trim() || \"-\"");
+  });
+
+  it("renders amount column with euro formatting in table view", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("function formatProjectAmount(amount: unknown): string");
+    expect(source).toContain("currency: \"EUR\"");
+    expect(source).toContain("header: \"Betrag\"");
+    expect(source).toContain("formatProjectAmount(row.project.amount)");
   });
 
   it("renders stacked project status badges under order number in board cards", () => {

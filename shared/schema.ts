@@ -1,4 +1,4 @@
-import { mysqlTable, text, int, date, time, boolean, bigint, primaryKey, varchar, timestamp, json, uniqueIndex, index, check } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, time, boolean, bigint, decimal, primaryKey, varchar, timestamp, json, uniqueIndex, index, check } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -229,6 +229,7 @@ export const projects = mysqlTable("project", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   orderNumber: varchar("order_number", { length: 255 }),
+  amount: decimal("amount", { precision: 12, scale: 2 }),
   customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
   descriptionMd: text("description_md"),
   isActive: boolean("is_active").notNull().default(true),
@@ -243,16 +244,40 @@ export const projects = mysqlTable("project", {
   ),
 }));
 
+const projectAmountSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) return value;
+      return value.toFixed(2);
+    }
+    if (typeof value === "string") {
+      const normalized = value.trim().replace(",", ".");
+      return normalized.length === 0 ? null : normalized;
+    }
+    return value;
+  },
+  z
+    .string()
+    .regex(/^-?\d+(?:\.\d{1,2})?$/, "amount must have at most 2 decimal places")
+    .transform((value) => Number(value).toFixed(2))
+    .nullable()
+    .optional(),
+);
+
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
   isActive: true,
+}).extend({
+  amount: projectAmountSchema,
 });
 
 export const updateProjectSchema = z.object({
   name: z.string().optional(),
   orderNumber: z.string().nullable().optional(),
+  amount: projectAmountSchema,
   customerId: z.number().optional(),
   descriptionMd: z.string().nullable().optional(),
   isActive: z.boolean().optional(),

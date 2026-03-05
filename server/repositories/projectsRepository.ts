@@ -194,6 +194,7 @@ export async function updateProjectWithVersion(
   data: UpdateProject,
 ): Promise<{ kind: "updated"; project: Project } | { kind: "version_conflict" }> {
   const hasOrderNumber = Object.prototype.hasOwnProperty.call(data, "orderNumber");
+  const hasAmount = Object.prototype.hasOwnProperty.call(data, "amount");
 
   const result = await db.execute(sql`
     update project
@@ -202,6 +203,10 @@ export async function updateProjectWithVersion(
       order_number = case
         when ${hasOrderNumber ? 1 : 0} = 1 then ${data.orderNumber ?? null}
         else order_number
+      end,
+      amount = case
+        when ${hasAmount ? 1 : 0} = 1 then ${data.amount ?? null}
+        else amount
       end,
       customer_id = coalesce(${data.customerId ?? null}, customer_id),
       description_md = ${data.descriptionMd ?? null},

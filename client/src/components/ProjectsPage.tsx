@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FolderKanban, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,17 @@ function formatAppointmentLabel(appointment: ProjectAppointmentSummary | null): 
   return `${dateLabel}, ${String(appointment.startTimeHour).padStart(2, "0")}:00`;
 }
 
+function formatProjectAmount(amount: unknown): string {
+  if (amount == null) return "â€”";
+  const normalized = typeof amount === "string" ? Number(amount) : amount;
+  if (typeof normalized !== "number" || !Number.isFinite(normalized)) return "â€”";
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(normalized);
+}
 function SortIcon({ direction }: { direction: SortDirection | null }) {
   if (direction === "asc") return <ArrowUp className="w-3.5 h-3.5" />;
   if (direction === "desc") return <ArrowDown className="w-3.5 h-3.5" />;
@@ -311,7 +322,7 @@ export function ProjectsPage({
         minWidth: 220,
         cell: ({ row }) => (
           <span>
-            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "—"}
+            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "â€”"}
           </span>
         ),
       },
@@ -320,11 +331,18 @@ export function ProjectsPage({
         header: "Auftragsnummer",
         accessor: (row) => row.project.orderNumber ?? "",
         minWidth: 160,
-        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "—"}</span>,
+        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "â€”"}</span>,
+      },
+      {
+        id: "amount",
+        header: "Betrag",
+        accessor: (row) => (row.project.amount == null ? "" : String(row.project.amount)),
+        minWidth: 150,
+        cell: ({ row }) => <span>{formatProjectAmount(row.project.amount)}</span>,
       },
       {
         id: "relevantAppointment",
-        header: "Nächster Termin",
+        header: "NÃ¤chster Termin",
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
         minWidth: 220,
         cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
@@ -538,3 +556,4 @@ export function ProjectsPage({
     </>
   );
 }
+

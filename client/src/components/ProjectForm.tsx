@@ -89,6 +89,7 @@ export function ProjectForm({
   
   const [name, setName] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
+  const [amount, setAmount] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -103,10 +104,17 @@ export function ProjectForm({
   const isAdmin = userRole === "ADMIN";
   const canManageProjectStatuses = isAdmin || userRole === "DISPATCHER";
 
-  const buildFormSnapshot = (input: { name: string; orderNumber: string; descriptionMd: string; customerId: number | null }) =>
+  const buildFormSnapshot = (input: {
+    name: string;
+    orderNumber: string;
+    amount: string;
+    descriptionMd: string;
+    customerId: number | null;
+  }) =>
     JSON.stringify({
       name: input.name.trim(),
       orderNumber: input.orderNumber.trim(),
+      amount: input.amount.replace(",", ".").trim(),
       descriptionMd: input.descriptionMd,
       customerId: input.customerId,
     });
@@ -145,12 +153,14 @@ export function ProjectForm({
       const parsedProjectName = parseProjectStoredName(projectData.project.name);
       setName(parsedProjectName.isolatedProjectName);
       setOrderNumber(projectData.project.orderNumber ?? "");
+      setAmount(projectData.project.amount != null ? String(projectData.project.amount) : "");
       setDescriptionMd(projectData.project.descriptionMd || "");
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: parsedProjectName.isolatedProjectName,
           orderNumber: projectData.project.orderNumber ?? "",
+          amount: projectData.project.amount != null ? String(projectData.project.amount) : "",
           descriptionMd: projectData.project.descriptionMd || "",
           customerId: projectData.project.customerId,
         }),
@@ -160,6 +170,7 @@ export function ProjectForm({
         buildFormSnapshot({
           name: "",
           orderNumber: "",
+          amount: "",
           descriptionMd: "",
           customerId: null,
         }),
@@ -371,6 +382,7 @@ export function ProjectForm({
   const isFormDirty = buildFormSnapshot({
     name,
     orderNumber,
+    amount,
     descriptionMd,
     customerId,
   }) !== initialFormSnapshot;
@@ -384,7 +396,7 @@ export function ProjectForm({
 
   // Create project mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; orderNumber?: string | null; customerId: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { name: string; orderNumber?: string | null; amount?: string | null; customerId: number; descriptionMd?: string }) => {
       const res = await apiRequest('POST', '/api/projects', data);
       return res.json();
     },
@@ -408,7 +420,7 @@ export function ProjectForm({
 
   // Update project mutation
   const updateMutation = useMutation({
-    mutationFn: async (data: { version: number; name?: string; orderNumber?: string | null; customerId?: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { version: number; name?: string; orderNumber?: string | null; amount?: string | null; customerId?: number; descriptionMd?: string }) => {
       const res = await apiRequest('PATCH', `/api/projects/${projectId}`, data);
       return res.json();
     },
@@ -589,6 +601,15 @@ export function ProjectForm({
 
     const storedProjectName = formatProjectStoredName(selectedCustomerNumber, name);
     const normalizedOrderNumber = orderNumber.trim() || null;
+    const normalizedAmountText = amount.replace(",", ".").trim();
+    const parsedAmountNumber = normalizedAmountText.length === 0 ? null : Number(normalizedAmountText);
+    const normalizedAmount = parsedAmountNumber == null ? null : parsedAmountNumber.toFixed(2);
+    const amountIsValid =
+      normalizedAmountText.length === 0 || /^-?\d+(?:\.\d{1,2})?$/.test(normalizedAmountText);
+    if (!amountIsValid || (parsedAmountNumber != null && !Number.isFinite(parsedAmountNumber))) {
+      toast({ title: "Betrag ist ungueltig (max. 2 Nachkommastellen)", variant: "destructive" });
+      throw new Error("validation");
+    }
 
     let createdProjectId: number | null = null;
     if (isEditing) {
@@ -600,6 +621,7 @@ export function ProjectForm({
         version: projectVersion,
         name: storedProjectName,
         orderNumber: normalizedOrderNumber,
+        amount: normalizedAmount,
         customerId,
         descriptionMd: descriptionMd || undefined,
       });
@@ -607,12 +629,13 @@ export function ProjectForm({
       const createdProject = await createMutation.mutateAsync({
         name: storedProjectName,
         orderNumber: normalizedOrderNumber,
+        amount: normalizedAmount,
         customerId,
         descriptionMd: descriptionMd || undefined,
       });
       createdProjectId = createdProject.id;
     }
-    setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, descriptionMd, customerId }));
+    setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, amount, descriptionMd, customerId }));
 
     if (createdProjectId && documentExtractionFile) {
       try {
@@ -784,7 +807,7 @@ export function ProjectForm({
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
         <div className="col-span-2 space-y-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-[150px,minmax(260px,1fr),150px] gap-4">
+                <div className="grid grid-cols-[150px,minmax(220px,1fr),150px,150px] gap-4">
                   <div className="space-y-2">
                     <Label data-testid="label-project-customer-number">Kunde Nr.</Label>
                     <div
@@ -811,6 +834,17 @@ export function ProjectForm({
                       onChange={(e) => setOrderNumber(e.target.value)}
                       readOnly={isEditing}
                       data-testid="input-project-order-number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="projectAmount" data-testid="label-project-amount">Betrag (EUR)</Label>
+                    <Input
+                      id="projectAmount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      inputMode="decimal"
+                      placeholder="z. B. 14999.90"
+                      data-testid="input-project-amount"
                     />
                   </div>
                 </div>
