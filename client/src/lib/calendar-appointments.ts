@@ -33,6 +33,7 @@ export type CalendarAppointment = {
   };
   customerNotesCount: number;
   projectNotesCount: number;
+  appointmentNotesCount: number;
   employees: { id: number; fullName: string }[];
   isLocked: boolean;
 };
@@ -92,11 +93,15 @@ export function useCalendarAppointments({
         const projectNotesCount = Number.isFinite(rawAppointment.projectNotesCount)
           ? Math.max(0, rawAppointment.projectNotesCount)
           : 0;
+        const appointmentNotesCount = Number.isFinite(rawAppointment.appointmentNotesCount)
+          ? Math.max(0, rawAppointment.appointmentNotesCount)
+          : 0;
 
         return {
           ...rawAppointment,
           customerNotesCount,
           projectNotesCount,
+          appointmentNotesCount,
         };
       });
       console.info(`${logPrefix} fetch success`, { count: data.length });

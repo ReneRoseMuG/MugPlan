@@ -1,14 +1,13 @@
 /**
  * Test Scope:
  *
- * Feature: FT03/FT09/FT13 - Wochenkalender Notiz-Preview
- * Use Case: UC Notiz-Footer zeigt Gesamtzaehler und laedt Kunden-/Projektnotizen on demand
+ * Feature: FT01/FT03/FT09/FT13 - Wochenkalender Notiz-Preview
+ * Use Case: UC Notiz-Footer zeigt kumulierten Gesamtzaehler und laedt Kunden-/Projekt-/Terminnotizen on demand
  *
  * Abgedeckte Regeln:
- * - Notes-Hover rendert nichts bei Gesamtzaehler <= 0.
- * - Trigger zeigt "Notizen anzeigen (X)" mit Gesamtzaehler.
- * - Preview laedt Kunden- und Projektnotizen getrennt ueber bestehende Endpoints.
- * - Preview zeigt Abschnitte Kunde/Projekt nur wenn jeweilige Zaehler > 0.
+ * - Weekly-Hover nutzt die wiederverwendbare EntityNotesHoverPreview-Komponente.
+ * - Weekly-Hover uebergibt kumulative Sources fuer Kunde/Projekt/Termin.
+ * - Preview laedt Kunden-/Projekt-/Terminnotizen getrennt ueber die bestehenden Endpoints.
  * - Fehlertext pro Abschnitt lautet "Notizen konnten nicht geladen werden."
  *
  * Fehlerfaelle:
@@ -23,29 +22,30 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 
 describe("FT03 UI: week appointment notes hover/preview wiring", () => {
-  it("hides trigger when no notes exist and shows aggregate label for available notes", () => {
+  it("wires weekly hover to the reusable entity notes preview with cumulative sources", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentNotesHover.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("const safeCustomerNotesCount = Number.isFinite(customerNotesCount) ? Math.max(0, customerNotesCount) : 0;");
-    expect(source).toContain("const safeProjectNotesCount = Number.isFinite(projectNotesCount) ? Math.max(0, projectNotesCount) : 0;");
-    expect(source).toContain("const totalNotesCount = safeCustomerNotesCount + safeProjectNotesCount;");
-    expect(source).toContain("if (totalNotesCount <= 0) return null;");
-    expect(source).toContain("Notizen");
-    expect(source).toContain("<span>{totalNotesCount}</span>");
-    expect(source).toContain('data-testid="week-appointment-notes-hover-trigger"');
+    expect(source).toContain("EntityNotesHoverPreview");
+    expect(source).toContain('sourceMode="cumulative"');
+    expect(source).toContain("customer: { id: customerId, count: customerNotesCount }");
+    expect(source).toContain("project: { id: projectId, count: projectNotesCount }");
+    expect(source).toContain("appointment: { id: appointmentId, count: appointmentNotesCount }");
   });
 
-  it("uses lazy preview loading and resolves customer/project notes via existing endpoints", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentNotesPreview.tsx");
+  it("uses lazy preview loading and resolves customer/project/appointment notes via existing endpoints", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/notes/EntityNotesHoverPreview.tsx");
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("enabled: customerEnabled");
     expect(source).toContain("enabled: projectEnabled");
-    expect(source).toContain("fetch(`/api/customers/${customerId}/notes`");
-    expect(source).toContain("fetch(`/api/projects/${projectId}/notes`");
-    expect(source).toContain('title="Kunde"');
-    expect(source).toContain('title="Projekt"');
+    expect(source).toContain("enabled: appointmentEnabled");
+    expect(source).toContain("return `/api/customers/${id}/notes`;");
+    expect(source).toContain("return `/api/projects/${id}/notes`;");
+    expect(source).toContain("return `/api/appointments/${id}/notes`;");
+    expect(source).toContain("resolveTitle(\"customer\")");
+    expect(source).toContain("resolveTitle(\"project\")");
+    expect(source).toContain("resolveTitle(\"appointment\")");
     expect(source).toContain("Notizen konnten nicht geladen werden.");
   });
 });

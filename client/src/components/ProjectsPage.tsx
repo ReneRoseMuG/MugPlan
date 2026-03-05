@@ -17,6 +17,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { ProjectBulkImportDialog } from "@/components/ProjectBulkImportDialog";
+import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -146,11 +147,6 @@ export function ProjectsPage({
 
   const activeProjects = useMemo(
     () => projects.filter((project) => project.isActive),
-    [projects],
-  );
-
-  const notesCountByProjectId = useMemo(
-    () => new Map(projects.map((project) => [project.id, project.notesCount] as const)),
     [projects],
   );
 
@@ -342,7 +338,7 @@ export function ProjectsPage({
       },
       {
         id: "relevantAppointment",
-        header: "NÃ¤chster Termin",
+        header: "Nächster Termin",
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
         minWidth: 220,
         cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
@@ -477,7 +473,11 @@ export function ProjectsPage({
                         className="text-xs text-slate-600"
                         data-testid={`text-project-notes-count-${project.id}`}
                       >
-                        Notizen: {notesCountByProjectId.get(project.id) ?? 0}
+                        <EntityNotesHoverPreview
+                          sourceMode="single-parent"
+                          sources={{ type: "project", id: project.id, count: (project as ProjectListItem).notesCount ?? 0 }}
+                          triggerTestId={`text-project-notes-count-${project.id}`}
+                        />
                       </span>
                     </div>
                   }

@@ -122,10 +122,12 @@ export function CalendarWeekAppointmentPanel({
             <>
               <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
               <CalendarWeekAppointmentNotesHover
+                appointmentId={appointment.id}
                 customerId={appointment.customer.id}
                 projectId={appointment.projectId}
                 customerNotesCount={appointment.customerNotesCount ?? 0}
                 projectNotesCount={appointment.projectNotesCount ?? 0}
+                appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
               />
             </>
           ) : (

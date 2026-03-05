@@ -47,6 +47,7 @@ export default defineConfig({
           if (id.includes("/@tanstack/react-query/")) return "query-vendor";
           if (id.includes("/react-leaflet/") || id.includes("/leaflet/")) return "map-vendor";
           if (id.includes("/date-fns/")) return "date-vendor";
+          return "vendor";
         },
       },
     },

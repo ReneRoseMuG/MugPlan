@@ -1,11 +1,11 @@
 /**
  * Test Scope:
  *
- * Feature: FT03/FT09/FT13 - Termin-Previews und Notizen
- * Use Case: UC Preview-Daten enthalten Notizzaehler fuer Kunde und Projekt
+ * Feature: FT01/FT03/FT09/FT13 - Termin-Previews und Notizen
+ * Use Case: UC Preview-Daten enthalten Notizzaehler fuer Kunde, Projekt und Termin
  *
  * Abgedeckte Regeln:
- * - Sidebar-/List-Appointment-Payloads liefern customerNotesCount und projectNotesCount.
+ * - Sidebar-/List-Appointment-Payloads liefern customerNotesCount, projectNotesCount und appointmentNotesCount.
  * - Contracts fuer appointments.list, projectAppointments und tourAppointments enthalten die Felder.
  *
  * Fehlerfaelle:
@@ -29,18 +29,20 @@ describe("FT03/FT09/FT13 preview notes counters wiring", () => {
     expect(routesSource).toContain("const entityAppointmentItemSchema = z.object({");
     expect(routesSource).toContain("customerNotesCount: z.number().int().min(0)");
     expect(routesSource).toContain("projectNotesCount: z.number().int().min(0)");
+    expect(routesSource).toContain("appointmentNotesCount: z.number().int().min(0)");
     expect(routesSource).toContain("path: '/api/appointments/list'");
     expect(routesSource).toContain("path: '/api/tours/:tourId/current-appointments'");
     expect(routesSource).toContain("path: '/api/projects/:projectId/appointments'");
   });
 
-  it("maps customer/project notes counters in sidebar and list appointment services", () => {
+  it("maps customer/project/appointment notes counters in sidebar and list appointment services", () => {
     expect(appointmentsServiceSource).toContain("const mapSidebarAppointments = async");
     expect(appointmentsServiceSource).toContain("getCustomerNoteCountsByCustomerIds");
     expect(appointmentsServiceSource).toContain("getProjectNoteCountsByProjectIds");
+    expect(appointmentsServiceSource).toContain("getAppointmentNoteCountsByAppointmentIds");
     expect(appointmentsServiceSource).toContain("customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0");
     expect(appointmentsServiceSource).toContain("projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0");
+    expect(appointmentsServiceSource).toContain("appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0");
     expect(appointmentsServiceSource).toContain("export async function listAppointmentsList");
   });
 });
-

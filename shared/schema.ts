@@ -848,6 +848,22 @@ export const appointmentEmployees = mysqlTable("appointment_employee", {
 
 export type AppointmentEmployee = typeof appointmentEmployees.$inferSelect;
 
+// Appointment Note Relation (FT 01)
+export const appointmentNotes = mysqlTable("appointment_note", {
+  appointmentId: bigint("appointment_id", { mode: "number" })
+    .notNull()
+    .references(() => appointments.id, { onDelete: "cascade" }),
+  noteId: bigint("note_id", { mode: "number" })
+    .notNull()
+    .references(() => notes.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.appointmentId, table.noteId] }),
+  byNoteAppointment: index("idx_an_note_appointment").on(table.noteId, table.appointmentId),
+}));
+
+export type AppointmentNote = typeof appointmentNotes.$inferSelect;
+
 // Help Texts (FT 16)
 export const helpTexts = mysqlTable("help_texts", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),

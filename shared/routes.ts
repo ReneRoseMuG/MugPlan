@@ -109,6 +109,7 @@ const entityAppointmentItemSchema = z.object({
   ),
   customerNotesCount: z.number().int().min(0),
   projectNotesCount: z.number().int().min(0),
+  appointmentNotesCount: z.number().int().min(0),
   isLocked: z.boolean(),
 });
 
@@ -446,6 +447,7 @@ export const api = {
               ),
               customerNotesCount: z.number().int().min(0),
               projectNotesCount: z.number().int().min(0),
+              appointmentNotesCount: z.number().int().min(0),
               isLocked: z.boolean(),
               allDay: z.boolean(),
               singleEmployee: z.boolean(),
@@ -562,6 +564,38 @@ export const api = {
       },
     },
   },
+  appointmentNotes: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/appointments/:appointmentId/notes',
+      responses: {
+        200: z.array(z.custom<typeof notes.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/appointments/:appointmentId/notes',
+      input: insertNoteSchema.extend({ templateId: z.number().optional() }),
+      responses: {
+        201: z.custom<typeof notes.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/appointments/:appointmentId/notes/:noteId',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   calendarAppointments: {
     list: {
       method: "GET" as const,
@@ -614,6 +648,7 @@ export const api = {
             }).optional(),
             customerNotesCount: z.number().int().min(0),
             projectNotesCount: z.number().int().min(0),
+            appointmentNotesCount: z.number().int().min(0),
             employees: z.array(
               z.object({
                 id: z.number(),
@@ -1810,6 +1845,7 @@ export const api = {
           ),
           customerNotesCount: z.number().int().min(0),
           projectNotesCount: z.number().int().min(0),
+          appointmentNotesCount: z.number().int().min(0),
           isLocked: z.boolean(),
         })),
       },
@@ -1858,6 +1894,7 @@ export const api = {
           ),
           customerNotesCount: z.number().int().min(0),
           projectNotesCount: z.number().int().min(0),
+          appointmentNotesCount: z.number().int().min(0),
           isLocked: z.boolean(),
         })),
       },
