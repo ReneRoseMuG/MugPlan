@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { ListLayout } from "@/components/ui/list-layout";
+import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import {
   AppointmentsFilterPanel,
@@ -83,6 +84,39 @@ function resolveAppointmentProjectColumnValue(row: AppointmentListItem): string 
     return projectName;
   }
   return `${projectName} (${orderNumber})`;
+}
+
+function hasUserControlledAppointmentFilters(
+  filters: AppointmentListFilters,
+  options: {
+    todayBerlin: string;
+    resolvedTourId: number | null | undefined;
+    resolvedEmployeeId: number | undefined;
+    resolvedEnforceFromToday: boolean;
+  },
+): boolean {
+  if (filters.projectId !== undefined) return true;
+  if (filters.customerId !== undefined) return true;
+  if (filters.orderNumber.trim().length > 0) return true;
+  if (filters.dateTo !== undefined) return true;
+
+  if (filters.employeeId !== undefined && filters.employeeId !== options.resolvedEmployeeId) {
+    return true;
+  }
+
+  if (filters.tourId !== undefined && filters.tourId !== (options.resolvedTourId ?? undefined)) {
+    return true;
+  }
+
+  if (filters.dateFrom === undefined) {
+    return false;
+  }
+
+  if (options.resolvedEnforceFromToday) {
+    return filters.dateFrom !== options.todayBerlin;
+  }
+
+  return true;
 }
 
 export function AppointmentsListPage({
@@ -293,6 +327,25 @@ export function AppointmentsListPage({
   const totalPages = data?.totalPages ?? 0;
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
+  const hasUserControlledFilters = hasUserControlledAppointmentFilters(filters, {
+    todayBerlin,
+    resolvedTourId,
+    resolvedEmployeeId,
+    resolvedEnforceFromToday,
+  });
+  const emptyState = hasUserControlledFilters ? (
+    <ListEmptyState
+      helpKey="appointments.emptyFiltered"
+      fallbackTitle="Keine Treffer gefunden."
+      fallbackBody="Fuer die gewaehlte Filtereinstellung konnten keine Treffer ermittelt werden."
+    />
+  ) : (
+    <ListEmptyState
+      helpKey="appointments.empty"
+      fallbackTitle="Keine Termine vorhanden."
+      fallbackBody="Es sind aktuell keine Termine in dieser Liste vorhanden."
+    />
+  );
 
   return (
     <ListLayout
@@ -360,7 +413,7 @@ export function AppointmentsListPage({
           rowKey={(row) => row.id}
           onRowDoubleClick={(row) => onOpenAppointment?.(row.id, context ?? { type: "standalone" })}
           rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
-          emptyState={emptyStateOverride ?? <p className="py-4 text-sm text-slate-400">Keine Termine gefunden.</p>}
+          emptyState={emptyStateOverride ?? emptyState}
           stickyHeader
         />
       }

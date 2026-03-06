@@ -7,6 +7,7 @@ import * as appointmentsRepository from "../../server/repositories/appointmentsR
 import * as customersService from "../../server/services/customersService";
 import * as employeesService from "../../server/services/employeesService";
 import * as projectsService from "../../server/services/projectsService";
+import * as teamsService from "../../server/services/teamsService";
 import * as toursService from "../../server/services/toursService";
 import { getBerlinTodayDateString } from "../../client/src/lib/project-appointments";
 
@@ -85,6 +86,10 @@ export async function createEmployeeFixture(prefix = "EMP") {
     phone: null,
     email: null,
   });
+}
+
+export async function createTeamFixture(color = "#0088cc") {
+  return teamsService.createTeam({ color });
 }
 
 export async function createTourFixture(color = "#0088cc") {

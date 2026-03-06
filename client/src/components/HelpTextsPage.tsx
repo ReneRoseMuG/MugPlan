@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
+import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HelpTextsFilterPanel } from "@/components/ui/filter-panels/help-texts-filter-panel";
@@ -238,6 +239,19 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
     ],
     [sortDirection, sortKey],
   );
+  const emptyState = searchQuery.trim().length > 0 ? (
+    <ListEmptyState
+      helpKey="helptexts.emptyFiltered"
+      fallbackTitle="Keine Treffer gefunden."
+      fallbackBody="Fuer die gewaehlte Filtereinstellung konnten keine Treffer ermittelt werden."
+    />
+  ) : (
+    <ListEmptyState
+      helpKey="helptexts.empty"
+      fallbackTitle="Keine Hilfetexte vorhanden."
+      fallbackBody="Es sind aktuell keine Hilfetexte in dieser Liste vorhanden."
+    />
+  );
 
   return (
     <>
@@ -299,11 +313,7 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
               gridTestId="list-helptexts"
               dynamicMinCols={3}
               isEmpty={helpTexts.length === 0}
-              emptyState={
-                <p className="text-sm text-slate-400 text-center py-8 col-span-full">
-                  {searchQuery ? "Keine Hilfetexte gefunden" : "Keine Hilfetexte vorhanden"}
-                </p>
-              }
+              emptyState={emptyState}
             >
               {helpTexts.map((helpText) => (
                 <EntityCard
@@ -357,11 +367,7 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
                   )}
                 </div>
               )}
-              emptyState={
-                <p className="text-sm text-slate-400 py-4">
-                  {searchQuery ? "Keine Hilfetexte gefunden" : "Keine Hilfetexte vorhanden"}
-                </p>
-              }
+              emptyState={emptyState}
               stickyHeader
             />
           )
