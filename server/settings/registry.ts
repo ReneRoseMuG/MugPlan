@@ -43,6 +43,8 @@ const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bo
 type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
+const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail"] as const;
+type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
 
 const templateAllowedKeys = [
   "sauna_model_name",
@@ -232,6 +234,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     placeholderWhitelist: [],
     validate: (value: unknown): value is string => typeof value === "string",
+  },
+  calendarWeekAppointmentDisplayMode: {
+    key: "calendar.weekAppointmentDisplayMode",
+    label: "Wochenansicht Termindarstellung",
+    description: "Speichert den globalen Darstellungsmodus der Terminkarten in der Wochenansicht.",
+    type: "enum",
+    options: weekAppointmentDisplayModeOptions,
+    defaultValue: "standard",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is WeekAppointmentDisplayMode =>
+      typeof value === "string" && weekAppointmentDisplayModeOptions.includes(value as WeekAppointmentDisplayMode),
   },
   helptextsViewMode: {
     key: "helptexts.viewMode",

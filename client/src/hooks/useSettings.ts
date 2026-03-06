@@ -15,7 +15,8 @@ export type UserSettingKey =
   | "hoverPreviewOpenDelayMs"
   | "cardListColumns"
   | "calendar.weekLanes.isCollapsed"
-  | "calendar.weekLanes.expandedLaneId";
+  | "calendar.weekLanes.expandedLaneId"
+  | "calendar.weekAppointmentDisplayMode";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -29,7 +30,15 @@ type UserSettingValueByKey = {
   cardListColumns: number;
   "calendar.weekLanes.isCollapsed": boolean;
   "calendar.weekLanes.expandedLaneId": string;
+  "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail";
 };
+
+export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
+  if (value === "standard" || value === "compact" || value === "detail") {
+    return value;
+  }
+  return "standard";
+}
 
 export function resolveToastDesktopPosition(value: unknown): ToastDesktopPosition {
   if (value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right") {
@@ -93,6 +102,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.weekLanes.expandedLaneId") {
       return (typeof setting?.resolvedValue === "string" ? setting.resolvedValue : "") as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.weekAppointmentDisplayMode") {
+      return resolveWeekAppointmentDisplayMode(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);

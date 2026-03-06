@@ -20,7 +20,6 @@ export function CalendarWeekAppointmentPanel({
   highlighted = false,
   onMouseEnter,
   onMouseLeave,
-  onCycleDisplayMode,
   segment = "start",
   context = "default",
   continuationHeightPx,
@@ -38,7 +37,6 @@ export function CalendarWeekAppointmentPanel({
   highlighted?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
-  onCycleDisplayMode?: () => void;
   segment?: "start" | "continuation";
   context?: "default" | "week-calendar";
   continuationHeightPx?: number | null;
@@ -85,21 +83,6 @@ export function CalendarWeekAppointmentPanel({
     >
       {!isContinuation && (
         <div className="space-y-1.5">
-          {interactive && context === "week-calendar" ? (
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onCycleDisplayMode?.();
-                }}
-                data-testid={`button-week-display-mode-${appointment.id}`}
-              >
-                Modus: {appointment.displayMode}
-              </button>
-            </div>
-          ) : null}
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}

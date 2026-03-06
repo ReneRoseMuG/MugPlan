@@ -9,7 +9,7 @@
  * - Neues Global-Setting fuer Hover-Delay wird inkl. Version aufgeloest.
  * - Neues Global-Setting fuer Toast-Desktop-Position wird inkl. Version aufgeloest.
  * - Neues USER-Setting fuer Hilfetext-Preview-Groesse wird inkl. Version aufgeloest.
- * - FT03-Settings fuer boolean/string werden im USER-Scope korrekt aufgeloest.
+ * - FT03-Settings fuer boolean/string/enum werden im USER-Scope korrekt aufgeloest.
  *
  * Fehlerfälle:
  * - Keine persistierten Werte: Fallback auf DEFAULT ohne Versionen.
@@ -185,6 +185,35 @@ describe("PKG-08 user settings resolved mapping", () => {
     expect(expandedLaneSetting?.resolvedValue).toBe("tour-42");
     expect(expandedLaneSetting?.resolvedScope).toBe("USER");
     expect(expandedLaneSetting?.resolvedVersion).toBe(3);
+  });
+
+  it("maps FT03 week appointment display mode with USER scope and version", async () => {
+    usersRepoMock.getUserWithRole.mockResolvedValue({
+      id: 1,
+      isActive: true,
+      roleCode: "ADMIN",
+    } as any);
+    settingsRepoMock.listSettingCandidates.mockResolvedValue([
+      {
+        settingKey: "calendar.weekAppointmentDisplayMode",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: "compact",
+        version: 8,
+        updatedAt: new Date("2026-03-06T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+    ] as any);
+
+    const result = await getResolvedSettingsForUser(1);
+    const displayModeSetting = result.find((entry) => entry.key === "calendar.weekAppointmentDisplayMode");
+
+    expect(displayModeSetting).toBeDefined();
+    expect(displayModeSetting?.type).toBe("enum");
+    expect(displayModeSetting?.userVersion).toBe(8);
+    expect(displayModeSetting?.resolvedValue).toBe("compact");
+    expect(displayModeSetting?.resolvedScope).toBe("USER");
+    expect(displayModeSetting?.resolvedVersion).toBe(8);
   });
 
   it("maps user version and resolved value for helpTextPreviewSize", async () => {

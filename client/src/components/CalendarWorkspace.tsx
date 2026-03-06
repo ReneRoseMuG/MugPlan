@@ -177,6 +177,7 @@ export function CalendarWorkspace({
           <CalendarFilterPanel
             employeeId={employeeFilterId}
             onEmployeeIdChange={onEmployeeFilterChange}
+            showWeekDisplayMode={activeView === "week"}
           />
         </div>
       )}
