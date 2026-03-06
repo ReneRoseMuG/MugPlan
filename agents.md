@@ -92,7 +92,7 @@ UI-Elemente darf Codex nur ändern oder ergänzen, wenn dies **explizit im Auftr
 
 Codex respektiert die fachlichen Regeln des Systems:
 
-- Ein Termin ist fachlich nur gültig, wenn er einem Projekt zugeordnet ist
+- Ein Termin ist fachlich nur gueltig, wenn ihm entweder ein Projekt oder direkt ein Kunde zugeordnet ist
 - Blockierende Überschneidungsregel für Mitarbeiterzuweisungen ist einzuhalten
 - Keine Umgehung von Rollen- und Lock-Regeln
 

@@ -97,14 +97,20 @@ export async function createTourFixture(color = "#0088cc") {
 }
 
 export async function createAppointmentFixture(params: {
-  projectId: number;
+  projectId?: number | null;
+  customerId?: number;
   startDate?: string;
+  endDate?: string | null;
+  startTime?: string | null;
   employeeIds?: number[];
   tourId?: number | null;
 }) {
   return appointmentsService.createAppointment({
     projectId: params.projectId,
+    customerId: params.customerId,
     startDate: params.startDate ?? "2099-01-01",
+    endDate: params.endDate ?? null,
+    startTime: params.startTime ?? null,
     employeeIds: params.employeeIds ?? [],
     tourId: params.tourId ?? null,
   });

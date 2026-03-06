@@ -72,7 +72,7 @@ async function listIds(url: string): Promise<number[]> {
 }
 
 describe("FT01 UC coverage integration", () => {
-  it("UC 01/01 happy+negative: create with project and block without project", async () => {
+  it("UC 01/01 happy+negative: create with project and block only when project and customer are both missing", async () => {
     const agent = await loginAdminAgent(app);
     const { customer, project } = await createProjectFixture("UC01-01");
     const employee = await createEmployeeFixture("UC01-01-E");

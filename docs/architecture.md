@@ -133,9 +133,9 @@ Das relationale Modell ist in `shared/schema.ts` definiert. Zentrale Entitäten:
 
 ## 7. Fachliche Invarianten (serverseitig)
 
-### 7.1 Termin-Projekt-Pflicht
+### 7.1 Termin-Relationspflicht
 
-Termine sind projektgebunden (`appointments.projectId` not null + Service-Prüfung in `appointmentsService`).
+Termine sind fachlich gueltig, wenn entweder `appointments.projectId` gesetzt ist oder bei `projectId = null` eine direkte `customerId`-Zuordnung besteht; bei gesetzter `projectId` wird die Kundenbeziehung aus dem Projekt abgeleitet und auf Konsistenz geprueft.
 
 ### 7.2 Mitarbeiter-Overlap
 
