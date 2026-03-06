@@ -221,6 +221,38 @@ Schlägt ein Test fehl, dokumentiert Codex den Fehler und wartet auf Anweisung. 
 
 ---
 
+### Verbindliche Begriffe: â€žvoller Testlauf" und â€žvoller Audit"
+
+Wenn der Nutzer â€žvoller Testlauf" verlangt, meint dies **alle** im Repository etablierten Testbereiche. Codex darf diesen Begriff nicht still auf ein einzelnes Standardkommando reduzieren.
+
+FÃ¼r dieses Repository umfasst ein **voller Testlauf** mindestens:
+
+- `npm run test:unit`
+- `npm run test:integration`
+- `npm run test:e2e`
+- `npm run test:e2e:browser`
+
+Wenn der Nutzer â€žvoller Audit" verlangt, meint dies **alle** im Repository etablierten PrÃ¼f- und QualitÃ¤tskommandos. Codex darf diesen Begriff nicht still auf `npm run check` oder ein anderes Teilkommando reduzieren.
+
+FÃ¼r dieses Repository umfasst ein **voller Audit** mindestens:
+
+- `npm run check`
+- `npm run lint`
+- `npm run audit`
+- `npm run secrets`
+
+Wenn der Nutzer â€žvoller Testlauf und voller Audit" verlangt, sind alle oben genannten Kommandos vollstÃ¤ndig auszufÃ¼hren â€“ auch dann, wenn der konkrete Auftrag nur einen kleinen Bugfix, eine kleine Ã„nderung oder einen einzelnen neuen Test betrifft.
+
+Nach AusfÃ¼hrung muss Codex immer explizit berichten:
+
+- welche Kommandos ausgefÃ¼hrt wurden
+- welches Ergebnis jedes Kommando hatte
+- welche Teile nicht ausgefÃ¼hrt wurden und warum
+
+Aussagen wie â€žalles grÃ¼n", â€žvollstÃ¤ndig erfolgreich" oder gleichwertige Zusammenfassungen sind nur zulÃ¤ssig, wenn wirklich alle verpflichtenden Kommandos des angeforderten Umfangs erfolgreich ausgefÃ¼hrt wurden.
+
+Kann ein verpflichtender Teil wegen Setup-, Infrastruktur-, Berechtigungs-, Umgebungs- oder Laufzeitproblemen nicht ausgefÃ¼hrt werden, darf Codex das Ergebnis nicht als â€žvoll" bezeichnen und muss den fehlenden Teil als Blocker dokumentieren.
+
 ## 12. Test-Dokumentationspflicht
 
 ### Pflicht-Kommentar in jeder Testdatei
