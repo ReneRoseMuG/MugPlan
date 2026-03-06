@@ -64,6 +64,7 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       id: 11,
       version: 2,
       projectId: 3,
+      customerId: 4,
       tourId: null,
       title: "existing",
       description: null,
@@ -74,7 +75,8 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
-    appointmentsRepoMock.getProjectTx.mockResolvedValue({ id: 3, name: "P3" });
+    appointmentsRepoMock.getProjectTx.mockResolvedValue({ id: 3, customerId: 4, name: "P3" } as any);
+    customersRepoMock.getCustomer.mockResolvedValue({ id: 4, customerNumber: "4711", isActive: true } as any);
     appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
     appointmentsRepoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
@@ -111,6 +113,7 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       id: 12,
       version: 2,
       projectId: 3,
+      customerId: 4,
       tourId: null,
       title: "existing",
       description: null,
@@ -121,7 +124,8 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
-    appointmentsRepoMock.getProjectTx.mockResolvedValue({ id: 3, name: "P3" });
+    appointmentsRepoMock.getProjectTx.mockResolvedValue({ id: 3, customerId: 4, name: "P3" } as any);
+    customersRepoMock.getCustomer.mockResolvedValue({ id: 4, customerNumber: "4711", isActive: true } as any);
     appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
     appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "version_conflict" });
 

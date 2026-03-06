@@ -41,7 +41,7 @@ describe("FT03/FT09/FT13 preview notes counters wiring", () => {
     expect(appointmentsServiceSource).toContain("getProjectNoteCountsByProjectIds");
     expect(appointmentsServiceSource).toContain("getAppointmentNoteCountsByAppointmentIds");
     expect(appointmentsServiceSource).toContain("customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0");
-    expect(appointmentsServiceSource).toContain("projectNotesCount: projectNoteCounts.get(row.project.id) ?? 0");
+    expect(appointmentsServiceSource).toContain("projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0");
     expect(appointmentsServiceSource).toContain("appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0");
     expect(appointmentsServiceSource).toContain("export async function listAppointmentsList");
   });

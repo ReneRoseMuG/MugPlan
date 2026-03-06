@@ -19,6 +19,8 @@
  * Sicherstellen, dass der appointments-Seed realistische Tour-Tagesplanung mit fester Mitarbeiter-Tour-Bindung erzeugt.
  */
 import { and, eq, inArray } from "drizzle-orm";
+import { existsSync } from "fs";
+import path from "path";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../../../server/db";
@@ -56,7 +58,13 @@ beforeEach(() => {
 });
 
 describe("FT20 integration: appointments-seed tour/day constraints", () => {
-  it("creates only rule-conform tour/day slots and keeps employee-tour binding", async () => {
+  const hasRequiredDemoSeedFiles = existsSync(
+    path.resolve(process.cwd(), "shared/uploads/demodata/fasssauna_modelle.csv"),
+  );
+
+  const itIfDemoSeedFilesPresent = hasRequiredDemoSeedFiles ? it : it.skip;
+
+  itIfDemoSeedFilesPresent("creates only rule-conform tour/day slots and keeps employee-tour binding", async () => {
     let baseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
 

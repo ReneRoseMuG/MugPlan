@@ -90,10 +90,11 @@ async function createCustomerWithProjects(label: string) {
   return { customer, projects: [projectPrimary, projectSecondary] };
 }
 
-async function insertProjectAppointment(params: { projectId: number; startDate: string; title: string }) {
+async function insertProjectAppointment(params: { projectId: number; customerId: number; startDate: string; title: string }) {
   const created = await appointmentsRepository.createAppointment(
     {
       projectId: params.projectId,
+      customerId: params.customerId,
       tourId: null,
       title: params.title,
       description: null,
@@ -121,16 +122,19 @@ describe("FT04/FT05+ integration: customer sidebar vs all appointments", () => {
     for (const bundle of customerBundles) {
       const historicalId = await insertProjectAppointment({
         projectId: bundle.projects[0].id,
+        customerId: bundle.projects[0].customerId,
         startDate: HISTORICAL_DATE,
         title: `Historical ${bundle.customer.id}`,
       });
       const currentId = await insertProjectAppointment({
         projectId: bundle.projects[0].id,
+        customerId: bundle.projects[0].customerId,
         startDate: CURRENT_DATE,
         title: `Current ${bundle.customer.id}`,
       });
       const futureId = await insertProjectAppointment({
         projectId: bundle.projects[1].id,
+        customerId: bundle.projects[1].customerId,
         startDate: FUTURE_DATE,
         title: `Future ${bundle.customer.id}`,
       });
@@ -212,9 +216,9 @@ describe("FT04/FT05+ integration: customer sidebar vs all appointments", () => {
     const admin = await loginAdminAgent();
     const bundle = await createCustomerWithProjects("override");
 
-    await insertProjectAppointment({ projectId: bundle.projects[0].id, startDate: HISTORICAL_DATE, title: "Historical override" });
-    await insertProjectAppointment({ projectId: bundle.projects[0].id, startDate: CURRENT_DATE, title: "Current override" });
-    await insertProjectAppointment({ projectId: bundle.projects[1].id, startDate: FUTURE_DATE, title: "Future override" });
+    await insertProjectAppointment({ projectId: bundle.projects[0].id, customerId: bundle.projects[0].customerId, startDate: HISTORICAL_DATE, title: "Historical override" });
+    await insertProjectAppointment({ projectId: bundle.projects[0].id, customerId: bundle.projects[0].customerId, startDate: CURRENT_DATE, title: "Current override" });
+    await insertProjectAppointment({ projectId: bundle.projects[1].id, customerId: bundle.projects[1].customerId, startDate: FUTURE_DATE, title: "Future override" });
 
     const withoutHeader = await admin
       .get(`/api/customers/${bundle.customer.id}/appointments?scope=upcoming&fromDate=${HISTORICAL_DATE}`)

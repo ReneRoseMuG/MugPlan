@@ -89,10 +89,11 @@ function relativeBerlinDate(daysFromToday: number): string {
   return berlinFormatter.format(now);
 }
 
-async function insertAppointmentRaw(params: { projectId: number; startDate: string; title: string }) {
+async function insertAppointmentRaw(params: { projectId: number; customerId: number; startDate: string; title: string }) {
   const created = await appointmentsRepository.createAppointment(
     {
       projectId: params.projectId,
+      customerId: params.customerId,
       tourId: null,
       title: params.title,
       description: null,
@@ -128,12 +129,14 @@ describe("FT02 integration: projects scope and mengenlogik", () => {
 
     await insertAppointmentRaw({
       projectId: projectPast.id,
+      customerId: projectPast.customerId,
       startDate: pastDay1,
       title: "Scope Past",
     });
 
     await insertAppointmentRaw({
       projectId: projectMixed.id,
+      customerId: projectMixed.customerId,
       startDate: pastDay1,
       title: "Scope Mixed Past",
     });

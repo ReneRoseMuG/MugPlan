@@ -80,10 +80,11 @@ async function createProject(customerId: number, label: string) {
   });
 }
 
-async function createAppointment(projectId: number, startDate: string, title: string): Promise<number> {
+async function createAppointment(project: { id: number; customerId: number }, startDate: string, title: string): Promise<number> {
   const created = await appointmentsRepository.createAppointment(
     {
-      projectId,
+      projectId: project.id,
+      customerId: project.customerId,
       tourId: null,
       title,
       description: null,
@@ -139,11 +140,11 @@ describe("FT03 integration: calendar appointments note counts", () => {
     const projectB1 = await createProject(customerB.id, "B1");
     const projectC1 = await createProject(customerC.id, "C1");
 
-    const appointmentA1 = await createAppointment(projectA1.id, "2098-07-10", "A1-1");
-    const appointmentA2 = await createAppointment(projectA1.id, "2098-07-11", "A1-2");
-    const appointmentA3 = await createAppointment(projectA2.id, "2098-07-12", "A2-1");
-    const appointmentB1 = await createAppointment(projectB1.id, "2098-07-13", "B1-1");
-    const appointmentC1 = await createAppointment(projectC1.id, "2098-07-14", "C1-1");
+    const appointmentA1 = await createAppointment(projectA1, "2098-07-10", "A1-1");
+    const appointmentA2 = await createAppointment(projectA1, "2098-07-11", "A1-2");
+    const appointmentA3 = await createAppointment(projectA2, "2098-07-12", "A2-1");
+    const appointmentB1 = await createAppointment(projectB1, "2098-07-13", "B1-1");
+    const appointmentC1 = await createAppointment(projectC1, "2098-07-14", "C1-1");
 
     await createCustomerNote(admin, customerA.id, "Kunde A 1");
     await createCustomerNote(admin, customerA.id, "Kunde A 2");

@@ -29,7 +29,7 @@ describe("FT03 UI: week appointment notes hover/preview wiring", () => {
     expect(source).toContain("EntityNotesHoverPreview");
     expect(source).toContain('sourceMode="cumulative"');
     expect(source).toContain("customer: { id: customerId, count: customerNotesCount }");
-    expect(source).toContain("project: { id: projectId, count: projectNotesCount }");
+    expect(source).toContain("project: projectId ? { id: projectId, count: projectNotesCount } : undefined");
     expect(source).toContain("appointment: { id: appointmentId, count: appointmentNotesCount }");
   });
 

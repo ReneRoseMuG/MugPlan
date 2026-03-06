@@ -1,5 +1,6 @@
+import { eq } from "drizzle-orm";
 import type { InsertCustomer } from "@shared/schema";
-import { projectTags, tags } from "@shared/schema";
+import { projectTags, projects, tags } from "@shared/schema";
 import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
@@ -141,6 +142,7 @@ export async function createProjectWithPastAndFutureAppointmentsFixture(params?:
   const pastAppointment = await appointmentsRepository.createAppointment(
     {
       projectId: project.id,
+      customerId: project.customerId,
       tourId: null,
       title: `${project.name} past`,
       description: null,
@@ -155,6 +157,7 @@ export async function createProjectWithPastAndFutureAppointmentsFixture(params?:
   const futureAppointment = await appointmentsRepository.createAppointment(
     {
       projectId: project.id,
+      customerId: project.customerId,
       tourId: null,
       title: `${project.name} future`,
       description: null,
@@ -180,9 +183,22 @@ export async function createRawAppointmentFixture(params: {
   startDate: string;
   title: string;
 }) {
+  const [project] = await db
+    .select({
+      customerId: projects.customerId,
+    })
+    .from(projects)
+    .where(eq(projects.id, params.projectId))
+    .limit(1);
+
+  if (!project) {
+    throw new Error(`Project ${params.projectId} not found for raw appointment fixture.`);
+  }
+
   const created = await appointmentsRepository.createAppointment(
     {
       projectId: params.projectId,
+      customerId: project.customerId,
       tourId: null,
       title: params.title,
       description: null,

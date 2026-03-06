@@ -115,6 +115,7 @@ async function createProjectForEmployee(label: string) {
 
 async function insertAppointment(params: {
   projectId: number;
+  customerId: number;
   employeeIds: number[];
   startDate: string;
   title: string;
@@ -122,6 +123,7 @@ async function insertAppointment(params: {
   const created = await appointmentsRepository.createAppointment(
     {
       projectId: params.projectId,
+      customerId: params.customerId,
       tourId: null,
       title: params.title,
       description: null,
@@ -156,18 +158,21 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
       const project = projects[index];
       const historicalId = await insertAppointment({
         projectId: project.id,
+        customerId: project.customerId,
         employeeIds: [employee.id],
         startDate: HISTORICAL_DATE,
         title: `Historical ${employee.id}`,
       });
       const currentId = await insertAppointment({
         projectId: project.id,
+        customerId: project.customerId,
         employeeIds: [employee.id],
         startDate: CURRENT_DATE,
         title: `Current ${employee.id}`,
       });
       const futureId = await insertAppointment({
         projectId: project.id,
+        customerId: project.customerId,
         employeeIds: [employee.id],
         startDate: FUTURE_DATE,
         title: `Future ${employee.id}`,
@@ -255,9 +260,9 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
     const employee = await createEmployee(admin, "override");
     const project = await createProjectForEmployee("override");
 
-    await insertAppointment({ projectId: project.id, employeeIds: [employee.id], startDate: HISTORICAL_DATE, title: "Historical override" });
-    await insertAppointment({ projectId: project.id, employeeIds: [employee.id], startDate: CURRENT_DATE, title: "Current override" });
-    await insertAppointment({ projectId: project.id, employeeIds: [employee.id], startDate: FUTURE_DATE, title: "Future override" });
+    await insertAppointment({ projectId: project.id, customerId: project.customerId, employeeIds: [employee.id], startDate: HISTORICAL_DATE, title: "Historical override" });
+    await insertAppointment({ projectId: project.id, customerId: project.customerId, employeeIds: [employee.id], startDate: CURRENT_DATE, title: "Current override" });
+    await insertAppointment({ projectId: project.id, customerId: project.customerId, employeeIds: [employee.id], startDate: FUTURE_DATE, title: "Future override" });
 
     const withoutHeader = await admin
       .get(`/api/employees/${employee.id}/appointments?scope=upcoming&fromDate=${HISTORICAL_DATE}`)
@@ -297,6 +302,7 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
 
     const futureId = await insertAppointment({
       projectId: project.id,
+      customerId: project.customerId,
       employeeIds: [employee.id],
       startDate: FUTURE_DATE,
       title: `Reader ${employee.id}`,
