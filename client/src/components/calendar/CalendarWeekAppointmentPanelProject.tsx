@@ -1,22 +1,15 @@
-import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 import { HoverPreview } from "@/components/ui/hover-preview";
-
-type AppointmentStatus = {
-  id: number;
-  title: string;
-  color: string;
-};
 
 export function CalendarWeekAppointmentPanelProject({
   projectName,
+  projectOrderNumber,
   projectDescription,
-  projectStatuses,
   showSectionTitle = false,
   enableFullDescriptionPreview = false,
 }: {
   projectName: string;
+  projectOrderNumber: string | null;
   projectDescription: string | null;
-  projectStatuses: AppointmentStatus[];
   showSectionTitle?: boolean;
   enableFullDescriptionPreview?: boolean;
 }) {
@@ -24,23 +17,12 @@ export function CalendarWeekAppointmentPanelProject({
     "max-h-16 overflow-hidden text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5";
   const fullDescriptionClassName =
     "max-h-[280px] overflow-y-auto text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5";
+  const resolvedProjectHeader = [projectOrderNumber?.trim() || "-", projectName].join(" - ");
 
   return (
     <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
       {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
-      {projectStatuses.length > 0 && (
-        <div className="mb-1 flex flex-wrap gap-1">
-          {projectStatuses.map((status) => (
-            <ProjectStatusInfoBadge
-              key={status.id}
-              status={status}
-              size="sm"
-              testId={`week-project-status-${status.id}`}
-            />
-          ))}
-        </div>
-      )}
-      <div className="text-xs font-semibold text-slate-800">{projectName}</div>
+      <div className="text-xs font-semibold text-slate-800" data-testid="week-project-header">{resolvedProjectHeader}</div>
       {projectDescription && !enableFullDescriptionPreview && (
         <div className={descriptionClassName} dangerouslySetInnerHTML={{ __html: projectDescription }} />
       )}
@@ -48,6 +30,7 @@ export function CalendarWeekAppointmentPanelProject({
         <HoverPreview
           preview={(
             <div className="rounded-lg bg-white p-2">
+              <div className="mb-2 text-xs font-semibold text-slate-800">{resolvedProjectHeader}</div>
               <div className={fullDescriptionClassName} dangerouslySetInnerHTML={{ __html: projectDescription }} />
             </div>
           )}

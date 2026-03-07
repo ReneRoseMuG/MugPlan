@@ -1,48 +1,70 @@
 /**
  * Test Scope:
  *
- * Feature: FT02 - Projektverwaltung
- * Use Case: UC Auftragsnummer in Termin-Previews
+ * Feature: FT03 - Wochenkalender Termin-Karten
+ * Use Case: UC Weekly Header- und Panel-Inhalte
  *
  * Abgedeckte Regeln:
- * - Weekly-Panel uebergibt die Projekt-Auftragsnummer in den Headerbereich.
- * - Header im Weekly-Panel rendert die Auftragsnummer als mittleren Wert.
- * - Projektbeschreibung im Weekly-Panel wird als HTML gerendert.
+ * - Weekly-Header nutzt Datums-, Zeit- und Mehrtagesinformationen statt Auftragsnummer.
+ * - Projektblock rendert die Auftragsnummer zusammen mit dem Projekttitel.
+ * - Kundenblock nutzt den bestehenden CustomerDetailCard im Hover.
+ * - Notizen bleiben im Weekly-Kontext auch bei 0 sichtbar.
  * - Termin-Info-Badge nutzt ausschliesslich die Weekly-Panel-Preview.
  *
  * Fehlerfaelle:
- * - Auftragsnummer wird im Preview-Datenfluss verloren.
+ * - Weekly-Header zeigt weiterhin die Auftragsnummer.
+ * - Kunden- oder Notiz-Preview verschwindet aus der Wochenkarte.
  *
  * Ziel:
- * Sicherstellen, dass Auftragsnummern in relevanten Termin-Previews sichtbar bleiben.
+ * Sicherstellen, dass Weekly-Preview und Wochenkarte die neuen Inhaltszonen korrekt verdrahten.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
 import path from "path";
 
-describe("FT02 appointment preview order number wiring", () => {
-  it("passes projectOrderNumber into weekly header panel", () => {
+describe("FT03 appointment weekly panel wiring", () => {
+  it("passes date and time information into weekly header panel", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanel.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("orderNumber={appointment.projectOrderNumber}");
+    expect(source).toContain("startDate={appointment.startDate}");
+    expect(source).toContain("endDate={appointment.endDate}");
+    expect(source).toContain("startTime={appointment.startTime}");
   });
 
-  it("renders order number as center value in weekly header panel", () => {
+  it("renders header top line with time/date/day count and second line with customer and postal code", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelHeader.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("orderNumber: string | null;");
-    expect(source).toContain("const resolvedOrderNumber = orderNumber?.trim() || \"-\"");
-    expect(source).toContain("{resolvedOrderNumber}");
+    expect(source).toContain("CalendarRange");
+    expect(source).toContain("const dayCountLabel = `${dayCount} ${dayCount === 1 ? \"Tag\" : \"Tage\"}`;");
+    expect(source).toContain("const topLineItems = [resolvedStartTime, formattedStartDate, dayCountLabel].filter(Boolean);");
+    expect(source).toContain("{topLineItems.join(\" | \")}");
+    expect(source).toContain("K: {resolvedCustomerNumber}");
+    expect(source).toContain("PLZ: {resolvedPostalCode}");
   });
 
-  it("renders weekly project description as HTML", () => {
+  it("renders weekly project header and description as HTML", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelProject.tsx");
     const source = readFileSync(filePath, "utf8");
 
+    expect(source).toContain("projectOrderNumber: string | null;");
+    expect(source).toContain("const resolvedProjectHeader = [projectOrderNumber?.trim() || \"-\", projectName].join(\" - \");");
+    expect(source).toContain("data-testid=\"week-project-header\"");
     expect(source).toContain("dangerouslySetInnerHTML={{ __html: projectDescription }}");
     expect(source).toContain("[&_ul]:list-disc");
+  });
+
+  it("uses customer detail card hover and keeps notes visible when no preview is available", () => {
+    const customerFile = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelCustomer.tsx");
+    const customerSource = readFileSync(customerFile, "utf8");
+    const notesFile = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentNotesHover.tsx");
+    const notesSource = readFileSync(notesFile, "utf8");
+
+    expect(customerSource).toContain("<CustomerDetailCard customer={customerPreview} testId=\"week-customer-preview\" />");
+    expect(customerSource).toContain("data-testid=\"week-customer-hover-trigger\"");
+    expect(notesSource).toContain("data-testid=\"week-appointment-notes-static-trigger\"");
+    expect(notesSource).toContain("<span>0</span>");
   });
 
   it("uses weekly-only preview in termin badge with sidebar/table size profile", () => {

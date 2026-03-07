@@ -1,5 +1,6 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
+import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
@@ -46,7 +47,6 @@ export function CalendarWeekAppointmentPanel({
 }) {
   const isContinuation = segment === "continuation";
   const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
-  const hasStartTime = Boolean(appointment.startTime && appointment.startTime.trim());
   const isCompact = appointment.displayMode === "compact";
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
@@ -86,10 +86,11 @@ export function CalendarWeekAppointmentPanel({
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}
-              orderNumber={appointment.projectOrderNumber}
               postalCode={appointment.customer.postalCode}
               color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
-              hasStartTime={hasStartTime}
+              startDate={appointment.startDate}
+              endDate={appointment.endDate}
+              startTime={appointment.startTime}
               connectedToNextRow={showPreviewTourNameLine}
             />
             {showPreviewTourNameLine && (
@@ -110,6 +111,7 @@ export function CalendarWeekAppointmentPanel({
             <>
               <CalendarWeekAppointmentPanelCustomer
                 fullName={appointment.customer.fullName ?? ""}
+                customerNumber={appointment.customer.customerNumber}
                 addressLine1={appointment.customer.addressLine1}
                 addressLine2={appointment.customer.addressLine2}
                 postalCode={appointment.customer.postalCode}
@@ -117,10 +119,25 @@ export function CalendarWeekAppointmentPanel({
               />
               <CalendarWeekAppointmentPanelProject
                 projectName={resolvedProjectName}
+                projectOrderNumber={appointment.projectOrderNumber}
                 projectDescription={appointment.projectDescription}
-                projectStatuses={appointment.projectStatuses}
                 enableFullDescriptionPreview={context === "week-calendar"}
               />
+              {appointment.projectStatuses.length > 0 ? (
+                <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
+                  <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt Status</div>
+                  <div className="flex flex-wrap gap-1">
+                    {appointment.projectStatuses.map((status) => (
+                      <ProjectStatusInfoBadge
+                        key={status.id}
+                        status={status}
+                        size="sm"
+                        testId={`week-project-status-${status.id}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {context === "week-calendar" ? (
                 <>
                   <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
