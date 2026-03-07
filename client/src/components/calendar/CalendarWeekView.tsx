@@ -653,15 +653,15 @@ export function CalendarWeekView({
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => (
                               <div
                                 key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                className="flex items-center justify-between gap-1 px-1"
+                                className="relative flex items-center justify-end gap-1 px-1"
                               >
                                 {dayAppointmentCounts[dayIdx] > 0 ? (
                                   <span
-                                    className="truncate text-[10px] font-semibold"
+                                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 truncate text-center text-[10px] font-semibold"
                                     style={{ color: laneCardHeaderTextColor }}
                                     data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
                                   >
-                                    ({dayAppointmentCounts[dayIdx]}) Termine
+                                    {dayAppointmentCounts[dayIdx]} {dayAppointmentCounts[dayIdx] === 1 ? "Termin" : "Termine"}
                                   </span>
                                 ) : (
                                   <span />

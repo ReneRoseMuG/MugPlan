@@ -54,11 +54,6 @@ export function ListEmptyState({
         <div className="space-y-3">
           <h3 className="text-base font-semibold text-foreground">{fallbackTitle}</h3>
           {fallbackBody ? <div className="text-sm text-muted-foreground">{fallbackBody}</div> : null}
-          {helpKey ? (
-            <p className="text-xs text-muted-foreground" data-testid={`text-empty-helpkey-${helpKey}`}>
-              helpKey: <span className="font-mono">{helpKey}</span>
-            </p>
-          ) : null}
         </div>
       )}
     </div>

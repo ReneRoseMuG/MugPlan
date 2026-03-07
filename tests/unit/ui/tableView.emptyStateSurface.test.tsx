@@ -4,9 +4,11 @@
  * Abgedeckte Regeln:
  * - TableView behaelt im Leerzustand den Tabellenkopf.
  * - Der Empty-State belegt eine definierte Grundflaeche im Tabellenbereich.
+ * - Die leere Tabellenzeile verwendet keinen Hover-Hintergrund.
  *
  * Fehlerfaelle:
  * - Leere Tabellen kollabieren weiter auf eine schmale Einzelzeile.
+ * - Leerzustaende reagieren weiterhin auf Zeilen-Hover.
  *
  * Ziel:
  * Die neue Leerdarstellung der TableView gegen Rueckfall auf das alte Zeilenlayout absichern.
@@ -43,5 +45,6 @@ describe("PKG-08 TableView empty state surface", () => {
     expect(html).toContain("<th");
     expect(html).toContain("min-h-[18rem]");
     expect(html).toContain("Keine Daten");
+    expect(html).toContain("hover:bg-transparent");
   });
 });

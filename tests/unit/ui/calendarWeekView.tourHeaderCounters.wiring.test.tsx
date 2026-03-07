@@ -7,12 +7,14 @@
  * Abgedeckte Regeln:
  * - CalendarWeekView leitet Tagescounts aus dayBuckets ab.
  * - Tagescounts werden im Header-Overlay pro Tagesspalte gerendert.
+ * - Overlay-Counter sitzen mittig in der Tagesspalte und nutzen Singular/Plural-Text.
  * - Tageskopfzellen rendern rechteckige Tour-Counter-Badges je Tag aus denselben Lane-Daten.
  * - Die bestehende Header-Integration bleibt an die Wochen-Grid-Logik gekoppelt.
  *
  * Fehlerfaelle:
  * - Fehlende Counter-Ausgabe im Tages-Overlay.
  * - Abweichende Count-Quelle statt dayBuckets.length.
+ * - Counter bleiben linksbuendig oder verwenden keinen singular/plural Text.
  *
  * Ziel:
  * Verdrahtung der Counter-Daten aus der Wochen-Lane-Struktur in den Header absichern.
@@ -37,7 +39,8 @@ describe("FT03 UI: CalendarWeekView tour header counters wiring", () => {
 
   it("renders per-day counter text only from computed dayAppointmentCounts in overlay", () => {
     expect(source).toContain("dayAppointmentCounts[dayIdx] > 0");
-    expect(source).toContain("({dayAppointmentCounts[dayIdx]}) Termine");
+    expect(source).toContain("className=\"pointer-events-none absolute left-1/2 -translate-x-1/2 truncate text-center text-[10px] font-semibold\"");
+    expect(source).toContain('{dayAppointmentCounts[dayIdx]} {dayAppointmentCounts[dayIdx] === 1 ? "Termin" : "Termine"}');
     expect(source).toContain("data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}");
   });
 

@@ -3,11 +3,11 @@
  *
  * Abgedeckte Regeln:
  * - ListEmptyState nutzt nur Hilfetexte mit nicht-leerem Body fuer dekorierte Empty-States.
- * - Fehlende oder leere Hilfetexte rendern den Fallback samt sichtbarem helpKey.
+ * - Fehlende oder leere Hilfetexte rendern nur den Fallback ohne technische helpKey-Anzeige.
  *
  * Fehlerfaelle:
  * - Leere Hilfetexte unterdruecken den Fallback.
- * - Der erwartete helpKey ist im Fallback nicht sichtbar.
+ * - Der Fallback blendet erneut interne helpKey-Details ein.
  *
  * Ziel:
  * Die Fallback-Regel fuer konfigurierbare Empty-States am gemeinsamen UI-Baustein absichern.
@@ -26,8 +26,8 @@ describe("FT16/FT28 list empty state help fallback wiring", () => {
     expect(source).toContain("const hasRenderableHelpText = Boolean(helpText && typeof helpText.body === \"string\" && helpText.body.trim().length > 0);");
   });
 
-  it("renders the expected helpKey in fallback mode", () => {
-    expect(source).toContain("data-testid={`text-empty-helpkey-${helpKey}`}");
-    expect(source).toContain("helpKey: <span className=\"font-mono\">{helpKey}</span>");
+  it("does not expose the internal helpKey in fallback mode", () => {
+    expect(source).not.toContain("text-empty-helpkey-");
+    expect(source).not.toContain("helpKey: <span className=\"font-mono\">{helpKey}</span>");
   });
 });
