@@ -10,13 +10,16 @@
  * - Verbotene Tageskombinationen auf einer Tour werden verhindert (kein 2x Ganztag, keine identische Intraday-Startzeit doppelt).
  * - Touren ohne Mitarbeitende werden im appointments-Run nicht beplant.
  * - Bei Engpaessen wird ueber das initiale Seed-Fenster hinaus weitergeplant.
+ * - Montage-Termine nutzen nur 1- oder 2-Tages-Dauern im Verhaeltnis 4:1; Freitage bleiben deutlich unterrepraesentiert.
+ * - Base-seeded Projekte erhalten einen Betrag zwischen 7500 und 18000, und nur ein begrenzter Anteil aller Seed-Termine ist intraday.
  *
  * Fehlerfaelle:
  * - Terminzuweisung enthaelt Mitarbeitende mit abweichender Tour.
  * - Tour-Tag-Slots uebersteigen die erlaubte Obergrenze oder enthalten verbotene Kombinationen.
+ * - Seed-Dauern, Freitaggewichtung, Intraday-Anteil oder Projekt-Betraege weichen von der Sollverteilung ab.
  *
  * Ziel:
- * Sicherstellen, dass der appointments-Seed realistische Tour-Tagesplanung mit fester Mitarbeiter-Tour-Bindung erzeugt.
+ * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung, reduzierte Mehrtagestermine und befuellte Projekt-Betraege erzeugt.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { existsSync } from "fs";
@@ -25,7 +28,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../../../server/db";
 import { createSeedRun, purgeSeedRun } from "../../../server/services/demoSeedService";
-import { appointments, appointmentEmployees, employees, seedRunEntities } from "../../../shared/schema";
+import { appointments, appointmentEmployees, employees, projects, seedRunEntities } from "../../../shared/schema";
 
 function toDateKey(date: Date) {
   const y = date.getFullYear();
@@ -51,6 +54,13 @@ function rangeDateKeys(startDate: Date, endDate: Date) {
     cursor.setDate(cursor.getDate() + 1);
   }
   return out;
+}
+
+function daySpan(startDate: Date, endDate: Date | null) {
+  const end = endDate ?? startDate;
+  const startUtc = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.floor((endUtc - startUtc) / (24 * 60 * 60 * 1000)) + 1;
 }
 
 beforeEach(() => {
@@ -106,8 +116,18 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       const appointmentIds = seededAppointmentEntities
         .filter((entity) => entity.entityType === "appointment_mount" || entity.entityType === "appointment_rekl")
         .map((entity) => Number(entity.entityId));
+      const mountAppointmentIds = seededAppointmentEntities
+        .filter((entity) => entity.entityType === "appointment_mount")
+        .map((entity) => Number(entity.entityId));
+      const baseProjectIds = (await db
+        .select({ entityId: seedRunEntities.entityId })
+        .from(seedRunEntities)
+        .where(and(eq(seedRunEntities.seedRunId, baseSeedRunId), eq(seedRunEntities.entityType, "project"))))
+        .map((entity) => Number(entity.entityId));
 
       expect(appointmentIds.length).toBeGreaterThan(0);
+      expect(mountAppointmentIds.length).toBeGreaterThan(0);
+      expect(baseProjectIds.length).toBeGreaterThan(0);
 
       const appointmentRows = await db
         .select({
@@ -121,6 +141,22 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         .where(inArray(appointments.id, appointmentIds));
 
       expect(appointmentRows.length).toBe(appointmentIds.length);
+
+      const baseProjectRows = await db
+        .select({
+          id: projects.id,
+          amount: projects.amount,
+        })
+        .from(projects)
+        .where(inArray(projects.id, baseProjectIds));
+
+      expect(baseProjectRows.length).toBe(baseProjectIds.length);
+      for (const row of baseProjectRows) {
+        const amount = Number(row.amount);
+        expect(Number.isInteger(amount)).toBe(true);
+        expect(amount).toBeGreaterThanOrEqual(7500);
+        expect(amount).toBeLessThanOrEqual(18000);
+      }
 
       const assignmentRows = await db
         .select({
@@ -195,6 +231,35 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       for (const usedTourId of usedTourIds) {
         expect(nonEmptyTourIds.has(usedTourId)).toBe(true);
       }
+
+      const mountRows = appointmentRows.filter((row) => mountAppointmentIds.includes(Number(row.id)));
+      const oneDayMounts = mountRows.filter((row) => daySpan(row.startDate as Date, (row.endDate as Date | null) ?? null) === 1);
+      const twoDayMounts = mountRows.filter((row) => daySpan(row.startDate as Date, (row.endDate as Date | null) ?? null) === 2);
+
+      expect(oneDayMounts.length + twoDayMounts.length).toBe(mountRows.length);
+      expect(twoDayMounts.length).toBeGreaterThan(0);
+      expect(oneDayMounts.length / twoDayMounts.length).toBeCloseTo(4, 0);
+
+      const fridayStarts = appointmentRows.filter((row) => (row.startDate as Date).getDay() === 5).length;
+      const weekdayStartsByDay = new Map<number, number>([
+        [1, 0],
+        [2, 0],
+        [3, 0],
+        [4, 0],
+      ]);
+      for (const row of appointmentRows) {
+        const day = (row.startDate as Date).getDay();
+        if (weekdayStartsByDay.has(day)) {
+          weekdayStartsByDay.set(day, (weekdayStartsByDay.get(day) ?? 0) + 1);
+        }
+      }
+      const weekdayAverage = Array.from(weekdayStartsByDay.values()).reduce((sum, value) => sum + value, 0) / weekdayStartsByDay.size;
+      expect(fridayStarts).toBeLessThanOrEqual(Math.max(1, Math.floor(weekdayAverage * 0.35)));
+
+      const intradayCount = appointmentRows.filter((row) => row.startTime != null).length;
+      const intradayShare = intradayCount / appointmentRows.length;
+      expect(intradayShare).toBeGreaterThanOrEqual(0.1);
+      expect(intradayShare).toBeLessThanOrEqual(0.3);
 
       const seededStartKeys = appointmentRows.map((row) => toDateKey(row.startDate as Date)).sort();
       const maxStartKey = seededStartKeys[seededStartKeys.length - 1];

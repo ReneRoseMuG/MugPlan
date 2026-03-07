@@ -153,7 +153,7 @@ type PurgeSummary = {
   noOp: boolean;
 };
 
-type DurationDays = 1 | 2 | 3;
+type DurationDays = 1 | 2;
 type IntentKind = "mount" | "rekl";
 
 type ProjectSeedContext = {
@@ -169,6 +169,7 @@ type AppointmentIntent = {
   tourId: number;
   durationDays: DurationDays;
   weekIndex: number;
+  isIntraday: boolean;
   delayDays?: number;
   baseDate?: Date;
 };
@@ -299,12 +300,31 @@ function defaults(config: SeedConfig) {
           : [])
         : [],
     durationWeights: {
-      1: 0.55,
-      2: 0.30,
-      3: 0.15,
+      1: 0.8,
+      2: 0.2,
     } as const,
     tourScatter: 0.8,
   };
+}
+
+function isFriday(date: Date) {
+  return date.getDay() === 5;
+}
+
+function buildStartTimeOptions(kind: IntentKind) {
+  return kind === "rekl"
+    ? (["10:00:00", "11:00:00", "13:00:00", "15:00:00"] as const)
+    : (["07:00:00", "08:00:00", "09:00:00", "12:00:00"] as const);
+}
+
+function shouldUseIntraday(seedRunId: string, seq: number, kind: IntentKind) {
+  return (hashInt(`${seedRunId}:intraday:${kind}:${seq}`) % 100) < 20;
+}
+
+function chooseStartTime(seedRunId: string, seq: number, kind: IntentKind, attempt: number) {
+  const options = buildStartTimeOptions(kind);
+  const baseIndex = hashInt(`${seedRunId}:start-time:${kind}:${seq}`) % options.length;
+  return options[(baseIndex + attempt) % options.length] ?? options[0];
 }
 
 function extractRunType(configJson: unknown): SeedRunType {
@@ -651,13 +671,12 @@ function buildDurationQuotaList(
   if (totalAppointments <= 0) return [];
   const counts = largestRemainderDistribute(
     totalAppointments,
-    [weights[1], weights[2], weights[3]],
+    [weights[1], weights[2]],
     random,
   );
   const out: DurationDays[] = [];
   for (let i = 0; i < counts[0]; i += 1) out.push(1);
   for (let i = 0; i < counts[1]; i += 1) out.push(2);
-  for (let i = 0; i < counts[2]; i += 1) out.push(3);
   return seededShuffle(out, random);
 }
 
@@ -726,6 +745,7 @@ function planMountAppointmentIntents(params: {
           tourId: tourPlan.tourId,
           durationDays: durations[durationCursor % durations.length] ?? 1,
           weekIndex,
+          isIntraday: shouldUseIntraday(`${project.projectId}:${tourPlan.tourId}`, seq, "mount"),
         });
         durationCursor += 1;
         seq += 1;
@@ -760,9 +780,19 @@ function touchesWeekend(startDate: Date, durationDays: number) {
 }
 
 function durationMaxStartDay(duration: DurationDays) {
-  if (duration === 3) return 3;
   if (duration === 2) return 4;
   return 5;
+}
+
+function prioritizeFridayCandidates(candidates: Date[], seedRunId: string, seq: number) {
+  const preferred = candidates.filter((date) => !isFriday(date));
+  const fridays = candidates.filter((date) => isFriday(date));
+  if (fridays.length === 0) return preferred;
+  if (preferred.length === 0) return fridays;
+  const gatedFridays = fridays.filter(
+    (date, index) => (hashInt(`${seedRunId}:friday:${seq}:${toDateString(date)}:${index}`) % 4) === 0,
+  );
+  return [...preferred, ...gatedFridays];
 }
 
 function buildCandidateDatesForIntent(params: {
@@ -812,7 +842,7 @@ function buildCandidateDatesForIntent(params: {
       candidates.push(candidate);
     }
   }
-  return candidates;
+  return prioritizeFridayCandidates(candidates, seedRunId, intent.seq);
 }
 
 function resolveCandidateWindowEndDate(params: {
@@ -845,11 +875,6 @@ function resolveExtensionStartDate(params: {
   const maxCandidateDate = new Date(maxCandidateTime);
   const later = maxCandidateDate > windowEnd ? maxCandidateDate : windowEnd;
   return addDays(later, 1);
-}
-
-function getReklStartTimeForAttempt(attempt: number) {
-  const options = ["10:00:00", "11:00:00", "13:00:00", "15:00:00"] as const;
-  return options[attempt % options.length] ?? "11:00:00";
 }
 
 function getOrCreateTourDaySlotState(
@@ -1020,7 +1045,13 @@ async function materializeAppointmentIntents(params: {
         attempt += 1;
         continue;
       }
-      const startTime = intent.kind === "rekl" ? getReklStartTimeForAttempt(attempt) : null;
+      if (isFriday(startDate) && (hashInt(`${seedRunId}:friday-extension:${intent.seq}:${attempt}`) % 4) !== 0) {
+        attempt += 1;
+        continue;
+      }
+      const startTime = intent.isIntraday
+        ? chooseStartTime(seedRunId, intent.seq, intent.kind, attempt)
+        : null;
       if (enforceAppointmentsRules && !canPlaceOnTourDays({
         tourDaySlots,
         tourId: intent.tourId,
@@ -1165,6 +1196,7 @@ function buildReklIntents(params: {
       tourId: mount.tourId,
       durationDays: 1,
       weekIndex,
+      isIntraday: true,
       delayDays: delay,
       baseDate: mount.startDate,
     });
@@ -1447,6 +1479,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         const project = await projectsService.createProject({
           name: rawProjectName.trim(),
           customerId,
+          amount: String(random.int(7500, 18000)),
           descriptionMd: renderTemplate(templates[TEMPLATE_KEYS.projectDescription], ctx, { allowedKeys: allowedTemplateKeys }),
         });
         created.projects += 1;
