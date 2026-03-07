@@ -107,8 +107,10 @@ export function TableView<T>({
         <TableBody>
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={columns.length} className="text-center text-muted-foreground py-10">
-                {emptyState ?? "Keine Eintraege vorhanden."}
+              <TableCell colSpan={columns.length} className="p-0">
+                <div className="flex min-h-[18rem] items-center justify-center px-4 py-10 text-center text-muted-foreground">
+                  {emptyState ?? "Keine Eintraege vorhanden."}
+                </div>
               </TableCell>
             </TableRow>
           )}

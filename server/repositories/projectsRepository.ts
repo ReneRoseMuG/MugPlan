@@ -222,6 +222,14 @@ export async function updateProjectWithVersion(
     return { kind: "version_conflict" };
   }
 
+  if (data.customerId !== undefined && data.customerId !== null) {
+    await db.execute(sql`
+      update appointments
+      set customer_id = ${data.customerId}
+      where project_id = ${id}
+    `);
+  }
+
   const [project] = await db.select().from(projects).where(eq(projects.id, id));
   return { kind: "updated", project };
 }

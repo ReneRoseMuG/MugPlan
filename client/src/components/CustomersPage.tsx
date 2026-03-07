@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
+import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CustomerFilterPanel } from "@/components/ui/filter-panels/customer-filter-panel";
@@ -294,6 +295,20 @@ export function CustomersPage({
   );
 
   const resolvedTitle = title ?? "Kunden";
+  const hasActiveFilters = filters.lastName.trim().length > 0 || filters.customerNumber.trim().length > 0 || (isAdmin && customerScope !== "active");
+  const emptyState = hasActiveFilters ? (
+    <ListEmptyState
+      helpKey="customers.emptyFiltered"
+      fallbackTitle="Keine Treffer gefunden."
+      fallbackBody="Fuer die gewaehlte Filtereinstellung konnten keine Treffer ermittelt werden."
+    />
+  ) : (
+    <ListEmptyState
+      helpKey="customers.empty"
+      fallbackTitle="Keine Kunden vorhanden."
+      fallbackBody="Es sind aktuell keine Kunden in dieser Liste vorhanden."
+    />
+  );
 
   return (
     <>
@@ -374,11 +389,7 @@ export function CustomersPage({
             gridTestId="list-customers"
             gridCols="3"
             isEmpty={filteredCustomers.length === 0}
-            emptyState={
-              <p className="text-sm text-slate-400 text-center py-8 col-span-full">
-                Keine Kunden gefunden.
-              </p>
-            }
+            emptyState={emptyState}
           >
             {filteredCustomers.map((customer) => {
               const appointments = appointmentsByCustomerId.get(customer.id) ?? [];
@@ -459,7 +470,7 @@ export function CustomersPage({
 
               return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
             }}
-            emptyState={<p className="text-sm text-slate-400 py-4">Keine Kunden gefunden.</p>}
+            emptyState={emptyState}
             stickyHeader
           />
         )

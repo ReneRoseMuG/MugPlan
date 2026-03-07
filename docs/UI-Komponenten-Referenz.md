@@ -42,6 +42,23 @@ Kartenraster für visuelle Übersichten. Spaltenanzahl ist responsiv und global 
 
 ---
 
+### `ListEmptyState`
+**Datei:** `client/src/components/ui/list-empty-state.tsx`
+
+Gemeinsamer Inline-Empty-State für Listenansichten. Nutzt das bestehende Help-Text-System über einen `helpKey` und zeigt bei fehlendem oder leerem Hilfetext einen statischen Fallback plus den erwarteten `helpKey` an.
+
+**Schlüssel-Props:**
+
+| Prop | Bedeutung |
+|---|---|
+| `helpKey` | Erwarteter Help-Text-Key für konfigurierbare Empty-Messages |
+| `fallbackTitle` | Titel, wenn kein nutzbarer Help-Text vorliegt |
+| `fallbackBody` | Ergänzender Fallback-Hinweis |
+
+**Eingesetzt in:** BoardView/TableView-Empty-States von CustomersPage, ProjectsPage, EmployeesPage, AppointmentsListPage, HelpTextsPage
+
+---
+
 ### `TableView`
 **Datei:** `client/src/components/ui/table-view.tsx`
 

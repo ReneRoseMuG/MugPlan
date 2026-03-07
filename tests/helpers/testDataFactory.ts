@@ -1,11 +1,13 @@
+import { eq } from "drizzle-orm";
 import type { InsertCustomer } from "@shared/schema";
-import { projectTags, tags } from "@shared/schema";
+import { projectTags, projects, tags } from "@shared/schema";
 import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
 import * as customersService from "../../server/services/customersService";
 import * as employeesService from "../../server/services/employeesService";
 import * as projectsService from "../../server/services/projectsService";
+import * as teamsService from "../../server/services/teamsService";
 import * as toursService from "../../server/services/toursService";
 import { getBerlinTodayDateString } from "../../client/src/lib/project-appointments";
 
@@ -86,19 +88,29 @@ export async function createEmployeeFixture(prefix = "EMP") {
   });
 }
 
+export async function createTeamFixture(color = "#0088cc") {
+  return teamsService.createTeam({ color });
+}
+
 export async function createTourFixture(color = "#0088cc") {
   return toursService.createTour({ color });
 }
 
 export async function createAppointmentFixture(params: {
-  projectId: number;
+  projectId?: number | null;
+  customerId?: number;
   startDate?: string;
+  endDate?: string | null;
+  startTime?: string | null;
   employeeIds?: number[];
   tourId?: number | null;
 }) {
   return appointmentsService.createAppointment({
     projectId: params.projectId,
+    customerId: params.customerId,
     startDate: params.startDate ?? "2099-01-01",
+    endDate: params.endDate ?? null,
+    startTime: params.startTime ?? null,
     employeeIds: params.employeeIds ?? [],
     tourId: params.tourId ?? null,
   });
@@ -141,6 +153,7 @@ export async function createProjectWithPastAndFutureAppointmentsFixture(params?:
   const pastAppointment = await appointmentsRepository.createAppointment(
     {
       projectId: project.id,
+      customerId: project.customerId,
       tourId: null,
       title: `${project.name} past`,
       description: null,
@@ -155,6 +168,7 @@ export async function createProjectWithPastAndFutureAppointmentsFixture(params?:
   const futureAppointment = await appointmentsRepository.createAppointment(
     {
       projectId: project.id,
+      customerId: project.customerId,
       tourId: null,
       title: `${project.name} future`,
       description: null,
@@ -180,9 +194,22 @@ export async function createRawAppointmentFixture(params: {
   startDate: string;
   title: string;
 }) {
+  const [project] = await db
+    .select({
+      customerId: projects.customerId,
+    })
+    .from(projects)
+    .where(eq(projects.id, params.projectId))
+    .limit(1);
+
+  if (!project) {
+    throw new Error(`Project ${params.projectId} not found for raw appointment fixture.`);
+  }
+
   const created = await appointmentsRepository.createAppointment(
     {
       projectId: params.projectId,
+      customerId: project.customerId,
       tourId: null,
       title: params.title,
       description: null,

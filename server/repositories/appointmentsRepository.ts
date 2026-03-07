@@ -134,11 +134,12 @@ export async function getAppointmentTx(tx: DbTx, id: number): Promise<Appointmen
 export async function getProjectTx(
   tx: DbTx,
   projectId: number,
-): Promise<{ id: number; name: string } | null> {
+): Promise<{ id: number; name: string; customerId: number } | null> {
   const [project] = await tx
     .select({
       id: projects.id,
       name: projects.name,
+      customerId: projects.customerId,
     })
     .from(projects)
     .where(eq(projects.id, projectId));
@@ -288,6 +289,7 @@ export async function updateAppointmentWithVersionTx(
     update appointments
     set
       project_id = ${params.data.projectId ?? null},
+      customer_id = ${params.data.customerId ?? null},
       tour_id = ${params.data.tourId ?? null},
       title = ${params.data.title ?? null},
       description = ${params.data.description ?? null},
@@ -295,6 +297,26 @@ export async function updateAppointmentWithVersionTx(
       start_time = ${params.data.startTime ?? null},
       end_date = ${params.data.endDate ?? null},
       end_time = ${params.data.endTime ?? null},
+      version = version + 1
+    where id = ${params.appointmentId}
+      and version = ${params.expectedVersion}
+  `);
+
+  return getAffectedRows(result) === 0 ? { kind: "version_conflict" } : { kind: "updated" };
+}
+
+export async function updateAppointmentDisplayModeWithVersionTx(
+  tx: DbTx,
+  params: {
+    appointmentId: number;
+    expectedVersion: number;
+    displayMode: string;
+  },
+): Promise<{ kind: "updated" | "version_conflict" }> {
+  const result = await tx.execute(sql`
+    update appointments
+    set
+      display_mode = ${params.displayMode},
       version = version + 1
     where id = ${params.appointmentId}
       and version = ${params.expectedVersion}
@@ -378,8 +400,8 @@ export async function listAppointmentsByEmployeeFromDate(employeeId: number, fro
     })
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .where(and(eq(appointmentEmployees.employeeId, employeeId), gte(appointments.startDate, fromDate)))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
@@ -394,8 +416,8 @@ export async function listSidebarAppointmentsByProjectFromDate(projectId: number
       tour: tours,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(eq(appointments.projectId, projectId), gte(appointments.startDate, fromDate)))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -412,8 +434,8 @@ export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: numb
     })
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(eq(appointmentEmployees.employeeId, employeeId), gte(appointments.startDate, fromDate)))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -436,8 +458,8 @@ export async function listSidebarAppointmentsByEmployeeScope(employeeId: number,
     })
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...whereConditions))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -447,7 +469,7 @@ export async function listSidebarAppointmentsByCustomerScope(customerId: number,
   logDebug(
     `${logPrefix} list sidebar appointments by customer scope customerId=${customerId} fromDate=${fromDate ? `>=${fromDate}` : "none"}`,
   );
-  const whereConditions = [eq(projects.customerId, customerId)];
+  const whereConditions = [eq(appointments.customerId, customerId)];
   if (fromDate) {
     whereConditions.push(gte(appointments.startDate, fromDate));
   }
@@ -459,8 +481,8 @@ export async function listSidebarAppointmentsByCustomerScope(customerId: number,
       tour: tours,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...whereConditions))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -476,8 +498,8 @@ export async function listSidebarAppointmentsByTourFromDate(tourId: number, from
       tour: tours,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(eq(appointments.tourId, tourId), gte(appointments.startDate, fromDate)))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -518,8 +540,8 @@ export async function listAppointmentsForCalendarRange({
       tour: tours,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...conditions))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -532,7 +554,7 @@ function buildAppointmentListConditions(filters: AppointmentListFilters) {
     conditions.push(eq(appointments.projectId, filters.projectId));
   }
   if (filters.customerId) {
-    conditions.push(eq(projects.customerId, filters.customerId));
+    conditions.push(eq(appointments.customerId, filters.customerId));
   }
   if (filters.orderNumber) {
     conditions.push(like(projects.orderNumber, `%${filters.orderNumber}%`));
@@ -591,8 +613,8 @@ export async function listAppointmentsForList(
   const [totalResult] = await db
     .select({ total: sql<number>`count(*)` })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(whereClause);
 
@@ -604,8 +626,8 @@ export async function listAppointmentsForList(
       tour: tours,
     })
     .from(appointments)
-    .innerJoin(projects, eq(appointments.projectId, projects.id))
-    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(whereClause)
     .orderBy(desc(appointments.startDate), desc(appointments.startTime), desc(appointments.id))

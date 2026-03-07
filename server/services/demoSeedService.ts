@@ -1054,9 +1054,15 @@ async function materializeAppointmentIntents(params: {
         intent.kind === "rekl"
           ? `Rekl. ${intent.project.selectedOven?.ovenName ?? "Ofen"}`
           : `Montage: ${intent.project.model.saunaModelName}`;
+      const linkedProject = await projectsService.getProject(intent.project.projectId);
+      if (!linkedProject) {
+        attempt += 1;
+        continue;
+      }
       const appointment = await createAppointmentRecord(
         {
           projectId: intent.project.projectId,
+          customerId: linkedProject.customerId,
           tourId: intent.tourId,
           title: renderTemplate(templates[titleTemplate], ctx, { allowedKeys: allowedTemplateKeys }) || fallbackTitle,
           description: null,

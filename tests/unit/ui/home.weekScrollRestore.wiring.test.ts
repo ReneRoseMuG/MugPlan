@@ -29,7 +29,7 @@ describe("FT03 UI: Home week scroll restore wiring", () => {
   });
 
   it("stores week scroll snapshot when opening appointment from week view", () => {
-    expect(source).toContain("weekScrollLeft: options?.scrollLeft ?? null,");
+    expect(source).toContain("weekScrollLeft: ctx.weekScrollLeft,");
   });
 
   it("wires pending restore props into WeekGrid", () => {

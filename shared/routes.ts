@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { appointmentDisplayModes } from "./appointmentDisplayMode";
 import { 
   insertTourSchema, updateTourSchema, tours, 
   insertTeamSchema, updateTeamSchema, teams,
@@ -73,9 +74,9 @@ const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active"
 const entityAppointmentItemSchema = z.object({
   id: z.number(),
   version: z.number().int().min(1),
-  projectId: z.number(),
+  projectId: z.number().nullable(),
   projectName: z.string(),
-  projectVersion: z.number().int().min(1),
+  projectVersion: z.number().int().min(1).nullable(),
   projectOrderNumber: z.string().nullable(),
   projectDescription: z.string().nullable(),
   projectStatuses: z.array(
@@ -110,6 +111,7 @@ const entityAppointmentItemSchema = z.object({
   customerNotesCount: z.number().int().min(0),
   projectNotesCount: z.number().int().min(0),
   appointmentNotesCount: z.number().int().min(0),
+  displayMode: z.enum(appointmentDisplayModes),
   isLocked: z.boolean(),
 });
 
@@ -134,7 +136,7 @@ const appointmentAttachmentContextSchema = z.object({
     id: z.number().int().positive(),
     name: z.string(),
     orderNumber: z.string().nullable(),
-  }),
+  }).nullable(),
   customer: z.object({
     id: z.number().int().positive(),
     customerNumber: z.string(),
@@ -411,9 +413,9 @@ export const api = {
           items: z.array(
             z.object({
               id: z.number(),
-              projectId: z.number(),
+              projectId: z.number().nullable(),
               projectName: z.string(),
-              projectVersion: z.number().int().min(1),
+              projectVersion: z.number().int().min(1).nullable(),
               projectOrderNumber: z.string().nullable(),
               projectDescription: z.string().nullable(),
               projectStatuses: z.array(
@@ -448,6 +450,7 @@ export const api = {
               customerNotesCount: z.number().int().min(0),
               projectNotesCount: z.number().int().min(0),
               appointmentNotesCount: z.number().int().min(0),
+              displayMode: z.enum(appointmentDisplayModes),
               isLocked: z.boolean(),
               allDay: z.boolean(),
               singleEmployee: z.boolean(),
@@ -464,8 +467,10 @@ export const api = {
         200: z.object({
           id: z.number(),
           version: z.number().int().min(1),
-          projectId: z.number(),
+          projectId: z.number().nullable(),
+          customerId: z.number(),
           tourId: z.number().nullable(),
+          displayMode: z.enum(appointmentDisplayModes),
           title: z.string(),
           description: z.string().nullable(),
           startDate: z.string(),
@@ -481,7 +486,8 @@ export const api = {
       method: 'POST' as const,
       path: '/api/appointments',
       input: z.object({
-        projectId: z.number(),
+        projectId: z.number().nullable().optional(),
+        customerId: z.number().optional(),
         tourId: z.number().nullable().optional(),
         startDate: z.string(),
         endDate: z.string().nullable().optional(),
@@ -491,8 +497,10 @@ export const api = {
       responses: {
         201: z.object({
           id: z.number(),
-          projectId: z.number(),
+          projectId: z.number().nullable(),
+          customerId: z.number(),
           tourId: z.number().nullable(),
+          displayMode: z.enum(appointmentDisplayModes),
           title: z.string(),
           description: z.string().nullable(),
           startDate: z.string(),
@@ -516,7 +524,8 @@ export const api = {
       path: '/api/appointments/:id',
       input: z.object({
         version: z.number().int().min(1),
-        projectId: z.number(),
+        projectId: z.number().nullable().optional(),
+        customerId: z.number().optional(),
         tourId: z.number().nullable().optional(),
         startDate: z.string(),
         endDate: z.string().nullable().optional(),
@@ -526,8 +535,10 @@ export const api = {
       responses: {
         200: z.object({
           id: z.number(),
-          projectId: z.number(),
+          projectId: z.number().nullable(),
+          customerId: z.number(),
           tourId: z.number().nullable(),
+          displayMode: z.enum(appointmentDisplayModes),
           title: z.string(),
           description: z.string().nullable(),
           startDate: z.string(),
@@ -557,6 +568,25 @@ export const api = {
       }),
       responses: {
         204: z.void(),
+        403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    setDisplayMode: {
+      method: "PATCH" as const,
+      path: "/api/appointments/:id/display-mode",
+      input: z.object({
+        version: z.number().int().min(1),
+        displayMode: z.enum(appointmentDisplayModes),
+      }).strict(),
+      responses: {
+        200: z.object({
+          id: z.number(),
+          version: z.number().int().min(1),
+          displayMode: z.enum(appointmentDisplayModes),
+        }),
         403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY"]) }),
@@ -611,9 +641,9 @@ export const api = {
           z.object({
             id: z.number(),
             version: z.number().int().min(1),
-            projectId: z.number(),
+            projectId: z.number().nullable(),
             projectName: z.string(),
-            projectVersion: z.number().int().min(1),
+            projectVersion: z.number().int().min(1).nullable(),
             projectOrderNumber: z.string().nullable(),
             projectDescription: z.string().nullable(),
             projectStatuses: z.array(
@@ -645,10 +675,11 @@ export const api = {
               orderNumber: z.string().nullable(),
               descriptionMd: z.string().nullable(),
               isActive: z.boolean(),
-            }).optional(),
+            }).nullable().optional(),
             customerNotesCount: z.number().int().min(0),
             projectNotesCount: z.number().int().min(0),
             appointmentNotesCount: z.number().int().min(0),
+            displayMode: z.enum(appointmentDisplayModes),
             employees: z.array(
               z.object({
                 id: z.number(),

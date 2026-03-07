@@ -227,7 +227,9 @@ async function buildExcelBuffer(input: {
   }
 
   const appointmentIds = input.allAppointments.map((row) => row.appointmentId);
-  const projectIds = Array.from(new Set(input.allAppointments.map((row) => row.projectId)));
+  const projectIds = Array.from(
+    new Set(input.allAppointments.map((row) => row.projectId).filter((id): id is number => Number.isFinite(id))),
+  );
   const employeesByAppointment = groupBy(await getAppointmentEmployeesByIds(appointmentIds), (row) => row.appointmentId);
   const statusesByProject = groupBy(await getProjectStatusesByIds(projectIds), (row) => row.projectId);
 
@@ -251,7 +253,9 @@ async function buildExcelBuffer(input: {
 
   for (const row of input.allAppointments) {
     const employeeList = (employeesByAppointment.get(row.appointmentId) ?? []).map((e) => e.employeeName).join(", ");
-    const statusList = (statusesByProject.get(row.projectId) ?? []).map((s) => s.statusTitle).join(", ");
+    const statusList = row.projectId
+      ? (statusesByProject.get(row.projectId) ?? []).map((s) => s.statusTitle).join(", ")
+      : "";
     detailSheet.addRow({
       appointmentId: row.appointmentId,
       startDate: formatDateForDisplay(row.startDate),

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
+import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EmployeeFilterPanel } from "@/components/ui/filter-panels/employee-filter-panel";
@@ -441,6 +442,21 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
     );
   }
 
+  const hasActiveFilters = filters.lastName.trim().length > 0 || (isAdmin && employeeScope !== "active");
+  const emptyState = hasActiveFilters ? (
+    <ListEmptyState
+      helpKey="employees.emptyFiltered"
+      fallbackTitle="Keine Treffer gefunden."
+      fallbackBody="Fuer die gewaehlte Filtereinstellung konnten keine Treffer ermittelt werden."
+    />
+  ) : (
+    <ListEmptyState
+      helpKey="employees.empty"
+      fallbackTitle="Keine Mitarbeiter vorhanden."
+      fallbackBody="Es sind aktuell keine Mitarbeiter in dieser Liste vorhanden."
+    />
+  );
+
   return (
     <>
       <ListLayout
@@ -508,11 +524,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
             gridTestId="list-employees"
             gridCols="3"
             isEmpty={filteredEmployees.length === 0}
-            emptyState={
-              <p className="text-sm text-slate-400 text-center py-8 col-span-full">
-                Keine Mitarbeiter vorhanden
-              </p>
-            }
+            emptyState={emptyState}
           >
             {filteredEmployees.map((employee) => {
               const tourInfo = getTourName(employee.tourId);
@@ -624,7 +636,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
 
                 return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
               }}
-              emptyState={<p className="text-sm text-slate-400 py-4">Keine Mitarbeiter vorhanden</p>}
+              emptyState={emptyState}
               stickyHeader
             />
           )

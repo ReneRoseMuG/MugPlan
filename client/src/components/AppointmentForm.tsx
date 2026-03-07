@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
@@ -27,6 +27,7 @@ import { RelationSlot } from "@/components/ui/relation-slot";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { ProjectsPage } from "@/components/ProjectsPage";
+import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { AppointmentAttachmentsPanel } from "@/components/AppointmentAttachmentsPanel";
 import { NotesSection } from "@/components/NotesSection";
@@ -58,7 +59,9 @@ interface AppointmentFormProps {
 interface AppointmentDetail {
   id: number;
   version: number;
-  projectId: number;
+  projectId: number | null;
+  customerId: number;
+  displayMode: "standard" | "compact" | "detail";
   tourId: number | null;
   title: string;
   description: string | null;
@@ -76,16 +79,37 @@ type ApiSuccessPayload = { id?: number; message?: string };
 
 const logPrefix = "[AppointmentForm]";
 
-const formatHourInput = (value: string) => {
-  const numeric = value.replace(/\D/g, "");
-  if (!numeric) return "";
-  const hour = Math.max(0, Math.min(23, Number(numeric)));
-  return String(hour).padStart(2, "0");
+const normalizeTimeInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const match = /^(\d{2}):(\d{2})$/.exec(trimmed);
+  if (!match) return trimmed;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return trimmed;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return trimmed;
+
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 };
 
-const buildTimeString = (hourValue: string) => {
-  if (!hourValue) return null;
-  return `${hourValue}:00:00`;
+const buildTimeString = (timeValue: string) => {
+  const normalized = normalizeTimeInput(timeValue);
+  if (!normalized) return null;
+  return `${normalized}:00`;
+};
+
+const getBerlinCurrentTimeString = () => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Berlin",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
+  return `${hour}:${minute}`;
 };
 
 const buildApiError = (message: string, status?: number, code?: string): AppointmentApiError => {
@@ -167,6 +191,7 @@ export function AppointmentForm({
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [assignedEmployeeIds, setAssignedEmployeeIds] = useState<number[]>([]);
   const [startDate, setStartDate] = useState<string>(
@@ -177,8 +202,9 @@ export function AppointmentForm({
   );
   const [isEndDateEnabled, setIsEndDateEnabled] = useState(false);
   const [startTimeEnabled, setStartTimeEnabled] = useState(false);
-  const [startTimeHour, setStartTimeHour] = useState("");
+  const [startTimeValue, setStartTimeValue] = useState("");
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
   const [tourConfirmOpen, setTourConfirmOpen] = useState(false);
   const [pendingTourChange, setPendingTourChange] = useState<{
@@ -198,22 +224,24 @@ export function AppointmentForm({
 
   const buildFormSnapshot = (input: {
     projectId: number | null;
+    customerId: number | null;
     tourId: number | null;
     startDate: string;
     endDate: string;
     isEndDateEnabled: boolean;
-    startTimeHour: string;
+    startTimeValue: string;
     startTimeEnabled: boolean;
     employeeIds: number[];
   }) =>
     JSON.stringify({
       projectId: input.projectId,
+      customerId: input.customerId,
       tourId: input.tourId,
       startDate: input.startDate,
       endDate: input.isEndDateEnabled ? input.endDate : null,
       isEndDateEnabled: input.isEndDateEnabled,
       startTimeEnabled: input.startTimeEnabled,
-      startTimeHour: input.startTimeEnabled ? input.startTimeHour : "",
+      startTimeValue: input.startTimeEnabled ? input.startTimeValue : "",
       employeeIds: [...input.employeeIds].sort((a, b) => a - b),
     });
 
@@ -313,24 +341,26 @@ export function AppointmentForm({
     if (!appointmentDetail) return;
     console.info(`${logPrefix} appointment detail loaded`, { appointmentId: appointmentDetail.id });
     setSelectedProjectId(appointmentDetail.projectId);
+    setSelectedCustomerId(appointmentDetail.customerId);
     setSelectedTourId(appointmentDetail.tourId ?? null);
     setStartDate(appointmentDetail.startDate);
     setEndDate(appointmentDetail.endDate ?? appointmentDetail.startDate);
     setIsEndDateEnabled(Boolean(appointmentDetail.endDate));
-    const startHour = appointmentDetail.startTime?.slice(0, 2) ?? "";
-    setStartTimeEnabled(Boolean(startHour));
-    setStartTimeHour(startHour);
+    const startTime = appointmentDetail.startTime?.slice(0, 5) ?? "";
+    setStartTimeEnabled(Boolean(startTime));
+    setStartTimeValue(startTime);
     const initialEmployeeIds = appointmentDetail.employees.map((employee) => employee.id);
     setAssignedEmployeeIds(initialEmployeeIds);
     setInitialFormSnapshot(
       buildFormSnapshot({
         projectId: appointmentDetail.projectId,
+        customerId: appointmentDetail.customerId,
         tourId: appointmentDetail.tourId ?? null,
         startDate: appointmentDetail.startDate,
         endDate: appointmentDetail.endDate ?? appointmentDetail.startDate,
         isEndDateEnabled: Boolean(appointmentDetail.endDate),
-        startTimeHour: startHour,
-        startTimeEnabled: Boolean(startHour),
+        startTimeValue: startTime,
+        startTimeEnabled: Boolean(startTime),
         employeeIds: initialEmployeeIds,
       }),
     );
@@ -341,18 +371,19 @@ export function AppointmentForm({
       setInitialFormSnapshot(
         buildFormSnapshot({
           projectId: selectedProjectId,
+          customerId: selectedCustomerId,
           tourId: selectedTourId,
           startDate,
           endDate,
           isEndDateEnabled,
-          startTimeHour,
+          startTimeValue,
           startTimeEnabled,
           employeeIds: assignedEmployeeIds,
         }),
       );
     }
     // Intentionally only initialize once for create mode.
-  }, [isEditing]);
+  }, [isEditing, selectedProjectId, selectedCustomerId, selectedTourId, startDate, endDate, isEndDateEnabled, startTimeValue, startTimeEnabled, assignedEmployeeIds]);
   useEffect(() => {
     if (isEditing) return;
     if (initialTourId === null || initialTourId === undefined) return;
@@ -384,10 +415,11 @@ export function AppointmentForm({
     [projects, selectedProjectId],
   );
 
+  const resolvedCustomerId = selectedProject?.customerId ?? selectedCustomerId;
   const selectedCustomer = useMemo(() => {
-    if (!selectedProject) return null;
-    return customers.find((customer) => customer.id === selectedProject.customerId) ?? null;
-  }, [customers, selectedProject]);
+    if (!resolvedCustomerId) return null;
+    return customers.find((customer) => customer.id === resolvedCustomerId) ?? null;
+  }, [customers, resolvedCustomerId]);
 
   const selectedTour = useMemo(
     () => tours.find((tour) => tour.id === selectedTourId) ?? null,
@@ -444,13 +476,15 @@ export function AppointmentForm({
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
   const isProjectReadOnly = isLocked || readOnlyFields?.includes("project") === true;
+  const isCustomerReadOnly = isLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
   const isFormDirty = initialFormSnapshot !== null && buildFormSnapshot({
     projectId: selectedProjectId,
+    customerId: selectedCustomerId,
     tourId: selectedTourId,
     startDate,
     endDate,
     isEndDateEnabled,
-    startTimeHour,
+    startTimeValue,
     startTimeEnabled,
     employeeIds: assignedEmployeeIds,
   }) !== initialFormSnapshot;
@@ -506,9 +540,17 @@ export function AppointmentForm({
   };
 
   const handleProjectSelect = (id: number) => {
+    const project = projects.find((item) => item.id === id) ?? null;
     setSelectedProjectId(id);
+    setSelectedCustomerId(project?.customerId ?? null);
     setProjectPickerOpen(false);
     console.info(`${logPrefix} project selected`, { projectId: id });
+  };
+
+  const handleCustomerSelect = (id: number) => {
+    setSelectedCustomerId(id);
+    setCustomerPickerOpen(false);
+    console.info(`${logPrefix} customer selected`, { customerId: id });
   };
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
@@ -900,9 +942,9 @@ export function AppointmentForm({
   });
 
   const validateForm = () => {
-    if (!selectedProjectId) {
-      console.info(`${logPrefix} validation blocked: project missing`);
-      toast({ title: "Projekt ist erforderlich", variant: "destructive" });
+    if (!selectedProjectId && !selectedCustomerId) {
+      console.info(`${logPrefix} validation blocked: relation missing`);
+      toast({ title: "Kunde oder Projekt ist erforderlich", variant: "destructive" });
       return false;
     }
     if (isEndDateEnabled && endDate < startDate) {
@@ -917,19 +959,13 @@ export function AppointmentForm({
       toast({ title: "Datum in der Vergangenheit", variant: "destructive" });
       return false;
     }
-    const currentBerlinHour = Number(
-      new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Berlin",
-        hour: "2-digit",
-        hour12: false,
-      }).format(new Date()),
-    );
-    const startHour = Number(startTimeHour);
+    const currentBerlinTime = getBerlinCurrentTimeString();
+    const normalizedStartTime = normalizeTimeInput(startTimeValue);
     const isPastTimeInput =
       startTimeEnabled &&
-      Number.isFinite(startHour) &&
+      normalizedStartTime.length === 5 &&
       startDate === berlinToday &&
-      startHour < currentBerlinHour;
+      normalizedStartTime < currentBerlinTime;
     if (isPastTimeInput) {
       console.info(`${logPrefix} validation blocked: startTime in past`);
       toast({ title: "Startzeit liegt in der Vergangenheit", variant: "destructive" });
@@ -947,19 +983,13 @@ export function AppointmentForm({
     if (!validateForm()) return;
     const berlinToday = getBerlinTodayDateString();
     const isPastDateInput = startDate < berlinToday;
-    const startHour = Number(startTimeHour);
-    const currentBerlinHour = Number(
-      new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Berlin",
-        hour: "2-digit",
-        hour12: false,
-      }).format(new Date()),
-    );
+    const currentBerlinTime = getBerlinCurrentTimeString();
+    const normalizedStartTime = normalizeTimeInput(startTimeValue);
     const isPastTimeInput =
       startTimeEnabled &&
-      Number.isFinite(startHour) &&
+      normalizedStartTime.length === 5 &&
       startDate === berlinToday &&
-      startHour < currentBerlinHour;
+      normalizedStartTime < currentBerlinTime;
     // Kein Save bei historischen Eingaben.
     if (isPastDateInput || isPastTimeInput) return;
 
@@ -1085,13 +1115,22 @@ export function AppointmentForm({
   });
 
   const persistAppointment = async () => {
-    if (!selectedProjectId) return;
+    const resolvedPayloadCustomerId = selectedProject?.customerId ?? selectedCustomerId;
+    if (!resolvedPayloadCustomerId) {
+      toast({
+        title: "Speichern nicht moeglich",
+        description: "Bitte Kunde oder Projekt zuordnen.",
+        variant: "destructive",
+      });
+      return;
+    }
     const basePayload = {
       projectId: selectedProjectId,
+      customerId: resolvedPayloadCustomerId,
       tourId: selectedTourId,
       startDate,
       endDate: isEndDateEnabled ? endDate : null,
-      startTime: startTimeEnabled ? buildTimeString(startTimeHour) : null,
+      startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
       employeeIds: assignedEmployeeIds,
     };
 
@@ -1190,23 +1229,25 @@ export function AppointmentForm({
       const savedAppointmentId = data?.id ?? appointmentId ?? null;
       console.info(`${logPrefix} save success`, {
         action: isEditing ? "edit" : "create",
-        projectId: payload.projectId,
+        projectId: payload.projectId ?? null,
         appointmentId: savedAppointmentId,
       });
-      const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
-        projectId: payload.projectId,
-        fromDate: projectAppointmentsUpcomingFromDate,
-        userRole,
-      });
-      const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
-        projectId: payload.projectId,
-        fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
-        userRole,
-      });
-      console.info(`${logPrefix} cache invalidate`, {
-        upcomingQueryKey: upcomingAppointmentsQueryKey,
-        allQueryKey: allAppointmentsQueryKey,
-      });
+      if (payload.projectId) {
+        const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+          projectId: payload.projectId,
+          fromDate: projectAppointmentsUpcomingFromDate,
+          userRole,
+        });
+        const allAppointmentsQueryKey = getProjectAppointmentsQueryKey({
+          projectId: payload.projectId,
+          fromDate: PROJECT_APPOINTMENTS_ALL_FROM_DATE,
+          userRole,
+        });
+        console.info(`${logPrefix} cache invalidate`, {
+          upcomingQueryKey: upcomingAppointmentsQueryKey,
+          allQueryKey: allAppointmentsQueryKey,
+        });
+      }
       await invalidateRelatedAppointmentQueries(payload.projectId);
       if (isEditing && appointmentId) {
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
@@ -1216,11 +1257,12 @@ export function AppointmentForm({
       });
       setInitialFormSnapshot(buildFormSnapshot({
         projectId: selectedProjectId,
+        customerId: selectedCustomerId,
         tourId: selectedTourId,
         startDate,
         endDate,
         isEndDateEnabled,
-        startTimeHour,
+        startTimeValue,
         startTimeEnabled,
         employeeIds: assignedEmployeeIds,
       }));
@@ -1294,14 +1336,75 @@ export function AppointmentForm({
           <RelationSlot
             title="Kunde"
             icon={<Users className="w-4 h-4" />}
-            state="readonly"
-            emptyText="Kunde wird über das Projekt bestimmt"
+            state={isCustomerReadOnly ? "readonly" : selectedCustomer ? "active" : "empty"}
+            onAdd={isCustomerReadOnly ? undefined : () => setCustomerPickerOpen(true)}
+            onRemove={isCustomerReadOnly ? undefined : () => setSelectedCustomerId(null)}
+            addLabel="Kunde auswählen"
+            emptyText={selectedProjectId ? "Kunde wird über das Projekt bestimmt" : "Kein Kunde ausgewählt"}
             testId="slot-customer-relation"
           >
             {selectedCustomer ? (
               <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" variant="relationCompact" />
             ) : null}
           </RelationSlot>
+
+          <div className="space-y-6">
+            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Mitarbeiter zuweisen
+            </h3>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Teams</Label>
+              <div className="flex flex-wrap gap-2">
+                {teams.map((team) => (
+                  <TeamInfoBadge
+                    key={team.id}
+                    id={team.id}
+                    name={team.name}
+                    color={team.color}
+                    members={teamMembersById.get(team.id) ?? []}
+                    action={isLocked ? "none" : "add"}
+                    onAdd={() => handleAssignTeam(team)}
+                    size="sm"
+                    testId={`badge-team-${team.id}`}
+                  />
+                ))}
+                {teams.length === 0 && (
+                  <div className="text-xs text-muted-foreground">Keine Teams vorhanden</div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border p-4 bg-slate-50 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Zugewiesene Mitarbeiter</Label>
+                <PlusActionButton
+                  onClick={() => setEmployeePickerOpen(true)}
+                  disabled={isLocked}
+                  data-testid="button-add-employee"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {assignedEmployees.length === 0 ? (
+                  <div className="text-sm text-muted-foreground italic">Keine Mitarbeiter zugewiesen</div>
+                ) : (
+                  assignedEmployees.map((employee) => (
+                    <EmployeeInfoBadge
+                      key={employee.id}
+                      id={employee.id}
+                      firstName={employee.firstName}
+                      lastName={employee.lastName}
+                      action={isLocked ? "none" : "remove"}
+                      onRemove={() => removeEmployee(employee.id)}
+                      size="sm"
+                      testId={`badge-employee-${employee.id}`}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
 
           {selectedProjectId === null ? (
             <DocumentExtractionDropzone
@@ -1382,10 +1485,11 @@ export function AppointmentForm({
                 {startTimeEnabled ? (
                   <Input
                     id="startTime"
-                    inputMode="numeric"
-                    value={startTimeHour}
-                    onChange={(event) => setStartTimeHour(formatHourInput(event.target.value))}
-                    placeholder="HH"
+                    type="time"
+                    step={60}
+                    value={startTimeValue}
+                    onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
+                    placeholder="HH:mm"
                     disabled={isLocked}
                     data-testid="input-start-time"
                   />
@@ -1463,64 +1567,6 @@ export function AppointmentForm({
         </div>
       </div>
 
-      <div className="mt-8 space-y-6">
-        <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          Mitarbeiter zuweisen
-        </h3>
-
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Teams</Label>
-          <div className="flex flex-wrap gap-2">
-            {teams.map((team) => (
-              <TeamInfoBadge
-                key={team.id}
-                id={team.id}
-                name={team.name}
-                color={team.color}
-                members={teamMembersById.get(team.id) ?? []}
-                action={isLocked ? "none" : "add"}
-                onAdd={() => handleAssignTeam(team)}
-                size="sm"
-                testId={`badge-team-${team.id}`}
-              />
-            ))}
-            {teams.length === 0 && (
-              <div className="text-xs text-muted-foreground">Keine Teams vorhanden</div>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border p-4 bg-slate-50 space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Zugewiesene Mitarbeiter</Label>
-            <PlusActionButton
-              onClick={() => setEmployeePickerOpen(true)}
-              disabled={isLocked}
-              data-testid="button-add-employee"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {assignedEmployees.length === 0 ? (
-              <div className="text-sm text-muted-foreground italic">Keine Mitarbeiter zugewiesen</div>
-            ) : (
-              assignedEmployees.map((employee) => (
-                <EmployeeInfoBadge
-                  key={employee.id}
-                  id={employee.id}
-                  firstName={employee.firstName}
-                  lastName={employee.lastName}
-                  action={isLocked ? "none" : "remove"}
-                  onRemove={() => removeEmployee(employee.id)}
-                  size="sm"
-                  testId={`badge-employee-${employee.id}`}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
       <DocumentExtractionDialog
         open={documentExtractionOpen}
         onOpenChange={setDocumentExtractionOpen}
@@ -1539,6 +1585,18 @@ export function AppointmentForm({
             title="Projekt auswählen"
             onSelectProject={handleProjectSelect}
             onCancel={() => setProjectPickerOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
+        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
+          <CustomersPage
+            showCloseButton={false}
+            tableOnly
+            title="Kunde auswählen"
+            onSelectCustomer={handleCustomerSelect}
+            onCancel={() => setCustomerPickerOpen(false)}
           />
         </DialogContent>
       </Dialog>

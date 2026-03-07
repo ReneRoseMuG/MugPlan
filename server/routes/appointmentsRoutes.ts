@@ -11,6 +11,7 @@ router.get(api.tourAppointments.list.path, appointmentsController.listTourAppoin
 router.get(api.calendarAppointments.list.path, appointmentsController.listCalendarAppointments);
 router.post(api.appointments.create.path, appointmentsController.createAppointment);
 router.patch(api.appointments.update.path, appointmentsController.updateAppointment);
+router.patch(api.appointments.setDisplayMode.path, appointmentsController.setAppointmentDisplayMode);
 router.delete(api.appointments.delete.path, appointmentsController.deleteAppointment);
 
 export default router;

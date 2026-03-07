@@ -10,7 +10,7 @@ export function CalendarWeekAppointmentNotesHover({
 }: {
   appointmentId: number;
   customerId: number;
-  projectId: number;
+  projectId: number | null;
   customerNotesCount: number;
   projectNotesCount: number;
   appointmentNotesCount: number;
@@ -20,7 +20,7 @@ export function CalendarWeekAppointmentNotesHover({
       sourceMode="cumulative"
       sources={{
         customer: { id: customerId, count: customerNotesCount },
-        project: { id: projectId, count: projectNotesCount },
+        project: projectId ? { id: projectId, count: projectNotesCount } : undefined,
         appointment: { id: appointmentId, count: appointmentNotesCount },
       }}
       triggerLabel="Notizen"

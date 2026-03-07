@@ -35,7 +35,7 @@ export async function getAppointmentAttachmentContext(appointmentId: number): Pr
     id: number;
     name: string;
     orderNumber: string | null;
-  };
+  } | null;
   customer: {
     id: number;
     customerNumber: string;
@@ -47,25 +47,31 @@ export async function getAppointmentAttachmentContext(appointmentId: number): Pr
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
 
-  const projectWithCustomer = await projectsRepository.getProjectWithCustomer(appointment.projectId);
-  if (!projectWithCustomer) return null;
+  const customer = await customersRepository.getCustomer(appointment.customerId);
+  if (!customer) return null;
 
   const [projectAttachments, customerAttachments] = await Promise.all([
-    projectsRepository.getProjectAttachments(projectWithCustomer.project.id),
-    customersRepository.getCustomerAttachments(projectWithCustomer.customer.id),
+    appointment.projectId ? projectsRepository.getProjectAttachments(appointment.projectId) : [],
+    customersRepository.getCustomerAttachments(customer.id),
   ]);
+
+  const project = appointment.projectId
+    ? await projectsRepository.getProject(appointment.projectId)
+    : null;
 
   return {
     appointmentId,
-    project: {
-      id: projectWithCustomer.project.id,
-      name: projectWithCustomer.project.name,
-      orderNumber: projectWithCustomer.project.orderNumber ?? null,
-    },
+    project: project
+      ? {
+          id: project.id,
+          name: project.name,
+          orderNumber: project.orderNumber ?? null,
+        }
+      : null,
     customer: {
-      id: projectWithCustomer.customer.id,
-      customerNumber: projectWithCustomer.customer.customerNumber,
-      fullName: projectWithCustomer.customer.fullName ?? null,
+      id: customer.id,
+      customerNumber: customer.customerNumber,
+      fullName: customer.fullName ?? null,
     },
     projectAttachments,
     customerAttachments,

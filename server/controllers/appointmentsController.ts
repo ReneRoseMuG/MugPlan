@@ -28,11 +28,6 @@ export async function getAppointment(req: Request, res: Response, next: NextFunc
 export async function createAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.create.input.parse(req.body);
-    if (!input.projectId) {
-      logWarn(`${logPrefix} create rejected: project missing`);
-      res.status(400).json({ message: "Projekt ist erforderlich" });
-      return;
-    }
     const appointment = await appointmentsService.createAppointment(input);
     res.status(201).json(appointment);
   } catch (err) {
@@ -55,11 +50,6 @@ export async function createAppointment(req: Request, res: Response, next: NextF
 export async function updateAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.update.input.parse(req.body);
-    if (!input.projectId) {
-      logWarn(`${logPrefix} update rejected: project missing`);
-      res.status(400).json({ message: "Projekt ist erforderlich" });
-      return;
-    }
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
@@ -85,6 +75,35 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
           ? { code: err.code, message: err.message, conflictEmployees: err.conflictEmployees }
           : { code: err.code, message: err.message },
       );
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function setAppointmentDisplayMode(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const input = api.appointments.setDisplayMode.input.parse(req.body);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const appointmentId = Number(req.params.id);
+    const appointment = await appointmentsService.setAppointmentDisplayMode(appointmentId, input, roleKey);
+    if (!appointment) {
+      res.status(404).json({ message: "Termin nicht gefunden" });
+      return;
+    }
+    res.json(appointment);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
       return;
     }
     next(err);

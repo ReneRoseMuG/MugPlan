@@ -7,6 +7,7 @@ import { EntityCard } from "@/components/ui/entity-card";
 import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
+import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProjectFilterPanel } from "@/components/ui/filter-panels/project-filter-panel";
@@ -73,9 +74,9 @@ function formatAppointmentLabel(appointment: ProjectAppointmentSummary | null): 
 }
 
 function formatProjectAmount(amount: unknown): string {
-  if (amount == null) return "â€”";
+  if (amount == null) return "-";
   const normalized = typeof amount === "string" ? Number(amount) : amount;
-  if (typeof normalized !== "number" || !Number.isFinite(normalized)) return "â€”";
+  if (typeof normalized !== "number" || !Number.isFinite(normalized)) return "-";
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",
@@ -318,7 +319,7 @@ export function ProjectsPage({
         minWidth: 220,
         cell: ({ row }) => (
           <span>
-            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "â€”"}
+            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "-"}
           </span>
         ),
       },
@@ -327,7 +328,7 @@ export function ProjectsPage({
         header: "Auftragsnummer",
         accessor: (row) => row.project.orderNumber ?? "",
         minWidth: 160,
-        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "â€”"}</span>,
+        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "-"}</span>,
       },
       {
         id: "amount",
@@ -348,6 +349,26 @@ export function ProjectsPage({
   );
 
   const resolvedTitle = title ?? "Projekte";
+  const hasActiveFilters =
+    filters.title.trim().length > 0
+    || filters.customerLastName.trim().length > 0
+    || filters.customerNumber.trim().length > 0
+    || filters.orderNumber.trim().length > 0
+    || filters.statusIds.length > 0
+    || projectScope !== "upcoming";
+  const emptyState = hasActiveFilters ? (
+    <ListEmptyState
+      helpKey="projects.emptyFiltered"
+      fallbackTitle="Keine Treffer gefunden."
+      fallbackBody="Fuer die gewaehlte Filtereinstellung konnten keine Treffer ermittelt werden."
+    />
+  ) : (
+    <ListEmptyState
+      helpKey="projects.empty"
+      fallbackTitle="Keine Projekte vorhanden."
+      fallbackBody="Es sind aktuell keine Projekte in dieser Liste vorhanden."
+    />
+  );
 
   return (
     <>
@@ -440,11 +461,7 @@ export function ProjectsPage({
             gridTestId="list-projects"
             gridCols="3"
             isEmpty={filteredProjects.length === 0}
-            emptyState={
-              <p className="text-sm text-slate-400 text-center py-8 col-span-full">
-                Keine Projekte gefunden.
-              </p>
-            }
+            emptyState={emptyState}
           >
             {filteredProjects.map((project) => {
               const customer = customersById.get(project.customerId);
@@ -546,7 +563,7 @@ export function ProjectsPage({
               }
               return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
             }}
-            emptyState={<p className="text-sm text-slate-400 py-4">Keine Projekte gefunden.</p>}
+            emptyState={emptyState}
             stickyHeader
           />
         )
@@ -556,4 +573,3 @@ export function ProjectsPage({
     </>
   );
 }
-

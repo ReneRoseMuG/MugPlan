@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 export type CalendarAppointment = {
   id: number;
   version: number;
-  projectId: number;
+  projectId: number | null;
   projectName: string;
+  projectVersion: number | null;
   projectOrderNumber: string | null;
   projectDescription: string | null;
   projectStatuses: { id: number; title: string; color: string }[];
@@ -15,7 +16,7 @@ export type CalendarAppointment = {
     orderNumber: string | null;
     descriptionMd: string | null;
     isActive: boolean;
-  };
+  } | null;
   startDate: string;
   endDate: string | null;
   startTime: string | null;
@@ -25,7 +26,7 @@ export type CalendarAppointment = {
   customer: {
     id: number;
     customerNumber: string;
-    fullName: string;
+    fullName: string | null;
     addressLine1?: string | null;
     addressLine2?: string | null;
     postalCode: string | null;
@@ -34,6 +35,7 @@ export type CalendarAppointment = {
   customerNotesCount: number;
   projectNotesCount: number;
   appointmentNotesCount: number;
+  displayMode: "standard" | "compact" | "detail";
   employees: { id: number; fullName: string }[];
   isLocked: boolean;
 };

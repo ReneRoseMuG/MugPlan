@@ -47,6 +47,7 @@ export function CalendarWeekAppointmentPanel({
   const isContinuation = segment === "continuation";
   const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
   const hasStartTime = Boolean(appointment.startTime && appointment.startTime.trim());
+  const isCompact = appointment.displayMode === "compact";
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
@@ -105,34 +106,38 @@ export function CalendarWeekAppointmentPanel({
               </div>
             )}
           </div>
-          <CalendarWeekAppointmentPanelCustomer
-            fullName={appointment.customer.fullName}
-            addressLine1={appointment.customer.addressLine1}
-            addressLine2={appointment.customer.addressLine2}
-            postalCode={appointment.customer.postalCode}
-            city={appointment.customer.city}
-          />
-          <CalendarWeekAppointmentPanelProject
-            projectName={resolvedProjectName}
-            projectDescription={appointment.projectDescription}
-            projectStatuses={appointment.projectStatuses}
-            enableFullDescriptionPreview={context === "week-calendar"}
-          />
-          {context === "week-calendar" ? (
+          {!isCompact ? (
             <>
-              <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-              <CalendarWeekAppointmentNotesHover
-                appointmentId={appointment.id}
-                customerId={appointment.customer.id}
-                projectId={appointment.projectId}
-                customerNotesCount={appointment.customerNotesCount ?? 0}
-                projectNotesCount={appointment.projectNotesCount ?? 0}
-                appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+              <CalendarWeekAppointmentPanelCustomer
+                fullName={appointment.customer.fullName ?? ""}
+                addressLine1={appointment.customer.addressLine1}
+                addressLine2={appointment.customer.addressLine2}
+                postalCode={appointment.customer.postalCode}
+                city={appointment.customer.city}
               />
+              <CalendarWeekAppointmentPanelProject
+                projectName={resolvedProjectName}
+                projectDescription={appointment.projectDescription}
+                projectStatuses={appointment.projectStatuses}
+                enableFullDescriptionPreview={context === "week-calendar"}
+              />
+              {context === "week-calendar" ? (
+                <>
+                  <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+                  <CalendarWeekAppointmentNotesHover
+                    appointmentId={appointment.id}
+                    customerId={appointment.customer.id}
+                    projectId={appointment.projectId}
+                    customerNotesCount={appointment.customerNotesCount ?? 0}
+                    projectNotesCount={appointment.projectNotesCount ?? 0}
+                    appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+                  />
+                </>
+              ) : (
+                <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+              )}
             </>
-          ) : (
-            <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
-          )}
+          ) : null}
         </div>
       )}
       {isContinuation && (

@@ -13,7 +13,7 @@ type AppointmentAttachmentContext = {
     id: number;
     name: string;
     orderNumber: string | null;
-  };
+  } | null;
   customer: {
     id: number;
     customerNumber: string;
@@ -60,10 +60,10 @@ export function AppointmentAttachmentsPanel({ appointmentId }: AppointmentAttach
         {
           id: "project",
           title: "Projektdokumente",
-          subtitle: data ? `(Projekt: ${data.project.name})` : undefined,
+          subtitle: data?.project ? `(Projekt: ${data.project.name})` : "(Kein Projekt)",
           items: data?.projectAttachments ?? [],
           isLoading,
-          emptyText: "Keine Projektdokumente vorhanden",
+          emptyText: data?.project ? "Keine Projektdokumente vorhanden" : "Kein Projekt zugeordnet",
           buildOpenUrl: (id) => `/api/project-attachments/${id}/download`,
           buildDownloadUrl: (id) => `/api/project-attachments/${id}/download?download=1`,
         },

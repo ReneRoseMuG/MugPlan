@@ -16,10 +16,16 @@ vi.mock("../../../server/repositories/projectStatusRepository", () => ({
   getProjectStatusesByProjectIds: vi.fn(),
 }));
 
+vi.mock("../../../server/repositories/customersRepository", () => ({
+  getCustomer: vi.fn(),
+}));
+
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import * as customersRepository from "../../../server/repositories/customersRepository";
 import { isAppointmentError, updateAppointment } from "../../../server/services/appointmentsService";
 
 const appointmentsRepoMock = vi.mocked(appointmentsRepository);
+const customersRepoMock = vi.mocked(customersRepository);
 
 describe("PKG-01 Invariant: conflict priority", () => {
   beforeEach(() => {
@@ -34,6 +40,7 @@ describe("PKG-01 Invariant: conflict priority", () => {
       id: 101,
       version: 5,
       projectId: 201,
+      customerId: 301,
       tourId: null,
       title: "A",
       description: null,
@@ -47,8 +54,14 @@ describe("PKG-01 Invariant: conflict priority", () => {
 
     appointmentsRepoMock.getProjectTx.mockResolvedValue({
       id: 201,
+      customerId: 301,
       name: "Project 201",
-    });
+    } as any);
+    customersRepoMock.getCustomer.mockResolvedValue({
+      id: 301,
+      customerNumber: "C-301",
+      isActive: true,
+    } as any);
     appointmentsRepoMock.getInactiveEmployeesByIdsTx.mockResolvedValue([]);
   });
 

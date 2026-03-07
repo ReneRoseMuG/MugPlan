@@ -50,7 +50,7 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
     expect(source).toContain("backgroundImage:");
     expect(source).toContain("boxShadow:");
     expect(source).toContain("orderNumber: string | null;");
-    expect(source).toContain("grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]");
+    expect(source).toContain("grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]");
     expect(source).toContain("const resolvedOrderNumber = orderNumber?.trim() || \"-\"");
   });
 });

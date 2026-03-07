@@ -41,7 +41,7 @@ describe("FT01 appointment form relation slot wiring", () => {
   it("renders customer relation as readonly slot", () => {
     expect(source).toContain("testId=\"slot-customer-relation\"");
     expect(source).toContain("title=\"Kunde\"");
-    expect(source).toContain("state=\"readonly\"");
+    expect(source).toContain("state={isCustomerReadOnly ? \"readonly\" : selectedCustomer ? \"active\" : \"empty\"}");
     expect(source).toContain("<CustomerDetailCard customer={selectedCustomer} testId=\"badge-customer\" variant=\"relationCompact\" />");
   });
 

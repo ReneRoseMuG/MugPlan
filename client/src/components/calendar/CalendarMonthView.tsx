@@ -233,6 +233,7 @@ export function CalendarMonthView({
         body: JSON.stringify({
           version: appointment.version,
           projectId: appointment.projectId,
+          customerId: appointment.customer.id,
           tourId: appointment.tourId ?? null,
           startDate: newStartDate,
           endDate: newEndDate,
