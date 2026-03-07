@@ -30,6 +30,11 @@ describe("FT03 UI: CalendarWeekView tour header counters wiring", () => {
     expect(source).toContain("const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);");
   });
 
+  it("builds separate render data for spanning and single-day appointments without changing header count source", () => {
+    expect(source).toContain("const laneRenderData = getLaneRenderData(tourLane);");
+    expect(source).toContain("const singleDayAppointmentIdsByBucket = tourLane.dayBuckets.map((bucket) =>");
+  });
+
   it("derives dayHeaderBadges from lane dayBuckets and sorts by tourId", () => {
     expect(source).toContain("const dayHeaderBadges = Array.from({ length: 7 }, (_, dayIdx) =>");
     expect(source).toContain("count: lane.dayBuckets[dayIdx]?.appointments.length ?? 0");

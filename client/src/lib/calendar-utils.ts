@@ -12,6 +12,13 @@ export function getAppointmentDurationDays(appointment: CalendarAppointment) {
   return differenceInCalendarDays(parseISO(getAppointmentEndDate(appointment)), parseISO(appointment.startDate));
 }
 
+export function getAppointmentStackPriority(appointment: CalendarAppointment) {
+  const durationDays = getAppointmentDurationDays(appointment);
+  if (durationDays > 0) return 0;
+  if (!appointment.startTime) return 1;
+  return 2;
+}
+
 export function getAppointmentTimeLabel(appointment: CalendarAppointment) {
   if (!appointment.startTime) return null;
   return appointment.startTime.slice(0, 5);
@@ -20,6 +27,34 @@ export function getAppointmentTimeLabel(appointment: CalendarAppointment) {
 export function getAppointmentSortValue(appointment: CalendarAppointment) {
   const time = appointment.startTime ? appointment.startTime.slice(0, 5) : "00:00";
   return `${appointment.startDate}-${time}-${appointment.id}`;
+}
+
+export function getWeekAppointmentGridStartColumn(appointment: CalendarAppointment, days: Date[]) {
+  const weekStart = days[0];
+  const appointmentStart = parseISO(appointment.startDate);
+
+  for (let dayIndex = 0; dayIndex < days.length; dayIndex += 1) {
+    if (days[dayIndex] >= appointmentStart) {
+      return dayIndex + 1;
+    }
+  }
+
+  return appointmentStart <= weekStart ? 1 : days.length;
+}
+
+export function getWeekAppointmentGridSpan(appointment: CalendarAppointment, days: Date[]) {
+  const appointmentEnd = parseISO(getAppointmentEndDate(appointment));
+  const startColumn = getWeekAppointmentGridStartColumn(appointment, days);
+  let span = 1;
+
+  for (let dayIndex = startColumn; dayIndex < days.length; dayIndex += 1) {
+    if (days[dayIndex] > appointmentEnd) {
+      break;
+    }
+    span += 1;
+  }
+
+  return Math.max(1, Math.min(span, days.length - startColumn + 1));
 }
 
 export function extractTourIndex(tourName: string | null): number | null {

@@ -20,10 +20,14 @@ import {
   CALENDAR_UNASSIGNED_TOUR_COLOR,
   getAppointmentDurationDays,
   getAppointmentEndDate,
+  getAppointmentStackPriority,
   getAppointmentSortValue,
+  getWeekAppointmentGridSpan,
+  getWeekAppointmentGridStartColumn,
 } from "@/lib/calendar-utils";
 import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
 import { CalendarWeekAppointmentPanel, DEFAULT_CONTINUATION_HEIGHT_PX } from "./CalendarWeekAppointmentPanel";
+import { CalendarWeekSpanningTile } from "./CalendarWeekSpanningTile";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import type { CalendarNavCommand } from "@/pages/Home";
@@ -53,6 +57,11 @@ type WeekTourLane = {
   tourId: number | null;
   members: { id: number; fullName: string }[];
   dayBuckets: WeekDayBucket[];
+};
+
+type WeekLaneRenderData = {
+  spanningAppointments: { appointmentId: number; rowIndex: number }[];
+  singleDayAppointmentIdsByBucket: number[][];
 };
 
 const logPrefix = "[calendar-week]";
@@ -279,6 +288,42 @@ export function CalendarWeekView({
 
     return map;
   }, [appointments, appointmentsById, membersByTourId, tours, unassignedMembers, weekStarts]);
+
+  const getLaneRenderData = (tourLane: WeekTourLane): WeekLaneRenderData => {
+    const spanningAppointments = tourLane.dayBuckets
+      .flatMap((bucket) => bucket.appointments)
+      .filter((appointmentId, index, appointmentIds) => appointmentIds.indexOf(appointmentId) === index)
+      .map((appointmentId) => appointmentsById.get(appointmentId))
+      .filter((appointment): appointment is NonNullable<typeof appointment> => Boolean(appointment))
+      .sort((a, b) => {
+        const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
+        if (priorityCompare !== 0) return priorityCompare;
+        return getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b));
+      })
+      .filter((appointment) => getAppointmentDurationDays(appointment) > 0)
+      .map((appointment, rowIndex) => ({
+        appointmentId: appointment.id,
+        rowIndex,
+      }));
+
+    const singleDayAppointmentIdsByBucket = tourLane.dayBuckets.map((bucket) =>
+      bucket.appointments
+        .map((appointmentId) => appointmentsById.get(appointmentId))
+        .filter((appointment): appointment is NonNullable<typeof appointment> => Boolean(appointment))
+        .filter((appointment) => getAppointmentDurationDays(appointment) === 0)
+        .sort((a, b) => {
+          const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
+          if (priorityCompare !== 0) return priorityCompare;
+          return getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b));
+        })
+        .map((appointment) => appointment.id),
+    );
+
+    return {
+      spanningAppointments,
+      singleDayAppointmentIdsByBucket,
+    };
+  };
 
   const primaryWeekLaneKeys = useMemo(() => {
     if (weekStarts.length === 0) return [] as string[];
@@ -611,6 +656,11 @@ export function CalendarWeekView({
                   <div className="flex-1 overflow-y-auto p-2 space-y-3">
                     {weekLanes.map((tourLane) => {
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
+                      const laneRenderData = getLaneRenderData(tourLane);
+                      const tileRowCount = laneRenderData.spanningAppointments.length;
+                      const laneGridTemplateRows = tileRowCount > 0
+                        ? `${Array.from({ length: tileRowCount }, () => "minmax(180px, auto)").join(" ")} minmax(180px, auto)`
+                        : "minmax(180px, auto)";
 
                       return (
                       <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10 p-2">
@@ -694,8 +744,45 @@ export function CalendarWeekView({
                         >
                           <div
                             className="grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30"
-                            style={{ gridTemplateColumns: dayGridTemplate }}
+                            style={{
+                              gridTemplateColumns: dayGridTemplate,
+                              gridTemplateRows: laneGridTemplateRows,
+                            }}
                           >
+                            {laneRenderData.spanningAppointments.map(({ appointmentId, rowIndex }) => {
+                              const appointment = appointmentsById.get(appointmentId);
+                              if (!appointment) return null;
+
+                              const startColumn = getWeekAppointmentGridStartColumn(appointment, days);
+                              const columnSpan = getWeekAppointmentGridSpan(appointment, days);
+                              const isHighlighted = hoveredAppointmentId === appointment.id;
+                              const isSegmentLocked = appointment.isLocked && !isAdmin;
+                              const isHistoricalSource = appointment.startDate < berlinToday;
+                              const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+
+                              return (
+                                <CalendarWeekSpanningTile
+                                  key={`week-spanning-tile-${appointment.id}`}
+                                  appointment={appointment}
+                                  style={{
+                                    gridColumn: `${startColumn} / span ${columnSpan}`,
+                                    gridRow: rowIndex + 1,
+                                    margin: "0.5rem",
+                                  }}
+                                  isDragging={draggedAppointmentId === appointment.id}
+                                  isLocked={isSegmentLocked}
+                                  highlighted={isHighlighted}
+                                  onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                  onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                  onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                  onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
+                                  onMouseLeave={() =>
+                                    setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
+                                  }
+                                  testId={`week-spanning-tile-${appointment.id}`}
+                                />
+                              );
+                            })}
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
                               const day = days[dayIdx];
                               const isWeekend = dayIdx >= 5;
@@ -704,20 +791,17 @@ export function CalendarWeekView({
                                 <div
                                   key={`${tourLane.laneKey}-${dayBucket.dateKey}`}
                                   className={`h-full p-2 space-y-2 ${isWeekend ? "bg-slate-200/30" : "bg-white/70"}`}
+                                  style={{ gridColumn: dayIdx + 1, gridRow: tileRowCount + 1 }}
                                   onDragOver={(event) => event.preventDefault()}
                                   onDrop={(event) => {
                                     void handleDrop(event, day);
                                   }}
                                   data-testid={`week-day-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                 >
-                                  {dayBucket.appointments.map((appointmentId, stackIndex) => {
+                                  {laneRenderData.singleDayAppointmentIdsByBucket[dayIdx].map((appointmentId, stackIndex) => {
                                     const appointment = appointmentsById.get(appointmentId);
                                     if (!appointment) return null;
 
-                                    const appointmentStart = parseISO(appointment.startDate);
-                                    const isContinuationSegment = appointmentStart < day;
-                                    const continuationHeightPx = appointmentHeightByIdRef.current.get(appointment.id)
-                                      ?? DEFAULT_CONTINUATION_HEIGHT_PX;
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
                                     const isSegmentLocked = appointment.isLocked && !isAdmin;
                                     const isHistoricalSource = appointment.startDate < berlinToday;
@@ -728,13 +812,9 @@ export function CalendarWeekView({
                                         key={`${appointment.id}-${tourLane.laneKey}-${dayIdx}-${stackIndex}`}
                                         appointment={appointment}
                                         context="week-calendar"
-                                        segment={isContinuationSegment ? "continuation" : "start"}
-                                        continuationHeightPx={continuationHeightPx}
-                                        containerRef={
-                                          isContinuationSegment
-                                            ? undefined
-                                            : (node) => measureStartSegmentHeight(appointment.id, node)
-                                        }
+                                        segment="start"
+                                        continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
+                                        containerRef={(node) => measureStartSegmentHeight(appointment.id, node)}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}
@@ -744,11 +824,6 @@ export function CalendarWeekView({
                                         onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                         onMouseLeave={() =>
                                           setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
-                                        }
-                                        testId={
-                                          isContinuationSegment
-                                            ? `week-appointment-continuation-${appointment.id}-${dayIdx}`
-                                            : undefined
                                         }
                                       />
                                     );

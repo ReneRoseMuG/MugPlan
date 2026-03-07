@@ -2,19 +2,19 @@
  * Test Scope:
  *
  * Feature: FT03 - Wochenkalender Termin-Karten
- * Use Case: UC FT03 - Segmenthoehe aus Startkarte in Wochenansicht weiterreichen
+ * Use Case: UC FT03 - Startkartenhoehen nur noch fuer Eintageskarten verdrahten
  *
  * Abgedeckte Regeln:
- * - CalendarWeekView misst Start-Segment-Hoehen pro Termin-ID.
- * - Continuation-Segmente erhalten die gemessene Hoehe mit konstantem Fallback.
- * - Hoehen-Cache wird bei Wochenwechsel zurueckgesetzt.
+ * - CalendarWeekView behaelt den Hoehen-Cache und den Reset pro Wochenwechsel.
+ * - Echte Mehrtagestermine laufen nicht mehr ueber Continuation-Segmente.
+ * - Eintageskarten bleiben Startsegmente mit Ref-Messung.
  *
  * Fehlerfaelle:
- * - Continuation-Hoehe bleibt von Spaltenbreite/Zeilenumbruch abhaengig.
+ * - Mehrtagestermine werden weiterhin als Continuation-Segmente im DayCell-Stack gerendert.
  * - Veraltete Hoehenwerte aus vorheriger Woche.
  *
  * Ziel:
- * Verdrahtung der hoehenstabilen Weitergabe von Startkarten-Hoehen in der Wochenansicht absichern.
+ * Verdrahtung des verbliebenen Hoehen-Caches und des neuen Startsegment-Pfads absichern.
  */
 import { readFileSync } from "fs";
 import path from "path";
@@ -33,10 +33,10 @@ describe("FT03 UI: CalendarWeekView continuation height wiring", () => {
     expect(source).toContain("}, [scrollResetKey]);");
   });
 
-  it("passes measured/fallback continuation height and start segment ref into panel", () => {
-    expect(source).toContain("const continuationHeightPx = appointmentHeightByIdRef.current.get(appointment.id)");
-    expect(source).toContain("?? DEFAULT_CONTINUATION_HEIGHT_PX;");
-    expect(source).toContain("continuationHeightPx={continuationHeightPx}");
-    expect(source).toContain(": (node) => measureStartSegmentHeight(appointment.id, node)");
+  it("keeps start-only panel wiring in day cells and removes continuation branching", () => {
+    expect(source).toContain("continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}");
+    expect(source).toContain('segment="start"');
+    expect(source).toContain("containerRef={(node) => measureStartSegmentHeight(appointment.id, node)}");
+    expect(source).not.toContain('segment={isContinuationSegment ? "continuation" : "start"}');
   });
 });
