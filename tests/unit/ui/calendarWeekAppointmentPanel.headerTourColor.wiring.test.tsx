@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - CalendarWeekAppointmentPanel gibt die Tourfarbe und Datums-/Zeitdaten in den Header weiter.
  * - Fallback auf CALENDAR_NEUTRAL_COLOR bleibt erhalten.
- * - Header rendert die Farbe als Hintergrund mit kontrastierter Textfarbe und Zweizeilen-Layout.
+ * - Header rendert die Farbe als Hintergrund mit weisser Schrift und Zweizeilen-Layout.
  *
  * Fehlerfaelle:
  * - Wochenkarten-Header bleibt grau statt Tourfarbe.
@@ -41,14 +41,13 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
     expect(source).toContain("backgroundColor: resolvedTourColor");
   });
 
-  it("applies provided color to header background and computes readable text color", () => {
+  it("applies provided color to header background and keeps header text white", () => {
     const headerPath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelHeader.tsx");
     const source = readFileSync(headerPath, "utf8");
 
     expect(source).toContain("color: string;");
-    expect(source).toContain("const textColor = (() => {");
     expect(source).toContain("backgroundColor: color");
-    expect(source).toContain("color: textColor");
+    expect(source).toContain('color: "#ffffff"');
     expect(source).toContain("backgroundImage:");
     expect(source).toContain("boxShadow:");
     expect(source).toContain("CalendarRange");

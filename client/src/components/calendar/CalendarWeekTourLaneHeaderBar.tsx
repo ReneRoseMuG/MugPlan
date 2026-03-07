@@ -30,14 +30,6 @@ export function CalendarWeekTourLaneHeaderBar({
   testId,
 }: CalendarWeekTourLaneHeaderBarProps) {
   const resolvedColor = color ?? "#64748b";
-  const textColor = (() => {
-    if (!resolvedColor.startsWith("#")) return "#1a1a1a";
-    const r = parseInt(resolvedColor.slice(1, 3), 16);
-    const g = parseInt(resolvedColor.slice(3, 5), 16);
-    const b = parseInt(resolvedColor.slice(5, 7), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.55 ? "#1a1a1a" : "#ffffff";
-  })();
 
   return (
     <HoverPreview
@@ -60,7 +52,7 @@ export function CalendarWeekTourLaneHeaderBar({
         }`}
         style={{
           backgroundColor: resolvedColor,
-          color: textColor,
+          color: "#ffffff",
           borderColor: "rgba(255,255,255,0.22)",
           backgroundImage:
             "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.18) 100%)",

@@ -38,8 +38,10 @@ describe("FT03 appointment weekly panel wiring", () => {
 
     expect(source).toContain("CalendarRange");
     expect(source).toContain("const dayCountLabel = `${dayCount} ${dayCount === 1 ? \"Tag\" : \"Tage\"}`;");
-    expect(source).toContain("const topLineItems = [resolvedStartTime, formattedStartDate, dayCountLabel].filter(Boolean);");
+    expect(source).toContain('const resolvedStartTime = startTime?.trim().slice(0, 5) || null;');
+    expect(source).toContain("const topLineItems = [resolvedStartTime, formattedStartDate].filter(Boolean);");
     expect(source).toContain("{topLineItems.join(\" | \")}");
+    expect(source).toContain("{dayCountLabel}");
     expect(source).toContain("K: {resolvedCustomerNumber}");
     expect(source).toContain("PLZ: {resolvedPostalCode}");
   });

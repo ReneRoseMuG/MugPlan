@@ -58,14 +58,6 @@ export function CalendarWeekAppointmentPanel({
   const resolvedTourColor = appointment.tourName?.trim()
     ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)
     : CALENDAR_UNASSIGNED_TOUR_COLOR;
-  const tourNameLineTextColor = (() => {
-    if (!resolvedTourColor.startsWith("#")) return "#1a1a1a";
-    const r = parseInt(resolvedTourColor.slice(1, 3), 16);
-    const g = parseInt(resolvedTourColor.slice(3, 5), 16);
-    const b = parseInt(resolvedTourColor.slice(5, 7), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.55 ? "#1a1a1a" : "#ffffff";
-  })();
 
   return (
     <div
@@ -98,7 +90,7 @@ export function CalendarWeekAppointmentPanel({
                 className="rounded-b-md rounded-t-none border border-t-0 px-2 py-1 text-[10px] font-semibold tracking-wide"
                 style={{
                   backgroundColor: resolvedTourColor,
-                  color: tourNameLineTextColor,
+                  color: "#ffffff",
                   borderColor: "rgba(255,255,255,0.22)",
                 }}
                 data-testid={`week-appointment-tour-name-${appointment.id}`}

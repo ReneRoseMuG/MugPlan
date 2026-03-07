@@ -25,7 +25,6 @@ export function CalendarWeekAppointmentPanelHeader({
   const dayCount = Number.isNaN(startDateValue.getTime()) || Number.isNaN(endDateValue.getTime())
     ? 1
     : Math.max(1, Math.round((endDateValue.getTime() - startDateValue.getTime()) / 86400000) + 1);
-  const resolvedStartTime = startTime?.trim() || null;
   const formattedStartDate = Number.isNaN(startDateValue.getTime())
     ? startDate
     : new Intl.DateTimeFormat("de-DE", {
@@ -35,23 +34,15 @@ export function CalendarWeekAppointmentPanelHeader({
       }).format(startDateValue);
   const dayCountLabel = `${dayCount} ${dayCount === 1 ? "Tag" : "Tage"}`;
   const TimingIcon = dayCount > 1 ? CalendarRange : hasStartTime ? Clock3 : CalendarDays;
-  const topLineItems = [resolvedStartTime, formattedStartDate, dayCountLabel].filter(Boolean);
-
-  const textColor = (() => {
-    if (!color.startsWith("#")) return "#1a1a1a";
-    const r = parseInt(color.slice(1, 3), 16);
-    const g = parseInt(color.slice(3, 5), 16);
-    const b = parseInt(color.slice(5, 7), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.55 ? "#1a1a1a" : "#ffffff";
-  })();
+  const resolvedStartTime = startTime?.trim().slice(0, 5) || null;
+  const topLineItems = [resolvedStartTime, formattedStartDate].filter(Boolean);
 
   return (
     <div
       className={connectedToNextRow ? "rounded-t-md rounded-b-none border px-2 py-1" : "rounded-md border px-2 py-1"}
       style={{
         backgroundColor: color,
-        color: textColor,
+        color: "#ffffff",
         borderColor: "rgba(255,255,255,0.22)",
         backgroundImage:
           "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.18) 100%)",
@@ -61,13 +52,21 @@ export function CalendarWeekAppointmentPanelHeader({
     >
       <div className="space-y-1 text-[10px] font-semibold tracking-wide">
         <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span
+              className="inline-flex items-center justify-center"
+              title={dayCount > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
+            >
+              <TimingIcon className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <span className="truncate">{topLineItems.join(" | ")}</span>
+          </div>
           <span
-            className="inline-flex items-center justify-center"
+            className="shrink-0 text-right"
             title={dayCount > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
           >
-            <TimingIcon className="h-3.5 w-3.5" aria-hidden />
+            {dayCountLabel}
           </span>
-          <span className="truncate">{topLineItems.join(" | ")}</span>
         </div>
         <div className="flex items-center justify-between gap-2 border-t border-white/20 pt-1">
           <span className="truncate">K: {resolvedCustomerNumber}</span>
