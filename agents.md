@@ -8,12 +8,38 @@ Codex ist ein **ausführendes Werkzeug**. Er trifft keine eigenständigen Archit
 
 ## 1. Pflichtlektüre vor jedem Auftrag
 
-Codex liest die folgenden Dokumente **vollständig**, bevor er plant oder irgendetwas ändert, und bestätigt danach explizit: „gelesen und verstanden".
+Codex arbeitet mit **gestufter Pflichtlektüre**. Ziel ist minimale Kontextnutzung bei unveränderter Sicherheits- und Architekturtreue.
 
-- `docs/architecture.md` – Ist-Architektur, Schichten, Datenflüsse, Erweiterungspunkte
-- `docs/implementation.md` – Engineering-Handbook, Contracts, Schichtregeln, React Query Patterns
+### 1.1 Basislektüre vor jeder Planung und jeder Änderung
 
-Ohne diese Pflichtlektüre darf Codex keine Entscheidungen treffen, keinen Code ändern und keine Tests anlegen oder erweitern.
+Vor jeder Planung liest Codex die für nahezu alle Aufgaben relevanten Kernabschnitte und bestätigt danach explizit: „gelesen und verstanden".
+
+Verbindliche Basislektüre:
+
+- `docs/architecture.md`: `3. Architekturprinzipien`, `7. Fachliche Invarianten`, `10. Erweiterungspunkte`, `11. Bekannte Risiken / Architekturhinweise`
+- `docs/implementation.md`: `2. Runtime- und Env-Regeln`, `3. Contract-First und Schichten`, `7. Sicherheitsgates für destruktive Operationen`, `10. Implementierungsregeln`, `11. Bekannte technische Hinweise`, Abschnitt `Schutzregel`
+
+Ohne diese Basislektüre darf Codex keine Entscheidungen treffen, keinen Code ändern und keine Tests anlegen oder erweitern.
+
+### 1.2 Zusatzlektüre nur bei betroffenen Bereichen
+
+Zusätzliche Abschnitte werden nur gelesen, wenn die Aufgabe den Bereich tatsächlich berührt:
+
+- API-, Backend-, Datenmodell- oder Kalender-Aggregationsänderung: zusätzlich passende Abschnitte in `docs/architecture.md` und `docs/implementation.md`
+- Auth-, Session-, Rollen-, Sicherheits-, Deployment- oder DB-Thema: zusätzlich alle einschlägigen Runtime-, Auth-, Sicherheits- und Betriebsabschnitte
+- Frontend-Server-State-, Settings- oder Listenlogik: zusätzlich die passenden Frontend-Abschnitte
+- Tests, Test-Setup, Testdaten oder Audit-Kommandos: zusätzlich die vollständigen Test- und Qualitätsabschnitte
+- Unklare Zuordnung oder erkennbare Querwirkung über mehrere Schichten: vollständige Lektüre der betroffenen Dokumente, bei Bedarf beider Dokumente komplett
+
+### 1.3 Leseprotokoll statt Volllektüre-Pflicht
+
+Codex dokumentiert zu Beginn kurz:
+
+- welche Basisabschnitte gelesen wurden
+- welche Zusatzabschnitte gelesen wurden
+- warum keine weitere Lektüre nötig ist oder warum vollständig gelesen wurde
+
+Wenn Codex nicht sicher eingrenzen kann, welche Abschnitte relevant sind, darf er nicht raten. In diesem Fall erweitert er die Lektüre kontrolliert, bis die Zuordnung belastbar ist.
 
 ---
 
@@ -25,6 +51,9 @@ Bevor Änderungen vorgenommen werden, verschafft sich Codex einen Überblick üb
 - Passende Einstiegspunkte identifizieren
 - Parallele oder redundante Implementierungen vermeiden
 - Prüfen ob vorhandene Strukturen nutzbar sind, bevor neue angelegt werden
+- Prüfen, ob die für die Aufgabe gelesenen Dokumentabschnitte ausreichen oder ob Zusatzlektüre erforderlich ist
+
+Codex liest Dokumentation und Code **aufgabenbezogen**, nicht pauschal vollständig. Er erweitert den Lesekontext nur dann, wenn der Auftrag oder der gefundene Code dies erforderlich macht.
 
 Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angelegt, wenn der Auftrag dies explizit verlangt oder bestehende Strukturen nachweislich ungeeignet sind. Dieser Nachweis muss dokumentiert werden.
 
@@ -32,7 +61,7 @@ Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angeleg
 
 ## 3. Planungspflicht
 
-Nachdem Codex die Pflichtdokumente und den Aufgabentext gelesen hat, beginnt er mit der Planung:
+Nachdem Codex die Basislektüre, erforderliche Zusatzlektüre und den Aufgabentext gelesen hat, beginnt er mit der Planung:
 
 - Die Planung ist klein geschnitten und nennt klar, welche Dateien voraussichtlich betroffen sind
 - Jeder Planschritt hinterlässt einen stabilen, lauffähigen Zustand
@@ -221,37 +250,37 @@ Schlägt ein Test fehl, dokumentiert Codex den Fehler und wartet auf Anweisung. 
 
 ---
 
-### Verbindliche Begriffe: â€žvoller Testlauf" und â€žvoller Audit"
+### Verbindliche Begriffe: „voller Testlauf" und „voller Audit"
 
-Wenn der Nutzer â€žvoller Testlauf" verlangt, meint dies **alle** im Repository etablierten Testbereiche. Codex darf diesen Begriff nicht still auf ein einzelnes Standardkommando reduzieren.
+Wenn der Nutzer „voller Testlauf" verlangt, meint dies **alle** im Repository etablierten Testbereiche. Codex darf diesen Begriff nicht still auf ein einzelnes Standardkommando reduzieren.
 
-FÃ¼r dieses Repository umfasst ein **voller Testlauf** mindestens:
+Für dieses Repository umfasst ein **voller Testlauf** mindestens:
 
 - `npm run test:unit`
 - `npm run test:integration`
 - `npm run test:e2e`
 - `npm run test:e2e:browser`
 
-Wenn der Nutzer â€žvoller Audit" verlangt, meint dies **alle** im Repository etablierten PrÃ¼f- und QualitÃ¤tskommandos. Codex darf diesen Begriff nicht still auf `npm run check` oder ein anderes Teilkommando reduzieren.
+Wenn der Nutzer „voller Audit" verlangt, meint dies **alle** im Repository etablierten Prüf- und Qualitätskommandos. Codex darf diesen Begriff nicht still auf `npm run check` oder ein anderes Teilkommando reduzieren.
 
-FÃ¼r dieses Repository umfasst ein **voller Audit** mindestens:
+Für dieses Repository umfasst ein **voller Audit** mindestens:
 
 - `npm run check`
 - `npm run lint`
 - `npm run audit`
 - `npm run secrets`
 
-Wenn der Nutzer â€žvoller Testlauf und voller Audit" verlangt, sind alle oben genannten Kommandos vollstÃ¤ndig auszufÃ¼hren â€“ auch dann, wenn der konkrete Auftrag nur einen kleinen Bugfix, eine kleine Ã„nderung oder einen einzelnen neuen Test betrifft.
+Wenn der Nutzer „voller Testlauf und voller Audit" verlangt, sind alle oben genannten Kommandos vollständig auszuführen – auch dann, wenn der konkrete Auftrag nur einen kleinen Bugfix, eine kleine Änderung oder einen einzelnen neuen Test betrifft.
 
-Nach AusfÃ¼hrung muss Codex immer explizit berichten:
+Nach Ausführung muss Codex immer explizit berichten:
 
-- welche Kommandos ausgefÃ¼hrt wurden
+- welche Kommandos ausgeführt wurden
 - welches Ergebnis jedes Kommando hatte
-- welche Teile nicht ausgefÃ¼hrt wurden und warum
+- welche Teile nicht ausgeführt wurden und warum
 
-Aussagen wie â€žalles grÃ¼n", â€žvollstÃ¤ndig erfolgreich" oder gleichwertige Zusammenfassungen sind nur zulÃ¤ssig, wenn wirklich alle verpflichtenden Kommandos des angeforderten Umfangs erfolgreich ausgefÃ¼hrt wurden.
+Aussagen wie „alles grün", „vollständig erfolgreich" oder gleichwertige Zusammenfassungen sind nur zulässig, wenn wirklich alle verpflichtenden Kommandos des angeforderten Umfangs erfolgreich ausgeführt wurden.
 
-Kann ein verpflichtender Teil wegen Setup-, Infrastruktur-, Berechtigungs-, Umgebungs- oder Laufzeitproblemen nicht ausgefÃ¼hrt werden, darf Codex das Ergebnis nicht als â€žvoll" bezeichnen und muss den fehlenden Teil als Blocker dokumentieren.
+Kann ein verpflichtender Teil wegen Setup-, Infrastruktur-, Berechtigungs-, Umgebungs- oder Laufzeitproblemen nicht ausgeführt werden, darf Codex das Ergebnis nicht als „voll" bezeichnen und muss den fehlenden Teil als Blocker dokumentieren.
 
 ## 12. Test-Dokumentationspflicht
 
