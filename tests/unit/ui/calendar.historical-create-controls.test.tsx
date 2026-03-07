@@ -6,6 +6,8 @@
  *
  * Abgedeckte Regeln:
  * - Monatsansicht zeigt New-Appointment-Button nur fuer Tage >= heute (Berlin).
+ * - Monatsansicht rendert die Tageszahl im Kachelkopf vor dem Plus-Button.
+ * - Monatsansicht setzt den Kachelkopf mit einer dezenten Hintergrundflaeche ab.
  * - Wochenansicht zeigt New-Appointment-Button nur fuer Tage >= heute (Berlin).
  * - Jahresansicht zeigt New-Appointment-Button nur fuer Tage >= heute (Berlin).
  * - Tabellenansicht enthaelt keine Aktion zur Erstellung historischer Termine.
@@ -34,6 +36,20 @@ describe("FT01 UI: calendar historical create controls", () => {
     expect(monthSource).toContain("const berlinToday = getBerlinTodayDateString();");
     expect(monthSource).toContain("{dayKey >= berlinToday ? (");
     expect(monthSource).toContain("data-testid={`button-new-appointment-${dayKey}`}" );
+  });
+
+  it("renders month day header with date before plus button and subtle background separation", () => {
+    const dayNumberIndex = monthSource.indexOf('{format(day, "d")}');
+    const plusGuardIndex = monthSource.indexOf("{dayKey >= berlinToday ? (");
+
+    expect(monthSource).toContain("mb-1 flex items-center justify-between rounded-md px-1.5 py-1");
+    expect(dayNumberIndex).toBeGreaterThan(-1);
+    expect(plusGuardIndex).toBeGreaterThan(-1);
+    expect(dayNumberIndex).toBeLessThan(plusGuardIndex);
+    expect(monthSource).toContain('? "bg-primary/10"');
+    expect(monthSource).toContain('? "bg-slate-300/35"');
+    expect(monthSource).toContain(': "bg-slate-100/90"');
+    expect(monthSource).toContain(': "bg-muted/30"');
   });
 
   it("guards week create button behind day >= berlinToday", () => {

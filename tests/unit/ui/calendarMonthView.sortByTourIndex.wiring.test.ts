@@ -9,11 +9,14 @@
  * - Nicht-standardisierte Tournamen werden hinter nummerierten Touren alphabetisch einsortiert.
  * - Termine ohne Tourname werden zuletzt einsortiert.
  * - Tie-Breaker innerhalb gleicher Gruppe: Startzeit (HH:mm), dann ID.
+ * - Monatsbalken nutzen einen festen horizontalen Innenabstand gegen Randkontakt und Rechtsueberstand.
  *
  * Fehlerfaelle:
  * - Lexikografische Sortierung setzt "Tour 10" vor "Tour 2".
  * - Nicht-standardisierte Tournamen verdrängen nummerierte Touren.
  * - Null-Touren erscheinen zwischen regulären Touren.
+ *
+ * - Monatsbalken ragen rechts aus der Tageskachel oder kleben an den Kachelraendern.
  *
  * Ziel:
  * Deterministische Absicherung der Monthly-Sortierlogik nach Tour-Index.
@@ -73,5 +76,13 @@ describe("FT03 UI: month view sort by tour index wiring", () => {
 
     const sorted = items.sort((a, b) => compareAppointmentsByTourIndexThenTime(a as any, b as any));
     expect(sorted.map((item) => item.id)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("applies horizontal inset to month lane bars to avoid overflow at tile edges", () => {
+    const source = readFileSync(path.resolve(process.cwd(), "client/src/components/calendar/CalendarMonthView.tsx"), "utf8");
+
+    expect(source).toContain("const MONTH_LANE_BAR_HORIZONTAL_INSET_PX = 4;");
+    expect(source).toContain('left: `calc(${(startWeight / totalDayWeight) * 100}% + ${MONTH_LANE_BAR_HORIZONTAL_INSET_PX}px)`,');
+    expect(source).toContain('width: `calc(${(spanWeight / totalDayWeight) * 100}% - ${MONTH_LANE_BAR_HORIZONTAL_INSET_PX * 2}px)`,');
   });
 });

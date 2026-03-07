@@ -54,6 +54,7 @@ type WeekLaneItem = {
 };
 
 const logPrefix = "[calendar-month]";
+const MONTH_LANE_BAR_HORIZONTAL_INSET_PX = 4;
 
 export function CalendarMonthView({
   currentDate,
@@ -118,8 +119,8 @@ export function CalendarMonthView({
     const startWeight = dayWeights.slice(0, startIndex).reduce((sum, weight) => sum + weight, 0);
     const spanWeight = dayWeights.slice(startIndex, endIndex + 1).reduce((sum, weight) => sum + weight, 0);
     return {
-      left: `${(startWeight / totalDayWeight) * 100}%`,
-      width: `${(spanWeight / totalDayWeight) * 100}%`,
+      left: `calc(${(startWeight / totalDayWeight) * 100}% + ${MONTH_LANE_BAR_HORIZONTAL_INSET_PX}px)`,
+      width: `calc(${(spanWeight / totalDayWeight) * 100}% - ${MONTH_LANE_BAR_HORIZONTAL_INSET_PX * 2}px)`,
     };
   };
 
@@ -382,7 +383,27 @@ export function CalendarMonthView({
                                   }}
                                   data-testid={`calendar-day-${dayKey}`}
                                 >
-                                  <div className="flex justify-between items-start mb-1">
+                                  <div
+                                    className={`mb-2 flex items-center justify-between rounded-md px-1.5 py-1 ${
+                                      isTodayDate
+                                        ? "bg-primary/10"
+                                        : isCurrentMonth
+                                          ? isWeekend
+                                            ? "bg-slate-300/35"
+                                            : "bg-slate-100/90"
+                                          : isWeekend
+                                            ? "bg-slate-300/20"
+                                            : "bg-muted/30"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`
+                                        flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
+                                        ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
+                                      `}
+                                    >
+                                      {format(day, "d")}
+                                    </span>
                                     {dayKey >= berlinToday ? (
                                       <button
                                         onClick={() => onNewAppointment?.(dayKey)}
@@ -394,20 +415,12 @@ export function CalendarMonthView({
                                     ) : (
                                       <span className="w-5 h-5" aria-hidden="true" />
                                     )}
-                                    <span
-                                      className={`
-                                        flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
-                                        ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
-                                      `}
-                                    >
-                                      {format(day, "d")}
-                                    </span>
                                   </div>
                                 </div>
                               );
                             })}
 
-                            <div className="absolute inset-x-1 top-8 bottom-1 pointer-events-none">
+                            <div className="absolute inset-x-1 top-9 bottom-1 pointer-events-none">
                               {laneGroups.map((lane, laneIndex) => (
                                 <div
                                   key={`${monthKey}-${weekIdx}-lane-${laneIndex}`}
