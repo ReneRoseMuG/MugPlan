@@ -79,16 +79,37 @@ type ApiSuccessPayload = { id?: number; message?: string };
 
 const logPrefix = "[AppointmentForm]";
 
-const formatHourInput = (value: string) => {
-  const numeric = value.replace(/\D/g, "");
-  if (!numeric) return "";
-  const hour = Math.max(0, Math.min(23, Number(numeric)));
-  return String(hour).padStart(2, "0");
+const normalizeTimeInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const match = /^(\d{2}):(\d{2})$/.exec(trimmed);
+  if (!match) return trimmed;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return trimmed;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return trimmed;
+
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 };
 
-const buildTimeString = (hourValue: string) => {
-  if (!hourValue) return null;
-  return `${hourValue}:00:00`;
+const buildTimeString = (timeValue: string) => {
+  const normalized = normalizeTimeInput(timeValue);
+  if (!normalized) return null;
+  return `${normalized}:00`;
+};
+
+const getBerlinCurrentTimeString = () => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Berlin",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
+  return `${hour}:${minute}`;
 };
 
 const buildApiError = (message: string, status?: number, code?: string): AppointmentApiError => {
@@ -181,7 +202,7 @@ export function AppointmentForm({
   );
   const [isEndDateEnabled, setIsEndDateEnabled] = useState(false);
   const [startTimeEnabled, setStartTimeEnabled] = useState(false);
-  const [startTimeHour, setStartTimeHour] = useState("");
+  const [startTimeValue, setStartTimeValue] = useState("");
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
@@ -208,7 +229,7 @@ export function AppointmentForm({
     startDate: string;
     endDate: string;
     isEndDateEnabled: boolean;
-    startTimeHour: string;
+    startTimeValue: string;
     startTimeEnabled: boolean;
     employeeIds: number[];
   }) =>
@@ -220,7 +241,7 @@ export function AppointmentForm({
       endDate: input.isEndDateEnabled ? input.endDate : null,
       isEndDateEnabled: input.isEndDateEnabled,
       startTimeEnabled: input.startTimeEnabled,
-      startTimeHour: input.startTimeEnabled ? input.startTimeHour : "",
+      startTimeValue: input.startTimeEnabled ? input.startTimeValue : "",
       employeeIds: [...input.employeeIds].sort((a, b) => a - b),
     });
 
@@ -325,9 +346,9 @@ export function AppointmentForm({
     setStartDate(appointmentDetail.startDate);
     setEndDate(appointmentDetail.endDate ?? appointmentDetail.startDate);
     setIsEndDateEnabled(Boolean(appointmentDetail.endDate));
-    const startHour = appointmentDetail.startTime?.slice(0, 2) ?? "";
-    setStartTimeEnabled(Boolean(startHour));
-    setStartTimeHour(startHour);
+    const startTime = appointmentDetail.startTime?.slice(0, 5) ?? "";
+    setStartTimeEnabled(Boolean(startTime));
+    setStartTimeValue(startTime);
     const initialEmployeeIds = appointmentDetail.employees.map((employee) => employee.id);
     setAssignedEmployeeIds(initialEmployeeIds);
     setInitialFormSnapshot(
@@ -338,8 +359,8 @@ export function AppointmentForm({
         startDate: appointmentDetail.startDate,
         endDate: appointmentDetail.endDate ?? appointmentDetail.startDate,
         isEndDateEnabled: Boolean(appointmentDetail.endDate),
-        startTimeHour: startHour,
-        startTimeEnabled: Boolean(startHour),
+        startTimeValue: startTime,
+        startTimeEnabled: Boolean(startTime),
         employeeIds: initialEmployeeIds,
       }),
     );
@@ -355,14 +376,14 @@ export function AppointmentForm({
           startDate,
           endDate,
           isEndDateEnabled,
-          startTimeHour,
+          startTimeValue,
           startTimeEnabled,
           employeeIds: assignedEmployeeIds,
         }),
       );
     }
     // Intentionally only initialize once for create mode.
-  }, [isEditing, selectedProjectId, selectedCustomerId, selectedTourId, startDate, endDate, isEndDateEnabled, startTimeHour, startTimeEnabled, assignedEmployeeIds]);
+  }, [isEditing, selectedProjectId, selectedCustomerId, selectedTourId, startDate, endDate, isEndDateEnabled, startTimeValue, startTimeEnabled, assignedEmployeeIds]);
   useEffect(() => {
     if (isEditing) return;
     if (initialTourId === null || initialTourId === undefined) return;
@@ -463,7 +484,7 @@ export function AppointmentForm({
     startDate,
     endDate,
     isEndDateEnabled,
-    startTimeHour,
+    startTimeValue,
     startTimeEnabled,
     employeeIds: assignedEmployeeIds,
   }) !== initialFormSnapshot;
@@ -938,19 +959,13 @@ export function AppointmentForm({
       toast({ title: "Datum in der Vergangenheit", variant: "destructive" });
       return false;
     }
-    const currentBerlinHour = Number(
-      new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Berlin",
-        hour: "2-digit",
-        hour12: false,
-      }).format(new Date()),
-    );
-    const startHour = Number(startTimeHour);
+    const currentBerlinTime = getBerlinCurrentTimeString();
+    const normalizedStartTime = normalizeTimeInput(startTimeValue);
     const isPastTimeInput =
       startTimeEnabled &&
-      Number.isFinite(startHour) &&
+      normalizedStartTime.length === 5 &&
       startDate === berlinToday &&
-      startHour < currentBerlinHour;
+      normalizedStartTime < currentBerlinTime;
     if (isPastTimeInput) {
       console.info(`${logPrefix} validation blocked: startTime in past`);
       toast({ title: "Startzeit liegt in der Vergangenheit", variant: "destructive" });
@@ -968,19 +983,13 @@ export function AppointmentForm({
     if (!validateForm()) return;
     const berlinToday = getBerlinTodayDateString();
     const isPastDateInput = startDate < berlinToday;
-    const startHour = Number(startTimeHour);
-    const currentBerlinHour = Number(
-      new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Berlin",
-        hour: "2-digit",
-        hour12: false,
-      }).format(new Date()),
-    );
+    const currentBerlinTime = getBerlinCurrentTimeString();
+    const normalizedStartTime = normalizeTimeInput(startTimeValue);
     const isPastTimeInput =
       startTimeEnabled &&
-      Number.isFinite(startHour) &&
+      normalizedStartTime.length === 5 &&
       startDate === berlinToday &&
-      startHour < currentBerlinHour;
+      normalizedStartTime < currentBerlinTime;
     // Kein Save bei historischen Eingaben.
     if (isPastDateInput || isPastTimeInput) return;
 
@@ -1121,7 +1130,7 @@ export function AppointmentForm({
       tourId: selectedTourId,
       startDate,
       endDate: isEndDateEnabled ? endDate : null,
-      startTime: startTimeEnabled ? buildTimeString(startTimeHour) : null,
+      startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
       employeeIds: assignedEmployeeIds,
     };
 
@@ -1253,7 +1262,7 @@ export function AppointmentForm({
         startDate,
         endDate,
         isEndDateEnabled,
-        startTimeHour,
+        startTimeValue,
         startTimeEnabled,
         employeeIds: assignedEmployeeIds,
       }));
@@ -1339,6 +1348,64 @@ export function AppointmentForm({
             ) : null}
           </RelationSlot>
 
+          <div className="space-y-6">
+            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Mitarbeiter zuweisen
+            </h3>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Teams</Label>
+              <div className="flex flex-wrap gap-2">
+                {teams.map((team) => (
+                  <TeamInfoBadge
+                    key={team.id}
+                    id={team.id}
+                    name={team.name}
+                    color={team.color}
+                    members={teamMembersById.get(team.id) ?? []}
+                    action={isLocked ? "none" : "add"}
+                    onAdd={() => handleAssignTeam(team)}
+                    size="sm"
+                    testId={`badge-team-${team.id}`}
+                  />
+                ))}
+                {teams.length === 0 && (
+                  <div className="text-xs text-muted-foreground">Keine Teams vorhanden</div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border p-4 bg-slate-50 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Zugewiesene Mitarbeiter</Label>
+                <PlusActionButton
+                  onClick={() => setEmployeePickerOpen(true)}
+                  disabled={isLocked}
+                  data-testid="button-add-employee"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {assignedEmployees.length === 0 ? (
+                  <div className="text-sm text-muted-foreground italic">Keine Mitarbeiter zugewiesen</div>
+                ) : (
+                  assignedEmployees.map((employee) => (
+                    <EmployeeInfoBadge
+                      key={employee.id}
+                      id={employee.id}
+                      firstName={employee.firstName}
+                      lastName={employee.lastName}
+                      action={isLocked ? "none" : "remove"}
+                      onRemove={() => removeEmployee(employee.id)}
+                      size="sm"
+                      testId={`badge-employee-${employee.id}`}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
           {selectedProjectId === null ? (
             <DocumentExtractionDropzone
               onFileSelected={(file) => {
@@ -1418,10 +1485,11 @@ export function AppointmentForm({
                 {startTimeEnabled ? (
                   <Input
                     id="startTime"
-                    inputMode="numeric"
-                    value={startTimeHour}
-                    onChange={(event) => setStartTimeHour(formatHourInput(event.target.value))}
-                    placeholder="HH"
+                    type="time"
+                    step={60}
+                    value={startTimeValue}
+                    onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
+                    placeholder="HH:mm"
                     disabled={isLocked}
                     data-testid="input-start-time"
                   />
@@ -1496,64 +1564,6 @@ export function AppointmentForm({
 
           {appointmentId ? <AppointmentAttachmentsPanel appointmentId={appointmentId} /> : null}
 
-        </div>
-      </div>
-
-      <div className="mt-8 space-y-6">
-        <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          Mitarbeiter zuweisen
-        </h3>
-
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Teams</Label>
-          <div className="flex flex-wrap gap-2">
-            {teams.map((team) => (
-              <TeamInfoBadge
-                key={team.id}
-                id={team.id}
-                name={team.name}
-                color={team.color}
-                members={teamMembersById.get(team.id) ?? []}
-                action={isLocked ? "none" : "add"}
-                onAdd={() => handleAssignTeam(team)}
-                size="sm"
-                testId={`badge-team-${team.id}`}
-              />
-            ))}
-            {teams.length === 0 && (
-              <div className="text-xs text-muted-foreground">Keine Teams vorhanden</div>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border p-4 bg-slate-50 space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Zugewiesene Mitarbeiter</Label>
-            <PlusActionButton
-              onClick={() => setEmployeePickerOpen(true)}
-              disabled={isLocked}
-              data-testid="button-add-employee"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {assignedEmployees.length === 0 ? (
-              <div className="text-sm text-muted-foreground italic">Keine Mitarbeiter zugewiesen</div>
-            ) : (
-              assignedEmployees.map((employee) => (
-                <EmployeeInfoBadge
-                  key={employee.id}
-                  id={employee.id}
-                  firstName={employee.firstName}
-                  lastName={employee.lastName}
-                  action={isLocked ? "none" : "remove"}
-                  onRemove={() => removeEmployee(employee.id)}
-                  size="sm"
-                  testId={`badge-employee-${employee.id}`}
-                />
-              ))
-            )}
-          </div>
         </div>
       </div>
 
@@ -1709,5 +1719,3 @@ export function AppointmentForm({
     </EntityFormLayout>
   );
 }
-
-

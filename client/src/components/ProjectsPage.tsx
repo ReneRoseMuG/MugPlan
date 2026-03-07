@@ -74,9 +74,9 @@ function formatAppointmentLabel(appointment: ProjectAppointmentSummary | null): 
 }
 
 function formatProjectAmount(amount: unknown): string {
-  if (amount == null) return "â€”";
+  if (amount == null) return "-";
   const normalized = typeof amount === "string" ? Number(amount) : amount;
-  if (typeof normalized !== "number" || !Number.isFinite(normalized)) return "â€”";
+  if (typeof normalized !== "number" || !Number.isFinite(normalized)) return "-";
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",
@@ -319,7 +319,7 @@ export function ProjectsPage({
         minWidth: 220,
         cell: ({ row }) => (
           <span>
-            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "â€”"}
+            {row.customer ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "-"}
           </span>
         ),
       },
@@ -328,7 +328,7 @@ export function ProjectsPage({
         header: "Auftragsnummer",
         accessor: (row) => row.project.orderNumber ?? "",
         minWidth: 160,
-        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "â€”"}</span>,
+        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "-"}</span>,
       },
       {
         id: "amount",
