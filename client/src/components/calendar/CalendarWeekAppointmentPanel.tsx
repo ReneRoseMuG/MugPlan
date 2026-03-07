@@ -24,6 +24,7 @@ export function CalendarWeekAppointmentPanel({
   segment = "start",
   context = "default",
   continuationHeightPx,
+  uniformHeightPx,
   showPreviewTourNameLine = false,
   containerRef,
   testId,
@@ -41,6 +42,7 @@ export function CalendarWeekAppointmentPanel({
   segment?: "start" | "continuation";
   context?: "default" | "week-calendar";
   continuationHeightPx?: number | null;
+  uniformHeightPx?: number | null;
   showPreviewTourNameLine?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
@@ -59,6 +61,12 @@ export function CalendarWeekAppointmentPanel({
     ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)
     : CALENDAR_UNASSIGNED_TOUR_COLOR;
 
+  const resolvedPanelStyle = isContinuation
+    ? { height: `${resolvedContinuationHeightPx}px` }
+    : uniformHeightPx && uniformHeightPx > 0
+      ? { height: `${uniformHeightPx}px` }
+      : undefined;
+
   return (
     <div
       className={`relative overflow-hidden rounded-lg border p-2 shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
@@ -71,7 +79,7 @@ export function CalendarWeekAppointmentPanel({
       onMouseLeave={onMouseLeave}
       aria-disabled={isLocked}
       data-testid={testId ?? `week-appointment-panel-${appointment.id}`}
-      style={isContinuation ? { height: `${resolvedContinuationHeightPx}px` } : undefined}
+      style={resolvedPanelStyle}
     >
       {!isContinuation && (
         <div className="space-y-1.5">

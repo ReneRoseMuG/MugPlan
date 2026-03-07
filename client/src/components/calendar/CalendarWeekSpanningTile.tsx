@@ -10,6 +10,9 @@ import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPa
 
 type CalendarWeekSpanningTileProps = {
   appointment: CalendarAppointment;
+  spanColumns: number;
+  uniformHeightPx?: number | null;
+  containerRef?: React.Ref<HTMLDivElement>;
   style?: CSSProperties;
   isDragging?: boolean;
   isLocked?: boolean;
@@ -24,6 +27,9 @@ type CalendarWeekSpanningTileProps = {
 
 export function CalendarWeekSpanningTile({
   appointment,
+  spanColumns,
+  uniformHeightPx,
+  containerRef,
   style,
   isDragging,
   isLocked,
@@ -47,18 +53,26 @@ export function CalendarWeekSpanningTile({
 
   return (
     <div
-      className={`relative flex min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
-      style={style}
+      className={`relative grid min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      style={{
+        gridTemplateColumns: `repeat(${Math.max(1, spanColumns)}, minmax(0, 1fr))`,
+        ...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx}px` } : {}),
+        ...style,
+      }}
       onDoubleClick={onDoubleClick}
       draggable={canDrag}
       onDragStart={canDrag ? onDragStart : undefined}
       onDragEnd={canDrag ? onDragEnd : undefined}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      ref={containerRef}
       aria-disabled={isLocked}
       data-testid={testId ?? `week-spanning-tile-${appointment.id}`}
     >
-      <div className="min-w-0 flex-1 space-y-1.5 bg-white/95 p-2">
+      <div
+        className="min-w-0 space-y-1.5 bg-white/90 p-2"
+        style={{ gridColumn: "1 / span 1" }}
+      >
         <div className="space-y-0">
           <CalendarWeekAppointmentPanelHeader
             customerNumber={appointment.customer.customerNumber}
@@ -125,10 +139,12 @@ export function CalendarWeekSpanningTile({
         ) : null}
       </div>
       <div
-        className="shrink-0 basis-1/3 border-l border-slate-200/90"
+        className="border-l border-slate-200/90"
         style={{
+          gridColumn: `${Math.min(2, spanColumns)} / span ${Math.max(1, spanColumns - 1)}`,
           backgroundImage:
             "repeating-linear-gradient(135deg, rgba(148,163,184,0.20) 0 8px, rgba(148,163,184,0.07) 8px 16px)",
+          backgroundColor: "rgba(241,245,249,0.45)",
         }}
         aria-hidden
       />

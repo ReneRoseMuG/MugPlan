@@ -35,6 +35,11 @@ describe("FT03 UI: CalendarWeekView tour header counters wiring", () => {
     expect(source).toContain("const singleDayAppointmentIdsByBucket = tourLane.dayBuckets.map((bucket) =>");
   });
 
+  it("keeps explicit weekend/header styling while the lane grid adds background columns", () => {
+    expect(source).toContain('${isTodayDate ? "bg-primary/10" : isWeekend ? "bg-slate-200/70" : "bg-muted/20"}');
+    expect(source).toContain('className={isWeekend ? "bg-slate-200/45" : "bg-white/80"}');
+  });
+
   it("derives dayHeaderBadges from lane dayBuckets and sorts by tourId", () => {
     expect(source).toContain("const dayHeaderBadges = Array.from({ length: 7 }, (_, dayIdx) =>");
     expect(source).toContain("count: lane.dayBuckets[dayIdx]?.appointments.length ?? 0");

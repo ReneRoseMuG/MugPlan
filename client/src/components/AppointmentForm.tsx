@@ -190,15 +190,17 @@ export function AppointmentForm({
 }: AppointmentFormProps) {
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
+  const isEditing = Boolean(appointmentId);
+  const createDefaultDate = initialDate ?? getBerlinTodayDateString();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [assignedEmployeeIds, setAssignedEmployeeIds] = useState<number[]>([]);
   const [startDate, setStartDate] = useState<string>(
-    initialDate ?? new Date().toISOString().split("T")[0],
+    isEditing ? "" : createDefaultDate,
   );
   const [endDate, setEndDate] = useState<string>(
-    initialDate ?? new Date().toISOString().split("T")[0],
+    isEditing ? "" : createDefaultDate,
   );
   const [isEndDateEnabled, setIsEndDateEnabled] = useState(false);
   const [startTimeEnabled, setStartTimeEnabled] = useState(false);
@@ -249,7 +251,6 @@ export function AppointmentForm({
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
   );
   const isAdmin = userRole === "ADMIN";
-  const isEditing = Boolean(appointmentId);
   const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
   const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {
     if (projectId) {

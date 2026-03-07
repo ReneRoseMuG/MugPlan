@@ -81,7 +81,7 @@ export function CalendarWeekView({
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
-  const appointmentHeightByIdRef = useRef<Map<number, number>>(new Map());
+  const laneHeightByKeyRef = useRef<Map<string, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
   const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
@@ -139,11 +139,6 @@ export function CalendarWeekView({
   }, [scrollResetKey]);
 
   useEffect(() => {
-    appointmentHeightByIdRef.current.clear();
-    setAppointmentHeightVersion((prev) => prev + 1);
-  }, [scrollResetKey]);
-
-  useEffect(() => {
     if (typeof restoreScrollLeft !== "number" || !Number.isFinite(restoreScrollLeft)) return;
     const node = horizontalScrollContainerRef.current;
     if (!node) return;
@@ -163,6 +158,11 @@ export function CalendarWeekView({
     detail: "full",
     userRole,
   });
+
+  useEffect(() => {
+    laneHeightByKeyRef.current.clear();
+    setAppointmentHeightVersion((prev) => prev + 1);
+  }, [appointments, scrollResetKey]);
 
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -523,12 +523,13 @@ export function CalendarWeekView({
     }
   };
 
-  const measureStartSegmentHeight = (appointmentId: number, node: HTMLDivElement | null) => {
+  const measureLaneCardHeight = (laneHeightKey: string, node: HTMLDivElement | null) => {
     if (!node) return;
     const heightPx = Math.round(node.getBoundingClientRect().height);
     if (heightPx <= 0) return;
-    if (appointmentHeightByIdRef.current.get(appointmentId) === heightPx) return;
-    appointmentHeightByIdRef.current.set(appointmentId, heightPx);
+    const currentLaneHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? 0;
+    if (heightPx <= currentLaneHeightPx) return;
+    laneHeightByKeyRef.current.set(laneHeightKey, heightPx);
     setAppointmentHeightVersion((prev) => prev + 1);
   };
 
@@ -655,12 +656,20 @@ export function CalendarWeekView({
 
                   <div className="flex-1 overflow-y-auto p-2 space-y-3">
                     {weekLanes.map((tourLane) => {
+                      const laneHeightKey = `${weekKey}:${tourLane.laneKey}`;
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
+                      const laneUniformHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? null;
                       const tileRowCount = laneRenderData.spanningAppointments.length;
-                      const laneGridTemplateRows = tileRowCount > 0
-                        ? `${Array.from({ length: tileRowCount }, () => "minmax(180px, auto)").join(" ")} minmax(180px, auto)`
-                        : "minmax(180px, auto)";
+                      const hasSingleDayAppointments = laneRenderData.singleDayAppointmentIdsByBucket.some(
+                        (appointmentIds) => appointmentIds.length > 0,
+                      );
+                      const needsDayCellRow = hasSingleDayAppointments || tileRowCount === 0;
+                      const laneGridTemplateRows = [
+                        ...Array.from({ length: tileRowCount }, () => "minmax(180px, auto)"),
+                        ...(needsDayCellRow ? ["minmax(180px, auto)"] : []),
+                      ].join(" ");
+                      const totalLaneRowCount = tileRowCount + (needsDayCellRow ? 1 : 0);
 
                       return (
                       <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10 p-2">
@@ -743,12 +752,44 @@ export function CalendarWeekView({
                           }`}
                         >
                           <div
-                            className="grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30"
+                            className="relative grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden"
                             style={{
                               gridTemplateColumns: dayGridTemplate,
                               gridTemplateRows: laneGridTemplateRows,
                             }}
                           >
+                            {days.map((_, dayIdx) => {
+                              const isWeekend = dayIdx >= 5;
+                              return (
+                                <div
+                                  key={`week-lane-column-background-${tourLane.laneKey}-${dayIdx}`}
+                                    className={isWeekend ? "bg-slate-200/45" : "bg-white/80"}
+                                  style={{
+                                    gridColumn: dayIdx + 1,
+                                    gridRow: `1 / span ${totalLaneRowCount}`,
+                                  }}
+                                  aria-hidden
+                                />
+                              );
+                            })}
+                            {draggedAppointmentId !== null ? (
+                              <div
+                                className="absolute inset-0 grid z-20"
+                                style={{ gridTemplateColumns: dayGridTemplate }}
+                              >
+                                {days.map((day) => (
+                                  <div
+                                    key={`week-day-drop-overlay-${tourLane.laneKey}-${format(day, "yyyy-MM-dd")}`}
+                                    className="h-full"
+                                    onDragOver={(event) => event.preventDefault()}
+                                    onDrop={(event) => {
+                                      void handleDrop(event, day);
+                                    }}
+                                    data-testid={`week-day-drop-overlay-${format(day, "yyyy-MM-dd")}-lane-${tourLane.laneKey}`}
+                                  />
+                                ))}
+                              </div>
+                            ) : null}
                             {laneRenderData.spanningAppointments.map(({ appointmentId, rowIndex }) => {
                               const appointment = appointmentsById.get(appointmentId);
                               if (!appointment) return null;
@@ -764,10 +805,13 @@ export function CalendarWeekView({
                                 <CalendarWeekSpanningTile
                                   key={`week-spanning-tile-${appointment.id}`}
                                   appointment={appointment}
+                                  spanColumns={columnSpan}
+                                  uniformHeightPx={laneUniformHeightPx}
                                   style={{
                                     gridColumn: `${startColumn} / span ${columnSpan}`,
                                     gridRow: rowIndex + 1,
                                     margin: "0.5rem",
+                                    zIndex: 10,
                                   }}
                                   isDragging={draggedAppointmentId === appointment.id}
                                   isLocked={isSegmentLocked}
@@ -779,19 +823,19 @@ export function CalendarWeekView({
                                   onMouseLeave={() =>
                                     setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
                                   }
+                                  containerRef={(node) => measureLaneCardHeight(laneHeightKey, node)}
                                   testId={`week-spanning-tile-${appointment.id}`}
                                 />
                               );
                             })}
-                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
+                            {needsDayCellRow ? tourLane.dayBuckets.map((dayBucket, dayIdx) => {
                               const day = days[dayIdx];
-                              const isWeekend = dayIdx >= 5;
 
                               return (
                                 <div
                                   key={`${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                  className={`h-full p-2 space-y-2 ${isWeekend ? "bg-slate-200/30" : "bg-white/70"}`}
-                                  style={{ gridColumn: dayIdx + 1, gridRow: tileRowCount + 1 }}
+                                  className="h-full p-2 space-y-2"
+                                  style={{ gridColumn: dayIdx + 1, gridRow: tileRowCount + 1, zIndex: 10 }}
                                   onDragOver={(event) => event.preventDefault()}
                                   onDrop={(event) => {
                                     void handleDrop(event, day);
@@ -814,7 +858,8 @@ export function CalendarWeekView({
                                         context="week-calendar"
                                         segment="start"
                                         continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
-                                        containerRef={(node) => measureStartSegmentHeight(appointment.id, node)}
+                                        uniformHeightPx={laneUniformHeightPx}
+                                        containerRef={(node) => measureLaneCardHeight(laneHeightKey, node)}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}
@@ -830,7 +875,7 @@ export function CalendarWeekView({
                                   })}
                                 </div>
                               );
-                            })}
+                            }) : null}
                           </div>
                         </div>
                       </div>
