@@ -5,9 +5,9 @@
  * Use Case: UC Wochenkarte zeigt Tourfarbe im Header
  *
  * Abgedeckte Regeln:
- * - CalendarWeekAppointmentPanel gibt die Tourfarbe und Auftragsnummer in den Header weiter.
+ * - CalendarWeekAppointmentPanel gibt die Tourfarbe und Datums-/Zeitdaten in den Header weiter.
  * - Fallback auf CALENDAR_NEUTRAL_COLOR bleibt erhalten.
- * - Header rendert die Farbe als Hintergrund mit kontrastierter Textfarbe und 3-Spalten-Inhalt.
+ * - Header rendert die Farbe als Hintergrund mit weisser Schrift und Zweizeilen-Layout.
  *
  * Fehlerfaelle:
  * - Wochenkarten-Header bleibt grau statt Tourfarbe.
@@ -26,7 +26,9 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
 
     expect(source).toContain("CALENDAR_NEUTRAL_COLOR");
     expect(source).toContain("color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}");
-    expect(source).toContain("orderNumber={appointment.projectOrderNumber}");
+    expect(source).toContain("startDate={appointment.startDate}");
+    expect(source).toContain("endDate={appointment.endDate}");
+    expect(source).toContain("startTime={appointment.startTime}");
   });
 
   it("wires preview-only tour name line with unassigned fallback color", () => {
@@ -39,18 +41,17 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
     expect(source).toContain("backgroundColor: resolvedTourColor");
   });
 
-  it("applies provided color to header background and computes readable text color", () => {
+  it("applies provided color to header background and keeps header text white", () => {
     const headerPath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelHeader.tsx");
     const source = readFileSync(headerPath, "utf8");
 
     expect(source).toContain("color: string;");
-    expect(source).toContain("const textColor = (() => {");
     expect(source).toContain("backgroundColor: color");
-    expect(source).toContain("color: textColor");
+    expect(source).toContain('color: "#ffffff"');
     expect(source).toContain("backgroundImage:");
     expect(source).toContain("boxShadow:");
-    expect(source).toContain("orderNumber: string | null;");
-    expect(source).toContain("grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]");
-    expect(source).toContain("const resolvedOrderNumber = orderNumber?.trim() || \"-\"");
+    expect(source).toContain("CalendarRange");
+    expect(source).toContain("const dayCountLabel = `${dayCount} ${dayCount === 1 ? \"Tag\" : \"Tage\"}`;");
+    expect(source).toContain("border-t border-white/20 pt-1");
   });
 });

@@ -20,6 +20,7 @@ import * as teamsService from "./teamsService";
 import * as toursService from "./toursService";
 import * as customersRepository from "../repositories/customersRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
+import * as projectsRepository from "../repositories/projectsRepository";
 import * as usersRepository from "../repositories/usersRepository";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as projectAttachmentsService from "./projectAttachmentsService";
@@ -364,6 +365,26 @@ async function getNextCustomerNumberStart() {
     }
   }
   return max + 1;
+}
+
+async function getNextSeedOrderNumberStart() {
+  const orderNumbers = await projectsRepository.listProjectOrderNumbers();
+  let max = 99999;
+
+  for (const value of orderNumbers) {
+    const match = /^A(\d{6})A$/.exec(value);
+    if (!match) continue;
+    const parsed = Number(match[1]);
+    if (Number.isFinite(parsed) && parsed > max) {
+      max = parsed;
+    }
+  }
+
+  return max + 1;
+}
+
+function formatSeedOrderNumber(value: number) {
+  return `A${String(value).padStart(6, "0")}A`;
 }
 
 function createSaunaContext(model: SaunaModelRow, oven: OvenRow | null) {
@@ -1404,6 +1425,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       }
 
       let nextCustomerNumber = await getNextCustomerNumberStart();
+      let nextOrderNumber = await getNextSeedOrderNumberStart();
       for (let i = 0; i < config.customers; i += 1) {
         const customerPayload = filler.nextCustomer(i, seedPrefix);
         const customer = await customersService.createCustomer({
@@ -1478,10 +1500,12 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           `Sauna ${i + 1}`;
         const project = await projectsService.createProject({
           name: rawProjectName.trim(),
+          orderNumber: formatSeedOrderNumber(nextOrderNumber),
           customerId,
           amount: String(random.int(7500, 18000)),
           descriptionMd: renderTemplate(templates[TEMPLATE_KEYS.projectDescription], ctx, { allowedKeys: allowedTemplateKeys }),
         });
+        nextOrderNumber += 1;
         created.projects += 1;
         await demoSeedRepository.addSeedRunEntity(seedRunId, "project", project.id);
 

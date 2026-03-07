@@ -5,10 +5,12 @@
  * Use Case: UC FT03 - Weekly-only Projektname und Vollbeschreibung-Preview
  *
  * Abgedeckte Regeln:
- * - CalendarWeekAppointmentPanel nutzt den Projektname direkt ohne Parsing.
+ * - CalendarWeekAppointmentPanel nutzt den Projektnamen direkt ohne Parsing.
+ * - Projektblock erhaelt die Auftragsnummer fuer die kombinierte Headerzeile.
  * - Weekly-Kontext aktiviert den Full-Description-Hover ueber enableFullDescriptionPreview.
- * - Project-Panel enthaelt die HoverPreview-Verdrahtung fuer den Description-Block.
+ * - Project-Panel enthaelt die HoverPreview-Verdrahtung fuer den Description-Block inklusive Headerzeile.
  * - Vollbeschreibung rendert weiterhin HTML via dangerouslySetInnerHTML.
+ * - Projektstatus wird unterhalb des Projektblocks separat gerendert.
  *
  * Fehlerfaelle:
  * - Kundenpraefix bleibt im Weekly-Projektnamen sichtbar.
@@ -28,8 +30,11 @@ describe("FT03 UI: weekly project description preview wiring", () => {
 
     expect(source).toContain("const resolvedProjectName = appointment.projectName;");
     expect(source).not.toContain("parseProjectStoredName(");
+    expect(source).toContain("projectOrderNumber={appointment.projectOrderNumber}");
     expect(source).toContain('context === "week-calendar"');
     expect(source).toContain("enableFullDescriptionPreview={context === \"week-calendar\"}");
+    expect(source).toContain("<div className=\"mb-1 text-[10px] font-semibold text-slate-500\">Projekt Status</div>");
+    expect(source).toContain("<ProjectStatusInfoBadge");
   });
 
   it("contains hover preview wiring for project description", () => {
@@ -39,6 +44,7 @@ describe("FT03 UI: weekly project description preview wiring", () => {
     expect(source).toContain("enableFullDescriptionPreview = false");
     expect(source).toContain("<HoverPreview");
     expect(source).toContain("data-testid=\"week-project-description-hover-trigger\"");
+    expect(source).toContain("resolvedProjectHeader");
     expect(source).toContain("dangerouslySetInnerHTML={{ __html: projectDescription }}");
   });
 });

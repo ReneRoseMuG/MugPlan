@@ -611,15 +611,6 @@ export function CalendarWeekView({
                   <div className="flex-1 overflow-y-auto p-2 space-y-3">
                     {weekLanes.map((tourLane) => {
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
-                      const laneCardHeaderColor = tourLane.color ?? CALENDAR_UNASSIGNED_TOUR_COLOR;
-                      const laneCardHeaderTextColor = (() => {
-                        if (!laneCardHeaderColor.startsWith("#")) return "#1a1a1a";
-                        const r = parseInt(laneCardHeaderColor.slice(1, 3), 16);
-                        const g = parseInt(laneCardHeaderColor.slice(3, 5), 16);
-                        const b = parseInt(laneCardHeaderColor.slice(5, 7), 16);
-                        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-                        return luminance > 0.55 ? "#1a1a1a" : "#ffffff";
-                      })();
 
                       return (
                       <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10 p-2">
@@ -658,7 +649,7 @@ export function CalendarWeekView({
                                 {dayAppointmentCounts[dayIdx] > 0 ? (
                                   <span
                                     className="pointer-events-none absolute left-1/2 -translate-x-1/2 truncate text-center text-[10px] font-semibold"
-                                    style={{ color: laneCardHeaderTextColor }}
+                                    style={{ color: "#ffffff" }}
                                     data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
                                   >
                                     {dayAppointmentCounts[dayIdx]} {dayAppointmentCounts[dayIdx] === 1 ? "Termin" : "Termine"}
@@ -679,7 +670,7 @@ export function CalendarWeekView({
                                       onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft });
                                     }}
                                     className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
-                                    style={{ color: laneCardHeaderTextColor }}
+                                    style={{ color: "#ffffff" }}
                                     data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                     title={`Neuer Termin am ${dayBucket.dateKey}`}
                                   >

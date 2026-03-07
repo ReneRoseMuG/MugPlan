@@ -11,15 +11,15 @@
  * - Touren ohne Mitarbeitende werden im appointments-Run nicht beplant.
  * - Bei Engpaessen wird ueber das initiale Seed-Fenster hinaus weitergeplant.
  * - Montage-Termine nutzen nur 1- oder 2-Tages-Dauern im Verhaeltnis 4:1; Freitage bleiben deutlich unterrepraesentiert.
- * - Base-seeded Projekte erhalten einen Betrag zwischen 7500 und 18000, und nur ein begrenzter Anteil aller Seed-Termine ist intraday.
+ * - Base-seeded Projekte erhalten fortlaufende Auftragsnummern im Muster A000000A, einen Betrag zwischen 7500 und 18000, und nur ein begrenzter Anteil aller Seed-Termine ist intraday.
  *
  * Fehlerfaelle:
  * - Terminzuweisung enthaelt Mitarbeitende mit abweichender Tour.
  * - Tour-Tag-Slots uebersteigen die erlaubte Obergrenze oder enthalten verbotene Kombinationen.
- * - Seed-Dauern, Freitaggewichtung, Intraday-Anteil oder Projekt-Betraege weichen von der Sollverteilung ab.
+ * - Seed-Dauern, Freitaggewichtung, Intraday-Anteil, Auftragsnummern oder Projekt-Betraege weichen von der Sollverteilung ab.
  *
  * Ziel:
- * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung, reduzierte Mehrtagestermine und befuellte Projekt-Betraege erzeugt.
+ * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung, reduzierte Mehrtagestermine, fortlaufende Auftragsnummern und befuellte Projekt-Betraege erzeugt.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { existsSync } from "fs";
@@ -145,12 +145,23 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       const baseProjectRows = await db
         .select({
           id: projects.id,
+          orderNumber: projects.orderNumber,
           amount: projects.amount,
         })
         .from(projects)
+        .orderBy(projects.id)
         .where(inArray(projects.id, baseProjectIds));
 
       expect(baseProjectRows.length).toBe(baseProjectIds.length);
+      const baseOrderNumbers = baseProjectRows.map((row) => row.orderNumber ?? "");
+      expect(baseOrderNumbers.every((orderNumber) => /^A\d{6}A$/.test(orderNumber))).toBe(true);
+      expect(baseOrderNumbers[0]).toBe("A100000A");
+      expect(new Set(baseOrderNumbers).size).toBe(baseOrderNumbers.length);
+
+      for (let index = 0; index < baseOrderNumbers.length; index += 1) {
+        expect(baseOrderNumbers[index]).toBe(`A${String(100000 + index).padStart(6, "0")}A`);
+      }
+
       for (const row of baseProjectRows) {
         const amount = Number(row.amount);
         expect(Number.isInteger(amount)).toBe(true);
@@ -271,6 +282,78 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       }
       if (baseSeedRunId) {
         await purgeSeedRun(baseSeedRunId);
+      }
+    }
+  });
+
+  itIfDemoSeedFilesPresent("continues seeded project order numbers across base runs", async () => {
+    let firstBaseSeedRunId: string | null = null;
+    let secondBaseSeedRunId: string | null = null;
+
+    try {
+      const firstSummary = await createSeedRun({
+        runType: "base",
+        randomSeed: 3303,
+        employees: 1,
+        customers: 2,
+        projects: 2,
+        projectStatuses: [
+          { title: "SeedStatus-First", color: "#0f766e", description: "seed-status-first" },
+        ],
+      });
+      firstBaseSeedRunId = firstSummary.seedRunId;
+
+      const secondSummary = await createSeedRun({
+        runType: "base",
+        randomSeed: 4404,
+        employees: 1,
+        customers: 2,
+        projects: 2,
+        projectStatuses: [
+          { title: "SeedStatus-Second", color: "#1d4ed8", description: "seed-status-second" },
+        ],
+      });
+      secondBaseSeedRunId = secondSummary.seedRunId;
+
+      const firstProjectIds = (await db
+        .select({ entityId: seedRunEntities.entityId })
+        .from(seedRunEntities)
+        .where(and(eq(seedRunEntities.seedRunId, firstBaseSeedRunId), eq(seedRunEntities.entityType, "project"))))
+        .map((entity) => Number(entity.entityId));
+      const secondProjectIds = (await db
+        .select({ entityId: seedRunEntities.entityId })
+        .from(seedRunEntities)
+        .where(and(eq(seedRunEntities.seedRunId, secondBaseSeedRunId), eq(seedRunEntities.entityType, "project"))))
+        .map((entity) => Number(entity.entityId));
+
+      expect(firstProjectIds.length).toBe(2);
+      expect(secondProjectIds.length).toBe(2);
+
+      const firstOrderRows = await db
+        .select({
+          id: projects.id,
+          orderNumber: projects.orderNumber,
+        })
+        .from(projects)
+        .where(inArray(projects.id, firstProjectIds))
+        .orderBy(projects.id);
+      const secondOrderRows = await db
+        .select({
+          id: projects.id,
+          orderNumber: projects.orderNumber,
+        })
+        .from(projects)
+        .where(inArray(projects.id, secondProjectIds))
+        .orderBy(projects.id);
+
+      expect(firstOrderRows.map((row) => row.orderNumber)).toEqual(["A100000A", "A100001A"]);
+      expect(secondOrderRows.map((row) => row.orderNumber)).toEqual(["A100002A", "A100003A"]);
+    } finally {
+      if (secondBaseSeedRunId) {
+        await purgeSeedRun(secondBaseSeedRunId);
+      }
+      if (firstBaseSeedRunId) {
+        await purgeSeedRun(firstBaseSeedRunId);
       }
     }
   });

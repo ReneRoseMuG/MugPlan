@@ -170,6 +170,16 @@ export async function existsProjectByOrderNumber(orderNumber: string): Promise<b
   return rows.length > 0;
 }
 
+export async function listProjectOrderNumbers(): Promise<string[]> {
+  const rows = await db
+    .select({ orderNumber: projects.orderNumber })
+    .from(projects);
+
+  return rows
+    .map((row) => row.orderNumber?.trim() ?? "")
+    .filter((orderNumber) => orderNumber.length > 0);
+}
+
 export async function getProjectWithCustomer(
   id: number,
 ): Promise<{ project: Project; customer: typeof customers.$inferSelect } | null> {
