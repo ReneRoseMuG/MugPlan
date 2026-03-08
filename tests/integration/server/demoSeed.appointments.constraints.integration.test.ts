@@ -12,23 +12,41 @@
  * - Bei Engpaessen wird ueber das initiale Seed-Fenster hinaus weitergeplant.
  * - Montage-Termine nutzen nur 1- oder 2-Tages-Dauern im Verhaeltnis 4:1; Freitage bleiben deutlich unterrepraesentiert.
  * - Base-seeded Projekte erhalten fortlaufende Auftragsnummern im Muster A000000A, einen Betrag zwischen 7500 und 18000, und nur ein begrenzter Anteil aller Seed-Termine ist intraday.
+ * - Base- und legacy-Seeds befuellen den FT27-Produktkatalog idempotent; Purge laesst die Katalogtabellen unberuehrt.
  *
  * Fehlerfaelle:
  * - Terminzuweisung enthaelt Mitarbeitende mit abweichender Tour.
  * - Tour-Tag-Slots uebersteigen die erlaubte Obergrenze oder enthalten verbotene Kombinationen.
  * - Seed-Dauern, Freitaggewichtung, Intraday-Anteil, Auftragsnummern oder Projekt-Betraege weichen von der Sollverteilung ab.
+ * - Produktkatalog wird doppelt angelegt, im appointments-Run veraendert oder beim Purge eines Seed-Runs geloescht.
  *
  * Ziel:
- * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung, reduzierte Mehrtagestermine, fortlaufende Auftragsnummern und befuellte Projekt-Betraege erzeugt.
+ * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung sowie den FT27-Produktkatalog stabil, idempotent und purge-resistent erzeugt.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { existsSync } from "fs";
 import path from "path";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../../../server/db";
 import { createSeedRun, purgeSeedRun } from "../../../server/services/demoSeedService";
-import { appointments, appointmentEmployees, employees, projects, seedRunEntities } from "../../../shared/schema";
+import {
+  appointments,
+  appointmentEmployees,
+  appointmentTags,
+  componentCategories,
+  components,
+  customerTags,
+  employees,
+  employeeTags,
+  productCategories,
+  productComponent,
+  projectTags,
+  products,
+  projects,
+  seedRunEntities,
+  tags,
+} from "../../../shared/schema";
 
 function toDateKey(date: Date) {
   const y = date.getFullYear();
@@ -63,6 +81,38 @@ function daySpan(startDate: Date, endDate: Date | null) {
   return Math.floor((endUtc - startUtc) / (24 * 60 * 60 * 1000)) + 1;
 }
 
+async function readProductCatalogCounts() {
+  const [productCategoryCountRow] = await db.select({ count: sql<number>`count(*)` }).from(productCategories);
+  const [componentCategoryCountRow] = await db.select({ count: sql<number>`count(*)` }).from(componentCategories);
+  const [productCountRow] = await db.select({ count: sql<number>`count(*)` }).from(products);
+  const [componentCountRow] = await db.select({ count: sql<number>`count(*)` }).from(components);
+  const [linkCountRow] = await db.select({ count: sql<number>`count(*)` }).from(productComponent);
+
+  return {
+    productCategories: Number(productCategoryCountRow?.count ?? 0),
+    componentCategories: Number(componentCategoryCountRow?.count ?? 0),
+    products: Number(productCountRow?.count ?? 0),
+    components: Number(componentCountRow?.count ?? 0),
+    links: Number(linkCountRow?.count ?? 0),
+  };
+}
+
+async function readDemoTagCounts() {
+  const [tagCountRow] = await db.select({ count: sql<number>`count(*)` }).from(tags);
+  const [projectTagCountRow] = await db.select({ count: sql<number>`count(*)` }).from(projectTags);
+  const [customerTagCountRow] = await db.select({ count: sql<number>`count(*)` }).from(customerTags);
+  const [employeeTagCountRow] = await db.select({ count: sql<number>`count(*)` }).from(employeeTags);
+  const [appointmentTagCountRow] = await db.select({ count: sql<number>`count(*)` }).from(appointmentTags);
+
+  return {
+    tags: Number(tagCountRow?.count ?? 0),
+    projectTags: Number(projectTagCountRow?.count ?? 0),
+    customerTags: Number(customerTagCountRow?.count ?? 0),
+    employeeTags: Number(employeeTagCountRow?.count ?? 0),
+    appointmentTags: Number(appointmentTagCountRow?.count ?? 0),
+  };
+}
+
 beforeEach(() => {
   // resetDatabase() laeuft zentral ueber tests/setup.env.ts vor jedem Integrationstest.
 });
@@ -73,6 +123,107 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
   );
 
   const itIfDemoSeedFilesPresent = hasRequiredDemoSeedFiles ? it : it.skip;
+
+  itIfDemoSeedFilesPresent("seeds FT27 product catalog once, keeps purge off catalog tables and skips appointments-only runs", async () => {
+    let firstBaseSeedRunId: string | null = null;
+    let secondBaseSeedRunId: string | null = null;
+    let appointmentsSeedRunId: string | null = null;
+
+    try {
+      const firstSummary = await createSeedRun({
+        runType: "base",
+        randomSeed: 5101,
+        employees: 1,
+        customers: 2,
+        projects: 2,
+        projectStatuses: [
+          { title: "SeedStatus-Catalog-A", color: "#0f766e", description: "seed-status-catalog-a" },
+        ],
+      });
+      firstBaseSeedRunId = firstSummary.seedRunId;
+
+      const productCategoryRows = await db.select().from(productCategories);
+      const componentCategoryRows = await db.select().from(componentCategories);
+      const productRows = await db.select().from(products);
+      const componentRows = await db.select().from(components);
+      const linkRows = await db.select().from(productComponent);
+
+      expect(productCategoryRows.map((row) => row.name).sort()).toEqual(["Ausstattung", "Sauna"]);
+      expect(componentCategoryRows.map((row) => row.name).sort()).toEqual([
+        "Dachvariante",
+        "Fenster",
+        "Ofen",
+        "Saunatyp",
+        "Tür",
+      ]);
+      expect(productRows.map((row) => row.name).sort()).toEqual(["Dach", "Fenster", "Ofen", "Sauna", "Tür"]);
+      expect(productRows.every((row) => Number.isFinite(Number(row.categoryId)) && Number(row.categoryId) > 0)).toBe(true);
+      expect(componentRows.length).toBeGreaterThanOrEqual(35);
+      expect(componentRows.every((row) => Number.isFinite(Number(row.categoryId)) && Number(row.categoryId) > 0)).toBe(true);
+      expect(linkRows.length).toBe(componentRows.length);
+
+      const countsAfterFirstBase = await readProductCatalogCounts();
+      const tagCountsAfterFirstBase = await readDemoTagCounts();
+      expect(tagCountsAfterFirstBase.tags).toBe(6);
+      expect(tagCountsAfterFirstBase.projectTags).toBeGreaterThan(0);
+      expect(tagCountsAfterFirstBase.customerTags).toBeGreaterThan(0);
+      expect(tagCountsAfterFirstBase.employeeTags).toBeGreaterThan(0);
+      expect(tagCountsAfterFirstBase.appointmentTags).toBe(0);
+
+      const secondSummary = await createSeedRun({
+        runType: "base",
+        randomSeed: 5202,
+        employees: 1,
+        customers: 2,
+        projects: 2,
+        projectStatuses: [
+          { title: "SeedStatus-Catalog-B", color: "#1d4ed8", description: "seed-status-catalog-b" },
+        ],
+      });
+      secondBaseSeedRunId = secondSummary.seedRunId;
+
+      const countsAfterSecondBase = await readProductCatalogCounts();
+      expect(countsAfterSecondBase).toEqual(countsAfterFirstBase);
+      const tagCountsAfterSecondBase = await readDemoTagCounts();
+      expect(tagCountsAfterSecondBase.tags).toBe(tagCountsAfterFirstBase.tags);
+
+      const appointmentsSummary = await createSeedRun({
+        runType: "appointments",
+        baseSeedRunId: firstBaseSeedRunId,
+        randomSeed: 5303,
+        appointmentsPerProject: 1,
+        generateAttachments: false,
+      });
+      appointmentsSeedRunId = appointmentsSummary.seedRunId;
+
+      const countsAfterAppointments = await readProductCatalogCounts();
+      expect(countsAfterAppointments).toEqual(countsAfterFirstBase);
+      const tagCountsAfterAppointments = await readDemoTagCounts();
+      expect(tagCountsAfterAppointments.tags).toBe(tagCountsAfterFirstBase.tags);
+      expect(tagCountsAfterAppointments.appointmentTags).toBeGreaterThan(0);
+
+      await purgeSeedRun(appointmentsSeedRunId);
+      appointmentsSeedRunId = null;
+
+      await purgeSeedRun(firstBaseSeedRunId);
+      firstBaseSeedRunId = null;
+
+      const countsAfterPurge = await readProductCatalogCounts();
+      expect(countsAfterPurge).toEqual(countsAfterFirstBase);
+      const tagCountsAfterPurge = await readDemoTagCounts();
+      expect(tagCountsAfterPurge.tags).toBe(tagCountsAfterFirstBase.tags);
+    } finally {
+      if (appointmentsSeedRunId) {
+        await purgeSeedRun(appointmentsSeedRunId);
+      }
+      if (secondBaseSeedRunId) {
+        await purgeSeedRun(secondBaseSeedRunId);
+      }
+      if (firstBaseSeedRunId) {
+        await purgeSeedRun(firstBaseSeedRunId);
+      }
+    }
+  });
 
   itIfDemoSeedFilesPresent("creates only rule-conform tour/day slots and keeps employee-tour binding", async () => {
     let baseSeedRunId: string | null = null;

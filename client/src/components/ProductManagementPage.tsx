@@ -72,6 +72,9 @@ async function invalidateMasterDataQueries(activeScope: ActiveScope): Promise<vo
 export function ProductManagementPage() {
   const { toast } = useToast();
   const activeScope: ActiveScope = "all";
+  const [productCategoryFilterId, setProductCategoryFilterId] = useState("");
+  const [componentCategoryFilterId, setComponentCategoryFilterId] = useState("");
+  const [componentProductFilterId, setComponentProductFilterId] = useState("");
 
   const [newProductCategoryName, setNewProductCategoryName] = useState("");
   const [editProductCategory, setEditProductCategory] = useState<ProductCategory | null>(null);
@@ -157,6 +160,65 @@ export function ProductManagementPage() {
     }
     return map;
   }, [componentProducts]);
+
+  const filteredProducts = useMemo(() => {
+    if (!productCategoryFilterId) return products;
+    const categoryId = Number(productCategoryFilterId);
+    if (!Number.isFinite(categoryId) || categoryId <= 0) return products;
+    return products.filter((row) => row.categoryId === categoryId);
+  }, [productCategoryFilterId, products]);
+
+  const filteredComponents = useMemo(() => {
+    let nextRows = components;
+
+    if (componentCategoryFilterId) {
+      const categoryId = Number(componentCategoryFilterId);
+      if (Number.isFinite(categoryId) && categoryId > 0) {
+        nextRows = nextRows.filter((row) => row.categoryId === categoryId);
+      }
+    }
+
+    if (componentProductFilterId) {
+      const productId = Number(componentProductFilterId);
+      if (Number.isFinite(productId) && productId > 0) {
+        nextRows = nextRows.filter((row) => (productIdsByComponentId.get(row.id) ?? []).includes(productId));
+      }
+    }
+
+    return nextRows;
+  }, [componentCategoryFilterId, componentProductFilterId, components, productIdsByComponentId]);
+
+  function toggleProductCategorySelection(row: ProductCategory) {
+    if (isDefaultProductCategory(row)) return;
+    if (editProductCategory?.id === row.id) {
+      setEditProductCategory(null);
+      setProductCategoryFilterId("");
+      return;
+    }
+    setEditProductCategory({ ...row });
+    setProductCategoryFilterId(String(row.id));
+  }
+
+  function toggleComponentCategorySelection(row: ComponentCategory) {
+    if (isDefaultComponentCategory(row)) return;
+    if (editComponentCategory?.id === row.id) {
+      setEditComponentCategory(null);
+      setComponentCategoryFilterId("");
+      return;
+    }
+    setEditComponentCategory({ ...row });
+    setComponentCategoryFilterId(String(row.id));
+  }
+
+  function toggleProductSelection(row: Product) {
+    if (editProduct?.id === row.id) {
+      setEditProduct(null);
+      setComponentProductFilterId("");
+      return;
+    }
+    setEditProduct({ ...row });
+    setComponentProductFilterId(String(row.id));
+  }
 
   const createProductCategoryMutation = useMutation({
     mutationFn: async () =>
@@ -461,7 +523,10 @@ export function ProductManagementPage() {
                   {editProductCategory ? "Speichern" : "Neu"}
                   </Button>
                   {editProductCategory ? (
-                    <Button variant="outline" onClick={() => setEditProductCategory(null)}>
+                    <Button variant="outline" onClick={() => {
+                      setEditProductCategory(null);
+                      setProductCategoryFilterId("");
+                    }}>
                       Abbrechen
                     </Button>
                   ) : null}
@@ -479,10 +544,7 @@ export function ProductManagementPage() {
                       <TableRow
                         key={row.id}
                         className={editProductCategory?.id === row.id ? "bg-slate-50" : undefined}
-                        onClick={() => {
-                          if (isDefaultProductCategory(row)) return;
-                          setEditProductCategory({ ...row });
-                        }}
+                        onClick={() => toggleProductCategorySelection(row)}
                       >
                         <TableCell>{row.name}</TableCell>
                         <TableCell className="space-x-2 text-right whitespace-nowrap">
@@ -493,8 +555,7 @@ export function ProductManagementPage() {
                             title={isDefaultProductCategory(row) ? "Default-Kategorie ist nicht bearbeitbar" : undefined}
                             onClick={(event) => {
                               event.stopPropagation();
-                              if (isDefaultProductCategory(row)) return;
-                              setEditProductCategory({ ...row });
+                              toggleProductCategorySelection(row);
                             }}
                           >
                             {editProductCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
@@ -553,7 +614,10 @@ export function ProductManagementPage() {
                   {editComponentCategory ? "Speichern" : "Neu"}
                   </Button>
                   {editComponentCategory ? (
-                    <Button variant="outline" onClick={() => setEditComponentCategory(null)}>
+                    <Button variant="outline" onClick={() => {
+                      setEditComponentCategory(null);
+                      setComponentCategoryFilterId("");
+                    }}>
                       Abbrechen
                     </Button>
                   ) : null}
@@ -571,10 +635,7 @@ export function ProductManagementPage() {
                       <TableRow
                         key={row.id}
                         className={editComponentCategory?.id === row.id ? "bg-slate-50" : undefined}
-                        onClick={() => {
-                          if (isDefaultComponentCategory(row)) return;
-                          setEditComponentCategory({ ...row });
-                        }}
+                        onClick={() => toggleComponentCategorySelection(row)}
                       >
                         <TableCell>{row.name}</TableCell>
                         <TableCell className="space-x-2 text-right whitespace-nowrap">
@@ -585,8 +646,7 @@ export function ProductManagementPage() {
                             title={isDefaultComponentCategory(row) ? "Default-Kategorie ist nicht bearbeitbar" : undefined}
                             onClick={(event) => {
                               event.stopPropagation();
-                              if (isDefaultComponentCategory(row)) return;
-                              setEditComponentCategory({ ...row });
+                              toggleComponentCategorySelection(row);
                             }}
                           >
                             {editComponentCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
@@ -632,6 +692,7 @@ export function ProductManagementPage() {
                   <select
                     value={editProduct ? String(editProduct.categoryId) : newProduct.categoryId}
                     onChange={(event) => {
+                      setProductCategoryFilterId(event.target.value);
                       if (editProduct) {
                         setEditProduct({ ...editProduct, categoryId: Number(event.target.value) });
                       } else {
@@ -661,7 +722,10 @@ export function ProductManagementPage() {
                     createProductMutation.mutate();
                   }}>{editProduct ? "Speichern" : "Neu"}</Button>
                   {editProduct ? (
-                    <Button variant="outline" onClick={() => setEditProduct(null)}>
+                    <Button variant="outline" onClick={() => {
+                      setEditProduct(null);
+                      setComponentProductFilterId("");
+                    }}>
                       Abbrechen
                     </Button>
                   ) : null}
@@ -690,11 +754,11 @@ export function ProductManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((row) => (
+                    {filteredProducts.map((row) => (
                       <TableRow
                         key={row.id}
                         className={editProduct?.id === row.id ? "bg-slate-50" : undefined}
-                        onClick={() => setEditProduct({ ...row })}
+                        onClick={() => toggleProductSelection(row)}
                       >
                         <TableCell>{row.name}</TableCell>
                         <TableCell>{productCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`}</TableCell>
@@ -704,7 +768,7 @@ export function ProductManagementPage() {
                             variant="outline"
                             onClick={(event) => {
                               event.stopPropagation();
-                              setEditProduct({ ...row });
+                              toggleProductSelection(row);
                             }}
                           >
                             {editProduct?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
@@ -756,6 +820,7 @@ export function ProductManagementPage() {
                   <select
                     value={editComponent ? String(editComponent.categoryId) : newComponent.categoryId}
                     onChange={(event) => {
+                      setComponentCategoryFilterId(event.target.value);
                       if (editComponent) {
                         setEditComponent({ ...editComponent, categoryId: Number(event.target.value) });
                       } else {
@@ -773,6 +838,7 @@ export function ProductManagementPage() {
                     <select
                       value={editComponent ? editComponentProductId : newComponentProductId}
                       onChange={(event) => {
+                        setComponentProductFilterId(event.target.value);
                         if (editComponent) {
                           setEditComponentProductId(event.target.value);
                         } else {
@@ -887,7 +953,7 @@ export function ProductManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {components.map((row) => (
+                    {filteredComponents.map((row) => (
                       <TableRow
                         key={row.id}
                         className={editComponent?.id === row.id ? "bg-slate-50" : undefined}
@@ -948,8 +1014,5 @@ export function ProductManagementPage() {
     />
   );
 }
-
-
-
 
 

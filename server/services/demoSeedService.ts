@@ -10,6 +10,8 @@ import {
 } from "../lib/attachmentFiles";
 import { renderTemplate } from "../lib/templateRender";
 import { loadSaunaSeedData } from "../seed/csvLoader";
+import { seedProductsAndComponents } from "../seed/productComponentSeeder";
+import { assignDemoTags, ensureDemoTags } from "../seed/tagSeeder";
 import type { OvenRow, SaunaModelRow } from "../seed/types";
 import { createDemoDataFiller } from "./demoDataFiller";
 import * as customersService from "./customersService";
@@ -1272,6 +1274,32 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     seedRunPersisted = true;
     logInfo(`${logPrefix} create start`, { seedRunId, config });
 
+    let demoTags: Array<{ id: number; name: string; color: string }> = [];
+
+    try {
+      const tagSeedResult = await ensureDemoTags();
+      demoTags = tagSeedResult.tags;
+      logInfo(`${logPrefix} demo tag seed`, { seedRunId, ...tagSeedResult.result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logError(`${logPrefix} demo tag seed failed`, { seedRunId, message });
+      warnings.push(`Tag-Seed fehlgeschlagen: ${message}`);
+    }
+
+    if (config.runType !== "appointments") {
+      try {
+        const productSeedResult = await seedProductsAndComponents(
+          saunaData.saunaModels,
+          saunaData.ovens,
+        );
+        logInfo(`${logPrefix} product/component seed`, { seedRunId, ...productSeedResult });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logError(`${logPrefix} product/component seed failed`, { seedRunId, message });
+        warnings.push(`Produkt-/Komponenten-Seed fehlgeschlagen: ${message}`);
+      }
+    }
+
     const created = {
       employees: 0,
       customers: 0,
@@ -1290,9 +1318,9 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       reklSkippedConstraints: 0,
     };
 
-    const teams: number[] = [];
-    const tours: number[] = [];
-    const employees: number[] = [];
+      const teams: number[] = [];
+      const tours: number[] = [];
+      const employees: number[] = [];
     const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
     const projectSeedContexts: ProjectSeedContext[] = [];
@@ -1438,6 +1466,25 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         await demoSeedRepository.addSeedRunEntity(seedRunId, "customer", customer.id);
       }
 
+      if (demoTags.length > 0) {
+        try {
+          const tagAssignmentResult = await assignDemoTags({
+            tags: demoTags,
+            customerIds: customers,
+            employeeIds: employees,
+            randomInt: (min, max) => random.int(min, max),
+          });
+          logInfo(`${logPrefix} demo tag assignment base entities`, {
+            seedRunId,
+            ...tagAssignmentResult,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          logError(`${logPrefix} demo tag assignment base entities failed`, { seedRunId, message });
+          warnings.push(`Tag-Zuordnung für Basisdaten fehlgeschlagen: ${message}`);
+        }
+      }
+
       const projectsToCreate = config.projects;
       const ovenById = new Map(saunaData.ovens.map((oven) => [oven.ovenId, oven]));
       const ovenIdsByModelId = new Map<string, string[]>();
@@ -1525,6 +1572,24 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           selectedOven,
         });
       }
+
+      if (demoTags.length > 0) {
+        try {
+          const tagAssignmentResult = await assignDemoTags({
+            tags: demoTags,
+            projectIds: projectSeedContexts.map((ctx) => ctx.projectId),
+            randomInt: (min, max) => random.int(min, max),
+          });
+          logInfo(`${logPrefix} demo tag assignment projects`, {
+            seedRunId,
+            ...tagAssignmentResult,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          logError(`${logPrefix} demo tag assignment projects failed`, { seedRunId, message });
+          warnings.push(`Tag-Zuordnung für Projekte fehlgeschlagen: ${message}`);
+        }
+      }
     }
 
     const startDate = addDays(new Date(), 1);
@@ -1587,6 +1652,24 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         } else {
           created.reklAppointments += 1;
           await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_rekl", appointment.id);
+        }
+      }
+
+      if (demoTags.length > 0 && allCreatedAppointments.length > 0) {
+        try {
+          const tagAssignmentResult = await assignDemoTags({
+            tags: demoTags,
+            appointmentIds: allCreatedAppointments.map((appointment) => appointment.id),
+            randomInt: (min, max) => random.int(min, max),
+          });
+          logInfo(`${logPrefix} demo tag assignment appointments`, {
+            seedRunId,
+            ...tagAssignmentResult,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          logError(`${logPrefix} demo tag assignment appointments failed`, { seedRunId, message });
+          warnings.push(`Tag-Zuordnung für Termine fehlgeschlagen: ${message}`);
         }
       }
     }
