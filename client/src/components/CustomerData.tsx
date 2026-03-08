@@ -611,9 +611,9 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
             onOpenProject={onOpenProject}
           />
 
-          <CustomerAppointmentsPanel customerId={customerId} />
+          <CustomerAppointmentsPanel customerId={customerId} className="h-auto" />
 
-          {isEditMode && <CustomerAttachmentsPanel customerId={customerId} />}
+          {isEditMode && <CustomerAttachmentsPanel customerId={customerId} className="h-auto" />}
         </div>
       </div>
 

@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface EmployeeAttachmentsPanelProps {
   employeeId?: number | null;
+  className?: string;
 }
 
-export function EmployeeAttachmentsPanel({ employeeId }: EmployeeAttachmentsPanelProps) {
+export function EmployeeAttachmentsPanel({ employeeId, className }: EmployeeAttachmentsPanelProps) {
   const { toast } = useToast();
   const { data: attachments = [], isLoading } = useQuery<EmployeeAttachment[]>({
     queryKey: ["/api/employees", employeeId, "attachments"],
@@ -48,6 +49,7 @@ export function EmployeeAttachmentsPanel({ employeeId }: EmployeeAttachmentsPane
     <AttachmentsPanel
       title="Dokumente"
       helpKey="employees.sidebar.attachments"
+      className={className}
       items={items}
       isLoading={isLoading}
       canUpload={Boolean(employeeId)}

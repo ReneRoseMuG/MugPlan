@@ -256,8 +256,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="stammdaten">
-          <div className="grid grid-cols-3 gap-6">
+        <TabsContent value="stammdaten" className="min-h-[620px]">
+          <div className="grid grid-cols-3 items-start gap-6">
             <div className="col-span-2 space-y-6 min-h-0">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
@@ -331,7 +331,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
             </div>
 
             <div className="space-y-6">
-              {employeeId ? <EmployeeAttachmentsPanel employeeId={employeeId} /> : null}
+              {employeeId ? <EmployeeAttachmentsPanel employeeId={employeeId} className="h-auto" /> : null}
 
               <div className="space-y-2">
                 <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">

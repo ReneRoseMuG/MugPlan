@@ -17,6 +17,7 @@ interface ProjectStatusPanelProps {
   onRemove: (item: ProjectStatusRelationItem) => void;
   title?: string;
   canEdit?: boolean;
+  className?: string;
 }
 
 export function ProjectStatusPanel({
@@ -27,6 +28,7 @@ export function ProjectStatusPanel({
   onRemove,
   title = "Status",
   canEdit = false,
+  className,
 }: ProjectStatusPanelProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -54,6 +56,7 @@ export function ProjectStatusPanel({
         title={`${title} (${assignedStatuses.length})`}
         icon={<Flag className="w-4 h-4" />}
         helpKey="projects.sidebar.status"
+        className={className}
         headerActions={canEdit ? (
           <Tooltip>
             <TooltipTrigger asChild>

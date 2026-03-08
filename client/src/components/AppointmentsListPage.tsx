@@ -140,7 +140,7 @@ export function AppointmentsListPage({
   const resolvedEmployeeId = context?.type === "employee" ? context.employeeId : undefined;
   const resolvedHideTourFilter = (isTourContext || isEmployeeContext) ? true : hideTourFilter;
   const resolvedHideEmployeeFilter = isEmployeeContext;
-  const resolvedHideTourColumn = (isTourContext || isEmployeeContext) ? true : hideTourColumn;
+  const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;
   const resolvedShowCloseButton = (isTourContext || isEmployeeContext) ? false : showCloseButton;
   const resolvedEnforceFromToday = contextType === "standalone" ? true : (isTourContext || isEmployeeContext || enforceFromToday);
 

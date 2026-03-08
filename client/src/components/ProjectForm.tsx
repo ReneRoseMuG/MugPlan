@@ -806,16 +806,7 @@ export function ProjectForm({
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
         <div className="col-span-2 space-y-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-[150px,minmax(220px,1fr),150px,150px] gap-4">
-                  <div className="space-y-2">
-                    <Label data-testid="label-project-customer-number">Kunde Nr.</Label>
-                    <div
-                      className="h-10 rounded-md border border-border/50 bg-[hsl(var(--sub-panel-background))] px-3 flex items-center text-sm"
-                      data-testid="text-project-customer-number"
-                    >
-                      {selectedCustomerNumber || "-"}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-[minmax(220px,1fr),150px,150px] gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
                     <Input 
@@ -913,6 +904,7 @@ export function ProjectForm({
                   assignedStatuses={assignedStatuses}
                   availableStatuses={allStatuses}
                   isLoading={statusesLoading}
+                  className="h-auto"
                   canEdit={canManageProjectStatuses}
                   onAdd={(statusId) => {
                     if (!canManageProjectStatuses) return;
@@ -929,6 +921,7 @@ export function ProjectForm({
                 projectId={projectId}
                 projectName={projectNamePreview}
                 isEditing={isEditing}
+                className="h-auto"
                 onOpenAppointment={onOpenAppointment}
                 onOpenCalendarWorkspace={onOpenCalendarWorkspace}
               />
@@ -938,6 +931,7 @@ export function ProjectForm({
                 <ProjectAttachmentsPanel
                   projectId={projectId}
                   isEditing={isEditing}
+                  className="h-auto"
                 />
               )}
             </div>

@@ -18,9 +18,10 @@ async function fetchCustomerAppointments(url: string): Promise<CustomerAppointme
 
 interface CustomerAppointmentsPanelProps {
   customerId?: number | null;
+  className?: string;
 }
 
-export function CustomerAppointmentsPanel({ customerId }: CustomerAppointmentsPanelProps) {
+export function CustomerAppointmentsPanel({ customerId, className }: CustomerAppointmentsPanelProps) {
   const canLoad = Boolean(customerId);
   const queryUrl = canLoad ? `/api/customers/${customerId}/appointments?scope=all` : null;
   const todayBerlin = getBerlinTodayDateString();
@@ -55,6 +56,7 @@ export function CustomerAppointmentsPanel({ customerId }: CustomerAppointmentsPa
       icon={<Calendar className="w-4 h-4" />}
       helpKey="customers.sidebar.appointments"
       compact
+      className={className}
       items={items}
       isLoading={isLoading}
       todayBerlin={todayBerlin}

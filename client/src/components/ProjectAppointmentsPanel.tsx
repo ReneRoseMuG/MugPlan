@@ -16,6 +16,7 @@ interface ProjectAppointmentsPanelProps {
   isEditing: boolean;
   onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
   onOpenCalendarWorkspace?: (ctx: { projectId: number }) => void;
+  className?: string;
 }
 
 type ProjectAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
@@ -27,6 +28,7 @@ export function ProjectAppointmentsPanel({
   projectName,
   isEditing,
   onOpenCalendarWorkspace,
+  className,
 }: ProjectAppointmentsPanelProps) {
   const [userRole] = useState(() =>
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
@@ -96,6 +98,7 @@ export function ProjectAppointmentsPanel({
       icon={<Calendar className="w-4 h-4" />}
       helpKey="projects.sidebar.appointments"
       compact
+      className={className}
       items={items}
       isLoading={isLoading}
       todayBerlin={todayBerlin}

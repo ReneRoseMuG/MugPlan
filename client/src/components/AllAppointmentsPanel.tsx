@@ -37,6 +37,7 @@ interface AllAppointmentsPanelProps {
   helpKey?: string;
   addAction?: AllAppointmentsPanelAction;
   emptyStateLabel?: string;
+  className?: string;
 }
 
 export function AllAppointmentsPanel({
@@ -49,6 +50,7 @@ export function AllAppointmentsPanel({
   helpKey,
   addAction,
   emptyStateLabel,
+  className,
 }: AllAppointmentsPanelProps) {
   const currentAndUpcomingItems = items.filter((appointment) => appointment.startDate >= todayBerlin);
   const historicalItems = items.filter((appointment) => appointment.startDate < todayBerlin);
@@ -61,6 +63,7 @@ export function AllAppointmentsPanel({
       icon={icon}
       helpKey={helpKey}
       addAction={addAction}
+      className={className}
     >
       <div className="space-y-2">
         {isLoading ? (

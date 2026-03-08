@@ -8,9 +8,10 @@ import type { CustomerAttachment, ProjectAttachment } from "@shared/schema";
 interface ProjectAttachmentsPanelProps {
   projectId?: number | null;
   isEditing: boolean;
+  className?: string;
 }
 
-export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachmentsPanelProps) {
+export function ProjectAttachmentsPanel({ projectId, isEditing, className }: ProjectAttachmentsPanelProps) {
   const { toast } = useToast();
 
   const { data: attachments = [], isLoading } = useQuery<ProjectAttachment[]>({
@@ -19,7 +20,6 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
   });
   const { data: projectWithCustomer } = useQuery<{
     project: { customerId: number };
-    customer: { fullName: string | null };
   }>({
     queryKey: ["/api/projects", projectId],
     enabled: isEditing && Boolean(projectId),
@@ -58,12 +58,12 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
 
   const items = useMemo(() => attachments, [attachments]);
   const customerItems = useMemo(() => customerAttachments, [customerAttachments]);
-  const customerName = projectWithCustomer?.customer.fullName?.trim() || "Unbekannt";
 
   return (
     <SplitAttachmentsPanel
       title="Dokumente"
       helpKey="projects.sidebar.attachments"
+      className={className}
       sections={[
         {
           id: "project",
@@ -80,7 +80,6 @@ export function ProjectAttachmentsPanel({ projectId, isEditing }: ProjectAttachm
         {
           id: "customer",
           title: "Kundendokumente",
-          subtitle: `(von Kunde: ${customerName})`,
           items: customerItems,
           isLoading: isCustomerAttachmentsLoading,
           emptyText: "Keine Kundendokumente vorhanden",

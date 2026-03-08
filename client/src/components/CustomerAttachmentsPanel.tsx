@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAttachmentsPanelProps {
   customerId?: number | null;
+  className?: string;
 }
 
 type ProjectAttachmentGroup = {
@@ -28,7 +29,7 @@ type CustomerProjectAttachmentAggregateResponse = {
   hasMore: boolean;
 };
 
-export function CustomerAttachmentsPanel({ customerId }: CustomerAttachmentsPanelProps) {
+export function CustomerAttachmentsPanel({ customerId, className }: CustomerAttachmentsPanelProps) {
   const { toast } = useToast();
   const [projectsPage, setProjectsPage] = useState(1);
   const pageSize = 20;
@@ -96,6 +97,7 @@ export function CustomerAttachmentsPanel({ customerId }: CustomerAttachmentsPane
     <SplitAttachmentsPanel
       title="Dokumente"
       helpKey="customers.sidebar.attachments"
+      className={className}
       sections={[
         {
           id: "customer",
@@ -112,7 +114,6 @@ export function CustomerAttachmentsPanel({ customerId }: CustomerAttachmentsPane
         {
           id: "project",
           title: "Projektdokumente",
-          subtitle: "(alle Projekte dieses Kunden)",
           items: projectItems,
           isLoading: isProjectAttachmentsLoading,
           emptyText: "Keine Projektdokumente vorhanden",

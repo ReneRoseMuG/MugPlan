@@ -1350,7 +1350,6 @@ export function AppointmentForm({
           {selectedProject ? (
             <ProjectDetailCard
               project={selectedProject}
-              customerNumber={selectedCustomer?.customerNumber ?? null}
               projectStatuses={selectedProjectStatuses.map((item) => item.status)}
               testId="badge-project"
             />

@@ -16,6 +16,7 @@ interface AttachmentsPanelProps {
   onUpload: (file: File) => void;
   buildOpenUrl: (id: number) => string;
   buildDownloadUrl: (id: number) => string;
+  className?: string;
 }
 
 export function AttachmentsPanel({
@@ -28,6 +29,7 @@ export function AttachmentsPanel({
   onUpload,
   buildOpenUrl,
   buildDownloadUrl,
+  className,
 }: AttachmentsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const addAction = canUpload
@@ -45,6 +47,7 @@ export function AttachmentsPanel({
       icon={<Paperclip className="w-4 h-4" />}
       helpKey={helpKey}
       addAction={addAction}
+      className={className}
     >
       <input
         ref={fileInputRef}

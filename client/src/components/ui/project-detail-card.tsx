@@ -6,7 +6,6 @@ type ProjectStatusBadgeItem = Pick<ProjectStatus, "id" | "title" | "color">;
 
 export interface ProjectDetailCardProps {
   project: Pick<Project, "name" | "orderNumber" | "amount" | "descriptionMd" | "isActive">;
-  customerNumber?: string | null;
   projectStatuses?: ProjectStatusBadgeItem[];
   testId?: string;
 }
@@ -40,8 +39,7 @@ const formatProjectAmount = (amount: unknown) => {
   }).format(normalized);
 };
 
-export function ProjectDetailCard({ project, customerNumber, projectStatuses = [], testId }: ProjectDetailCardProps) {
-  const customerNumberValue = resolveValue(customerNumber);
+export function ProjectDetailCard({ project, projectStatuses = [], testId }: ProjectDetailCardProps) {
   const projectNameValue = resolveValue(project.name);
   const orderNumberValue = resolveValue(project.orderNumber);
   const amountValue = formatProjectAmount(project.amount);
@@ -50,13 +48,7 @@ export function ProjectDetailCard({ project, customerNumber, projectStatuses = [
 
   return (
     <div className="flex h-full flex-col gap-3" data-testid={testId}>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[118px,minmax(200px,1fr),118px,150px]">
-        <div className="space-y-1">
-          <div className="text-muted-foreground text-sm">Kunde Nr.</div>
-          <div className="h-10 rounded-md border border-border/50 bg-[hsl(var(--sub-panel-background))] px-3 flex items-center text-sm">
-            {customerNumberValue}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(200px,1fr),118px,150px]">
         <div className="space-y-1">
           <div className="text-muted-foreground text-sm">Projektname</div>
           <div
