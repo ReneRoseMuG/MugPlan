@@ -19,6 +19,7 @@ import { useListFilters } from "@/hooks/useListFilters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { ProjectBulkImportDialog } from "@/components/ProjectBulkImportDialog";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
+import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -479,17 +480,13 @@ export function ProjectsPage({
                   testId={`project-card-${project.id}`}
                   onDoubleClick={handleSelect}
                   footer={
-                    <div className="flex w-full flex-col gap-0.5">
-                      <span
-                        className="text-xs text-slate-600"
-                        data-testid={`text-project-planned-appointments-${project.id}`}
-                      >
-                        Geplante Termine: {plannedAppointmentsCount}
-                      </span>
-                      <span
-                        className="text-xs text-slate-600"
-                        data-testid={`text-project-notes-count-${project.id}`}
-                      >
+                    <div className="flex w-full flex-col gap-1">
+                      <AppointmentCountBadge
+                        count={plannedAppointmentsCount}
+                        testId={`text-project-planned-appointments-${project.id}`}
+                        fullWidth
+                      />
+                      <span data-testid={`text-project-notes-count-${project.id}`}>
                         <EntityNotesHoverPreview
                           sourceMode="single-parent"
                           sources={{ type: "project", id: project.id, count: (project as ProjectListItem).notesCount ?? 0 }}

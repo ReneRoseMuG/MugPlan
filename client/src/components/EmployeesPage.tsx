@@ -35,6 +35,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 import type { Employee, Team, Tour } from "@shared/schema";
@@ -560,13 +561,11 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     </Button>
                   }
                   footer={
-                    <div className="flex w-full items-center">
-                      <span
-                        className="text-xs text-slate-600"
-                        data-testid={`text-employee-current-appointments-${employee.id}`}
-                      >
-                        Geplante Termine: {currentAppointmentsCount}
-                      </span>
+                    <div className="flex w-full justify-end">
+                      <AppointmentCountBadge
+                        count={currentAppointmentsCount}
+                        testId={`text-employee-current-appointments-${employee.id}`}
+                      />
                     </div>
                   }
                   footerVisibility="visible"

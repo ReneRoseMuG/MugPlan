@@ -13,6 +13,7 @@ import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-prov
 import { defaultEntityColor } from "@/lib/colors";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
+import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Tour, Employee } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
@@ -310,7 +311,14 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                   borderColor={tour.color}
                   testId={`card-tour-${tour.id}`}
                   onDoubleClick={() => handleOpenEdit(tour)}
-                  footer={<span data-testid={`text-tour-appointment-count-${tour.id}`}>({appointmentCountsByTourId.get(tour.id) ?? 0}) Termine</span>}
+                  footer={(
+                    <div className="flex w-full justify-end">
+                      <AppointmentCountBadge
+                        count={appointmentCountsByTourId.get(tour.id) ?? 0}
+                        testId={`text-tour-appointment-count-${tour.id}`}
+                      />
+                    </div>
+                  )}
                   footerVisibility="visible"
                 >
                   <MembersSectionHeader className="px-0 py-1 mb-1 border-b border-border" />

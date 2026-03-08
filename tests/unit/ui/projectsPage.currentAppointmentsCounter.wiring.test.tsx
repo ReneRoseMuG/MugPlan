@@ -25,9 +25,11 @@ describe("FT02 projects page current appointments counter wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
   const source = readFileSync(filePath, "utf8");
 
-  it("renders the planned appointments footer label", () => {
-    expect(source).toContain("Geplante Termine:");
-    expect(source).toContain("data-testid={`text-project-planned-appointments-${project.id}`}");
+ it("renders the planned appointments footer label", () => {
+    expect(source).toContain('import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";');
+    expect(source).toContain("<AppointmentCountBadge");
+    expect(source).toContain("count={plannedAppointmentsCount}");
+    expect(source).toContain("testId={`text-project-planned-appointments-${project.id}`}");
     expect(source).toContain("<EntityNotesHoverPreview");
     expect(source).toContain('sourceMode="single-parent"');
     expect(source).toContain('type: "project", id: project.id');

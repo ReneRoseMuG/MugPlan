@@ -17,6 +17,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { CustomerBulkImportDialog } from "@/components/CustomerBulkImportDialog";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
+import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Customer, Project } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { format } from "date-fns";
@@ -405,17 +406,13 @@ export function CustomersPage({
                   testId={`customer-card-${customer.id}`}
                   onDoubleClick={handleSelect}
                   footer={
-                    <div className="flex w-full flex-col gap-0.5">
-                      <span
-                        className="text-xs text-slate-600"
-                        data-testid={`text-customer-planned-appointments-${customer.id}`}
-                      >
-                        Geplante Termine: {plannedAppointmentsCount}
-                      </span>
-                      <span
-                        className="text-xs text-slate-600"
-                        data-testid={`text-customer-notes-count-${customer.id}`}
-                      >
+                    <div className="flex w-full flex-col gap-1">
+                      <AppointmentCountBadge
+                        count={plannedAppointmentsCount}
+                        testId={`text-customer-planned-appointments-${customer.id}`}
+                        fullWidth
+                      />
+                      <span data-testid={`text-customer-notes-count-${customer.id}`}>
                         <EntityNotesHoverPreview
                           sourceMode="single-parent"
                           sources={{ type: "customer", id: customer.id, count: (customer as CustomerListItem).notesCount ?? 0 }}

@@ -25,8 +25,10 @@ describe("FT05+ employees page current appointments counter wiring", () => {
   const source = readFileSync(filePath, "utf8");
 
   it("renders the current appointments footer label", () => {
-    expect(source).toContain("Geplante Termine:");
-    expect(source).toContain("data-testid={`text-employee-current-appointments-${employee.id}`}");
+    expect(source).toContain('import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";');
+    expect(source).toContain("<AppointmentCountBadge");
+    expect(source).toContain("count={currentAppointmentsCount}");
+    expect(source).toContain("testId={`text-employee-current-appointments-${employee.id}`}");
   });
 
   it("derives the counter from appointments starting today or later", () => {
