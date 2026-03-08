@@ -46,11 +46,11 @@ export function AppointmentAttachmentsPanel({ appointmentId }: AppointmentAttach
     <SplitAttachmentsPanel
       title="Dokumente"
       helpKey="appointments.sidebar.attachments"
+      className="h-full"
       sections={[
         {
           id: "customer",
           title: "Kundendokumente",
-          subtitle: data ? `(Kunde: ${data.customer.fullName ?? data.customer.customerNumber})` : undefined,
           items: data?.customerAttachments ?? [],
           isLoading,
           emptyText: "Keine Kundendokumente vorhanden",
@@ -60,7 +60,6 @@ export function AppointmentAttachmentsPanel({ appointmentId }: AppointmentAttach
         {
           id: "project",
           title: "Projektdokumente",
-          subtitle: data?.project ? `(Projekt: ${data.project.name})` : "(Kein Projekt)",
           items: data?.projectAttachments ?? [],
           isLoading,
           emptyText: data?.project ? "Keine Projektdokumente vorhanden" : "Kein Projekt zugeordnet",

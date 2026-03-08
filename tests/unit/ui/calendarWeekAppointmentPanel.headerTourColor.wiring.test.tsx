@@ -52,6 +52,10 @@ describe("FT03 UI: week appointment panel header tour color wiring", () => {
     expect(source).toContain("boxShadow:");
     expect(source).toContain("CalendarRange");
     expect(source).toContain("const dayCountLabel = `${dayCount} ${dayCount === 1 ? \"Tag\" : \"Tage\"}`;");
+    expect(source).toContain('className="grid grid-cols-[auto_1fr_auto] items-center gap-2"');
+    expect(source).toContain('className="inline-flex items-center justify-center"');
+    expect(source).toContain('className="min-w-0 text-center"');
+    expect(source).toContain('className="shrink-0 text-right justify-self-end"');
     expect(source).toContain("border-t border-white/20 pt-1");
   });
 });

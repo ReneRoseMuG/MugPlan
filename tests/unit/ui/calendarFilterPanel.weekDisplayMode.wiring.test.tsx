@@ -41,6 +41,10 @@ describe("FT03 UI: calendar filter panel week display mode wiring", () => {
     expect(filterSource).toContain('key: "calendar.weekAppointmentDisplayMode"');
     expect(filterSource).toContain('scopeType: "USER"');
     expect(filterSource).toContain('data-testid="select-week-appointment-display-mode"');
+    expect(filterSource).toContain('<Label className="text-xs">Darstellungsmodus</Label>');
+    expect(filterSource).toContain('<SelectValue placeholder="Darstellungsmodus wählen" />');
+    expect(filterSource).toContain('<SelectItem value="compact">Zentriert</SelectItem>');
+    expect(filterSource).toContain('<SelectItem value="detail">Gefüllt</SelectItem>');
   });
 
   it("keeps readers out of an interactive write path", () => {

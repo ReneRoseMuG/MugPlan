@@ -5,7 +5,6 @@ import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { Button } from "@/components/ui/button";
-import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -20,16 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { ProjectDetailCard } from "@/components/ui/project-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
-import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { AppointmentAttachmentsPanel } from "@/components/AppointmentAttachmentsPanel";
+import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";
 import { NotesSection } from "@/components/NotesSection";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -110,6 +108,28 @@ const getBerlinCurrentTimeString = () => {
   const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
   const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
   return `${hour}:${minute}`;
+};
+
+const normalizeDateInputValue = (value: string | null | undefined): string => {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return "";
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  const localizedMatch = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(trimmed);
+  if (localizedMatch) {
+    return `${localizedMatch[3]}-${localizedMatch[2]}-${localizedMatch[1]}`;
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const buildApiError = (message: string, status?: number, code?: string): AppointmentApiError => {
@@ -341,12 +361,15 @@ export function AppointmentForm({
   useEffect(() => {
     if (!appointmentDetail) return;
     console.info(`${logPrefix} appointment detail loaded`, { appointmentId: appointmentDetail.id });
+    const normalizedStartDate = normalizeDateInputValue(appointmentDetail.startDate);
+    const normalizedEndDate = normalizeDateInputValue(appointmentDetail.endDate ?? appointmentDetail.startDate);
+    const hasExplicitEndDate = normalizedEndDate.length > 0 && normalizedEndDate !== normalizedStartDate;
     setSelectedProjectId(appointmentDetail.projectId);
     setSelectedCustomerId(appointmentDetail.customerId);
     setSelectedTourId(appointmentDetail.tourId ?? null);
-    setStartDate(appointmentDetail.startDate);
-    setEndDate(appointmentDetail.endDate ?? appointmentDetail.startDate);
-    setIsEndDateEnabled(Boolean(appointmentDetail.endDate));
+    setStartDate(normalizedStartDate);
+    setEndDate(normalizedEndDate || normalizedStartDate);
+    setIsEndDateEnabled(hasExplicitEndDate);
     const startTime = appointmentDetail.startTime?.slice(0, 5) ?? "";
     setStartTimeEnabled(Boolean(startTime));
     setStartTimeValue(startTime);
@@ -357,9 +380,9 @@ export function AppointmentForm({
         projectId: appointmentDetail.projectId,
         customerId: appointmentDetail.customerId,
         tourId: appointmentDetail.tourId ?? null,
-        startDate: appointmentDetail.startDate,
-        endDate: appointmentDetail.endDate ?? appointmentDetail.startDate,
-        isEndDateEnabled: Boolean(appointmentDetail.endDate),
+        startDate: normalizedStartDate,
+        endDate: normalizedEndDate || normalizedStartDate,
+        isEndDateEnabled: hasExplicitEndDate,
         startTimeValue: startTime,
         startTimeEnabled: Boolean(startTime),
         employeeIds: initialEmployeeIds,
@@ -406,6 +429,7 @@ export function AppointmentForm({
   }, [employees, employeesLoading, initialTourId, isEditing]);
 
   useEffect(() => {
+    if (!startDate) return;
     if (!isEndDateEnabled) {
       setEndDate(startDate);
     }
@@ -1311,103 +1335,187 @@ export function AppointmentForm({
       )}
 
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-4">
-          <RelationSlot
-            title="Projektzuordnung"
-            icon={<FolderKanban className="w-4 h-4" />}
-            state={isProjectReadOnly ? "readonly" : selectedProject ? "active" : "empty"}
-            onAdd={isProjectReadOnly ? undefined : () => setProjectPickerOpen(true)}
-            onRemove={isProjectReadOnly ? undefined : () => setSelectedProjectId(null)}
-            addLabel="Projekt auswählen"
-            emptyText="Kein Projekt ausgewählt"
-            testId="slot-project-relation"
-            addActionTestId="button-select-project"
-            className="min-h-[18rem]"
-          >
-            {selectedProject ? (
-              <ProjectDetailCard
-                project={selectedProject}
-                customerNumber={selectedCustomer?.customerNumber ?? null}
-                projectStatusTitles={selectedProjectStatuses.map((item) => item.status.title)}
-                testId="badge-project"
-              />
-            ) : null}
-          </RelationSlot>
+        <RelationSlot
+          title="Projekt"
+          icon={<FolderKanban className="w-4 h-4" />}
+          state={isProjectReadOnly ? "readonly" : selectedProject ? "active" : "empty"}
+          onAdd={isProjectReadOnly ? undefined : () => setProjectPickerOpen(true)}
+          onRemove={isProjectReadOnly ? undefined : () => setSelectedProjectId(null)}
+          addLabel="Projekt auswählen"
+          emptyText="Kein Projekt ausgewählt"
+          testId="slot-project-relation"
+          addActionTestId="button-select-project"
+          className="col-span-2 min-h-[18rem] h-full"
+        >
+          {selectedProject ? (
+            <ProjectDetailCard
+              project={selectedProject}
+              customerNumber={selectedCustomer?.customerNumber ?? null}
+              projectStatuses={selectedProjectStatuses.map((item) => item.status)}
+              testId="badge-project"
+            />
+          ) : null}
+        </RelationSlot>
 
-          <RelationSlot
-            title="Kunde"
-            icon={<Users className="w-4 h-4" />}
-            state={isCustomerReadOnly ? "readonly" : selectedCustomer ? "active" : "empty"}
-            onAdd={isCustomerReadOnly ? undefined : () => setCustomerPickerOpen(true)}
-            onRemove={isCustomerReadOnly ? undefined : () => setSelectedCustomerId(null)}
-            addLabel="Kunde auswählen"
-            emptyText={selectedProjectId ? "Kunde wird über das Projekt bestimmt" : "Kein Kunde ausgewählt"}
-            testId="slot-customer-relation"
-          >
-            {selectedCustomer ? (
-              <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" variant="relationCompact" />
-            ) : null}
-          </RelationSlot>
+        <div className="sub-panel space-y-3 h-full">
+          <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Zeitpunkt und Dauer
+          </h3>
 
-          <div className="space-y-6">
-            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Mitarbeiter zuweisen
-            </h3>
-
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Teams</Label>
-              <div className="flex flex-wrap gap-2">
-                {teams.map((team) => (
-                  <TeamInfoBadge
-                    key={team.id}
-                    id={team.id}
-                    name={team.name}
-                    color={team.color}
-                    members={teamMembersById.get(team.id) ?? []}
-                    action={isLocked ? "none" : "add"}
-                    onAdd={() => handleAssignTeam(team)}
-                    size="sm"
-                    testId={`badge-team-${team.id}`}
-                  />
-                ))}
-                {teams.length === 0 && (
-                  <div className="text-xs text-muted-foreground">Keine Teams vorhanden</div>
-                )}
-              </div>
+              <Label htmlFor="startDate">Startdatum</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                disabled={isLocked}
+                data-testid="input-start-date"
+              />
             </div>
-
-            <div className="rounded-lg border border-border p-4 bg-slate-50 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Zugewiesene Mitarbeiter</Label>
-                <PlusActionButton
-                  onClick={() => setEmployeePickerOpen(true)}
+            <div className="space-y-2">
+              <Label htmlFor="endDate">Enddatum</Label>
+              {isEndDateEnabled ? (
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(event) => setEndDate(event.target.value)}
                   disabled={isLocked}
-                  data-testid="button-add-employee"
+                  data-testid="input-end-date"
                 />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {assignedEmployees.length === 0 ? (
-                  <div className="text-sm text-muted-foreground italic">Keine Mitarbeiter zugewiesen</div>
-                ) : (
-                  assignedEmployees.map((employee) => (
-                    <EmployeeInfoBadge
-                      key={employee.id}
-                      id={employee.id}
-                      firstName={employee.firstName}
-                      lastName={employee.lastName}
-                      action={isLocked ? "none" : "remove"}
-                      onRemove={() => removeEmployee(employee.id)}
-                      size="sm"
-                      testId={`badge-employee-${employee.id}`}
-                    />
-                  ))
-                )}
-              </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-muted-foreground"
+                  onClick={() => setIsEndDateEnabled(true)}
+                  disabled={isLocked}
+                  data-testid="button-enable-end-date"
+                >
+                  Enddatum hinzufügen
+                </Button>
+              )}
             </div>
           </div>
 
-          {selectedProjectId === null ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startTime">Startzeit (optional)</Label>
+              {startTimeEnabled ? (
+                <Input
+                  id="startTime"
+                  type="time"
+                  step={60}
+                  value={startTimeValue}
+                  onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
+                  placeholder="HH:mm"
+                  disabled={isLocked}
+                  data-testid="input-start-time"
+                />
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-muted-foreground"
+                  onClick={() => setStartTimeEnabled(true)}
+                  disabled={isLocked}
+                  data-testid="button-enable-start-time"
+                >
+                  Startzeit hinzufügen
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endTime">Endzeit</Label>
+              <Input
+                id="endTime"
+                type="time"
+                disabled
+                value=""
+                placeholder="--:--"
+                data-testid="input-end-time"
+              />
+            </div>
+          </div>
+        </div>
+
+        <RelationSlot
+          title="Kunde"
+          icon={<Users className="w-4 h-4" />}
+          state={isCustomerReadOnly ? "readonly" : selectedCustomer ? "active" : "empty"}
+          onAdd={isCustomerReadOnly ? undefined : () => setCustomerPickerOpen(true)}
+          onRemove={isCustomerReadOnly ? undefined : () => setSelectedCustomerId(null)}
+          addLabel="Kunde auswählen"
+          emptyText={selectedProjectId ? "Kunde wird über das Projekt bestimmt" : "Kein Kunde ausgewählt"}
+          testId="slot-customer-relation"
+          className="col-span-2 h-full"
+        >
+          {selectedCustomer ? (
+            <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" variant="relationCompact" />
+          ) : null}
+        </RelationSlot>
+
+        {appointmentId ? <div className="h-full"><AppointmentAttachmentsPanel appointmentId={appointmentId} /></div> : <div />}
+
+        <AppointmentEmployeeSlot
+          teams={teams}
+          assignedEmployees={assignedEmployees}
+          teamMembersById={teamMembersById}
+          isLocked={isLocked}
+          onAssignTeam={handleAssignTeam}
+          onAddEmployee={() => setEmployeePickerOpen(true)}
+          onRemoveEmployee={removeEmployee}
+          className="col-span-2"
+        />
+
+        <div className="sub-panel space-y-3 h-full">
+          <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+            <Route className="w-4 h-4" />
+            Tour
+          </h3>
+
+          {selectedTour ? (
+            <TourInfoBadge
+              id={selectedTour.id}
+              name={selectedTour.name}
+              color={selectedTour.color}
+              members={tourMembersById.get(selectedTour.id) ?? []}
+              action={isLocked ? "none" : "remove"}
+              onRemove={() => handleTourChange(null)}
+              fullWidth
+              testId="badge-tour"
+            />
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
+              Keine Tour ausgewählt
+            </div>
+          )}
+
+          {!selectedTour && (
+            <div className="flex flex-wrap gap-2">
+              {tours.map((tour) => (
+                <TourInfoBadge
+                  key={tour.id}
+                  id={tour.id}
+                  name={tour.name}
+                  color={tour.color}
+                  members={tourMembersById.get(tour.id) ?? []}
+                  action={isLocked ? "none" : "add"}
+                  onAdd={() => handleTourChange(tour.id)}
+                  size="sm"
+                  testId={`badge-tour-select-${tour.id}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {selectedProjectId === null ? (
+          <div className="col-span-2">
             <DocumentExtractionDropzone
               onFileSelected={(file) => {
                 void runDocumentExtraction(file);
@@ -1415,9 +1523,11 @@ export function AppointmentForm({
               disabled={isLocked}
               isProcessing={documentExtractionLoading}
             />
-          ) : null}
+          </div>
+        ) : null}
 
-          {isEditing && appointmentId ? (
+        {isEditing && appointmentId ? (
+          <div className="col-span-2">
             <NotesSection
               notes={appointmentNotes}
               isLoading={appointmentNotesLoading}
@@ -1431,141 +1541,8 @@ export function AppointmentForm({
                 deleteAppointmentNoteMutation.mutate({ noteId, version });
               }}
             />
-          ) : null}
-        </div>
-
-        <div className="space-y-4">
-          <div className="sub-panel space-y-3">
-            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Zeitpunkt und Dauer
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Startdatum</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
-                  disabled={isLocked}
-                  data-testid="input-start-date"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endDate">Enddatum</Label>
-                {isEndDateEnabled ? (
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    min={startDate}
-                    onChange={(event) => setEndDate(event.target.value)}
-                    disabled={isLocked}
-                    data-testid="input-end-date"
-                  />
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-muted-foreground"
-                    onClick={() => setIsEndDateEnabled(true)}
-                    disabled={isLocked}
-                    data-testid="button-enable-end-date"
-                  >
-                    Enddatum hinzufügen
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startTime">Startzeit (optional)</Label>
-                {startTimeEnabled ? (
-                  <Input
-                    id="startTime"
-                    type="time"
-                    step={60}
-                    value={startTimeValue}
-                    onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
-                    placeholder="HH:mm"
-                    disabled={isLocked}
-                    data-testid="input-start-time"
-                  />
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-muted-foreground"
-                    onClick={() => setStartTimeEnabled(true)}
-                    disabled={isLocked}
-                    data-testid="button-enable-start-time"
-                  >
-                    Startzeit hinzufügen
-                  </Button>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endTime">Endzeit</Label>
-                <Input
-                  id="endTime"
-                  type="time"
-                  disabled
-                  value=""
-                  placeholder="--:--"
-                  data-testid="input-end-time"
-                />
-              </div>
-            </div>
           </div>
-
-          <div className="sub-panel space-y-3">
-            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-              <Route className="w-4 h-4" />
-              Tourzuordnung
-            </h3>
-
-            {selectedTour ? (
-              <TourInfoBadge
-                id={selectedTour.id}
-                name={selectedTour.name}
-                color={selectedTour.color}
-                members={tourMembersById.get(selectedTour.id) ?? []}
-                action={isLocked ? "none" : "remove"}
-                onRemove={() => handleTourChange(null)}
-                fullWidth
-                testId="badge-tour"
-              />
-            ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-                Keine Tour ausgewählt
-              </div>
-            )}
-
-            {!selectedTour && (
-              <div className="flex flex-wrap gap-2">
-                {tours.map((tour) => (
-                  <TourInfoBadge
-                    key={tour.id}
-                    id={tour.id}
-                    name={tour.name}
-                    color={tour.color}
-                    members={tourMembersById.get(tour.id) ?? []}
-                    action={isLocked ? "none" : "add"}
-                    onAdd={() => handleTourChange(tour.id)}
-                    size="sm"
-                    testId={`badge-tour-select-${tour.id}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {appointmentId ? <AppointmentAttachmentsPanel appointmentId={appointmentId} /> : null}
-
-        </div>
+        ) : null}
       </div>
 
       <DocumentExtractionDialog

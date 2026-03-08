@@ -42,6 +42,15 @@ describe("FT03 UI: CalendarWeekView spanning tile wiring", () => {
     expect(source).toContain("style={{ gridColumn: dayIdx + 1, gridRow: tileRowCount + 1, zIndex: 10 }}");
   });
 
+  it("passes the global week display mode and visible day metadata into spanning tiles", () => {
+    expect(source).toContain('const weekAppointmentDisplayMode = useSetting("calendar.weekAppointmentDisplayMode");');
+    expect(source).toContain("const visibleStartDate = format(days[Math.max(0, startColumn - 1)], \"yyyy-MM-dd\");");
+    expect(source).toContain("const visibleDayNumberStart =");
+    expect(source).toContain('displayMode={weekAppointmentDisplayMode ?? "standard"}');
+    expect(source).toContain("visibleStartDate={visibleStartDate}");
+    expect(source).toContain("visibleDayNumberStart={visibleDayNumberStart}");
+  });
+
   it("adds a drag-only lane overlay for drop targets across the full grid height", () => {
     expect(source).toContain("draggedAppointmentId !== null ? (");
     expect(source).toContain('className="absolute inset-0 grid z-20"');

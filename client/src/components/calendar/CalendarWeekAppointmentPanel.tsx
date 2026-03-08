@@ -54,7 +54,8 @@ export function CalendarWeekAppointmentPanel({
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
     : "";
-  const highlightClass = highlighted ? "border-primary shadow-md ring-1 ring-primary/30" : "border-slate-200";
+  const borderColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
+  const highlightClass = highlighted ? "shadow-md ring-1 ring-primary/30" : "";
   const resolvedProjectName = appointment.projectName;
   const resolvedTourName = appointment.tourName?.trim() || "Ohne Tour";
   const resolvedTourColor = appointment.tourName?.trim()
@@ -69,7 +70,7 @@ export function CalendarWeekAppointmentPanel({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-lg border p-2 shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`relative overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       ref={containerRef}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
@@ -79,7 +80,10 @@ export function CalendarWeekAppointmentPanel({
       onMouseLeave={onMouseLeave}
       aria-disabled={isLocked}
       data-testid={testId ?? `week-appointment-panel-${appointment.id}`}
-      style={resolvedPanelStyle}
+      style={{
+        borderColor: highlighted ? undefined : borderColor,
+        ...resolvedPanelStyle,
+      }}
     >
       {!isContinuation && (
         <div className="space-y-1.5">

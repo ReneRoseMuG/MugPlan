@@ -9,7 +9,8 @@
  * - Edit-Save wird blockiert, wenn keine gueltige Version verfuegbar ist.
  * - Delete-Flow nutzt vor dem DELETE eine frische Terminversion und sendet diese verpflichtend.
  * - Bei VERSION_CONFLICT wird genau ein Retry mit frisch geladener Version ausgefuehrt.
- * - Das Panel "Zugewiesene Mitarbeiter" rendert einen Header-Action-Button (+) fuer die Auswahl.
+ * - AppointmentEmployeeSlot rendert einen Header-Action-Button (+) fuer die Auswahl.
+ * - Team-Badges und zugewiesene Mitarbeiter liegen im selben hervorgehobenen Panel.
  * - Der bisherige grosse Button "Mitarbeiter auswaehlen" unterhalb der Liste wird nicht mehr gerendert.
  *
  * Fehlerfaelle:
@@ -27,6 +28,10 @@ import { describe, expect, it } from "vitest";
 describe("FT01 appointment form save and employees panel wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentForm.tsx");
   const source = readFileSync(filePath, "utf8");
+  const employeeSlotSource = readFileSync(
+    path.resolve(process.cwd(), "client/src/components/AppointmentEmployeeSlot.tsx"),
+    "utf8",
+  );
 
   it("tracks appointment detail version for edit save", () => {
     expect(source).toContain("interface AppointmentDetail {");
@@ -67,11 +72,15 @@ describe("FT01 appointment form save and employees panel wiring", () => {
     expect(source).toContain("if (err.code === \"VALIDATION_ERROR\")");
   });
 
-  it("renders employee picker as header action button with plus icon", () => {
-    expect(source).toContain("Zugewiesene Mitarbeiter");
-    expect(source).toContain("className=\"flex items-center justify-between\"");
-    expect(source).toContain("<PlusActionButton");
-    expect(source).toContain("data-testid=\"button-add-employee\"");
+  it("renders employee picker as header action button with plus icon inside AppointmentEmployeeSlot", () => {
+    expect(source).toContain('import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";');
+    expect(source).toContain("<AppointmentEmployeeSlot");
+    expect(source).toContain('className="col-span-2"');
+    expect(employeeSlotSource).toContain("Zugewiesene Mitarbeiter");
+    expect(employeeSlotSource).toContain("className=\"flex items-center justify-between\"");
+    expect(employeeSlotSource).toContain("<PlusActionButton");
+    expect(employeeSlotSource).toContain("data-testid=\"button-add-employee\"");
+    expect(employeeSlotSource).toContain(">Teams</Label>");
   });
 
   it("removes legacy large employee selection button block", () => {

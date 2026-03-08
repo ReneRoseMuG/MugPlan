@@ -5,10 +5,13 @@
  *
  * Abgedeckte Regeln:
  * - Edit-Formulare uebernehmen Start- und Enddatum ausschliesslich aus geladenen Termindetails.
+ * - Geladene Datumswerte werden vor dem Binding auf browserkonformes yyyy-MM-dd normalisiert.
+ * - Der Enddatum-Sync darf initial leere Edit-States nicht ueber geladene Mehrtages-Enddaten drueberkopieren.
  * - `initialDate` dient nur als Create-Default und nicht als Zwischenwert fuer bestehende Termine.
  *
  * Fehlerfaelle:
  * - Mehrtagestermine zeigen vor Detail-Load kurz ein falsches Enddatum.
+ * - Ein initial leerer Edit-State ueberschreibt geladene Mehrtages-Enddaten wieder mit leerem Wert.
  * - Edit-Formulare initialisieren Datumsfelder implizit mit "heute" oder dem Klickdatum.
  *
  * Ziel:
@@ -28,8 +31,27 @@ describe("FT01 UI: AppointmentForm multi-day edit date wiring", () => {
   });
 
   it("hydrates edit mode dates exclusively from appointmentDetail", () => {
-    expect(source).toContain("setStartDate(appointmentDetail.startDate);");
-    expect(source).toContain("setEndDate(appointmentDetail.endDate ?? appointmentDetail.startDate);");
-    expect(source).toContain("setIsEndDateEnabled(Boolean(appointmentDetail.endDate));");
+    expect(source).toContain("const normalizedStartDate = normalizeDateInputValue(appointmentDetail.startDate);");
+    expect(source).toContain("const normalizedEndDate = normalizeDateInputValue(appointmentDetail.endDate ?? appointmentDetail.startDate);");
+    expect(source).toContain("const hasExplicitEndDate = normalizedEndDate.length > 0 && normalizedEndDate !== normalizedStartDate;");
+    expect(source).toContain("setStartDate(normalizedStartDate);");
+    expect(source).toContain("setEndDate(normalizedEndDate || normalizedStartDate);");
+    expect(source).toContain("setIsEndDateEnabled(hasExplicitEndDate);");
+  });
+
+  it("normalizes incoming detail dates for browser date inputs", () => {
+    expect(source).toContain("const normalizeDateInputValue = (value: string | null | undefined): string => {");
+    expect(source).toContain('const isoMatch = /^(\\d{4})-(\\d{2})-(\\d{2})/.exec(trimmed);');
+    expect(source).toContain('const localizedMatch = /^(\\d{2})\\.(\\d{2})\\.(\\d{4})$/.exec(trimmed);');
+    expect(source).toContain('const year = parsed.getFullYear();');
+    expect(source).toContain('const month = String(parsed.getMonth() + 1).padStart(2, "0");');
+    expect(source).toContain('const day = String(parsed.getDate()).padStart(2, "0");');
+    expect(source).toContain('return `${year}-${month}-${day}`;');
+  });
+
+  it("guards the end-date sync against empty initial edit state", () => {
+    expect(source).toContain("if (!startDate) return;");
+    expect(source).toContain("if (!isEndDateEnabled) {");
+    expect(source).toContain("setEndDate(startDate);");
   });
 });

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { X } from "lucide-react";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
+import { cn } from "@/lib/utils";
 
 interface SidebarChildPanelAction {
   onClick: () => void;
@@ -16,6 +17,7 @@ interface SidebarChildPanelProps {
   title: string;
   icon: ReactNode;
   children: ReactNode;
+  className?: string;
   count?: number | null;
   helpKey?: string;
   headerActions?: ReactNode;
@@ -28,6 +30,7 @@ export function SidebarChildPanel({
   title,
   icon,
   children,
+  className,
   count,
   helpKey,
   headerActions,
@@ -38,7 +41,7 @@ export function SidebarChildPanel({
   const hasCount = typeof count === "number";
 
   return (
-    <div className="sub-panel flex flex-col gap-4">
+    <div className={cn("sub-panel flex h-full flex-col gap-4", className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center flex-wrap gap-3">
           <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
@@ -80,7 +83,7 @@ export function SidebarChildPanel({
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex-1 space-y-3">
         {children}
       </div>
 

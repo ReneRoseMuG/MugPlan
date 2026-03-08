@@ -33,7 +33,7 @@ export function CalendarFilterPanel({
       </div>
       {showWeekDisplayMode ? (
         <div className="flex min-w-[220px] flex-col gap-1">
-          <Label className="text-xs">Wochenmodus</Label>
+          <Label className="text-xs">Darstellungsmodus</Label>
           <Select
             value={weekDisplayMode ?? "standard"}
             onValueChange={(value: "standard" | "compact" | "detail") => {
@@ -45,7 +45,7 @@ export function CalendarFilterPanel({
               }).catch((error) => {
                 console.error("[calendar-filter-panel] week display mode persist failed", error);
                 toast({
-                  title: "Wochenmodus konnte nicht gespeichert werden",
+                  title: "Darstellungsmodus konnte nicht gespeichert werden",
                   description: "Bitte erneut versuchen.",
                   variant: "destructive",
                 });
@@ -54,12 +54,12 @@ export function CalendarFilterPanel({
             disabled={!canEditWeekDisplayMode}
           >
             <SelectTrigger className="w-56 bg-white" data-testid="select-week-appointment-display-mode">
-              <SelectValue placeholder="Wochenmodus wählen" />
+              <SelectValue placeholder="Darstellungsmodus wählen" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="standard">Standard</SelectItem>
-              <SelectItem value="compact">Compact</SelectItem>
-              <SelectItem value="detail">Detail</SelectItem>
+              <SelectItem value="compact">Zentriert</SelectItem>
+              <SelectItem value="detail">Gefüllt</SelectItem>
             </SelectContent>
           </Select>
         </div>

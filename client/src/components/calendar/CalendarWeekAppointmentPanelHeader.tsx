@@ -51,18 +51,18 @@ export function CalendarWeekAppointmentPanelHeader({
       }}
     >
       <div className="space-y-1 text-[10px] font-semibold tracking-wide">
-        <div className="flex items-center gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span
-              className="inline-flex items-center justify-center"
-              title={dayCount > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
-            >
-              <TimingIcon className="h-3.5 w-3.5" aria-hidden />
-            </span>
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+          <span
+            className="inline-flex items-center justify-center"
+            title={dayCount > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
+          >
+            <TimingIcon className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          <div className="min-w-0 text-center">
             <span className="truncate">{topLineItems.join(" | ")}</span>
           </div>
           <span
-            className="shrink-0 text-right"
+            className="shrink-0 text-right justify-self-end"
             title={dayCount > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
           >
             {dayCountLabel}

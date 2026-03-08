@@ -9,6 +9,7 @@
  * - ProjectDetailCard erhaelt Kundennummer aus der selektierten Kundenrelation.
  * - Projektdatenquelle des Formulars nutzt scope=all, damit ausgewaehlte Projekte aus allen Picker-Sichten angezeigt werden.
  * - Projekt-Readonly wird ueber Lock und explizite readOnlyFields gesteuert.
+ * - Formular koppelt Projekt/Zeitpunkt, Kunde/Dokumente und Mitarbeiter/Tour als parallele Zeilen.
  * - Tour-Auswahlbadges werden nur angezeigt, wenn keine Tour zugeordnet ist.
  * - Kunden-Slot ist readonly und links in der Hauptspalte verortet.
  *
@@ -49,6 +50,15 @@ describe("FT01 appointment form relation slot wiring", () => {
     expect(source).toContain("<ProjectDetailCard");
     expect(source).toContain("testId=\"badge-project\"");
     expect(source).toContain("customerNumber={selectedCustomer?.customerNumber ?? null}");
+  });
+
+  it("couples the three appointment form rows via shared grid placement", () => {
+    expect(source).toContain('className="col-span-2 min-h-[18rem] h-full"');
+    expect(source).toContain('className="col-span-2 h-full"');
+    expect(source).toContain('<AppointmentEmployeeSlot');
+    expect(source).toContain('className="col-span-2"');
+    expect(source).toContain('{appointmentId ? <div className="h-full"><AppointmentAttachmentsPanel appointmentId={appointmentId} /></div> : <div />}');
+    expect(source).toContain('className="sub-panel space-y-3 h-full"');
   });
 
   it("loads projects with scope=all for stable post-selection rendering", () => {

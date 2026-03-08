@@ -96,6 +96,7 @@ export function CalendarWeekView({
 
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = useSetting("calendarWeekScrollRange");
+  const weekAppointmentDisplayMode = useSetting("calendar.weekAppointmentDisplayMode");
   const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const isAdmin = userRole === "ADMIN";
@@ -654,7 +655,7 @@ export function CalendarWeekView({
                     })}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-2 space-y-3">
+                  <div className="flex-1 overflow-y-auto space-y-3">
                     {weekLanes.map((tourLane) => {
                       const laneHeightKey = `${weekKey}:${tourLane.laneKey}`;
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
@@ -672,7 +673,7 @@ export function CalendarWeekView({
                       const totalLaneRowCount = tileRowCount + (needsDayCellRow ? 1 : 0);
 
                       return (
-                      <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10 p-2">
+                      <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10">
                         <div className="relative">
                           <CalendarWeekTourLaneHeaderBar
                             label={tourLane.label}
@@ -796,6 +797,14 @@ export function CalendarWeekView({
 
                               const startColumn = getWeekAppointmentGridStartColumn(appointment, days);
                               const columnSpan = getWeekAppointmentGridSpan(appointment, days);
+                              const visibleStartDate = format(days[Math.max(0, startColumn - 1)], "yyyy-MM-dd");
+                              const visibleDayNumberStart =
+                                Math.max(
+                                  0,
+                                  Math.round(
+                                    (parseISO(visibleStartDate).getTime() - parseISO(appointment.startDate).getTime()) / 86400000,
+                                  ),
+                                ) + 1;
                               const isHighlighted = hoveredAppointmentId === appointment.id;
                               const isSegmentLocked = appointment.isLocked && !isAdmin;
                               const isHistoricalSource = appointment.startDate < berlinToday;
@@ -806,6 +815,9 @@ export function CalendarWeekView({
                                   key={`week-spanning-tile-${appointment.id}`}
                                   appointment={appointment}
                                   spanColumns={columnSpan}
+                                  displayMode={weekAppointmentDisplayMode ?? "standard"}
+                                  visibleStartDate={visibleStartDate}
+                                  visibleDayNumberStart={visibleDayNumberStart}
                                   uniformHeightPx={laneUniformHeightPx}
                                   style={{
                                     gridColumn: `${startColumn} / span ${columnSpan}`,

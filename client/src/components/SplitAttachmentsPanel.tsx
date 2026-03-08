@@ -23,9 +23,10 @@ interface SplitAttachmentsPanelProps {
   title: string;
   helpKey?: string;
   sections: AttachmentSection[];
+  className?: string;
 }
 
-export function SplitAttachmentsPanel({ title, helpKey, sections }: SplitAttachmentsPanelProps) {
+export function SplitAttachmentsPanel({ title, helpKey, sections, className }: SplitAttachmentsPanelProps) {
   const uploadableSection = sections.find((section) => section.canUpload && section.onUpload);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -46,6 +47,7 @@ export function SplitAttachmentsPanel({ title, helpKey, sections }: SplitAttachm
       icon={<Paperclip className="w-4 h-4" />}
       helpKey={helpKey}
       addAction={addAction}
+      className={className}
     >
       {uploadableSection ? (
         <input
