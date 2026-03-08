@@ -84,6 +84,16 @@ Codex arbeitet minimal-invasiv. Er verändert nur den Code, der zur Erfüllung d
 
 Erkannter Verbesserungs- oder Refactoring-Bedarf wird dokumentiert, aber nicht umgesetzt.
 
+### 4.1 Git-Kommandos nur seriell
+
+Git-Aktionen werden in diesem Projekt ausschließlich **seriell** ausgeführt.
+
+- Kein paralleles Ausführen von `git add`, `git commit`, `git status`, `git diff`, `git push` oder ähnlichen Git-Kommandos
+- Keine Tool-Parallelisierung rund um Git-Schritte
+- Vor dem nächsten Git-Schritt ist immer das Ergebnis des vorherigen Git-Kommandos abzuwarten
+
+Wenn mehrere Git-Schritte nötig sind, führt Codex sie nacheinander aus und prüft nach jedem Schritt den Zustand erneut.
+
 ---
 
 ## 5. Architektur- und Konfigurationsgrenzen

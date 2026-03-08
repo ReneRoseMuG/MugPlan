@@ -9,7 +9,7 @@ interface AppointmentCountBadgeProps {
 export function AppointmentCountBadge({ count, testId, fullWidth = false }: AppointmentCountBadgeProps) {
   return (
     <div
-      className={`mt-1 rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 ${fullWidth ? "w-full" : ""}`}
+      className={`mt-1 rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 ${fullWidth ? "block w-full self-stretch" : ""}`}
       data-testid={testId}
     >
       <div className="flex items-center justify-between gap-2">

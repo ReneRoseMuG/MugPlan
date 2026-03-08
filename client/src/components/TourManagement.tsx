@@ -312,10 +312,11 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                   testId={`card-tour-${tour.id}`}
                   onDoubleClick={() => handleOpenEdit(tour)}
                   footer={(
-                    <div className="flex w-full justify-end">
+                    <div className="flex w-full">
                       <AppointmentCountBadge
                         count={appointmentCountsByTourId.get(tour.id) ?? 0}
                         testId={`text-tour-appointment-count-${tour.id}`}
+                        fullWidth
                       />
                     </div>
                   )}
