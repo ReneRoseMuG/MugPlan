@@ -116,6 +116,29 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
   });
 
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ noteId, title, body, version }: { noteId: number; title: string; body: string; version: number }) => {
+      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, version });
+      return res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void invalidateAppointmentProjectionQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractErrorCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
   const getNoteVersion = (noteId: number): number => {
     const note = notes.find((entry) => entry.id === noteId);
     if (!note || !Number.isInteger(note.version) || note.version < 1) {
@@ -308,6 +331,12 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       const version = getNoteVersion(noteId);
       deleteNoteMutation.mutate({ noteId, version });
     }
+  };
+
+  const handleUpdateNote = (noteId: number, data: { title: string; body: string }) => {
+    if (!isEditMode || !customerId) return;
+    const version = getNoteVersion(noteId);
+    updateNoteMutation.mutate({ noteId, ...data, version });
   };
 
   const resolveCustomerByNumber = async (customerNumber: string) => {
@@ -599,6 +628,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
             notes={notes}
             isLoading={notesLoading}
             onAdd={handleAddNote}
+            onUpdate={isEditMode ? handleUpdateNote : undefined}
             onTogglePin={isEditMode ? handleTogglePin : undefined}
             onDelete={isEditMode ? handleDeleteNote : undefined}
           />

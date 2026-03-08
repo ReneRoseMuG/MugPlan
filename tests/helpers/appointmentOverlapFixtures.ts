@@ -1,6 +1,7 @@
 import type express from "express";
 import request, { type SuperAgentTest } from "supertest";
 import { eq, sql } from "drizzle-orm";
+import { expect } from "vitest";
 
 import { db } from "../../server/db";
 import { appointmentEmployees, employees as employeesTable, type Employee } from "@shared/schema";

@@ -1,0 +1,123 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - heading "MuG Plan" [level=1] [ref=e7]
+        - navigation [ref=e8]:
+          - generic [ref=e9]:
+            - generic [ref=e10]: Terminplanung
+            - generic [ref=e11]:
+              - button "Wochenübersicht" [ref=e12] [cursor=pointer]:
+                - img [ref=e13]
+                - generic [ref=e15]: Wochenübersicht
+              - button "Monatsübersicht" [ref=e16] [cursor=pointer]:
+                - img [ref=e17]
+                - generic [ref=e19]: Monatsübersicht
+              - button "Termine" [ref=e20] [cursor=pointer]:
+                - img [ref=e21]
+                - generic [ref=e23]: Termine
+          - generic [ref=e24]:
+            - generic [ref=e25]: Projektplanung
+            - generic [ref=e26]:
+              - button "Projekte" [active] [ref=e27] [cursor=pointer]:
+                - img [ref=e28]
+                - generic [ref=e30]: Projekte
+              - button "Kunden" [ref=e31] [cursor=pointer]:
+                - img [ref=e32]
+                - generic [ref=e36]: Kunden
+          - generic [ref=e37]:
+            - generic [ref=e38]: Mitarbeiter Verwaltung
+            - generic [ref=e39]:
+              - button "Mitarbeiter" [ref=e40] [cursor=pointer]:
+                - img [ref=e41]
+                - generic [ref=e45]: Mitarbeiter
+              - button "Teams" [ref=e46] [cursor=pointer]:
+                - img [ref=e47]
+                - generic [ref=e51]: Teams
+              - button "Touren" [ref=e52] [cursor=pointer]:
+                - img [ref=e53]
+                - generic [ref=e56]: Touren
+          - generic [ref=e57]:
+            - generic [ref=e58]: Administration
+            - generic [ref=e59]:
+              - button "Stammdaten" [ref=e60] [cursor=pointer]:
+                - img [ref=e61]
+                - generic [ref=e71]: Stammdaten
+              - button "Hilfetexte" [ref=e72] [cursor=pointer]:
+                - img [ref=e73]
+                - generic [ref=e76]: Hilfetexte
+              - button "Benutzerverwaltung" [ref=e77] [cursor=pointer]:
+                - img [ref=e78]
+                - generic [ref=e82]: Benutzerverwaltung
+              - button "Einstellungen" [ref=e83] [cursor=pointer]:
+                - img [ref=e84]
+                - generic [ref=e87]: Einstellungen
+              - button "Demo-Daten" [ref=e88] [cursor=pointer]:
+                - img [ref=e89]
+                - generic [ref=e92]: Demo-Daten
+          - button "Logout" [ref=e94] [cursor=pointer]:
+            - img [ref=e95]
+            - generic [ref=e98]: Logout
+    - main [ref=e99]:
+      - generic [ref=e101]:
+        - generic [ref=e103]:
+          - generic [ref=e105]:
+            - img [ref=e106]
+            - text: Projekte
+          - group [ref=e109]:
+            - radio "Board-Ansicht" [checked] [ref=e110] [cursor=pointer]:
+              - img
+            - radio "Tabellen-Ansicht" [ref=e111] [cursor=pointer]:
+              - img
+        - generic [ref=e115]:
+          - img [ref=e117]
+          - generic [ref=e120]:
+            - heading "Keine Projekte vorhanden." [level=3] [ref=e121]
+            - generic [ref=e122]: Es sind aktuell keine Projekte in dieser Liste vorhanden.
+        - generic [ref=e124]:
+          - generic [ref=e125]:
+            - paragraph [ref=e126]: Projektfilter
+            - generic [ref=e127]:
+              - generic [ref=e128]:
+                - generic [ref=e130]: Projekttitel
+                - textbox "Projekttitel" [ref=e132]:
+                  - /placeholder: "Suche: Projekttitel"
+              - generic [ref=e133]:
+                - generic [ref=e134]:
+                  - generic [ref=e136]: Alle Projekte
+                  - switch "Alle Projekte" [ref=e137] [cursor=pointer]
+                - generic [ref=e138]:
+                  - generic [ref=e140]: Ohne Termine
+                  - switch "Ohne Termine" [ref=e141] [cursor=pointer]
+              - generic [ref=e142]:
+                - generic [ref=e144]: Status
+                - generic [ref=e145]:
+                  - generic [ref=e146]: Kein Statusfilter
+                  - button "Status hinzufügen" [disabled]:
+                    - img
+          - generic [ref=e147]:
+            - paragraph [ref=e148]: Kundenfilter
+            - generic [ref=e149]:
+              - generic [ref=e150]:
+                - generic [ref=e152]: Nachname
+                - textbox "Nachname" [ref=e154]:
+                  - /placeholder: "Suche: Nachname"
+              - generic [ref=e155]:
+                - generic [ref=e157]: Kundennummer
+                - textbox "Kundennummer" [ref=e159]:
+                  - /placeholder: "Suche: Kundennummer"
+              - generic [ref=e160]:
+                - generic [ref=e162]: Auftragsnummer
+                - textbox "Auftragsnummer" [ref=e164]:
+                  - /placeholder: "Suche: Auftragsnummer"
+        - generic [ref=e167]:
+          - button "Bulk Import Projekte" [ref=e168] [cursor=pointer]
+          - button "Neues Projekt" [ref=e169] [cursor=pointer]:
+            - img
+            - text: Neues Projekt
+```

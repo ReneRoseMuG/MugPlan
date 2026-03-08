@@ -919,6 +919,30 @@ export function AppointmentForm({
     },
   });
 
+  const updateAppointmentNoteMutation = useMutation({
+    mutationFn: async ({ noteId, title, body, version }: { noteId: number; title: string; body: string; version: number }) => {
+      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, version });
+      return res.json();
+    },
+    onSuccess: () => {
+      if (!appointmentId) return;
+      void invalidateAppointmentNotesQueries(appointmentId);
+      void invalidateRelatedAppointmentQueries(selectedProjectId);
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+
   const toggleAppointmentNotePinMutation = useMutation({
     mutationFn: async ({ noteId, isPinned, version }: { noteId: number; isPinned: boolean; version: number }) => {
       const res = await apiRequest("PATCH", `/api/notes/${noteId}/pin`, { isPinned, version });
@@ -1531,6 +1555,10 @@ export function AppointmentForm({
               notes={appointmentNotes}
               isLoading={appointmentNotesLoading}
               onAdd={(data) => createAppointmentNoteMutation.mutate(data)}
+              onUpdate={(noteId, data) => {
+                const version = getAppointmentNoteVersion(noteId);
+                updateAppointmentNoteMutation.mutate({ noteId, ...data, version });
+              }}
               onTogglePin={(id, isPinned) => {
                 const version = getAppointmentNoteVersion(id);
                 toggleAppointmentNotePinMutation.mutate({ noteId: id, isPinned, version });

@@ -13,15 +13,19 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./tests/setup.env.ts"],
+    env: {
+      NODE_ENV: "test",
+      MUGPLAN_MODE: "test",
+    },
     exclude: ["node_modules", "dist", "tests/e2e-browser/**"],
     fileParallelism: false,
     sequence: {
-      concurrent: false
+      concurrent: false,
     },
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      reportsDirectory: "./tests/coverage"
-    }
-  }
+      reportsDirectory: "./tests/coverage",
+    },
+  },
 });

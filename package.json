@@ -26,10 +26,11 @@
     "test:run": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run",
     "test:extraction:mock": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run tests/integration/server/documentExtraction.routes.test.ts tests/unit/validation/extractionValidator.structure.test.ts tests/unit/services/documentProcessing.customerResolution.test.ts tests/unit/ui/projectForm.documentExtractionFlow.test.tsx tests/unit/ui/appointmentForm.documentExtractionFlow.test.tsx tests/unit/extraction/documentTextExtractor.test.ts tests/unit/validation/dtoValidators.test.ts",
     "test:extraction": "npm run test:extraction:mock",
-    "test:unit": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run tests/unit",
-    "test:integration": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run -c vitest.integration.config.ts tests/integration",
-    "test:e2e": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run tests/e2e --exclude tests/e2e-browser/**",
+    "test:unit": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run --config vitest.workspace.ts --project unit",
+    "test:integration": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run --config vitest.workspace.ts --project integration",
+    "test:e2e": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run --config vitest.workspace.ts --project e2e",
     "test:e2e:browser": "cross-env NODE_ENV=test MUGPLAN_MODE=test playwright test -c playwright.config.ts",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:e2e:browser",
     "test:coverage": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run --coverage"
   },
   "dependencies": {

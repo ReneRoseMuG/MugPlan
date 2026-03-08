@@ -1,11 +1,5 @@
 import { initializeRuntimeEnv } from "../server/config/runtimeEnv";
-import { beforeEach } from "vitest";
-import { resetDatabase } from "./helpers/resetDatabase";
 
 process.env.NODE_ENV = "test";
 process.env.MUGPLAN_MODE = "test";
 initializeRuntimeEnv();
-
-beforeEach(async () => {
-  await resetDatabase();
-});

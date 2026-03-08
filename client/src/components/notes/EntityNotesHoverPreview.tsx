@@ -138,7 +138,6 @@ export function EntityNotesHoverPreview({
     : [{ type: sources.type, id: sources.id, count: normalizeCount(sources.count) }].filter((entry) => entry.count > 0);
 
   const totalNotesCount = sourceEntries.reduce((acc, entry) => acc + entry.count, 0);
-  if (totalNotesCount <= 0) return null;
 
   const customerSource = sourceEntries.find((entry) => entry.type === "customer");
   const projectSource = sourceEntries.find((entry) => entry.type === "project");
@@ -183,6 +182,8 @@ export function EntityNotesHoverPreview({
       return Array.isArray(payload) ? (payload as Note[]) : [];
     },
   });
+
+  if (totalNotesCount <= 0) return null;
 
   return (
     <HoverPreview
