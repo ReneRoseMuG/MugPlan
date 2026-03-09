@@ -42,7 +42,7 @@ describe("FT01 UI: calendar historical create controls", () => {
     const dayNumberIndex = monthSource.indexOf('{format(day, "d")}');
     const plusGuardIndex = monthSource.indexOf("{dayKey >= berlinToday ? (");
 
-    expect(monthSource).toContain("mb-1 flex items-center justify-between rounded-md px-1.5 py-1");
+    expect(monthSource).toContain("mb-2 flex items-center justify-between rounded-md px-1.5 py-1");
     expect(dayNumberIndex).toBeGreaterThan(-1);
     expect(plusGuardIndex).toBeGreaterThan(-1);
     expect(dayNumberIndex).toBeLessThan(plusGuardIndex);

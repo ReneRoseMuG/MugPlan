@@ -47,7 +47,7 @@ describe("FT04 appointments list page tour locking wiring", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
     const source = readFileSync(filePath, "utf8");
 
-    expect(source).toContain("const resolvedHideTourColumn = (isTourContext || isEmployeeContext) ? true : hideTourColumn;");
+    expect(source).toContain("const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;");
     expect(source).toContain("if (!resolvedHideTourColumn) {");
     expect(source).toContain("id: \"tour\"");
   });

@@ -32,7 +32,7 @@ describe("FT03 UI: CalendarWeekAppointmentPanel continuation height wiring", () 
   it("applies explicit height style for continuation segments", () => {
     expect(source).toContain("const resolvedPanelStyle = isContinuation");
     expect(source).toContain("? { height: `${resolvedContinuationHeightPx}px` }");
-    expect(source).toContain("style={resolvedPanelStyle}");
+    expect(source).toContain("...resolvedPanelStyle");
   });
 
   it("removes hidden-content layout hack for continuation segments", () => {

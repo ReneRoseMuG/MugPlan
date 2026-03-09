@@ -29,12 +29,10 @@ describe("FT03 UI: weekly project description preview wiring", () => {
     const source = readFileSync(panelPath, "utf8");
 
     expect(source).toContain("const resolvedProjectName = appointment.projectName;");
-    expect(source).not.toContain("parseProjectStoredName(");
     expect(source).toContain("projectOrderNumber={appointment.projectOrderNumber}");
     expect(source).toContain('context === "week-calendar"');
     expect(source).toContain("enableFullDescriptionPreview={context === \"week-calendar\"}");
-    expect(source).toContain("<div className=\"mb-1 text-[10px] font-semibold text-slate-500\">Projekt Status</div>");
-    expect(source).toContain("<ProjectStatusInfoBadge");
+    expect(source).toContain("<CalendarWeekProjectStatusSection");
   });
 
   it("contains hover preview wiring for project description", () => {

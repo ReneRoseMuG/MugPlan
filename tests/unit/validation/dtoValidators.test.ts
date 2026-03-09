@@ -24,11 +24,13 @@ const {
   extractTextFromPdfBufferMock,
   parseDocumentHeaderDeterministicallyMock,
   parseDocumentArticleItemsDeterministicallyMock,
+  parseDocumentTotalAmountDeterministicallyMock,
   isOrderNumberAlreadyImportedMock,
 } = vi.hoisted(() => ({
   extractTextFromPdfBufferMock: vi.fn(),
   parseDocumentHeaderDeterministicallyMock: vi.fn(),
   parseDocumentArticleItemsDeterministicallyMock: vi.fn(),
+  parseDocumentTotalAmountDeterministicallyMock: vi.fn(),
   isOrderNumberAlreadyImportedMock: vi.fn(),
 }));
 
@@ -42,6 +44,7 @@ vi.mock("../../../server/services/documentHeaderDeterministicParser", () => ({
 
 vi.mock("../../../server/services/documentArticleDeterministicParser", () => ({
   parseDocumentArticleItemsDeterministically: parseDocumentArticleItemsDeterministicallyMock,
+  parseDocumentTotalAmountDeterministically: parseDocumentTotalAmountDeterministicallyMock,
 }));
 
 vi.mock("../../../server/services/customersService", () => ({
@@ -106,6 +109,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     isOrderNumberAlreadyImportedMock.mockResolvedValue(false);
+    parseDocumentTotalAmountDeterministicallyMock.mockReturnValue(null);
   });
 
   it("extractFromPdf returns normalized extraction and never persists customer data", async () => {
@@ -156,6 +160,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
       { quantity: "1", description: "Sauna Modell Y" },
     ]);
+    parseDocumentTotalAmountDeterministicallyMock.mockReturnValue("17136.00");
     extractTextFromPdfBufferMock.mockResolvedValue([
       "Menge Art.Nr. / Bezeichnung",
       "1 Stueck Sauna Modell Y",

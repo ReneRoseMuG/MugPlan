@@ -67,7 +67,7 @@ describe("FT03 UI: CalendarWeekView spanning tile wiring", () => {
     expect(source).toContain("laneRenderData.singleDayGridItems.map(({ appointmentId, gridColumn, gridRow }) => {");
     expect(source).toContain("key={`week-single-grid-item-${appointment.id}`}");
     expect(source).toContain("style={{ gridColumn, gridRow, padding: \"0.5rem\", zIndex: 10 }}");
-    expect(source).toContain("{needsDayCellRow ? tourLane.dayBuckets.map((dayBucket, dayIdx) => {");
+    expect(source).toContain("{hasLaneContent && needsDayCellRow ? tourLane.dayBuckets.map((dayBucket, dayIdx) => {");
     expect(source).toContain("laneRenderData.singleDayOverflowByBucket[dayIdx].map");
   });
 });

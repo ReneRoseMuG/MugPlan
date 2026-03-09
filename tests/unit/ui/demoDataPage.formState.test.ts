@@ -18,7 +18,6 @@ import { parseDemoDataFormState } from "../../../client/src/components/DemoDataP
 describe("FT20 DemoDataPage form state parsing", () => {
   it("restores persisted demo form values", () => {
     const parsed = parseDemoDataFormState(JSON.stringify({
-      baseEmployees: 42,
       baseCustomers: 11,
       baseProjects: 8,
       baseGenerateAttachments: false,
@@ -36,7 +35,8 @@ describe("FT20 DemoDataPage form state parsing", () => {
       appointmentsLocale: "en",
     }));
 
-    expect(parsed.baseEmployees).toBe(42);
+    expect(parsed.baseCustomers).toBe(11);
+    expect(parsed.baseProjects).toBe(8);
     expect(parsed.baseGenerateAttachments).toBe(false);
     expect(parsed.baseProjectStatuses).toEqual([{ title: "Test", color: "#000000", description: "ok" }]);
     expect(parsed.appointmentBaseSeedRunId).toBe("seed-1");
@@ -45,14 +45,14 @@ describe("FT20 DemoDataPage form state parsing", () => {
 
   it("falls back to defaults for invalid persisted payloads", () => {
     const parsed = parseDemoDataFormState("{invalid");
-    expect(parsed.baseEmployees).toBe(20);
+    expect(parsed.baseCustomers).toBe(10);
+    expect(parsed.baseProjects).toBe(30);
     expect(parsed.baseProjectStatuses).toHaveLength(3);
     expect(parsed.appointmentsLocale).toBe("de");
   });
 
   it("falls back to default statuses when persisted statuses are empty", () => {
     const parsed = parseDemoDataFormState(JSON.stringify({
-      baseEmployees: 20,
       baseCustomers: 10,
       baseProjects: 30,
       baseGenerateAttachments: true,

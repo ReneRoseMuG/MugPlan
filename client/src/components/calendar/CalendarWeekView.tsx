@@ -101,7 +101,8 @@ export function buildWeekLaneRenderData(
       rowIndex,
     }));
 
-  const tileRowCount = spanningAppointments.length;
+  const hasSingleDayAppointments = distinctAppointments.some((appointment) => getAppointmentDurationDays(appointment) === 0);
+  const tileRowCount = spanningAppointments.length > 0 ? spanningAppointments.length : hasSingleDayAppointments ? 1 : 0;
   const occupiedCells = new Set<string>();
 
   for (const { appointmentId, rowIndex } of spanningAppointments) {

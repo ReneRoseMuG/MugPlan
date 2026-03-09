@@ -6,7 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Projektrelation im Terminformular nutzt RelationSlot.
- * - ProjectDetailCard erhaelt Kundennummer aus der selektierten Kundenrelation.
+ * - ProjectDetailCard wird im Projektslot mit Projekt- und Statusdaten verdrahtet.
  * - Projektdatenquelle des Formulars nutzt scope=all, damit ausgewaehlte Projekte aus allen Picker-Sichten angezeigt werden.
  * - Projekt-Readonly wird ueber Lock und explizite readOnlyFields gesteuert.
  * - Formular koppelt Projekt/Zeitpunkt, Kunde/Dokumente und Mitarbeiter/Tour als parallele Zeilen.
@@ -48,8 +48,9 @@ describe("FT01 appointment form relation slot wiring", () => {
 
   it("renders project detail card inside project relation slot", () => {
     expect(source).toContain("<ProjectDetailCard");
+    expect(source).toContain("project={selectedProject}");
+    expect(source).toContain("projectStatuses={selectedProjectStatuses.map((item) => item.status)}");
     expect(source).toContain("testId=\"badge-project\"");
-    expect(source).toContain("customerNumber={selectedCustomer?.customerNumber ?? null}");
   });
 
   it("couples the three appointment form rows via shared grid placement", () => {
