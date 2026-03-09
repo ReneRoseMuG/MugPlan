@@ -201,6 +201,8 @@ KI-Provider-Code ist vorhanden, aber nicht der aktive Hauptpfad für Kopf-/Artik
 
 Seed/Purge ist ein separater Admin-Pfad mit Run-Tracking (`seed_run`, `seed_run_entity`) und guardierter, idempotenter Purge-Logik.
 
+Basis-Seed synchronisiert Mitarbeitende idempotent aus `shared/uploads/demodata/Personal.csv`, statt sie frei zu generieren. Admin-Reset nimmt `users`, `roles` und `employee` aus dem Domain-Reset aus.
+
 ## 9. Frontend-Architektur
 
 ### 9.1 Navigations- und Screen-Orchestrierung

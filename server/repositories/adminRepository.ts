@@ -8,9 +8,7 @@ import {
   customerAttachments,
   customerTags,
   customers,
-  employeeAttachments,
   employeeTags,
-  employees,
   helpTexts,
   noteTemplates,
   notes,
@@ -54,7 +52,6 @@ export type ResetDomainDataCounts = {
   customerTags: number;
   employeeTags: number;
   customers: number;
-  employees: number;
   projectStatuses: number;
   teams: number;
   tours: number;
@@ -64,16 +61,14 @@ export type ResetDomainDataCounts = {
 };
 
 export async function listAllAttachmentStoragePaths(): Promise<string[]> {
-  const [projectRows, customerRows, employeeRows] = await Promise.all([
+  const [projectRows, customerRows] = await Promise.all([
     db.select({ storagePath: projectAttachments.storagePath }).from(projectAttachments),
     db.select({ storagePath: customerAttachments.storagePath }).from(customerAttachments),
-    db.select({ storagePath: employeeAttachments.storagePath }).from(employeeAttachments),
   ]);
 
   const allPaths = [
     ...projectRows.map((row) => row.storagePath),
     ...customerRows.map((row) => row.storagePath),
-    ...employeeRows.map((row) => row.storagePath),
   ].filter((value): value is string => typeof value === "string" && value.length > 0);
 
   return Array.from(new Set(allPaths));
@@ -100,7 +95,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
 
     const deletedProjects = affectedRows(await tx.delete(projects));
     const deletedCustomers = affectedRows(await tx.delete(customers));
-    const deletedEmployees = affectedRows(await tx.delete(employees));
 
     const deletedProducts = affectedRows(await tx.delete(products));
     const deletedProductCategories = affectedRows(await tx.delete(productCategories));
@@ -135,7 +129,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
       customerTags: deletedCustomerTagLinks,
       employeeTags: deletedEmployeeTagLinks,
       customers: deletedCustomers,
-      employees: deletedEmployees,
       projectStatuses: deletedProjectStatuses,
       teams: deletedTeams,
       tours: deletedTours,

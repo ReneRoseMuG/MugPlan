@@ -35,6 +35,8 @@ import { logError, logInfo } from "../lib/logger";
 import { assertSafeDemoSeedPurgeTarget } from "./demoSeedPurgeSafety";
 
 const logPrefix = "[demo-seed-service]";
+const demoDataDir = path.resolve(process.cwd(), "../../shared/uploads/demodata");
+const demoEmployeeCsvPath = path.join(demoDataDir, "Personal.csv");
 
 const TEMPLATE_KEYS = {
   projectTitle: "templates.project.title",
@@ -79,7 +81,6 @@ type SeedProjectStatusInput = {
 type SeedConfig = {
   runType?: SeedRunType;
   baseSeedRunId?: string;
-  employees?: number;
   customers?: number;
   projects?: number;
   appointmentsPerProject?: number;
@@ -133,6 +134,7 @@ type SeedSummary = {
   };
   warnings: string[];
   meta?: {
+    employeeIds?: number[];
     projectContexts: Array<{
       projectId: number;
       modelId: string;
@@ -383,7 +385,7 @@ function defaults(config: SeedConfig) {
   return {
     runType,
     baseSeedRunId: typeof config.baseSeedRunId === "string" ? config.baseSeedRunId : undefined,
-    employees: runType === "appointments" ? 0 : (config.employees ?? 20),
+    employees: 0,
     customers: runType === "appointments" ? 0 : (config.customers ?? 10),
     projects: runType === "appointments" ? 0 : (config.projects ?? 30),
     appointmentsPerProject:
@@ -422,6 +424,21 @@ function defaults(config: SeedConfig) {
   };
 }
 
+function readDemoEmployeeCsv(): Buffer {
+  if (!fs.existsSync(demoEmployeeCsvPath)) {
+    throw createBadRequestError(`Mitarbeiter-CSV nicht gefunden: ${demoEmployeeCsvPath}`);
+  }
+  return fs.readFileSync(demoEmployeeCsvPath);
+}
+
+async function syncDemoEmployeesFromCsv(): Promise<{ employeeIds: number[]; importedRows: number }> {
+  const result = await employeesService.syncEmployeesFromCsv(readDemoEmployeeCsv());
+  return {
+    employeeIds: uniqueNumberList(result.employeeIds),
+    importedRows: result.summary.importedRows,
+  };
+}
+
 function isFriday(date: Date) {
   return date.getDay() === 5;
 }
@@ -455,6 +472,15 @@ function extractBaseSeedRunId(configJson: unknown): string | undefined {
   if (!configJson || typeof configJson !== "object") return undefined;
   const value = (configJson as Record<string, unknown>).baseSeedRunId;
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function extractMetaEmployeeIds(summaryJson: unknown): number[] {
+  if (!summaryJson || typeof summaryJson !== "object") return [];
+  const meta = (summaryJson as Record<string, unknown>).meta;
+  if (!meta || typeof meta !== "object") return [];
+  const employeeIds = (meta as Record<string, unknown>).employeeIds;
+  if (!Array.isArray(employeeIds)) return [];
+  return uniqueNumberList(employeeIds.filter((value): value is number => typeof value === "number"));
 }
 
 function findDependentAppointmentRunIds(baseSeedRunId: string, runs: SeedRunLike[]) {
@@ -1461,7 +1487,10 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       }
 
       const baseProjectIds = uniqueNumberList(idsByType.project ?? []);
-      const baseEmployeeIds = uniqueNumberList(idsByType.employee ?? []);
+      const baseEmployeeIds = uniqueNumberList([
+        ...extractMetaEmployeeIds(baseRun.summaryJson),
+        ...(idsByType.employee ?? []),
+      ]);
       const baseTourIds = uniqueNumberList(idsByType.tour ?? []);
       if (baseProjectIds.length === 0) {
         throw createBadRequestError("Basis-Run enthaelt keine Projekte.");
@@ -1526,13 +1555,14 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         await demoSeedRepository.addSeedRunEntity(seedRunId, "tour", tour.id);
       }
 
-      const seedPrefix = seedRunId.slice(0, 8);
-      for (let i = 0; i < config.employees; i += 1) {
-        const employee = await employeesService.createEmployee(filler.nextEmployee(i, seedPrefix));
-        employees.push(employee.id);
-        created.employees += 1;
-        await demoSeedRepository.addSeedRunEntity(seedRunId, "employee", employee.id);
+      const syncedEmployees = await syncDemoEmployeesFromCsv();
+      employees.push(...syncedEmployees.employeeIds);
+      created.employees += syncedEmployees.importedRows;
+      if (employees.length === 0) {
+        throw createBadRequestError("Keine gueltigen Mitarbeitenden aus Personal.csv verfuegbar.");
       }
+
+      const seedPrefix = seedRunId.slice(0, 8);
 
       if (config.runType === "base") {
         const minAssignmentsPerGroup = employees.length >= teams.length ? 1 : 0;
@@ -1854,7 +1884,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       runType: config.runType,
       baseSeedRunId: config.baseSeedRunId,
       requested: {
-        employees: config.employees,
+        employees: employees.length,
         customers: config.customers,
         projects: config.projects,
         appointmentsPerProject: config.appointmentsPerProject,
@@ -1872,6 +1902,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       meta:
         config.runType === "base"
           ? {
+              employeeIds: employees,
               projectContexts: projectSeedContexts.map((ctx) => ({
                 projectId: ctx.projectId,
                 modelId: ctx.model.modelId,

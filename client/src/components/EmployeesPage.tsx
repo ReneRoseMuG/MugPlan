@@ -561,10 +561,11 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     </Button>
                   }
                   footer={
-                    <div className="flex w-full justify-end">
+                    <div className="flex w-full">
                       <AppointmentCountBadge
                         count={currentAppointmentsCount}
                         testId={`text-employee-current-appointments-${employee.id}`}
+                        fullWidth
                       />
                     </div>
                   }

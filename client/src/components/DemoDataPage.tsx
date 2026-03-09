@@ -28,7 +28,6 @@ type ProjectStatusSeedForm = {
 };
 
 type DemoDataFormState = {
-  baseEmployees: number;
   baseCustomers: number;
   baseProjects: number;
   baseGenerateAttachments: boolean;
@@ -48,7 +47,6 @@ type DemoDataFormState = {
 
 type BaseSeedConfig = {
   runType: "base";
-  employees: number;
   customers: number;
   projects: number;
   generateAttachments: boolean;
@@ -132,7 +130,6 @@ type ResetDatabaseResponse = {
     userSettingsValues: number;
     projects: number;
     customers: number;
-    employees: number;
     projectStatuses: number;
     teams: number;
     tours: number;
@@ -150,7 +147,6 @@ type ResetDatabaseResponse = {
 const demoDataAdminFormStateKey = "demoData.adminFormState";
 
 const defaultDemoDataFormState: DemoDataFormState = {
-  baseEmployees: 20,
   baseCustomers: 10,
   baseProjects: 30,
   baseGenerateAttachments: true,
@@ -216,7 +212,6 @@ export function parseDemoDataFormState(value: unknown): DemoDataFormState {
     }
 
     return {
-      baseEmployees: toIntegerOrFallback(parsed.baseEmployees, defaultDemoDataFormState.baseEmployees),
       baseCustomers: toIntegerOrFallback(parsed.baseCustomers, defaultDemoDataFormState.baseCustomers),
       baseProjects: toIntegerOrFallback(parsed.baseProjects, defaultDemoDataFormState.baseProjects),
       baseGenerateAttachments: toBooleanOrFallback(parsed.baseGenerateAttachments, defaultDemoDataFormState.baseGenerateAttachments),
@@ -288,7 +283,6 @@ export function DemoDataPage() {
   const serializedFormState = useMemo(() => serializeDemoDataFormState(formState), [formState]);
 
   const {
-    baseEmployees,
     baseCustomers,
     baseProjects,
     baseGenerateAttachments,
@@ -404,7 +398,7 @@ export function DemoDataPage() {
       void queryClient.invalidateQueries();
       toast({
         title: "Datenbank zurueckgesetzt",
-        description: `Projekte: ${result.deleted.projects}, Kunden: ${result.deleted.customers}, Mitarbeitende: ${result.deleted.employees}`,
+        description: `Projekte: ${result.deleted.projects}, Kunden: ${result.deleted.customers}, Teams: ${result.deleted.teams}, Touren: ${result.deleted.tours}`,
       });
     },
     onError: (error: Error) => {
@@ -440,7 +434,6 @@ export function DemoDataPage() {
     }
     createMutation.mutate({
       runType: "base",
-      employees: baseEmployees,
       customers: baseCustomers,
       projects: baseProjects,
       generateAttachments: baseGenerateAttachments,
@@ -485,12 +478,8 @@ export function DemoDataPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="rounded-md border border-slate-200 p-4">
           <h4 className="font-bold text-slate-900">Basisdaten</h4>
-          <p className="text-xs text-slate-500 mt-1">Mitarbeitende, Kunden, Projekte, Teams und Touren.</p>
+          <p className="text-xs text-slate-500 mt-1">Mitarbeitende aus Personal.csv, Kunden, Projekte, Teams und Touren.</p>
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <Label htmlFor="seed-base-employees">Mitarbeitende</Label>
-              <Input id="seed-base-employees" type="number" value={baseEmployees} onChange={(event) => setFormState((current) => ({ ...current, baseEmployees: Number(event.target.value) }))} />
-            </div>
             <div>
               <Label htmlFor="seed-base-customers">Kunden</Label>
               <Input id="seed-base-customers" type="number" value={baseCustomers} onChange={(event) => setFormState((current) => ({ ...current, baseCustomers: Number(event.target.value) }))} />

@@ -238,6 +238,10 @@ type ParseImportResult = {
   rows: EmployeeCsvImportRowResult[];
 };
 
+type EmployeeCsvImportSyncResult = EmployeeCsvImportResult & {
+  employeeIds: number[];
+};
+
 function parseEmployeeImportCsv(rawBuffer: Buffer): ParseImportResult {
   const content = rawBuffer.toString("utf8").replace(/^\uFEFF/, "");
   const lines = toLines(content);
@@ -387,4 +391,71 @@ export async function importEmployeesFromCsv(rawBuffer: Buffer): Promise<Employe
   };
 
   return { summary, rows };
+}
+
+export async function syncEmployeesFromCsv(rawBuffer: Buffer): Promise<EmployeeCsvImportSyncResult> {
+  const parsed = parseEmployeeImportCsv(rawBuffer);
+  const rows = [...parsed.rows];
+  const existingEmployees = await employeesRepository.getAllEmployees();
+  const employeesByKey = new Map(
+    existingEmployees.map((employee) => [
+      `${normalizeNamePart(employee.firstName)}::${normalizeNamePart(employee.lastName)}`,
+      employee,
+    ]),
+  );
+  const employeeIds: number[] = [];
+
+  for (const candidate of parsed.candidates) {
+    const key = `${candidate.normalizedFirstName}::${candidate.normalizedLastName}`;
+    const existingEmployee = employeesByKey.get(key);
+    if (existingEmployee) {
+      employeeIds.push(existingEmployee.id);
+      rows.push({
+        lineNumber: candidate.lineNumber,
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
+        status: "DUPLICATE",
+        message: "Duplikat bereits im Bestand",
+      });
+      continue;
+    }
+
+    try {
+      const createdEmployee = await createEmployee({
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
+        phone: null,
+        email: null,
+      });
+      employeesByKey.set(key, createdEmployee);
+      employeeIds.push(createdEmployee.id);
+      rows.push({
+        lineNumber: candidate.lineNumber,
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
+        status: "IMPORTED",
+        message: "Importiert",
+      });
+    } catch {
+      rows.push({
+        lineNumber: candidate.lineNumber,
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
+        status: "ERROR",
+        message: "Insert fehlgeschlagen",
+      });
+    }
+  }
+
+  rows.sort((a, b) => a.lineNumber - b.lineNumber);
+
+  const summary = {
+    totalRows: rows.length,
+    importedRows: rows.filter((row) => row.status === "IMPORTED").length,
+    duplicateRows: rows.filter((row) => row.status === "DUPLICATE").length,
+    invalidRows: rows.filter((row) => row.status === "INVALID").length,
+    errorRows: rows.filter((row) => row.status === "ERROR").length,
+  };
+
+  return { summary, rows, employeeIds };
 }

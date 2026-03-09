@@ -55,7 +55,11 @@ vi.mock("../../../server/repositories/toursRepository", () => ({
   getTour: getTourMock,
 }));
 
-import { EmployeeImportError, importEmployeesFromCsv } from "../../../server/services/employeesService";
+import {
+  EmployeeImportError,
+  importEmployeesFromCsv,
+  syncEmployeesFromCsv,
+} from "../../../server/services/employeesService";
 
 describe("FT23 unit: employees csv import service", () => {
   beforeEach(() => {
@@ -148,5 +152,43 @@ describe("FT23 unit: employees csv import service", () => {
       status: 400,
       code: "INVALID_CSV_HEADER",
     });
+  });
+
+  it("syncs CSV idempotently, returns employee ids and skips invalid rows", async () => {
+    getAllEmployeesMock.mockResolvedValueOnce([
+      {
+        id: 7,
+        firstName: "Max",
+        lastName: "Muster",
+        fullName: "Muster, Max",
+        phone: null,
+        email: null,
+        isActive: true,
+        teamId: null,
+        tourId: null,
+        version: 1,
+      },
+    ]);
+    createEmployeeRepoMock.mockImplementationOnce(async (data: { firstName: string; lastName: string; fullName: string }) => ({
+      id: 11,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      fullName: data.fullName,
+      phone: null,
+      email: null,
+      isActive: true,
+      teamId: null,
+      tourId: null,
+      version: 1,
+    }));
+
+    const csv = Buffer.from("Vorname;Nachname\nMax;Muster\nAnna;Beispiel\nAmina;\n", "utf8");
+    const result = await syncEmployeesFromCsv(csv);
+
+    expect(result.employeeIds).toEqual([7, 11]);
+    expect(result.summary.importedRows).toBe(1);
+    expect(result.summary.duplicateRows).toBe(1);
+    expect(result.summary.invalidRows).toBe(1);
+    expect(createEmployeeRepoMock).toHaveBeenCalledTimes(1);
   });
 });

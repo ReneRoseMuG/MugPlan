@@ -2184,7 +2184,7 @@ export const api = {
       input: z.union([
         z.object({
           runType: z.literal("base"),
-          employees: z.number().int().min(0).max(500).default(20),
+          employees: z.number().int().min(0).max(500).default(0).optional(),
           customers: z.number().int().min(0).max(500).default(10),
           projects: z.number().int().min(0).max(1000).default(30),
           generateAttachments: z.boolean().default(true),
@@ -2211,7 +2211,7 @@ export const api = {
           locale: z.string().default("de").optional(),
         }).strict(),
         z.object({
-          employees: z.number().int().min(0).max(500).default(20),
+          employees: z.number().int().min(0).max(500).default(0).optional(),
           customers: z.number().int().min(0).max(500).default(10),
           projects: z.number().int().min(0).max(1000).default(30),
           appointmentsPerProject: z.number().int().min(0).max(20).default(1),
@@ -2352,11 +2352,12 @@ export const api = {
                 .object({
                   projectContexts: z.array(
                     z.object({
-                      projectId: z.number(),
-                      modelId: z.string(),
-                      ovenId: z.string().nullable(),
+                  projectId: z.number(),
+                  modelId: z.string(),
+                  ovenId: z.string().nullable(),
                     }),
                   ),
+                  employeeIds: z.array(z.number()).optional(),
                 })
                 .optional(),
             }),
@@ -2428,7 +2429,6 @@ export const api = {
             customerTags: z.number(),
             employeeTags: z.number(),
             customers: z.number(),
-            employees: z.number(),
             projectStatuses: z.number(),
             teams: z.number(),
             tours: z.number(),
