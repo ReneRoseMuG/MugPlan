@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
+  getSetupStatus,
   getQuickLoginTargets,
   login,
   quickLogin,
@@ -48,6 +49,7 @@ export default function Login({ onAuthenticated }: LoginProps) {
   const [quickTargetsLoading, setQuickTargetsLoading] = useState(false);
   const [quickError, setQuickError] = useState<string | null>(null);
   const [quickSubmittingRole, setQuickSubmittingRole] = useState<RoleCode | null>(null);
+  const [isQuickLoginVisible, setIsQuickLoginVisible] = useState(quickLoginEnabled);
   const [step, setStep] = useState<LoginStep>({ kind: "password" });
 
   useEffect(() => {
@@ -57,9 +59,19 @@ export default function Login({ onAuthenticated }: LoginProps) {
     setQuickTargetsLoading(true);
     setQuickError(null);
 
-    void getQuickLoginTargets()
-      .then((payload) => {
+    void getSetupStatus()
+      .then((status) => {
         if (cancelled) return;
+        if (status.isTwoFactorEnabled) {
+          setIsQuickLoginVisible(false);
+          setQuickTargets([]);
+          return null;
+        }
+        setIsQuickLoginVisible(true);
+        return getQuickLoginTargets();
+      })
+      .then((payload) => {
+        if (cancelled || !payload) return;
         setQuickTargets(payload.roles);
       })
       .catch((loadError) => {
@@ -324,7 +336,7 @@ export default function Login({ onAuthenticated }: LoginProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {quickLoginEnabled && step.kind === "password" && (
+          {quickLoginEnabled && isQuickLoginVisible && step.kind === "password" && (
             <div className="space-y-3 pb-6">
               <div className="text-xs font-semibold tracking-wide text-slate-500">Schnelllogin (Test)</div>
               <div className="grid grid-cols-1 gap-2">

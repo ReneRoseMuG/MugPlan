@@ -98,7 +98,11 @@ function toAuthenticatedPayload(input: { userId: number; username: string; roleC
 }
 
 export async function getSetupStatus() {
-  return getBootstrapState();
+  const bootstrapState = await getBootstrapState();
+  return {
+    ...bootstrapState,
+    isTwoFactorEnabled: await isGlobalTwoFactorEnabled(),
+  };
 }
 
 export async function setupAdmin(input: { username: string; password: string }): Promise<AuthenticatedPayload> {

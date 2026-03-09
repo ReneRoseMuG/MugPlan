@@ -1,5 +1,6 @@
 type SetupStatusResponse = {
   needsAdminSetup: boolean;
+  isTwoFactorEnabled: boolean;
 };
 
 type AuthenticatedPayload = {

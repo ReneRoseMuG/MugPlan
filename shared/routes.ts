@@ -231,6 +231,7 @@ export const api = {
       responses: {
         200: z.object({
           needsAdminSetup: z.boolean(),
+          isTwoFactorEnabled: z.boolean(),
         }),
       },
     },
