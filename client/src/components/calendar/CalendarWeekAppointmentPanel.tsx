@@ -1,12 +1,12 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
-import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
 import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
+import { CalendarWeekProjectStatusSection } from "./CalendarWeekProjectStatusSection";
 
 export const DEFAULT_CONTINUATION_HEIGHT_PX = 180;
 
@@ -25,6 +25,8 @@ export function CalendarWeekAppointmentPanel({
   context = "default",
   continuationHeightPx,
   uniformHeightPx,
+  projectStatusAreaHeightPx,
+  projectStatusAreaRef,
   showPreviewTourNameLine = false,
   containerRef,
   testId,
@@ -43,6 +45,8 @@ export function CalendarWeekAppointmentPanel({
   context?: "default" | "week-calendar";
   continuationHeightPx?: number | null;
   uniformHeightPx?: number | null;
+  projectStatusAreaHeightPx?: number | null;
+  projectStatusAreaRef?: React.Ref<HTMLDivElement>;
   showPreviewTourNameLine?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
@@ -127,21 +131,11 @@ export function CalendarWeekAppointmentPanel({
                 projectDescription={appointment.projectDescription}
                 enableFullDescriptionPreview={context === "week-calendar"}
               />
-              {appointment.projectStatuses.length > 0 ? (
-                <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
-                  <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt Status</div>
-                  <div className="flex flex-wrap gap-1">
-                    {appointment.projectStatuses.map((status) => (
-                      <ProjectStatusInfoBadge
-                        key={status.id}
-                        status={status}
-                        size="sm"
-                        testId={`week-project-status-${status.id}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+              <CalendarWeekProjectStatusSection
+                statuses={appointment.projectStatuses}
+                reservedHeightPx={projectStatusAreaHeightPx}
+                containerRef={appointment.projectStatuses.length > 0 ? projectStatusAreaRef : undefined}
+              />
               {context === "week-calendar" ? (
                 <>
                   <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />

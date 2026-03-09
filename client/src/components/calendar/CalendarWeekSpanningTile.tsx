@@ -1,11 +1,11 @@
 import type { CSSProperties, DragEvent } from "react";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
-import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
+import { CalendarWeekProjectStatusSection } from "./CalendarWeekProjectStatusSection";
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
 
 type CalendarWeekSpanningTileProps = {
@@ -15,6 +15,8 @@ type CalendarWeekSpanningTileProps = {
   visibleStartDate: string;
   visibleDayNumberStart: number;
   uniformHeightPx?: number | null;
+  projectStatusAreaHeightPx?: number | null;
+  projectStatusAreaRef?: React.Ref<HTMLDivElement>;
   containerRef?: React.Ref<HTMLDivElement>;
   style?: CSSProperties;
   isDragging?: boolean;
@@ -35,6 +37,8 @@ export function CalendarWeekSpanningTile({
   visibleStartDate,
   visibleDayNumberStart,
   uniformHeightPx,
+  projectStatusAreaHeightPx,
+  projectStatusAreaRef,
   containerRef,
   style,
   isDragging,
@@ -97,21 +101,11 @@ export function CalendarWeekSpanningTile({
         projectDescription={appointment.projectDescription}
         enableFullDescriptionPreview
       />
-      {appointment.projectStatuses.length > 0 ? (
-        <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
-          <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt Status</div>
-          <div className="flex flex-wrap gap-1">
-            {appointment.projectStatuses.map((status) => (
-              <ProjectStatusInfoBadge
-                key={status.id}
-                status={status}
-                size="sm"
-                testId={`week-project-status-${status.id}`}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
+      <CalendarWeekProjectStatusSection
+        statuses={appointment.projectStatuses}
+        reservedHeightPx={projectStatusAreaHeightPx}
+        containerRef={appointment.projectStatuses.length > 0 ? projectStatusAreaRef : undefined}
+      />
       <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
       <CalendarWeekAppointmentNotesHover
         appointmentId={appointment.id}

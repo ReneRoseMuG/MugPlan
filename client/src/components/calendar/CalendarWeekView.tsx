@@ -82,6 +82,7 @@ export function CalendarWeekView({
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
   const laneHeightByKeyRef = useRef<Map<string, number>>(new Map());
+  const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
   const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
@@ -162,6 +163,7 @@ export function CalendarWeekView({
 
   useEffect(() => {
     laneHeightByKeyRef.current.clear();
+    projectStatusHeightByWeekRef.current.clear();
     setAppointmentHeightVersion((prev) => prev + 1);
   }, [appointments, scrollResetKey]);
 
@@ -534,6 +536,16 @@ export function CalendarWeekView({
     setAppointmentHeightVersion((prev) => prev + 1);
   };
 
+  const measureProjectStatusHeight = (weekKey: string, node: HTMLDivElement | null) => {
+    if (!node) return;
+    const heightPx = Math.round(node.getBoundingClientRect().height);
+    if (heightPx <= 0) return;
+    const currentWeekHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? 0;
+    if (heightPx <= currentWeekHeightPx) return;
+    projectStatusHeightByWeekRef.current.set(weekKey, heightPx);
+    setAppointmentHeightVersion((prev) => prev + 1);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
@@ -661,6 +673,7 @@ export function CalendarWeekView({
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
                       const laneUniformHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? null;
+                      const projectStatusAreaHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? null;
                       const tileRowCount = laneRenderData.spanningAppointments.length;
                       const hasSingleDayAppointments = laneRenderData.singleDayAppointmentIdsByBucket.some(
                         (appointmentIds) => appointmentIds.length > 0,
@@ -819,6 +832,7 @@ export function CalendarWeekView({
                                   visibleStartDate={visibleStartDate}
                                   visibleDayNumberStart={visibleDayNumberStart}
                                   uniformHeightPx={laneUniformHeightPx}
+                                  projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                   style={{
                                     gridColumn: `${startColumn} / span ${columnSpan}`,
                                     gridRow: rowIndex + 1,
@@ -835,6 +849,7 @@ export function CalendarWeekView({
                                   onMouseLeave={() =>
                                     setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
                                   }
+                                  projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                   containerRef={(node) => measureLaneCardHeight(laneHeightKey, node)}
                                   testId={`week-spanning-tile-${appointment.id}`}
                                 />
@@ -871,6 +886,8 @@ export function CalendarWeekView({
                                         segment="start"
                                         continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
                                         uniformHeightPx={laneUniformHeightPx}
+                                        projectStatusAreaHeightPx={projectStatusAreaHeightPx}
+                                        projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                         containerRef={(node) => measureLaneCardHeight(laneHeightKey, node)}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
