@@ -198,6 +198,62 @@ Sicherheitsregeln:
 - Empfohlene Produktionsbaseline: `TRUST_PROXY=1`, `SESSION_COOKIE_SECURE=auto`
 - Reverse Proxy muss `X-Forwarded-Proto=https` weiterleiten, sonst werden keine Secure-Session-Cookies ausgestellt
 
+### Verbindliche Migrationsstrategie
+
+Diese Regeln sind fuer alle kuenftigen Schemaaenderungen verbindlich. Ziel ist ein einheitlicher, versionierter Migrationspfad fuer lokale Akteure und Remote-Umgebungen.
+
+#### Drei strikt getrennte Ebenen
+
+- **Schema im Code**: `shared/schema.ts` beschreibt den beabsichtigten Datenmodell-Stand im Repository.
+- **Migrationsdateien im Repository**: `migrations/*.sql` sowie `migrations/meta/*` bilden die versionierte, nachvollziehbare Historie der Schemaaenderungen.
+- **Tatsaechlich angewendeter Stand je Datenbank**: Massgeblich ist die pro Datenbank eingetragene Migration-History, insbesondere `__drizzle_migrations`. Die Datenbank ist nur auf dem Stand der Migrationen, die dort wirklich ausgefuehrt wurden.
+
+#### Wann eine Migration Pflicht ist
+
+- Jede strukturelle Aenderung am DB-Schema ist erst vollstaendig, wenn dazu eine neue versionierte Migrationsdatei im Repository existiert.
+- Dazu zaehlen insbesondere: neue Tabellen, neue Spalten, entfernte Spalten, geaenderte Spaltentypen, Nullability-Aenderungen, Defaults, Constraints, Foreign Keys, Checks und Indizes.
+- Eine Aenderung nur in `shared/schema.ts` ohne neue Migration ist unzulaessig und gilt als unvollstaendig.
+- Reine Datenkorrektur- oder Einmal-Skripte ersetzen keine Schema-Migration.
+
+#### Kanonischer Migrationspfad
+
+- Fuer neue Schemaaenderungen ist ausschliesslich `migrations/` der kanonische Standardpfad.
+- Neue Migrationen muessen eindeutig sortierbar und versioniert sein; der bestehende Drizzle-Mechanismus mit numerischem Praefix ist beizubehalten.
+- `migrations/meta/*` gehoert zur Migrationshistorie und ist nicht optional.
+- Vorhandene Dateien unter `script/sql/*.sql` gelten als Bestand oder manueller Sonderfall, nicht als regulaerer Zukunftspfad fuer neue Schemaaenderungen.
+
+#### Commit-Regeln bei Schemaaenderungen
+
+- Zusammen committed werden muessen mindestens:
+- die Aenderung in `shared/schema.ts`
+- die neue Datei unter `migrations/*.sql`
+- die zugehoerigen Aenderungen unter `migrations/meta/*`
+- alle fachlich notwendigen Code-, Test- und Dokumentationsanpassungen, die von dieser Schemaaenderung abhaengen
+- Unzulaessig sind Commits mit Schemaaenderung ohne Migration oder Migration ohne den dazugehoerigen Schemakontext.
+- Bereits versionierte und in Benutzung befindliche Migrationsdateien duerfen nicht still umgeschrieben, ersetzt oder inhaltlich uminterpretiert werden. Korrekturen erfolgen ueber neue Folge-Migrationen.
+
+#### Lokaler Ablauf fuer Entwickler und Agenten
+
+- Bei einer Schemaaenderung ist zuerst `shared/schema.ts` anzupassen und danach unmittelbar eine neue Migration unter `migrations/` zu erzeugen.
+- Lokale Entwicklungsdatenbanken muessen ueber denselben versionierten Migrationspfad aktualisiert werden wie alle anderen Umgebungen.
+- Direkte manuelle Schemaaenderungen per SQL-Client sind nicht Teil des Standardprozesses.
+- `npm run db:push` beziehungsweise `drizzle-kit push` ist fuer regulaere Teamarbeit, gemeinsame Entwicklung und nachverfolgbare Schemaentwicklung nicht zulaessig.
+- Reset-Skripte wie `script/sql/reset_safe_dev_test.sql` und `script/sql/reset_absolute_state.sql` sind Bootstrap-/Reset-Werkzeuge, aber keine autoritative Migrationshistorie.
+
+#### Ablauf fuer Remote-Deployments
+
+- Remote-Umgebungen verwenden denselben Migrationspfad wie lokale Akteure: die im Repository versionierten Dateien unter `migrations/`.
+- Vor Inbetriebnahme einer neuen Version sind die ausstehenden Repository-Migrationen auf die Ziel-Datenbank anzuwenden.
+- Ein Deployment ist nicht vollstaendig, wenn zugehoeriger Code ausgerollt wurde, die benoetigten Migrationen auf der Ziel-Datenbank aber noch fehlen.
+- Ein stiller Direktabgleich des Schemas ohne versionierte Migration-History ist nicht zulaessig.
+
+#### Zu vermeidende Abkuerzungen und Sonderwege
+
+- Kein unprotokollierter Direktabgleich zwischen `shared/schema.ts` und Datenbank.
+- Kein manuelles "Nachziehen" von Spalten, Indizes oder Constraints ausserhalb einer versionierten Migration als Standardweg.
+- Keine neuen regulaeren Schemaaenderungen in `script/sql/*.sql`.
+- Kein Vertrauen darauf, dass Startskripte Migrationen automatisch ausfuehren, solange ein solcher Mechanismus nicht explizit als Projektstandard eingefuehrt und dokumentiert wurde.
+
 ---
 
 ## 11. Teststrategie
