@@ -8,10 +8,12 @@ import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPa
 import { CalendarWeekProjectStatusSection } from "./CalendarWeekProjectStatusSection";
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
 
+export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = 28;
+
 type CalendarWeekSpanningTileProps = {
   appointment: CalendarAppointment;
   spanColumns: number;
-  displayMode: "standard" | "compact" | "detail";
+  displayMode: "standard" | "compact" | "detail" | "split";
   visibleStartDate: string;
   visibleDayNumberStart: number;
   uniformHeightPx?: number | null;
@@ -60,6 +62,7 @@ export function CalendarWeekSpanningTile({
   const effectiveDisplayMode = displayMode;
   const isCenteredMode = effectiveDisplayMode === "compact";
   const isFilledMode = effectiveDisplayMode === "detail";
+  const isSplitMode = effectiveDisplayMode === "split";
   const visibleColumns = Math.max(1, spanColumns);
   const bodyColumnWidth = `calc(100% / ${visibleColumns})`;
   const headerDays = Array.from({ length: visibleColumns }, (_, dayOffset) => {
@@ -85,7 +88,7 @@ export function CalendarWeekSpanningTile({
   const resolvedCustomerNumber = appointment.customer.customerNumber.trim() || "-";
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
 
-  const contentPanels = (
+  const mainContentPanels = (
     <>
       <CalendarWeekAppointmentPanelCustomer
         fullName={appointment.customer.fullName ?? ""}
@@ -106,6 +109,11 @@ export function CalendarWeekSpanningTile({
         reservedHeightPx={projectStatusAreaHeightPx}
         containerRef={appointment.projectStatuses.length > 0 ? projectStatusAreaRef : undefined}
       />
+    </>
+  );
+
+  const footerContentPanels = (
+    <>
       <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
       <CalendarWeekAppointmentNotesHover
         appointmentId={appointment.id}
@@ -119,8 +127,13 @@ export function CalendarWeekSpanningTile({
   );
 
   const bodyContent = (
-    <div className="min-w-0 space-y-1.5 bg-white/90">
-      {contentPanels}
+    <div className="flex h-full min-h-0 flex-col bg-white/90 pb-1.5">
+      <div className="min-h-0 space-y-1.5 overflow-hidden">
+        {mainContentPanels}
+      </div>
+      <div className="mt-auto shrink-0">
+        {footerContentPanels}
+      </div>
     </div>
   );
 
@@ -132,7 +145,7 @@ export function CalendarWeekSpanningTile({
         gridTemplateRows: "auto 1fr",
         borderColor: highlighted ? undefined : borderColor,
         boxShadow: uniformBorderShadow,
-        ...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx}px` } : {}),
+        ...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),
         ...style,
       }}
       onDoubleClick={onDoubleClick}
@@ -203,6 +216,23 @@ export function CalendarWeekSpanningTile({
         >
           {bodyContent}
         </div>
+      ) : isSplitMode ? (
+        <>
+          {headerDays.map((headerDay, dayIndex) => (
+            <div
+              key={`week-spanning-tile-body-split-${appointment.id}-${headerDay.key}`}
+              className="min-h-0 bg-white/90 p-1.5"
+              style={{
+                gridColumn: `${dayIndex + 1} / span 1`,
+                gridRow: 2,
+                borderLeft: headerDay.isFirst ? undefined : "1px solid rgba(226,232,240,0.9)",
+              }}
+              data-testid={`week-spanning-tile-body-split-${appointment.id}-${dayIndex}`}
+            >
+              {bodyContent}
+            </div>
+          ))}
+        </>
       ) : isCenteredMode ? (
         <div
           className="flex min-h-0 items-stretch"

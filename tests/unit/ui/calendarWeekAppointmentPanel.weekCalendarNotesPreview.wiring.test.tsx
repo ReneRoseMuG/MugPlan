@@ -33,4 +33,15 @@ describe("FT03 UI: week calendar notes hover wiring", () => {
     expect(source).toContain("projectNotesCount={appointment.projectNotesCount ?? 0}");
     expect(source).toContain("appointmentNotesCount={appointment.appointmentNotesCount ?? 0}");
   });
+
+  it("keeps the notes hover inside spanning tiles for multi-day appointments", () => {
+    const tilePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekSpanningTile.tsx");
+    const source = readFileSync(tilePath, "utf8");
+
+    expect(source).toContain("<CalendarWeekAppointmentNotesHover");
+    expect(source).toContain("appointmentId={appointment.id}");
+    expect(source).toContain("customerNotesCount={appointment.customerNotesCount ?? 0}");
+    expect(source).toContain("projectNotesCount={appointment.projectNotesCount ?? 0}");
+    expect(source).toContain("appointmentNotesCount={appointment.appointmentNotesCount ?? 0}");
+  });
 });

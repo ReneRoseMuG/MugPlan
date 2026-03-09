@@ -30,6 +30,8 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(source).toContain("startDate={appointment.startDate}");
     expect(source).toContain("endDate={appointment.endDate}");
     expect(source).toContain("startTime={appointment.startTime}");
+    expect(source).toContain("WEEK_CARD_FOOTER_SAFE_SPACE_PX");
+    expect(source).toContain('height: `${uniformHeightPx + WEEK_CARD_FOOTER_SAFE_SPACE_PX}px`');
   });
 
   it("renders header top line with time/date/day count and second line with customer and postal code", () => {

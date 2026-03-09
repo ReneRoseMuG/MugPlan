@@ -26,8 +26,12 @@ import {
   getWeekAppointmentGridStartColumn,
 } from "@/lib/calendar-utils";
 import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
-import { CalendarWeekAppointmentPanel, DEFAULT_CONTINUATION_HEIGHT_PX } from "./CalendarWeekAppointmentPanel";
-import { CalendarWeekSpanningTile } from "./CalendarWeekSpanningTile";
+import {
+  CalendarWeekAppointmentPanel,
+  DEFAULT_CONTINUATION_HEIGHT_PX,
+  WEEK_CARD_FOOTER_SAFE_SPACE_PX,
+} from "./CalendarWeekAppointmentPanel";
+import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "./CalendarWeekSpanningTile";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import type { CalendarNavCommand } from "@/pages/Home";
@@ -526,9 +530,9 @@ export function CalendarWeekView({
     }
   };
 
-  const measureLaneCardHeight = (laneHeightKey: string, node: HTMLDivElement | null) => {
+  const measureLaneCardHeight = (laneHeightKey: string, node: HTMLDivElement | null, footerSafeSpacePx = 0) => {
     if (!node) return;
-    const heightPx = Math.round(node.getBoundingClientRect().height);
+    const heightPx = Math.max(0, Math.round(node.getBoundingClientRect().height) - footerSafeSpacePx);
     if (heightPx <= 0) return;
     const currentLaneHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? 0;
     if (heightPx <= currentLaneHeightPx) return;
@@ -850,7 +854,8 @@ export function CalendarWeekView({
                                     setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
                                   }
                                   projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                  containerRef={(node) => measureLaneCardHeight(laneHeightKey, node)}
+                                  containerRef={(node) =>
+                                    measureLaneCardHeight(laneHeightKey, node, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX)}
                                   testId={`week-spanning-tile-${appointment.id}`}
                                 />
                               );
@@ -888,7 +893,8 @@ export function CalendarWeekView({
                                         uniformHeightPx={laneUniformHeightPx}
                                         projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                         projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                        containerRef={(node) => measureLaneCardHeight(laneHeightKey, node)}
+                                        containerRef={(node) =>
+                                          measureLaneCardHeight(laneHeightKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}

@@ -25,6 +25,8 @@ describe("FT03 UI: CalendarWeekView continuation height wiring", () => {
 
   it("imports continuation fallback constant and keeps a lane-based height map", () => {
     expect(source).toContain("DEFAULT_CONTINUATION_HEIGHT_PX");
+    expect(source).toContain("WEEK_CARD_FOOTER_SAFE_SPACE_PX");
+    expect(source).toContain("WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX");
     expect(source).toContain("const laneHeightByKeyRef = useRef<Map<string, number>>(new Map());");
   });
 
@@ -36,8 +38,11 @@ describe("FT03 UI: CalendarWeekView continuation height wiring", () => {
   it("measures lane card heights and passes a shared uniform height to tiles and day panels", () => {
     expect(source).toContain("const laneHeightKey = `${weekKey}:${tourLane.laneKey}`;");
     expect(source).toContain("const laneUniformHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? null;");
+    expect(source).toContain("const measureLaneCardHeight = (laneHeightKey: string, node: HTMLDivElement | null, footerSafeSpacePx = 0) => {");
+    expect(source).toContain("Math.round(node.getBoundingClientRect().height) - footerSafeSpacePx");
     expect(source).toContain("uniformHeightPx={laneUniformHeightPx}");
-    expect(source).toContain("containerRef={(node) => measureLaneCardHeight(laneHeightKey, node)}");
+    expect(source).toContain("measureLaneCardHeight(laneHeightKey, node, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX)");
+    expect(source).toContain("measureLaneCardHeight(laneHeightKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)");
     expect(source).toContain("continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}");
     expect(source).toContain('segment="start"');
   });

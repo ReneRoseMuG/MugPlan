@@ -9,6 +9,7 @@ import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPa
 import { CalendarWeekProjectStatusSection } from "./CalendarWeekProjectStatusSection";
 
 export const DEFAULT_CONTINUATION_HEIGHT_PX = 180;
+export const WEEK_CARD_FOOTER_SAFE_SPACE_PX = 14;
 
 export function CalendarWeekAppointmentPanel({
   appointment,
@@ -69,7 +70,7 @@ export function CalendarWeekAppointmentPanel({
   const resolvedPanelStyle = isContinuation
     ? { height: `${resolvedContinuationHeightPx}px` }
     : uniformHeightPx && uniformHeightPx > 0
-      ? { height: `${uniformHeightPx}px` }
+      ? { height: `${uniformHeightPx + WEEK_CARD_FOOTER_SAFE_SPACE_PX}px` }
       : undefined;
 
   return (
@@ -90,7 +91,7 @@ export function CalendarWeekAppointmentPanel({
       }}
     >
       {!isContinuation && (
-        <div className="space-y-1.5">
+        <div className="h-full space-y-1.5 pb-1.5">
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}

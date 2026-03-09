@@ -30,11 +30,11 @@ type UserSettingValueByKey = {
   cardListColumns: number;
   "calendar.weekLanes.isCollapsed": boolean;
   "calendar.weekLanes.expandedLaneId": string;
-  "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail";
+  "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
 };
 
 export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
-  if (value === "standard" || value === "compact" || value === "detail") {
+  if (value === "standard" || value === "compact" || value === "detail" || value === "split") {
     return value;
   }
   return "standard";

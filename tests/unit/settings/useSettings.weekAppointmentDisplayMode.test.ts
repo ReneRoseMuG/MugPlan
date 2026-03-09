@@ -23,6 +23,7 @@ describe("FT03 useSettings weekAppointmentDisplayMode", () => {
     expect(resolveWeekAppointmentDisplayMode("standard")).toBe("standard");
     expect(resolveWeekAppointmentDisplayMode("compact")).toBe("compact");
     expect(resolveWeekAppointmentDisplayMode("detail")).toBe("detail");
+    expect(resolveWeekAppointmentDisplayMode("split")).toBe("split");
   });
 
   it("falls back to standard for missing values", () => {

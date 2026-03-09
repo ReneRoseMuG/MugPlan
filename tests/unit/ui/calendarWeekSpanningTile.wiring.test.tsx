@@ -5,12 +5,12 @@
  *
  * Abgedeckte Regeln:
  * - Spanning Tiles nutzen ein internes Tagesraster mit durchgehendem Header ueber alle sichtbaren Tage.
- * - Der globale Darstellungsmodus schaltet zwischen Standard-, zentriertem und gefuelltem Body-Layout.
- * - Standard behaelt eine linke Inhalts-Spalte, zentriert setzt gleiche Sperrflaechen links/rechts und gefuellt streckt den Body ueber das ganze Tile.
+ * - Der globale Darstellungsmodus schaltet zwischen Standard-, zentriertem, gefuelltem und geteiltem Body-Layout.
+ * - Standard behaelt eine linke Inhalts-Spalte, zentriert setzt gleiche Sperrflaechen links/rechts, gefuellt streckt den Body ueber das ganze Tile und geteilt spiegelt die erste Tageszelle auf alle sichtbaren Tage.
  *
  * Fehlerfaelle:
  * - Mehrtagesheader zeigt weiter nur eine kompakte Ein-Tages-Kopfzeile.
- * - Zentriert/Gefuellt bleiben ohne sichtbaren Effekt auf den Tile-Body.
+ * - Zentriert/Gefuellt/Geteilt bleiben ohne sichtbaren Effekt auf den Tile-Body.
  *
  * Ziel:
  * Verdrahtung des internen Tile-Layouts fuer feste Inhaltsbreite regressionssicher absichern.
@@ -24,14 +24,15 @@ describe("FT03 UI: CalendarWeekSpanningTile wiring", () => {
 
   it("accepts spanColumns, display mode and visible day metadata for multi-day header rendering", () => {
     expect(source).toContain("spanColumns: number;");
-    expect(source).toContain('displayMode: "standard" | "compact" | "detail";');
+    expect(source).toContain('displayMode: "standard" | "compact" | "detail" | "split";');
     expect(source).toContain("visibleStartDate: string;");
     expect(source).toContain("visibleDayNumberStart: number;");
     expect(source).toContain("uniformHeightPx?: number | null;");
     expect(source).toContain("containerRef?: React.Ref<HTMLDivElement>;");
     expect(source).toContain("gridTemplateColumns: `repeat(${Math.max(1, spanColumns)}, minmax(0, 1fr))`");
     expect(source).toContain('gridTemplateRows: "auto 1fr"');
-    expect(source).toContain('...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx}px` } : {}),');
+    expect(source).toContain("WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX");
+    expect(source).toContain('...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),');
     expect(source).toContain("ref={containerRef}");
   });
 
@@ -53,12 +54,18 @@ describe("FT03 UI: CalendarWeekSpanningTile wiring", () => {
     expect(source).toContain('backgroundColor: "rgba(241,245,249,0.45)"');
   });
 
-  it("supports centered and filled body layouts from the global week display mode", () => {
+  it("supports centered, filled and split body layouts from the global week display mode", () => {
     expect(source).toContain('const isCenteredMode = effectiveDisplayMode === "compact";');
     expect(source).toContain('const isFilledMode = effectiveDisplayMode === "detail";');
+    expect(source).toContain('const isSplitMode = effectiveDisplayMode === "split";');
+    expect(source).toContain('const footerContentPanels = (');
+    expect(source).toContain('className="flex h-full min-h-0 flex-col bg-white/90 pb-1.5"');
+    expect(source).toContain('className="mt-auto shrink-0"');
     expect(source).toContain('data-testid={`week-spanning-tile-body-centered-${appointment.id}`}');
     expect(source).toContain('style={{ width: bodyColumnWidth }}');
     expect(source).toContain('data-testid={`week-spanning-tile-body-filled-${appointment.id}`}');
     expect(source).toContain('style={{ gridColumn: `1 / span ${visibleColumns}`, gridRow: 2 }}');
+    expect(source).toContain("headerDays.map((headerDay, dayIndex) => (");
+    expect(source).toContain('data-testid={`week-spanning-tile-body-split-${appointment.id}-${dayIndex}`}');
   });
 });

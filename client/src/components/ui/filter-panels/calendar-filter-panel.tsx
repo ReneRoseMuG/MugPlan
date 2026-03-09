@@ -36,7 +36,7 @@ export function CalendarFilterPanel({
           <Label className="text-xs">Darstellungsmodus</Label>
           <Select
             value={weekDisplayMode ?? "standard"}
-            onValueChange={(value: "standard" | "compact" | "detail") => {
+            onValueChange={(value: "standard" | "compact" | "detail" | "split") => {
               if (!canEditWeekDisplayMode) return;
               void setSetting({
                 key: "calendar.weekAppointmentDisplayMode",
@@ -60,6 +60,7 @@ export function CalendarFilterPanel({
               <SelectItem value="standard">Standard</SelectItem>
               <SelectItem value="compact">Zentriert</SelectItem>
               <SelectItem value="detail">Gefüllt</SelectItem>
+              <SelectItem value="split">Geteilt</SelectItem>
             </SelectContent>
           </Select>
         </div>

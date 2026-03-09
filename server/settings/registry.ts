@@ -43,7 +43,7 @@ const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bo
 type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
-const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail"] as const;
+const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
 type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
 
 const templateAllowedKeys = [

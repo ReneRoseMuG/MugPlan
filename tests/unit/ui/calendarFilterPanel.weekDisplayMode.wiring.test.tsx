@@ -45,6 +45,7 @@ describe("FT03 UI: calendar filter panel week display mode wiring", () => {
     expect(filterSource).toContain('<SelectValue placeholder="Darstellungsmodus wählen" />');
     expect(filterSource).toContain('<SelectItem value="compact">Zentriert</SelectItem>');
     expect(filterSource).toContain('<SelectItem value="detail">Gefüllt</SelectItem>');
+    expect(filterSource).toContain('<SelectItem value="split">Geteilt</SelectItem>');
   });
 
   it("keeps readers out of an interactive write path", () => {
