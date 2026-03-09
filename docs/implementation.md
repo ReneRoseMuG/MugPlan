@@ -269,10 +269,24 @@ Wichtige Scripts unter `script/`:
 - `build.ts`
 - `check-frontend-encoding.ts`
 - `check-destructive-inventory.ts`
+- `check-migration-status.ts`
+- `run-migrations.ts`
 - `verify-demo-seed.ts`
 - `test-template-render.ts`
 - `reset-test-db.ts`
 - SQL-Skripte unter `script/sql/`
+
+Verbindlicher Migrationspfad fuer operative Nutzung:
+
+- Dev-Status pruefen: `npm run db:migration-status:dev`
+- Test-Status pruefen: `npm run db:migration-status:test`
+- Prod-Status pruefen: `npm run db:migration-status:prod`
+- Dev migrieren: `npm run db:migrate:dev`
+- Test migrieren: `npm run db:migrate:test`
+- Prod migrieren: `npm run db:migrate:prod`
+
+Die Statuspruefung vergleicht Repository-Migrationen mit `__drizzle_migrations`.
+Ein Migrationslauf gilt erst dann als abgeschlossen, wenn anschliessend der jeweilige Status-Check synchron meldet.
 
 ## 10. Implementierungsregeln für Änderungen
 

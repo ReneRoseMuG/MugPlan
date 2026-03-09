@@ -19,6 +19,20 @@
     {
       "idx": 2,
       "version": "5",
+      "when": 1772697433542,
+      "tag": "0002_ft07_backup_caldav_persistence",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1772784000000,
+      "tag": "0003_appointment_customer_display_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
       "when": 1773100800000,
       "tag": "0004_ft29_global_2fa",
       "breakpoints": true

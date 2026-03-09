@@ -101,7 +101,7 @@ export function buildWeekLaneRenderData(
       rowIndex,
     }));
 
-  const tileRowCount = spanningAppointments.length > 0 ? spanningAppointments.length : 1;
+  const tileRowCount = spanningAppointments.length;
   const occupiedCells = new Set<string>();
 
   for (const { appointmentId, rowIndex } of spanningAppointments) {
@@ -730,6 +730,7 @@ export function CalendarWeekView({
                         ...(needsDayCellRow ? ["minmax(180px, auto)"] : []),
                       ].join(" ");
                       const totalLaneRowCount = tileRowCount + (needsDayCellRow ? 1 : 0);
+                      const hasLaneContent = totalLaneRowCount > 0;
 
                       return (
                       <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10">
@@ -812,13 +813,15 @@ export function CalendarWeekView({
                           }`}
                         >
                           <div
-                            className="relative grid min-h-[180px] divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden"
+                            className={`relative grid divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden ${
+                              hasLaneContent ? "min-h-[180px]" : ""
+                            }`}
                             style={{
                               gridTemplateColumns: dayGridTemplate,
-                              gridTemplateRows: laneGridTemplateRows,
+                              ...(hasLaneContent ? { gridTemplateRows: laneGridTemplateRows } : {}),
                             }}
                           >
-                            {days.map((_, dayIdx) => {
+                            {hasLaneContent ? days.map((_, dayIdx) => {
                               const isWeekend = dayIdx >= 5;
                               return (
                                 <div
@@ -831,8 +834,8 @@ export function CalendarWeekView({
                                   aria-hidden
                                 />
                               );
-                            })}
-                            {draggedAppointmentId !== null ? (
+                            }) : null}
+                            {hasLaneContent && draggedAppointmentId !== null ? (
                               <div
                                 className="absolute inset-0 grid z-20"
                                 style={{ gridTemplateColumns: dayGridTemplate }}
@@ -850,7 +853,7 @@ export function CalendarWeekView({
                                 ))}
                               </div>
                             ) : null}
-                            {laneRenderData.spanningAppointments.map(({ appointmentId, rowIndex }) => {
+                            {hasLaneContent ? laneRenderData.spanningAppointments.map(({ appointmentId, rowIndex }) => {
                               const appointment = appointmentsById.get(appointmentId);
                               if (!appointment) return null;
 
@@ -901,8 +904,8 @@ export function CalendarWeekView({
                                   testId={`week-spanning-tile-${appointment.id}`}
                                 />
                               );
-                            })}
-                            {laneRenderData.singleDayGridItems.map(({ appointmentId, gridColumn, gridRow }) => {
+                            }) : null}
+                            {hasLaneContent ? laneRenderData.singleDayGridItems.map(({ appointmentId, gridColumn, gridRow }) => {
                               const appointment = appointmentsById.get(appointmentId);
                               if (!appointment) return null;
 
@@ -939,8 +942,8 @@ export function CalendarWeekView({
                                   />
                                 </div>
                               );
-                            })}
-                            {needsDayCellRow ? tourLane.dayBuckets.map((dayBucket, dayIdx) => {
+                            }) : null}
+                            {hasLaneContent && needsDayCellRow ? tourLane.dayBuckets.map((dayBucket, dayIdx) => {
                               const day = days[dayIdx];
 
                               return (
