@@ -6,11 +6,12 @@
  * Abgedeckte Regeln:
  * - Echte Mehrtagestermine werden als direkte Grid-Kinder mit Spalten-Span gerendert.
  * - Ein Overlay deckt beim Draggen die gesamte Lane-Hoehe als Drop-Ziel ab.
- * - DayCells bleiben Inhalte in einer festen Grid-Row unterhalb der Tiles.
+ * - Eintagestermine fuellen freie Grid-Zellen in der Tile-Zone vor dem Overflow.
+ * - DayCells bleiben nur fuer echten Overflow in einer zusaetzlichen Grid-Row erhalten.
  * - Spanning Tiles nutzen eine eigene Komponente statt Continuation-Segmenten.
  *
  * Fehlerfaelle:
- * - Mehrtagestermine landen weiter im DayCell-Stack.
+ * - Freie Luecken in der Tile-Zone bleiben trotz Eintagesterminen ungenutzt.
  * - Drop-Targets decken nicht die sichtbare Tile-Flaeche ab.
  *
  * Ziel:
@@ -27,12 +28,13 @@ describe("FT03 UI: CalendarWeekView spanning tile wiring", () => {
     expect(source).toContain("getAppointmentStackPriority");
     expect(source).toContain("getWeekAppointmentGridSpan");
     expect(source).toContain("getWeekAppointmentGridStartColumn");
-    expect(source).toContain('import { CalendarWeekSpanningTile } from "./CalendarWeekSpanningTile";');
+    expect(source).toContain("CalendarWeekSpanningTile");
+    expect(source).toContain("WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX");
   });
 
   it("renders spanning appointments before day cells with explicit grid row separation", () => {
-    expect(source).toContain("const hasSingleDayAppointments = laneRenderData.singleDayAppointmentIdsByBucket.some(");
-    expect(source).toContain("const needsDayCellRow = hasSingleDayAppointments || tileRowCount === 0;");
+    expect(source).toContain("const tileRowCount = laneRenderData.tileRowCount;");
+    expect(source).toContain("const needsDayCellRow = laneRenderData.needsDayCellRow;");
     expect(source).toContain("gridTemplateRows: laneGridTemplateRows");
     expect(source).toContain("const totalLaneRowCount = tileRowCount + (needsDayCellRow ? 1 : 0);");
     expect(source).toContain("<CalendarWeekSpanningTile");
@@ -62,7 +64,10 @@ describe("FT03 UI: CalendarWeekView spanning tile wiring", () => {
     expect(source).toContain("key={`week-lane-column-background-${tourLane.laneKey}-${dayIdx}`}");
     expect(source).toContain('className={isWeekend ? "bg-slate-200/45" : "bg-white/80"}');
     expect(source).toContain("gridRow: `1 / span ${totalLaneRowCount}`");
+    expect(source).toContain("laneRenderData.singleDayGridItems.map(({ appointmentId, gridColumn, gridRow }) => {");
+    expect(source).toContain("key={`week-single-grid-item-${appointment.id}`}");
+    expect(source).toContain("style={{ gridColumn, gridRow, padding: \"0.5rem\", zIndex: 10 }}");
     expect(source).toContain("{needsDayCellRow ? tourLane.dayBuckets.map((dayBucket, dayIdx) => {");
-    expect(source).toContain("laneRenderData.singleDayAppointmentIdsByBucket[dayIdx].map");
+    expect(source).toContain("laneRenderData.singleDayOverflowByBucket[dayIdx].map");
   });
 });

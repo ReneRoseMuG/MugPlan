@@ -13,7 +13,7 @@ import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
-import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { useCalendarAppointments, type CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
@@ -65,10 +65,88 @@ type WeekTourLane = {
 
 type WeekLaneRenderData = {
   spanningAppointments: { appointmentId: number; rowIndex: number }[];
-  singleDayAppointmentIdsByBucket: number[][];
+  singleDayGridItems: {
+    appointmentId: number;
+    gridColumn: number;
+    gridRow: number;
+  }[];
+  singleDayOverflowByBucket: number[][];
+  tileRowCount: number;
+  needsDayCellRow: boolean;
 };
 
 const logPrefix = "[calendar-week]";
+
+const compareAppointmentsForWeekLane = (a: CalendarAppointment, b: CalendarAppointment) => {
+  const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
+  if (priorityCompare !== 0) return priorityCompare;
+  return getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b));
+};
+
+export function buildWeekLaneRenderData(
+  tourLane: WeekTourLane,
+  appointmentsById: Map<number, CalendarAppointment>,
+): WeekLaneRenderData {
+  const distinctAppointments = tourLane.dayBuckets
+    .flatMap((bucket) => bucket.appointments)
+    .filter((appointmentId, index, appointmentIds) => appointmentIds.indexOf(appointmentId) === index)
+    .map((appointmentId) => appointmentsById.get(appointmentId))
+    .filter((appointment): appointment is CalendarAppointment => Boolean(appointment))
+    .sort(compareAppointmentsForWeekLane);
+
+  const spanningAppointments = distinctAppointments
+    .filter((appointment) => getAppointmentDurationDays(appointment) > 0)
+    .map((appointment, rowIndex) => ({
+      appointmentId: appointment.id,
+      rowIndex,
+    }));
+
+  const tileRowCount = spanningAppointments.length > 0 ? spanningAppointments.length : 1;
+  const occupiedCells = new Set<string>();
+
+  for (const { appointmentId, rowIndex } of spanningAppointments) {
+    for (const dayBucket of tourLane.dayBuckets) {
+      if (dayBucket.appointments.includes(appointmentId)) {
+        occupiedCells.add(`${rowIndex}-${dayBucket.dayIndex}`);
+      }
+    }
+  }
+
+  const singleDayGridItems: WeekLaneRenderData["singleDayGridItems"] = [];
+  const singleDayOverflowByBucket = tourLane.dayBuckets.map((bucket) =>
+    bucket.appointments
+      .map((appointmentId) => appointmentsById.get(appointmentId))
+      .filter((appointment): appointment is CalendarAppointment => Boolean(appointment))
+      .filter((appointment) => getAppointmentDurationDays(appointment) === 0)
+      .sort(compareAppointmentsForWeekLane)
+      .reduce<number[]>((overflow, appointment) => {
+        for (let rowIndex = 0; rowIndex < tileRowCount; rowIndex += 1) {
+          const cellKey = `${rowIndex}-${bucket.dayIndex}`;
+          if (occupiedCells.has(cellKey)) continue;
+          occupiedCells.add(cellKey);
+          singleDayGridItems.push({
+            appointmentId: appointment.id,
+            gridColumn: bucket.dayIndex + 1,
+            gridRow: rowIndex + 1,
+          });
+          return overflow;
+        }
+
+        overflow.push(appointment.id);
+        return overflow;
+      }, []),
+  );
+
+  const needsDayCellRow = singleDayOverflowByBucket.some((appointmentIds) => appointmentIds.length > 0);
+
+  return {
+    spanningAppointments,
+    singleDayGridItems,
+    singleDayOverflowByBucket,
+    tileRowCount,
+    needsDayCellRow,
+  };
+}
 
 export function CalendarWeekView({
   currentDate,
@@ -296,41 +374,8 @@ export function CalendarWeekView({
     return map;
   }, [appointments, appointmentsById, membersByTourId, tours, unassignedMembers, weekStarts]);
 
-  const getLaneRenderData = (tourLane: WeekTourLane): WeekLaneRenderData => {
-    const spanningAppointments = tourLane.dayBuckets
-      .flatMap((bucket) => bucket.appointments)
-      .filter((appointmentId, index, appointmentIds) => appointmentIds.indexOf(appointmentId) === index)
-      .map((appointmentId) => appointmentsById.get(appointmentId))
-      .filter((appointment): appointment is NonNullable<typeof appointment> => Boolean(appointment))
-      .sort((a, b) => {
-        const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
-        if (priorityCompare !== 0) return priorityCompare;
-        return getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b));
-      })
-      .filter((appointment) => getAppointmentDurationDays(appointment) > 0)
-      .map((appointment, rowIndex) => ({
-        appointmentId: appointment.id,
-        rowIndex,
-      }));
-
-    const singleDayAppointmentIdsByBucket = tourLane.dayBuckets.map((bucket) =>
-      bucket.appointments
-        .map((appointmentId) => appointmentsById.get(appointmentId))
-        .filter((appointment): appointment is NonNullable<typeof appointment> => Boolean(appointment))
-        .filter((appointment) => getAppointmentDurationDays(appointment) === 0)
-        .sort((a, b) => {
-          const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
-          if (priorityCompare !== 0) return priorityCompare;
-          return getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b));
-        })
-        .map((appointment) => appointment.id),
-    );
-
-    return {
-      spanningAppointments,
-      singleDayAppointmentIdsByBucket,
-    };
-  };
+  const getLaneRenderData = (tourLane: WeekTourLane): WeekLaneRenderData =>
+    buildWeekLaneRenderData(tourLane, appointmentsById);
 
   const primaryWeekLaneKeys = useMemo(() => {
     if (weekStarts.length === 0) return [] as string[];
@@ -678,11 +723,8 @@ export function CalendarWeekView({
                       const laneRenderData = getLaneRenderData(tourLane);
                       const laneUniformHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? null;
                       const projectStatusAreaHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? null;
-                      const tileRowCount = laneRenderData.spanningAppointments.length;
-                      const hasSingleDayAppointments = laneRenderData.singleDayAppointmentIdsByBucket.some(
-                        (appointmentIds) => appointmentIds.length > 0,
-                      );
-                      const needsDayCellRow = hasSingleDayAppointments || tileRowCount === 0;
+                      const tileRowCount = laneRenderData.tileRowCount;
+                      const needsDayCellRow = laneRenderData.needsDayCellRow;
                       const laneGridTemplateRows = [
                         ...Array.from({ length: tileRowCount }, () => "minmax(180px, auto)"),
                         ...(needsDayCellRow ? ["minmax(180px, auto)"] : []),
@@ -860,6 +902,44 @@ export function CalendarWeekView({
                                 />
                               );
                             })}
+                            {laneRenderData.singleDayGridItems.map(({ appointmentId, gridColumn, gridRow }) => {
+                              const appointment = appointmentsById.get(appointmentId);
+                              if (!appointment) return null;
+
+                              const isHighlighted = hoveredAppointmentId === appointment.id;
+                              const isSegmentLocked = appointment.isLocked && !isAdmin;
+                              const isHistoricalSource = appointment.startDate < berlinToday;
+                              const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+
+                              return (
+                                <div
+                                  key={`week-single-grid-item-${appointment.id}`}
+                                  style={{ gridColumn, gridRow, padding: "0.5rem", zIndex: 10 }}
+                                >
+                                  <CalendarWeekAppointmentPanel
+                                    appointment={appointment}
+                                    context="week-calendar"
+                                    segment="start"
+                                    continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
+                                    uniformHeightPx={laneUniformHeightPx}
+                                    projectStatusAreaHeightPx={projectStatusAreaHeightPx}
+                                    projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
+                                    containerRef={(node) =>
+                                      measureLaneCardHeight(laneHeightKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
+                                    isDragging={draggedAppointmentId === appointment.id}
+                                    isLocked={isSegmentLocked}
+                                    highlighted={isHighlighted}
+                                    onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                    onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                    onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                    onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
+                                    onMouseLeave={() =>
+                                      setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
+                                    }
+                                  />
+                                </div>
+                              );
+                            })}
                             {needsDayCellRow ? tourLane.dayBuckets.map((dayBucket, dayIdx) => {
                               const day = days[dayIdx];
 
@@ -874,7 +954,7 @@ export function CalendarWeekView({
                                   }}
                                   data-testid={`week-day-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                 >
-                                  {laneRenderData.singleDayAppointmentIdsByBucket[dayIdx].map((appointmentId, stackIndex) => {
+                                  {laneRenderData.singleDayOverflowByBucket[dayIdx].map((appointmentId, stackIndex) => {
                                     const appointment = appointmentsById.get(appointmentId);
                                     if (!appointment) return null;
 

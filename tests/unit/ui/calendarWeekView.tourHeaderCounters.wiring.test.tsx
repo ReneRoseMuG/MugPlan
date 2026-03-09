@@ -32,7 +32,10 @@ describe("FT03 UI: CalendarWeekView tour header counters wiring", () => {
 
   it("builds separate render data for spanning and single-day appointments without changing header count source", () => {
     expect(source).toContain("const laneRenderData = getLaneRenderData(tourLane);");
-    expect(source).toContain("const singleDayAppointmentIdsByBucket = tourLane.dayBuckets.map((bucket) =>");
+    expect(source).toContain("singleDayGridItems");
+    expect(source).toContain("singleDayOverflowByBucket");
+    expect(source).toContain("tileRowCount");
+    expect(source).toContain("needsDayCellRow");
   });
 
   it("keeps explicit weekend/header styling while the lane grid adds background columns", () => {
