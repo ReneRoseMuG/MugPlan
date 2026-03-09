@@ -2,6 +2,15 @@ import * as usersRepository from "../repositories/usersRepository";
 import { getBootstrapState } from "../bootstrap/getBootstrapState";
 import { hashPassword, verifyPassword } from "../security/passwordHash";
 import type { DbRoleCode } from "../settings/registry";
+import * as userSettingsService from "./userSettingsService";
+import type { AuthLoginPayload, AuthPreSessionState, AuthenticatedPayload } from "./authTypes";
+import {
+  buildTwoFactorSetup,
+  decryptTwoFactorSecret,
+  encryptTwoFactorSecret,
+  isTwoFactorChallengeExpired,
+  verifyTwoFactorCode,
+} from "./twoFactorService";
 
 type RoleCode = "READER" | "DISPATCHER" | "ADMIN";
 
@@ -14,7 +23,10 @@ export class AuthError extends Error {
     | "VALIDATION_ERROR"
     | "SETUP_REQUIRED"
     | "QUICK_LOGIN_DISABLED"
-    | "USER_NOT_FOUND_FOR_ROLE";
+    | "USER_NOT_FOUND_FOR_ROLE"
+    | "INVALID_TWO_FACTOR_CODE"
+    | "TWO_FACTOR_CHALLENGE_MISSING"
+    | "TWO_FACTOR_REQUIRED";
 
   constructor(
     message: string,
@@ -26,19 +38,16 @@ export class AuthError extends Error {
       | "VALIDATION_ERROR"
       | "SETUP_REQUIRED"
       | "QUICK_LOGIN_DISABLED"
-      | "USER_NOT_FOUND_FOR_ROLE",
+      | "USER_NOT_FOUND_FOR_ROLE"
+      | "INVALID_TWO_FACTOR_CODE"
+      | "TWO_FACTOR_CHALLENGE_MISSING"
+      | "TWO_FACTOR_REQUIRED",
   ) {
     super(message);
     this.status = status;
     this.code = code;
   }
 }
-
-type AuthResponse = {
-  userId: number;
-  username: string;
-  roleCode: RoleCode;
-};
 
 type QuickLoginRoleTarget = {
   roleCode: RoleCode;
@@ -48,6 +57,11 @@ type QuickLoginRoleTarget = {
 
 type QuickLoginTargetsResponse = {
   roles: QuickLoginRoleTarget[];
+};
+
+type LoginResult = {
+  payload: AuthLoginPayload;
+  preAuth?: AuthPreSessionState;
 };
 
 function normalizeUsername(input: string): string {
@@ -69,11 +83,25 @@ function isQuickLoginEnabled(): boolean {
   return process.env.NODE_ENV !== "production" && process.env.AUTH_QUICK_LOGIN_ENABLED === "true";
 }
 
+async function isGlobalTwoFactorEnabled(): Promise<boolean> {
+  const value = await userSettingsService.getGlobalSettingValue("auth_two_factor_enabled");
+  return value === true;
+}
+
+function toAuthenticatedPayload(input: { userId: number; username: string; roleCode: DbRoleCode }): AuthenticatedPayload {
+  return {
+    status: "authenticated",
+    userId: input.userId,
+    username: input.username,
+    roleCode: input.roleCode,
+  };
+}
+
 export async function getSetupStatus() {
   return getBootstrapState();
 }
 
-export async function setupAdmin(input: { username: string; password: string }): Promise<AuthResponse> {
+export async function setupAdmin(input: { username: string; password: string }): Promise<AuthenticatedPayload> {
   const bootstrap = await getBootstrapState();
   if (!bootstrap.needsAdminSetup) {
     throw new AuthError("Setup already completed", 409, "SETUP_ALREADY_COMPLETED");
@@ -99,14 +127,14 @@ export async function setupAdmin(input: { username: string; password: string }):
     throw error;
   }
 
-  return {
+  return toAuthenticatedPayload({
     userId: created.id,
     username: created.username,
     roleCode: created.roleCode,
-  };
+  });
 }
 
-export async function login(input: { username: string; password: string }): Promise<AuthResponse> {
+export async function login(input: { username: string; password: string }): Promise<LoginResult> {
   const bootstrap = await getBootstrapState();
   if (bootstrap.needsAdminSetup) {
     throw new AuthError("Setup required", 409, "SETUP_REQUIRED");
@@ -134,11 +162,96 @@ export async function login(input: { username: string; password: string }): Prom
     throw new AuthError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
 
+  const twoFactorEnabled = await isGlobalTwoFactorEnabled();
+  if (!twoFactorEnabled) {
+    return {
+      payload: toAuthenticatedPayload({
+        userId: user.userId,
+        username: user.username,
+        roleCode: user.roleCode,
+      }),
+    };
+  }
+
+  if (!user.twoFactorSecretEncrypted) {
+    const setup = await buildTwoFactorSetup(user.username);
+    return {
+      payload: {
+        status: "2fa_setup_required",
+        username: user.username,
+        manualEntryKey: setup.manualEntryKey,
+        qrCodeDataUrl: setup.qrCodeDataUrl,
+      },
+      preAuth: {
+        userId: user.userId,
+        username: user.username,
+        roleCode: user.roleCode,
+        mode: "setup",
+        pendingSecret: setup.secret,
+        createdAt: Date.now(),
+      },
+    };
+  }
+
   return {
+    payload: {
+      status: "2fa_required",
+      username: user.username,
+    },
+    preAuth: {
+      userId: user.userId,
+      username: user.username,
+      roleCode: user.roleCode,
+      mode: "verify",
+      createdAt: Date.now(),
+    },
+  };
+}
+
+function assertValidPreAuth(preAuth: AuthPreSessionState | undefined, expectedMode: "setup" | "verify"): AuthPreSessionState {
+  if (!preAuth || preAuth.mode !== expectedMode || isTwoFactorChallengeExpired(preAuth.createdAt)) {
+    throw new AuthError("Two-factor challenge missing", 409, "TWO_FACTOR_CHALLENGE_MISSING");
+  }
+  return preAuth;
+}
+
+export async function verifyTwoFactorSetup(input: {
+  code: string;
+  preAuth: AuthPreSessionState | undefined;
+}): Promise<AuthenticatedPayload> {
+  const preAuth = assertValidPreAuth(input.preAuth, "setup");
+  if (!preAuth.pendingSecret || !(await verifyTwoFactorCode(preAuth.pendingSecret, input.code))) {
+    throw new AuthError("Invalid two-factor code", 401, "INVALID_TWO_FACTOR_CODE");
+  }
+
+  await usersRepository.storeUserTwoFactorSecret(
+    preAuth.userId,
+    encryptTwoFactorSecret(preAuth.pendingSecret),
+  );
+
+  return toAuthenticatedPayload(preAuth);
+}
+
+export async function verifyTwoFactorLogin(input: {
+  code: string;
+  preAuth: AuthPreSessionState | undefined;
+}): Promise<AuthenticatedPayload> {
+  const preAuth = assertValidPreAuth(input.preAuth, "verify");
+  const user = await usersRepository.getUserTwoFactorRecordById(preAuth.userId);
+  if (!user || !user.isActive || !user.roleCode || !user.twoFactorSecretEncrypted) {
+    throw new AuthError("Two-factor challenge missing", 409, "TWO_FACTOR_CHALLENGE_MISSING");
+  }
+
+  const decryptedSecret = decryptTwoFactorSecret(user.twoFactorSecretEncrypted);
+  if (!(await verifyTwoFactorCode(decryptedSecret, input.code))) {
+    throw new AuthError("Invalid two-factor code", 401, "INVALID_TWO_FACTOR_CODE");
+  }
+
+  return toAuthenticatedPayload({
     userId: user.userId,
     username: user.username,
     roleCode: user.roleCode,
-  };
+  });
 }
 
 export async function listQuickLoginTargets(): Promise<QuickLoginTargetsResponse> {
@@ -172,7 +285,7 @@ export async function listQuickLoginTargets(): Promise<QuickLoginTargetsResponse
   return { roles };
 }
 
-export async function quickLoginByRole(input: { roleCode: RoleCode }): Promise<AuthResponse> {
+export async function quickLoginByRole(input: { roleCode: RoleCode }): Promise<AuthenticatedPayload> {
   if (!isQuickLoginEnabled()) {
     throw new AuthError("Quick login disabled", 404, "QUICK_LOGIN_DISABLED");
   }
@@ -181,17 +294,20 @@ export async function quickLoginByRole(input: { roleCode: RoleCode }): Promise<A
   if (bootstrap.needsAdminSetup) {
     throw new AuthError("Setup required", 409, "SETUP_REQUIRED");
   }
+  if (await isGlobalTwoFactorEnabled()) {
+    throw new AuthError("Two-factor required", 409, "TWO_FACTOR_REQUIRED");
+  }
 
   const user = await usersRepository.getFirstActiveUserByRoleCode(input.roleCode);
   if (!user) {
     throw new AuthError("No active user for role", 404, "USER_NOT_FOUND_FOR_ROLE");
   }
 
-  return {
+  return toAuthenticatedPayload({
     userId: user.userId,
     username: user.username,
     roleCode: user.roleCode,
-  };
+  });
 }
 
 export function isAuthError(error: unknown): error is AuthError {

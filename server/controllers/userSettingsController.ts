@@ -41,6 +41,10 @@ export async function setSetting(req: Request, res: Response, next: NextFunction
         res.status(409).json({ code: "VERSION_CONFLICT" });
         return;
       }
+      if (error.message === "FORBIDDEN") {
+        res.status(403).json({ code: "FORBIDDEN" });
+        return;
+      }
       res.status(error.status).json({ message: error.message });
       return;
     }

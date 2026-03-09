@@ -141,6 +141,8 @@ export const users = mysqlTable("users", {
   username: varchar("username", { length: 100 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  twoFactorSecretEncrypted: text("two_factor_secret_encrypted"),
+  twoFactorBackupCodesReserved: text("two_factor_backup_codes_reserved"),
   firstName: varchar("first_name", { length: 100 }).notNull(),
   lastName: varchar("last_name", { length: 100 }).notNull(),
   fullName: varchar("full_name", { length: 200 }).notNull(),

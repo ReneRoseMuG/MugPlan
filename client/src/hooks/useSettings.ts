@@ -9,6 +9,7 @@ export type UserSettingKey =
   | "helpTextPreviewSize"
   | "toastDesktopPosition"
   | "backup_enabled"
+  | "auth_two_factor_enabled"
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
@@ -24,6 +25,7 @@ type UserSettingValueByKey = {
   helpTextPreviewSize: "small" | "medium" | "large";
   toastDesktopPosition: ToastDesktopPosition;
   backup_enabled: boolean;
+  auth_two_factor_enabled: boolean;
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
@@ -101,6 +103,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "backup_enabled") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : true) as UserSettingValueByKey[K];
+    }
+    if (key === "auth_two_factor_enabled") {
+      return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
     }
     if (key === "calendar.weekLanes.expandedLaneId") {
       return (typeof setting?.resolvedValue === "string" ? setting.resolvedValue : "") as UserSettingValueByKey[K];

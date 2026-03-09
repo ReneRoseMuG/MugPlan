@@ -334,6 +334,8 @@ CREATE TABLE `users` (
   `username` varchar(100) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `two_factor_secret_encrypted` text,
+  `two_factor_backup_codes_reserved` text,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
   `full_name` varchar(200) NOT NULL,

@@ -54,6 +54,35 @@ export async function resetDatabase() {
     }
   }
 
+  const ensureConnection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
+  try {
+    await assertSqlDatabaseIdentity(ensureConnection, expectedTarget.dbName);
+    const [columnRows] = await ensureConnection.query(
+      `
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'users'
+          AND COLUMN_NAME IN ('two_factor_secret_encrypted', 'two_factor_backup_codes_reserved')
+      `,
+    );
+    const existingColumns = new Set(
+      (columnRows as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME),
+    );
+    if (!existingColumns.has("two_factor_secret_encrypted")) {
+      await ensureConnection.query(
+        "ALTER TABLE users ADD COLUMN two_factor_secret_encrypted text NULL",
+      );
+    }
+    if (!existingColumns.has("two_factor_backup_codes_reserved")) {
+      await ensureConnection.query(
+        "ALTER TABLE users ADD COLUMN two_factor_backup_codes_reserved text NULL",
+      );
+    }
+  } finally {
+    await ensureConnection.end();
+  }
+
   const { ensureSystemRoles } = await import("../../server/bootstrap/ensureSystemRoles");
   const { ensureMasterDataDefaults } = await import("../../server/bootstrap/ensureMasterDataDefaults");
   const { getAuthUserByUsername, createAdminUser } = await import("../../server/repositories/usersRepository");

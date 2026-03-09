@@ -27,12 +27,18 @@ vi.mock("../../../server/bootstrap/getBootstrapState", () => ({
   getBootstrapState: vi.fn(),
 }));
 
+vi.mock("../../../server/services/userSettingsService", () => ({
+  getGlobalSettingValue: vi.fn(),
+}));
+
 import * as usersRepository from "../../../server/repositories/usersRepository";
 import * as bootstrap from "../../../server/bootstrap/getBootstrapState";
+import * as userSettingsService from "../../../server/services/userSettingsService";
 import { AuthError, listQuickLoginTargets, quickLoginByRole } from "../../../server/services/authService";
 
 const usersRepoMock = vi.mocked(usersRepository);
 const bootstrapMock = vi.mocked(bootstrap);
+const userSettingsServiceMock = vi.mocked(userSettingsService);
 
 describe("authService quick login", () => {
   const originalNodeEnv = process.env.NODE_ENV;
@@ -43,6 +49,7 @@ describe("authService quick login", () => {
     process.env.NODE_ENV = "test";
     process.env.AUTH_QUICK_LOGIN_ENABLED = "true";
     bootstrapMock.getBootstrapState.mockResolvedValue({ needsAdminSetup: false });
+    userSettingsServiceMock.getGlobalSettingValue.mockResolvedValue(false);
   });
 
   afterAll(() => {
@@ -87,6 +94,7 @@ describe("authService quick login", () => {
 
     expect(usersRepoMock.getFirstActiveUserByRoleCode).toHaveBeenCalledWith("READER");
     expect(result).toEqual({
+      status: "authenticated",
       userId: 7,
       username: "reader-a",
       roleCode: "READER",
@@ -108,6 +116,15 @@ describe("authService quick login", () => {
     await expect(quickLoginByRole({ roleCode: "DISPATCHER" })).rejects.toMatchObject<AuthError>({
       code: "USER_NOT_FOUND_FOR_ROLE",
       status: 404,
+    });
+  });
+
+  it("throws TWO_FACTOR_REQUIRED when global 2FA is active", async () => {
+    userSettingsServiceMock.getGlobalSettingValue.mockResolvedValue(true);
+
+    await expect(quickLoginByRole({ roleCode: "DISPATCHER" })).rejects.toMatchObject<AuthError>({
+      code: "TWO_FACTOR_REQUIRED",
+      status: 409,
     });
   });
 });

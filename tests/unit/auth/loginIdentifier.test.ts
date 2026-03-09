@@ -13,19 +13,26 @@ vi.mock("../../../server/security/passwordHash", () => ({
   verifyPassword: vi.fn(),
 }));
 
+vi.mock("../../../server/services/userSettingsService", () => ({
+  getGlobalSettingValue: vi.fn(),
+}));
+
 import * as usersRepository from "../../../server/repositories/usersRepository";
 import * as bootstrap from "../../../server/bootstrap/getBootstrapState";
 import * as passwordHash from "../../../server/security/passwordHash";
+import * as userSettingsService from "../../../server/services/userSettingsService";
 import { login } from "../../../server/services/authService";
 
 const usersRepoMock = vi.mocked(usersRepository);
 const bootstrapMock = vi.mocked(bootstrap);
 const passwordHashMock = vi.mocked(passwordHash);
+const userSettingsServiceMock = vi.mocked(userSettingsService);
 
 describe("authService.login identifier", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     bootstrapMock.getBootstrapState.mockResolvedValue({ needsAdminSetup: false });
+    userSettingsServiceMock.getGlobalSettingValue.mockResolvedValue(false);
   });
 
   it("authenticates by email identifier", async () => {
@@ -35,6 +42,7 @@ describe("authService.login identifier", () => {
       passwordHash: "scrypt$abc$hash",
       isActive: true,
       roleCode: "ADMIN",
+      twoFactorSecretEncrypted: null,
     });
     passwordHashMock.verifyPassword.mockResolvedValue(true);
 
@@ -44,6 +52,11 @@ describe("authService.login identifier", () => {
     });
 
     expect(usersRepoMock.getAuthUserByIdentifier).toHaveBeenCalledWith("admin@example.com");
-    expect(result).toMatchObject({ userId: 7, username: "admin", roleCode: "ADMIN" });
+    expect(result.payload).toMatchObject({
+      status: "authenticated",
+      userId: 7,
+      username: "admin",
+      roleCode: "ADMIN",
+    });
   });
 });

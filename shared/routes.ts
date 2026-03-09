@@ -245,6 +245,7 @@ export const api = {
         .strict(),
       responses: {
         201: z.object({
+          status: z.literal("authenticated"),
           userId: z.number().int().positive(),
           username: z.string(),
           roleCode: z.literal("ADMIN"),
@@ -263,14 +264,63 @@ export const api = {
         })
         .strict(),
       responses: {
+        200: z.union([
+          z.object({
+            status: z.literal("authenticated"),
+            userId: z.number().int().positive(),
+            username: z.string(),
+            roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+          }),
+          z.object({
+            status: z.literal("2fa_setup_required"),
+            username: z.string(),
+            manualEntryKey: z.string(),
+            qrCodeDataUrl: z.string(),
+          }),
+          z.object({
+            status: z.literal("2fa_required"),
+            username: z.string(),
+          }),
+        ]),
+        401: z.object({ code: z.literal("INVALID_CREDENTIALS") }),
+        403: z.object({ code: z.literal("USER_INACTIVE") }),
+        409: z.object({ code: z.literal("SETUP_REQUIRED") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    twoFactorSetupVerify: {
+      method: "POST" as const,
+      path: "/api/auth/2fa/setup/verify",
+      input: z.object({
+        code: z.string().min(1).max(20),
+      }).strict(),
+      responses: {
         200: z.object({
+          status: z.literal("authenticated"),
           userId: z.number().int().positive(),
           username: z.string(),
           roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
         }),
-        401: z.object({ code: z.literal("INVALID_CREDENTIALS") }),
-        403: z.object({ code: z.literal("USER_INACTIVE") }),
-        409: z.object({ code: z.literal("SETUP_REQUIRED") }),
+        401: z.object({ code: z.literal("INVALID_TWO_FACTOR_CODE") }),
+        409: z.object({ code: z.literal("TWO_FACTOR_CHALLENGE_MISSING") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    twoFactorVerify: {
+      method: "POST" as const,
+      path: "/api/auth/2fa/verify",
+      input: z.object({
+        code: z.string().min(1).max(20),
+      }).strict(),
+      responses: {
+        200: z.object({
+          status: z.literal("authenticated"),
+          userId: z.number().int().positive(),
+          username: z.string(),
+          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+        }),
+        401: z.object({ code: z.literal("INVALID_TWO_FACTOR_CODE") }),
+        409: z.object({ code: z.literal("TWO_FACTOR_CHALLENGE_MISSING") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -301,12 +351,13 @@ export const api = {
         .strict(),
       responses: {
         200: z.object({
+          status: z.literal("authenticated"),
           userId: z.number().int().positive(),
           username: z.string(),
           roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
         }),
         404: z.object({ code: z.enum(["QUICK_LOGIN_DISABLED", "USER_NOT_FOUND_FOR_ROLE"]) }),
-        409: z.object({ code: z.literal("SETUP_REQUIRED") }),
+        409: z.object({ code: z.enum(["SETUP_REQUIRED", "TWO_FACTOR_REQUIRED"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -2704,6 +2755,7 @@ export const api = {
             updatedBy: z.number().nullable().optional(),
           }),
         ),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
@@ -2758,4 +2810,6 @@ export type EmployeeInput = z.infer<typeof api.employees.create.input>;
 export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
 export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
 export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
+export type AuthLoginResponse = z.infer<typeof api.auth.login.responses[200]>;
+export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.responses[200]>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;

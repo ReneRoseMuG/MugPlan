@@ -15,6 +15,13 @@
       "when": 1772442165346,
       "tag": "0001_safe_silk_fever",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773100800000,
+      "tag": "0004_ft29_global_2fa",
+      "breakpoints": true
     }
   ]
 }

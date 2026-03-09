@@ -81,6 +81,18 @@ function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): st
   return globalScopeMarker;
 }
 
+async function assertCanWriteSetting(userId: number, input: SetSettingInput): Promise<void> {
+  if (!(input.scopeType === "GLOBAL" && input.key === "auth_two_factor_enabled")) {
+    return;
+  }
+  const userWithRole = await usersRepository.getUserWithRole(userId);
+  const roleCode = userWithRole?.isActive ? userWithRole.roleCode : null;
+  const roleKey = roleCode ? mapDbRoleCodeToCanonicalRole(roleCode) : null;
+  if (roleKey !== "ADMIN") {
+    throw new UserSettingsError("FORBIDDEN", 403);
+  }
+}
+
 export async function getResolvedSettingsForUser(userId: number): Promise<ResolvedSettingRow[]> {
   if (!Number.isFinite(userId) || userId <= 0) {
     throw new UserSettingsError("Ungueltiger User-Kontext", 400);
@@ -200,6 +212,8 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
   if (!definition) {
     throw new UserSettingsError("Unbekannter Setting-Key", 400);
   }
+
+  await assertCanWriteSetting(userId, input);
 
   if (!hasAllowedScope(definition, input.scopeType)) {
     throw new UserSettingsError("Scope fuer dieses Setting nicht erlaubt", 400);

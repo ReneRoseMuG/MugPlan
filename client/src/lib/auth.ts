@@ -2,11 +2,25 @@ type SetupStatusResponse = {
   needsAdminSetup: boolean;
 };
 
-type AuthPayload = {
+type AuthenticatedPayload = {
+  status: "authenticated";
   userId: number;
   username: string;
   roleCode: "READER" | "DISPATCHER" | "ADMIN";
 };
+
+type LoginPayload =
+  | AuthenticatedPayload
+  | {
+      status: "2fa_setup_required";
+      username: string;
+      manualEntryKey: string;
+      qrCodeDataUrl: string;
+    }
+  | {
+      status: "2fa_required";
+      username: string;
+    };
 
 type QuickLoginRoleCode = "READER" | "DISPATCHER" | "ADMIN";
 
@@ -31,7 +45,11 @@ export async function getSetupStatus(): Promise<SetupStatusResponse> {
   return (await response.json()) as SetupStatusResponse;
 }
 
-export async function login(username: string, password: string): Promise<void> {
+function persistRole(payload: AuthenticatedPayload): void {
+  window.localStorage.setItem("userRole", payload.roleCode);
+}
+
+export async function login(username: string, password: string): Promise<LoginPayload> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     credentials: "include",
@@ -44,8 +62,47 @@ export async function login(username: string, password: string): Promise<void> {
     const code = typeof payload?.code === "string" ? payload.code : "LOGIN_FAILED";
     throw new Error(code);
   }
-  const payload = (await response.json()) as AuthPayload;
-  window.localStorage.setItem("userRole", payload.roleCode);
+  const payload = (await response.json()) as LoginPayload;
+  if (payload.status === "authenticated") {
+    persistRole(payload);
+  }
+  return payload;
+}
+
+export async function verifyTwoFactorSetup(code: string): Promise<void> {
+  const response = await fetch("/api/auth/2fa/setup/verify", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const codeValue = typeof payload?.code === "string" ? payload.code : "TWO_FACTOR_SETUP_FAILED";
+    throw new Error(codeValue);
+  }
+
+  const payload = (await response.json()) as AuthenticatedPayload;
+  persistRole(payload);
+}
+
+export async function verifyTwoFactorLogin(code: string): Promise<void> {
+  const response = await fetch("/api/auth/2fa/verify", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const codeValue = typeof payload?.code === "string" ? payload.code : "TWO_FACTOR_VERIFY_FAILED";
+    throw new Error(codeValue);
+  }
+
+  const payload = (await response.json()) as AuthenticatedPayload;
+  persistRole(payload);
 }
 
 export async function getQuickLoginTargets(): Promise<QuickLoginTargetsResponse> {
@@ -77,8 +134,8 @@ export async function quickLogin(roleCode: QuickLoginRoleCode): Promise<void> {
     throw new Error(code);
   }
 
-  const payload = (await response.json()) as AuthPayload;
-  window.localStorage.setItem("userRole", payload.roleCode);
+  const payload = (await response.json()) as AuthenticatedPayload;
+  persistRole(payload);
 }
 
 export async function setupAdmin(username: string, password: string): Promise<void> {
@@ -94,8 +151,8 @@ export async function setupAdmin(username: string, password: string): Promise<vo
     const code = typeof payload?.code === "string" ? payload.code : "SETUP_FAILED";
     throw new Error(code);
   }
-  const payload = (await response.json()) as AuthPayload;
-  window.localStorage.setItem("userRole", payload.roleCode);
+  const payload = (await response.json()) as AuthenticatedPayload;
+  persistRole(payload);
 }
 
 export async function logout(): Promise<void> {

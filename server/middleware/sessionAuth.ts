@@ -1,10 +1,12 @@
 import session from "express-session";
 import type { NextFunction, Request, Response } from "express";
 import type { CanonicalRoleKey, DbRoleCode } from "../settings/registry";
+import type { AuthPreSessionState } from "../services/authTypes";
 
 declare module "express-session" {
   interface SessionData {
     userId?: number;
+    preAuth?: AuthPreSessionState;
   }
 }
 
@@ -60,6 +62,8 @@ const publicPaths = new Set<string>([
   "/auth/setup-status",
   "/auth/setup-admin",
   "/auth/login",
+  "/auth/2fa/setup/verify",
+  "/auth/2fa/verify",
   "/auth/quick-login-targets",
   "/auth/quick-login",
   "/auth/logout",

@@ -15,6 +15,7 @@ export type AuthUserRecord = {
   passwordHash: string;
   isActive: boolean;
   roleCode: DbRoleCode | null;
+  twoFactorSecretEncrypted: string | null;
 };
 
 export type UserRoleListRow = {
@@ -39,6 +40,14 @@ export type FirstActiveUserByRole = {
   userId: number;
   username: string;
   roleCode: DbRoleCode;
+};
+
+export type UserTwoFactorRecord = {
+  userId: number;
+  username: string;
+  isActive: boolean;
+  roleCode: DbRoleCode | null;
+  twoFactorSecretEncrypted: string | null;
 };
 
 export class UsersRepositoryError extends Error {
@@ -220,6 +229,7 @@ export async function getAuthUserByUsername(username: string): Promise<AuthUserR
       passwordHash: users.passwordHash,
       isActive: users.isActive,
       roleCode: roles.code,
+      twoFactorSecretEncrypted: users.twoFactorSecretEncrypted,
     })
     .from(users)
     .leftJoin(roles, eq(users.roleId, roles.id))
@@ -233,6 +243,7 @@ export async function getAuthUserByUsername(username: string): Promise<AuthUserR
     passwordHash: row.passwordHash,
     isActive: row.isActive,
     roleCode: row.roleCode ? assertDbRoleCode(row.roleCode.toUpperCase()) : null,
+    twoFactorSecretEncrypted: row.twoFactorSecretEncrypted ?? null,
   };
 }
 
@@ -247,6 +258,7 @@ export async function getAuthUserByIdentifier(identifier: string): Promise<AuthU
       passwordHash: users.passwordHash,
       isActive: users.isActive,
       roleCode: roles.code,
+      twoFactorSecretEncrypted: users.twoFactorSecretEncrypted,
     })
     .from(users)
     .leftJoin(roles, eq(users.roleId, roles.id))
@@ -260,7 +272,45 @@ export async function getAuthUserByIdentifier(identifier: string): Promise<AuthU
     passwordHash: row.passwordHash,
     isActive: row.isActive,
     roleCode: row.roleCode ? assertDbRoleCode(row.roleCode.toUpperCase()) : null,
+    twoFactorSecretEncrypted: row.twoFactorSecretEncrypted ?? null,
   };
+}
+
+export async function getUserTwoFactorRecordById(userId: number): Promise<UserTwoFactorRecord | null> {
+  const [row] = await db
+    .select({
+      userId: users.id,
+      username: users.username,
+      isActive: users.isActive,
+      roleCode: roles.code,
+      twoFactorSecretEncrypted: users.twoFactorSecretEncrypted,
+    })
+    .from(users)
+    .leftJoin(roles, eq(users.roleId, roles.id))
+    .where(eq(users.id, userId));
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    userId: row.userId,
+    username: row.username,
+    isActive: row.isActive,
+    roleCode: row.roleCode ? assertDbRoleCode(row.roleCode.toUpperCase()) : null,
+    twoFactorSecretEncrypted: row.twoFactorSecretEncrypted ?? null,
+  };
+}
+
+export async function storeUserTwoFactorSecret(userId: number, encryptedSecret: string): Promise<void> {
+  await db.execute(sql`
+    update users
+    set
+      two_factor_secret_encrypted = ${encryptedSecret},
+      updated_at = now(),
+      version = version + 1
+    where id = ${userId}
+  `);
 }
 
 export async function createAdminUser(params: {

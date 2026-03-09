@@ -7,6 +7,8 @@ const router = Router();
 router.get(api.auth.setupStatus.path, authController.getSetupStatus);
 router.post(api.auth.setupAdmin.path, authController.setupAdmin);
 router.post(api.auth.login.path, authController.login);
+router.post(api.auth.twoFactorSetupVerify.path, authController.verifyTwoFactorSetup);
+router.post(api.auth.twoFactorVerify.path, authController.verifyTwoFactor);
 router.get(api.auth.quickLoginTargets.path, authController.getQuickLoginTargets);
 router.post(api.auth.quickLogin.path, authController.quickLogin);
 router.post(api.auth.logout.path, authController.logout);

@@ -57,6 +57,8 @@ function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; 
 
 export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
+  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
   const helpTextPreviewSetting = settingsByKey.get("helpTextPreviewSize");
@@ -67,6 +69,7 @@ export function SettingsPage() {
   const hoverPreviewOpenDelaySetting = settingsByKey.get("hoverPreviewOpenDelayMs");
   const cardListColumnsSetting = settingsByKey.get("cardListColumns");
   const backupEnabledSetting = settingsByKey.get("backup_enabled");
+  const authTwoFactorEnabledSetting = settingsByKey.get("auth_two_factor_enabled");
 
   const backupsQuery = useQuery<BackupLogRow[]>({
     queryKey: [api.backups.listLogs.path],
@@ -150,6 +153,10 @@ export function SettingsPage() {
     const value = backupEnabledSetting?.resolvedValue;
     return typeof value === "boolean" ? value : true;
   }, [backupEnabledSetting?.resolvedValue]);
+  const resolvedAuthTwoFactorEnabled = useMemo(() => {
+    const value = authTwoFactorEnabledSetting?.resolvedValue;
+    return typeof value === "boolean" ? value : false;
+  }, [authTwoFactorEnabledSetting?.resolvedValue]);
 
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
   const [helpTextPreviewValue, setHelpTextPreviewValue] = useState<HelpTextPreviewSize>(resolvedHelpTextPreviewValue);
@@ -160,6 +167,7 @@ export function SettingsPage() {
   const [hoverPreviewOpenDelayValue, setHoverPreviewOpenDelayValue] = useState<string>(String(resolvedHoverPreviewOpenDelay));
   const [cardListColumnsValue, setCardListColumnsValue] = useState<string>(String(resolvedCardListColumns));
   const [backupEnabledValue, setBackupEnabledValue] = useState<boolean>(resolvedBackupEnabled);
+  const [authTwoFactorEnabledValue, setAuthTwoFactorEnabledValue] = useState<boolean>(resolvedAuthTwoFactorEnabled);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [helpTextPreviewError, setHelpTextPreviewError] = useState<string | null>(null);
   const [toastDesktopPositionError, setToastDesktopPositionError] = useState<string | null>(null);
@@ -169,6 +177,7 @@ export function SettingsPage() {
   const [hoverPreviewOpenDelayError, setHoverPreviewOpenDelayError] = useState<string | null>(null);
   const [cardListColumnsError, setCardListColumnsError] = useState<string | null>(null);
   const [backupEnabledError, setBackupEnabledError] = useState<string | null>(null);
+  const [authTwoFactorEnabledError, setAuthTwoFactorEnabledError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
   const [helpTextPreviewSaved, setHelpTextPreviewSaved] = useState(false);
   const [toastDesktopPositionSaved, setToastDesktopPositionSaved] = useState(false);
@@ -178,6 +187,7 @@ export function SettingsPage() {
   const [hoverPreviewOpenDelaySaved, setHoverPreviewOpenDelaySaved] = useState(false);
   const [cardListColumnsSaved, setCardListColumnsSaved] = useState(false);
   const [backupEnabledSaved, setBackupEnabledSaved] = useState(false);
+  const [authTwoFactorEnabledSaved, setAuthTwoFactorEnabledSaved] = useState(false);
   const [isRunningBackupNow, setIsRunningBackupNow] = useState(false);
   const [backupRunInfo, setBackupRunInfo] = useState<string | null>(null);
   const [backupRunError, setBackupRunError] = useState<string | null>(null);
@@ -217,6 +227,10 @@ export function SettingsPage() {
   useEffect(() => {
     setBackupEnabledValue(resolvedBackupEnabled);
   }, [resolvedBackupEnabled]);
+
+  useEffect(() => {
+    setAuthTwoFactorEnabledValue(resolvedAuthTwoFactorEnabled);
+  }, [resolvedAuthTwoFactorEnabled]);
 
   if (isLoading) {
     return (
@@ -404,6 +418,21 @@ export function SettingsPage() {
       void backupsQuery.refetch();
     } catch (error) {
       setBackupEnabledError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveAuthTwoFactorEnabled = async () => {
+    setAuthTwoFactorEnabledError(null);
+    setAuthTwoFactorEnabledSaved(false);
+    try {
+      await setSetting({
+        key: "auth_two_factor_enabled",
+        scopeType: "GLOBAL",
+        value: authTwoFactorEnabledValue,
+      });
+      setAuthTwoFactorEnabledSaved(true);
+    } catch (error) {
+      setAuthTwoFactorEnabledError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
 
@@ -668,6 +697,38 @@ export function SettingsPage() {
           </section>
 
           <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-backups">
+            {isAdmin ? (
+              <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-auth-two-factor-enabled">
+                <p className="font-semibold text-slate-900">{authTwoFactorEnabledSetting?.label ?? "2FA global aktiv"}</p>
+                <p className="mb-3 text-xs text-slate-500">
+                  {authTwoFactorEnabledSetting?.description ?? "Aktiviert die verpflichtende Zwei-Faktor-Anmeldung fuer alle Benutzer."}
+                </p>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <div className="flex h-10 items-center gap-3">
+                    <Switch
+                      checked={authTwoFactorEnabledValue}
+                      onCheckedChange={setAuthTwoFactorEnabledValue}
+                      data-testid="switch-setting-auth-two-factor-enabled"
+                    />
+                    <span className="text-sm text-slate-700">{authTwoFactorEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+                  </div>
+                  <Button
+                    onClick={() => void handleSaveAuthTwoFactorEnabled()}
+                    disabled={isSaving}
+                    data-testid="button-save-auth-two-factor-enabled"
+                  >
+                    Speichern
+                  </Button>
+                </div>
+                <p className="mt-2 text-xs text-slate-600">
+                  Wirksam: {stringifyValue(authTwoFactorEnabledSetting?.resolvedValue ?? false)} ({authTwoFactorEnabledSetting?.resolvedScope ?? "-"})
+                </p>
+                <p className="mt-1 text-xs text-slate-500">Default: deaktiviert. Die Aenderung wirkt fuer alle künftigen Logins.</p>
+                {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
+              </div>
+            ) : null}
+
             <h4 className="font-bold text-slate-900">Backups</h4>
             <p className="mt-1 text-xs text-slate-500">Steuerung und Monitoring aller Backup-Funktionen.</p>
 

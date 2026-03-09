@@ -182,6 +182,15 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL"],
     validate: (value: unknown): value is boolean => typeof value === "boolean",
   },
+  authTwoFactorEnabled: {
+    key: "auth_two_factor_enabled",
+    label: "2FA global aktiv",
+    description: "Aktiviert die verpflichtende Zwei-Faktor-Anmeldung fuer alle Benutzer.",
+    type: "boolean",
+    defaultValue: false,
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
   backupLaneTourIds: {
     key: "backup_lane_tour_ids",
     label: "Backup Tour-Lanes (CSV)",
