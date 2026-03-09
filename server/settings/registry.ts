@@ -98,6 +98,47 @@ function isValidBackupLaneTourIds(value: unknown): value is string {
   return new Set(parsed).size === parsed.length;
 }
 
+function isValidDemoDataAdminFormState(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+
+    const integerKeys = [
+      "baseEmployees",
+      "baseCustomers",
+      "baseProjects",
+      "appointmentsPerProject",
+      "seedWindowDaysMin",
+      "seedWindowDaysMax",
+      "reklDelayDaysMin",
+      "reklDelayDaysMax",
+    ] as const;
+    for (const key of integerKeys) {
+      if (!Number.isInteger(parsed[key])) return false;
+    }
+
+    if (typeof parsed.baseGenerateAttachments !== "boolean") return false;
+    if (typeof parsed.baseRandomSeed !== "string") return false;
+    if (typeof parsed.baseLocale !== "string") return false;
+    if (typeof parsed.appointmentBaseSeedRunId !== "string") return false;
+    if (typeof parsed.appointmentsRandomSeed !== "string") return false;
+    if (typeof parsed.appointmentsLocale !== "string") return false;
+    if (typeof parsed.reklShare !== "number" || !Number.isFinite(parsed.reklShare)) return false;
+
+    if (!Array.isArray(parsed.baseProjectStatuses)) return false;
+    return parsed.baseProjectStatuses.every((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
+      const status = entry as Record<string, unknown>;
+      const hasDescription = status.description === undefined || typeof status.description === "string";
+      return typeof status.title === "string" && typeof status.color === "string" && hasDescription;
+    });
+  } catch {
+    return false;
+  }
+}
+
 export const userSettingsRegistry = {
   attachmentPreviewSize: {
     key: "attachmentPreviewSize",
@@ -289,6 +330,16 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: (value: unknown): value is ListViewMode =>
       typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
+  },
+  demoDataAdminFormState: {
+    key: "demoData.adminFormState",
+    label: "Demo-Daten Formularzustand",
+    description: "Speichert den zuletzt verwendeten Formularzustand der Demo-Daten-Adminansicht.",
+    type: "string",
+    defaultValue: "",
+    allowedScopes: ["USER"],
+    placeholderWhitelist: [],
+    validate: isValidDemoDataAdminFormState,
   },
   templatesProjectTitle: {
     key: "templates.project.title",

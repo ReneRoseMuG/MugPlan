@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -24,6 +25,25 @@ type ProjectStatusSeedForm = {
   title: string;
   color: string;
   description?: string;
+};
+
+type DemoDataFormState = {
+  baseEmployees: number;
+  baseCustomers: number;
+  baseProjects: number;
+  baseGenerateAttachments: boolean;
+  baseRandomSeed: string;
+  baseLocale: string;
+  baseProjectStatuses: ProjectStatusSeedForm[];
+  appointmentBaseSeedRunId: string;
+  appointmentsPerProject: number;
+  appointmentsRandomSeed: string;
+  seedWindowDaysMin: number;
+  seedWindowDaysMax: number;
+  reklDelayDaysMin: number;
+  reklDelayDaysMax: number;
+  reklShare: number;
+  appointmentsLocale: string;
 };
 
 type BaseSeedConfig = {
@@ -127,6 +147,101 @@ type ResetDatabaseResponse = {
   durationMs: number;
 };
 
+const demoDataAdminFormStateKey = "demoData.adminFormState";
+
+const defaultDemoDataFormState: DemoDataFormState = {
+  baseEmployees: 20,
+  baseCustomers: 10,
+  baseProjects: 30,
+  baseGenerateAttachments: true,
+  baseRandomSeed: "",
+  baseLocale: "de",
+  baseProjectStatuses: [
+    { title: "Neu", color: "#2563eb", description: "" },
+    { title: "In Arbeit", color: "#d97706", description: "" },
+    { title: "Erledigt", color: "#16a34a", description: "" },
+  ],
+  appointmentBaseSeedRunId: "",
+  appointmentsPerProject: 1,
+  appointmentsRandomSeed: "",
+  seedWindowDaysMin: 60,
+  seedWindowDaysMax: 90,
+  reklDelayDaysMin: 14,
+  reklDelayDaysMax: 42,
+  reklShare: 0.33,
+  appointmentsLocale: "de",
+};
+
+function toIntegerOrFallback(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isInteger(value) ? value : fallback;
+}
+
+function toFiniteNumberOrFallback(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toStringOrFallback(value: unknown, fallback: string) {
+  return typeof value === "string" ? value : fallback;
+}
+
+function toBooleanOrFallback(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function normalizeProjectStatuses(value: unknown): ProjectStatusSeedForm[] {
+  if (!Array.isArray(value)) {
+    return defaultDemoDataFormState.baseProjectStatuses;
+  }
+
+  const statuses = value
+    .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === "object" && !Array.isArray(entry))
+    .map((entry) => ({
+      title: toStringOrFallback(entry.title, ""),
+      color: toStringOrFallback(entry.color, "#64748b"),
+      description: toStringOrFallback(entry.description, ""),
+    }));
+
+  return statuses.length > 0 ? statuses : defaultDemoDataFormState.baseProjectStatuses;
+}
+
+export function parseDemoDataFormState(value: unknown): DemoDataFormState {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return defaultDemoDataFormState;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return defaultDemoDataFormState;
+    }
+
+    return {
+      baseEmployees: toIntegerOrFallback(parsed.baseEmployees, defaultDemoDataFormState.baseEmployees),
+      baseCustomers: toIntegerOrFallback(parsed.baseCustomers, defaultDemoDataFormState.baseCustomers),
+      baseProjects: toIntegerOrFallback(parsed.baseProjects, defaultDemoDataFormState.baseProjects),
+      baseGenerateAttachments: toBooleanOrFallback(parsed.baseGenerateAttachments, defaultDemoDataFormState.baseGenerateAttachments),
+      baseRandomSeed: toStringOrFallback(parsed.baseRandomSeed, defaultDemoDataFormState.baseRandomSeed),
+      baseLocale: toStringOrFallback(parsed.baseLocale, defaultDemoDataFormState.baseLocale),
+      baseProjectStatuses: normalizeProjectStatuses(parsed.baseProjectStatuses),
+      appointmentBaseSeedRunId: toStringOrFallback(parsed.appointmentBaseSeedRunId, defaultDemoDataFormState.appointmentBaseSeedRunId),
+      appointmentsPerProject: toIntegerOrFallback(parsed.appointmentsPerProject, defaultDemoDataFormState.appointmentsPerProject),
+      appointmentsRandomSeed: toStringOrFallback(parsed.appointmentsRandomSeed, defaultDemoDataFormState.appointmentsRandomSeed),
+      seedWindowDaysMin: toIntegerOrFallback(parsed.seedWindowDaysMin, defaultDemoDataFormState.seedWindowDaysMin),
+      seedWindowDaysMax: toIntegerOrFallback(parsed.seedWindowDaysMax, defaultDemoDataFormState.seedWindowDaysMax),
+      reklDelayDaysMin: toIntegerOrFallback(parsed.reklDelayDaysMin, defaultDemoDataFormState.reklDelayDaysMin),
+      reklDelayDaysMax: toIntegerOrFallback(parsed.reklDelayDaysMax, defaultDemoDataFormState.reklDelayDaysMax),
+      reklShare: toFiniteNumberOrFallback(parsed.reklShare, defaultDemoDataFormState.reklShare),
+      appointmentsLocale: toStringOrFallback(parsed.appointmentsLocale, defaultDemoDataFormState.appointmentsLocale),
+    };
+  } catch {
+    return defaultDemoDataFormState;
+  }
+}
+
+function serializeDemoDataFormState(state: DemoDataFormState) {
+  return JSON.stringify(state);
+}
+
 function runTypeLabel(runType: SeedRunType | undefined) {
   if (runType === "base") return "Basisdaten";
   if (runType === "appointments") return "Termine";
@@ -142,28 +257,11 @@ function formatCounts(summary: SeedSummary, runType: SeedRunType | undefined) {
 
 export function DemoDataPage() {
   const { toast } = useToast();
-
-  const [baseEmployees, setBaseEmployees] = useState(20);
-  const [baseCustomers, setBaseCustomers] = useState(10);
-  const [baseProjects, setBaseProjects] = useState(30);
-  const [baseGenerateAttachments, setBaseGenerateAttachments] = useState(true);
-  const [baseRandomSeed, setBaseRandomSeed] = useState("");
-  const [baseLocale, setBaseLocale] = useState("de");
-  const [baseProjectStatuses, setBaseProjectStatuses] = useState<ProjectStatusSeedForm[]>([
-    { title: "Neu", color: "#2563eb", description: "" },
-    { title: "In Arbeit", color: "#d97706", description: "" },
-    { title: "Erledigt", color: "#16a34a", description: "" },
-  ]);
-
-  const [appointmentBaseSeedRunId, setAppointmentBaseSeedRunId] = useState("");
-  const [appointmentsPerProject, setAppointmentsPerProject] = useState(1);
-  const [appointmentsRandomSeed, setAppointmentsRandomSeed] = useState("");
-  const [seedWindowDaysMin, setSeedWindowDaysMin] = useState(60);
-  const [seedWindowDaysMax, setSeedWindowDaysMax] = useState(90);
-  const [reklDelayDaysMin, setReklDelayDaysMin] = useState(14);
-  const [reklDelayDaysMax, setReklDelayDaysMax] = useState(42);
-  const [reklShare, setReklShare] = useState(0.33);
-  const [appointmentsLocale, setAppointmentsLocale] = useState("de");
+  const { settingsByKey, setSetting } = useSettings();
+  const [formState, setFormState] = useState<DemoDataFormState>(defaultDemoDataFormState);
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
+  const lastPersistedValueRef = useRef<string | null>(null);
+  const persistErrorShownRef = useRef(false);
 
   const [lastResult, setLastResult] = useState<SeedSummary | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -182,11 +280,73 @@ export function DemoDataPage() {
     return baseRuns[baseRuns.length - 1]?.seedRunId ?? "";
   }, [baseRuns]);
 
+  const persistedFormState = useMemo(() => {
+    const rawValue = settingsByKey.get(demoDataAdminFormStateKey)?.resolvedValue;
+    return parseDemoDataFormState(rawValue);
+  }, [settingsByKey]);
+
+  const serializedFormState = useMemo(() => serializeDemoDataFormState(formState), [formState]);
+
+  const {
+    baseEmployees,
+    baseCustomers,
+    baseProjects,
+    baseGenerateAttachments,
+    baseRandomSeed,
+    baseLocale,
+    baseProjectStatuses,
+    appointmentBaseSeedRunId,
+    appointmentsPerProject,
+    appointmentsRandomSeed,
+    seedWindowDaysMin,
+    seedWindowDaysMax,
+    reklDelayDaysMin,
+    reklDelayDaysMax,
+    reklShare,
+    appointmentsLocale,
+  } = formState;
+
   useEffect(() => {
+    if (settingsHydrated) return;
+    setFormState(persistedFormState);
+    lastPersistedValueRef.current = serializeDemoDataFormState(persistedFormState);
+    setSettingsHydrated(true);
+  }, [persistedFormState, settingsHydrated]);
+
+  useEffect(() => {
+    if (!settingsHydrated) return;
     if (appointmentBaseSeedRunId.trim().length > 0) return;
     if (!latestBaseRunId) return;
-    setAppointmentBaseSeedRunId(latestBaseRunId);
-  }, [appointmentBaseSeedRunId, latestBaseRunId]);
+    setFormState((current) => ({ ...current, appointmentBaseSeedRunId: latestBaseRunId }));
+  }, [appointmentBaseSeedRunId, latestBaseRunId, settingsHydrated]);
+
+  useEffect(() => {
+    if (!settingsHydrated) return;
+    if (serializedFormState === lastPersistedValueRef.current) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void setSetting({
+        key: demoDataAdminFormStateKey,
+        scopeType: "USER",
+        value: serializedFormState,
+      })
+        .then(() => {
+          lastPersistedValueRef.current = serializedFormState;
+          persistErrorShownRef.current = false;
+        })
+        .catch(() => {
+          if (persistErrorShownRef.current) return;
+          persistErrorShownRef.current = true;
+          toast({
+            title: "Demo-Formular konnte nicht gespeichert werden",
+            description: "Der zuletzt eingegebene Stand wurde nicht persistent gesichert.",
+            variant: "destructive",
+          });
+        });
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [serializedFormState, setSetting, settingsHydrated, toast]);
 
   const createMutation = useMutation({
     mutationFn: async (config: SeedConfig) => {
@@ -196,7 +356,7 @@ export function DemoDataPage() {
     onSuccess: (result) => {
       setLastResult(result);
       if (result.runType === "base") {
-        setAppointmentBaseSeedRunId(result.seedRunId);
+        setFormState((current) => ({ ...current, appointmentBaseSeedRunId: result.seedRunId }));
       }
       void queryClient.invalidateQueries();
     },
@@ -329,26 +489,26 @@ export function DemoDataPage() {
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
               <Label htmlFor="seed-base-employees">Mitarbeitende</Label>
-              <Input id="seed-base-employees" type="number" value={baseEmployees} onChange={(event) => setBaseEmployees(Number(event.target.value))} />
+              <Input id="seed-base-employees" type="number" value={baseEmployees} onChange={(event) => setFormState((current) => ({ ...current, baseEmployees: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="seed-base-customers">Kunden</Label>
-              <Input id="seed-base-customers" type="number" value={baseCustomers} onChange={(event) => setBaseCustomers(Number(event.target.value))} />
+              <Input id="seed-base-customers" type="number" value={baseCustomers} onChange={(event) => setFormState((current) => ({ ...current, baseCustomers: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="seed-base-projects">Projekte</Label>
-              <Input id="seed-base-projects" type="number" value={baseProjects} onChange={(event) => setBaseProjects(Number(event.target.value))} />
+              <Input id="seed-base-projects" type="number" value={baseProjects} onChange={(event) => setFormState((current) => ({ ...current, baseProjects: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="seed-base-random">Random Seed (optional)</Label>
-              <Input id="seed-base-random" type="number" value={baseRandomSeed} onChange={(event) => setBaseRandomSeed(event.target.value)} />
+              <Input id="seed-base-random" type="number" value={baseRandomSeed} onChange={(event) => setFormState((current) => ({ ...current, baseRandomSeed: event.target.value }))} />
             </div>
             <div>
               <Label htmlFor="seed-base-locale">Locale</Label>
-              <Input id="seed-base-locale" value={baseLocale} onChange={(event) => setBaseLocale(event.target.value)} />
+              <Input id="seed-base-locale" value={baseLocale} onChange={(event) => setFormState((current) => ({ ...current, baseLocale: event.target.value }))} />
             </div>
             <div className="flex items-end gap-3 pb-2">
-              <Switch id="seed-base-attachments" checked={baseGenerateAttachments} onCheckedChange={setBaseGenerateAttachments} />
+              <Switch id="seed-base-attachments" checked={baseGenerateAttachments} onCheckedChange={(checked) => setFormState((current) => ({ ...current, baseGenerateAttachments: checked }))} />
               <Label htmlFor="seed-base-attachments">Anhaenge erzeugen</Label>
             </div>
             <div className="md:col-span-2">
@@ -359,10 +519,13 @@ export function DemoDataPage() {
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setBaseProjectStatuses((prev) => [
-                      ...prev,
-                      { title: "", color: "#64748b", description: "" },
-                    ])
+                    setFormState((current) => ({
+                      ...current,
+                      baseProjectStatuses: [
+                        ...current.baseProjectStatuses,
+                        { title: "", color: "#64748b", description: "" },
+                      ],
+                    }))
                   }
                 >
                   + Status
@@ -376,11 +539,12 @@ export function DemoDataPage() {
                       placeholder="Titel"
                       value={status.title}
                       onChange={(event) =>
-                        setBaseProjectStatuses((prev) =>
-                          prev.map((row, rowIndex) =>
+                        setFormState((current) => ({
+                          ...current,
+                          baseProjectStatuses: current.baseProjectStatuses.map((row, rowIndex) =>
                             rowIndex === index ? { ...row, title: event.target.value } : row,
                           ),
-                        )
+                        }))
                       }
                     />
                     <Input
@@ -388,11 +552,12 @@ export function DemoDataPage() {
                       type="color"
                       value={status.color}
                       onChange={(event) =>
-                        setBaseProjectStatuses((prev) =>
-                          prev.map((row, rowIndex) =>
+                        setFormState((current) => ({
+                          ...current,
+                          baseProjectStatuses: current.baseProjectStatuses.map((row, rowIndex) =>
                             rowIndex === index ? { ...row, color: event.target.value } : row,
                           ),
-                        )
+                        }))
                       }
                     />
                     <Input
@@ -400,11 +565,12 @@ export function DemoDataPage() {
                       placeholder="Beschreibung (optional)"
                       value={status.description ?? ""}
                       onChange={(event) =>
-                        setBaseProjectStatuses((prev) =>
-                          prev.map((row, rowIndex) =>
+                        setFormState((current) => ({
+                          ...current,
+                          baseProjectStatuses: current.baseProjectStatuses.map((row, rowIndex) =>
                             rowIndex === index ? { ...row, description: event.target.value } : row,
                           ),
-                        )
+                        }))
                       }
                     />
                     <Button
@@ -414,7 +580,10 @@ export function DemoDataPage() {
                       size="sm"
                       disabled={baseProjectStatuses.length <= 1}
                       onClick={() =>
-                        setBaseProjectStatuses((prev) => prev.filter((_, rowIndex) => rowIndex !== index))
+                        setFormState((current) => ({
+                          ...current,
+                          baseProjectStatuses: current.baseProjectStatuses.filter((_, rowIndex) => rowIndex !== index),
+                        }))
                       }
                     >
                       -
@@ -438,41 +607,41 @@ export function DemoDataPage() {
               <Input
                 id="seed-appointments-base"
                 value={appointmentBaseSeedRunId}
-                onChange={(event) => setAppointmentBaseSeedRunId(event.target.value)}
+                onChange={(event) => setFormState((current) => ({ ...current, appointmentBaseSeedRunId: event.target.value }))}
                 placeholder={baseRuns[0]?.seedRunId ?? "Kein Basis-Run vorhanden"}
               />
             </div>
             <div>
               <Label htmlFor="seed-appointments-per-project">Termine je Projekt</Label>
-              <Input id="seed-appointments-per-project" type="number" value={appointmentsPerProject} onChange={(event) => setAppointmentsPerProject(Number(event.target.value))} />
+              <Input id="seed-appointments-per-project" type="number" value={appointmentsPerProject} onChange={(event) => setFormState((current) => ({ ...current, appointmentsPerProject: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="seed-appointments-random">Random Seed (optional)</Label>
-              <Input id="seed-appointments-random" type="number" value={appointmentsRandomSeed} onChange={(event) => setAppointmentsRandomSeed(event.target.value)} />
+              <Input id="seed-appointments-random" type="number" value={appointmentsRandomSeed} onChange={(event) => setFormState((current) => ({ ...current, appointmentsRandomSeed: event.target.value }))} />
             </div>
             <div>
               <Label htmlFor="seed-window-min">Seed Fenster Min (Tage)</Label>
-              <Input id="seed-window-min" type="number" value={seedWindowDaysMin} onChange={(event) => setSeedWindowDaysMin(Number(event.target.value))} />
+              <Input id="seed-window-min" type="number" value={seedWindowDaysMin} onChange={(event) => setFormState((current) => ({ ...current, seedWindowDaysMin: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="seed-window-max">Seed Fenster Max (Tage)</Label>
-              <Input id="seed-window-max" type="number" value={seedWindowDaysMax} onChange={(event) => setSeedWindowDaysMax(Number(event.target.value))} />
+              <Input id="seed-window-max" type="number" value={seedWindowDaysMax} onChange={(event) => setFormState((current) => ({ ...current, seedWindowDaysMax: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="rekl-delay-min">Rekla Delay Min (Tage)</Label>
-              <Input id="rekl-delay-min" type="number" value={reklDelayDaysMin} onChange={(event) => setReklDelayDaysMin(Number(event.target.value))} />
+              <Input id="rekl-delay-min" type="number" value={reklDelayDaysMin} onChange={(event) => setFormState((current) => ({ ...current, reklDelayDaysMin: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="rekl-delay-max">Rekla Delay Max (Tage)</Label>
-              <Input id="rekl-delay-max" type="number" value={reklDelayDaysMax} onChange={(event) => setReklDelayDaysMax(Number(event.target.value))} />
+              <Input id="rekl-delay-max" type="number" value={reklDelayDaysMax} onChange={(event) => setFormState((current) => ({ ...current, reklDelayDaysMax: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="rekl-share">Rekla Anteil (0..1)</Label>
-              <Input id="rekl-share" type="number" step="0.01" min="0" max="1" value={reklShare} onChange={(event) => setReklShare(Number(event.target.value))} />
+              <Input id="rekl-share" type="number" step="0.01" min="0" max="1" value={reklShare} onChange={(event) => setFormState((current) => ({ ...current, reklShare: Number(event.target.value) }))} />
             </div>
             <div>
               <Label htmlFor="seed-appointments-locale">Locale</Label>
-              <Input id="seed-appointments-locale" value={appointmentsLocale} onChange={(event) => setAppointmentsLocale(event.target.value)} />
+              <Input id="seed-appointments-locale" value={appointmentsLocale} onChange={(event) => setFormState((current) => ({ ...current, appointmentsLocale: event.target.value }))} />
             </div>
           </div>
           <div className="mt-4">

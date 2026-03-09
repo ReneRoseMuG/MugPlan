@@ -16,7 +16,8 @@ export type UserSettingKey =
   | "cardListColumns"
   | "calendar.weekLanes.isCollapsed"
   | "calendar.weekLanes.expandedLaneId"
-  | "calendar.weekAppointmentDisplayMode";
+  | "calendar.weekAppointmentDisplayMode"
+  | "demoData.adminFormState";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -31,6 +32,7 @@ type UserSettingValueByKey = {
   "calendar.weekLanes.isCollapsed": boolean;
   "calendar.weekLanes.expandedLaneId": string;
   "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
+  "demoData.adminFormState": string;
 };
 
 export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
