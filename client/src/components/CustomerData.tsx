@@ -372,6 +372,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       const extraction = payload as {
         customer: ExtractionCustomerDraft;
         orderNumber: string | null;
+        amount: string | null;
         saunaModel: string;
         articleItems: ExtractionDialogData["articleItems"];
         categorizedItems: ExtractionDialogData["categorizedItems"];
@@ -392,6 +393,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           city: extraction.customer.city ?? "",
         },
         orderNumber: extraction.orderNumber ?? null,
+        amount: extraction.amount ?? null,
         saunaModel: extraction.saunaModel ?? "",
         articleItems: extraction.articleItems ?? [],
         categorizedItems: extraction.categorizedItems ?? [],

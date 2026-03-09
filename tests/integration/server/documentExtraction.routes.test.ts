@@ -164,6 +164,7 @@ describe("FT20 integration: document extraction routes", () => {
         city: null,
       },
       orderNumber: "A0218229A",
+      amount: "17136.00",
       saunaModel: "Sauna Pro",
       articleItems: [{ quantity: "1x", description: "Ofen", category: "Ofen" }],
       categorizedItems: [{ category: "Ofen", items: [{ quantity: "1x", description: "Ofen", category: "Ofen" }] }],
@@ -180,6 +181,7 @@ describe("FT20 integration: document extraction routes", () => {
         expect(res.body.customer.customerNumber).toBe("1001");
         expect(res.body.customer.phone).toBeNull();
         expect(res.body.orderNumber).toBe("A0218229A");
+        expect(res.body.amount).toBe("17136.00");
         expect(Array.isArray(res.body.articleItems)).toBe(true);
       });
   });
@@ -200,6 +202,7 @@ describe("FT20 integration: document extraction routes", () => {
         city: null,
       },
       orderNumber: null,
+      amount: null,
       saunaModel: "Sauna Pro",
       articleItems: [{ quantity: "1x", description: "Ofen", category: "Artikel" }],
       categorizedItems: [{ category: "Artikel", items: [{ quantity: "1x", description: "Ofen", category: "Artikel" }] }],

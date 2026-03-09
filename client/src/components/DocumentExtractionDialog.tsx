@@ -34,6 +34,7 @@ export type ExtractionCategory = {
 export type ExtractionDialogData = {
   customer: ExtractionCustomerDraft;
   orderNumber: string | null;
+  amount: string | null;
   saunaModel: string;
   articleItems: ExtractionArticleItem[];
   categorizedItems: ExtractionCategory[];
@@ -56,6 +57,7 @@ interface DocumentExtractionDialogProps {
   onApplyProject?: (payload: {
     saunaModel: string;
     orderNumber: string;
+    amount: string;
     articleListHtml: string;
     customer: ExtractionCustomerDraft;
   }) => Promise<void>;
@@ -63,6 +65,7 @@ interface DocumentExtractionDialogProps {
   onApplyData?: (payload: {
     saunaModel: string;
     orderNumber: string;
+    amount: string;
     articleListHtml: string;
     customer: ExtractionCustomerDraft;
   }) => Promise<void>;
@@ -102,6 +105,7 @@ export function DocumentExtractionDialog({
   const [customerFields, setCustomerFields] = useState<ExtractionCustomerEditableFields | null>(null);
   const [saunaModel, setSaunaModel] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
+  const [amount, setAmount] = useState("");
   const [articleListHtml, setArticleListHtml] = useState("");
   const [isApplyingProject, setIsApplyingProject] = useState(false);
   const [isApplyingCustomer, setIsApplyingCustomer] = useState(false);
@@ -112,6 +116,7 @@ export function DocumentExtractionDialog({
       setCustomerFields(null);
       setSaunaModel("");
       setOrderNumber("");
+      setAmount("");
       setArticleListHtml("");
       return;
     }
@@ -128,6 +133,7 @@ export function DocumentExtractionDialog({
     });
     setSaunaModel(data.saunaModel);
     setOrderNumber(data.orderNumber ?? "");
+    setAmount(data.amount ?? "");
     setArticleListHtml(data.articleListHtml);
   }, [data]);
 
@@ -146,10 +152,11 @@ export function DocumentExtractionDialog({
     return {
       saunaModel,
       orderNumber,
+      amount,
       articleListHtml,
       customer,
     };
-  }, [articleListHtml, customer, orderNumber, saunaModel]);
+  }, [amount, articleListHtml, customer, orderNumber, saunaModel]);
 
   const disableActions = isBusy || isApplyingProject || isApplyingCustomer || isApplyingData;
 
@@ -179,9 +186,11 @@ export function DocumentExtractionDialog({
               <DocumentExtractionProjectSection
                 saunaModel={saunaModel}
                 orderNumber={orderNumber}
+                amount={amount}
                 articleListHtml={articleListHtml}
                 onSaunaModelChange={setSaunaModel}
                 onOrderNumberChange={setOrderNumber}
+                onAmountChange={setAmount}
                 onArticleListHtmlChange={setArticleListHtml}
               />
             ) : null}

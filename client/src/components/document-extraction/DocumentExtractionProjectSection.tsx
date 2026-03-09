@@ -6,9 +6,11 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 interface DocumentExtractionProjectSectionProps {
   saunaModel: string;
   orderNumber: string;
+  amount: string;
   articleListHtml: string;
   onSaunaModelChange: (value: string) => void;
   onOrderNumberChange: (value: string) => void;
+  onAmountChange: (value: string) => void;
   onArticleListHtmlChange: (value: string) => void;
   action?: ReactNode;
   showHeading?: boolean;
@@ -17,9 +19,11 @@ interface DocumentExtractionProjectSectionProps {
 export function DocumentExtractionProjectSection({
   saunaModel,
   orderNumber,
+  amount,
   articleListHtml,
   onSaunaModelChange,
   onOrderNumberChange,
+  onAmountChange,
   onArticleListHtmlChange,
   action,
   showHeading = true,
@@ -41,6 +45,14 @@ export function DocumentExtractionProjectSection({
           value={orderNumber}
           onChange={(event) => onOrderNumberChange(event.target.value)}
           data-testid="input-doc-extract-order-number"
+        />
+      </div>
+      <div className="space-y-1">
+        <Label>Betrag (EUR)</Label>
+        <Input
+          value={amount}
+          onChange={(event) => onAmountChange(event.target.value)}
+          data-testid="input-doc-extract-amount"
         />
       </div>
       <div className="space-y-1">

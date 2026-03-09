@@ -22,6 +22,7 @@ const articleItemSchema = z.object({
 const aiExtractionOutputSchema = z.object({
   customer: customerDraftSchema,
   orderNumber: z.string().trim().nullable().optional(),
+  amount: z.string().trim().nullable().optional(),
   saunaModel: z.string().trim().min(1),
   articleItems: z.array(articleItemSchema).min(1),
   warnings: z.array(z.string().trim()).optional(),
@@ -30,6 +31,7 @@ const aiExtractionOutputSchema = z.object({
 export type ValidatedExtraction = {
   customer: z.infer<typeof customerDraftSchema>;
   orderNumber: string | null;
+  amount: string | null;
   saunaModel: string;
   articleItems: Array<z.infer<typeof articleItemSchema>>;
   categorizedItems: Array<{
@@ -104,6 +106,7 @@ export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtractio
       city: normalizeOptional(parsed.customer.city),
     },
     orderNumber: normalizeOptional(parsed.orderNumber),
+    amount: normalizeOptional(parsed.amount),
     saunaModel: parsed.saunaModel.trim(),
     articleItems: normalizedItems,
     categorizedItems,

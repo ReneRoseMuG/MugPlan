@@ -10,6 +10,7 @@
  * - Artikel werden kategorisiert.
  * - HTML-Ausgabe ist flach (eine UL-Ebene) und escaped nutzernahe Inhalte.
  * - Warnings werden getrimmt und leere Werte entfernt.
+ * - Optionale Auftragsumme wird als normalisierter Betrag durchgereicht.
  *
  * Fehlerfaelle:
  * - Fehlende Pflichtfelder führen zu Zod-Validierungsfehlern.
@@ -36,6 +37,7 @@ describe("FT20 extraction validator structure", () => {
         city: " Leipzig ",
       },
       orderNumber: "  A0218229A ",
+      amount: " 17136.00 ",
       saunaModel: "  Modell X ",
       articleItems: [{ quantity: " 1x ", description: " Ofen ", category: " Technik " }],
       warnings: [" ", " Hinweis A "],
@@ -48,6 +50,7 @@ describe("FT20 extraction validator structure", () => {
     expect(result.customer.addressLine2).toBe("Haus B");
     expect(result.customer.city).toBe("Leipzig");
     expect(result.orderNumber).toBe("A0218229A");
+    expect(result.amount).toBe("17136.00");
     expect(result.warnings).toEqual(["Hinweis A"]);
   });
 

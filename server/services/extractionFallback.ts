@@ -91,6 +91,7 @@ export function buildFallbackExtraction(params: {
   return {
     customer: normalizeCustomerDraft(params.aiResult ?? null, params.sourceText),
     orderNumber: null,
+    amount: null,
     saunaModel: pickSaunaModel(sanitizedText),
     articleItems,
     categorizedItems,

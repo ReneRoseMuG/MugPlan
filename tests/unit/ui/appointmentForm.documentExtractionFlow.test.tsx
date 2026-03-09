@@ -47,8 +47,10 @@ describe("FT20 appointment form document extraction flow wiring", () => {
     expect(source).not.toContain("onApplyCustomer={applyExtractedCustomer}");
   });
 
-  it("forwards extracted order number and uses existing customer silently on duplicate conflicts", () => {
+  it("forwards extracted project data and uses existing customer silently on duplicate conflicts", () => {
     expect(source).toContain("orderNumber: payload.orderNumber.trim() || null");
+    expect(source).toContain("amount: payload.amount.trim() || null");
+    expect(source).toContain("amount: extraction.amount ?? null");
     expect(source).toContain("tryPatchExistingCustomerFromExtraction");
     expect(source).toContain("name: payload.saunaModel.trim()");
     expect(source).toContain("if (resolution.resolution === \"single\")");

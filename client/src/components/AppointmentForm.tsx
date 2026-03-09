@@ -753,6 +753,7 @@ export function AppointmentForm({
       const extraction = payload as {
         customer: ExtractionCustomerDraft;
         orderNumber: string | null;
+        amount: string | null;
         saunaModel: string;
         articleItems: ExtractionDialogData["articleItems"];
         categorizedItems: ExtractionDialogData["categorizedItems"];
@@ -773,6 +774,7 @@ export function AppointmentForm({
           city: extraction.customer.city ?? "",
         },
         orderNumber: extraction.orderNumber ?? null,
+        amount: extraction.amount ?? null,
         saunaModel: extraction.saunaModel ?? "",
         articleItems: extraction.articleItems ?? [],
         categorizedItems: extraction.categorizedItems ?? [],
@@ -795,6 +797,7 @@ export function AppointmentForm({
   const applyExtractedProject = async (payload: {
     saunaModel: string;
     orderNumber: string;
+    amount: string;
     articleListHtml: string;
     customer: ExtractionCustomerDraft;
   }) => {
@@ -817,6 +820,7 @@ export function AppointmentForm({
         body: JSON.stringify({
           name: payload.saunaModel.trim(),
           orderNumber: payload.orderNumber.trim() || null,
+          amount: payload.amount.trim() || null,
           customerId: mergedCustomer.id,
           descriptionMd: payload.articleListHtml.trim(),
         }),

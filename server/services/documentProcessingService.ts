@@ -3,7 +3,10 @@ import type { ExtractionScope } from "./aiExtractionService";
 import { extractTextFromPdfBuffer } from "./documentTextExtractor";
 import { validateAndNormalizeExtraction } from "./extractionValidator";
 import { parseDocumentHeaderDeterministically } from "./documentHeaderDeterministicParser";
-import { parseDocumentArticleItemsDeterministically } from "./documentArticleDeterministicParser";
+import {
+  parseDocumentArticleItemsDeterministically,
+  parseDocumentTotalAmountDeterministically,
+} from "./documentArticleDeterministicParser";
 import * as customersService from "./customersService";
 import * as projectsService from "./projectsService";
 
@@ -58,6 +61,7 @@ export async function extractFromPdf(params: {
       }
     }
     const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
+    const amount = parseDocumentTotalAmountDeterministically(extractedText);
 
     return validateAndNormalizeExtraction({
       customer: {
@@ -73,6 +77,7 @@ export async function extractFromPdf(params: {
         city: header.city,
       },
       orderNumber: header.orderNumber,
+      amount,
       saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),
       articleItems: articleItems.map((item) => ({
         quantity: item.quantity,

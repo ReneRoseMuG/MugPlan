@@ -8,6 +8,7 @@
  * - Zod-Validierungsfehler werden korrekt als API-Validierungsantwort abgebildet.
  * - Extraktionsservice persistiert keine Kunden implizit.
  * - Deterministische Parserfehler werden als kontrollierter Fehler propagiert.
+ * - Extrahierte Auftragsummen werden in den zentralen Extract-Output uebernommen.
  *
  * Fehlerfaelle:
  * - Ungueltige DTO-Payload.
@@ -134,9 +135,39 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(result.customer.company).toBe("Muster GmbH");
     expect(result.customer.phone).toBeNull();
     expect(result.orderNumber).toBe("A-1");
+    expect(result.amount).toBeNull();
     expect(result.saunaModel).toContain("Sauna");
     expect(result.articleItems).toHaveLength(1);
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
+  });
+
+  it("extractFromPdf returns extracted total amount when Gesamtbetrag is present", async () => {
+    parseDocumentHeaderDeterministicallyMock.mockReturnValue({
+      orderNumber: "A-2",
+      customerNumber: "K-2",
+      mobile: null,
+      firstName: "Erika",
+      lastName: "Muster",
+      company: null,
+      addressLine1: "Teststrasse 2",
+      postalCode: "12345",
+      city: "Leipzig",
+    });
+    parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
+      { quantity: "1", description: "Sauna Modell Y" },
+    ]);
+    extractTextFromPdfBufferMock.mockResolvedValue([
+      "Menge Art.Nr. / Bezeichnung",
+      "1 Stueck Sauna Modell Y",
+      "Gesamtbetrag 17.136,00 EUR",
+    ].join("\n"));
+
+    const result = await extractFromPdf({
+      scope: "project_form",
+      fileBuffer: Buffer.from("dummy"),
+    });
+
+    expect(result.amount).toBe("17136.00");
   });
 
   it("throws deterministic extraction error when parser fails", async () => {

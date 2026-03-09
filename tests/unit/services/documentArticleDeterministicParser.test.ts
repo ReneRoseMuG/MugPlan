@@ -8,6 +8,7 @@
  * - Positionen starten nur bei Mengenmuster am Zeilenanfang.
  * - Mehrzeilige Beschreibungen werden pro Position zusammengefuehrt.
  * - Preis- und Steuerzeilen werden ignoriert.
+ * - Gesamtbetrag wird als normalisierter Projektbetrag extrahiert.
  * - Leere Positionen werden verworfen.
  *
  * Fehlerfaelle:
@@ -18,7 +19,10 @@
  * Deterministische Extraktion der Artikelliste zwischen Start- und Endmarker absichern.
  */
 import { describe, expect, it } from "vitest";
-import { parseDocumentArticleItemsDeterministically } from "../../../server/services/documentArticleDeterministicParser";
+import {
+  parseDocumentArticleItemsDeterministically,
+  parseDocumentTotalAmountDeterministically,
+} from "../../../server/services/documentArticleDeterministicParser";
 
 const SAMPLE_TEXT = [
   "Fasssauna.de - Header",
@@ -59,5 +63,13 @@ describe("FT21 deterministic article parser", () => {
       "Artikelbereich zwischen Start- und Endmarker",
     );
   });
-});
 
+  it("extracts normalized total amount from Gesamtbetrag line", () => {
+    expect(parseDocumentTotalAmountDeterministically(SAMPLE_TEXT)).toBe("14750.00");
+  });
+
+  it("returns null when Gesamtbetrag line is missing or unparsable", () => {
+    expect(parseDocumentTotalAmountDeterministically("kein marker text")).toBeNull();
+    expect(parseDocumentTotalAmountDeterministically("Gesamtbetrag n/a")).toBeNull();
+  });
+});

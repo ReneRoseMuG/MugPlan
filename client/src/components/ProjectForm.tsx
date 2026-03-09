@@ -340,6 +340,7 @@ export function ProjectForm({
       const extraction = payload as {
         customer: ExtractionCustomerDraft;
         orderNumber: string | null;
+        amount: string | null;
         saunaModel: string;
         articleItems: ExtractionDialogData["articleItems"];
         categorizedItems: ExtractionDialogData["categorizedItems"];
@@ -360,6 +361,7 @@ export function ProjectForm({
           city: extraction.customer.city ?? "",
         },
         orderNumber: extraction.orderNumber ?? null,
+        amount: extraction.amount ?? null,
         saunaModel: extraction.saunaModel ?? "",
         articleItems: extraction.articleItems ?? [],
         categorizedItems: extraction.categorizedItems ?? [],
@@ -754,6 +756,7 @@ export function ProjectForm({
   const applyExtractedData = async (payload: {
     saunaModel: string;
     orderNumber: string;
+    amount: string;
     articleListHtml: string;
     customer: ExtractionCustomerDraft;
   }) => {
@@ -783,6 +786,20 @@ export function ProjectForm({
           );
           if (shouldOverwrite) {
             setOrderNumber(extractedOrderNumber);
+          }
+        }
+      }
+      const extractedAmount = payload.amount.trim();
+      if (extractedAmount.length > 0) {
+        const currentAmount = amount.trim();
+        if (!currentAmount) {
+          setAmount(extractedAmount);
+        } else if (currentAmount !== extractedAmount) {
+          const shouldOverwrite = window.confirm(
+            `Es ist bereits ein abweichender Betrag gesetzt (${currentAmount}). Mit extrahiertem Betrag (${extractedAmount}) ueberschreiben?`,
+          );
+          if (shouldOverwrite) {
+            setAmount(extractedAmount);
           }
         }
       }

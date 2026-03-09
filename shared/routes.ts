@@ -325,15 +325,16 @@ export const api = {
       input: z.object({
         scope: extractionScopeSchema,
       }).strict(),
-      responses: {
-        200: z.object({
-          customer: extractedCustomerSchema,
-          orderNumber: z.string().nullable(),
-          saunaModel: z.string().min(1),
-          articleItems: z.array(extractedArticleItemSchema),
-          categorizedItems: z.array(extractedArticleCategorySchema),
-          articleListHtml: z.string().min(1),
-          warnings: z.array(z.string()),
+        responses: {
+          200: z.object({
+            customer: extractedCustomerSchema,
+            orderNumber: z.string().nullable(),
+            amount: z.string().nullable(),
+            saunaModel: z.string().min(1),
+            articleItems: z.array(extractedArticleItemSchema),
+            categorizedItems: z.array(extractedArticleCategorySchema),
+            articleListHtml: z.string().min(1),
+            warnings: z.array(z.string()),
         }),
         400: errorSchemas.validation,
         409: z.object({

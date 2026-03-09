@@ -9,6 +9,7 @@
  * - Kunden-/Projektdaten koennen getrennt uebernommen werden (Split-Buttons).
  * - Terminmodus kann einen einzelnen Daten-Button nutzen.
  * - Projektbereich nutzt RichTextEditor controlled mit articleListHtml.
+ * - Projektbereich fuehrt den editierbaren Betrag im Payload mit.
  *
  * Fehlerfälle:
  * - Regression auf Textarea/HTML-Plaintext-Anzeige.
@@ -49,10 +50,18 @@ describe("FT21 document extraction dialog composable ui", () => {
   it("keeps payload shape unchanged for apply actions", () => {
     expect(source).toContain("saunaModel,");
     expect(source).toContain("orderNumber,");
+    expect(source).toContain("amount,");
     expect(source).toContain("articleListHtml,");
     expect(source).toContain("customer,");
     expect(source).toContain("company: data.customer.company ?? \"\"");
     expect(source).toContain("addressLine2: fallback.addressLine2");
+  });
+
+  it("passes editable amount through the project section", () => {
+    expect(source).toContain("const [amount, setAmount] = useState(\"\")");
+    expect(source).toContain("setAmount(data.amount ?? \"\")");
+    expect(source).toContain("amount={amount}");
+    expect(source).toContain("onAmountChange={setAmount}");
   });
 
   it("keeps dialog size constraints", () => {

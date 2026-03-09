@@ -53,6 +53,12 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("readOnly={isEditing}");
   });
 
+  it("maps extracted amount into dialog data and local amount state", () => {
+    expect(source).toContain("amount: extraction.amount ?? null");
+    expect(source).toContain("const extractedAmount = payload.amount.trim();");
+    expect(source).toContain("setAmount(extractedAmount);");
+  });
+
   it("resolves duplicate customer numbers silently and reuses existing customers", () => {
     expect(source).toContain("if (resolution.resolution === \"single\")");
     expect(source).toContain("return resolution.customer;");

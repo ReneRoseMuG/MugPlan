@@ -5,6 +5,7 @@ const QUANTITY_LINE_REGEX = /^(\d+(?:[.,]\d+)?)\s+(.+)$/i;
 const PRICE_TAX_LINE_REGEX =
   /(?:\b(?:mwst|e-?preis|g-?preis|gesamtbetrag|gesamt|summe|preis|brutto|netto|inkl\.)\b|€|\beur\b)/i;
 const PRICE_ONLY_REGEX = /^\s*[\d.,\s%]+(?:€|eur)?\s*$/i;
+const TOTAL_AMOUNT_REGEX = /gesamtbetrag\s+([\d.\s]+,\d{2})(?:\s*(?:€|eur))?/i;
 
 export type DeterministicArticleItem = {
   quantity: string;
@@ -126,3 +127,25 @@ export function parseDocumentArticleItemsDeterministically(sourceText: string): 
   return nonEmptyItems;
 }
 
+function normalizeEuroAmount(value: string): string | null {
+  const normalized = value.replace(/\s+/g, "").replace(/\./g, "").replace(",", ".");
+  if (!/^\d+(?:\.\d{2})$/.test(normalized)) {
+    return null;
+  }
+  return normalized;
+}
+
+export function parseDocumentTotalAmountDeterministically(sourceText: string): string | null {
+  const lines = normalizeLines(sourceText);
+  const totalLine = lines.find((line) => line.includes(END_MARKER));
+  if (!totalLine) {
+    return null;
+  }
+
+  const match = TOTAL_AMOUNT_REGEX.exec(totalLine);
+  if (!match) {
+    return null;
+  }
+
+  return normalizeEuroAmount(match[1] ?? "");
+}
