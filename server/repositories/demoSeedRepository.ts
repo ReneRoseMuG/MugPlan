@@ -2,12 +2,17 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
+  appointmentNotes,
   appointments,
   customerAttachments,
+  customerNotes,
   customers,
   employeeAttachments,
   employees,
+  notes,
+  noteTemplates,
   projectAttachments,
+  projectNotes,
   projectProjectStatus,
   projects,
   seedRunEntities,
@@ -20,6 +25,8 @@ export type SeedEntityType =
   | "employee"
   | "customer"
   | "project"
+  | "note"
+  | "note_template"
   | "appointment"
   | "appointment_mount"
   | "appointment_rekl"
@@ -127,6 +134,8 @@ export async function purgeSeedRun(seedRunId: string, idsByType: Record<string, 
     const projectIds = idsByType.project ?? [];
     const customerIds = idsByType.customer ?? [];
     const employeeIds = idsByType.employee ?? [];
+    const noteIds = idsByType.note ?? [];
+    const noteTemplateIds = idsByType.note_template ?? [];
     const teamIds = idsByType.team ?? [];
     const tourIds = idsByType.tour ?? [];
     const projectAttachmentIds = idsByType.project_attachment ?? [];
@@ -154,10 +163,26 @@ export async function purgeSeedRun(seedRunId: string, idsByType: Record<string, 
       projectStatusRelationsDeleted = Number((result as any)[0]?.affectedRows ?? 0);
     }
 
+    let customerNotesDeleted = 0;
+    let projectNotesDeleted = 0;
+    let appointmentNotesDeleted = 0;
+    if (noteIds.length > 0) {
+      const [customerNoteResult, projectNoteResult, appointmentNoteResult] = await Promise.all([
+        tx.delete(customerNotes).where(inArray(customerNotes.noteId, noteIds)),
+        tx.delete(projectNotes).where(inArray(projectNotes.noteId, noteIds)),
+        tx.delete(appointmentNotes).where(inArray(appointmentNotes.noteId, noteIds)),
+      ]);
+      customerNotesDeleted = Number((customerNoteResult as any)[0]?.affectedRows ?? 0);
+      projectNotesDeleted = Number((projectNoteResult as any)[0]?.affectedRows ?? 0);
+      appointmentNotesDeleted = Number((appointmentNoteResult as any)[0]?.affectedRows ?? 0);
+    }
+
     const appointmentsDeleted = await deleteByIds(appointments, appointments.id, appointmentIds);
     const projectsDeleted = await deleteByIds(projects, projects.id, projectIds);
     const customersDeleted = await deleteByIds(customers, customers.id, customerIds);
     const employeesDeleted = await deleteByIds(employees, employees.id, employeeIds);
+    const notesDeleted = await deleteByIds(notes, notes.id, noteIds);
+    const noteTemplatesDeleted = await deleteByIds(noteTemplates, noteTemplates.id, noteTemplateIds);
     const teamsDeleted = await deleteByIds(teams, teams.id, teamIds);
     const toursDeleted = await deleteByIds(tours, tours.id, tourIds);
 
@@ -176,10 +201,15 @@ export async function purgeSeedRun(seedRunId: string, idsByType: Record<string, 
       projectsDeleted,
       customersDeleted,
       employeesDeleted,
+      notesDeleted,
+      noteTemplatesDeleted,
       teamsDeleted,
       toursDeleted,
       projectStatusRelationsDeleted,
       appointmentEmployeesDeleted,
+      customerNotesDeleted,
+      projectNotesDeleted,
+      appointmentNotesDeleted,
       attachmentsDeleted,
       mappingRows,
       seedRunsDeleted,

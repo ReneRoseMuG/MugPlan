@@ -33,14 +33,19 @@ import { createSeedRun, purgeSeedRun } from "../../../server/services/demoSeedSe
 import {
   appointments,
   appointmentEmployees,
+  appointmentNotes,
   appointmentTags,
   componentCategories,
+  customerNotes,
   components,
   customerTags,
   employees,
   employeeTags,
+  noteTemplates,
+  notes,
   productCategories,
   productComponent,
+  projectNotes,
   projectTags,
   products,
   projects,
@@ -221,6 +226,179 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       }
       if (firstBaseSeedRunId) {
         await purgeSeedRun(firstBaseSeedRunId);
+      }
+    }
+  });
+
+  itIfDemoSeedFilesPresent("seeds note templates plus scoped notes for half of customers, projects and appointments and purges them again", async () => {
+    let baseSeedRunId: string | null = null;
+    let appointmentsSeedRunId: string | null = null;
+
+    try {
+      const baseSummary = await createSeedRun({
+        runType: "base",
+        randomSeed: 6101,
+        employees: 2,
+        customers: 6,
+        projects: 6,
+        projectStatuses: [
+          { title: "SeedStatus-Notes", color: "#0f766e", description: "seed-status-notes" },
+        ],
+      });
+      baseSeedRunId = baseSummary.seedRunId;
+
+      expect(baseSummary.created.noteTemplates).toBe(3);
+      expect(baseSummary.created.notes).toBe(6);
+
+      const baseSeedEntities = await db
+        .select({
+          entityType: seedRunEntities.entityType,
+          entityId: seedRunEntities.entityId,
+        })
+        .from(seedRunEntities)
+        .where(eq(seedRunEntities.seedRunId, baseSeedRunId));
+
+      const seededCustomerIds = baseSeedEntities
+        .filter((entity) => entity.entityType === "customer")
+        .map((entity) => Number(entity.entityId));
+      const seededProjectIds = baseSeedEntities
+        .filter((entity) => entity.entityType === "project")
+        .map((entity) => Number(entity.entityId));
+      const seededNoteTemplateIds = baseSeedEntities
+        .filter((entity) => entity.entityType === "note_template")
+        .map((entity) => Number(entity.entityId));
+      const seededNoteIds = baseSeedEntities
+        .filter((entity) => entity.entityType === "note")
+        .map((entity) => Number(entity.entityId));
+
+      expect(seededCustomerIds.length).toBe(6);
+      expect(seededProjectIds.length).toBe(6);
+      expect(seededNoteTemplateIds.length).toBe(3);
+      expect(seededNoteIds.length).toBe(6);
+
+      const seededTemplateRows = await db
+        .select({
+          id: noteTemplates.id,
+          title: noteTemplates.title,
+        })
+        .from(noteTemplates)
+        .where(inArray(noteTemplates.id, seededNoteTemplateIds))
+        .orderBy(noteTemplates.sortOrder);
+
+      expect(seededTemplateRows.map((row) => row.title)).toEqual([
+        "Anreise beachten",
+        "Aufbau Start beachten",
+        "Messeaufbau",
+      ]);
+
+      const [customerNoteCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(customerNotes)
+        .where(inArray(customerNotes.customerId, seededCustomerIds));
+      const [projectNoteCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(projectNotes)
+        .where(inArray(projectNotes.projectId, seededProjectIds));
+      const templatedBaseNotes = await db
+        .select({
+          id: notes.id,
+          title: notes.title,
+          body: notes.body,
+        })
+        .from(notes)
+        .where(inArray(notes.id, seededNoteIds));
+
+      expect(Number(customerNoteCountRow?.count ?? 0)).toBe(3);
+      expect(Number(projectNoteCountRow?.count ?? 0)).toBe(3);
+      expect(
+        templatedBaseNotes.filter((note) =>
+          seededTemplateRows.some((template) => template.title === note.title && note.body.length > 0),
+        ).length,
+      ).toBeGreaterThanOrEqual(2);
+
+      const appointmentsSummary = await createSeedRun({
+        runType: "appointments",
+        baseSeedRunId,
+        randomSeed: 6202,
+        appointmentsPerProject: 2,
+        generateAttachments: false,
+      });
+      appointmentsSeedRunId = appointmentsSummary.seedRunId;
+
+      const appointmentSeedEntities = await db
+        .select({
+          entityType: seedRunEntities.entityType,
+          entityId: seedRunEntities.entityId,
+        })
+        .from(seedRunEntities)
+        .where(eq(seedRunEntities.seedRunId, appointmentsSeedRunId));
+
+      const seededAppointmentIds = appointmentSeedEntities
+        .filter((entity) => entity.entityType === "appointment_mount" || entity.entityType === "appointment_rekl")
+        .map((entity) => Number(entity.entityId));
+      const seededAppointmentNoteIds = appointmentSeedEntities
+        .filter((entity) => entity.entityType === "note")
+        .map((entity) => Number(entity.entityId));
+
+      expect(seededAppointmentIds.length).toBeGreaterThan(0);
+      expect(appointmentsSummary.created.noteTemplates).toBe(0);
+      expect(appointmentsSummary.created.notes).toBe(Math.floor(seededAppointmentIds.length / 2));
+      expect(seededAppointmentNoteIds.length).toBe(appointmentsSummary.created.notes);
+
+      const [appointmentNoteCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(appointmentNotes)
+        .where(inArray(appointmentNotes.appointmentId, seededAppointmentIds));
+      expect(Number(appointmentNoteCountRow?.count ?? 0)).toBe(Math.floor(seededAppointmentIds.length / 2));
+
+      const appointmentNoteRows = await db
+        .select({
+          id: notes.id,
+          title: notes.title,
+        })
+        .from(notes)
+        .where(inArray(notes.id, seededAppointmentNoteIds));
+      expect(
+        appointmentNoteRows.filter((note) =>
+          ["Anreise beachten", "Aufbau Start beachten", "Messeaufbau"].includes(note.title),
+        ).length,
+      ).toBeGreaterThanOrEqual(Math.floor(seededAppointmentNoteIds.length / 3));
+
+      const purgeAppointmentsSummary = await purgeSeedRun(appointmentsSeedRunId);
+      appointmentsSeedRunId = null;
+
+      expect(purgeAppointmentsSummary.deleted.notes).toBe(seededAppointmentNoteIds.length);
+      expect(purgeAppointmentsSummary.deleted.noteTemplates).toBe(0);
+      expect(purgeAppointmentsSummary.deleted.appointmentNotes).toBe(seededAppointmentNoteIds.length);
+
+      const [remainingAppointmentNoteRows] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(notes)
+        .where(inArray(notes.id, seededAppointmentNoteIds));
+      expect(Number(remainingAppointmentNoteRows?.count ?? 0)).toBe(0);
+
+      const purgeBaseSummary = await purgeSeedRun(baseSeedRunId);
+      baseSeedRunId = null;
+
+      expect(purgeBaseSummary.deleted.noteTemplates).toBe(3);
+      expect(purgeBaseSummary.deleted.notes).toBe(seededNoteIds.length);
+      expect(purgeBaseSummary.deleted.customerNotes).toBe(3);
+      expect(purgeBaseSummary.deleted.projectNotes).toBe(3);
+
+      const [remainingTemplateCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(noteTemplates);
+      const [remainingNoteCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(notes);
+      expect(Number(remainingTemplateCountRow?.count ?? 0)).toBe(0);
+      expect(Number(remainingNoteCountRow?.count ?? 0)).toBe(0);
+    } finally {
+      if (appointmentsSeedRunId) {
+        await purgeSeedRun(appointmentsSeedRunId);
+      }
+      if (baseSeedRunId) {
+        await purgeSeedRun(baseSeedRunId);
       }
     }
   });

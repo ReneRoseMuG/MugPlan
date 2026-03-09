@@ -25,6 +25,8 @@ import * as employeesRepository from "../repositories/employeesRepository";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as usersRepository from "../repositories/usersRepository";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
+import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
+import * as notesRepository from "../repositories/notesRepository";
 import * as projectAttachmentsService from "./projectAttachmentsService";
 import * as demoSeedRepository from "../repositories/demoSeedRepository";
 import * as userSettingsService from "./userSettingsService";
@@ -118,6 +120,8 @@ type SeedSummary = {
     appointments: number;
     mountAppointments: number;
     reklAppointments: number;
+    notes: number;
+    noteTemplates: number;
     teams: number;
     tours: number;
     attachments: number;
@@ -144,10 +148,15 @@ type PurgeSummary = {
     projects: number;
     customers: number;
     employees: number;
+    notes: number;
+    noteTemplates: number;
     teams: number;
     tours: number;
     projectStatusRelations: number;
     appointmentEmployees: number;
+    customerNotes: number;
+    projectNotes: number;
+    appointmentNotes: number;
     attachments: number;
     mappingRows: number;
     seedRuns: number;
@@ -199,6 +208,34 @@ type SeedRunLike = {
   configJson: unknown;
   summaryJson: unknown;
 };
+
+type DemoNoteTemplateSeed = {
+  title: string;
+  body: string;
+  color: string;
+  sortOrder: number;
+};
+
+const DEMO_NOTE_TEMPLATES: DemoNoteTemplateSeed[] = [
+  {
+    title: "Anreise beachten",
+    body: "Bitte Anreise, Zufahrt und Parkmoeglichkeiten vor dem Termin pruefen.",
+    color: "#1d4ed8",
+    sortOrder: 10,
+  },
+  {
+    title: "Aufbau Start beachten",
+    body: "Aufbau-Start mit Team und Ansprechpartner verbindlich abstimmen.",
+    color: "#b45309",
+    sortOrder: 20,
+  },
+  {
+    title: "Messeaufbau",
+    body: "Messeaufbau auf Standflaeche, Materialanlieferung und Freigaben abstimmen.",
+    color: "#0f766e",
+    sortOrder: 30,
+  },
+];
 
 function createBadRequestError(message: string) {
   const err = new Error(message) as Error & { status?: number };
@@ -257,6 +294,81 @@ function addDays(base: Date, days: number) {
 function isWeekend(date: Date) {
   const day = date.getDay();
   return day === 0 || day === 6;
+}
+
+function chooseHalfIds(ids: number[], seedRunId: string, scope: string) {
+  if (ids.length === 0) return [];
+  const targetCount = Math.floor(ids.length / 2);
+  if (targetCount === 0) return [];
+  return [...ids]
+    .sort((a, b) => (hashInt(`${seedRunId}:${scope}:${a}`) - hashInt(`${seedRunId}:${scope}:${b}`)))
+    .slice(0, targetCount);
+}
+
+function shouldUseSeedNoteTemplate(seedRunId: string, scope: string, entityId: number) {
+  return (hashInt(`${seedRunId}:seed-note-template:${scope}:${entityId}`) % 3) === 0;
+}
+
+function buildSeedNoteBody(scope: "customer" | "project" | "appointment", entityId: number) {
+  if (scope === "customer") {
+    return `Seed-Hinweis fuer Kunde ${entityId}: Kontaktdaten und Erreichbarkeit vor Terminstart pruefen.`;
+  }
+  if (scope === "project") {
+    return `Seed-Hinweis fuer Projekt ${entityId}: Materialstatus, Ansprechpartner und Ablauf vor Ausfuehrung abstimmen.`;
+  }
+  return `Seed-Hinweis fuer Termin ${entityId}: Zeitfenster, Team und Einsatzdetails vor Start gegenpruefen.`;
+}
+
+async function seedNoteTemplates(seedRunId: string) {
+  const createdTemplates = [];
+  for (const template of DEMO_NOTE_TEMPLATES) {
+    const createdTemplate = await noteTemplatesRepository.createNoteTemplate({
+      title: template.title,
+      body: template.body,
+      color: template.color,
+      sortOrder: template.sortOrder,
+      isActive: true,
+    });
+    createdTemplates.push(createdTemplate);
+    await demoSeedRepository.addSeedRunEntity(seedRunId, "note_template", createdTemplate.id);
+  }
+  return createdTemplates;
+}
+
+async function seedScopedNotes(params: {
+  seedRunId: string;
+  scope: "customer" | "project" | "appointment";
+  entityIds: number[];
+  templatePool: Array<{ id: number; title: string; body: string; color: string | null }>;
+  addRelationTx: (tx: Parameters<Parameters<typeof notesRepository.withNotesTransaction>[0]>[0], entityId: number, noteId: number) => Promise<void>;
+}) {
+  const { seedRunId, scope, entityIds, templatePool, addRelationTx } = params;
+  const selectedEntityIds = chooseHalfIds(entityIds, seedRunId, `${scope}-notes`);
+  let createdNotes = 0;
+  let templatedNotes = 0;
+
+  for (const entityId of selectedEntityIds) {
+    const useTemplate = templatePool.length > 0 && shouldUseSeedNoteTemplate(seedRunId, scope, entityId);
+    const selectedTemplate = useTemplate
+      ? templatePool[hashInt(`${seedRunId}:${scope}:template:${entityId}`) % templatePool.length]
+      : null;
+    await notesRepository.withNotesTransaction(async (tx) => {
+      const noteId = await notesRepository.createNoteTx(tx, {
+        title: selectedTemplate?.title ?? `Seed-Notiz ${scope} ${entityId}`,
+        body: selectedTemplate?.body ?? buildSeedNoteBody(scope, entityId),
+        color: selectedTemplate?.color ?? null,
+      });
+      await addRelationTx(tx, entityId, noteId);
+      await demoSeedRepository.addSeedRunEntity(seedRunId, "note", noteId);
+    });
+    createdNotes += 1;
+    if (selectedTemplate) templatedNotes += 1;
+  }
+
+  return {
+    createdNotes,
+    templatedNotes,
+  };
 }
 
 function toDateString(date: Date) {
@@ -1308,6 +1420,8 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       appointments: 0,
       mountAppointments: 0,
       reklAppointments: 0,
+      notes: 0,
+      noteTemplates: 0,
       teams: 0,
       tours: 0,
       attachments: 0,
@@ -1324,6 +1438,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
     const projectSeedContexts: ProjectSeedContext[] = [];
+    let seedNoteTemplatesPool: Array<{ id: number; title: string; body: string; color: string | null }> = [];
 
     if (config.runType === "appointments") {
       if (!config.baseSeedRunId) {
@@ -1394,6 +1509,9 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         throw createBadRequestError("Keine gueltigen Projekt-Kontexte aus dem Basis-Run verfuegbar.");
       }
     } else {
+      seedNoteTemplatesPool = await seedNoteTemplates(seedRunId);
+      created.noteTemplates += seedNoteTemplatesPool.length;
+
       for (let i = 0; i < 3; i += 1) {
         const team = await teamsService.createTeam({ color: random.pick(["#0f766e", "#0369a1", "#be123c", "#4d7c0f"]) });
         teams.push(team.id);
@@ -1484,6 +1602,15 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           warnings.push(`Tag-Zuordnung für Basisdaten fehlgeschlagen: ${message}`);
         }
       }
+
+      const customerNotesSeed = await seedScopedNotes({
+        seedRunId,
+        scope: "customer",
+        entityIds: customers,
+        templatePool: seedNoteTemplatesPool,
+        addRelationTx: notesRepository.addCustomerNoteRelationTx,
+      });
+      created.notes += customerNotesSeed.createdNotes;
 
       const projectsToCreate = config.projects;
       const ovenById = new Map(saunaData.ovens.map((oven) => [oven.ovenId, oven]));
@@ -1590,6 +1717,15 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           warnings.push(`Tag-Zuordnung für Projekte fehlgeschlagen: ${message}`);
         }
       }
+
+      const projectNotesSeed = await seedScopedNotes({
+        seedRunId,
+        scope: "project",
+        entityIds: projectSeedContexts.map((ctx) => ctx.projectId),
+        templatePool: seedNoteTemplatesPool,
+        addRelationTx: notesRepository.addProjectNoteRelationTx,
+      });
+      created.notes += projectNotesSeed.createdNotes;
     }
 
     const startDate = addDays(new Date(), 1);
@@ -1654,6 +1790,22 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           await demoSeedRepository.addSeedRunEntity(seedRunId, "appointment_rekl", appointment.id);
         }
       }
+
+      const appointmentNotesSeed = await seedScopedNotes({
+        seedRunId,
+        scope: "appointment",
+        entityIds: allCreatedAppointments.map((appointment) => appointment.id),
+        templatePool: seedNoteTemplatesPool.length > 0
+          ? seedNoteTemplatesPool
+          : DEMO_NOTE_TEMPLATES.map((template, index) => ({
+              id: index + 1,
+              title: template.title,
+              body: template.body,
+              color: template.color,
+            })),
+        addRelationTx: notesRepository.addAppointmentNoteRelationTx,
+      });
+      created.notes += appointmentNotesSeed.createdNotes;
 
       if (demoTags.length > 0 && allCreatedAppointments.length > 0) {
         try {
@@ -1799,6 +1951,8 @@ export async function listSeedRuns() {
         appointments: 0,
         mountAppointments: 0,
         reklAppointments: 0,
+        notes: 0,
+        noteTemplates: 0,
         teams: 0,
         tours: 0,
         attachments: 0,
@@ -1823,10 +1977,15 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
         projects: 0,
         customers: 0,
         employees: 0,
+        notes: 0,
+        noteTemplates: 0,
         teams: 0,
         tours: 0,
         projectStatusRelations: 0,
         appointmentEmployees: 0,
+        customerNotes: 0,
+        projectNotes: 0,
+        appointmentNotes: 0,
         attachments: 0,
         mappingRows: 0,
         seedRuns: 0,
@@ -1896,10 +2055,15 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
       projects: deleted.projectsDeleted,
       customers: deleted.customersDeleted,
       employees: deleted.employeesDeleted,
+      notes: deleted.notesDeleted,
+      noteTemplates: deleted.noteTemplatesDeleted,
       teams: deleted.teamsDeleted,
       tours: deleted.toursDeleted,
       projectStatusRelations: deleted.projectStatusRelationsDeleted,
       appointmentEmployees: deleted.appointmentEmployeesDeleted,
+      customerNotes: deleted.customerNotesDeleted,
+      projectNotes: deleted.projectNotesDeleted,
+      appointmentNotes: deleted.appointmentNotesDeleted,
       attachments: deleted.attachmentsDeleted,
       mappingRows: deleted.mappingRows,
       seedRuns: deleted.seedRunsDeleted,

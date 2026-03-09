@@ -87,7 +87,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
     const seedRunEntitiesCount = Number(seedRunEntityCountRow?.count ?? 0);
 
     const deletedAppointments = affectedRows(await tx.delete(appointments));
-    const deletedNoteTemplates = affectedRows(await tx.delete(noteTemplates));
     const deletedHelpTexts = affectedRows(await tx.delete(helpTexts));
     const deletedUserSettingsValues = affectedRows(await tx.delete(userSettingsValue));
     const deletedBackupLogs = affectedRows(await tx.delete(backupLog));
@@ -109,10 +108,11 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
     const deletedComponentCategories = affectedRows(await tx.delete(componentCategories));
     const deletedTags = affectedRows(await tx.delete(tags));
 
+    const deletedNotes = affectedRows(await tx.delete(notes));
+    const deletedNoteTemplates = affectedRows(await tx.delete(noteTemplates));
     const deletedProjectStatuses = affectedRows(await tx.delete(projectStatus));
     const deletedTeams = affectedRows(await tx.delete(teams));
     const deletedTours = affectedRows(await tx.delete(tours));
-    const deletedNotes = affectedRows(await tx.delete(notes));
 
     const deletedSeedRuns = affectedRows(await tx.delete(seedRuns));
 
