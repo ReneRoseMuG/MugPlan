@@ -66,6 +66,7 @@ export async function getProject(req: Request, res: Response, next: NextFunction
 
     res.json({
       ...result,
+      projectOrder: result.project.projectOrder ?? null,
       projectStatuses,
       projectNotes,
       projectAttachments,

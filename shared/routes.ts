@@ -6,7 +6,9 @@ import {
   insertCustomerSchema, updateCustomerSchema, customers,
   insertNoteSchema, updateNoteSchema, notes,
   insertNoteTemplateSchema, updateNoteTemplateSchema, noteTemplates,
-  insertProjectSchema, updateProjectSchema, projects,
+  insertProjectSchema, updateProjectSchema,
+  updateProjectOrderSchema,
+  insertProjectOrderItemSchema, updateProjectOrderItemSchema, projectOrderItems,
   projectAttachments,
   customerAttachments,
   employeeAttachments,
@@ -18,8 +20,10 @@ import {
   insertComponentCategorySchema, updateComponentCategorySchema, componentCategories,
   insertProductSchema, updateProductSchema, products,
   insertComponentSchema, updateComponentSchema, components,
+  insertComponentSpecificationSchema, updateComponentSpecificationSchema, componentSpecifications,
   productComponent,
 } from './schema';
+import type { Project, ProjectOrder } from "./schema";
 
 export const errorSchemas = {
   validation: z.object({
@@ -114,6 +118,20 @@ const entityAppointmentItemSchema = z.object({
   displayMode: z.enum(appointmentDisplayModes),
   isLocked: z.boolean(),
 });
+
+const projectOrderResponseSchema = z.object({
+  id: z.number().int().positive(),
+  projectId: z.number().int().positive(),
+  orderNumber: z.string(),
+  amount: z.string().nullable(),
+  plannedDateText: z.string().nullable(),
+  plannedWeek: z.string().nullable(),
+  version: z.number().int().min(1),
+  createdAt: z.any(),
+  updatedAt: z.any(),
+});
+
+const projectWithOrderSchema = z.custom<Project & { notesCount?: number; projectOrder?: ProjectOrder | null }>();
 
 const attachmentDuplicateHitSchema = z.object({
   domain: z.enum(["customer", "project", "employee"]),
@@ -1464,6 +1482,57 @@ export const api = {
         },
       },
     },
+    componentSpecifications: {
+      listByComponent: {
+        method: "GET" as const,
+        path: "/api/admin/master-data/components/:id/specifications",
+        responses: {
+          200: z.array(z.custom<typeof componentSpecifications.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/components/:id/specifications",
+        input: insertComponentSpecificationSchema,
+        responses: {
+          201: z.custom<typeof componentSpecifications.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/admin/master-data/components/:id/specifications/:specificationId",
+        input: updateComponentSpecificationSchema.extend({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof componentSpecifications.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/components/:id/specifications/:specificationId",
+        input: z.object({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
     tags: {
       list: {
         method: "GET" as const,
@@ -1792,7 +1861,7 @@ export const api = {
         scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
       }),
       responses: {
-        200: z.array(z.custom<typeof projects.$inferSelect & { notesCount: number }>()),
+        200: z.array(projectWithOrderSchema),
       },
     },
     get: {
@@ -1800,7 +1869,8 @@ export const api = {
       path: '/api/projects/:id',
       responses: {
         200: z.object({
-          project: z.custom<typeof projects.$inferSelect>(),
+          project: projectWithOrderSchema,
+          projectOrder: projectOrderResponseSchema.nullable(),
           customer: z.custom<typeof customers.$inferSelect>(),
           projectStatuses: z.array(
             z.object({
@@ -1820,7 +1890,7 @@ export const api = {
       path: '/api/projects',
       input: insertProjectSchema,
       responses: {
-        201: z.custom<typeof projects.$inferSelect>(),
+        201: projectWithOrderSchema,
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         409: z.object({ code: z.literal("INACTIVE_ENTITY_ASSIGNMENT") }),
       },
@@ -1832,7 +1902,7 @@ export const api = {
         version: z.number().int().min(1),
       }),
       responses: {
-        200: z.custom<typeof projects.$inferSelect>(),
+        200: projectWithOrderSchema,
         404: errorSchemas.notFound,
         409: z.object({
           code: z.enum(["VERSION_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]),
@@ -1851,6 +1921,76 @@ export const api = {
         404: errorSchemas.notFound,
         409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    order: {
+      get: {
+        method: "GET" as const,
+        path: "/api/projects/:id/order",
+        responses: {
+          200: projectOrderResponseSchema,
+          404: errorSchemas.notFound,
+        },
+      },
+      upsert: {
+        method: "PUT" as const,
+        path: "/api/projects/:id/order",
+        input: updateProjectOrderSchema.extend({
+          version: z.number().int().min(1).optional(),
+        }).strict(),
+        responses: {
+          200: projectOrderResponseSchema,
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    orderItems: {
+      list: {
+        method: "GET" as const,
+        path: "/api/projects/:id/order-items",
+        responses: {
+          200: z.array(z.custom<typeof projectOrderItems.$inferSelect>()),
+          404: errorSchemas.notFound,
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/projects/:id/order-items",
+        input: insertProjectOrderItemSchema,
+        responses: {
+          201: z.custom<typeof projectOrderItems.$inferSelect>(),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/projects/:id/order-items/:itemId",
+        input: updateProjectOrderItemSchema.extend({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          200: z.custom<typeof projectOrderItems.$inferSelect>(),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/projects/:id/order-items/:itemId",
+        input: z.object({
+          version: z.number().int().min(1),
+        }).strict(),
+        responses: {
+          204: z.void(),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
       },
     },
   },

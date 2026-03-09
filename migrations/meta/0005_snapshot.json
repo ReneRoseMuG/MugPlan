@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "3c17c642-2f24-4d2e-a48c-6d308c2b9881",
+  "prevId": "cdbefe10-5951-4583-92b5-b0f5faf6c59c",
+  "note": "Manual snapshot placeholder for 0005_refactor_product_management. Authoritative migration logic lives in migrations/0005_refactor_product_management.sql."
+}

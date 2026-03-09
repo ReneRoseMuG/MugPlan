@@ -231,8 +231,7 @@ export const customerNotes = mysqlTable("customer_note", {
 export const projects = mysqlTable("project", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  orderNumber: varchar("order_number", { length: 255 }),
-  amount: decimal("amount", { precision: 12, scale: 2 }),
+  type: int("type").notNull().default(1),
   customerId: bigint("customer_id", { mode: "number" }).notNull().references(() => customers.id, { onDelete: "restrict" }),
   descriptionMd: text("description_md"),
   isActive: boolean("is_active").notNull().default(true),
@@ -268,25 +267,72 @@ const projectAmountSchema = z.preprocess(
     .optional(),
 );
 
+export const projectTypeSchema = z.number().int().positive().default(1);
+
+export const projectOrder = mysqlTable("project_order", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  projectId: bigint("project_id", { mode: "number" })
+    .notNull()
+    .unique()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  orderNumber: varchar("order_number", { length: 255 }).notNull().unique(),
+  amount: decimal("amount", { precision: 12, scale: 2 }),
+  plannedDateText: varchar("planned_date_text", { length: 255 }),
+  plannedWeek: varchar("planned_week", { length: 10 }),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  byProjectOrderNumber: index("idx_project_order_number_project").on(table.orderNumber, table.projectId),
+}));
+
+export const insertProjectOrderSchema = createInsertSchema(projectOrder).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  amount: projectAmountSchema,
+});
+
+export const updateProjectOrderSchema = z.object({
+  orderNumber: z.string().trim().min(1).optional(),
+  amount: projectAmountSchema,
+  plannedDateText: z.string().trim().nullable().optional(),
+  plannedWeek: z.string().trim().max(10).nullable().optional(),
+  version: z.number().int().optional(),
+}).partial();
+
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
   isActive: true,
 }).extend({
+  type: projectTypeSchema.optional(),
+  orderNumber: z.string().trim().nullable().optional(),
   amount: projectAmountSchema,
+  projectOrder: insertProjectOrderSchema.omit({ projectId: true }).partial().optional(),
 });
 
 export const updateProjectSchema = z.object({
   name: z.string().optional(),
+  type: projectTypeSchema.optional(),
   orderNumber: z.string().nullable().optional(),
   amount: projectAmountSchema,
   customerId: z.number().optional(),
   descriptionMd: z.string().nullable().optional(),
+  projectOrder: updateProjectOrderSchema.optional(),
   isActive: z.boolean().optional(),
 });
 
-export type Project = typeof projects.$inferSelect;
+export type ProjectOrder = typeof projectOrder.$inferSelect;
+export type InsertProjectOrder = z.infer<typeof insertProjectOrderSchema>;
+export type UpdateProjectOrder = z.infer<typeof updateProjectOrderSchema>;
+export type Project = typeof projects.$inferSelect & {
+  orderNumber?: string | null;
+  amount?: string | null;
+  projectOrder?: ProjectOrder | null;
+};
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
 
@@ -425,62 +471,43 @@ export const insertProductComponentSchema = createInsertSchema(productComponent)
 export type ProductComponent = typeof productComponent.$inferSelect;
 export type InsertProductComponent = z.infer<typeof insertProductComponentSchema>;
 
-export const projectOrderItemSourceSchema = z.enum(["product", "component", "text"]);
+export const componentSpecifications = mysqlTable("component_specifications", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  componentId: bigint("component_id", { mode: "number" })
+    .notNull()
+    .references(() => components.id, { onDelete: "cascade" }),
+  specName: varchar("spec_name", { length: 255 }).notNull(),
+  specValue: text("spec_value").notNull(),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  uniqueComponentSpec: uniqueIndex("uq_component_specifications_value").on(table.componentId, table.specName, table.specValue),
+  byComponent: index("idx_component_specifications_component").on(table.componentId),
+}));
 
-const hasNonEmptyProjectOrderItemDescription = (value: string | null | undefined): boolean =>
-  typeof value === "string" && value.trim().length > 0;
+export const insertComponentSpecificationSchema = createInsertSchema(componentSpecifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
-const validateProjectOrderItemSource = (
-  value: {
-    source: "product" | "component" | "text";
-    productId?: number | null;
-    componentId?: number | null;
-    description?: string | null;
-  },
-  ctx: z.RefinementCtx,
-): void => {
-  const hasProduct = value.productId != null;
-  const hasComponent = value.componentId != null;
-  const hasText = hasNonEmptyProjectOrderItemDescription(value.description);
-  const selectedSourceCount = [hasProduct, hasComponent, hasText].filter(Boolean).length;
+export const updateComponentSpecificationSchema = z.object({
+  specName: z.string().trim().min(1).optional(),
+  specValue: z.string().trim().min(1).optional(),
+  version: z.number().int().optional(),
+}).partial();
 
-  if (selectedSourceCount !== 1) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Exactly one of productId, componentId, or non-empty description must be set.",
-      path: ["source"],
-    });
-    return;
-  }
-
-  if (value.source === "product" && !hasProduct) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "source 'product' requires productId.",
-      path: ["productId"],
-    });
-  }
-
-  if (value.source === "component" && !hasComponent) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "source 'component' requires componentId.",
-      path: ["componentId"],
-    });
-  }
-
-  if (value.source === "text" && !hasText) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "source 'text' requires a non-empty description.",
-      path: ["description"],
-    });
-  }
-};
+export type ComponentSpecification = typeof componentSpecifications.$inferSelect;
+export type InsertComponentSpecification = z.infer<typeof insertComponentSpecificationSchema>;
+export type UpdateComponentSpecification = z.infer<typeof updateComponentSpecificationSchema>;
 
 // Project Order Items - Auftragspositionen je Projekt (FT 27)
 export const projectOrderItems = mysqlTable("project_order_items", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  orderNumber: varchar("order_number", { length: 255 })
+    .notNull()
+    .references(() => projectOrder.orderNumber, { onDelete: "cascade" }),
   projectId: bigint("project_id", { mode: "number" })
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
@@ -488,33 +515,26 @@ export const projectOrderItems = mysqlTable("project_order_items", {
     .references(() => products.id, { onDelete: "restrict" }),
   componentId: bigint("component_id", { mode: "number" })
     .references(() => components.id, { onDelete: "restrict" }),
+  specificationId: bigint("specification_id", { mode: "number" })
+    .references(() => componentSpecifications.id, { onDelete: "restrict" }),
   description: text("description"),
   quantity: int("quantity").notNull().default(1),
-  source: varchar("source", { length: 20 }).notNull(),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 }, (table) => ({
+  byOrderNumberProject: index("idx_order_items_order_number_project").on(table.orderNumber, table.projectId),
   byProject: index("idx_order_items_project").on(table.projectId),
   quantityPositive: check("chk_project_order_items_quantity_positive", sql`${table.quantity} > 0`),
-  sourceConsistent: check(
-    "chk_project_order_items_source_consistent",
+  relationConsistent: check(
+    "chk_project_order_items_relation_consistent",
     sql`(
-      (${table.source} = 'product'
-       AND ${table.productId} IS NOT NULL
-       AND ${table.componentId} IS NULL
-       AND (${table.description} IS NULL OR char_length(trim(${table.description})) = 0))
-      OR
-      (${table.source} = 'component'
-       AND ${table.componentId} IS NOT NULL
-       AND ${table.productId} IS NULL
-       AND (${table.description} IS NULL OR char_length(trim(${table.description})) = 0))
-      OR
-      (${table.source} = 'text'
-       AND ${table.productId} IS NULL
-       AND ${table.componentId} IS NULL
-       AND ${table.description} IS NOT NULL
-       AND char_length(trim(${table.description})) > 0)
+      (
+        (${table.productId} IS NOT NULL AND ${table.componentId} IS NULL)
+        OR (${table.productId} IS NULL AND ${table.componentId} IS NOT NULL)
+        OR (${table.productId} IS NULL AND ${table.componentId} IS NULL AND ${table.description} IS NOT NULL)
+      )
+      AND (${table.specificationId} IS NULL OR ${table.componentId} IS NOT NULL)
     )`,
   ),
 }));
@@ -526,49 +546,20 @@ export const insertProjectOrderItemSchema = createInsertSchema(projectOrderItems
     updatedAt: true,
   })
   .extend({
-    source: projectOrderItemSourceSchema,
+    orderNumber: z.string().trim().min(1),
     quantity: z.number().int().positive(),
-  })
-  .superRefine((value, ctx) => validateProjectOrderItemSource(value, ctx));
+  });
 
 export const updateProjectOrderItemSchema = z.object({
+  orderNumber: z.string().trim().min(1).optional(),
   projectId: z.number().int().optional(),
   productId: z.number().int().nullable().optional(),
   componentId: z.number().int().nullable().optional(),
+  specificationId: z.number().int().nullable().optional(),
   description: z.string().nullable().optional(),
   quantity: z.number().int().positive().optional(),
-  source: projectOrderItemSourceSchema.optional(),
   version: z.number().int().optional(),
-}).partial().superRefine((value, ctx) => {
-  const touchesSourceFields =
-    value.source !== undefined ||
-    value.productId !== undefined ||
-    value.componentId !== undefined ||
-    value.description !== undefined;
-
-  if (!touchesSourceFields) {
-    return;
-  }
-
-  if (value.source === undefined) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "source is required when updating productId, componentId, or description.",
-      path: ["source"],
-    });
-    return;
-  }
-
-  validateProjectOrderItemSource(
-    {
-      source: value.source,
-      productId: value.productId,
-      componentId: value.componentId,
-      description: value.description,
-    },
-    ctx,
-  );
-});
+}).partial();
 
 export type ProjectOrderItem = typeof projectOrderItems.$inferSelect;
 export type InsertProjectOrderItem = z.infer<typeof insertProjectOrderItemSchema>;

@@ -2,13 +2,16 @@
 import type {
   Component,
   ComponentCategory,
+  ComponentSpecification,
   InsertComponent,
   InsertComponentCategory,
+  InsertComponentSpecification,
   InsertProduct,
   InsertProductCategory,
   Tag,
   Product,
   ProductCategory,
+  UpdateComponentSpecification,
   UpdateComponent,
   UpdateComponentCategory,
   UpdateProduct,
@@ -17,6 +20,7 @@ import type {
 import {
   appointmentTags,
   componentCategories,
+  componentSpecifications,
   components,
   customerTags,
   employeeTags,
@@ -281,6 +285,58 @@ export async function deleteComponentWithVersion(id: number, expectedVersion: nu
   `);
 
   const outcome = await classifyVersionedMutation("components", id, toAffectedRows(result));
+  if (outcome === "not_found") return { kind: "not_found" };
+  if (outcome === "version_conflict") return { kind: "version_conflict" };
+  return { kind: "deleted" };
+}
+
+export async function listComponentSpecifications(componentId: number): Promise<ComponentSpecification[]> {
+  return db
+    .select()
+    .from(componentSpecifications)
+    .where(eq(componentSpecifications.componentId, componentId))
+    .orderBy(asc(componentSpecifications.specName), asc(componentSpecifications.id));
+}
+
+export async function createComponentSpecification(input: InsertComponentSpecification): Promise<ComponentSpecification> {
+  const result = await db.insert(componentSpecifications).values(input);
+  const id = toInsertId(result);
+  const [row] = await db.select().from(componentSpecifications).where(eq(componentSpecifications.id, id));
+  return row;
+}
+
+export async function updateComponentSpecificationWithVersion(
+  id: number,
+  expectedVersion: number,
+  input: UpdateComponentSpecification,
+): Promise<VersionedUpdateResult<ComponentSpecification>> {
+  const result = await db.execute(sql`
+    update component_specifications
+    set
+      spec_name = if(${input.specName === undefined}, spec_name, ${input.specName ?? null}),
+      spec_value = if(${input.specValue === undefined}, spec_value, ${input.specValue ?? null}),
+      updated_at = now(),
+      version = version + 1
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+
+  const outcome = await classifyVersionedMutation("component_specifications", id, toAffectedRows(result));
+  if (outcome === "not_found") return { kind: "not_found" };
+  if (outcome === "version_conflict") return { kind: "version_conflict" };
+
+  const [row] = await db.select().from(componentSpecifications).where(eq(componentSpecifications.id, id));
+  return { kind: "updated", row };
+}
+
+export async function deleteComponentSpecificationWithVersion(id: number, expectedVersion: number): Promise<VersionedDeleteResult> {
+  const result = await db.execute(sql`
+    delete from component_specifications
+    where id = ${id}
+      and version = ${expectedVersion}
+  `);
+
+  const outcome = await classifyVersionedMutation("component_specifications", id, toAffectedRows(result));
   if (outcome === "not_found") return { kind: "not_found" };
   if (outcome === "version_conflict") return { kind: "version_conflict" };
   return { kind: "deleted" };

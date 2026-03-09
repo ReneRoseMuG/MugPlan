@@ -7,6 +7,7 @@ import {
   customerNotes,
   customers,
   employees,
+  projectOrder,
   projectNotes,
   projects,
   tours,
@@ -401,6 +402,7 @@ export async function listAppointmentsByEmployeeFromDate(employeeId: number, fro
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .where(and(eq(appointmentEmployees.employeeId, employeeId), gte(appointments.startDate, fromDate)))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -412,11 +414,13 @@ export async function listSidebarAppointmentsByProjectFromDate(projectId: number
     .select({
       appointment: appointments,
       project: projects,
+      projectOrder,
       customer: customers,
       tour: tours,
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(eq(appointments.projectId, projectId), gte(appointments.startDate, fromDate)))
@@ -429,12 +433,14 @@ export async function listSidebarAppointmentsByEmployeeFromDate(employeeId: numb
     .select({
       appointment: appointments,
       project: projects,
+      projectOrder,
       customer: customers,
       tour: tours,
     })
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(eq(appointmentEmployees.employeeId, employeeId), gte(appointments.startDate, fromDate)))
@@ -453,12 +459,14 @@ export async function listSidebarAppointmentsByEmployeeScope(employeeId: number,
     .select({
       appointment: appointments,
       project: projects,
+      projectOrder,
       customer: customers,
       tour: tours,
     })
     .from(appointmentEmployees)
     .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...whereConditions))
@@ -477,11 +485,13 @@ export async function listSidebarAppointmentsByCustomerScope(customerId: number,
     .select({
       appointment: appointments,
       project: projects,
+      projectOrder,
       customer: customers,
       tour: tours,
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...whereConditions))
@@ -494,11 +504,13 @@ export async function listSidebarAppointmentsByTourFromDate(tourId: number, from
     .select({
       appointment: appointments,
       project: projects,
+      projectOrder,
       customer: customers,
       tour: tours,
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(eq(appointments.tourId, tourId), gte(appointments.startDate, fromDate)))
@@ -536,11 +548,13 @@ export async function listAppointmentsForCalendarRange({
     .select({
       appointment: appointments,
       project: projects,
+      projectOrder,
       customer: customers,
       tour: tours,
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...conditions))
@@ -557,7 +571,7 @@ function buildAppointmentListConditions(filters: AppointmentListFilters) {
     conditions.push(eq(appointments.customerId, filters.customerId));
   }
   if (filters.orderNumber) {
-    conditions.push(like(projects.orderNumber, `%${filters.orderNumber}%`));
+    conditions.push(like(projectOrder.orderNumber, `%${filters.orderNumber}%`));
   }
   if (filters.tourId) {
     conditions.push(eq(appointments.tourId, filters.tourId));
@@ -614,6 +628,7 @@ export async function listAppointmentsForList(
     .select({ total: sql<number>`count(*)` })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(whereClause);
@@ -622,11 +637,13 @@ export async function listAppointmentsForList(
     .select({
       appointment: appointments,
       project: projects,
+      projectOrder,
       customer: customers,
       tour: tours,
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(whereClause)

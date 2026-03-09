@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
-import { customers, projects, projectAttachments } from "@shared/schema";
+import { customers, projectAttachments, projectOrder, projects } from "@shared/schema";
 import { parseDocumentHeaderDeterministically } from "./documentHeaderDeterministicParser";
 import { extractTextFromPdfBuffer } from "./documentTextExtractor";
 import { parseDocumentArticleItemsDeterministically } from "./documentArticleDeterministicParser";
@@ -401,8 +401,9 @@ export async function analyzeProjectBulkImport(files: BulkFileInput[]) {
       if (alreadyImported) {
         const [existingProject] = await db
           .select({ id: projects.id })
-          .from(projects)
-          .where(eq(projects.orderNumber, orderNumber))
+          .from(projectOrder)
+          .innerJoin(projects, eq(projectOrder.projectId, projects.id))
+          .where(eq(projectOrder.orderNumber, orderNumber))
           .limit(1);
         duplicates.push({ ...row, existingProjectId: Number(existingProject?.id ?? 0) });
         log.push({ fileName: file.fileName, status: "duplicate" });
@@ -514,7 +515,7 @@ export async function applyNewProjects(sessionId: string, selectedIds: string[])
     throw new BulkImportError(422, "VALIDATION_ERROR", "Validierung fehlgeschlagen", detailErrors);
   }
 
-  const createdProjects = await db.transaction(async (tx) => {
+  const createdProjects = await db.transaction(async () => {
     const created: Array<{ id: number; fileName: string; buffer: Buffer }> = [];
     for (const row of selectedRows) {
       const customerResolution = await documentProcessingService.resolveCustomerByNumber(row.customerNumber);
@@ -528,9 +529,10 @@ export async function applyNewProjects(sessionId: string, selectedIds: string[])
         orderNumber: row.orderNumber,
         customerId: customerResolution.customer.id,
         descriptionMd: row.articleListHtml,
+        type: 1,
       };
-      const result = await tx.insert(projects).values(payload);
-      const projectId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
+      const createdProject = await projectsService.createProject(payload);
+      const projectId = createdProject.id;
       created.push({
         id: projectId,
         fileName: row.fileName,
@@ -588,9 +590,10 @@ export async function applyProjectSpecialCase(sessionId: string, id: string) {
       orderNumber: row.orderNumber,
       customerId,
       descriptionMd: row.articleListHtml,
+      type: 1,
     };
-    const projectResult = await tx.insert(projects).values(projectPayload);
-    const projectId = Number((projectResult as any)?.[0]?.insertId ?? (projectResult as any)?.insertId ?? 0);
+    const project = await projectsService.createProject(projectPayload);
+    const projectId = project.id;
     return { customerId, projectId };
   });
 
@@ -623,9 +626,9 @@ export async function invalidateProjectOrderConflictCache(_orderNumber: string) 
 
 export async function ensureNoDuplicateOrderNumber(orderNumber: string) {
   const exists = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.orderNumber, orderNumber)))
+    .select({ id: projectOrder.id })
+    .from(projectOrder)
+    .where(and(eq(projectOrder.orderNumber, orderNumber)))
     .limit(1);
   return exists.length === 0;
 }

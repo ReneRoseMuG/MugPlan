@@ -1,8 +1,10 @@
 ﻿import type {
   Component,
   ComponentCategory,
+  ComponentSpecification,
   InsertComponent,
   InsertComponentCategory,
+  InsertComponentSpecification,
   InsertProduct,
   InsertProductCategory,
   Tag,
@@ -10,6 +12,7 @@
   ProductCategory,
   UpdateComponent,
   UpdateComponentCategory,
+  UpdateComponentSpecification,
   UpdateProduct,
   UpdateProductCategory,
 } from "@shared/schema";
@@ -281,6 +284,64 @@ export async function deleteComponent(
   requireAdmin(roleKey);
   try {
     const result = await masterDataRepository.deleteComponentWithVersion(id, expectedVersion);
+    if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
+    if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
+  } catch (error) {
+    if (isRowReferencedError(error)) {
+      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+}
+
+export async function listComponentSpecifications(componentId: number, roleKey: CanonicalRoleKey): Promise<ComponentSpecification[]> {
+  requireAdmin(roleKey);
+  return masterDataRepository.listComponentSpecifications(componentId);
+}
+
+export async function createComponentSpecification(
+  input: InsertComponentSpecification,
+  roleKey: CanonicalRoleKey,
+): Promise<ComponentSpecification> {
+  requireAdmin(roleKey);
+  try {
+    return await masterDataRepository.createComponentSpecification(input);
+  } catch (error) {
+    if (isDuplicateKeyError(error) || isMissingReferenceError(error)) {
+      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+}
+
+export async function updateComponentSpecification(
+  id: number,
+  expectedVersion: number,
+  input: UpdateComponentSpecification,
+  roleKey: CanonicalRoleKey,
+): Promise<ComponentSpecification> {
+  requireAdmin(roleKey);
+  try {
+    const result = await masterDataRepository.updateComponentSpecificationWithVersion(id, expectedVersion, input);
+    if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
+    if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
+    return result.row;
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
+}
+
+export async function deleteComponentSpecification(
+  id: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<void> {
+  requireAdmin(roleKey);
+  try {
+    const result = await masterDataRepository.deleteComponentSpecificationWithVersion(id, expectedVersion);
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
   } catch (error) {

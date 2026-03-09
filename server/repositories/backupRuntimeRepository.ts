@@ -5,6 +5,7 @@ import {
   appointments,
   customers,
   employees,
+  projectOrder,
   projectProjectStatus,
   projectStatus,
   projects,
@@ -85,7 +86,7 @@ export async function getExportAppointmentRows(range: { fromDate: Date; toDate: 
       tourColor: tours.color,
       projectId: projects.id,
       projectName: projects.name,
-      orderNumber: projects.orderNumber,
+      orderNumber: projectOrder.orderNumber,
       customerId: customers.id,
       customerNumber: customers.customerNumber,
       customerName: customers.fullName,
@@ -95,6 +96,7 @@ export async function getExportAppointmentRows(range: { fromDate: Date; toDate: 
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(
@@ -139,7 +141,7 @@ export async function getAllExportAppointmentRows(): Promise<ExportAppointmentRo
       tourColor: tours.color,
       projectId: projects.id,
       projectName: projects.name,
-      orderNumber: projects.orderNumber,
+      orderNumber: projectOrder.orderNumber,
       customerId: customers.id,
       customerNumber: customers.customerNumber,
       customerName: customers.fullName,
@@ -149,6 +151,7 @@ export async function getAllExportAppointmentRows(): Promise<ExportAppointmentRo
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
@@ -206,7 +209,22 @@ export async function listAllTours() {
 }
 
 export async function listAllProjects() {
-  return db.select().from(projects).orderBy(asc(projects.id));
+  return db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      type: projects.type,
+      customerId: projects.customerId,
+      descriptionMd: projects.descriptionMd,
+      isActive: projects.isActive,
+      version: projects.version,
+      createdAt: projects.createdAt,
+      updatedAt: projects.updatedAt,
+      orderNumber: projectOrder.orderNumber,
+    })
+    .from(projects)
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .orderBy(asc(projects.id));
 }
 
 export async function listAllCustomers() {
@@ -229,13 +247,14 @@ export async function getAppointmentByIdForSync(appointmentId: number) {
       endTime: appointments.endTime,
       externalEventId: appointments.externalEventId,
       projectName: projects.name,
-      orderNumber: projects.orderNumber,
+      orderNumber: projectOrder.orderNumber,
       customerNumber: customers.customerNumber,
       customerName: customers.fullName,
       tourName: tours.name,
     })
     .from(appointments)
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(eq(appointments.id, appointmentId))

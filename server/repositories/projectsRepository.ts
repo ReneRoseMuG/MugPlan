@@ -3,11 +3,14 @@ import { db } from "../db";
 import {
   appointments,
   customers,
+  projectOrder,
+  projectOrderItems,
   projectAttachments,
   projectNotes,
   projectProjectStatus,
   projects,
   type Project,
+  type ProjectOrder,
   type ProjectAttachment,
   type InsertProject,
   type UpdateProject,
@@ -48,6 +51,47 @@ function buildScopeCondition(scope: ProjectScope) {
   )`;
 }
 
+function mergeProjectWithOrder(project: typeof projects.$inferSelect, order: ProjectOrder | null): Project {
+  return {
+    ...project,
+    orderNumber: order?.orderNumber ?? null,
+    amount: order?.amount == null ? null : String(order.amount),
+    projectOrder: order,
+  };
+}
+
+async function getProjectOrdersByProjectIds(projectIds: number[]): Promise<Map<number, ProjectOrder>> {
+  const uniqueProjectIds = Array.from(new Set(projectIds));
+  if (uniqueProjectIds.length === 0) return new Map();
+
+  const rows = await db
+    .select()
+    .from(projectOrder)
+    .where(inArray(projectOrder.projectId, uniqueProjectIds));
+
+  return new Map(rows.map((row) => [row.projectId, row] as const));
+}
+
+function resolveProjectOrderInput(
+  projectId: number,
+  data: InsertProject | (UpdateProject & { version?: number }),
+): {
+  projectId: number;
+  orderNumber: string | null;
+  amount: string | null;
+  plannedDateText: string | null;
+  plannedWeek: string | null;
+} {
+  const nested = data.projectOrder ?? {};
+  return {
+    projectId,
+    orderNumber: nested.orderNumber?.trim() ?? data.orderNumber?.trim() ?? null,
+    amount: nested.amount ?? data.amount ?? null,
+    plannedDateText: nested.plannedDateText?.trim() ?? null,
+    plannedWeek: nested.plannedWeek?.trim() ?? null,
+  };
+}
+
 export async function getProjects(
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
@@ -81,6 +125,7 @@ export async function getProjects(
   const rows = await query.orderBy(desc(projects.updatedAt));
   const projectIds = rows.map((row) => row.id);
   if (projectIds.length === 0) return [];
+  const orderByProjectId = await getProjectOrdersByProjectIds(projectIds);
 
   const noteCountRows = await db
     .select({
@@ -92,7 +137,10 @@ export async function getProjects(
     .groupBy(projectNotes.projectId);
 
   const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
-  return rows.map((row) => ({ ...row, notesCount: notesCountByProjectId.get(row.id) ?? 0 }));
+  return rows.map((row) => ({
+    ...mergeProjectWithOrder(row, orderByProjectId.get(row.id) ?? null),
+    notesCount: notesCountByProjectId.get(row.id) ?? 0,
+  }));
 }
 
 export type ProjectListItem = Project & { notesCount: number };
@@ -131,6 +179,7 @@ export async function getProjectsByCustomer(
 
   const projectIds = rows.map((row) => row.id);
   if (projectIds.length === 0) return [];
+  const orderByProjectId = await getProjectOrdersByProjectIds(projectIds);
 
   const noteCountRows = await db
     .select({
@@ -142,12 +191,17 @@ export async function getProjectsByCustomer(
     .groupBy(projectNotes.projectId);
 
   const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
-  return rows.map((row) => ({ ...row, notesCount: notesCountByProjectId.get(row.id) ?? 0 }));
+  return rows.map((row) => ({
+    ...mergeProjectWithOrder(row, orderByProjectId.get(row.id) ?? null),
+    notesCount: notesCountByProjectId.get(row.id) ?? 0,
+  }));
 }
 
 export async function getProject(id: number): Promise<Project | null> {
   const [project] = await db.select().from(projects).where(eq(projects.id, id));
-  return project || null;
+  if (!project) return null;
+  const [order] = await db.select().from(projectOrder).where(eq(projectOrder.projectId, id));
+  return mergeProjectWithOrder(project, order ?? null);
 }
 
 export async function existsProjectByOrderNumber(orderNumber: string): Promise<boolean> {
@@ -157,12 +211,13 @@ export async function existsProjectByOrderNumber(orderNumber: string): Promise<b
   }
 
   const rows = await db
-    .select({ id: projects.id })
-    .from(projects)
+    .select({ id: projectOrder.id })
+    .from(projectOrder)
+    .innerJoin(projects, eq(projectOrder.projectId, projects.id))
     .where(
-      sql`${projects.orderNumber} is not null
-          and char_length(trim(${projects.orderNumber})) > 0
-          and trim(${projects.orderNumber}) = ${normalizedOrderNumber}
+      sql`${projectOrder.orderNumber} is not null
+          and char_length(trim(${projectOrder.orderNumber})) > 0
+          and trim(${projectOrder.orderNumber}) = ${normalizedOrderNumber}
           and ${projects.isActive} = true`,
     )
     .limit(1);
@@ -172,8 +227,8 @@ export async function existsProjectByOrderNumber(orderNumber: string): Promise<b
 
 export async function listProjectOrderNumbers(): Promise<string[]> {
   const rows = await db
-    .select({ orderNumber: projects.orderNumber })
-    .from(projects);
+    .select({ orderNumber: projectOrder.orderNumber })
+    .from(projectOrder);
 
   return rows
     .map((row) => row.orderNumber?.trim() ?? "")
@@ -184,18 +239,43 @@ export async function getProjectWithCustomer(
   id: number,
 ): Promise<{ project: Project; customer: typeof customers.$inferSelect } | null> {
   const [result] = await db
-    .select({ project: projects, customer: customers })
+    .select({ project: projects, customer: customers, order: projectOrder })
     .from(projects)
     .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .where(eq(projects.id, id));
-  return result || null;
+  if (!result) return null;
+  return {
+    project: mergeProjectWithOrder(result.project, result.order ?? null),
+    customer: result.customer,
+  };
 }
 
 export async function createProject(data: InsertProject): Promise<Project> {
-  const result = await db.insert(projects).values(data);
-  const insertId = (result as any)[0].insertId;
-  const [project] = await db.select().from(projects).where(eq(projects.id, insertId));
-  return project;
+  return db.transaction(async (tx) => {
+    const projectValues = {
+      name: data.name,
+      type: data.type ?? 1,
+      customerId: data.customerId,
+      descriptionMd: data.descriptionMd ?? null,
+    };
+    const result = await tx.insert(projects).values(projectValues);
+    const insertId = (result as any)[0].insertId;
+    const orderInput = resolveProjectOrderInput(insertId, data);
+    if (!orderInput.orderNumber) {
+      throw new Error("VALIDATION_ERROR");
+    }
+    await tx.insert(projectOrder).values({
+      projectId: insertId,
+      orderNumber: orderInput.orderNumber,
+      amount: orderInput.amount,
+      plannedDateText: orderInput.plannedDateText,
+      plannedWeek: orderInput.plannedWeek,
+    });
+    const [project] = await tx.select().from(projects).where(eq(projects.id, insertId));
+    const [order] = await tx.select().from(projectOrder).where(eq(projectOrder.projectId, insertId));
+    return mergeProjectWithOrder(project, order ?? null);
+  });
 }
 
 export async function updateProjectWithVersion(
@@ -203,45 +283,75 @@ export async function updateProjectWithVersion(
   expectedVersion: number,
   data: UpdateProject,
 ): Promise<{ kind: "updated"; project: Project } | { kind: "version_conflict" }> {
-  const hasOrderNumber = Object.prototype.hasOwnProperty.call(data, "orderNumber");
-  const hasAmount = Object.prototype.hasOwnProperty.call(data, "amount");
-
-  const result = await db.execute(sql`
-    update project
-    set
-      name = coalesce(${data.name ?? null}, name),
-      order_number = case
-        when ${hasOrderNumber ? 1 : 0} = 1 then ${data.orderNumber ?? null}
-        else order_number
-      end,
-      amount = case
-        when ${hasAmount ? 1 : 0} = 1 then ${data.amount ?? null}
-        else amount
-      end,
-      customer_id = coalesce(${data.customerId ?? null}, customer_id),
-      description_md = ${data.descriptionMd ?? null},
-      is_active = coalesce(${data.isActive ?? null}, is_active),
-      updated_at = now(),
-      version = version + 1
-    where id = ${id}
-      and version = ${expectedVersion}
-  `);
-
-  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
-  if (affectedRows === 0) {
-    return { kind: "version_conflict" };
-  }
-
-  if (data.customerId !== undefined && data.customerId !== null) {
-    await db.execute(sql`
-      update appointments
-      set customer_id = ${data.customerId}
-      where project_id = ${id}
+  return db.transaction(async (tx) => {
+    const result = await tx.execute(sql`
+      update project
+      set
+        name = coalesce(${data.name ?? null}, name),
+        type = coalesce(${data.type ?? null}, type),
+        customer_id = coalesce(${data.customerId ?? null}, customer_id),
+        description_md = if(${data.descriptionMd === undefined}, description_md, ${data.descriptionMd ?? null}),
+        is_active = coalesce(${data.isActive ?? null}, is_active),
+        updated_at = now(),
+        version = version + 1
+      where id = ${id}
+        and version = ${expectedVersion}
     `);
-  }
 
-  const [project] = await db.select().from(projects).where(eq(projects.id, id));
-  return { kind: "updated", project };
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      return { kind: "version_conflict" as const };
+    }
+
+    const orderInput = resolveProjectOrderInput(id, data);
+    const [existingOrder] = await tx.select().from(projectOrder).where(eq(projectOrder.projectId, id));
+    const touchesOrder =
+      data.orderNumber !== undefined ||
+      data.amount !== undefined ||
+      data.projectOrder !== undefined;
+
+    if (touchesOrder) {
+      if (!existingOrder && !orderInput.orderNumber) {
+        return { kind: "version_conflict" as const };
+      }
+      if (existingOrder) {
+        const hasAmountWrite = data.amount !== undefined || data.projectOrder?.amount !== undefined ? 1 : 0;
+        const hasPlannedDateTextWrite = data.projectOrder?.plannedDateText === undefined ? 1 : 0;
+        const hasPlannedWeekWrite = data.projectOrder?.plannedWeek === undefined ? 1 : 0;
+        await tx.execute(sql`
+          update project_order
+          set
+            order_number = if(${orderInput.orderNumber === null}, order_number, ${orderInput.orderNumber}),
+            amount = if(${orderInput.amount === null && hasAmountWrite === 0}, amount, ${orderInput.amount}),
+            planned_date_text = if(${hasPlannedDateTextWrite}, planned_date_text, ${orderInput.plannedDateText}),
+            planned_week = if(${hasPlannedWeekWrite}, planned_week, ${orderInput.plannedWeek}),
+            updated_at = now(),
+            version = version + 1
+          where project_id = ${id}
+        `);
+      } else {
+        await tx.insert(projectOrder).values({
+          projectId: id,
+          orderNumber: orderInput.orderNumber!,
+          amount: orderInput.amount,
+          plannedDateText: orderInput.plannedDateText,
+          plannedWeek: orderInput.plannedWeek,
+        });
+      }
+    }
+
+    if (data.customerId !== undefined && data.customerId !== null) {
+      await tx.execute(sql`
+        update appointments
+        set customer_id = ${data.customerId}
+        where project_id = ${id}
+      `);
+    }
+
+    const [project] = await tx.select().from(projects).where(eq(projects.id, id));
+    const [order] = await tx.select().from(projectOrder).where(eq(projectOrder.projectId, id));
+    return { kind: "updated" as const, project: mergeProjectWithOrder(project, order ?? null) };
+  });
 }
 
 export async function deleteProjectWithVersion(
@@ -297,6 +407,7 @@ export async function deleteProjectWithVersion(
       `);
     }
     await tx.delete(projectAttachments).where(eq(projectAttachments.projectId, id));
+    await tx.delete(projectOrderItems).where(eq(projectOrderItems.projectId, id));
     await tx.delete(projectProjectStatus).where(eq(projectProjectStatus.projectId, id));
 
     const result = await tx.execute(sql`

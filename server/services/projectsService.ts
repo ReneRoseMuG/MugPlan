@@ -70,9 +70,20 @@ export async function createProject(data: InsertProject): Promise<Project> {
   }
 
   const normalizedProjectName = data.name.trim();
+  const normalizedOrderNumber = data.projectOrder?.orderNumber?.trim() ?? data.orderNumber?.trim() ?? "";
+  if (normalizedOrderNumber.length === 0) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
   return projectsRepository.createProject({
     ...data,
     name: normalizedProjectName,
+    type: data.type ?? 1,
+    orderNumber: normalizedOrderNumber,
+    projectOrder: {
+      ...data.projectOrder,
+      orderNumber: normalizedOrderNumber,
+      amount: data.projectOrder?.amount ?? data.amount ?? null,
+    },
   });
 }
 
@@ -106,6 +117,22 @@ export async function updateProject(
     normalizedData = {
       ...normalizedData,
       name: data.name?.trim(),
+    };
+  }
+
+  if (data.orderNumber !== undefined || data.projectOrder?.orderNumber !== undefined) {
+    const normalizedOrderNumber = data.projectOrder?.orderNumber?.trim() ?? data.orderNumber?.trim() ?? "";
+    if (normalizedOrderNumber.length === 0) {
+      throw new ProjectsError(422, "VALIDATION_ERROR");
+    }
+    normalizedData = {
+      ...normalizedData,
+      orderNumber: normalizedOrderNumber,
+      projectOrder: {
+        ...data.projectOrder,
+        orderNumber: normalizedOrderNumber,
+        amount: data.projectOrder?.amount ?? data.amount ?? undefined,
+      },
     };
   }
 

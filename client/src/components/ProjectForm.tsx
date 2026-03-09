@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
+import { ProjectOrderForm } from "@/components/ProjectOrderForm";
 import { ProjectStatusPanel } from "@/components/ProjectStatusPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
@@ -23,6 +24,7 @@ import {
   FileText
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,6 +91,8 @@ export function ProjectForm({
   const [name, setName] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
   const [amount, setAmount] = useState("");
+  const [plannedDateText, setPlannedDateText] = useState("");
+  const [plannedWeek, setPlannedWeek] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -107,6 +111,8 @@ export function ProjectForm({
     name: string;
     orderNumber: string;
     amount: string;
+    plannedDateText: string;
+    plannedWeek: string;
     descriptionMd: string;
     customerId: number | null;
   }) =>
@@ -114,6 +120,8 @@ export function ProjectForm({
       name: input.name.trim(),
       orderNumber: input.orderNumber.trim(),
       amount: input.amount.replace(",", ".").trim(),
+      plannedDateText: input.plannedDateText.trim(),
+      plannedWeek: input.plannedWeek.trim(),
       descriptionMd: input.descriptionMd,
       customerId: input.customerId,
     });
@@ -153,6 +161,8 @@ export function ProjectForm({
       setName(projectName);
       setOrderNumber(projectData.project.orderNumber ?? "");
       setAmount(projectData.project.amount != null ? String(projectData.project.amount) : "");
+      setPlannedDateText(projectData.project.projectOrder?.plannedDateText ?? "");
+      setPlannedWeek(projectData.project.projectOrder?.plannedWeek ?? "");
       setDescriptionMd(projectData.project.descriptionMd || "");
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
@@ -160,6 +170,8 @@ export function ProjectForm({
           name: projectName,
           orderNumber: projectData.project.orderNumber ?? "",
           amount: projectData.project.amount != null ? String(projectData.project.amount) : "",
+          plannedDateText: projectData.project.projectOrder?.plannedDateText ?? "",
+          plannedWeek: projectData.project.projectOrder?.plannedWeek ?? "",
           descriptionMd: projectData.project.descriptionMd || "",
           customerId: projectData.project.customerId,
         }),
@@ -170,6 +182,8 @@ export function ProjectForm({
           name: "",
           orderNumber: "",
           amount: "",
+          plannedDateText: "",
+          plannedWeek: "",
           descriptionMd: "",
           customerId: null,
         }),
@@ -384,6 +398,8 @@ export function ProjectForm({
     name,
     orderNumber,
     amount,
+    plannedDateText,
+    plannedWeek,
     descriptionMd,
     customerId,
   }) !== initialFormSnapshot;
@@ -397,7 +413,7 @@ export function ProjectForm({
 
   // Create project mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; orderNumber?: string | null; amount?: string | null; customerId: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { name: string; orderNumber?: string | null; amount?: string | null; customerId: number; descriptionMd?: string; projectOrder?: { amount?: string | null; plannedDateText?: string | null; plannedWeek?: string | null } }) => {
       const res = await apiRequest('POST', '/api/projects', data);
       return res.json();
     },
@@ -421,7 +437,7 @@ export function ProjectForm({
 
   // Update project mutation
   const updateMutation = useMutation({
-    mutationFn: async (data: { version: number; name?: string; orderNumber?: string | null; amount?: string | null; customerId?: number; descriptionMd?: string }) => {
+    mutationFn: async (data: { version: number; name?: string; orderNumber?: string | null; amount?: string | null; customerId?: number; descriptionMd?: string; projectOrder?: { amount?: string | null; plannedDateText?: string | null; plannedWeek?: string | null } }) => {
       const res = await apiRequest('PATCH', `/api/projects/${projectId}`, data);
       return res.json();
     },
@@ -636,6 +652,8 @@ export function ProjectForm({
     }
 
     let createdProjectId: number | null = null;
+    const normalizedPlannedDateText = plannedDateText.trim() || null;
+    const normalizedPlannedWeek = plannedWeek.trim() || null;
     if (isEditing) {
       if (!projectVersion || !Number.isInteger(projectVersion) || projectVersion < 1) {
         toast({ title: "Projektversion fehlt, bitte neu laden", variant: "destructive" });
@@ -648,6 +666,11 @@ export function ProjectForm({
         amount: normalizedAmount,
         customerId,
         descriptionMd: descriptionMd || undefined,
+        projectOrder: {
+          amount: normalizedAmount,
+          plannedDateText: normalizedPlannedDateText,
+          plannedWeek: normalizedPlannedWeek,
+        },
       });
     } else {
       const createdProject = await createMutation.mutateAsync({
@@ -656,10 +679,15 @@ export function ProjectForm({
         amount: normalizedAmount,
         customerId,
         descriptionMd: descriptionMd || undefined,
+        projectOrder: {
+          amount: normalizedAmount,
+          plannedDateText: normalizedPlannedDateText,
+          plannedWeek: normalizedPlannedWeek,
+        },
       });
       createdProjectId = createdProject.id;
     }
-    setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, amount, descriptionMd, customerId }));
+    setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, amount, plannedDateText, plannedWeek, descriptionMd, customerId }));
 
     if (createdProjectId && documentExtractionFile) {
       try {
@@ -857,39 +885,45 @@ export function ProjectForm({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="projectOrderNumber" data-testid="label-project-order-number">Auftragsnummer</Label>
-                    <Input
-                      id="projectOrderNumber"
-                      value={orderNumber}
-                      onChange={(e) => setOrderNumber(e.target.value)}
-                      readOnly={isEditing}
-                      data-testid="input-project-order-number"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="projectAmount" data-testid="label-project-amount">Betrag (EUR)</Label>
-                    <Input
-                      id="projectAmount"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      inputMode="decimal"
-                      placeholder="z. B. 14999.90"
-                      data-testid="input-project-amount"
-                    />
+                    <Label htmlFor="projectType" data-testid="label-project-type">Projekttyp</Label>
+                    <Input id="projectType" value="Typ 1 - Sauna" readOnly data-testid="input-project-type" />
                   </div>
                 </div>
               </div>
+
+              <ProjectOrderForm
+                orderNumber={orderNumber}
+                amount={amount}
+                plannedDateText={plannedDateText}
+                plannedWeek={plannedWeek}
+                onAmountChange={setAmount}
+                onPlannedDateTextChange={setPlannedDateText}
+                onPlannedWeekChange={setPlannedWeek}
+              />
 
               <div className="space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Beschreibung
                 </h3>
-                <RichTextEditor
-                  value={descriptionMd}
-                  onChange={setDescriptionMd}
-                  placeholder="Projektbeschreibung eingeben..."
-                />
+                <Tabs defaultValue="description" className="w-full" data-testid="project-description-tabs">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="description">Beschreibung</TabsTrigger>
+                    <TabsTrigger value="article-list">Artikelliste</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="description" className="pt-4">
+                    <RichTextEditor
+                      value={descriptionMd}
+                      onChange={setDescriptionMd}
+                      placeholder="Projektbeschreibung eingeben..."
+                    />
+                  </TabsContent>
+                  <TabsContent value="article-list" className="pt-4">
+                    <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground" data-testid="project-article-list-slot">
+                      Die Artikellistenbearbeitung folgt als eigener Auftrag. In diesem Schritt ist der Slot vorbereitet; Doc-Extract schreibt weiterhin die erkannte Artikelliste in die Beschreibung.
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
 
               <div className="space-y-4">
