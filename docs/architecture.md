@@ -87,7 +87,7 @@ Die zentrale Pipeline in `server/routes.ts` ist:
 6. `enforceAdminMaintenancePolicy`
 7. fachliche Route-Module
 
-Aktive Domänen-Routen umfassen u. a. Auth, Termine, Kalender, Kunden, Projekte, Mitarbeiter, Teams, Touren, Projektstatus, Notizen, Anhänge, User Settings, Backups, Demo Seed/Purge, Dokumentextraktion, Help-Texts, Masterdata, Admin Bulk Imports.
+Aktive Domänen-Routen umfassen u. a. Auth inkl. Passwort-Login, 2FA-Flow und Quick-Login, Termine, Kalender, Kunden, Projekte, Mitarbeiter, Teams, Touren, Projektstatus, Notizen, Anhänge und Attachment-Queries, User Settings, Users, Backups, Demo Seed/Purge, Dokumentextraktion, Help-Texts, Masterdata, Admin Bulk Imports und Sauna-Tour-Import-Preview.
 
 ## 5. Rollen- und Zugriffsarchitektur
 
@@ -120,16 +120,19 @@ Das relationale Modell ist in `shared/schema.ts` definiert. Zentrale Entitäten:
 
 - Kunden (`customer`)
 - Projekte (`project`)
+- Projektaufträge und Auftragspositionen (`project_order`, `project_order_items`)
 - Termine (`appointments`)
 - Mitarbeiter (`employee`)
 - Teams (`teams`), Touren (`tours`)
 - Projektstatus (`project_status`, Join `project_project_status`)
+- Tags und Zuordnungen (`tags`, `project_tags`, `customer_tags`, `employee_tags`, `appointment_tags`)
 - Notizen/Vorlagen (`note`, `note_template`, Joins)
 - Anhänge (`project_attachment`, `customer_attachment`, `employee_attachment`)
 - User/Rollen (`users`, `roles`)
 - User Settings (`user_settings_value`)
+- Backup-/Sync-Logs (`backup_log`, `calendar_sync_log`)
 - Seed-Läufe (`seed_run`, `seed_run_entity`)
-- Tags und Masterdata-Tabellen (FT27/FT28)
+- Masterdata-Tabellen für Produkte, Komponenten und Spezifikationen (FT27)
 
 ## 7. Fachliche Invarianten (serverseitig)
 
@@ -161,7 +164,7 @@ Stammdaten nutzen primär Aktiv-Flags (`isActive`) statt physischem Löschen; gl
 
 ### 8.1 Kalender-Aggregation
 
-`/api/calendar/appointments` liefert aggregierte Termine inkl. Projekt-, Kunden-, Tour-, Mitarbeiter-, Status- und Lock-Informationen. Views laden intervalbasiert (`fromDate`, `toDate`).
+`/api/calendar/appointments` liefert aggregierte Termine inkl. Projekt-, Kunden-, Tour-, Mitarbeiter-, Status-, Notiz- und Lock-Informationen. Views laden intervalbasiert (`fromDate`, `toDate`).
 
 ### 8.2 Listen-/Detailflüsse
 

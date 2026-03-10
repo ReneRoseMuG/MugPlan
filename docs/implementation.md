@@ -82,7 +82,8 @@ JSON-Validation erfolgt schema-basiert über Contract-Schemas; Multipart über d
 - `express-session`
 - Cookie `httpOnly`, `sameSite=lax`
 - `SESSION_COOKIE_SECURE`: `auto|true|false`
-- Public-Pfade (Setup/Login/Quick-Login/Logout/Health) ohne `requireSessionUser`
+- Session speichert entweder `userId` oder einen temporären `preAuth`-Status für den 2FA-Flow
+- Public-Pfade für Setup, Login, 2FA-Verify, Quick-Login, Logout und `/health` ohne `requireSessionUser`
 
 ### 4.2 Rollenauflösung
 
@@ -118,6 +119,7 @@ Kalender-Endpoints liefern aggregierte Terminobjekte mit:
 - Tourdaten
 - Mitarbeiterliste
 - Notizzähler
+- Anzeige-Felder wie `displayMode`, `allDay`, `singleEmployee`
 - `isLocked`
 
 ### 5.3 Attachments
@@ -154,6 +156,7 @@ Serverauflösung in `server/services/userSettingsService.ts`:
 - Setzen mit Versionsprüfung (`VERSION_CONFLICT`)
 
 Registry in `server/settings/registry.ts` enthält valide Keys, Typen, Allowed Scopes und Validatoren.
+Aktive globale Settings steuern u. a. Backup-Aktivierung, 2FA-Pflicht sowie Kalender- und UI-Defaults.
 
 ### 5.6 Backup und CalDAV
 
@@ -184,6 +187,22 @@ CalDAV:
 `server/services/adminService.ts` / `server/repositories/adminRepository.ts`:
 
 - zentraler Admin-Reset löscht Demo-/Fachdaten, aber keine `users`, `roles`, `employee` oder `employee_attachment`
+
+### 5.8 Admin Bulk Import und Sauna-Tour-Preview
+
+Admin-Importpfade laufen über `server/routes/adminBulkImportRoutes.ts` und die zugehörigen Controller/Services:
+
+- Customer Bulk Import: Analyse, Neuanlage und Update von Dubletten
+- Project Bulk Import: Analyse, Neuanlage und Special-Case-Pfad mit zusätzlicher Customer-Auflösung
+- Sauna-Tour-Import-Preview: Preview-Session mit Year-/Week-Chunking und explizitem Cleanup-Endpunkt
+
+### 5.9 Projektaufträge, Positionen und Tags
+
+Das Projektdatenmodell umfasst zusätzlich:
+
+- `project_order` als 1:1-Erweiterung des Projekts für Auftragsnummer, Betrag und Planungsfelder
+- `project_order_items` für positionsbezogene Produkt-/Komponenten-/Freitextzeilen mit Konsistenz-Checks
+- universelles Tagging für Projekte, Kunden, Mitarbeiter und Termine; Termin-Tags werden über `appointment_tags` persistiert
 
 ## 6. Frontend-Implementierung
 
@@ -217,11 +236,13 @@ Standardkomponenten:
 - `BoardView`
 - `TableView`
 
-ViewMode wird über Settings-Keys persistiert (`customers.viewMode`, `employees.viewMode`, `projects.viewMode`, `helptexts.viewMode`).
+ViewMode wird über Settings-Keys persistiert (`customers.viewMode`, `employees.viewMode`, `projects.viewMode`, `helptexts.viewMode`, `appointments.viewMode`).
+Admin-Listen für Kunden und Projekte binden zusätzlich Bulk-Import-Dialoge ein.
 
 ### 6.5 Settings im Frontend
 
 `SettingsProvider` lädt `/api/user-settings/resolved`, setzt via PATCH und macht Version-Retry bei Konflikten.
+`SettingsPage` nutzt die aufgelösten Settings für Backup-Monitoring und manuellen Backup-Run, globale 2FA-Aktivierung sowie die Sauna-Tour-Import-Preview.
 
 ## 7. Sicherheitsgates für destruktive Operationen
 
@@ -276,6 +297,7 @@ Wichtige Scripts unter `script/`:
 - `check-frontend-encoding.ts`
 - `check-destructive-inventory.ts`
 - `check-migration-status.ts`
+- `check-ollama.ts`
 - `run-migrations.ts`
 - `verify-demo-seed.ts`
 - `test-template-render.ts`
