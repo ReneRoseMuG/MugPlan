@@ -105,6 +105,7 @@ async function createProjectFixture(label: string) {
   return projectsService.createProject({
     customerId: customer.id,
     name: `FT05 Project ${label} ${projectCounter}`,
+    orderNumber: `ORD-FT05-${label}-${projectCounter}`,
     descriptionMd: null,
     version: 1,
   });

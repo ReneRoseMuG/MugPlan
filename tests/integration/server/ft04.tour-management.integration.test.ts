@@ -91,6 +91,7 @@ async function createProjectForTourDeleteTest() {
   return projectsService.createProject({
     name: `FT04-TourDelete-${customerCounter}`,
     customerId: customer.id,
+    orderNumber: `ORD-FT04-TOUR-${customerCounter}`,
     descriptionMd: null,
     version: 1,
   });

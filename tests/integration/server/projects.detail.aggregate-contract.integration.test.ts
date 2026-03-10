@@ -65,6 +65,7 @@ async function createProjectFixture() {
   const project = await projectsService.createProject({
     customerId: customer.id,
     name: "Aggregate Contract",
+    orderNumber: `ORD-AGG-${customer.id}`,
     descriptionMd: null,
     version: 1,
   });

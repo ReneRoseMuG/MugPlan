@@ -75,6 +75,7 @@ async function createProject(customerId: number, name: string) {
   return projectsService.createProject({
     customerId,
     name,
+    orderNumber: `ORD-${name.replace(/\s+/g, "-")}-${seq++}`,
     descriptionMd: null,
     version: 1,
   });
@@ -91,7 +92,7 @@ describe("FT02 integration: full uc coverage", () => {
 
     const created = await admin
       .post("/api/projects")
-      .send({ customerId: customer.id, name: "UC02-01 Project", descriptionMd: null })
+      .send({ customerId: customer.id, name: "UC02-01 Project", orderNumber: "ORD-UC02-01", descriptionMd: null })
       .expect(201);
 
     expect(created.body.customerId).toBe(customer.id);
@@ -99,7 +100,7 @@ describe("FT02 integration: full uc coverage", () => {
 
     await admin
       .post("/api/projects")
-      .send({ name: "Missing customer" })
+      .send({ name: "Missing customer", orderNumber: "ORD-UC02-MISSING" })
       .expect(422);
   });
 
@@ -114,7 +115,7 @@ describe("FT02 integration: full uc coverage", () => {
 
     await admin
       .post("/api/projects")
-      .send({ customerId: customer.id, name: "UC02-03 Inactive Customer", descriptionMd: null })
+      .send({ customerId: customer.id, name: "UC02-03 Inactive Customer", orderNumber: "ORD-UC02-03", descriptionMd: null })
       .expect(409)
       .expect((res) => {
         expect(res.body.code).toBe("INACTIVE_ENTITY_ASSIGNMENT");
@@ -386,7 +387,7 @@ describe("FT02 integration: full uc coverage", () => {
 
     await admin
       .post("/api/projects")
-      .send({ customerId: 999999999, name: "UC02-16 Invalid", descriptionMd: null })
+      .send({ customerId: 999999999, name: "UC02-16 Invalid", orderNumber: "ORD-UC02-16", descriptionMd: null })
       .expect(422);
   });
 

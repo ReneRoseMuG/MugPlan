@@ -111,6 +111,7 @@ async function createProjectForAppointment() {
   return projectsService.createProject({
     name: `FT04-UC-Project-${customerCounter}`,
     customerId: customer.id,
+    orderNumber: `ORD-FT04-UC-${customerCounter}`,
     descriptionMd: null,
     version: 1,
   });

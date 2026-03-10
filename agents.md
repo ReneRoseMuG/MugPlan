@@ -300,6 +300,13 @@ Ohne bestandenes Safety Gate gilt jeder Testlauf als ungültig.
 - Datenquelle: zentraler E2E-Fixture/Seed-Einstiegspunkt
 - Determinismus: fixierte Referenzzeit, reproduzierbare Testdatenkennungen
 
+### Timeout-Regel für lange Testläufe
+
+- Für `npm run test:integration` ist per Tooling standardmäßig ein langer Command-Timeout zu verwenden.
+- Für `npm run test:e2e` ist per Tooling ebenfalls standardmäßig ein langer Command-Timeout zu verwenden.
+- Kurze Default-Timeouts sind unzulässig, wenn sie erfahrungsgemäß zu abgebrochenen Läufen und kostenpflichtigen Wiederholungen führen.
+- Diese Regel gilt nur für die nicht-Browser-Testläufe; `npm run test:e2e:browser` bleibt davon unberührt, solange der Auftrag nichts anderes verlangt.
+
 ### Testdaten-Bauanleitung
 
 1. Zentralen Factory/Fixture-Einstiegspunkt aufrufen: `tests/helpers/testDataFactory.ts`

@@ -68,6 +68,7 @@ async function createProjectForRace() {
   return projectsService.createProject({
     customerId: customer.id,
     name: "Race Project",
+    orderNumber: `ORD-RACE-${customer.id}`,
     descriptionMd: null,
     version: 1,
   });

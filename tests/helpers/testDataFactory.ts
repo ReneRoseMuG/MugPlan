@@ -74,6 +74,7 @@ export async function createProjectFixture(params?: {
   return projectsService.createProject({
     customerId,
     name: params?.name ?? token,
+    orderNumber: `ORD-${token}`,
     descriptionMd: null,
   });
 }

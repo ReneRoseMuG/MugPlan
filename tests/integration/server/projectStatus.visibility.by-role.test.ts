@@ -88,6 +88,7 @@ async function createProjectWithStatusPair() {
   const project = await projectsService.createProject({
     name: `Projekt-${Date.now()}-${sequence}`,
     customerId: customer.id,
+    orderNumber: `ORD-STATUS-VIS-${Date.now()}-${sequence}`,
     descriptionMd: null,
     version: 1,
   });

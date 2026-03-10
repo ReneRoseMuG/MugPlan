@@ -87,6 +87,7 @@ async function createProjectForAttachments() {
   return projectsService.createProject({
     customerId: customer.id,
     name: "Attachment Project",
+    orderNumber: `ORD-ATTACH-${customer.id}`,
     descriptionMd: null,
     version: 1,
   });

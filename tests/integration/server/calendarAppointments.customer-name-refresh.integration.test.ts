@@ -63,6 +63,7 @@ async function createCustomerProjectAndAppointment() {
   const project = await projectsService.createProject({
     name: `Projekt ${local}`,
     customerId: customer.id,
+    orderNumber: `ORD-CAL-CUST-${local}`,
     descriptionMd: null,
     version: 1,
   });

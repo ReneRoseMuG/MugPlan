@@ -74,6 +74,7 @@ async function createProjectForTest() {
   return projectsService.createProject({
     name: `Projekt-${customerCounter}`,
     customerId: customer.id,
+    orderNumber: `ORD-STATUS-LIFE-${customerCounter}`,
     descriptionMd: null,
     version: 1,
   });

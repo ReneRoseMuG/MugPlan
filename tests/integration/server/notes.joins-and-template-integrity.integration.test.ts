@@ -102,7 +102,7 @@ async function createProjectEntity(
     .send({
       name: nextId(`PRJ-${marker}`),
       customerId,
-      orderNumber: null,
+      orderNumber: nextId(`ORD-${marker}`),
       descriptionMd: null,
       version: 1,
     })

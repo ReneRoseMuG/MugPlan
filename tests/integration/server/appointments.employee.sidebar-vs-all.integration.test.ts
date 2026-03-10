@@ -108,6 +108,7 @@ async function createProjectForEmployee(label: string) {
   return projectsService.createProject({
     name: `Emp SidebarAll Project ${label} ${seq}`,
     customerId: customer.id,
+    orderNumber: `ORD-EMP-SIDE-${label}-${seq}`,
     descriptionMd: null,
     version: 1,
   });

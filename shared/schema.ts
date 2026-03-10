@@ -302,7 +302,7 @@ export const updateProjectOrderSchema = z.object({
   version: z.number().int().optional(),
 }).partial();
 
-export const insertProjectSchema = createInsertSchema(projects).omit({
+const insertProjectSchemaBase = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -312,6 +312,17 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   orderNumber: z.string().trim().nullable().optional(),
   amount: projectAmountSchema,
   projectOrder: insertProjectOrderSchema.omit({ projectId: true }).partial().optional(),
+});
+
+export const insertProjectSchema = insertProjectSchemaBase.superRefine((value, ctx) => {
+  const normalizedOrderNumber = value.projectOrder?.orderNumber?.trim() ?? value.orderNumber?.trim() ?? "";
+  if (normalizedOrderNumber.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["orderNumber"],
+      message: "orderNumber is required",
+    });
+  }
 });
 
 export const updateProjectSchema = z.object({

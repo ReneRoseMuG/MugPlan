@@ -71,6 +71,7 @@ async function createProjectForTest() {
   return projectsService.createProject({
     name: `Delete-Projekt-${token}`,
     customerId: customer.id,
+    orderNumber: `ORD-${token}`,
     descriptionMd: null,
     version: 1,
   });

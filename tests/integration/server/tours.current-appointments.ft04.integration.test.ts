@@ -69,6 +69,7 @@ async function createProjectForTourTest() {
   return projectsService.createProject({
     name: `Tour Current Project ${seq}`,
     customerId: customer.id,
+    orderNumber: `ORD-TOUR-CURR-${seq}`,
     descriptionMd: null,
     version: 1,
   });

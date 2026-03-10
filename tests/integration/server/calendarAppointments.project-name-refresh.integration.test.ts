@@ -64,6 +64,7 @@ async function createCustomerAndProject() {
   const project = await projectsService.createProject({
     name: "Sauna Alt",
     customerId: customer.id,
+    orderNumber: `ORD-CAL-PROJ-${local}`,
     descriptionMd: null,
     version: 1,
   });

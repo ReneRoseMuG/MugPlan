@@ -64,6 +64,7 @@ describe("E-001 e2e: create project with appointment", () => {
       .send({
         name: "E2E Projekt",
         customerId: customer.id,
+        orderNumber: "E2E-PROJ-0001",
         descriptionMd: null,
       })
       .expect(201);

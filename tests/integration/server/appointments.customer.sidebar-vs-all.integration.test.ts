@@ -77,12 +77,14 @@ async function createCustomerWithProjects(label: string) {
   const projectPrimary = await projectsService.createProject({
     name: `Cust SidebarAll Primary ${label} ${seq}`,
     customerId: customer.id,
+    orderNumber: `ORD-CUST-SIDE-PRIMARY-${label}-${seq}`,
     descriptionMd: null,
     version: 1,
   });
   const projectSecondary = await projectsService.createProject({
     name: `Cust SidebarAll Secondary ${label} ${seq}`,
     customerId: customer.id,
+    orderNumber: `ORD-CUST-SIDE-SECONDARY-${label}-${seq}`,
     descriptionMd: null,
     version: 1,
   });

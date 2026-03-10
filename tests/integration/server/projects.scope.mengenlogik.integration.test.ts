@@ -78,6 +78,7 @@ async function createProject(customerId: number, name: string) {
   return projectsService.createProject({
     customerId,
     name,
+    orderNumber: `ORD-${name.replace(/\s+/g, "-")}-${customerId}`,
     descriptionMd: null,
     version: 1,
   });

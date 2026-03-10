@@ -102,6 +102,7 @@ async function createProjectWithCustomer() {
   const project = await projectsService.createProject({
     name: `Emp Current Project ${seq}`,
     customerId: customer.id,
+    orderNumber: `ORD-EMP-CURR-${seq}`,
     descriptionMd: null,
     version: 1,
   });

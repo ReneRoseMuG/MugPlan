@@ -25,6 +25,7 @@ describe("PKG-07 Integration: join replace atomicity", () => {
     const project = await projectsService.createProject({
       name: "Join Atomicity Project",
       customerId: customer.id,
+      orderNumber: "ORD-JOIN-001",
       descriptionMd: null,
     });
 

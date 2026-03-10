@@ -75,7 +75,7 @@ async function createProject(customerId: number, label: string) {
     name: `Kalender Notiz Projekt ${label} ${nextDeterministicToken("calendar-notes-project")}-${nextSeq()}`,
     customerId,
     descriptionMd: null,
-    orderNumber: null,
+    orderNumber: `ORD-CAL-NOTE-${label}-${nextDeterministicToken("calendar-notes-order")}-${nextSeq()}`,
     version: 1,
   });
 }

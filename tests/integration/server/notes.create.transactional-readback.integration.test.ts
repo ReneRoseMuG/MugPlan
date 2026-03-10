@@ -72,7 +72,7 @@ async function createProject(agent: SuperAgentTest, customerId: number): Promise
       name: `Projekt ${nextDeterministicToken("notes-create-project")}`,
       customerId,
       descriptionMd: null,
-      orderNumber: null,
+      orderNumber: `ORD-${nextDeterministicToken("notes-create-order")}`,
       version: 1,
     })
     .expect(201);
