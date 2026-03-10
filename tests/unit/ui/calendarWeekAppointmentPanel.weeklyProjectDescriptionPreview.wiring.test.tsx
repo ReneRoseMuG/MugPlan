@@ -30,6 +30,7 @@ describe("FT03 UI: weekly project description preview wiring", () => {
 
     expect(source).toContain("const resolvedProjectName = appointment.projectName;");
     expect(source).toContain("projectOrderNumber={appointment.projectOrderNumber}");
+    expect(source).toContain("projectArticleItems={appointment.projectArticleItems}");
     expect(source).toContain('context === "week-calendar"');
     expect(source).toContain("enableFullDescriptionPreview={context === \"week-calendar\"}");
     expect(source).toContain("<CalendarWeekProjectStatusSection");
@@ -43,6 +44,6 @@ describe("FT03 UI: weekly project description preview wiring", () => {
     expect(source).toContain("<HoverPreview");
     expect(source).toContain("data-testid=\"week-project-description-hover-trigger\"");
     expect(source).toContain("resolvedProjectHeader");
-    expect(source).toContain("dangerouslySetInnerHTML={{ __html: projectDescription }}");
+    expect(source).toContain("<ProjectArticleDescriptionRenderer");
   });
 });

@@ -171,6 +171,25 @@ export async function listProjectOrderItems(projectId: number): Promise<ProjectO
   return projectsRepository.listProjectOrderItems(projectId);
 }
 
+async function ensureActiveOrderItemReferences(input: {
+  productId?: number | null;
+  componentId?: number | null;
+}) {
+  if (input.productId != null) {
+    const product = await projectsRepository.getProductById(input.productId);
+    if (!product || !product.isActive) {
+      throw new ProjectsError(409, "INACTIVE_ENTITY_ASSIGNMENT");
+    }
+  }
+
+  if (input.componentId != null) {
+    const component = await projectsRepository.getComponentById(input.componentId);
+    if (!component || !component.isActive) {
+      throw new ProjectsError(409, "INACTIVE_ENTITY_ASSIGNMENT");
+    }
+  }
+}
+
 export async function createProjectOrderItem(
   projectId: number,
   input: InsertProjectOrderItem,
@@ -182,6 +201,7 @@ export async function createProjectOrderItem(
   if (!project?.projectOrder?.orderNumber || project.projectOrder.orderNumber !== input.orderNumber.trim()) {
     throw new ProjectsError(409, "BUSINESS_CONFLICT");
   }
+  await ensureActiveOrderItemReferences(input);
   return projectsRepository.createProjectOrderItem({
     ...input,
     orderNumber: input.orderNumber.trim(),
@@ -197,6 +217,7 @@ export async function updateProjectOrderItem(
   if (!Number.isInteger(input.version) || input.version < 1) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
+  await ensureActiveOrderItemReferences(input);
   const result = await projectsRepository.updateProjectOrderItemWithVersion(projectId, itemId, input.version, input);
   if (result.kind === "not_found") {
     throw new ProjectsError(404, "NOT_FOUND");

@@ -225,9 +225,6 @@ export function AppointmentForm({
 }: AppointmentFormProps) {
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
-  const productsUrl = "/api/admin/master-data/products?active=all";
-  const componentCategoriesUrl = "/api/admin/master-data/component-categories?active=all";
-  const componentsUrl = "/api/admin/master-data/components?active=all";
   const isEditing = Boolean(appointmentId);
   const createDefaultDate = initialDate ?? getBerlinTodayDateString();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
@@ -290,6 +287,10 @@ export function AppointmentForm({
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
   );
   const isAdmin = userRole === "ADMIN";
+  const masterDataScope = isAdmin ? "all" : "active";
+  const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
+  const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
+  const componentsUrl = `/api/admin/master-data/components?active=${masterDataScope}`;
   const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
   const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {
     if (projectId) {

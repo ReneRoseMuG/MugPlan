@@ -75,6 +75,16 @@ function normalizeFilter(filter: "active" | "inactive" | "all" | undefined): mas
   return "active";
 }
 
+function normalizeReadFilterForRole(
+  filter: "active" | "inactive" | "all" | undefined,
+  roleKey: CanonicalRoleKey,
+): masterDataRepository.ActiveFilter {
+  if (roleKey === "ADMIN") {
+    return normalizeFilter(filter);
+  }
+  return "active";
+}
+
 export async function listProductCategories(
   filter: "active" | "inactive" | "all" | undefined,
   roleKey: CanonicalRoleKey,
@@ -138,7 +148,7 @@ export async function listComponentCategories(
   if (!roleKey) {
     throw new MasterDataError(403, "FORBIDDEN");
   }
-  return masterDataRepository.listComponentCategories(normalizeFilter(filter));
+  return masterDataRepository.listComponentCategories(normalizeReadFilterForRole(filter, roleKey));
 }
 
 export async function createComponentCategory(input: InsertComponentCategory, roleKey: CanonicalRoleKey): Promise<ComponentCategory> {
@@ -193,8 +203,10 @@ export async function listProducts(
   filter: "active" | "inactive" | "all" | undefined,
   roleKey: CanonicalRoleKey,
 ): Promise<Product[]> {
-  requireAdmin(roleKey);
-  return masterDataRepository.listProducts(normalizeFilter(filter));
+  if (!roleKey) {
+    throw new MasterDataError(403, "FORBIDDEN");
+  }
+  return masterDataRepository.listProducts(normalizeReadFilterForRole(filter, roleKey));
 }
 
 export async function createProduct(input: InsertProduct, roleKey: CanonicalRoleKey): Promise<Product> {
@@ -254,7 +266,7 @@ export async function listComponents(
   if (!roleKey) {
     throw new MasterDataError(403, "FORBIDDEN");
   }
-  return masterDataRepository.listComponents(normalizeFilter(filter));
+  return masterDataRepository.listComponents(normalizeReadFilterForRole(filter, roleKey));
 }
 
 export async function createComponent(input: InsertComponent, roleKey: CanonicalRoleKey): Promise<Component> {
@@ -433,6 +445,20 @@ export async function replaceComponentProducts(
   roleKey: CanonicalRoleKey,
 ): Promise<Component> {
   requireAdmin(roleKey);
+  const component = await masterDataRepository.getComponentById(componentId);
+  if (!component) {
+    throw new MasterDataError(404, "NOT_FOUND");
+  }
+  if (!component.isActive) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  }
+
+  const uniqueProductIds = Array.from(new Set(productIds.filter((value) => Number.isFinite(value) && value > 0)));
+  const referencedProducts = await masterDataRepository.getProductsByIds(uniqueProductIds);
+  if (referencedProducts.length !== uniqueProductIds.length || referencedProducts.some((product) => !product.isActive)) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  }
+
   try {
     const result = await masterDataRepository.replaceComponentProductsWithVersion(componentId, expectedVersion, productIds);
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");

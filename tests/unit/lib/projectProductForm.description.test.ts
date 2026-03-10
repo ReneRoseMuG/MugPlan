@@ -4,19 +4,19 @@
  * Abgedeckte Regeln:
  * - Artikellistenzeilen werden aus den gepflegten Produktslots in stabiler Reihenfolge erzeugt.
  * - Zusätzliche Slots für Tür, Vorderwand, Rückwand und Inneneinrichtung werden mitgeführt.
- * - Persistierte Projektbeschreibung trennt Artikelliste und Beschreibung ueber sichtbare H2-Abschnitte.
- * - Beim Oeffnen des Formulars wird nur der Beschreibungsteil in den Editor zurueckgefuehrt.
+ * - Persistierte Projektbeschreibung bleibt unverändert und wird nicht mehr mit Artikellisten-Markern angereichert.
+ * - Beim Öffnen des Formulars wird die Beschreibung unverändert in den Editor zurückgeführt.
  * - Kategorien werden über robuste Alias-Namen den Artikelslots zugeordnet.
  * - Saunamodell wird aus Produkt-Referenzen statt Komponenten gelesen.
  *
  * Fehlerfälle:
  * - Artikelliste wird leer oder in falscher Reihenfolge gespeichert.
- * - Editor liest beim Oeffnen den Artikellistenblock erneut mit ein.
+ * - Editorinhalt wird beim Laden oder Speichern still verändert.
  * - Komponentenlisten bleiben leer, weil Singular/Plural oder Leerzeichen in Kategorien nicht gematcht werden.
  * - Produktbasierte Saunamodelle landen nicht im Artikelslot.
  *
  * Ziel:
- * Die Trennung zwischen Artikelliste und Beschreibungseditor sowie die Zuordnung von Produkt-/Komponentenslots absichern.
+ * Die entkoppelte Persistenz der Projektbeschreibung sowie die Zuordnung von Produkt-/Komponentenslots absichern.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -51,19 +51,17 @@ describe("project product form helpers", () => {
     ]);
   });
 
-  it("persists article list and description with visible section headings", () => {
+  it("persists the editor description unchanged", () => {
     const selections = createEmptyProjectProductSelections();
     selections.saunaModel.componentName = "Modell S";
 
     const persisted = buildPersistedProjectDescription(selections, "<p>Freie Beschreibung</p>");
 
-    expect(persisted).toContain("<h2>Artikelliste</h2>");
-    expect(persisted).toContain("Saunamodell: Modell S");
-    expect(persisted).toContain("<h2>Beschreibung</h2><p>Freie Beschreibung</p>");
+    expect(persisted).toBe("<p>Freie Beschreibung</p>");
   });
 
-  it("extracts only the description section back into the editor", () => {
-    const persisted = "<h2>Artikelliste</h2><ul><li>Ofen: X</li></ul><h2>Beschreibung</h2><p>Nur Editor</p>";
+  it("returns the persisted description unchanged back into the editor", () => {
+    const persisted = "<p>Nur Editor</p>";
     expect(extractEditorDescriptionHtml(persisted)).toBe("<p>Nur Editor</p>");
   });
 

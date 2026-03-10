@@ -242,10 +242,12 @@ export function ProductComponentList({
               <Label htmlFor="edit-component-description">Beschreibung</Label>
               <Textarea id="edit-component-description" value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
             </div>
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" checked={draft.isActive} onChange={(event) => setDraft({ ...draft, isActive: event.target.checked })} />
-              <span>Is Active</span>
-            </label>
+            {isAdmin ? (
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked={draft.isActive} onChange={(event) => setDraft({ ...draft, isActive: event.target.checked })} />
+                <span>Is Active</span>
+              </label>
+            ) : null}
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
           </div>
           <DialogFooter>

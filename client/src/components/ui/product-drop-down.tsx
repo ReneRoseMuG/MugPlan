@@ -31,10 +31,9 @@ export function ProductDropDown({
 
   const options = products.map((product) => {
     const categoryName = categories.find((category) => category.id === product.categoryId)?.name ?? `#${product.categoryId}`;
-    const status = product.isActive ? "Aktiv" : "Inaktiv";
     return {
       value: String(product.id),
-      label: `${product.name} | ${categoryName} | ${status}`,
+      label: isAdmin ? `${product.name} | ${categoryName} | ${product.isActive ? "Aktiv" : "Inaktiv"}` : `${product.name} | ${categoryName}`,
     };
   });
 

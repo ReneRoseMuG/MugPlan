@@ -196,6 +196,18 @@ export async function createProduct(input: InsertProduct): Promise<Product> {
   return row;
 }
 
+export async function getProductById(id: number): Promise<Product | undefined> {
+  const [row] = await db.select().from(products).where(eq(products.id, id));
+  return row;
+}
+
+export async function getProductsByIds(ids: number[]): Promise<Product[]> {
+  const uniqueIds = Array.from(new Set(ids.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueIds.length === 0) return [];
+  const idList = sql.join(uniqueIds.map((value) => sql`${value}`), sql`, `);
+  return db.select().from(products).where(sql`${products.id} in (${idList})`);
+}
+
 export async function updateProductWithVersion(
   id: number,
   expectedVersion: number,
@@ -247,6 +259,11 @@ export async function listComponents(filter: ActiveFilter): Promise<Component[]>
 export async function createComponent(input: InsertComponent): Promise<Component> {
   const result = await db.insert(components).values(input);
   const id = toInsertId(result);
+  const [row] = await db.select().from(components).where(eq(components.id, id));
+  return row;
+}
+
+export async function getComponentById(id: number): Promise<Component | undefined> {
   const [row] = await db.select().from(components).where(eq(components.id, id));
   return row;
 }

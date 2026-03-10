@@ -101,6 +101,7 @@ export function CalendarWeekSpanningTile({
       <CalendarWeekAppointmentPanelProject
         projectName={resolvedProjectName}
         projectOrderNumber={appointment.projectOrderNumber}
+        projectArticleItems={appointment.projectArticleItems}
         projectDescription={appointment.projectDescription}
         enableFullDescriptionPreview
       />

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ProjectArticleItem } from "@shared/projectArticleList";
 
 export type CalendarAppointment = {
   id: number;
@@ -7,6 +8,7 @@ export type CalendarAppointment = {
   projectName: string;
   projectVersion: number | null;
   projectOrderNumber: string | null;
+  projectArticleItems: ProjectArticleItem[];
   projectDescription: string | null;
   projectStatuses: { id: number; title: string; color: string }[];
   project?: {

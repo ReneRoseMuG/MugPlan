@@ -189,9 +189,10 @@ export function ProjectForm({
   const { data: allStatuses = [] } = useQuery<ProjectStatus[]>({
     queryKey: ['/api/project-status'],
   });
-  const productsUrl = "/api/admin/master-data/products?active=all";
-  const componentCategoriesUrl = "/api/admin/master-data/component-categories?active=all";
-  const componentsUrl = "/api/admin/master-data/components?active=all";
+  const masterDataScope = isAdmin ? "all" : "active";
+  const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
+  const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
+  const componentsUrl = `/api/admin/master-data/components?active=${masterDataScope}`;
   const projectOrderItemsUrl = projectId ? `/api/projects/${projectId}/order-items` : null;
 
   const { data: products = [] } = useQuery<Product[]>({

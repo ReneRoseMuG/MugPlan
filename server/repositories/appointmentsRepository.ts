@@ -4,12 +4,16 @@ import {
   appointmentNotes,
   appointmentEmployees,
   appointments,
+  componentCategories,
+  components,
   customerNotes,
   customers,
   employees,
   projectOrder,
+  projectOrderItems,
   projectNotes,
   projects,
+  products,
   tours,
   type Appointment,
   type InsertAppointment,
@@ -72,6 +76,28 @@ export async function getAppointmentEmployeesByAppointmentIds(appointmentIds: nu
     .from(appointmentEmployees)
     .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
     .where(inArray(appointmentEmployees.appointmentId, appointmentIds));
+}
+
+export async function listProjectArticleRowsByProjectIds(projectIds: number[]) {
+  const uniqueProjectIds = Array.from(new Set(projectIds.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueProjectIds.length === 0) return [];
+
+  return db
+    .select({
+      projectId: projectOrderItems.projectId,
+      itemId: projectOrderItems.id,
+      productId: projectOrderItems.productId,
+      componentId: projectOrderItems.componentId,
+      productName: products.name,
+      componentName: components.name,
+      componentCategoryName: componentCategories.name,
+    })
+    .from(projectOrderItems)
+    .leftJoin(products, eq(projectOrderItems.productId, products.id))
+    .leftJoin(components, eq(projectOrderItems.componentId, components.id))
+    .leftJoin(componentCategories, eq(components.categoryId, componentCategories.id))
+    .where(inArray(projectOrderItems.projectId, uniqueProjectIds))
+    .orderBy(desc(projectOrderItems.updatedAt), desc(projectOrderItems.id));
 }
 
 export async function getCustomerNoteCountsByCustomerIds(customerIds: number[]): Promise<Map<number, number>> {

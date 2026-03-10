@@ -11,6 +11,7 @@ import {
   projectNotes,
   projectProjectStatus,
   projects,
+  products,
   type Project,
   type ProjectOrder,
   type ProjectAttachment,
@@ -444,6 +445,16 @@ export async function listProjectOrderItems(projectId: number): Promise<ProjectO
     .from(projectOrderItems)
     .where(eq(projectOrderItems.projectId, projectId))
     .orderBy(desc(projectOrderItems.updatedAt), desc(projectOrderItems.id));
+}
+
+export async function getProductById(productId: number) {
+  const [row] = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+  return row ?? null;
+}
+
+export async function getComponentById(componentId: number) {
+  const [row] = await db.select().from(components).where(eq(components.id, componentId)).limit(1);
+  return row ?? null;
 }
 
 async function deleteConflictingCategoryItemsTx(

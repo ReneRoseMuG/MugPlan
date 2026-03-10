@@ -1,6 +1,12 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import type { InsertAppointment } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
+import {
+  getProjectArticleField,
+  getProjectArticleFieldByCategoryName,
+  type ProjectArticleFieldKey,
+  type ProjectArticleItem,
+} from "@shared/projectArticleList";
 import * as customersRepository from "../repositories/customersRepository";
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
@@ -181,12 +187,75 @@ const buildStatusesByProject = async (projectIds: number[]) => {
   return statusesByProject;
 };
 
+const PROJECT_ARTICLE_FIELD_ORDER: ProjectArticleFieldKey[] = [
+  "saunaModel",
+  "oven",
+  "control",
+  "roof",
+  "window",
+  "door",
+  "frontWall",
+  "rearWallWindow",
+  "interior",
+];
+
+const buildProjectArticleItemsByProject = async (projectIds: number[]) => {
+  const articleRows = await appointmentsRepository.listProjectArticleRowsByProjectIds(projectIds);
+  const slotsByProject = new Map<number, Map<ProjectArticleFieldKey, ProjectArticleItem>>();
+
+  for (const row of articleRows) {
+    const slots = slotsByProject.get(row.projectId) ?? new Map<ProjectArticleFieldKey, ProjectArticleItem>();
+
+    if (row.productId != null && row.productName?.trim()) {
+      if (!slots.has("saunaModel")) {
+        slots.set("saunaModel", {
+          label: getProjectArticleField("saunaModel").label,
+          value: row.productName.trim(),
+        });
+      }
+      slotsByProject.set(row.projectId, slots);
+      continue;
+    }
+
+    if (row.componentId == null || !row.componentName?.trim() || !row.componentCategoryName?.trim()) {
+      slotsByProject.set(row.projectId, slots);
+      continue;
+    }
+
+    const fieldKey = getProjectArticleFieldByCategoryName(row.componentCategoryName);
+    if (!fieldKey || slots.has(fieldKey)) {
+      slotsByProject.set(row.projectId, slots);
+      continue;
+    }
+
+    slots.set(fieldKey, {
+      label: getProjectArticleField(fieldKey).label,
+      value: row.componentName.trim(),
+    });
+    slotsByProject.set(row.projectId, slots);
+  }
+
+  const articleItemsByProject = new Map<number, ProjectArticleItem[]>();
+  for (const [projectId, slots] of Array.from(slotsByProject.entries())) {
+    articleItemsByProject.set(
+      projectId,
+      PROJECT_ARTICLE_FIELD_ORDER.flatMap((fieldKey) => {
+        const item = slots.get(fieldKey);
+        return item ? [item] : [];
+      }),
+    );
+  }
+
+  return articleItemsByProject;
+};
+
 const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: CanonicalRoleKey) => {
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project?.id).filter((id): id is number => Number.isFinite(id))));
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
   const statusesByProject = await buildStatusesByProject(projectIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
@@ -200,6 +269,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       projectName: row.project?.name ?? "Ohne Projekt",
       projectVersion: row.project?.version ?? null,
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
+      projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
       projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
@@ -606,6 +676,7 @@ export async function listCalendarAppointments({
 
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
   const statusesByProject = await buildStatusesByProject(projectIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
@@ -619,6 +690,7 @@ export async function listCalendarAppointments({
       projectName: row.project?.name ?? "Ohne Projekt",
       projectVersion: row.project?.version ?? null,
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
+      projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
       projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
@@ -718,6 +790,7 @@ export async function listAppointmentsList(params: {
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
   const statusesByProject = await buildStatusesByProject(projectIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
@@ -731,6 +804,7 @@ export async function listAppointmentsList(params: {
       projectName: row.project?.name ?? "Ohne Projekt",
       projectVersion: row.project?.version ?? null,
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
+      projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
       projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",

@@ -32,20 +32,22 @@ export function ProductData({
     <section className="rounded-md border border-slate-200 bg-slate-50 p-4">
       <h5 className="font-semibold text-slate-900">Produkt Stammdaten</h5>
       <div className="mt-3 grid grid-cols-1 gap-3">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[140px_minmax(0,1fr)_220px] md:items-end">
-          <div className="space-y-2">
-            <Label htmlFor="product-data-active">Status</Label>
-            <label className="flex h-10 items-center gap-2 rounded border border-slate-300 bg-white px-3 text-sm text-slate-700">
-              <input
-                id="product-data-active"
-                type="checkbox"
-                checked={draft.isActive}
-                disabled={disabled || !isAdmin}
-                onChange={(event) => onDraftChange({ ...draft, isActive: event.target.checked })}
-              />
-              <span>Is Active</span>
-            </label>
-          </div>
+        <div className={`grid grid-cols-1 gap-3 ${isAdmin ? "md:grid-cols-[140px_minmax(0,1fr)_220px]" : "md:grid-cols-[minmax(0,1fr)_220px]"} md:items-end`}>
+          {isAdmin ? (
+            <div className="space-y-2">
+              <Label htmlFor="product-data-active">Status</Label>
+              <label className="flex h-10 items-center gap-2 rounded border border-slate-300 bg-white px-3 text-sm text-slate-700">
+                <input
+                  id="product-data-active"
+                  type="checkbox"
+                  checked={draft.isActive}
+                  disabled={disabled}
+                  onChange={(event) => onDraftChange({ ...draft, isActive: event.target.checked })}
+                />
+                <span>Is Active</span>
+              </label>
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="product-data-name">Name</Label>
             <Input

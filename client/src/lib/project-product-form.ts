@@ -1,70 +1,17 @@
+import {
+  PROJECT_ARTICLE_FIELDS,
+  getProjectArticleCategoryAliases,
+  getProjectArticleField,
+  getProjectArticleFieldByCategoryName,
+  isProjectArticleProductField,
+  normalizeProjectArticleValue,
+  type ProjectArticleFieldKey,
+} from "@shared/projectArticleList";
 import type { Component, ComponentCategory, Product, ProjectOrderItem } from "@shared/schema";
 
-export const PROJECT_PRODUCT_FIELDS = [
-  {
-    key: "saunaModel",
-    label: "Saunamodell",
-    source: "product",
-  },
-  {
-    key: "oven",
-    label: "Ofen",
-    source: "component",
-    categoryName: "Öfen",
-    categoryAliases: ["Öfen", "Ofen"],
-  },
-  {
-    key: "control",
-    label: "Steuerung",
-    source: "component",
-    categoryName: "Steuerungen",
-    categoryAliases: ["Steuerungen", "Steuerung"],
-  },
-  {
-    key: "roof",
-    label: "Dach",
-    source: "component",
-    categoryName: "Dachvarianten",
-    categoryAliases: ["Dachvarianten", "Dach"],
-  },
-  {
-    key: "window",
-    label: "Fenster",
-    source: "component",
-    categoryName: "Fenster",
-    categoryAliases: ["Fenster"],
-  },
-  {
-    key: "door",
-    label: "Tür",
-    source: "component",
-    categoryName: "Türen",
-    categoryAliases: ["Türen", "Tür"],
-  },
-  {
-    key: "frontWall",
-    label: "Vorderwand",
-    source: "component",
-    categoryName: "Vorderwände",
-    categoryAliases: ["Vorderwände", "Vorderwand"],
-  },
-  {
-    key: "rearWallWindow",
-    label: "Rückwand",
-    source: "component",
-    categoryName: "Rückwände",
-    categoryAliases: ["Rückwände", "Rückwand"],
-  },
-  {
-    key: "interior",
-    label: "Inneneinrichtung",
-    source: "component",
-    categoryName: "Inneneinrichtung",
-    categoryAliases: ["Inneneinrichtung"],
-  },
-] as const;
+export const PROJECT_PRODUCT_FIELDS = PROJECT_ARTICLE_FIELDS;
 
-export type ProjectProductFieldKey = (typeof PROJECT_PRODUCT_FIELDS)[number]["key"];
+export type ProjectProductFieldKey = ProjectArticleFieldKey;
 
 export type ProjectProductSelection = {
   productId: number | null;
@@ -81,15 +28,6 @@ type ExtractionCategoryInput = {
   items: Array<{ description: string }>;
 };
 
-function normalizeValue(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "")
-    .trim()
-    .toLocaleLowerCase("de-DE");
-}
-
 function createEmptySelection(): ProjectProductSelection {
   return {
     productId: null,
@@ -101,13 +39,11 @@ function createEmptySelection(): ProjectProductSelection {
 }
 
 function getFieldCategoryAliases(fieldKey: ProjectProductFieldKey): readonly string[] {
-  const field = getProjectProductField(fieldKey);
-  if (field.source !== "component") return [];
-  return field.categoryAliases ?? [field.categoryName];
+  return getProjectArticleCategoryAliases(fieldKey);
 }
 
 export function isProductSelectionField(fieldKey: ProjectProductFieldKey): boolean {
-  return getProjectProductField(fieldKey).source === "product";
+  return isProjectArticleProductField(fieldKey);
 }
 
 export function findProjectProductCategory(
@@ -115,8 +51,8 @@ export function findProjectProductCategory(
   fieldKey: ProjectProductFieldKey,
 ): ComponentCategory | null {
   if (isProductSelectionField(fieldKey)) return null;
-  const aliases = getFieldCategoryAliases(fieldKey).map(normalizeValue);
-  return categories.find((entry) => aliases.includes(normalizeValue(entry.name))) ?? null;
+  const aliases = getFieldCategoryAliases(fieldKey).map(normalizeProjectArticleValue);
+  return categories.find((entry) => aliases.includes(normalizeProjectArticleValue(entry.name))) ?? null;
 }
 
 export function createEmptyProjectProductSelections(): ProjectProductSelections {
@@ -150,15 +86,11 @@ export function cloneProjectProductSelections(
 }
 
 export function getProjectProductField(key: ProjectProductFieldKey) {
-  return PROJECT_PRODUCT_FIELDS.find((field) => field.key === key)!;
+  return getProjectArticleField(key);
 }
 
 export function getProjectProductFieldByCategoryName(categoryName: string): ProjectProductFieldKey | null {
-  const normalized = normalizeValue(categoryName);
-  return PROJECT_PRODUCT_FIELDS.find((field) => {
-    if (field.source !== "component") return false;
-    return (field.categoryAliases ?? [field.categoryName]).some((alias) => normalizeValue(alias) === normalized);
-  })?.key ?? null;
+  return getProjectArticleFieldByCategoryName(categoryName);
 }
 
 export function buildProjectArticleLines(selections: ProjectProductSelections): string[] {
@@ -182,30 +114,20 @@ function escapeHtml(value: string): string {
 export function buildProjectArticleListHtml(selections: ProjectProductSelections): string {
   const lines = buildProjectArticleLines(selections);
   if (lines.length === 0) {
-    return "<h2>Artikelliste</h2><p>Keine Artikelliste gepflegt.</p>";
+    return "<ul></ul>";
   }
-  return `<h2>Artikelliste</h2><ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
+  return `<ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
 }
 
 export function buildPersistedProjectDescription(
-  selections: ProjectProductSelections,
+  _selections: ProjectProductSelections,
   descriptionHtml: string,
 ): string {
-  const normalizedDescription = descriptionHtml.trim();
-  const descriptionBlock = normalizedDescription.length > 0
-    ? `<h2>Beschreibung</h2>${normalizedDescription}`
-    : "<h2>Beschreibung</h2><p></p>";
-  return `${buildProjectArticleListHtml(selections)}${descriptionBlock}`;
+  return descriptionHtml;
 }
 
 export function extractEditorDescriptionHtml(descriptionHtml: string | null | undefined): string {
-  const normalized = descriptionHtml?.trim() ?? "";
-  if (!normalized) return "";
-  const match = normalized.match(/<h2>\s*Beschreibung\s*<\/h2>([\s\S]*)$/i);
-  if (match) {
-    return match[1].trim();
-  }
-  return normalized;
+  return descriptionHtml ?? "";
 }
 
 export function mapProjectOrderItemsToSelections(
@@ -253,10 +175,10 @@ export function mapProjectOrderItemsToSelections(
 }
 
 function findMatchingProduct(products: Product[], candidateText: string): Product | null {
-  const normalizedCandidate = normalizeValue(candidateText);
+  const normalizedCandidate = normalizeProjectArticleValue(candidateText);
   if (!normalizedCandidate) return null;
   return products.find((product) => {
-    const normalizedName = normalizeValue(product.name);
+    const normalizedName = normalizeProjectArticleValue(product.name);
     return normalizedName === normalizedCandidate
       || normalizedCandidate.includes(normalizedName)
       || normalizedName.includes(normalizedCandidate);
@@ -269,13 +191,13 @@ function findMatchingComponent(
   fieldKey: ProjectProductFieldKey,
   candidateText: string,
 ): Component | null {
-  const normalizedCandidate = normalizeValue(candidateText);
+  const normalizedCandidate = normalizeProjectArticleValue(candidateText);
   if (!normalizedCandidate) return null;
   const category = findProjectProductCategory(categories, fieldKey);
   if (!category) return null;
   const categoryComponents = components.filter((component) => component.categoryId === category.id);
   return categoryComponents.find((component) => {
-    const normalizedName = normalizeValue(component.name);
+    const normalizedName = normalizeProjectArticleValue(component.name);
     return normalizedName === normalizedCandidate
       || normalizedCandidate.includes(normalizedName)
       || normalizedName.includes(normalizedCandidate);

@@ -75,6 +75,11 @@ const entityAppointmentsQuerySchema = z.object({
 
 const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active");
 
+const projectArticleItemSchema = z.object({
+  label: z.string().min(1),
+  value: z.string().min(1),
+});
+
 const entityAppointmentItemSchema = z.object({
   id: z.number(),
   version: z.number().int().min(1),
@@ -82,6 +87,7 @@ const entityAppointmentItemSchema = z.object({
   projectName: z.string(),
   projectVersion: z.number().int().min(1).nullable(),
   projectOrderNumber: z.string().nullable(),
+  projectArticleItems: z.array(projectArticleItemSchema),
   projectDescription: z.string().nullable(),
   projectStatuses: z.array(
     z.object({
@@ -522,6 +528,7 @@ export const api = {
               projectName: z.string(),
               projectVersion: z.number().int().min(1).nullable(),
               projectOrderNumber: z.string().nullable(),
+              projectArticleItems: z.array(projectArticleItemSchema),
               projectDescription: z.string().nullable(),
               projectStatuses: z.array(
                 z.object({
@@ -750,6 +757,7 @@ export const api = {
             projectName: z.string(),
             projectVersion: z.number().int().min(1).nullable(),
             projectOrderNumber: z.string().nullable(),
+            projectArticleItems: z.array(projectArticleItemSchema),
             projectDescription: z.string().nullable(),
             projectStatuses: z.array(
               z.object({
@@ -1996,7 +2004,7 @@ export const api = {
         responses: {
           201: z.custom<typeof projectOrderItems.$inferSelect>(),
           404: errorSchemas.notFound,
-          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+          409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]) }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },
@@ -2009,7 +2017,7 @@ export const api = {
         responses: {
           200: z.custom<typeof projectOrderItems.$inferSelect>(),
           404: errorSchemas.notFound,
-          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
+          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]) }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },
@@ -2071,6 +2079,8 @@ export const api = {
           projectId: z.number(),
           projectName: z.string(),
           projectVersion: z.number().int().min(1),
+          projectOrderNumber: z.string().nullable(),
+          projectArticleItems: z.array(projectArticleItemSchema),
           projectDescription: z.string().nullable(),
           projectStatuses: z.array(
             z.object({
@@ -2120,6 +2130,7 @@ export const api = {
           projectName: z.string(),
           projectVersion: z.number().int().min(1),
           projectOrderNumber: z.string().nullable(),
+          projectArticleItems: z.array(projectArticleItemSchema),
           projectDescription: z.string().nullable(),
           projectStatuses: z.array(
             z.object({

@@ -5,6 +5,7 @@
  * - Projekt-Auftragspositionen sind ueber die bestehenden Projekt-Endpunkte lesbar und schreibbar.
  * - Eine neue Komponentenposition ersetzt bestehende Komponenten derselben Kategorie im Projekt.
  * - Loeschen respektiert die Version des zuletzt gespeicherten Eintrags.
+ * - Neue Auftragspositionen mit inaktiven Produkt-/Komponentenreferenzen werden blockiert.
  *
  * Fehlerfälle:
  * - Mehrere Komponenten derselben Kategorie bleiben parallel im Projekt bestehen.
@@ -188,6 +189,82 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
       .expect(200)
       .expect((res) => {
         expect(res.body).toHaveLength(0);
+      });
+  });
+
+  it("rejects creating a new order item with an inactive product", async () => {
+    const admin = await loginAdminAgent();
+    const token = `FT27-ORDER-INACTIVE-PRODUCT-${sequence++}`;
+    const project = await createProjectFixture({ prefix: token, name: `${token}-Project` });
+
+    const productCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: `${token}-Category`, isActive: true, version: 1 })
+      .expect(201);
+
+    const inactiveProduct = await admin
+      .post("/api/admin/master-data/products")
+      .send({
+        name: `${token}-Model-Inactive`,
+        categoryId: productCategory.body.id,
+        description: null,
+        isActive: false,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: inactiveProduct.body.id,
+        componentId: null,
+        specificationId: null,
+        description: null,
+        quantity: 1,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("INACTIVE_ENTITY_ASSIGNMENT");
+      });
+  });
+
+  it("rejects creating a new order item with an inactive component", async () => {
+    const admin = await loginAdminAgent();
+    const token = `FT27-ORDER-INACTIVE-COMPONENT-${sequence++}`;
+    const project = await createProjectFixture({ prefix: token, name: `${token}-Project` });
+
+    const categoryResponse = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: `${token}-Category`, isActive: true, version: 1 })
+      .expect(201);
+
+    const inactiveComponent = await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: `${token}-Component-Inactive`,
+        categoryId: categoryResponse.body.id,
+        description: null,
+        isActive: false,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: null,
+        componentId: inactiveComponent.body.id,
+        specificationId: null,
+        description: null,
+        quantity: 1,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("INACTIVE_ENTITY_ASSIGNMENT");
       });
   });
 });

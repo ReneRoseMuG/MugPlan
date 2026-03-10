@@ -48,15 +48,15 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(source).toContain("PLZ: {resolvedPostalCode}");
   });
 
-  it("renders weekly project header and description as HTML", () => {
+  it("renders weekly project header and routes project content through the shared renderer", () => {
     const filePath = path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanelProject.tsx");
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("projectOrderNumber: string | null;");
+    expect(source).toContain("projectArticleItems: ProjectArticleItem[];");
     expect(source).toContain("const resolvedProjectHeader = [projectOrderNumber?.trim() || \"-\", projectName].join(\" - \");");
     expect(source).toContain("data-testid=\"week-project-header\"");
-    expect(source).toContain("dangerouslySetInnerHTML={{ __html: projectDescription }}");
-    expect(source).toContain("[&_ul]:list-disc");
+    expect(source).toContain("<ProjectArticleDescriptionRenderer");
   });
 
   it("uses customer detail card hover and keeps notes visible when no preview is available", () => {

@@ -129,6 +129,7 @@ export function CalendarWeekAppointmentPanel({
               <CalendarWeekAppointmentPanelProject
                 projectName={resolvedProjectName}
                 projectOrderNumber={appointment.projectOrderNumber}
+                projectArticleItems={appointment.projectArticleItems}
                 projectDescription={appointment.projectDescription}
                 enableFullDescriptionPreview={context === "week-calendar"}
               />
