@@ -47,13 +47,13 @@ async function ensureModelDefaultCategory(): Promise<void> {
       isActive: componentCategories.isActive,
     })
     .from(componentCategories)
-    .where(eq(componentCategories.name, "Alle Modelle"))
+    .where(eq(componentCategories.name, "Saunamodell"))
     .limit(1);
 
   if (!existing) {
     try {
       await db.insert(componentCategories).values({
-        name: "Alle Modelle",
+        name: "Saunamodell",
         isActive: true,
         version: 1,
       });

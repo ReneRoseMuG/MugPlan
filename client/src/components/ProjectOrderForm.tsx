@@ -1,5 +1,11 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  PROJECT_PRODUCT_FIELDS,
+  type ProjectProductFieldKey,
+  type ProjectProductSelections,
+} from "@/lib/project-product-form";
 
 interface ProjectOrderFormProps {
   name: string;
@@ -8,11 +14,13 @@ interface ProjectOrderFormProps {
   plannedDateText: string;
   plannedWeek: string;
   isEditing: boolean;
+  productSelections: ProjectProductSelections;
   onNameChange: (value: string) => void;
   onOrderNumberChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onPlannedDateTextChange: (value: string) => void;
   onPlannedWeekChange: (value: string) => void;
+  onOpenComponentDialog: (fieldKey: ProjectProductFieldKey) => void;
 }
 
 export function ProjectOrderForm({
@@ -22,11 +30,13 @@ export function ProjectOrderForm({
   plannedDateText,
   plannedWeek,
   isEditing,
+  productSelections,
   onNameChange,
   onOrderNumberChange,
   onAmountChange,
   onPlannedDateTextChange,
   onPlannedWeekChange,
+  onOpenComponentDialog,
 }: ProjectOrderFormProps) {
   return (
     <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4" data-testid="project-order-form">
@@ -84,6 +94,37 @@ export function ProjectOrderForm({
             placeholder="z. B. KW 14"
             data-testid="input-project-planned-week"
           />
+        </div>
+      </div>
+      <div className="space-y-3 rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-product-fields">
+        <h3 className="text-sm font-bold tracking-wider text-primary">Artikelliste</h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {PROJECT_PRODUCT_FIELDS.map((field) => (
+            <div
+              key={field.key}
+              className="grid grid-cols-[minmax(0,1fr),auto] items-end gap-2"
+              data-testid={`project-product-field-${field.key}`}
+            >
+              <div className="space-y-2">
+                <Label htmlFor={`project-product-${field.key}`}>{field.label}</Label>
+                <Input
+                  id={`project-product-${field.key}`}
+                  value={productSelections[field.key].componentName}
+                  readOnly
+                  placeholder={`${field.label} auswählen`}
+                  data-testid={`input-project-product-${field.key}`}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenComponentDialog(field.key)}
+                data-testid={`button-project-product-${field.key}`}
+              >
+                Auswählen
+              </Button>
+            </div>
+          ))}
         </div>
       </div>
     </div>

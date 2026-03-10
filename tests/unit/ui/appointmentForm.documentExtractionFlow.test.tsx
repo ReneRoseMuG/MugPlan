@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - Upload ruft den Extract-Endpunkt mit appointment_form auf.
  * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
- * - Apply-Callbacks sind an Customer/Project-Uebernahme verdrahtet.
+ * - Apply-Callback oeffnet das neue Projektformular statt direkt ein Projekt zu persistieren.
  * - Disable-Flags fuer Apply sind an selektiertes Projekt gekoppelt.
  * - Bei single-Customer-Konflikt wird bestaetigt und vorhandener Kunde uebernommen.
  *
@@ -47,16 +47,18 @@ describe("FT20 appointment form document extraction flow wiring", () => {
     expect(source).not.toContain("onApplyCustomer={applyExtractedCustomer}");
   });
 
-  it("forwards extracted project data and uses existing customer silently on duplicate conflicts", () => {
-    expect(source).toContain("orderNumber: payload.orderNumber.trim() || null");
-    expect(source).toContain("amount: payload.amount.trim() || null");
+  it("forwards extracted project data into a pending project draft and uses existing customer silently on duplicate conflicts", () => {
+    expect(source).toContain("setPendingProjectDraft({");
+    expect(source).toContain("extractedArticleListHtml: payload.articleListHtml.trim()");
+    expect(source).toContain("productSelections: documentExtractionData");
     expect(source).toContain("amount: extraction.amount ?? null");
     expect(source).toContain("tryPatchExistingCustomerFromExtraction");
-    expect(source).toContain("name: payload.saunaModel.trim()");
+    expect(source).toContain("<ProjectForm");
+    expect(source).toContain("onProjectCreated={(createdProjectId) => {");
+    expect(source).toContain("setSelectedProjectId(createdProjectId);");
     expect(source).toContain("if (resolution.resolution === \"single\")");
     expect(source).toContain("return resolution.customer;");
     expect(source).not.toContain("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");
     expect(source).toContain("if (!resolvedCustomer) {");
-    expect(source).not.toContain("formatProjectStoredName(");
   });
 });

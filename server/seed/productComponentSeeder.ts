@@ -12,7 +12,7 @@ import type { OvenRow, SaunaModelRow } from "./types";
 const logPrefix = "[product-component-seeder]";
 
 const PRODUCT_CATEGORY_NAMES = ["Sauna", "Ausstattung"] as const;
-const COMPONENT_CATEGORY_NAMES = ["Saunatyp", "Ofen", "Dachvariante", "Tür", "Fenster"] as const;
+const COMPONENT_CATEGORY_NAMES = ["Saunamodell", "Ofen", "Steuerung", "Dach", "Tür", "Fenster"] as const;
 
 const PRODUCT_DEFINITIONS = {
   sauna: { name: "Sauna", categoryName: "Sauna" },
@@ -225,7 +225,7 @@ export async function seedProductsAndComponents(
     };
 
     for (const row of saunaModels) {
-      await seedComponent("sauna", "Saunatyp", row.saunaModelName, buildSaunaDescription(row));
+      await seedComponent("sauna", "Saunamodell", row.saunaModelName, buildSaunaDescription(row));
     }
 
     for (const row of ovens) {
@@ -233,7 +233,7 @@ export async function seedProductsAndComponents(
     }
 
     for (const name of STATIC_COMPONENTS.roof) {
-      await seedComponent("roof", "Dachvariante", name, null);
+      await seedComponent("roof", "Dach", name, null);
     }
     for (const name of STATIC_COMPONENTS.door) {
       await seedComponent("door", "Tür", name, null);

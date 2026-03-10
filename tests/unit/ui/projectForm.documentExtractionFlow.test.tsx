@@ -7,7 +7,8 @@
  * Abgedeckte Regeln:
  * - Upload ruft den Extract-Endpunkt mit project_form auf.
  * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
- * - Apply-Callback nutzt einen kombinierten Daten-Button fuer Customer/Project.
+ * - Apply-Callback schreibt die extrahierte Artikelliste nicht direkt in den Beschreibungseditor.
+ * - Projektformular verdrahtet Artikellisten-Slots und ComponentDropdown.
  * - Auftragsnummer ist nur bei Bestandsprojekt readOnly und bei neuem Projekt editierbar.
  * - Bei single-Customer-Konflikt wird bestaetigt und vorhandener Kunde uebernommen statt Neuanlage.
  *
@@ -48,6 +49,19 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("setDocumentExtractionOpen(false);");
     expect(source).not.toContain("onApplyCustomer={");
     expect(source).not.toContain("onApplyProject={");
+  });
+
+  it("routes article list handling through the new product state instead of the editor", () => {
+    expect(source).toContain("setExtractedArticleListHtml(payload.articleListHtml.trim());");
+    expect(source).toContain("buildPersistedProjectDescription(productSelections, descriptionMd)");
+    expect(source).not.toContain("setDescriptionMd(payload.articleListHtml.trim());");
+  });
+
+  it("wires component slot selection and dialog rendering", () => {
+    expect(source).toContain("<ComponentDropdown");
+    expect(source).toContain("onOpenComponentDialog={setComponentDialogField}");
+    expect(projectOrderFormSource).toContain("PROJECT_PRODUCT_FIELDS.map((field) => (");
+    expect(projectOrderFormSource).toContain("Auswählen");
   });
 
   it("keeps order number editable for new project and readonly for existing project", () => {

@@ -158,11 +158,11 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
       expect(productCategoryRows.map((row) => row.name).sort()).toEqual(["Alle Produkte", "Ausstattung", "Sauna"]);
       expect(componentCategoryRows.map((row) => row.name).sort()).toEqual([
-        "Alle Modelle",
-        "Dachvariante",
+        "Dach",
         "Fenster",
         "Ofen",
-        "Saunatyp",
+        "Saunamodell",
+        "Steuerung",
         "Tür",
       ]);
       expect(productRows.map((row) => row.name).sort()).toEqual(["Dach", "Fenster", "Ofen", "Sauna", "Tür"]);

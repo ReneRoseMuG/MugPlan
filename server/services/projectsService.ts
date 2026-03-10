@@ -1,4 +1,5 @@
 import type { Customer, InsertProject, Project, UpdateProject } from "@shared/schema";
+import type { InsertProjectOrderItem, ProjectOrderItem, UpdateProjectOrderItem } from "@shared/schema";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as customersRepository from "../repositories/customersRepository";
 
@@ -159,5 +160,62 @@ export async function deleteProject(id: number, expectedVersion: number): Promis
   }
   if (result.kind === "business_conflict") {
     throw new ProjectsError(409, "BUSINESS_CONFLICT");
+  }
+}
+
+export async function listProjectOrderItems(projectId: number): Promise<ProjectOrderItem[]> {
+  const project = await projectsRepository.getProject(projectId);
+  if (!project) {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+  return projectsRepository.listProjectOrderItems(projectId);
+}
+
+export async function createProjectOrderItem(
+  projectId: number,
+  input: InsertProjectOrderItem,
+): Promise<ProjectOrderItem> {
+  if (input.projectId !== projectId || input.orderNumber.trim().length === 0) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const project = await projectsRepository.getProject(projectId);
+  if (!project?.projectOrder?.orderNumber || project.projectOrder.orderNumber !== input.orderNumber.trim()) {
+    throw new ProjectsError(409, "BUSINESS_CONFLICT");
+  }
+  return projectsRepository.createProjectOrderItem({
+    ...input,
+    orderNumber: input.orderNumber.trim(),
+    quantity: input.quantity,
+  });
+}
+
+export async function updateProjectOrderItem(
+  projectId: number,
+  itemId: number,
+  input: UpdateProjectOrderItem & { version: number },
+): Promise<ProjectOrderItem> {
+  if (!Number.isInteger(input.version) || input.version < 1) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const result = await projectsRepository.updateProjectOrderItemWithVersion(projectId, itemId, input.version, input);
+  if (result.kind === "not_found") {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+  if (result.kind === "version_conflict") {
+    throw new ProjectsError(409, "VERSION_CONFLICT");
+  }
+  return result.row;
+}
+
+export async function deleteProjectOrderItem(projectId: number, itemId: number, expectedVersion: number): Promise<void> {
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const result = await projectsRepository.deleteProjectOrderItemWithVersion(projectId, itemId, expectedVersion);
+  if (result.kind === "not_found") {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+  if (result.kind === "version_conflict") {
+    throw new ProjectsError(409, "VERSION_CONFLICT");
   }
 }

@@ -20,7 +20,7 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 
 const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
-const DEFAULT_MODEL_CATEGORY_NAME = "Alle Modelle";
+const DEFAULT_MODEL_CATEGORY_NAME = "Saunamodell";
 
 export class MasterDataError extends Error {
   status: number;
@@ -126,7 +126,9 @@ export async function listComponentCategories(
   filter: "active" | "inactive" | "all" | undefined,
   roleKey: CanonicalRoleKey,
 ): Promise<ComponentCategory[]> {
-  requireAdmin(roleKey);
+  if (!roleKey) {
+    throw new MasterDataError(403, "FORBIDDEN");
+  }
   return masterDataRepository.listComponentCategories(normalizeFilter(filter));
 }
 
@@ -240,7 +242,9 @@ export async function listComponents(
   filter: "active" | "inactive" | "all" | undefined,
   roleKey: CanonicalRoleKey,
 ): Promise<Component[]> {
-  requireAdmin(roleKey);
+  if (!roleKey) {
+    throw new MasterDataError(403, "FORBIDDEN");
+  }
   return masterDataRepository.listComponents(normalizeFilter(filter));
 }
 

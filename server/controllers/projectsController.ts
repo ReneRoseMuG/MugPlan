@@ -141,6 +141,79 @@ export async function deleteProject(req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function listProjectOrderItems(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const projectId = Number(req.params.id);
+    const rows = await projectsService.listProjectOrderItems(projectId);
+    res.json(rows);
+  } catch (err) {
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function createProjectOrderItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const projectId = Number(req.params.id);
+    const input = api.projects.orderItems.create.input.parse(req.body);
+    const row = await projectsService.createProjectOrderItem(projectId, input);
+    res.status(201).json(row);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function updateProjectOrderItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const projectId = Number(req.params.id);
+    const itemId = Number(req.params.itemId);
+    const input = api.projects.orderItems.update.input.parse(req.body);
+    const row = await projectsService.updateProjectOrderItem(projectId, itemId, input);
+    res.json(row);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function deleteProjectOrderItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const projectId = Number(req.params.id);
+    const itemId = Number(req.params.itemId);
+    const input = api.projects.orderItems.delete.input.parse(req.body);
+    await projectsService.deleteProjectOrderItem(projectId, itemId, input.version);
+    res.status(204).send();
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
 function parseStatusIds(value: unknown): number[] {
   if (!value) return [];
   const rawValues = Array.isArray(value) ? value : [value];

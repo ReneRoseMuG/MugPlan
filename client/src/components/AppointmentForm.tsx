@@ -23,6 +23,7 @@ import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { ProjectDetailCard } from "@/components/ui/project-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
+import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
@@ -38,11 +39,16 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
+  createEmptyProjectProductSelections,
+  resolveSelectionsFromExtraction,
+  type ProjectProductSelections,
+} from "@/lib/project-product-form";
+import {
   PROJECT_APPOINTMENTS_ALL_FROM_DATE,
   getBerlinTodayDateString,
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
-import type { Note } from "@shared/schema";
+import type { Component, ComponentCategory, Note } from "@shared/schema";
 
 interface AppointmentFormProps {
   onCancel?: () => void;
@@ -74,6 +80,15 @@ type AppointmentApiError = Error & { status?: number; code?: string };
 type ApiConflictEmployee = { id?: unknown; fullName?: unknown };
 type ApiErrorPayload = { message?: string; code?: string; conflictEmployees?: ApiConflictEmployee[] };
 type ApiSuccessPayload = { id?: number; message?: string };
+type ExtractedProjectDraft = {
+  name: string;
+  orderNumber: string;
+  amount: string;
+  customerId: number;
+  extractedArticleListHtml: string;
+  productSelections: ProjectProductSelections;
+  documentFile: File | null;
+};
 
 const logPrefix = "[AppointmentForm]";
 
@@ -210,9 +225,12 @@ export function AppointmentForm({
 }: AppointmentFormProps) {
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
+  const componentCategoriesUrl = "/api/admin/master-data/component-categories?active=all";
+  const componentsUrl = "/api/admin/master-data/components?active=all";
   const isEditing = Boolean(appointmentId);
   const createDefaultDate = initialDate ?? getBerlinTodayDateString();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
+  const [pendingProjectDraft, setPendingProjectDraft] = useState<ExtractedProjectDraft | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [assignedEmployeeIds, setAssignedEmployeeIds] = useState<number[]>([]);
@@ -317,6 +335,14 @@ export function AppointmentForm({
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
     queryFn: () => fetchJson<Customer[]>("/api/customers"),
+  });
+  const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
+    queryKey: [componentCategoriesUrl],
+    queryFn: () => fetchJson<ComponentCategory[]>(componentCategoriesUrl),
+  });
+  const { data: components = [] } = useQuery<Component[]>({
+    queryKey: [componentsUrl],
+    queryFn: () => fetchJson<Component[]>(componentsUrl),
   });
 
   const { data: selectedProjectStatuses = [] } = useQuery<ProjectStatusRelationItem[]>({
@@ -811,75 +837,26 @@ export function AppointmentForm({
         return;
       }
       const mergedCustomer = await tryPatchExistingCustomerFromExtraction(resolvedCustomer, payload.customer);
-      const projectResponse = await fetch("/api/projects", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: payload.saunaModel.trim(),
-          orderNumber: payload.orderNumber.trim() || null,
-          amount: payload.amount.trim() || null,
-          customerId: mergedCustomer.id,
-          descriptionMd: payload.articleListHtml.trim(),
-        }),
+      setPendingProjectDraft({
+        name: payload.saunaModel.trim(),
+        orderNumber: payload.orderNumber.trim(),
+        amount: payload.amount.trim(),
+        customerId: mergedCustomer.id,
+        extractedArticleListHtml: payload.articleListHtml.trim(),
+        productSelections: documentExtractionData
+          ? resolveSelectionsFromExtraction(
+              {
+                saunaModel: payload.saunaModel.trim(),
+                categorizedItems: documentExtractionData.categorizedItems,
+              },
+              components,
+              componentCategories,
+            )
+          : createEmptyProjectProductSelections(),
+        documentFile: documentExtractionFile,
       });
-      const projectPayload = await projectResponse.json().catch(() => null);
-      if (!projectResponse.ok) {
-        throw new Error(projectPayload?.message ?? "Projekt konnte nicht angelegt werden");
-      }
-
-      const createdProject = projectPayload as Project;
-      if (documentExtractionFile) {
-        const duplicateResponse = await fetch("/api/attachments/duplicates/check-original-name", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ originalName: documentExtractionFile.name }),
-        });
-        const duplicatePayload = await duplicateResponse.json().catch(() => null);
-        if (!duplicateResponse.ok) {
-          throw new Error(duplicatePayload?.message ?? "Duplikatpruefung fehlgeschlagen");
-        }
-        const duplicateInfo = duplicatePayload as {
-          duplicate: boolean;
-          summary: { customer: number; project: number; employee: number };
-        };
-        const shouldAttach = !duplicateInfo.duplicate || window.confirm(
-          `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknuepfen?`,
-        );
-        if (shouldAttach) {
-          const uploadData = new FormData();
-          uploadData.append("file", documentExtractionFile);
-          const uploadResponse = await fetch(`/api/projects/${createdProject.id}/attachments`, {
-            method: "POST",
-            credentials: "include",
-            body: uploadData,
-          });
-          if (!uploadResponse.ok) {
-            const uploadPayload = await uploadResponse.json().catch(() => null);
-            throw new Error(uploadPayload?.message ?? "Dokumentverknuepfung fehlgeschlagen");
-          }
-          await queryClient.invalidateQueries({ queryKey: ["/api/projects", createdProject.id, "attachments"] });
-        } else {
-          toast({ title: "Dokumentverknuepfung uebersprungen" });
-        }
-      }
-      queryClient.setQueryData<Project[]>(projectsQueryKey, (current) => {
-        if (!Array.isArray(current)) return [createdProject];
-        if (current.some((project) => project.id === createdProject.id)) {
-          return current.map((project) => (project.id === createdProject.id ? createdProject : project));
-        }
-        return [createdProject, ...current];
-      });
-      await queryClient.invalidateQueries({ queryKey: projectsQueryKey });
-      setSelectedProjectId(createdProject.id);
-      toast({ title: "Projekt übernommen", description: "Neues Projekt wurde erzeugt und dem Termin zugeordnet." });
       setDocumentExtractionOpen(false);
-      setDocumentExtractionFile(null);
+      toast({ title: "Projektformular geöffnet", description: "Extrahierte Daten wurden vorbefüllt." });
     } catch (error) {
       toast({
         title: "Projekt konnte nicht übernommen werden",
@@ -1585,6 +1562,43 @@ export function AppointmentForm({
         dataApplyLabel="Daten übernehmen"
         onApplyData={applyExtractedProject}
       />
+
+      <Dialog
+        open={pendingProjectDraft !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingProjectDraft(null);
+          }
+        }}
+      >
+        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[92vh] sm:max-w-6xl sm:rounded-lg">
+          {pendingProjectDraft ? (
+            <ProjectForm
+              initialDraft={{
+                name: pendingProjectDraft.name,
+                orderNumber: pendingProjectDraft.orderNumber,
+                amount: pendingProjectDraft.amount,
+                customerId: pendingProjectDraft.customerId,
+                extractedArticleListHtml: pendingProjectDraft.extractedArticleListHtml,
+                productSelections: pendingProjectDraft.productSelections,
+              }}
+              initialDocumentExtractionFile={pendingProjectDraft.documentFile}
+              onProjectCreated={(createdProjectId) => {
+                setSelectedProjectId(createdProjectId);
+                setSelectedCustomerId(null);
+              }}
+              onSaved={() => {
+                setPendingProjectDraft(null);
+                setDocumentExtractionFile(null);
+                toast({ title: "Projekt übernommen", description: "Neues Projekt wurde erzeugt und dem Termin zugeordnet." });
+              }}
+              onCancel={() => {
+                setPendingProjectDraft(null);
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={projectPickerOpen} onOpenChange={setProjectPickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ComponentDropdown } from "@/components/ui/component-dropdown";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
@@ -36,8 +37,21 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { DEFAULT_PROJECT_TYPE, resolveProjectEditForm } from "@/lib/project-edit-form";
+import {
+  buildPersistedProjectDescription,
+  buildProjectArticleLines,
+  cloneProjectProductSelections,
+  createEmptyProjectProductSelections,
+  extractEditorDescriptionHtml,
+  getProjectProductField,
+  mapProjectOrderItemsToSelections,
+  PROJECT_PRODUCT_FIELDS,
+  resolveSelectionsFromExtraction,
+  type ProjectProductFieldKey,
+  type ProjectProductSelections,
+} from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, ProjectStatus } from "@shared/schema";
+import type { Project, Customer, Note, ProjectStatus, Component, ComponentCategory, ProjectOrderItem } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 
 interface ProjectFormProps {
@@ -46,6 +60,16 @@ interface ProjectFormProps {
   onSaved?: () => void;
   onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
   onOpenCalendarWorkspace?: (ctx: { projectId: number }) => void;
+  initialDocumentExtractionFile?: File | null;
+  initialDraft?: {
+    name?: string;
+    orderNumber?: string;
+    amount?: string;
+    customerId?: number | null;
+    extractedArticleListHtml?: string;
+    productSelections?: ProjectProductSelections;
+  } | null;
+  onProjectCreated?: (projectId: number) => void;
 }
 
 
@@ -55,6 +79,9 @@ export function ProjectForm({
   onSaved,
   onOpenAppointment,
   onOpenCalendarWorkspace,
+  initialDocumentExtractionFile,
+  initialDraft,
+  onProjectCreated,
 }: ProjectFormProps) {
   const { toast } = useToast();
   const isEditing = !!projectId;
@@ -94,6 +121,9 @@ export function ProjectForm({
   const [plannedDateText, setPlannedDateText] = useState("");
   const [plannedWeek, setPlannedWeek] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
+  const [productSelections, setProductSelections] = useState<ProjectProductSelections>(createEmptyProjectProductSelections);
+  const [componentDialogField, setComponentDialogField] = useState<ProjectProductFieldKey | null>(null);
+  const [extractedArticleListHtml, setExtractedArticleListHtml] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -101,8 +131,9 @@ export function ProjectForm({
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
-  const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(null);
+  const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
+  const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canManageProjectStatuses = isAdmin || userRole === "DISPATCHER";
@@ -114,6 +145,8 @@ export function ProjectForm({
     plannedDateText: string;
     plannedWeek: string;
     descriptionMd: string;
+    productSelections: ProjectProductSelections;
+    extractedArticleListHtml: string;
     customerId: number | null;
   }) =>
     JSON.stringify({
@@ -123,6 +156,8 @@ export function ProjectForm({
       plannedDateText: input.plannedDateText.trim(),
       plannedWeek: input.plannedWeek.trim(),
       descriptionMd: input.descriptionMd,
+      articleLines: buildProjectArticleLines(input.productSelections),
+      extractedArticleListHtml: input.extractedArticleListHtml.trim(),
       customerId: input.customerId,
     });
   // Fetch project data if editing
@@ -152,6 +187,24 @@ export function ProjectForm({
   const { data: allStatuses = [] } = useQuery<ProjectStatus[]>({
     queryKey: ['/api/project-status'],
   });
+  const componentCategoriesUrl = "/api/admin/master-data/component-categories?active=all";
+  const componentsUrl = "/api/admin/master-data/components?active=all";
+  const projectOrderItemsUrl = projectId ? `/api/projects/${projectId}/order-items` : null;
+
+  const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
+    queryKey: [componentCategoriesUrl],
+    enabled: true,
+  });
+
+  const { data: components = [] } = useQuery<Component[]>({
+    queryKey: [componentsUrl],
+    enabled: true,
+  });
+
+  const { data: projectOrderItems = [] } = useQuery<ProjectOrderItem[]>({
+    queryKey: projectOrderItemsUrl ? [projectOrderItemsUrl] : ["project-order-items-disabled"],
+    enabled: Boolean(projectOrderItemsUrl),
+  });
 
 
   // Initialize form when project data loads
@@ -164,7 +217,8 @@ export function ProjectForm({
       setAmount(projectData.project.amount != null ? String(projectData.project.amount) : "");
       setPlannedDateText(projectData.project.projectOrder?.plannedDateText ?? "");
       setPlannedWeek(projectData.project.projectOrder?.plannedWeek ?? "");
-      setDescriptionMd(projectData.project.descriptionMd || "");
+      setDescriptionMd(extractEditorDescriptionHtml(projectData.project.descriptionMd));
+      setExtractedArticleListHtml("");
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
         buildFormSnapshot({
@@ -173,12 +227,16 @@ export function ProjectForm({
           amount: projectData.project.amount != null ? String(projectData.project.amount) : "",
           plannedDateText: projectData.project.projectOrder?.plannedDateText ?? "",
           plannedWeek: projectData.project.projectOrder?.plannedWeek ?? "",
-          descriptionMd: projectData.project.descriptionMd || "",
+          descriptionMd: extractEditorDescriptionHtml(projectData.project.descriptionMd),
+          productSelections: createEmptyProjectProductSelections(),
+          extractedArticleListHtml: "",
           customerId: projectData.project.customerId,
         }),
       );
     } else if (!isEditing) {
       setProjectType(DEFAULT_PROJECT_TYPE);
+      setProductSelections(createEmptyProjectProductSelections());
+      setExtractedArticleListHtml("");
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: "",
@@ -187,17 +245,76 @@ export function ProjectForm({
           plannedDateText: "",
           plannedWeek: "",
           descriptionMd: "",
+          productSelections: createEmptyProjectProductSelections(),
+          extractedArticleListHtml: "",
           customerId: null,
         }),
       );
     }
   }, [projectData, isEditing]);
 
+  useEffect(() => {
+    if (!isEditing || components.length === 0 || componentCategories.length === 0) return;
+    setProductSelections(mapProjectOrderItemsToSelections(projectOrderItems, components, componentCategories));
+  }, [componentCategories, components, isEditing, projectOrderItems]);
+
+  useEffect(() => {
+    if (!isEditing && initialDocumentExtractionFile) {
+      setDocumentExtractionFile(initialDocumentExtractionFile);
+    }
+  }, [initialDocumentExtractionFile, isEditing]);
+
+  useEffect(() => {
+    if (isEditing || !initialDraft || didApplyInitialDraft) return;
+    const nextSelections = initialDraft.productSelections
+      ? cloneProjectProductSelections(initialDraft.productSelections)
+      : createEmptyProjectProductSelections();
+    setName(initialDraft.name ?? "");
+    setOrderNumber(initialDraft.orderNumber ?? "");
+    setAmount(initialDraft.amount ?? "");
+    setCustomerId(initialDraft.customerId ?? null);
+    setProductSelections(nextSelections);
+    setExtractedArticleListHtml(initialDraft.extractedArticleListHtml ?? "");
+    setInitialFormSnapshot(
+      buildFormSnapshot({
+        name: initialDraft.name ?? "",
+        orderNumber: initialDraft.orderNumber ?? "",
+        amount: initialDraft.amount ?? "",
+        plannedDateText: "",
+        plannedWeek: "",
+        descriptionMd: "",
+        productSelections: nextSelections,
+        extractedArticleListHtml: initialDraft.extractedArticleListHtml ?? "",
+        customerId: initialDraft.customerId ?? null,
+      }),
+    );
+    setDidApplyInitialDraft(true);
+  }, [didApplyInitialDraft, initialDraft, isEditing]);
+
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
   const projectNamePreview = name.trim();
   const projectVersion = projectData?.project.version;
   const resolvedProjectEditForm = resolveProjectEditForm(projectType);
+  const articleLines = buildProjectArticleLines(productSelections);
+  const selectedComponentDialogCategory = componentDialogField ? getProjectProductField(componentDialogField).categoryName : null;
+
+  useEffect(() => {
+    if (!isEditing || !projectData || components.length === 0 || componentCategories.length === 0) return;
+    setInitialFormSnapshot(
+      buildFormSnapshot({
+        name: projectData.project.name.trim(),
+        orderNumber: projectData.project.orderNumber ?? "",
+        amount: projectData.project.amount != null ? String(projectData.project.amount) : "",
+        plannedDateText: projectData.project.projectOrder?.plannedDateText ?? "",
+        plannedWeek: projectData.project.projectOrder?.plannedWeek ?? "",
+        descriptionMd: extractEditorDescriptionHtml(projectData.project.descriptionMd),
+        productSelections: mapProjectOrderItemsToSelections(projectOrderItems, components, componentCategories),
+        extractedArticleListHtml: "",
+        customerId: projectData.project.customerId,
+      }),
+    );
+  }, [componentCategories, components, isEditing, projectData, projectOrderItems]);
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
@@ -397,6 +514,83 @@ export function ProjectForm({
       setDocumentExtractionLoading(false);
     }
   };
+
+  const upsertExistingProjectSelection = async (fieldKey: ProjectProductFieldKey, componentIdValue: string) => {
+    if (!projectId || !projectData?.project.orderNumber) return;
+    const numericComponentId = Number(componentIdValue);
+    const component = components.find((entry) => entry.id === numericComponentId);
+    if (!component) return;
+
+    const response = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
+      projectId,
+      orderNumber: projectData.project.orderNumber,
+      productId: null,
+      componentId: component.id,
+      specificationId: null,
+      description: null,
+      quantity: 1,
+    });
+    const savedItem = await response.json() as ProjectOrderItem;
+    setProductSelections((current) => ({
+      ...current,
+      [fieldKey]: {
+        componentId: component.id,
+        componentName: component.name,
+        itemId: savedItem.id,
+        version: savedItem.version,
+      },
+    }));
+    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+  };
+
+  const handleComponentSelection = async (fieldKey: ProjectProductFieldKey, componentIdValue: string) => {
+    if (!componentIdValue) return;
+    const numericComponentId = Number(componentIdValue);
+    const component = components.find((entry) => entry.id === numericComponentId);
+    if (!component) return;
+
+    if (isEditing && projectId) {
+      try {
+        await upsertExistingProjectSelection(fieldKey, componentIdValue);
+        toast({ title: `${getProjectProductField(fieldKey).label} übernommen` });
+      } catch (error) {
+        toast({
+          title: "Komponente konnte nicht übernommen werden",
+          description: error instanceof Error ? error.message : "Unbekannter Fehler",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    setProductSelections((current) => ({
+      ...current,
+      [fieldKey]: {
+        componentId: component.id,
+        componentName: component.name,
+        itemId: null,
+        version: null,
+      },
+    }));
+  };
+
+  const persistBufferedOrderItems = async (createdProjectId: number, createdOrderNumber: string) => {
+    for (const field of PROJECT_PRODUCT_FIELDS) {
+      const selection = productSelections[field.key];
+      if (selection.componentId == null) continue;
+      await apiRequest("POST", `/api/projects/${createdProjectId}/order-items`, {
+        projectId: createdProjectId,
+        orderNumber: createdOrderNumber,
+        productId: null,
+        componentId: selection.componentId,
+        specificationId: null,
+        description: null,
+        quantity: 1,
+      });
+    }
+    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${createdProjectId}/order-items`] });
+  };
+
   const isFormDirty = buildFormSnapshot({
     name,
     orderNumber,
@@ -404,6 +598,8 @@ export function ProjectForm({
     plannedDateText,
     plannedWeek,
     descriptionMd,
+    productSelections,
+    extractedArticleListHtml,
     customerId,
   }) !== initialFormSnapshot;
   const handleRequestClose = () => {
@@ -657,6 +853,7 @@ export function ProjectForm({
     let createdProjectId: number | null = null;
     const normalizedPlannedDateText = plannedDateText.trim() || null;
     const normalizedPlannedWeek = plannedWeek.trim() || null;
+    const persistedDescriptionMd = buildPersistedProjectDescription(productSelections, descriptionMd);
     if (isEditing) {
       if (!projectVersion || !Number.isInteger(projectVersion) || projectVersion < 1) {
         toast({ title: "Projektversion fehlt, bitte neu laden", variant: "destructive" });
@@ -669,7 +866,7 @@ export function ProjectForm({
         orderNumber: normalizedOrderNumber,
         amount: normalizedAmount,
         customerId,
-        descriptionMd: descriptionMd || undefined,
+        descriptionMd: persistedDescriptionMd,
         projectOrder: {
           amount: normalizedAmount,
           plannedDateText: normalizedPlannedDateText,
@@ -683,7 +880,7 @@ export function ProjectForm({
         orderNumber: normalizedOrderNumber,
         amount: normalizedAmount,
         customerId,
-        descriptionMd: descriptionMd || undefined,
+        descriptionMd: persistedDescriptionMd,
         projectOrder: {
           amount: normalizedAmount,
           plannedDateText: normalizedPlannedDateText,
@@ -691,8 +888,29 @@ export function ProjectForm({
         },
       });
       createdProjectId = createdProject.id;
+      if (createdProject.projectOrder?.orderNumber) {
+        try {
+          await persistBufferedOrderItems(createdProject.id, createdProject.projectOrder.orderNumber);
+        } catch (error) {
+          toast({
+            title: "Projekt gespeichert, Artikelliste konnte nicht vollständig persistiert werden",
+            description: error instanceof Error ? error.message : "Unbekannter Fehler",
+            variant: "destructive",
+          });
+        }
+      }
     }
-    setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, amount, plannedDateText, plannedWeek, descriptionMd, customerId }));
+    setInitialFormSnapshot(buildFormSnapshot({
+      name,
+      orderNumber,
+      amount,
+      plannedDateText,
+      plannedWeek,
+      descriptionMd,
+      productSelections,
+      extractedArticleListHtml,
+      customerId,
+    }));
 
     if (createdProjectId && documentExtractionFile) {
       try {
@@ -754,6 +972,9 @@ export function ProjectForm({
     if (onSaved && onSaved !== onCancel) {
       onSaved();
     }
+    if (createdProjectId) {
+      onProjectCreated?.(createdProjectId);
+    }
   };
 
   const resolveOrCreateCustomerForExtraction = async (customerDraft: ExtractionCustomerDraft): Promise<Customer | null> => {
@@ -801,13 +1022,25 @@ export function ProjectForm({
       const mergedCustomer = await tryPatchExistingCustomerFromExtraction(resolvedCustomer, payload.customer);
       setCustomerId(mergedCustomer.id);
 
-      const hasExistingValues = name.trim().length > 0 || descriptionMd.trim().length > 0;
+      const hasExistingValues = name.trim().length > 0 || articleLines.length > 0 || extractedArticleListHtml.trim().length > 0;
       if (hasExistingValues) {
         const confirmed = window.confirm("Titel oder Beschreibung sind bereits befüllt. Inhalte überschreiben?");
         if (!confirmed) return;
       }
       setName(payload.saunaModel.trim());
-      setDescriptionMd(payload.articleListHtml.trim());
+      setExtractedArticleListHtml(payload.articleListHtml.trim());
+      if (components.length > 0 && componentCategories.length > 0 && documentExtractionData) {
+        setProductSelections(
+          resolveSelectionsFromExtraction(
+            {
+              saunaModel: payload.saunaModel.trim(),
+              categorizedItems: documentExtractionData.categorizedItems,
+            },
+            components,
+            componentCategories,
+          ),
+        );
+      }
       const extractedOrderNumber = payload.orderNumber.trim();
       if (extractedOrderNumber.length > 0) {
         const currentOrderNumber = orderNumber.trim();
@@ -885,11 +1118,13 @@ export function ProjectForm({
                 plannedDateText={plannedDateText}
                 plannedWeek={plannedWeek}
                 isEditing={isEditing}
+                productSelections={productSelections}
                 onNameChange={setName}
                 onOrderNumberChange={setOrderNumber}
                 onAmountChange={setAmount}
                 onPlannedDateTextChange={setPlannedDateText}
                 onPlannedWeekChange={setPlannedWeek}
+                onOpenComponentDialog={setComponentDialogField}
               />
 
               <div className="space-y-4">
@@ -903,6 +1138,18 @@ export function ProjectForm({
                     <TabsTrigger value="article-list">Artikelliste</TabsTrigger>
                   </TabsList>
                   <TabsContent value="description" className="pt-4">
+                    <div className="mb-4 rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-article-list-preview">
+                      <h2 className="text-lg font-semibold">Artikelliste</h2>
+                      {articleLines.length === 0 ? (
+                        <p className="mt-2 text-sm text-muted-foreground">Keine Artikelliste gepflegt.</p>
+                      ) : (
+                        <div className="mt-2 space-y-1 text-sm">
+                          {articleLines.map((line) => (
+                            <div key={line}>{line}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <RichTextEditor
                       value={descriptionMd}
                       onChange={setDescriptionMd}
@@ -910,12 +1157,31 @@ export function ProjectForm({
                     />
                   </TabsContent>
                   <TabsContent value="article-list" className="pt-4">
-                    <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground" data-testid="project-article-list-slot">
-                      Die Artikellistenbearbeitung folgt als eigener Auftrag. In diesem Schritt ist der Slot vorbereitet; Doc-Extract schreibt weiterhin die erkannte Artikelliste in die Beschreibung.
+                    <div className="rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-article-list-slot">
+                      <h2 className="text-lg font-semibold">Artikelliste</h2>
+                      {articleLines.length === 0 ? (
+                        <p className="mt-2 text-sm text-muted-foreground">Wählen Sie im Produktformular Komponenten aus.</p>
+                      ) : (
+                        <div className="mt-2 space-y-1 text-sm">
+                          {articleLines.map((line) => (
+                            <div key={line}>{line}</div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
                 </Tabs>
               </div>
+
+              {extractedArticleListHtml.trim().length > 0 ? (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold tracking-wider text-primary">Extrahierte Artikelliste</h3>
+                  <RichTextEditor
+                    value={extractedArticleListHtml}
+                    onChange={setExtractedArticleListHtml}
+                  />
+                </div>
+              ) : null}
 
               <div className="space-y-4">
                 <RelationSlot
@@ -1014,6 +1280,25 @@ export function ProjectForm({
         dataApplyLabel="Daten übernehmen"
         onApplyData={applyExtractedData}
       />
+
+      {selectedComponentDialogCategory && componentDialogField ? (
+        <ComponentDropdown
+          components={components}
+          categories={componentCategories}
+          targetCategory={selectedComponentDialogCategory}
+          selectedComponentId={String(productSelections[componentDialogField].componentId ?? "")}
+          onSelect={(componentId) => {
+            void handleComponentSelection(componentDialogField, componentId);
+          }}
+          dialogMode
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setComponentDialogField(null);
+            }
+          }}
+        />
+      ) : null}
 
       {/* Customer Selection Dialog */}
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>

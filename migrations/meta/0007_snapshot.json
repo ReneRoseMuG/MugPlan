@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "4d124f3b-9cc7-4cc7-bf1b-f2f3c3220ef4",
+  "prevId": "4fc91a2e-7e48-45cc-bd2d-4b8b3d0731b5",
+  "note": "Manual snapshot placeholder for 0007_project_product_categories_and_order_items. Authoritative migration logic lives in migrations/0007_project_product_categories_and_order_items.sql."
+}

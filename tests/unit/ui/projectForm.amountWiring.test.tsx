@@ -29,7 +29,11 @@ describe("FT02 project form amount wiring", () => {
   it("tracks amount in local form state and dirty snapshot", () => {
     expect(source).toContain("const [amount, setAmount] = useState(\"\")");
     expect(source).toContain("amount: input.amount.replace(\",\", \".\").trim()");
-    expect(source).toContain("setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, amount, plannedDateText, plannedWeek, descriptionMd, customerId }))");
+    expect(source).toContain("setInitialFormSnapshot(buildFormSnapshot({");
+    expect(source).toContain("amount,");
+    expect(source).toContain("productSelections,");
+    expect(source).toContain("extractedArticleListHtml,");
+    expect(source).toContain("customerId,");
   });
 
   it("renders amount input field with wiring", () => {

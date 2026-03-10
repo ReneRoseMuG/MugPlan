@@ -2,6 +2,8 @@ import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointments,
+  componentCategories,
+  components,
   customers,
   projectOrder,
   projectOrderItems,
@@ -13,7 +15,10 @@ import {
   type ProjectOrder,
   type ProjectAttachment,
   type InsertProject,
+  type InsertProjectOrderItem,
+  type ProjectOrderItem,
   type UpdateProject,
+  type UpdateProjectOrderItem,
   type InsertProjectAttachment,
 } from "@shared/schema";
 import type { ProjectScope } from "../services/projectsService";
@@ -144,6 +149,10 @@ export async function getProjects(
 }
 
 export type ProjectListItem = Project & { notesCount: number };
+type VersionedMutationResult<T> =
+  | { kind: "updated"; row: T }
+  | { kind: "not_found" }
+  | { kind: "version_conflict" };
 
 export async function getProjectsByCustomer(
   customerId: number,
@@ -427,6 +436,144 @@ export async function deleteProjectWithVersion(
     }
     throw error;
   });
+}
+
+export async function listProjectOrderItems(projectId: number): Promise<ProjectOrderItem[]> {
+  return db
+    .select()
+    .from(projectOrderItems)
+    .where(eq(projectOrderItems.projectId, projectId))
+    .orderBy(desc(projectOrderItems.updatedAt), desc(projectOrderItems.id));
+}
+
+async function deleteConflictingCategoryItemsTx(
+  tx: any,
+  projectId: number,
+  componentId: number,
+  excludeItemId?: number,
+): Promise<void> {
+  const [targetComponent] = await tx
+    .select({
+      componentId: components.id,
+      categoryId: components.categoryId,
+    })
+    .from(components)
+    .where(eq(components.id, componentId))
+    .limit(1);
+
+  if (!targetComponent) {
+    return;
+  }
+
+  const conditions = [
+    eq(projectOrderItems.projectId, projectId),
+    eq(componentCategories.id, targetComponent.categoryId),
+  ];
+  if (excludeItemId != null) {
+    conditions.push(sql`${projectOrderItems.id} <> ${excludeItemId}`);
+  }
+
+  const conflictingRows = await tx
+    .select({ id: projectOrderItems.id })
+    .from(projectOrderItems)
+    .innerJoin(components, eq(projectOrderItems.componentId, components.id))
+    .innerJoin(componentCategories, eq(components.categoryId, componentCategories.id))
+    .where(and(...conditions));
+
+  const conflictingIds = conflictingRows.map((row: { id: number }) => row.id);
+  if (conflictingIds.length === 0) {
+    return;
+  }
+
+  await tx.delete(projectOrderItems).where(inArray(projectOrderItems.id, conflictingIds));
+}
+
+export async function createProjectOrderItem(input: InsertProjectOrderItem): Promise<ProjectOrderItem> {
+  return db.transaction(async (tx) => {
+    if (input.componentId != null) {
+      await deleteConflictingCategoryItemsTx(tx, input.projectId, input.componentId);
+    }
+
+    const result = await tx.insert(projectOrderItems).values(input);
+    const insertId = (result as any)[0].insertId;
+    const [row] = await tx.select().from(projectOrderItems).where(eq(projectOrderItems.id, insertId));
+    return row;
+  });
+}
+
+export async function updateProjectOrderItemWithVersion(
+  projectId: number,
+  itemId: number,
+  expectedVersion: number,
+  input: UpdateProjectOrderItem,
+): Promise<VersionedMutationResult<ProjectOrderItem>> {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(projectOrderItems)
+      .where(and(eq(projectOrderItems.id, itemId), eq(projectOrderItems.projectId, projectId)))
+      .limit(1);
+
+    if (!existing) {
+      return { kind: "not_found" as const };
+    }
+    if (existing.version !== expectedVersion) {
+      return { kind: "version_conflict" as const };
+    }
+
+    const nextComponentId = input.componentId === undefined ? existing.componentId : input.componentId;
+    if (nextComponentId != null) {
+      await deleteConflictingCategoryItemsTx(tx, projectId, nextComponentId, itemId);
+    }
+
+    await tx.execute(sql`
+      update project_order_items
+      set
+        order_number = if(${input.orderNumber === undefined}, order_number, ${input.orderNumber ?? null}),
+        project_id = if(${input.projectId === undefined}, project_id, ${input.projectId ?? null}),
+        product_id = if(${input.productId === undefined}, product_id, ${input.productId ?? null}),
+        component_id = if(${input.componentId === undefined}, component_id, ${input.componentId ?? null}),
+        specification_id = if(${input.specificationId === undefined}, specification_id, ${input.specificationId ?? null}),
+        description = if(${input.description === undefined}, description, ${input.description ?? null}),
+        quantity = if(${input.quantity === undefined}, quantity, ${input.quantity ?? null}),
+        updated_at = now(),
+        version = version + 1
+      where id = ${itemId}
+        and project_id = ${projectId}
+        and version = ${expectedVersion}
+    `);
+
+    const [row] = await tx
+      .select()
+      .from(projectOrderItems)
+      .where(and(eq(projectOrderItems.id, itemId), eq(projectOrderItems.projectId, projectId)))
+      .limit(1);
+    return { kind: "updated" as const, row };
+  });
+}
+
+export async function deleteProjectOrderItemWithVersion(
+  projectId: number,
+  itemId: number,
+  expectedVersion: number,
+): Promise<VersionedMutationResult<null>> {
+  const [existing] = await db
+    .select()
+    .from(projectOrderItems)
+    .where(and(eq(projectOrderItems.id, itemId), eq(projectOrderItems.projectId, projectId)))
+    .limit(1);
+
+  if (!existing) {
+    return { kind: "not_found" as const };
+  }
+  if (existing.version !== expectedVersion) {
+    return { kind: "version_conflict" as const };
+  }
+
+  await db
+    .delete(projectOrderItems)
+    .where(and(eq(projectOrderItems.id, itemId), eq(projectOrderItems.projectId, projectId)));
+  return { kind: "updated" as const, row: null };
 }
 
 export async function getProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
