@@ -13,6 +13,11 @@ function assertAdmin(req: Request, res: Response): boolean {
   return true;
 }
 
+export function getMasterDataPdfMiningLimits(req: Request, res: Response): void {
+  if (!assertAdmin(req, res)) return;
+  res.json(bulkImportService.BULK_IMPORT_LIMITS);
+}
+
 export async function analyzeCustomersBulkImport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!assertAdmin(req, res)) return;

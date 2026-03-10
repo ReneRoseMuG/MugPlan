@@ -15,7 +15,6 @@ import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
-import { CustomerBulkImportDialog } from "@/components/CustomerBulkImportDialog";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Customer, Project } from "@shared/schema";
@@ -99,7 +98,6 @@ export function CustomersPage({
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const [customerScope, setCustomerScope] = useState<"active" | "inactive">("active");
-  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
@@ -356,15 +354,6 @@ export function CustomersPage({
         <div className="flex justify-between items-center">
           {onNewCustomer ? (
             <div className="flex items-center gap-2">
-              {!tableOnly && isAdmin ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setBulkImportOpen(true)}
-                  data-testid="button-open-customer-bulk-import"
-                >
-                  Bulk Import Kunden
-                </Button>
-              ) : null}
               <Button
                 variant="outline"
                 onClick={onNewCustomer}
@@ -473,7 +462,6 @@ export function CustomersPage({
         )
       }
     />
-      <CustomerBulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
     </>
   );
 }

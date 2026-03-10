@@ -5,7 +5,7 @@
  * Use Case: UC Admin-Dialogverdrahtung in Listen
  *
  * Abgedeckte Regeln:
- * - CustomersPage rendert admin-only Bulk-Import-Button und Dialog.
+ * - CustomersPage rendert keinen Kunden-Bulk-Import mehr.
  * - ProjectsPage rendert keinen Projekt-Bulk-Import mehr.
  * - Stammdaten binden den neuen PDF-Mining-Tab an.
  * - Query-Invalidierung nutzt explizite Kunden/Projekte-Keys.
@@ -21,21 +21,13 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 
 describe("FT24 unit: bulk import dialog wiring", () => {
-  it("wires customer bulk import in CustomersPage and dialog invalidations", () => {
+  it("removes customer bulk import from CustomersPage", () => {
     const customersPagePath = path.resolve(process.cwd(), "client/src/components/CustomersPage.tsx");
     const customersPageSource = readFileSync(customersPagePath, "utf8");
-    const customerDialogPath = path.resolve(process.cwd(), "client/src/components/CustomerBulkImportDialog.tsx");
-    const customerDialogSource = readFileSync(customerDialogPath, "utf8");
 
-    expect(customersPageSource).toContain("CustomerBulkImportDialog");
-    expect(customersPageSource).toContain("button-open-customer-bulk-import");
-    expect(customersPageSource).toContain("!tableOnly && isAdmin");
-    expect(customersPageSource).toContain("<CustomerBulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />");
-
-    expect(customerDialogSource).toContain("queryKey: [\"/api/customers\"]");
-    expect(customerDialogSource).toContain("queryKey: [\"/api/customers\", { scope: \"active\" }]");
-    expect(customerDialogSource).toContain("queryKey: [\"/api/customers\", { scope: \"inactive\" }]");
-    expect(customerDialogSource).toContain("queryKey: [\"/api/projects?filter=all&scope=all\"]");
+    expect(customersPageSource).not.toContain("CustomerBulkImportDialog");
+    expect(customersPageSource).not.toContain("button-open-customer-bulk-import");
+    expect(customersPageSource).not.toContain("bulkImportOpen");
   });
 
   it("removes project bulk import from ProjectsPage and adds master data pdf mining", () => {
@@ -52,7 +44,12 @@ describe("FT24 unit: bulk import dialog wiring", () => {
     expect(masterDataPageSource).toContain("id: \"pdf-mining\"");
     expect(masterDataPageSource).toContain("content: <MasterDataPdfMiningPage />");
 
+    expect(miningPageSource).toContain("/api/admin/master-data/pdf-mining/limits");
     expect(miningPageSource).toContain("/api/admin/master-data/pdf-mining/analyze");
+    expect(miningPageSource).toContain("partitionMiningFiles(files, limits)");
+    expect(miningPageSource).toContain("for (let index = 0; index < batches.length; index += 1)");
+    expect(miningPageSource).toContain("mergeMiningAnalyzeResponses(aggregatedResult, batchResult)");
+    expect(miningPageSource).toContain("data-testid=\"master-data-pdf-mining-progress\"");
     expect(miningPageSource).toContain("button-adopt-mining-product");
     expect(miningPageSource).toContain("button-run-master-data-pdf-mining");
   });

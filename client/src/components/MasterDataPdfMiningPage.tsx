@@ -6,51 +6,57 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  createEmptyMiningResult,
+  mergeMiningAnalyzeResponses,
+  partitionMiningFiles,
+  type MiningAnalyzeResponse,
+  type MiningArticleItem,
+  type MiningLimits,
+} from "@/lib/masterDataPdfMining";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-type MiningArticleItem = {
-  kind: "product" | "component";
-  quantity: string;
-  articleNumber: string | null;
-  name: string;
-  description: string | null;
-};
-
-type MiningProductGroup = {
-  productName: string;
-  productDescription: string | null;
-  sourceFileNames: string[];
-  articleItems: MiningArticleItem[];
-};
-
-type MiningAnalyzeResponse = {
-  documents: Array<{
-    fileName: string;
-    orderNumber: string | null;
-    productName: string;
-    productDescription: string | null;
-    articleItems: MiningArticleItem[];
-  }>;
-  productGroups: MiningProductGroup[];
-  skipped: Array<{ fileName: string; reason: string }>;
-  errors: Array<{ fileName: string; reason: string }>;
-  limits: {
-    maxFiles: number;
-    maxFileSizeBytes: number;
-    maxTotalBytes: number;
-  };
-};
-
 type ActiveScope = "all";
+type AnalyzeProgress = {
+  totalBatches: number;
+  currentBatch: number;
+  processedFiles: number;
+  totalFiles: number;
+};
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: "include" });
+  const payload = await parseJsonResponse<T>(response, url);
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed for ${url}`);
+    throw new Error(extractResponseMessage(payload, `Request failed for ${url}`));
   }
-  return response.json() as Promise<T>;
+  return payload;
+}
+
+async function parseJsonResponse<T>(response: Response, context: string): Promise<T> {
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error(`Leere Antwort fuer ${context}`);
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`Ungueltige Serverantwort fuer ${context}`);
+  }
+}
+
+function extractResponseMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === "string" && payload.trim()) {
+    return payload;
+  }
+  if (payload && typeof payload === "object" && "message" in payload) {
+    const message = (payload as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+  return fallback;
 }
 
 async function invalidateMasterDataQueries(activeScope: ActiveScope): Promise<void> {
@@ -94,12 +100,14 @@ export function MasterDataPdfMiningPage() {
   const [selectedExtractComponent, setSelectedExtractComponent] = useState<MiningArticleItem | null>(null);
   const [componentSubmitting, setComponentSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<AnalyzeProgress | null>(null);
 
   const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${activeScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${activeScope}`;
   const productsUrl = `/api/admin/master-data/products?active=${activeScope}`;
   const componentsUrl = `/api/admin/master-data/components?active=${activeScope}`;
   const componentProductsUrl = "/api/admin/master-data/component-products";
+  const miningLimitsUrl = "/api/admin/master-data/pdf-mining/limits";
 
   const productCategoriesQuery = useQuery<ProductCategory[]>({
     queryKey: [productCategoriesUrl],
@@ -121,12 +129,17 @@ export function MasterDataPdfMiningPage() {
     queryKey: [componentProductsUrl],
     queryFn: () => fetchJson(componentProductsUrl),
   });
+  const miningLimitsQuery = useQuery<MiningLimits>({
+    queryKey: [miningLimitsUrl],
+    queryFn: () => fetchJson(miningLimitsUrl),
+  });
 
   const productCategories = productCategoriesQuery.data ?? [];
   const componentCategories = componentCategoriesQuery.data ?? [];
   const products = productsQuery.data ?? [];
   const components = componentsQuery.data ?? [];
   const componentProducts = componentProductsQuery.data ?? [];
+  const miningLimits = miningLimitsQuery.data ?? result?.limits ?? null;
 
   useEffect(() => {
     if (!selectedDbProductId && products.length > 0) {
@@ -169,30 +182,98 @@ export function MasterDataPdfMiningPage() {
     return components.filter((component) => componentIds.has(component.id));
   }, [components, componentsByProductId, selectedDbProductId]);
 
+  const fetchMiningLimits = async () => {
+    return miningLimits ?? fetchJson<MiningLimits>(miningLimitsUrl);
+  };
+
+  const analyzeBatch = async (batchFiles: File[]): Promise<MiningAnalyzeResponse> => {
+    const body = new FormData();
+    for (const file of batchFiles) {
+      body.append("files", file);
+    }
+    const response = await fetch("/api/admin/master-data/pdf-mining/analyze", {
+      method: "POST",
+      credentials: "include",
+      body,
+    });
+    const payload = await parseJsonResponse<MiningAnalyzeResponse | { message?: string }>(
+      response,
+      "/api/admin/master-data/pdf-mining/analyze",
+    );
+    if (!response.ok) {
+      throw new Error(extractResponseMessage(payload, "Analyse fehlgeschlagen"));
+    }
+    return payload as MiningAnalyzeResponse;
+  };
+
   const runAnalyze = async () => {
     if (files.length === 0) return;
     setAnalyzing(true);
     setError(null);
+    setProgress(null);
     try {
-      const body = new FormData();
-      for (const file of files) {
-        body.append("files", file);
+      const limits = await fetchMiningLimits();
+      const { batches, rejected } = partitionMiningFiles(files, limits);
+      let aggregatedResult = createEmptyMiningResult(limits);
+
+      if (rejected.length > 0) {
+        aggregatedResult = mergeMiningAnalyzeResponses(aggregatedResult, {
+          documents: [],
+          productGroups: [],
+          skipped: [],
+          errors: rejected,
+        });
       }
-      const response = await fetch("/api/admin/master-data/pdf-mining/analyze", {
-        method: "POST",
-        credentials: "include",
-        body,
+
+      let processedFiles = rejected.length;
+      setProgress({
+        totalBatches: batches.length,
+        currentBatch: batches.length > 0 ? 1 : 0,
+        processedFiles,
+        totalFiles: files.length,
       });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Analyse fehlgeschlagen");
+      setResult(aggregatedResult);
+
+      for (let index = 0; index < batches.length; index += 1) {
+        const batch = batches[index] ?? [];
+        setProgress({
+          totalBatches: batches.length,
+          currentBatch: index + 1,
+          processedFiles,
+          totalFiles: files.length,
+        });
+
+        try {
+          const batchResult = await analyzeBatch(batch);
+          aggregatedResult = mergeMiningAnalyzeResponses(aggregatedResult, batchResult);
+        } catch (batchError) {
+          aggregatedResult = mergeMiningAnalyzeResponses(aggregatedResult, {
+            documents: [],
+            productGroups: [],
+            skipped: [],
+            errors: batch.map((file) => ({
+              fileName: file.name,
+              reason: `Batch ${index + 1}/${batches.length}: ${
+                batchError instanceof Error ? batchError.message : "Analyse fehlgeschlagen"
+              }`,
+            })),
+          });
+        }
+
+        processedFiles += batch.length;
+        setResult(aggregatedResult);
+        setProgress({
+          totalBatches: batches.length,
+          currentBatch: index + 1,
+          processedFiles,
+          totalFiles: files.length,
+        });
       }
-      const nextResult = payload as MiningAnalyzeResponse;
-      setResult(nextResult);
-      setSelectedProductName(nextResult.productGroups[0]?.productName ?? "");
+
+      setSelectedProductName((current) => current || aggregatedResult.productGroups[0]?.productName || "");
       toast({
         title: "PDF-Mining abgeschlossen",
-        description: `Produkte: ${nextResult.productGroups.length}, ausgelassen: ${nextResult.skipped.length}, Fehler: ${nextResult.errors.length}`,
+        description: `Produkte: ${aggregatedResult.productGroups.length}, ausgelassen: ${aggregatedResult.skipped.length}, Fehler: ${aggregatedResult.errors.length}`,
       });
     } catch (analyzeError) {
       setError(analyzeError instanceof Error ? analyzeError.message : "Analyse fehlgeschlagen");
@@ -296,15 +377,20 @@ export function MasterDataPdfMiningPage() {
             {analyzing ? "Analysiere..." : "Analyse starten"}
           </Button>
         </div>
-        {result ? (
+        {miningLimits ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            Limits: max {result.limits.maxFiles} Dateien, max {(result.limits.maxFileSizeBytes / (1024 * 1024)).toFixed(0)} MB pro Datei
+            Limits: max {miningLimits.maxFiles} Dateien pro Batch, max {(miningLimits.maxFileSizeBytes / (1024 * 1024)).toFixed(0)} MB pro Datei, max {(miningLimits.maxTotalBytes / (1024 * 1024)).toFixed(0)} MB pro Batch
+          </p>
+        ) : null}
+        {progress ? (
+          <p className="mt-2 text-xs text-muted-foreground" data-testid="master-data-pdf-mining-progress">
+            Fortschritt: Batch {progress.currentBatch}/{progress.totalBatches || 0}, Dateien {progress.processedFiles}/{progress.totalFiles}
           </p>
         ) : null}
         {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
       </section>
 
-      <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_auto_1fr]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
         <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-mining-extract-panel">
           <div className="flex items-center justify-between gap-3">
             <h4 className="font-bold text-slate-900">Extrakt Resultat</h4>

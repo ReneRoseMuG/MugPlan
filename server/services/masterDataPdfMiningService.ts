@@ -59,6 +59,10 @@ function containsSauna(items: MasterDataArticleItem[]): boolean {
   return items.some((item) => /sauna/i.test(`${item.name} ${item.description ?? ""}`));
 }
 
+function containsAllowedSingleItemProduct(items: MasterDataArticleItem[]): boolean {
+  return items.some((item) => /(schlaffass|gartenfass)/i.test(`${item.name} ${item.description ?? ""}`));
+}
+
 function consolidateDocuments(documents: MiningDocument[]) {
   const groupMap = new Map<string, {
     productName: string;
@@ -125,12 +129,14 @@ export async function analyzeMasterDataPdfMining(files: BulkFileInput[]) {
       const header = parseDocumentHeaderDeterministically(extractedText);
       const parsed = parseMasterDataArticleItemsDeterministically(extractedText);
 
-      if (parsed.articleItems.length <= 1) {
+      const hasAllowedSingleItemProduct = containsAllowedSingleItemProduct(parsed.articleItems);
+
+      if (parsed.articleItems.length <= 1 && !hasAllowedSingleItemProduct) {
         skipped.push({ fileName: file.fileName, reason: "Artikelliste enthaelt nur einen Eintrag" });
         continue;
       }
 
-      if (!containsSauna(parsed.articleItems)) {
+      if (!containsSauna(parsed.articleItems) && !hasAllowedSingleItemProduct) {
         skipped.push({ fileName: file.fileName, reason: "Begriff Sauna kommt in der Artikelliste nicht vor" });
         continue;
       }

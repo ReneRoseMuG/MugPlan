@@ -23,12 +23,14 @@ import { z } from "zod";
 const {
   extractTextFromPdfBufferMock,
   parseDocumentHeaderDeterministicallyMock,
+  parseMasterDataArticleItemsDeterministicallyMock,
   parseDocumentArticleItemsDeterministicallyMock,
   parseDocumentTotalAmountDeterministicallyMock,
   isOrderNumberAlreadyImportedMock,
 } = vi.hoisted(() => ({
   extractTextFromPdfBufferMock: vi.fn(),
   parseDocumentHeaderDeterministicallyMock: vi.fn(),
+  parseMasterDataArticleItemsDeterministicallyMock: vi.fn(),
   parseDocumentArticleItemsDeterministicallyMock: vi.fn(),
   parseDocumentTotalAmountDeterministicallyMock: vi.fn(),
   isOrderNumberAlreadyImportedMock: vi.fn(),
@@ -40,6 +42,10 @@ vi.mock("../../../server/services/documentTextExtractor", () => ({
 
 vi.mock("../../../server/services/documentHeaderDeterministicParser", () => ({
   parseDocumentHeaderDeterministically: parseDocumentHeaderDeterministicallyMock,
+}));
+
+vi.mock("../../../server/services/documentArticleMasterDataParser", () => ({
+  parseMasterDataArticleItemsDeterministically: parseMasterDataArticleItemsDeterministicallyMock,
 }));
 
 vi.mock("../../../server/services/documentArticleDeterministicParser", () => ({
@@ -112,7 +118,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     parseDocumentTotalAmountDeterministicallyMock.mockReturnValue(null);
   });
 
-  it("extractFromPdf returns normalized extraction and never persists customer data", async () => {
+  it("extractFromPdf maps new article parser output while keeping header-based customer data", async () => {
     extractTextFromPdfBufferMock.mockResolvedValue("doc text");
     parseDocumentHeaderDeterministicallyMock.mockReturnValue({
       orderNumber: "A-1",
@@ -125,9 +131,26 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       postalCode: "12345",
       city: "Leipzig",
     });
-    parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
-      { quantity: "1", description: "Sauna Modell X" },
-    ]);
+    parseMasterDataArticleItemsDeterministicallyMock.mockReturnValue({
+      productName: "XL Sauna",
+      productDescription: "Sauna Modell X mit Ofen",
+      articleItems: [
+        {
+          kind: "product",
+          quantity: "1",
+          articleNumber: "S1001",
+          name: "XL Sauna",
+          description: "Sauna Modell X mit Ofen",
+        },
+        {
+          kind: "component",
+          quantity: "1",
+          articleNumber: "S1002",
+          name: "Ofen",
+          description: "Bio-Kombiofen",
+        },
+      ],
+    });
 
     const result = await extractFromPdf({
       scope: "project_form",
@@ -140,8 +163,11 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(result.customer.phone).toBeNull();
     expect(result.orderNumber).toBe("A-1");
     expect(result.amount).toBeNull();
-    expect(result.saunaModel).toContain("Sauna");
-    expect(result.articleItems).toHaveLength(1);
+    expect(result.saunaModel).toBe("XL Sauna");
+    expect(result.articleItems).toEqual([
+      { quantity: "1", description: "XL Sauna - Sauna Modell X mit Ofen", category: "Produkt" },
+      { quantity: "1", description: "Ofen - Bio-Kombiofen", category: "Komponente" },
+    ]);
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
 
@@ -157,9 +183,19 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       postalCode: "12345",
       city: "Leipzig",
     });
-    parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
-      { quantity: "1", description: "Sauna Modell Y" },
-    ]);
+    parseMasterDataArticleItemsDeterministicallyMock.mockReturnValue({
+      productName: "Sauna Modell Y",
+      productDescription: "Sauna Modell Y",
+      articleItems: [
+        {
+          kind: "product",
+          quantity: "1",
+          articleNumber: "S2001",
+          name: "Sauna Modell Y",
+          description: null,
+        },
+      ],
+    });
     parseDocumentTotalAmountDeterministicallyMock.mockReturnValue("17136.00");
     extractTextFromPdfBufferMock.mockResolvedValue([
       "Menge Art.Nr. / Bezeichnung",
@@ -173,6 +209,40 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     });
 
     expect(result.amount).toBe("17136.00");
+  });
+
+  it("falls back to the legacy article parser when the new parser cannot derive a product", async () => {
+    extractTextFromPdfBufferMock.mockResolvedValue("doc text");
+    parseDocumentHeaderDeterministicallyMock.mockReturnValue({
+      orderNumber: "A-3",
+      customerNumber: "K-3",
+      mobile: null,
+      firstName: "Erika",
+      lastName: "Muster",
+      company: null,
+      addressLine1: "Teststrasse 3",
+      postalCode: "12345",
+      city: "Leipzig",
+    });
+    parseMasterDataArticleItemsDeterministicallyMock.mockImplementation(() => {
+      throw new Error("Produktmarker konnte nicht erkannt werden");
+    });
+    parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
+      { quantity: "1", description: "Sauna Modell Z" },
+      { quantity: "2", description: "Ofenrohr Set" },
+    ]);
+
+    const result = await extractFromPdf({
+      scope: "customer_form",
+      fileBuffer: Buffer.from("dummy"),
+    });
+
+    expect(result.customer.customerNumber).toBe("K-3");
+    expect(result.saunaModel).toBe("Sauna Modell Z");
+    expect(result.articleItems).toEqual([
+      { quantity: "1", description: "Sauna Modell Z", category: "Artikel" },
+      { quantity: "2", description: "Ofenrohr Set", category: "Artikel" },
+    ]);
   });
 
   it("throws deterministic extraction error when parser fails", async () => {

@@ -1,11 +1,14 @@
-﻿import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Component, ComponentCategory, Product, ProductCategory, ProductComponent } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AllComponentList } from "@/components/ui/all-component-list";
+import { ProductComponentList } from "@/components/ui/product-component-list";
+import { ProductData, type ProductDataDraft } from "@/components/ui/product-data";
+import { ProductDropDown } from "@/components/ui/product-drop-down";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,12 +23,25 @@ type ProductMutationInput = {
   isActive?: boolean;
 };
 
-type ComponentMutationInput = ProductMutationInput & {
+type ComponentMutationInput = {
+  id: number;
+  version: number;
+  name?: string;
+  categoryId?: number;
+  description?: string | null;
+  isActive?: boolean;
   productIds?: number[];
 };
 
+type ComponentEditorInput = {
+  name: string;
+  categoryId: number;
+  description: string | null;
+  isActive: boolean;
+};
+
 const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
-const DEFAULT_COMPONENT_CATEGORY_NAME = "Alle Modelle";
+const DEFAULT_COMPONENT_CATEGORY_NAME = "Alle Komponenten";
 
 function extractApiCode(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
@@ -39,6 +55,23 @@ function extractApiCode(error: unknown): string | null {
   }
 }
 
+function toProductDraft(product: Product | null): ProductDataDraft {
+  if (!product) {
+    return {
+      name: "",
+      description: "",
+      categoryId: "",
+      isActive: true,
+    };
+  }
+  return {
+    name: product.name,
+    description: product.description ?? "",
+    categoryId: String(product.categoryId),
+    isActive: product.isActive,
+  };
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: "include" });
   if (!response.ok) {
@@ -48,18 +81,12 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-function formatProductNames(productIds: number[] | undefined, productNameById: Map<number, string>): string {
-  if (!productIds || productIds.length === 0) return "-";
-  return productIds.map((id) => productNameById.get(id) ?? `#${id}`).join(", ");
-}
-
 async function invalidateMasterDataQueries(activeScope: ActiveScope): Promise<void> {
   const urls = [
     `/api/admin/master-data/product-categories?active=${activeScope}`,
     `/api/admin/master-data/component-categories?active=${activeScope}`,
     `/api/admin/master-data/products?active=${activeScope}`,
     `/api/admin/master-data/components?active=${activeScope}`,
-    "/api/admin/master-data/tags",
     "/api/admin/master-data/component-products",
     "/api/admin/master-data/product-categories?active=all",
     "/api/admin/master-data/component-categories?active=all",
@@ -74,7 +101,6 @@ export function ProductManagementPage() {
   const activeScope: ActiveScope = "all";
   const [productCategoryFilterId, setProductCategoryFilterId] = useState("");
   const [componentCategoryFilterId, setComponentCategoryFilterId] = useState("");
-  const [componentProductFilterId, setComponentProductFilterId] = useState("");
 
   const [newProductCategoryName, setNewProductCategoryName] = useState("");
   const [editProductCategory, setEditProductCategory] = useState<ProductCategory | null>(null);
@@ -82,14 +108,11 @@ export function ProductManagementPage() {
   const [newComponentCategoryName, setNewComponentCategoryName] = useState("");
   const [editComponentCategory, setEditComponentCategory] = useState<ComponentCategory | null>(null);
 
-  const [newProduct, setNewProduct] = useState({ name: "", categoryId: "", description: "" });
-  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [productDraft, setProductDraft] = useState<ProductDataDraft>(toProductDraft(null));
 
-  const [newComponent, setNewComponent] = useState({ name: "", categoryId: "", description: "", productIds: [] as number[] });
-  const [newComponentProductId, setNewComponentProductId] = useState("");
-  const [editComponent, setEditComponent] = useState<Component | null>(null);
-  const [editComponentProductIds, setEditComponentProductIds] = useState<number[]>([]);
-  const [editComponentProductId, setEditComponentProductId] = useState("");
+  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
 
   const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${activeScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${activeScope}`;
@@ -127,26 +150,12 @@ export function ProductManagementPage() {
   const products = productsQuery.data ?? [];
   const components = componentsQuery.data ?? [];
   const componentProducts = componentProductsQuery.data ?? [];
-  const isDefaultProductCategory = (category: ProductCategory): boolean => category.name === DEFAULT_PRODUCT_CATEGORY_NAME;
-  const isDefaultComponentCategory = (category: ComponentCategory): boolean => category.name === DEFAULT_COMPONENT_CATEGORY_NAME;
-
-  const productCategoryNameById = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const row of productCategories) map.set(row.id, row.name);
-    return map;
-  }, [productCategories]);
 
   const componentCategoryNameById = useMemo(() => {
     const map = new Map<number, string>();
     for (const row of componentCategories) map.set(row.id, row.name);
     return map;
   }, [componentCategories]);
-
-  const productNameById = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const row of products) map.set(row.id, row.name);
-    return map;
-  }, [products]);
 
   const productIdsByComponentId = useMemo(() => {
     const map = new Map<number, number[]>();
@@ -168,57 +177,35 @@ export function ProductManagementPage() {
     return products.filter((row) => row.categoryId === categoryId);
   }, [productCategoryFilterId, products]);
 
-  const filteredComponents = useMemo(() => {
-    let nextRows = components;
+  const selectedProduct = useMemo(
+    () => products.find((row) => String(row.id) === selectedProductId) ?? null,
+    [products, selectedProductId],
+  );
 
-    if (componentCategoryFilterId) {
-      const categoryId = Number(componentCategoryFilterId);
-      if (Number.isFinite(categoryId) && categoryId > 0) {
-        nextRows = nextRows.filter((row) => row.categoryId === categoryId);
-      }
-    }
+  useEffect(() => {
+    setProductDraft(toProductDraft(selectedProduct));
+  }, [selectedProduct]);
 
-    if (componentProductFilterId) {
-      const productId = Number(componentProductFilterId);
-      if (Number.isFinite(productId) && productId > 0) {
-        nextRows = nextRows.filter((row) => (productIdsByComponentId.get(row.id) ?? []).includes(productId));
-      }
-    }
+  const selectedProductComponents = useMemo(() => {
+    if (!selectedProduct) return [];
+    return components
+      .filter((row) => (productIdsByComponentId.get(row.id) ?? []).includes(selectedProduct.id))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  }, [components, productIdsByComponentId, selectedProduct]);
 
-    return nextRows;
-  }, [componentCategoryFilterId, componentProductFilterId, components, productIdsByComponentId]);
+  const allAvailableComponents = useMemo(() => {
+    if (!selectedProduct) return [];
+    return components
+      .filter((row) => !(productIdsByComponentId.get(row.id) ?? []).includes(selectedProduct.id))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  }, [components, productIdsByComponentId, selectedProduct]);
 
-  function toggleProductCategorySelection(row: ProductCategory) {
-    if (isDefaultProductCategory(row)) return;
-    if (editProductCategory?.id === row.id) {
-      setEditProductCategory(null);
-      setProductCategoryFilterId("");
-      return;
-    }
-    setEditProductCategory({ ...row });
-    setProductCategoryFilterId(String(row.id));
-  }
-
-  function toggleComponentCategorySelection(row: ComponentCategory) {
-    if (isDefaultComponentCategory(row)) return;
-    if (editComponentCategory?.id === row.id) {
-      setEditComponentCategory(null);
-      setComponentCategoryFilterId("");
-      return;
-    }
-    setEditComponentCategory({ ...row });
-    setComponentCategoryFilterId(String(row.id));
-  }
-
-  function toggleProductSelection(row: Product) {
-    if (editProduct?.id === row.id) {
-      setEditProduct(null);
-      setComponentProductFilterId("");
-      return;
-    }
-    setEditProduct({ ...row });
-    setComponentProductFilterId(String(row.id));
-  }
+  const filteredAvailableComponents = useMemo(() => {
+    if (!componentCategoryFilterId) return allAvailableComponents;
+    const categoryId = Number(componentCategoryFilterId);
+    if (!Number.isFinite(categoryId) || categoryId <= 0) return allAvailableComponents;
+    return allAvailableComponents.filter((row) => row.categoryId === categoryId);
+  }, [allAvailableComponents, componentCategoryFilterId]);
 
   const createProductCategoryMutation = useMutation({
     mutationFn: async () =>
@@ -289,7 +276,7 @@ export function ProductManagementPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "BUSINESS_CONFLICT" ? "Modellkategorie existiert bereits" : "Modellkategorie konnte nicht angelegt werden",
+        title: code === "BUSINESS_CONFLICT" ? "Komponentenkategorie existiert bereits" : "Komponentenkategorie konnte nicht angelegt werden",
         variant: "destructive",
       });
     },
@@ -309,7 +296,7 @@ export function ProductManagementPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "VERSION_CONFLICT" ? "Modellkategorie wurde zwischenzeitlich geändert" : "Modellkategorie konnte nicht aktualisiert werden",
+        title: code === "VERSION_CONFLICT" ? "Komponentenkategorie wurde zwischenzeitlich geändert" : "Komponentenkategorie konnte nicht aktualisiert werden",
         variant: "destructive",
       });
     },
@@ -324,77 +311,51 @@ export function ProductManagementPage() {
     onError: (error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "BUSINESS_CONFLICT" ? "Modellkategorie wird noch verwendet" : "Modellkategorie konnte nicht gelöscht werden",
+        title: code === "BUSINESS_CONFLICT" ? "Komponentenkategorie wird noch verwendet" : "Komponentenkategorie konnte nicht gelöscht werden",
         variant: "destructive",
       });
     },
   });
 
   const createProductMutation = useMutation({
-    mutationFn: async () =>
-      apiRequest("POST", "/api/admin/master-data/products", {
-        name: newProduct.name.trim(),
-        categoryId: Number(newProduct.categoryId),
-        description: newProduct.description.trim() || null,
+    mutationFn: async (input: { name: string; categoryId: number }) => {
+      const response = await apiRequest("POST", "/api/admin/master-data/products", {
+        name: input.name.trim(),
+        categoryId: input.categoryId,
+        description: null,
         isActive: true,
         version: 1,
-      }),
-    onSuccess: async () => {
-      setNewProduct({ name: "", categoryId: "", description: "" });
-      await invalidateMasterDataQueries(activeScope);
-    },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      toast({
-        title: code === "BUSINESS_CONFLICT" ? "Produkt konnte nicht angelegt werden (Name/Kategorie prüfen)" : "Produkt konnte nicht angelegt werden",
-        variant: "destructive",
       });
+      return response.json() as Promise<Product>;
+    },
+    onSuccess: async (createdProduct) => {
+      await invalidateMasterDataQueries(activeScope);
+      setSelectedProductId(String(createdProduct.id));
     },
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: async (input: ProductMutationInput) =>
-      apiRequest("PUT", `/api/admin/master-data/products/${input.id}`, {
+    mutationFn: async (input: ProductMutationInput) => {
+      const response = await apiRequest("PUT", `/api/admin/master-data/products/${input.id}`, {
         version: input.version,
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
         ...(input.description !== undefined ? { description: input.description } : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-      }),
-    onSuccess: async () => {
-      setEditProduct(null);
-      await invalidateMasterDataQueries(activeScope);
-    },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      toast({
-        title: code === "VERSION_CONFLICT" ? "Produkt wurde zwischenzeitlich geändert" : "Produkt konnte nicht aktualisiert werden",
-        variant: "destructive",
       });
+      return response.json() as Promise<Product>;
     },
-  });
-
-  const deleteProductMutation = useMutation({
-    mutationFn: async (input: { id: number; version: number }) =>
-      apiRequest("DELETE", `/api/admin/master-data/products/${input.id}`, { version: input.version }),
     onSuccess: async () => {
       await invalidateMasterDataQueries(activeScope);
-    },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      toast({
-        title: code === "BUSINESS_CONFLICT" ? "Produkt wird noch verwendet" : "Produkt konnte nicht gelöscht werden",
-        variant: "destructive",
-      });
     },
   });
 
   const createComponentMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (input: ComponentEditorInput & { productId: number }) => {
       const componentResponse = await apiRequest("POST", "/api/admin/master-data/components", {
-        name: newComponent.name.trim(),
-        categoryId: Number(newComponent.categoryId),
-        description: newComponent.description.trim() || null,
+        name: input.name.trim(),
+        categoryId: input.categoryId,
+        description: input.description,
         isActive: true,
         version: 1,
       });
@@ -404,22 +365,13 @@ export function ProductManagementPage() {
         `/api/admin/master-data/components/${createdComponent.id}/products`,
         {
           version: createdComponent.version,
-          productIds: Array.from(new Set(newComponent.productIds)),
+          productIds: [input.productId],
         },
       );
       return relationResponse.json() as Promise<Component>;
     },
     onSuccess: async () => {
-      setNewComponent({ name: "", categoryId: "", description: "", productIds: [] });
-      setNewComponentProductId("");
       await invalidateMasterDataQueries(activeScope);
-    },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      toast({
-        title: code === "BUSINESS_CONFLICT" ? "Modell konnte nicht angelegt werden (Werte prüfen)" : "Modell konnte nicht angelegt werden",
-        variant: "destructive",
-      });
     },
   });
 
@@ -443,32 +395,7 @@ export function ProductManagementPage() {
       return updatedComponent;
     },
     onSuccess: async () => {
-      setEditComponent(null);
-      setEditComponentProductIds([]);
-      setEditComponentProductId("");
       await invalidateMasterDataQueries(activeScope);
-    },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      toast({
-        title: code === "VERSION_CONFLICT" ? "Modell wurde zwischenzeitlich geändert" : "Modell konnte nicht aktualisiert werden",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteComponentMutation = useMutation({
-    mutationFn: async (input: { id: number; version: number }) =>
-      apiRequest("DELETE", `/api/admin/master-data/components/${input.id}`, { version: input.version }),
-    onSuccess: async () => {
-      await invalidateMasterDataQueries(activeScope);
-    },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      toast({
-        title: code === "BUSINESS_CONFLICT" ? "Modell wird noch verwendet" : "Modell konnte nicht gelöscht werden",
-        variant: "destructive",
-      });
     },
   });
 
@@ -477,6 +404,97 @@ export function ProductManagementPage() {
     || productsQuery.isLoading
     || componentsQuery.isLoading
     || componentProductsQuery.isLoading;
+
+  async function createProductFromDropDown(input: { name: string; categoryId: number }): Promise<Product> {
+    try {
+      return await createProductMutation.mutateAsync(input);
+    } catch (error) {
+      const code = extractApiCode(error);
+      throw new Error(code === "BUSINESS_CONFLICT" ? "Produktname existiert bereits." : "Produkt konnte nicht angelegt werden.");
+    }
+  }
+
+  async function updateSelectedProduct(): Promise<void> {
+    if (!selectedProduct || !productDraft.name.trim() || !productDraft.categoryId) return;
+    try {
+      await updateProductMutation.mutateAsync({
+        id: selectedProduct.id,
+        version: selectedProduct.version,
+        name: productDraft.name.trim(),
+        categoryId: Number(productDraft.categoryId),
+        description: productDraft.description.trim() || null,
+        isActive: productDraft.isActive,
+      });
+      toast({ title: "Produkt aktualisiert" });
+    } catch (error) {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "BUSINESS_CONFLICT" ? "Produktname existiert bereits" : "Produkt konnte nicht aktualisiert werden",
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function createComponentForProduct(input: ComponentEditorInput): Promise<void> {
+    if (!selectedProduct) {
+      throw new Error("Kein Produkt ausgewählt.");
+    }
+    try {
+      await createComponentMutation.mutateAsync({
+        ...input,
+        productId: selectedProduct.id,
+      });
+      toast({ title: "Komponente angelegt" });
+    } catch (error) {
+      const code = extractApiCode(error);
+      throw new Error(code === "BUSINESS_CONFLICT" ? "Komponentenname existiert bereits." : "Komponente konnte nicht angelegt werden.");
+    }
+  }
+
+  async function updateComponentData(component: Component, input: ComponentEditorInput): Promise<void> {
+    try {
+      await updateComponentMutation.mutateAsync({
+        id: component.id,
+        version: component.version,
+        name: input.name.trim(),
+        categoryId: input.categoryId,
+        description: input.description,
+        isActive: input.isActive,
+      });
+      toast({ title: "Komponente aktualisiert" });
+    } catch (error) {
+      const code = extractApiCode(error);
+      throw new Error(code === "BUSINESS_CONFLICT" ? "Komponentenname existiert bereits." : "Komponente konnte nicht aktualisiert werden.");
+    }
+  }
+
+  async function removeComponentFromProduct(component: Component): Promise<void> {
+    if (!selectedProduct) return;
+    try {
+      await updateComponentMutation.mutateAsync({
+        id: component.id,
+        version: component.version,
+        productIds: (productIdsByComponentId.get(component.id) ?? []).filter((id) => id !== selectedProduct.id),
+      });
+      toast({ title: "Komponente entfernt" });
+    } catch {
+      toast({ title: "Komponente konnte nicht entfernt werden", variant: "destructive" });
+    }
+  }
+
+  async function insertComponentIntoProduct(component: Component): Promise<void> {
+    if (!selectedProduct) return;
+    try {
+      await updateComponentMutation.mutateAsync({
+        id: component.id,
+        version: component.version,
+        productIds: [...(productIdsByComponentId.get(component.id) ?? []), selectedProduct.id],
+      });
+      toast({ title: "Komponente eingefügt" });
+    } catch {
+      toast({ title: "Komponente konnte nicht eingefügt werden", variant: "destructive" });
+    }
+  }
 
   return (
     <ListLayout
@@ -488,26 +506,26 @@ export function ProductManagementPage() {
         <div className="flex h-full min-h-0 flex-col gap-4">
           <div className="order-2 min-h-0 basis-1/3 overflow-hidden">
             <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
-            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-product-categories">
-              <h4 className="font-bold text-slate-900">Produktkategorien</h4>
-              <div className="mt-3 flex items-end gap-2">
-                <Input
-                  value={editProductCategory ? editProductCategory.name : newProductCategoryName}
-                  onChange={(event) => {
-                    if (editProductCategory) {
-                      setEditProductCategory({ ...editProductCategory, name: event.target.value });
-                    } else {
-                      setNewProductCategoryName(event.target.value);
-                    }
-                  }}
-                  placeholder={editProductCategory ? "Produktkategorie bearbeiten" : "Neue Produktkategorie"}
-                  data-testid="input-new-product-category"
-                />
+              <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="master-data-product-categories">
+                <h4 className="font-bold text-slate-900">Produktkategorien</h4>
+                <div className="mt-3 flex items-end gap-2">
+                  <Input
+                    value={editProductCategory ? editProductCategory.name : newProductCategoryName}
+                    onChange={(event) => {
+                      if (editProductCategory) {
+                        setEditProductCategory({ ...editProductCategory, name: event.target.value });
+                      } else {
+                        setNewProductCategoryName(event.target.value);
+                      }
+                    }}
+                    placeholder={editProductCategory ? "Produktkategorie bearbeiten" : "Neue Produktkategorie"}
+                    data-testid="input-new-product-category"
+                  />
                   <Button
                     variant="outline"
                     onClick={() => {
                       if (editProductCategory) {
-                        if (!editProductCategory.name.trim() || isDefaultProductCategory(editProductCategory)) return;
+                        if (!editProductCategory.name.trim() || editProductCategory.name === DEFAULT_PRODUCT_CATEGORY_NAME) return;
                         updateProductCategoryMutation.mutate({
                           id: editProductCategory.id,
                           version: editProductCategory.version,
@@ -520,7 +538,7 @@ export function ProductManagementPage() {
                     }}
                     data-testid="button-create-product-category"
                   >
-                  {editProductCategory ? "Speichern" : "Neu"}
+                    {editProductCategory ? "Speichern" : "Neu"}
                   </Button>
                   {editProductCategory ? (
                     <Button variant="outline" onClick={() => {
@@ -530,75 +548,74 @@ export function ProductManagementPage() {
                       Abbrechen
                     </Button>
                   ) : null}
-              </div>
-              <div className="mt-4 min-h-0 flex-1 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="w-[330px] text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {productCategories.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        className={editProductCategory?.id === row.id ? "bg-slate-50" : undefined}
-                        onClick={() => toggleProductCategorySelection(row)}
-                      >
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell className="space-x-2 text-right whitespace-nowrap">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isDefaultProductCategory(row)}
-                            title={isDefaultProductCategory(row) ? "Default-Kategorie ist nicht bearbeitbar" : undefined}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              toggleProductCategorySelection(row);
-                            }}
-                          >
-                            {editProductCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (!window.confirm(`Produktkategorie "${row.name}" löschen?`)) return;
-                              deleteProductCategoryMutation.mutate({ id: row.id, version: row.version });
-                            }}
-                          >
-                            Löschen
-                          </Button>
-                        </TableCell>
+                </div>
+                <div className="mt-4 min-h-0 flex-1 overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="w-[330px] text-right">Aktionen</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </section>
+                    </TableHeader>
+                    <TableBody>
+                      {productCategories.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          className={editProductCategory?.id === row.id ? "bg-slate-50" : undefined}
+                          onClick={() => {
+                            if (row.name === DEFAULT_PRODUCT_CATEGORY_NAME) return;
+                            setEditProductCategory(editProductCategory?.id === row.id ? null : { ...row });
+                            setProductCategoryFilterId(editProductCategory?.id === row.id ? "" : String(row.id));
+                          }}
+                        >
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell className="space-x-2 text-right whitespace-nowrap">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={row.name === DEFAULT_PRODUCT_CATEGORY_NAME}
+                            >
+                              {editProductCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                if (!window.confirm(`Produktkategorie "${row.name}" löschen?`)) return;
+                                deleteProductCategoryMutation.mutate({ id: row.id, version: row.version });
+                              }}
+                            >
+                              Löschen
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
 
-            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-component-categories">
-              <h4 className="font-bold text-slate-900">Modellkategorien</h4>
-              <div className="mt-3 flex items-end gap-2">
-                <Input
-                  value={editComponentCategory ? editComponentCategory.name : newComponentCategoryName}
-                  onChange={(event) => {
-                    if (editComponentCategory) {
-                      setEditComponentCategory({ ...editComponentCategory, name: event.target.value });
-                    } else {
-                      setNewComponentCategoryName(event.target.value);
-                    }
-                  }}
-                  placeholder={editComponentCategory ? "Modellkategorie bearbeiten" : "Neue Modellkategorie"}
-                  data-testid="input-new-component-category"
-                />
+              <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="master-data-component-categories">
+                <h4 className="font-bold text-slate-900">Komponentenkategorien</h4>
+                <div className="mt-3 flex items-end gap-2">
+                  <Input
+                    value={editComponentCategory ? editComponentCategory.name : newComponentCategoryName}
+                    onChange={(event) => {
+                      if (editComponentCategory) {
+                        setEditComponentCategory({ ...editComponentCategory, name: event.target.value });
+                      } else {
+                        setNewComponentCategoryName(event.target.value);
+                      }
+                    }}
+                    placeholder={editComponentCategory ? "Komponentenkategorie bearbeiten" : "Neue Komponentenkategorie"}
+                    data-testid="input-new-component-category"
+                  />
                   <Button
                     variant="outline"
                     onClick={() => {
                       if (editComponentCategory) {
-                        if (!editComponentCategory.name.trim() || isDefaultComponentCategory(editComponentCategory)) return;
+                        if (!editComponentCategory.name.trim() || editComponentCategory.name === DEFAULT_COMPONENT_CATEGORY_NAME) return;
                         updateComponentCategoryMutation.mutate({
                           id: editComponentCategory.id,
                           version: editComponentCategory.version,
@@ -611,7 +628,7 @@ export function ProductManagementPage() {
                     }}
                     data-testid="button-create-component-category"
                   >
-                  {editComponentCategory ? "Speichern" : "Neu"}
+                    {editComponentCategory ? "Speichern" : "Neu"}
                   </Button>
                   {editComponentCategory ? (
                     <Button variant="outline" onClick={() => {
@@ -621,398 +638,99 @@ export function ProductManagementPage() {
                       Abbrechen
                     </Button>
                   ) : null}
-              </div>
-              <div className="mt-4 min-h-0 flex-1 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="w-[330px] text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {componentCategories.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        className={editComponentCategory?.id === row.id ? "bg-slate-50" : undefined}
-                        onClick={() => toggleComponentCategorySelection(row)}
-                      >
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell className="space-x-2 text-right whitespace-nowrap">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isDefaultComponentCategory(row)}
-                            title={isDefaultComponentCategory(row) ? "Default-Kategorie ist nicht bearbeitbar" : undefined}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              toggleComponentCategorySelection(row);
-                            }}
-                          >
-                            {editComponentCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (!window.confirm(`Modellkategorie "${row.name}" löschen?`)) return;
-                              deleteComponentCategoryMutation.mutate({ id: row.id, version: row.version });
-                            }}
-                          >
-                            Löschen
-                          </Button>
-                        </TableCell>
+                </div>
+                <div className="mt-4 min-h-0 flex-1 overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="w-[330px] text-right">Aktionen</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </section>
+                    </TableHeader>
+                    <TableBody>
+                      {componentCategories.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          className={editComponentCategory?.id === row.id ? "bg-slate-50" : undefined}
+                          onClick={() => {
+                            if (row.name === DEFAULT_COMPONENT_CATEGORY_NAME) return;
+                            setEditComponentCategory(editComponentCategory?.id === row.id ? null : { ...row });
+                            setComponentCategoryFilterId(editComponentCategory?.id === row.id ? "" : String(row.id));
+                          }}
+                        >
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell className="space-x-2 text-right whitespace-nowrap">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={row.name === DEFAULT_COMPONENT_CATEGORY_NAME}
+                            >
+                              {editComponentCategory?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                if (!window.confirm(`Komponentenkategorie "${row.name}" löschen?`)) return;
+                                deleteComponentCategoryMutation.mutate({ id: row.id, version: row.version });
+                              }}
+                            >
+                              Löschen
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
             </div>
           </div>
 
           <div className="order-1 min-h-0 basis-2/3 overflow-hidden">
-            <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
-            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-products">
+            <section className="flex h-full min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-products">
               <h4 className="font-bold text-slate-900">Produkte</h4>
-              <div className="mt-3 space-y-2">
-                <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_132px_auto] lg:items-end">
-                  <Input
-                    value={editProduct ? editProduct.name : newProduct.name}
-                    onChange={(event) => {
-                      if (editProduct) {
-                        setEditProduct({ ...editProduct, name: event.target.value });
-                      } else {
-                        setNewProduct((current) => ({ ...current, name: event.target.value }));
-                      }
-                    }}
-                    placeholder={editProduct ? "Produkt bearbeiten" : "Produktname"}
-                  />
-                  <select
-                    value={editProduct ? String(editProduct.categoryId) : newProduct.categoryId}
-                    onChange={(event) => {
-                      setProductCategoryFilterId(event.target.value);
-                      if (editProduct) {
-                        setEditProduct({ ...editProduct, categoryId: Number(event.target.value) });
-                      } else {
-                        setNewProduct((current) => ({ ...current, categoryId: event.target.value }));
-                      }
-                    }}
-                    className="h-10 rounded border border-slate-300 bg-white px-2 text-sm"
-                  >
-                    <option value="">Kategorie</option>
-                    {productCategories.map((category) => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
-                  <Button variant="outline" onClick={() => {
-                    if (editProduct) {
-                      if (!editProduct.name.trim()) return;
-                      updateProductMutation.mutate({
-                        id: editProduct.id,
-                        version: editProduct.version,
-                        name: editProduct.name.trim(),
-                        categoryId: editProduct.categoryId,
-                        description: editProduct.description ?? null,
-                      });
-                      return;
-                    }
-                    if (!newProduct.name.trim() || !newProduct.categoryId) return;
-                    createProductMutation.mutate();
-                  }}>{editProduct ? "Speichern" : "Neu"}</Button>
-                  {editProduct ? (
-                    <Button variant="outline" onClick={() => {
-                      setEditProduct(null);
-                      setComponentProductFilterId("");
-                    }}>
-                      Abbrechen
-                    </Button>
-                  ) : null}
-                </div>
-                <Textarea
-                  value={editProduct ? (editProduct.description ?? "") : newProduct.description}
-                  onChange={(event) => {
-                    if (editProduct) {
-                      setEditProduct({ ...editProduct, description: event.target.value || null });
-                    } else {
-                      setNewProduct((current) => ({ ...current, description: event.target.value }));
-                    }
-                  }}
-                  placeholder="Beschreibung (optional)"
-                  className="min-h-[40px]"
+              <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4">
+                <ProductDropDown
+                  products={filteredProducts}
+                  categories={productCategories}
+                  selectedProductId={selectedProductId}
+                  onSelectProduct={setSelectedProductId}
+                  onCreateProduct={createProductFromDropDown}
+                  isAdmin={isAdmin}
+                />
+
+                <ProductData
+                  draft={productDraft}
+                  categories={productCategories}
+                  disabled={!selectedProduct}
+                  isAdmin={isAdmin}
+                  onDraftChange={setProductDraft}
+                  onSubmit={() => void updateSelectedProduct()}
+                />
+
+                <ProductComponentList
+                  components={selectedProductComponents}
+                  categoryNameById={componentCategoryNameById}
+                  isAdmin={isAdmin}
+                  onCreateComponent={createComponentForProduct}
+                  onUpdateComponent={updateComponentData}
+                  onRemoveComponent={removeComponentFromProduct}
+                />
+
+                <AllComponentList
+                  components={filteredAvailableComponents}
+                  categories={componentCategories}
+                  categoryNameById={componentCategoryNameById}
+                  isAdmin={isAdmin}
+                  onInsertComponent={insertComponentIntoProduct}
                 />
               </div>
-
-              <div className="mt-4 min-h-0 flex-1 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Kategorie</TableHead>
-                      <TableHead className="w-[360px] text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProducts.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        className={editProduct?.id === row.id ? "bg-slate-50" : undefined}
-                        onClick={() => toggleProductSelection(row)}
-                      >
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>{productCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`}</TableCell>
-                        <TableCell className="space-x-2 text-right whitespace-nowrap">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              toggleProductSelection(row);
-                            }}
-                          >
-                            {editProduct?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              updateProductMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive });
-                            }}
-                          >
-                            {row.isActive ? "Deaktivieren" : "Aktivieren"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (!window.confirm(`Produkt "${row.name}" löschen?`)) return;
-                              deleteProductMutation.mutate({ id: row.id, version: row.version });
-                            }}
-                          >
-                            Löschen
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
             </section>
-
-            <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-components">
-              <h4 className="font-bold text-slate-900">Modelle</h4>
-              <div className="mt-3 space-y-2">
-                <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_132px_168px_auto] lg:items-end">
-                  <Input
-                    value={editComponent ? editComponent.name : newComponent.name}
-                    onChange={(event) => {
-                      if (editComponent) {
-                        setEditComponent({ ...editComponent, name: event.target.value });
-                      } else {
-                        setNewComponent((current) => ({ ...current, name: event.target.value }));
-                      }
-                    }}
-                    placeholder={editComponent ? "Modell bearbeiten" : "Modellname"}
-                  />
-                  <select
-                    value={editComponent ? String(editComponent.categoryId) : newComponent.categoryId}
-                    onChange={(event) => {
-                      setComponentCategoryFilterId(event.target.value);
-                      if (editComponent) {
-                        setEditComponent({ ...editComponent, categoryId: Number(event.target.value) });
-                      } else {
-                        setNewComponent((current) => ({ ...current, categoryId: event.target.value }));
-                      }
-                    }}
-                    className="h-10 rounded border border-slate-300 bg-white px-2 text-sm"
-                  >
-                    <option value="">Kategorie</option>
-                    {componentCategories.map((category) => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={editComponent ? editComponentProductId : newComponentProductId}
-                      onChange={(event) => {
-                        setComponentProductFilterId(event.target.value);
-                        if (editComponent) {
-                          setEditComponentProductId(event.target.value);
-                        } else {
-                          setNewComponentProductId(event.target.value);
-                        }
-                      }}
-                      className="h-10 w-full rounded border border-slate-300 bg-white px-2 text-sm"
-                      data-testid="input-new-component-products"
-                    >
-                      <option value="">Produkt</option>
-                      {products
-                        .filter((product) => !(editComponent ? editComponentProductIds : newComponent.productIds).includes(product.id))
-                        .map((product) => (
-                          <option key={product.id} value={product.id}>{product.name}</option>
-                        ))}
-                    </select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const selectedId = Number(editComponent ? editComponentProductId : newComponentProductId);
-                        if (!Number.isFinite(selectedId) || selectedId <= 0) return;
-                        if (editComponent) {
-                          setEditComponentProductIds((current) => (
-                            current.includes(selectedId) ? current : [...current, selectedId]
-                          ));
-                          setEditComponentProductId("");
-                        } else {
-                          setNewComponent((current) => ({
-                            ...current,
-                            productIds: current.productIds.includes(selectedId)
-                              ? current.productIds
-                              : [...current.productIds, selectedId],
-                          }));
-                          setNewComponentProductId("");
-                        }
-                      }}
-                    >
-                      +
-                    </Button>
-                  </div>
-                  <Button variant="outline" onClick={() => {
-                    if (editComponent) {
-                      if (!editComponent.name.trim()) return;
-                      updateComponentMutation.mutate({
-                        id: editComponent.id,
-                        version: editComponent.version,
-                        name: editComponent.name.trim(),
-                        categoryId: editComponent.categoryId,
-                        description: editComponent.description ?? null,
-                        productIds: editComponentProductIds,
-                      });
-                      return;
-                    }
-                    if (!newComponent.name.trim() || !newComponent.categoryId) return;
-                    createComponentMutation.mutate();
-                  }}>{editComponent ? "Speichern" : "Neu"}</Button>
-                  {editComponent ? (
-                    <Button variant="outline" onClick={() => {
-                      setEditComponent(null);
-                      setEditComponentProductIds([]);
-                      setEditComponentProductId("");
-                    }}>
-                      Abbrechen
-                    </Button>
-                  ) : null}
-                </div>
-                <Textarea
-                  value={editComponent ? (editComponent.description ?? "") : newComponent.description}
-                  onChange={(event) => {
-                    if (editComponent) {
-                      setEditComponent({ ...editComponent, description: event.target.value || null });
-                    } else {
-                      setNewComponent((current) => ({ ...current, description: event.target.value }));
-                    }
-                  }}
-                  placeholder="Beschreibung (optional)"
-                  className="min-h-[40px]"
-                />
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(editComponent ? editComponentProductIds : newComponent.productIds).map((productId) => (
-                  <button
-                    key={productId}
-                    type="button"
-                    onClick={() => {
-                      if (editComponent) {
-                        setEditComponentProductIds((current) => current.filter((id) => id !== productId));
-                      } else {
-                        setNewComponent((current) => ({
-                          ...current,
-                          productIds: current.productIds.filter((id) => id !== productId),
-                        }));
-                      }
-                    }}
-                    className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
-                    data-testid={`selected-new-component-product-${productId}`}
-                  >
-                    {productNameById.get(productId) ?? `#${productId}`} ×
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-4 min-h-0 flex-1 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Kategorie</TableHead>
-                      <TableHead>Produkte</TableHead>
-                      <TableHead className="w-[420px] text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredComponents.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        className={editComponent?.id === row.id ? "bg-slate-50" : undefined}
-                        onClick={() => {
-                          setEditComponent({ ...row });
-                          setEditComponentProductIds(productIdsByComponentId.get(row.id) ?? []);
-                          setEditComponentProductId("");
-                        }}
-                      >
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>{componentCategoryNameById.get(row.categoryId) ?? `#${row.categoryId}`}</TableCell>
-                        <TableCell>{formatProductNames(productIdsByComponentId.get(row.id), productNameById)}</TableCell>
-                        <TableCell className="space-x-2 text-right whitespace-nowrap">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setEditComponent({ ...row });
-                              setEditComponentProductIds(productIdsByComponentId.get(row.id) ?? []);
-                              setEditComponentProductId("");
-                            }}
-                          >
-                            {editComponent?.id === row.id ? "Ausgewählt" : "Bearbeiten"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              updateComponentMutation.mutate({ id: row.id, version: row.version, isActive: !row.isActive });
-                            }}
-                          >
-                            {row.isActive ? "Deaktivieren" : "Aktivieren"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (!window.confirm(`Modell "${row.name}" löschen?`)) return;
-                              deleteComponentMutation.mutate({ id: row.id, version: row.version });
-                            }}
-                          >
-                            Löschen
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </section>
-            </div>
           </div>
         </div>
       )}
     />
   );
 }
-
-

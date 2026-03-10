@@ -224,6 +224,12 @@ const masterDataMiningSkippedDocumentSchema = z.object({
   reason: z.string().min(1),
 });
 
+const bulkImportLimitsSchema = z.object({
+  maxFiles: z.number().int().positive(),
+  maxFileSizeBytes: z.number().int().positive(),
+  maxTotalBytes: z.number().int().positive(),
+});
+
 const saunaTourPreviewYearSchema = z.enum(["2025", "2026"]);
 
 const saunaTourPreviewWeekRowSchema = z.object({
@@ -2745,6 +2751,14 @@ export const api = {
         }),
       },
     },
+    masterDataPdfMiningLimits: {
+      method: "GET" as const,
+      path: "/api/admin/master-data/pdf-mining/limits",
+      responses: {
+        200: bulkImportLimitsSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
     masterDataPdfMiningAnalyze: {
       method: "POST" as const,
       path: "/api/admin/master-data/pdf-mining/analyze",
@@ -2754,11 +2768,7 @@ export const api = {
           productGroups: z.array(masterDataMiningProductGroupSchema),
           skipped: z.array(masterDataMiningSkippedDocumentSchema),
           errors: z.array(z.object({ fileName: z.string(), reason: z.string() })),
-          limits: z.object({
-            maxFiles: z.number().int().positive(),
-            maxFileSizeBytes: z.number().int().positive(),
-            maxTotalBytes: z.number().int().positive(),
-          }),
+          limits: bulkImportLimitsSchema,
         }),
         400: errorSchemas.validation,
         403: z.object({ code: z.literal("FORBIDDEN") }),

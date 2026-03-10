@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Mining-Analyse klammert Einzeltreffer und nicht-saunabezogene Dokumente aus.
+ * - Schlaffass und Gartenfass bleiben als Einzelpositionen zugelassen.
  * - Produkte werden exakt nach normalisiertem Produktnamen konsolidiert.
  * - Komponenten werden pro Produktgruppe nach Namen dedupliziert.
  *
@@ -33,7 +34,7 @@ describe("FT24 unit: master data pdf mining service", () => {
     parseDocumentHeaderDeterministicallyMock.mockReturnValue({ orderNumber: "A0218170A" });
   });
 
-  it("skips single-entry and non-sauna article lists and consolidates matching product groups", async () => {
+  it("skips single-entry and non-sauna article lists, but keeps Schlaffass/Gartenfass single-item products", async () => {
     extractTextFromPdfBufferMock
       .mockResolvedValueOnce([
         "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
@@ -72,6 +73,12 @@ describe("FT24 unit: master data pdf mining service", () => {
         "1 Stück Bank",
         "Ohne Ofenbezug",
         "Gesamtbetrag 1,00 EUR",
+      ].join("\n"))
+      .mockResolvedValueOnce([
+        "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+        "1,00 Stück S1005721",
+        "Ihre Schlaffass wie folgt konfiguriert:",
+        "Gesamtbetrag 1,00 EUR",
       ].join("\n"));
 
     const { analyzeMasterDataPdfMining } = await import("../../../server/services/masterDataPdfMiningService");
@@ -81,17 +88,22 @@ describe("FT24 unit: master data pdf mining service", () => {
       { fileName: "b.pdf", contentType: "application/pdf", buffer: Buffer.from("b") },
       { fileName: "single.pdf", contentType: "application/pdf", buffer: Buffer.from("c") },
       { fileName: "nosauna.pdf", contentType: "application/pdf", buffer: Buffer.from("d") },
+      { fileName: "schlaffass.pdf", contentType: "application/pdf", buffer: Buffer.from("e") },
     ]);
 
-    expect(result.documents).toHaveLength(2);
-    expect(result.productGroups).toHaveLength(1);
-    expect(result.productGroups[0]?.productName).toBe("XL Sauna");
-    expect(result.productGroups[0]?.sourceFileNames).toEqual(["a.pdf", "b.pdf"]);
-    expect(result.productGroups[0]?.articleItems.filter((item) => item.kind === "component").map((item) => item.name)).toEqual([
+    expect(result.documents).toHaveLength(3);
+    expect(result.productGroups).toHaveLength(2);
+    const xlSaunaGroup = result.productGroups.find((group) => group.productName === "XL Sauna");
+    const schlaffassGroup = result.productGroups.find((group) => group.productName === "Schlaffass");
+
+    expect(xlSaunaGroup).toBeTruthy();
+    expect(xlSaunaGroup?.sourceFileNames).toEqual(["a.pdf", "b.pdf"]);
+    expect(xlSaunaGroup?.articleItems.filter((item) => item.kind === "component").map((item) => item.name)).toEqual([
       "XL Saunafass",
       "Ofen",
       "Einstiegsstufe",
     ]);
+    expect(schlaffassGroup).toBeTruthy();
     expect(result.skipped).toEqual([
       { fileName: "single.pdf", reason: "Artikelliste enthaelt nur einen Eintrag" },
       { fileName: "nosauna.pdf", reason: "Begriff Sauna kommt in der Artikelliste nicht vor" },

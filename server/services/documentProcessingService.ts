@@ -7,6 +7,7 @@ import {
   parseDocumentArticleItemsDeterministically,
   parseDocumentTotalAmountDeterministically,
 } from "./documentArticleDeterministicParser";
+import { parseMasterDataArticleItemsDeterministically } from "./documentArticleMasterDataParser";
 import * as customersService from "./customersService";
 import * as projectsService from "./projectsService";
 
@@ -44,6 +45,43 @@ function deriveSaunaModel(descriptions: string[]): string {
   return "Produktinformationen aus Dokument";
 }
 
+function buildExtractionDescription(name: string, description: string | null): string {
+  const normalizedName = name.trim();
+  const normalizedDescription = description?.trim() ?? "";
+  if (!normalizedDescription) return normalizedName;
+  if (normalizedDescription.toLowerCase().startsWith(normalizedName.toLowerCase())) {
+    return normalizedDescription;
+  }
+  return `${normalizedName} - ${normalizedDescription}`;
+}
+
+function buildExtractionContentFromDocument(extractedText: string): {
+  saunaModel: string;
+  articleItems: Array<{ quantity: string; description: string; category: string }>;
+} {
+  try {
+    const parsed = parseMasterDataArticleItemsDeterministically(extractedText);
+    return {
+      saunaModel: parsed.productName.trim(),
+      articleItems: parsed.articleItems.map((item) => ({
+        quantity: item.quantity,
+        description: buildExtractionDescription(item.name, item.description),
+        category: item.kind === "product" ? "Produkt" : "Komponente",
+      })),
+    };
+  } catch {
+    const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
+    return {
+      saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),
+      articleItems: articleItems.map((item) => ({
+        quantity: item.quantity,
+        description: item.description,
+        category: "Artikel",
+      })),
+    };
+  }
+}
+
 export async function extractFromPdf(params: {
   scope: ExtractionScope;
   fileBuffer: Buffer;
@@ -60,7 +98,7 @@ export async function extractFromPdf(params: {
         throw new DocumentExtractionOrderConflictError("Auftrag schon importiert");
       }
     }
-    const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
+    const extractionContent = buildExtractionContentFromDocument(extractedText);
     const amount = parseDocumentTotalAmountDeterministically(extractedText);
 
     return validateAndNormalizeExtraction({
@@ -78,12 +116,8 @@ export async function extractFromPdf(params: {
       },
       orderNumber: header.orderNumber,
       amount,
-      saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),
-      articleItems: articleItems.map((item) => ({
-        quantity: item.quantity,
-        description: item.description,
-        category: "Artikel",
-      })),
+      saunaModel: extractionContent.saunaModel,
+      articleItems: extractionContent.articleItems,
       warnings: [],
     });
   } catch (error) {
