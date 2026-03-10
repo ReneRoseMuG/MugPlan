@@ -14,43 +14,24 @@
  * Ziel:
  * Minimalen E2E-Workflow fuer Kernobjekte als Startpunkt der E2E-Ebene absichern.
  */
-import express from "express";
-import { createServer } from "http";
-import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { errorHandler } from "../../server/middleware/errorHandler";
-import { registerRoutes } from "../../server/routes";
 import { buildCustomerPayload, resetTestDataFactoryState } from "../helpers/testDataFactory";
-import { resetDatabase } from "../helpers/resetDatabase";
+import { createApiTestApp, loginAdminAgent } from "../helpers/apiTestHarness";
+import type express from "express";
 
 let app: express.Express;
 
 beforeAll(async () => {
-  app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  const httpServer = createServer(app);
-  await registerRoutes(httpServer, app);
-  app.use(errorHandler);
+  app = await createApiTestApp();
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   resetTestDataFactoryState();
-  await resetDatabase();
 });
-
-async function loginAdminAgent(): Promise<SuperAgentTest> {
-  const agent = request.agent(app);
-  await agent
-    .post("/api/auth/login")
-    .send({ username: "test-admin", password: "test-admin-password" })
-    .expect(200);
-  return agent;
-}
 
 describe("E-001 e2e: create project with appointment", () => {
   it("creates customer, project, appointment and lists appointment by project", async () => {
-    const admin = await loginAdminAgent();
+    const admin = await loginAdminAgent(app);
     const customerPayload = buildCustomerPayload("E2E-CUST");
 
     const createdCustomer = await admin

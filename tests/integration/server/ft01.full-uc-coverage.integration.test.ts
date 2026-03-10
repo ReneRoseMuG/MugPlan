@@ -16,14 +16,10 @@
  * Ziel:
  * Vollstaendige UC-nahe FT01-Testabdeckung unter strikter Produktionscode-Sperre.
  */
-import express from "express";
-import { createServer } from "http";
 import { eq, sql } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../../../server/db";
-import { errorHandler } from "../../../server/middleware/errorHandler";
-import { registerRoutes } from "../../../server/routes";
 import { appointmentEmployees, appointments, type Appointment } from "@shared/schema";
 import {
   assignEmployeesToTeamFixture,
@@ -39,16 +35,13 @@ import {
   loginAdminAgent,
   resetAppointmentOverlapFixtureCounters,
 } from "../../helpers/appointmentOverlapFixtures";
+import { createApiTestApp } from "../../helpers/apiTestHarness";
+import type express from "express";
 
 let app: express.Express;
 
 beforeAll(async () => {
-  app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  const httpServer = createServer(app);
-  await registerRoutes(httpServer, app);
-  app.use(errorHandler);
+  app = await createApiTestApp();
 });
 
 beforeEach(() => {

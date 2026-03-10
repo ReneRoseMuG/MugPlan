@@ -15,44 +15,27 @@
  * Ziel:
  * API-E2E Absicherung des Sidebar-Panel-Datenflusses fuer "Alle Termine".
  */
-import express from "express";
-import { createServer } from "http";
-import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { errorHandler } from "../../server/middleware/errorHandler";
-import { registerRoutes } from "../../server/routes";
 import {
   createProjectWithPastAndFutureAppointmentsFixture,
   resetTestDataFactoryState,
 } from "../helpers/testDataFactory";
+import { createApiTestApp, loginAdminAgent } from "../helpers/apiTestHarness";
+import type express from "express";
 
 let app: express.Express;
 
 beforeAll(async () => {
-  app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  const httpServer = createServer(app);
-  await registerRoutes(httpServer, app);
-  app.use(errorHandler);
+  app = await createApiTestApp();
 });
 
 beforeEach(() => {
   resetTestDataFactoryState();
 });
 
-async function loginAdminAgent(): Promise<SuperAgentTest> {
-  const agent = request.agent(app);
-  await agent
-    .post("/api/auth/login")
-    .send({ username: "test-admin", password: "test-admin-password" })
-    .expect(200);
-  return agent;
-}
-
 describe("E-002 e2e: project sidebar all appointments", () => {
   it("returns past and future appointments for one project via panel source endpoint", async () => {
-    const admin = await loginAdminAgent();
+    const admin = await loginAdminAgent(app);
     const primary = await createProjectWithPastAndFutureAppointmentsFixture({ prefix: "E2E-SIDEBAR-ALL" });
     const foreign = await createProjectWithPastAndFutureAppointmentsFixture({ prefix: "E2E-SIDEBAR-FOREIGN" });
 
@@ -74,4 +57,3 @@ describe("E-002 e2e: project sidebar all appointments", () => {
     expect(ids).not.toContain(foreign.futureAppointmentId);
   });
 });
-

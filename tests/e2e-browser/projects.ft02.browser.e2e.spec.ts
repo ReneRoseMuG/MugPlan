@@ -17,28 +17,20 @@
  * Eine reduzierte, belastbare FT02-Browser-Suite fuer die realen Projekt-Workflows des Ist-Stands absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { resetDatabase } from "../helpers/resetDatabase";
 import {
   createAppointmentFixture,
   createCustomerFixture,
   createProjectFixture,
   getRelativeBerlinDate,
-  resetTestDataFactoryState,
 } from "../helpers/testDataFactory";
 import * as projectStatusService from "../../server/services/projectStatusService";
+import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
-test.beforeEach(async () => {
-  resetTestDataFactoryState();
-  await resetDatabase();
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  await resetBrowserSuiteState();
 });
-
-async function loginAsAdmin(page: Page) {
-  await page.goto("/");
-  await expect(page.getByLabel("Benutzername oder E-Mail")).toBeVisible();
-  await page.getByLabel("Benutzername oder E-Mail").fill("test-admin");
-  await page.getByLabel("Passwort").fill("test-admin-password");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-}
 
 async function openProjects(page: Page) {
   await loginAsAdmin(page);
@@ -46,10 +38,10 @@ async function openProjects(page: Page) {
   await expect(page.getByTestId("button-new-project")).toBeVisible();
 }
 
-async function openCustomerPickerAndSelect(page: Page, customerLabel: string) {
+async function openCustomerPickerAndSelect(page: Page, customerNumber: string) {
   await page.getByTestId("button-select-customer").click();
   await expect(page.getByTestId("table-customers")).toBeVisible();
-  await page.locator("tr").filter({ hasText: customerLabel }).first().dblclick();
+  await page.locator("tr").filter({ hasText: customerNumber }).first().dblclick();
 }
 
 async function openProjectById(page: Page, projectId: number) {
@@ -73,13 +65,14 @@ test("creates a project via UI after customer selection and keeps validation err
   await page.getByTestId("button-save-project").click();
   await expect(page.getByText(/Kunde muss ausgew/)).toBeVisible();
 
-  await openCustomerPickerAndSelect(page, customer.fullName ?? customer.lastName ?? customer.customerNumber);
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
   await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
 
   await page.getByTestId("input-project-order-number").fill("FT02-ORD-001");
   await page.getByTestId("button-save-project").click();
 
   await expect(page.getByTestId("button-new-project")).toBeVisible();
+  await page.getByLabel("Alle Projekte").click();
   await expect(page.getByTestId("list-projects")).toContainText("FT02 Browser Projekt");
 });
 
@@ -214,9 +207,7 @@ test("deletes projects without appointments and keeps projects with appointments
     return response.status();
   }).toBe(200);
 
-  await page.getByTestId("button-close-project").click();
-  await expect(page.getByTestId("button-new-project")).toBeVisible();
-
+  await openProjects(page);
   await page.getByLabel("Alle Projekte").click();
   await page.getByTestId(`project-card-${deletableProject.id}`).dblclick();
   await page.getByTestId("button-delete-project").click();

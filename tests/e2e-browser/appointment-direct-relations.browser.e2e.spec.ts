@@ -15,27 +15,19 @@
  * Stabile Browser-E2E fuer die wichtigsten Direkttermin-Pfade ohne Abhaengigkeit von den aktuell bruechigen Picker-Dialogen.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { resetDatabase } from "../helpers/resetDatabase";
 import {
   createAppointmentFixture,
   createCustomerFixture,
   createProjectFixture,
   getRelativeBerlinDate,
-  resetTestDataFactoryState,
 } from "../helpers/testDataFactory";
+import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
-test.beforeEach(async () => {
-  resetTestDataFactoryState();
-  await resetDatabase();
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  await resetBrowserSuiteState();
 });
-
-async function loginAsAdmin(page: Page) {
-  await page.goto("/");
-  await expect(page.getByLabel("Benutzername oder E-Mail")).toBeVisible();
-  await page.getByLabel("Benutzername oder E-Mail").fill("test-admin");
-  await page.getByLabel("Passwort").fill("test-admin-password");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-}
 
 async function openExistingAppointment(page: Page, appointmentId: number) {
   await loginAsAdmin(page);

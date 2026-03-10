@@ -15,28 +15,20 @@
  * Den Mehrtages-Edit-Flow im Wochenkalender Ende-zu-Ende gegen Datumsverlust und Render-Regressions absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { resetDatabase } from "../helpers/resetDatabase";
 import {
   createAppointmentFixture,
   createCustomerFixture,
   createEmployeeFixture,
   createProjectFixture,
   getRelativeBerlinDate,
-  resetTestDataFactoryState,
 } from "../helpers/testDataFactory";
+import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
-test.beforeEach(async () => {
-  resetTestDataFactoryState();
-  await resetDatabase();
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  await resetBrowserSuiteState();
 });
-
-async function loginAsAdmin(page: Page) {
-  await page.goto("/");
-  await expect(page.getByLabel("Benutzername oder E-Mail")).toBeVisible();
-  await page.getByLabel("Benutzername oder E-Mail").fill("test-admin");
-  await page.getByLabel("Passwort").fill("test-admin-password");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-}
 
 async function openWeekAppointment(page: Page, appointmentId: number, kind: "single" | "spanning") {
   const target = kind === "single"

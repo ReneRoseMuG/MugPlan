@@ -18,39 +18,26 @@
  * Ziel:
  * FT02-UC-Traceability in einer zentralen Integrationssuite herstellen.
  */
-import express from "express";
-import { createServer } from "http";
-import request, { type SuperAgentTest } from "supertest";
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
-
-import { registerRoutes } from "../../../server/routes";
-import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import { db } from "../../../server/db";
 import { projectOrder, projectProjectStatus } from "../../../shared/schema";
+import { createApiTestApp, loginAdminAgent as loginAdminAgentBase } from "../../helpers/apiTestHarness";
+import type express from "express";
+import type { SuperAgentTest } from "supertest";
 
 let app: express.Express;
 let seq = 1;
 
 beforeAll(async () => {
-  app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  const httpServer = createServer(app);
-  await registerRoutes(httpServer, app);
-  app.use(errorHandler);
+  app = await createApiTestApp();
 });
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
-  const agent = request.agent(app);
-  await agent
-    .post("/api/auth/login")
-    .send({ username: "test-admin", password: "test-admin-password" })
-    .expect(200);
-  return agent;
+  return loginAdminAgentBase(app);
 }
 
 async function createCustomer(prefix: string) {

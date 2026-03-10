@@ -16,18 +16,15 @@
  * Ziel:
  * Vollstaendige FT04-UC-Abdeckung (UC 04/01-04/10) ohne Produktionscode-Aenderung.
  */
-import express from "express";
-import { createServer } from "http";
-import request, { type Response, type SuperAgentTest } from "supertest";
+import type { Response, SuperAgentTest } from "supertest";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { registerRoutes } from "../../../server/routes";
-import { errorHandler } from "../../../server/middleware/errorHandler";
-import { resetDatabase } from "../../helpers/resetDatabase";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
+import { createApiTestApp, loginAdminAgent as loginAdminAgentBase, loginAgent as loginAgentBase } from "../../helpers/apiTestHarness";
+import type express from "express";
 
 let app: express.Express;
 let employeeCounter = 1;
@@ -35,29 +32,21 @@ let customerCounter = 1;
 let userCounter = 1;
 
 beforeAll(async () => {
-  app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  const httpServer = createServer(app);
-  await registerRoutes(httpServer, app);
-  app.use(errorHandler);
+  app = await createApiTestApp();
 });
 
-beforeEach(async () => {
-  await resetDatabase();
+beforeEach(() => {
   employeeCounter = 1;
   customerCounter = 1;
   userCounter = 1;
 });
 
 async function loginAgent(username: string, password: string): Promise<SuperAgentTest> {
-  const agent = request.agent(app);
-  await agent.post("/api/auth/login").send({ username, password }).expect(200);
-  return agent;
+  return loginAgentBase(app, { username, password });
 }
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
-  return loginAgent("test-admin", "test-admin-password");
+  return loginAdminAgentBase(app);
 }
 
 async function createRoleAgent(roleCode: "READER" | "DISPATCHER"): Promise<SuperAgentTest> {

@@ -20,29 +20,22 @@
  * Browser-E2E Nachweis fuer Trennung + Sortierung in Sidebar-Panels sowie test-first Erwartungspruefung fuer Kunden-Projektpanel.
  */
 import { expect, test } from "@playwright/test";
-import { resetDatabase } from "../helpers/resetDatabase";
 import {
   createAppointmentFixture,
   createRawAppointmentFixture,
   createCustomerProjectsTimelineFixture,
   createProjectWithPastAndFutureAppointmentsFixture,
   getRelativeBerlinDate,
-  resetTestDataFactoryState,
 } from "../helpers/testDataFactory";
+import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 const TODO_CUSTOMER_PROJECTS_SORTING = "TODO-FT04-CUSTOMER-SIDEBAR-PROJECTS-SORTING";
 
-test.beforeEach(async () => {
-  resetTestDataFactoryState();
-  await resetDatabase();
-});
+test.describe.configure({ mode: "serial" });
 
-async function loginAsAdmin(page: Parameters<typeof test>[0]["page"]) {
-  await page.goto("/");
-  await page.getByLabel("Benutzername oder E-Mail").fill("test-admin");
-  await page.getByLabel("Passwort").fill("test-admin-password");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-}
+test.beforeAll(async () => {
+  await resetBrowserSuiteState();
+});
 
 test("project sidebar appointments: visible separation and descending by date", async ({ page }) => {
   const fixture = await createProjectWithPastAndFutureAppointmentsFixture({
