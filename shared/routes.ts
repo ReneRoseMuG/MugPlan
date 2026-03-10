@@ -196,6 +196,34 @@ const bulkImportProjectSpecialItemSchema = bulkImportProjectAnalyzeItemSchema.ex
   extractedCustomer: extractedCustomerSchema,
 });
 
+const masterDataMiningArticleItemSchema = z.object({
+  kind: z.enum(["product", "component"]),
+  quantity: z.string().min(1),
+  articleNumber: z.string().nullable(),
+  name: z.string().min(1),
+  description: z.string().nullable(),
+});
+
+const masterDataMiningDocumentSchema = z.object({
+  fileName: z.string().min(1),
+  orderNumber: z.string().nullable(),
+  productName: z.string().min(1),
+  productDescription: z.string().nullable(),
+  articleItems: z.array(masterDataMiningArticleItemSchema).min(1),
+});
+
+const masterDataMiningProductGroupSchema = z.object({
+  productName: z.string().min(1),
+  productDescription: z.string().nullable(),
+  sourceFileNames: z.array(z.string().min(1)).min(1),
+  articleItems: z.array(masterDataMiningArticleItemSchema),
+});
+
+const masterDataMiningSkippedDocumentSchema = z.object({
+  fileName: z.string().min(1),
+  reason: z.string().min(1),
+});
+
 const saunaTourPreviewYearSchema = z.enum(["2025", "2026"]);
 
 const saunaTourPreviewWeekRowSchema = z.object({
@@ -2715,6 +2743,26 @@ export const api = {
             message: z.string(),
           })),
         }),
+      },
+    },
+    masterDataPdfMiningAnalyze: {
+      method: "POST" as const,
+      path: "/api/admin/master-data/pdf-mining/analyze",
+      responses: {
+        200: z.object({
+          documents: z.array(masterDataMiningDocumentSchema),
+          productGroups: z.array(masterDataMiningProductGroupSchema),
+          skipped: z.array(masterDataMiningSkippedDocumentSchema),
+          errors: z.array(z.object({ fileName: z.string(), reason: z.string() })),
+          limits: z.object({
+            maxFiles: z.number().int().positive(),
+            maxFileSizeBytes: z.number().int().positive(),
+            maxTotalBytes: z.number().int().positive(),
+          }),
+        }),
+        400: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
       },
     },
     saunaTourImportPreview: {

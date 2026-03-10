@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { api } from "@shared/routes";
 import { parseMultipartFiles } from "../lib/multipart";
 import * as bulkImportService from "../services/bulkImportService";
+import * as masterDataPdfMiningService from "../services/masterDataPdfMiningService";
 import { handleZodError } from "./validation";
 
 function assertAdmin(req: Request, res: Response): boolean {
@@ -86,6 +87,34 @@ export async function analyzeProjectsBulkImport(req: Request, res: Response, nex
     }
     if (err instanceof Error && err.message === "Payload too large") {
       res.status(413).json({ code: "BULK_IMPORT_LIMIT_EXCEEDED", message: "Payload too large" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function analyzeMasterDataPdfMining(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!assertAdmin(req, res)) return;
+    const files = await parseMultipartFiles(req, {
+      fieldName: "files",
+      maxSizeBytes: bulkImportService.BULK_IMPORT_LIMITS.maxTotalBytes,
+    });
+    const result = await masterDataPdfMiningService.analyzeMasterDataPdfMining(
+      bulkImportService.toBulkFileInputs(files),
+    );
+    res.json(result);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Limit")) {
+      res.status(413).json({ code: "BULK_IMPORT_LIMIT_EXCEEDED", message: err.message });
+      return;
+    }
+    if (err instanceof Error && err.message === "Payload too large") {
+      res.status(413).json({ code: "BULK_IMPORT_LIMIT_EXCEEDED", message: "Payload too large" });
+      return;
+    }
+    if (err instanceof Error && err.message === "Keine Dateien uebergeben.") {
+      res.status(400).json({ code: "VALIDATION_ERROR", message: err.message });
       return;
     }
     next(err);

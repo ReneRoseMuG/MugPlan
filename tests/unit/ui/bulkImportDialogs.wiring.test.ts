@@ -6,14 +6,15 @@
  *
  * Abgedeckte Regeln:
  * - CustomersPage rendert admin-only Bulk-Import-Button und Dialog.
- * - ProjectsPage rendert admin-only Bulk-Import-Button und Dialog.
+ * - ProjectsPage rendert keinen Projekt-Bulk-Import mehr.
+ * - Stammdaten binden den neuen PDF-Mining-Tab an.
  * - Query-Invalidierung nutzt explizite Kunden/Projekte-Keys.
  *
  * Fehlerfaelle:
  * - Fehlende Dialogverdrahtung in der jeweiligen Listenansicht.
  *
  * Ziel:
- * Sicherstellen, dass Bulk-Import-Dialoge in beiden Hauptlisten korrekt angebunden sind.
+ * Sicherstellen, dass der alte Projekt-Bulk-Import entfernt und der neue Mining-Flow im Adminbereich verdrahtet ist.
  */
 import { readFileSync } from "fs";
 import path from "path";
@@ -37,21 +38,22 @@ describe("FT24 unit: bulk import dialog wiring", () => {
     expect(customerDialogSource).toContain("queryKey: [\"/api/projects?filter=all&scope=all\"]");
   });
 
-  it("wires project bulk import in ProjectsPage and dialog invalidations", () => {
+  it("removes project bulk import from ProjectsPage and adds master data pdf mining", () => {
     const projectsPagePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
     const projectsPageSource = readFileSync(projectsPagePath, "utf8");
-    const projectDialogPath = path.resolve(process.cwd(), "client/src/components/ProjectBulkImportDialog.tsx");
-    const projectDialogSource = readFileSync(projectDialogPath, "utf8");
+    const masterDataPagePath = path.resolve(process.cwd(), "client/src/components/MasterDataPage.tsx");
+    const masterDataPageSource = readFileSync(masterDataPagePath, "utf8");
+    const miningPagePath = path.resolve(process.cwd(), "client/src/components/MasterDataPdfMiningPage.tsx");
+    const miningPageSource = readFileSync(miningPagePath, "utf8");
 
-    expect(projectsPageSource).toContain("ProjectBulkImportDialog");
-    expect(projectsPageSource).toContain("button-open-project-bulk-import");
-    expect(projectsPageSource).toContain("!tableOnly && isAdmin");
-    expect(projectsPageSource).toContain("<ProjectBulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />");
+    expect(projectsPageSource).not.toContain("ProjectBulkImportDialog");
+    expect(projectsPageSource).not.toContain("button-open-project-bulk-import");
 
-    expect(projectDialogSource).toContain("queryKey: [\"/api/projects\"]");
-    expect(projectDialogSource).toContain("queryKey: [\"/api/projects?filter=all&scope=all\"]");
-    expect(projectDialogSource).toContain("queryKey: [\"/api/customers\"]");
-    expect(projectDialogSource).toContain("queryKey: [\"/api/customers\", { scope: \"active\" }]");
-    expect(projectDialogSource).toContain("queryKey: [\"/api/customers\", { scope: \"inactive\" }]");
+    expect(masterDataPageSource).toContain("id: \"pdf-mining\"");
+    expect(masterDataPageSource).toContain("content: <MasterDataPdfMiningPage />");
+
+    expect(miningPageSource).toContain("/api/admin/master-data/pdf-mining/analyze");
+    expect(miningPageSource).toContain("button-adopt-mining-product");
+    expect(miningPageSource).toContain("button-run-master-data-pdf-mining");
   });
 });

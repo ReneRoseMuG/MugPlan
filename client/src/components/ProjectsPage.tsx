@@ -17,7 +17,6 @@ import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
-import { ProjectBulkImportDialog } from "@/components/ProjectBulkImportDialog";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Project, Customer, ProjectStatus } from "@shared/schema";
@@ -113,8 +112,6 @@ export function ProjectsPage({
   const [sortKey, setSortKey] = useState<ProjectSortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
-  const isAdmin = userRole === "ADMIN";
-  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
@@ -428,15 +425,6 @@ export function ProjectsPage({
         <div className="flex justify-between items-center">
           {onNewProject ? (
             <div className="flex items-center gap-2">
-              {!tableOnly && isAdmin ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setBulkImportOpen(true)}
-                  data-testid="button-open-project-bulk-import"
-                >
-                  Bulk Import Projekte
-                </Button>
-              ) : null}
               <Button
                 variant="outline"
                 onClick={onNewProject}
@@ -566,7 +554,6 @@ export function ProjectsPage({
         )
       }
     />
-      <ProjectBulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
     </>
   );
 }

@@ -12,6 +12,7 @@ router.post(api.admin.customerBulkImportApplyDuplicates.path, adminBulkImportCon
 router.post(api.admin.projectBulkImportAnalyze.path, adminBulkImportController.analyzeProjectsBulkImport);
 router.post(api.admin.projectBulkImportApplyNew.path, adminBulkImportController.applyProjectsBulkImportNew);
 router.post(api.admin.projectBulkImportApplySpecialCase.path, adminBulkImportController.applyProjectsBulkImportSpecialCase);
+router.post(api.admin.masterDataPdfMiningAnalyze.path, adminBulkImportController.analyzeMasterDataPdfMining);
 
 router.post(api.admin.saunaTourImportPreview.path, adminSaunaTourImportController.createSaunaTourPreview);
 router.post(api.admin.saunaTourImportPreviewWeekRows.path, adminSaunaTourImportController.getSaunaTourPreviewWeekRows);
