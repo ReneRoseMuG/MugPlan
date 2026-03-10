@@ -22,10 +22,9 @@ describe("FT21 projects repository order-number conflict wiring", () => {
   const filePath = path.resolve(process.cwd(), "server/repositories/projectsRepository.ts");
   const source = readFileSync(filePath, "utf8");
 
-  it("checks duplicate order numbers only against active projects", () => {
+ it("checks duplicate order numbers only against active projects", () => {
     expect(source).toContain("export async function existsProjectByOrderNumber(orderNumber: string)");
-    expect(source).toContain("trim(${projects.orderNumber}) = ${normalizedOrderNumber}");
+    expect(source).toContain("trim(${projectOrder.orderNumber}) = ${normalizedOrderNumber}");
     expect(source).toContain("and ${projects.isActive} = true");
   });
 });
-

@@ -7,11 +7,12 @@
  * Abgedeckte Regeln:
  * - createProject liefert VALIDATION_ERROR, wenn customerId nicht aufloesbar ist.
  * - createProject ruft Repository nicht auf, wenn der Pflichtbezug customer fehlt.
- * - Leerer Projektname wird im aktuellen IST-Verhalten als leerer Name weitergereicht.
+ * - Fehlende Auftragsnummer liefert VALIDATION_ERROR.
  *
  * Fehlerfaelle:
  * - customerId fehlt/ungueltig.
  * - customerId verweist auf nicht vorhandenen Kunden.
+ * - orderNumber fehlt oder ist leer.
  *
  * Ziel:
  * Pflichtfeld- und Pflichtbezug-Verhalten des Project-Service als aktueller Vertrag absichern.
@@ -71,29 +72,25 @@ describe("FT02 unit: projects service required-field behavior", () => {
     expect(createProjectMock).not.toHaveBeenCalled();
   });
 
-  it("documents current behavior for empty project name", async () => {
+  it("returns VALIDATION_ERROR when orderNumber is empty", async () => {
     getCustomerMock.mockResolvedValueOnce({
       id: 1,
       customerNumber: "4711",
       isActive: true,
     });
-    createProjectMock.mockResolvedValueOnce({
-      id: 100,
-      customerId: 1,
-      name: "",
+
+    await expect(
+      createProject({
+        customerId: 1,
+        name: "   ",
+        orderNumber: "   ",
+        descriptionMd: null,
+      } as any),
+    ).rejects.toMatchObject<ProjectsError>({
+      status: 422,
+      code: "VALIDATION_ERROR",
     });
 
-    await createProject({
-      customerId: 1,
-      name: "   ",
-      descriptionMd: null,
-    } as any);
-
-    expect(createProjectMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        customerId: 1,
-        name: "",
-      }),
-    );
+    expect(createProjectMock).not.toHaveBeenCalled();
   });
 });

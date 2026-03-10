@@ -21,21 +21,24 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 
 describe("FT02 project form amount wiring", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
-  const source = readFileSync(filePath, "utf8");
+  const projectFormPath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
+  const projectOrderFormPath = path.resolve(process.cwd(), "client/src/components/ProjectOrderForm.tsx");
+  const source = readFileSync(projectFormPath, "utf8");
+  const projectOrderFormSource = readFileSync(projectOrderFormPath, "utf8");
 
   it("tracks amount in local form state and dirty snapshot", () => {
     expect(source).toContain("const [amount, setAmount] = useState(\"\")");
     expect(source).toContain("amount: input.amount.replace(\",\", \".\").trim()");
-    expect(source).toContain("setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, amount, descriptionMd, customerId }))");
+    expect(source).toContain("setInitialFormSnapshot(buildFormSnapshot({ name, orderNumber, amount, plannedDateText, plannedWeek, descriptionMd, customerId }))");
   });
 
   it("renders amount input field with wiring", () => {
-    expect(source).toContain("htmlFor=\"projectAmount\"");
-    expect(source).toContain("id=\"projectAmount\"");
-    expect(source).toContain("value={amount}");
-    expect(source).toContain("onChange={(e) => setAmount(e.target.value)}");
-    expect(source).toContain("data-testid=\"input-project-amount\"");
+    expect(source).toContain("onAmountChange={setAmount}");
+    expect(projectOrderFormSource).toContain("htmlFor=\"projectAmount\"");
+    expect(projectOrderFormSource).toContain("id=\"projectAmount\"");
+    expect(projectOrderFormSource).toContain("value={amount}");
+    expect(projectOrderFormSource).toContain("onChange={(e) => onAmountChange(e.target.value)}");
+    expect(projectOrderFormSource).toContain("data-testid=\"input-project-amount\"");
   });
 
   it("maps amount to create and update mutation payloads", () => {

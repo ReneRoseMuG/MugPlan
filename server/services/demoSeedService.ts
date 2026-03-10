@@ -214,7 +214,7 @@ type SeedRunLike = {
 type DemoNoteTemplateSeed = {
   title: string;
   body: string;
-  color: string;
+  cardColor: string;
   sortOrder: number;
 };
 
@@ -222,19 +222,19 @@ const DEMO_NOTE_TEMPLATES: DemoNoteTemplateSeed[] = [
   {
     title: "Anreise beachten",
     body: "Bitte Anreise, Zufahrt und Parkmoeglichkeiten vor dem Termin pruefen.",
-    color: "#1d4ed8",
+    cardColor: "#1d4ed8",
     sortOrder: 10,
   },
   {
     title: "Aufbau Start beachten",
     body: "Aufbau-Start mit Team und Ansprechpartner verbindlich abstimmen.",
-    color: "#b45309",
+    cardColor: "#b45309",
     sortOrder: 20,
   },
   {
     title: "Messeaufbau",
     body: "Messeaufbau auf Standflaeche, Materialanlieferung und Freigaben abstimmen.",
-    color: "#0f766e",
+    cardColor: "#0f766e",
     sortOrder: 30,
   },
 ];
@@ -327,7 +327,8 @@ async function seedNoteTemplates(seedRunId: string) {
     const createdTemplate = await noteTemplatesRepository.createNoteTemplate({
       title: template.title,
       body: template.body,
-      color: template.color,
+      cardColor: template.cardColor,
+      print: true,
       sortOrder: template.sortOrder,
       isActive: true,
     });
@@ -341,7 +342,7 @@ async function seedScopedNotes(params: {
   seedRunId: string;
   scope: "customer" | "project" | "appointment";
   entityIds: number[];
-  templatePool: Array<{ id: number; title: string; body: string; color: string | null }>;
+  templatePool: Array<{ id: number; title: string; body: string; cardColor: string | null }>;
   addRelationTx: (tx: Parameters<Parameters<typeof notesRepository.withNotesTransaction>[0]>[0], entityId: number, noteId: number) => Promise<void>;
 }) {
   const { seedRunId, scope, entityIds, templatePool, addRelationTx } = params;
@@ -358,7 +359,9 @@ async function seedScopedNotes(params: {
       const noteId = await notesRepository.createNoteTx(tx, {
         title: selectedTemplate?.title ?? `Seed-Notiz ${scope} ${entityId}`,
         body: selectedTemplate?.body ?? buildSeedNoteBody(scope, entityId),
-        color: selectedTemplate?.color ?? null,
+        cardColor: selectedTemplate?.cardColor ?? null,
+        print: true,
+        cardColorLocked: selectedTemplate?.cardColor != null,
       });
       await addRelationTx(tx, entityId, noteId);
       await demoSeedRepository.addSeedRunEntity(seedRunId, "note", noteId);
@@ -1464,7 +1467,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
     const projectSeedContexts: ProjectSeedContext[] = [];
-    let seedNoteTemplatesPool: Array<{ id: number; title: string; body: string; color: string | null }> = [];
+    let seedNoteTemplatesPool: Array<{ id: number; title: string; body: string; cardColor: string | null }> = [];
 
     if (config.runType === "appointments") {
       if (!config.baseSeedRunId) {
@@ -1831,7 +1834,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
               id: index + 1,
               title: template.title,
               body: template.body,
-              color: template.color,
+              cardColor: template.cardColor,
             })),
         addRelationTx: notesRepository.addAppointmentNoteRelationTx,
       });

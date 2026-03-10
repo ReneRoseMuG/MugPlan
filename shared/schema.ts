@@ -162,7 +162,9 @@ export const notes = mysqlTable("note", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
-  color: varchar("color", { length: 255 }),
+  cardColor: varchar("card_color", { length: 255 }),
+  print: boolean("print").notNull().default(true),
+  cardColorLocked: boolean("card_color_locked").notNull().default(false),
   isPinned: boolean("is_pinned").notNull().default(false),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -174,12 +176,14 @@ export const insertNoteSchema = createInsertSchema(notes).omit({
   createdAt: true,
   updatedAt: true,
   isPinned: true,
-  color: true,
+  cardColorLocked: true,
 });
 
 export const updateNoteSchema = z.object({
   title: z.string().optional(),
   body: z.string().optional(),
+  cardColor: z.string().nullable().optional(),
+  print: z.boolean().optional(),
 });
 
 export type Note = typeof notes.$inferSelect;
@@ -192,7 +196,8 @@ export const noteTemplates = mysqlTable("note_template", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
-  color: varchar("color", { length: 255 }),
+  cardColor: varchar("card_color", { length: 255 }),
+  print: boolean("print").notNull().default(true),
   sortOrder: int("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   version: int("version").notNull().default(1),
@@ -209,7 +214,8 @@ export const insertNoteTemplateSchema = createInsertSchema(noteTemplates).omit({
 export const updateNoteTemplateSchema = z.object({
   title: z.string().optional(),
   body: z.string().optional(),
-  color: z.string().nullable().optional(),
+  cardColor: z.string().nullable().optional(),
+  print: z.boolean().optional(),
   sortOrder: z.number().optional(),
   isActive: z.boolean().optional(),
 });

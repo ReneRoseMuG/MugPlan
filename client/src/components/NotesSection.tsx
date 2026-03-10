@@ -6,16 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { StickyNote, Plus, Pin, PinOff, X } from "lucide-react";
 import type { Note, NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
+const fallbackCardColor = "#f8fafc";
+
+interface NoteInput {
+  title: string;
+  body: string;
+  cardColor?: string | null;
+  print: boolean;
+  templateId?: number;
+}
+
 interface NotesSectionProps {
   notes: Note[];
   isLoading?: boolean;
-  onAdd: (data: { title: string; body: string; templateId?: number }) => void;
-  onUpdate?: (id: number, data: { title: string; body: string }) => void;
+  onAdd: (data: NoteInput) => void;
+  onUpdate?: (id: number, data: Omit<NoteInput, "templateId">) => void;
   onTogglePin?: (id: number, isPinned: boolean) => void;
   onDelete?: (id: number) => void;
   title?: string;
@@ -40,10 +52,8 @@ function NoteCard({
 
   return (
     <div
-      className={`relative rounded-lg border p-4 shadow-sm ${
-        note.isPinned ? "border-primary/50 bg-primary/5" : "border-border bg-white dark:bg-slate-800"
-      } ${note.color ? "border-l-4" : ""} ${onEdit ? "cursor-pointer" : ""}`}
-      style={note.color ? { borderLeftColor: note.color } : undefined}
+      className={`relative rounded-lg border p-4 shadow-sm ${onEdit ? "cursor-pointer" : ""}`}
+      style={{ backgroundColor: note.cardColor ?? fallbackCardColor }}
       data-testid={`note-card-${note.id}`}
       onDoubleClick={onEdit}
     >
@@ -81,9 +91,17 @@ function NoteCard({
           </button>
         ) : null}
       </div>
-      <h4 className="mb-2 pr-16 text-sm font-medium text-slate-800 dark:text-slate-200" data-testid={`text-note-title-${note.id}`}>
-        {note.title}
-      </h4>
+      <div className="mb-2 flex items-center gap-2 pr-16">
+        <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200" data-testid={`text-note-title-${note.id}`}>
+          {note.title}
+        </h4>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${note.print ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}
+          data-testid={`badge-note-print-${note.id}`}
+        >
+          {note.print ? "Drucken" : "Nicht drucken"}
+        </span>
+      </div>
       {note.body ? (
         <div
           className="text-sm text-slate-600 dark:text-slate-400"
@@ -91,7 +109,7 @@ function NoteCard({
           data-testid={`text-note-body-${note.id}`}
         />
       ) : null}
-      <p className="mt-2 text-xs text-slate-400" data-testid={`text-note-date-${note.id}`}>
+      <p className="mt-2 text-xs text-slate-500" data-testid={`text-note-date-${note.id}`}>
         {formatDate(note.updatedAt)}
       </p>
     </div>
@@ -110,8 +128,12 @@ export function NotesSection({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
+  const [noteCardColor, setNoteCardColor] = useState<string>(fallbackCardColor);
+  const [useCardColor, setUseCardColor] = useState(false);
+  const [notePrint, setNotePrint] = useState(true);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [cardColorLocked, setCardColorLocked] = useState(false);
 
   const { data: templates = [], isLoading: templatesLoading } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates"],
@@ -121,8 +143,12 @@ export function NotesSection({
   const resetDialogState = () => {
     setNoteTitle("");
     setNoteBody("");
+    setNoteCardColor(fallbackCardColor);
+    setUseCardColor(false);
+    setNotePrint(true);
     setSelectedTemplateId("none");
     setEditingNoteId(null);
+    setCardColorLocked(false);
     setDialogOpen(false);
   };
 
@@ -130,7 +156,11 @@ export function NotesSection({
     setEditingNoteId(null);
     setNoteTitle("");
     setNoteBody("");
+    setNoteCardColor(fallbackCardColor);
+    setUseCardColor(false);
+    setNotePrint(true);
     setSelectedTemplateId("none");
+    setCardColorLocked(false);
     setDialogOpen(true);
   };
 
@@ -138,29 +168,46 @@ export function NotesSection({
     setEditingNoteId(note.id);
     setNoteTitle(note.title);
     setNoteBody(note.body ?? "");
+    setNoteCardColor(note.cardColor ?? fallbackCardColor);
+    setUseCardColor(note.cardColor !== null);
+    setNotePrint(note.print);
     setSelectedTemplateId("none");
+    setCardColorLocked(note.cardColorLocked);
     setDialogOpen(true);
   };
 
   const handleSave = () => {
     if (!noteTitle.trim()) return;
+    const payload = {
+      title: noteTitle,
+      body: noteBody,
+      cardColor: useCardColor ? noteCardColor : null,
+      print: notePrint,
+    };
     if (editingNoteId !== null) {
-      onUpdate?.(editingNoteId, { title: noteTitle, body: noteBody });
+      onUpdate?.(editingNoteId, payload);
       resetDialogState();
       return;
     }
     const templateId = selectedTemplateId === "none" ? undefined : Number(selectedTemplateId);
-    onAdd({ title: noteTitle, body: noteBody, templateId });
+    onAdd({ ...payload, templateId });
     resetDialogState();
   };
 
   const handleTemplateChange = (value: string) => {
     setSelectedTemplateId(value);
-    if (value === "none") return;
+    if (value === "none") {
+      setCardColorLocked(false);
+      return;
+    }
     const template = templates.find((item) => item.id === Number(value));
     if (!template) return;
     setNoteTitle(template.title);
     setNoteBody(template.body);
+    setNotePrint(template.print);
+    setCardColorLocked(template.cardColor !== null);
+    setUseCardColor(template.cardColor !== null);
+    setNoteCardColor(template.cardColor ?? fallbackCardColor);
   };
 
   const handleDelete = (note: Note) => {
@@ -263,6 +310,47 @@ export function NotesSection({
                 onChange={setNoteBody}
                 placeholder="Notizinhalt eingeben..."
                 className="min-h-[150px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Kartenfarbe</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUseCardColor((current) => !current)}
+                  disabled={cardColorLocked}
+                  data-testid="button-note-toggle-card-color"
+                >
+                  {useCardColor ? "Farbe entfernen" : "Farbe aktivieren"}
+                </Button>
+              </div>
+              <ColorSelectButton
+                color={noteCardColor}
+                onChange={(color) => {
+                  setUseCardColor(true);
+                  setNoteCardColor(color);
+                }}
+                testId="button-note-card-color-picker"
+                disabled={!useCardColor || cardColorLocked}
+              />
+              {cardColorLocked ? (
+                <p className="text-xs text-slate-500" data-testid="text-note-card-color-locked">
+                  Die Kartenfarbe stammt aus der Vorlage und kann fuer diese Notiz nicht geaendert werden.
+                </p>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
+              <div>
+                <Label htmlFor="switch-note-print" className="text-sm font-medium">Drucken</Label>
+                <p className="text-xs text-slate-500">Bestimmt, ob die Notiz in Druckausgaben beruecksichtigt wird.</p>
+              </div>
+              <Switch
+                id="switch-note-print"
+                checked={notePrint}
+                onCheckedChange={setNotePrint}
+                data-testid="switch-note-print"
               />
             </div>
           </div>

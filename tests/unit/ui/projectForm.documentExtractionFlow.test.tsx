@@ -22,8 +22,10 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 
 describe("FT20 project form document extraction flow wiring", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
-  const source = readFileSync(filePath, "utf8");
+  const projectFormPath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
+  const projectOrderFormPath = path.resolve(process.cwd(), "client/src/components/ProjectOrderForm.tsx");
+  const source = readFileSync(projectFormPath, "utf8");
+  const projectOrderFormSource = readFileSync(projectOrderFormPath, "utf8");
 
   it("calls extract endpoint with project_form scope", () => {
     expect(source).toContain("/api/document-extraction/extract?scope=project_form");
@@ -50,7 +52,9 @@ describe("FT20 project form document extraction flow wiring", () => {
 
   it("keeps order number editable for new project and readonly for existing project", () => {
     expect(source).toContain("const isEditing = !!projectId;");
-    expect(source).toContain("readOnly={isEditing}");
+    expect(source).toContain("isEditing={isEditing}");
+    expect(source).toContain("onOrderNumberChange={setOrderNumber}");
+    expect(projectOrderFormSource).toContain("readOnly={isEditing}");
   });
 
   it("maps extracted amount into dialog data and local amount state", () => {

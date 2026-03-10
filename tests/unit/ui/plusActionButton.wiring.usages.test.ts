@@ -20,7 +20,7 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 
 const scopeFiles = [
-  "client/src/components/AppointmentForm.tsx",
+  "client/src/components/AppointmentEmployeeSlot.tsx",
   "client/src/components/DocumentExtractionDropzone.tsx",
   "client/src/components/ui/employee-select-entity-edit-dialog.tsx",
   "client/src/components/ui/relation-slot.tsx",

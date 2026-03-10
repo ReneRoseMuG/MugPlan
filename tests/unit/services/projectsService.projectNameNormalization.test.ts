@@ -57,6 +57,7 @@ describe("FT02 projects service project name normalization", () => {
     await createProject({
       name: "  Sauna Modern  ",
       customerId: 11,
+      orderNumber: "  ORD-4711  ",
       descriptionMd: null,
       version: 1,
     });
@@ -65,6 +66,10 @@ describe("FT02 projects service project name normalization", () => {
       expect.objectContaining({
         name: "Sauna Modern",
         customerId: 11,
+        orderNumber: "ORD-4711",
+        projectOrder: expect.objectContaining({
+          orderNumber: "ORD-4711",
+        }),
       }),
     );
   });

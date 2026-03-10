@@ -6,6 +6,8 @@ interface ProjectOrderFormProps {
   amount: string;
   plannedDateText: string;
   plannedWeek: string;
+  isEditing: boolean;
+  onOrderNumberChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onPlannedDateTextChange: (value: string) => void;
   onPlannedWeekChange: (value: string) => void;
@@ -16,6 +18,8 @@ export function ProjectOrderForm({
   amount,
   plannedDateText,
   plannedWeek,
+  isEditing,
+  onOrderNumberChange,
   onAmountChange,
   onPlannedDateTextChange,
   onPlannedWeekChange,
@@ -28,7 +32,8 @@ export function ProjectOrderForm({
           <Input
             id="projectOrderNumber"
             value={orderNumber}
-            readOnly
+            onChange={(e) => onOrderNumberChange(e.target.value)}
+            readOnly={isEditing}
             data-testid="input-project-order-number"
           />
         </div>

@@ -103,8 +103,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   });
 
   const createNoteMutation = useMutation({
-    mutationFn: async ({ title, body, templateId }: { title: string; body: string; templateId?: number }) => {
-      const res = await apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body, templateId });
+    mutationFn: async ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
+      const res = await apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body, cardColor, print, templateId });
       return res.json();
     },
     onSuccess: () => {
@@ -117,8 +117,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: async ({ noteId, title, body, version }: { noteId: number; title: string; body: string; version: number }) => {
-      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, version });
+    mutationFn: async ({ noteId, title, body, cardColor, print, version }: { noteId: number; title: string; body: string; cardColor?: string | null; print: boolean; version: number }) => {
+      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
       return res.json();
     },
     onSuccess: () => {
@@ -313,12 +313,12 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     }
   };
 
-  const handleAddNote = ({ title, body, templateId }: { title: string; body: string; templateId?: number }) => {
+  const handleAddNote = ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
     if (!isEditMode || !customerId) {
       toast({ title: "Notiz noch nicht verfügbar", description: "Bitte speichern Sie den Kunden zuerst." });
       return;
     }
-    createNoteMutation.mutate({ title, body, templateId });
+    createNoteMutation.mutate({ title, body, cardColor, print, templateId });
   };
 
   const handleTogglePin = (noteId: number, isPinned: boolean) => {
@@ -333,7 +333,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     }
   };
 
-  const handleUpdateNote = (noteId: number, data: { title: string; body: string }) => {
+  const handleUpdateNote = (noteId: number, data: { title: string; body: string; cardColor?: string | null; print: boolean }) => {
     if (!isEditMode || !customerId) return;
     const version = getNoteVersion(noteId);
     updateNoteMutation.mutate({ noteId, ...data, version });

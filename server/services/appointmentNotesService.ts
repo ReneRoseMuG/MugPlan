@@ -16,15 +16,20 @@ export async function createAppointmentNote(
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
 
-  const noteData: InsertNote = { title: data.title, body: data.body };
+  const noteData: InsertNote = {
+    title: data.title,
+    body: data.body,
+    cardColor: data.cardColor ?? null,
+    print: data.print,
+  };
   if (data.templateId) {
     const template = await noteTemplatesRepository.getNoteTemplate(data.templateId);
     if (!template) {
       throw new Error("Note template not found");
     }
-    if (template.color) {
-      noteData.color = template.color;
-    }
+    noteData.cardColor = template.cardColor ?? null;
+    noteData.print = template.print;
+    noteData.cardColorLocked = template.cardColor !== null;
   }
 
   return notesRepository.withNotesTransaction(async (tx) => {
