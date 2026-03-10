@@ -22,6 +22,7 @@ import * as masterDataRepository from "../repositories/masterDataRepository";
 const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
 const PROTECTED_COMPONENT_CATEGORY_NAMES = new Set([
   "Dachvarianten",
+  "Fenster",
   "Inneneinrichtung",
   "Öfen",
   "Rückwände",

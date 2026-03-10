@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Component, ComponentCategory } from "@shared/schema";
 import { CollectionDropDown } from "@/components/ui/collection-drop-down";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getProjectProductFieldByCategoryName } from "@/lib/project-product-form";
+import { findProjectProductCategory, getProjectProductFieldByCategoryName } from "@/lib/project-product-form";
 
 interface ComponentDropdownProps {
   components: Component[];
@@ -37,7 +37,8 @@ function ComponentDropdownPanel({
     setDraftSelection(selectedComponentId);
   }, [selectedComponentId]);
 
-  const category = categories.find((entry) => entry.name === targetCategory) ?? null;
+  const fieldKey = getProjectProductFieldByCategoryName(targetCategory);
+  const category = fieldKey ? findProjectProductCategory(categories, fieldKey) : null;
   const options = useMemo(() => {
     if (!category) return [];
     return components
@@ -62,7 +63,7 @@ function ComponentDropdownPanel({
         onApply();
       }}
       adoptDisabled={!draftSelection}
-      testId={`select-component-${getProjectProductFieldByCategoryName(targetCategory) ?? "unknown"}`}
+      testId={`select-component-${fieldKey ?? "unknown"}`}
     />
   );
 }

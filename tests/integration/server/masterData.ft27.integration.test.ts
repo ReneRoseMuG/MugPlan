@@ -74,6 +74,7 @@ async function createAndLoginReaderAgent(admin: SuperAgentTest): Promise<SuperAg
 describe("FT27 integration: master data admin API", () => {
   const protectedComponentCategoryNames = [
     "Dachvarianten",
+    "Fenster",
     "Inneneinrichtung",
     "Öfen",
     "Rückwände",

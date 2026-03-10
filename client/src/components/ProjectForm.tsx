@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ComponentDropdown } from "@/components/ui/component-dropdown";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { ProductSelectionDropdown } from "@/components/ui/product-selection-dropdown";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
 import { ProjectOrderForm, ProjectProductFields } from "@/components/ProjectOrderForm";
@@ -44,6 +45,7 @@ import {
   createEmptyProjectProductSelections,
   extractEditorDescriptionHtml,
   getProjectProductField,
+  isProductSelectionField,
   mapProjectOrderItemsToSelections,
   PROJECT_PRODUCT_FIELDS,
   resolveSelectionsFromExtraction,
@@ -51,7 +53,7 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, ProjectStatus, Component, ComponentCategory, ProjectOrderItem } from "@shared/schema";
+import type { Project, Customer, Note, ProjectStatus, Component, ComponentCategory, ProjectOrderItem, Product } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 
 interface ProjectFormProps {
@@ -187,9 +189,15 @@ export function ProjectForm({
   const { data: allStatuses = [] } = useQuery<ProjectStatus[]>({
     queryKey: ['/api/project-status'],
   });
+  const productsUrl = "/api/admin/master-data/products?active=all";
   const componentCategoriesUrl = "/api/admin/master-data/component-categories?active=all";
   const componentsUrl = "/api/admin/master-data/components?active=all";
   const projectOrderItemsUrl = projectId ? `/api/projects/${projectId}/order-items` : null;
+
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: [productsUrl],
+    enabled: true,
+  });
 
   const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
     queryKey: [componentCategoriesUrl],
@@ -254,9 +262,9 @@ export function ProjectForm({
   }, [projectData, isEditing]);
 
   useEffect(() => {
-    if (!isEditing || components.length === 0 || componentCategories.length === 0) return;
-    setProductSelections(mapProjectOrderItemsToSelections(projectOrderItems, components, componentCategories));
-  }, [componentCategories, components, isEditing, projectOrderItems]);
+    if (!isEditing || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
+    setProductSelections(mapProjectOrderItemsToSelections(projectOrderItems, products, components, componentCategories));
+  }, [componentCategories, components, isEditing, products, projectOrderItems]);
 
   useEffect(() => {
     if (!isEditing && initialDocumentExtractionFile) {
@@ -297,10 +305,14 @@ export function ProjectForm({
   const projectVersion = projectData?.project.version;
   const resolvedProjectEditForm = resolveProjectEditForm(projectType);
   const articleLines = buildProjectArticleLines(productSelections);
-  const selectedComponentDialogCategory = componentDialogField ? getProjectProductField(componentDialogField).categoryName : null;
+  const selectedComponentDialogField = componentDialogField ? getProjectProductField(componentDialogField) : null;
+  const selectedComponentDialogCategory =
+    selectedComponentDialogField && selectedComponentDialogField.source === "component"
+      ? selectedComponentDialogField.categoryName
+      : null;
 
   useEffect(() => {
-    if (!isEditing || !projectData || components.length === 0 || componentCategories.length === 0) return;
+    if (!isEditing || !projectData || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
     setInitialFormSnapshot(
       buildFormSnapshot({
         name: projectData.project.name.trim(),
@@ -309,12 +321,12 @@ export function ProjectForm({
         plannedDateText: projectData.project.projectOrder?.plannedDateText ?? "",
         plannedWeek: projectData.project.projectOrder?.plannedWeek ?? "",
         descriptionMd: extractEditorDescriptionHtml(projectData.project.descriptionMd),
-        productSelections: mapProjectOrderItemsToSelections(projectOrderItems, components, componentCategories),
+        productSelections: mapProjectOrderItemsToSelections(projectOrderItems, products, components, componentCategories),
         extractedArticleListHtml: "",
         customerId: projectData.project.customerId,
       }),
     );
-  }, [componentCategories, components, isEditing, projectData, projectOrderItems]);
+  }, [componentCategories, components, isEditing, products, projectData, projectOrderItems]);
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
@@ -515,17 +527,26 @@ export function ProjectForm({
     }
   };
 
-  const upsertExistingProjectSelection = async (fieldKey: ProjectProductFieldKey, componentIdValue: string) => {
+  const upsertExistingProjectSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
     if (!projectId || !projectData?.project.orderNumber) return;
-    const numericComponentId = Number(componentIdValue);
-    const component = components.find((entry) => entry.id === numericComponentId);
-    if (!component) return;
+    const field = getProjectProductField(fieldKey);
+    const numericSelectedId = Number(selectedValue);
+    if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
+
+    const product = field.source === "product"
+      ? products.find((entry) => entry.id === numericSelectedId) ?? null
+      : null;
+    const component = field.source === "component"
+      ? components.find((entry) => entry.id === numericSelectedId) ?? null
+      : null;
+    if (field.source === "product" && !product) return;
+    if (field.source === "component" && !component) return;
 
     const response = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
       projectId,
       orderNumber: projectData.project.orderNumber,
-      productId: null,
-      componentId: component.id,
+      productId: product?.id ?? null,
+      componentId: component?.id ?? null,
       specificationId: null,
       description: null,
       quantity: 1,
@@ -534,8 +555,9 @@ export function ProjectForm({
     setProductSelections((current) => ({
       ...current,
       [fieldKey]: {
-        componentId: component.id,
-        componentName: component.name,
+        productId: product?.id ?? null,
+        componentId: component?.id ?? null,
+        componentName: product?.name ?? component?.name ?? "",
         itemId: savedItem.id,
         version: savedItem.version,
       },
@@ -543,15 +565,23 @@ export function ProjectForm({
     await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
   };
 
-  const handleComponentSelection = async (fieldKey: ProjectProductFieldKey, componentIdValue: string) => {
-    if (!componentIdValue) return;
-    const numericComponentId = Number(componentIdValue);
-    const component = components.find((entry) => entry.id === numericComponentId);
-    if (!component) return;
+  const handleFieldSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
+    if (!selectedValue) return;
+    const field = getProjectProductField(fieldKey);
+    const numericSelectedId = Number(selectedValue);
+    if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
+    const product = field.source === "product"
+      ? products.find((entry) => entry.id === numericSelectedId) ?? null
+      : null;
+    const component = field.source === "component"
+      ? components.find((entry) => entry.id === numericSelectedId) ?? null
+      : null;
+    if (field.source === "product" && !product) return;
+    if (field.source === "component" && !component) return;
 
     if (isEditing && projectId) {
       try {
-        await upsertExistingProjectSelection(fieldKey, componentIdValue);
+        await upsertExistingProjectSelection(fieldKey, selectedValue);
         toast({ title: `${getProjectProductField(fieldKey).label} übernommen` });
       } catch (error) {
         toast({
@@ -566,8 +596,9 @@ export function ProjectForm({
     setProductSelections((current) => ({
       ...current,
       [fieldKey]: {
-        componentId: component.id,
-        componentName: component.name,
+        productId: product?.id ?? null,
+        componentId: component?.id ?? null,
+        componentName: product?.name ?? component?.name ?? "",
         itemId: null,
         version: null,
       },
@@ -577,12 +608,13 @@ export function ProjectForm({
   const persistBufferedOrderItems = async (createdProjectId: number, createdOrderNumber: string) => {
     for (const field of PROJECT_PRODUCT_FIELDS) {
       const selection = productSelections[field.key];
-      if (selection.componentId == null) continue;
+      if (field.source === "product" && selection.productId == null) continue;
+      if (field.source === "component" && selection.componentId == null) continue;
       await apiRequest("POST", `/api/projects/${createdProjectId}/order-items`, {
         projectId: createdProjectId,
         orderNumber: createdOrderNumber,
-        productId: null,
-        componentId: selection.componentId,
+        productId: field.source === "product" ? selection.productId : null,
+        componentId: field.source === "component" ? selection.componentId : null,
         specificationId: null,
         description: null,
         quantity: 1,
@@ -1029,13 +1061,14 @@ export function ProjectForm({
       }
       setName(payload.saunaModel.trim());
       setExtractedArticleListHtml(payload.articleListHtml.trim());
-      if (components.length > 0 && componentCategories.length > 0 && documentExtractionData) {
+      if (products.length > 0 && components.length > 0 && componentCategories.length > 0 && documentExtractionData) {
         setProductSelections(
           resolveSelectionsFromExtraction(
             {
               saunaModel: payload.saunaModel.trim(),
               categorizedItems: documentExtractionData.categorizedItems,
             },
+            products,
             components,
             componentCategories,
           ),
@@ -1111,17 +1144,16 @@ export function ProjectForm({
       <div className="grid grid-cols-3 gap-6">
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
         <div className="col-span-2 space-y-6">
-              <ProjectOrderForm
-                name={name}
-                orderNumber={orderNumber}
-                amount={amount}
-                plannedDateText={plannedDateText}
-                plannedWeek={plannedWeek}
-                isEditing={isEditing}
-                productSelections={productSelections}
-                onNameChange={setName}
-                onOrderNumberChange={setOrderNumber}
-                onAmountChange={setAmount}
+                <ProjectOrderForm
+                  name={name}
+                  orderNumber={orderNumber}
+                  amount={amount}
+                  plannedDateText={plannedDateText}
+                  plannedWeek={plannedWeek}
+                  isEditing={isEditing}
+                  onNameChange={setName}
+                  onOrderNumberChange={setOrderNumber}
+                  onAmountChange={setAmount}
                 onPlannedDateTextChange={setPlannedDateText}
                 onPlannedWeekChange={setPlannedWeek}
               />
@@ -1274,14 +1306,31 @@ export function ProjectForm({
         onApplyData={applyExtractedData}
       />
 
-      {selectedComponentDialogCategory && componentDialogField ? (
+      {componentDialogField && isProductSelectionField(componentDialogField) ? (
+        <ProductSelectionDropdown
+          products={products}
+          selectedProductId={String(productSelections[componentDialogField].productId ?? "")}
+          onSelect={(productId) => {
+            void handleFieldSelection(componentDialogField, productId);
+          }}
+          dialogMode
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setComponentDialogField(null);
+            }
+          }}
+        />
+      ) : null}
+
+      {selectedComponentDialogCategory && componentDialogField && !isProductSelectionField(componentDialogField) ? (
         <ComponentDropdown
           components={components}
           categories={componentCategories}
           targetCategory={selectedComponentDialogCategory}
           selectedComponentId={String(productSelections[componentDialogField].componentId ?? "")}
           onSelect={(componentId) => {
-            void handleComponentSelection(componentDialogField, componentId);
+            void handleFieldSelection(componentDialogField, componentId);
           }}
           dialogMode
           open

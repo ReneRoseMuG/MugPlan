@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Customer, Employee, Project, Team, Tour } from "@shared/schema";
+import type { Customer, Employee, Product, Project, Team, Tour } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { Button } from "@/components/ui/button";
@@ -225,6 +225,7 @@ export function AppointmentForm({
 }: AppointmentFormProps) {
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
+  const productsUrl = "/api/admin/master-data/products?active=all";
   const componentCategoriesUrl = "/api/admin/master-data/component-categories?active=all";
   const componentsUrl = "/api/admin/master-data/components?active=all";
   const isEditing = Boolean(appointmentId);
@@ -335,6 +336,10 @@ export function AppointmentForm({
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
     queryFn: () => fetchJson<Customer[]>("/api/customers"),
+  });
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: [productsUrl],
+    queryFn: () => fetchJson<Product[]>(productsUrl),
   });
   const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
     queryKey: [componentCategoriesUrl],
@@ -849,6 +854,7 @@ export function AppointmentForm({
                 saunaModel: payload.saunaModel.trim(),
                 categorizedItems: documentExtractionData.categorizedItems,
               },
+              products,
               components,
               componentCategories,
             )

@@ -43,6 +43,74 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 describe("FT02/FT27 integration: project order items endpoints", () => {
+  it("replaces existing product-based sauna model items in the same project", async () => {
+    const admin = await loginAdminAgent();
+    const token = `FT27-ORDER-PRODUCT-${sequence++}`;
+    const project = await createProjectFixture({ prefix: token, name: `${token}-Project` });
+
+    const productCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: `${token}-Category`, isActive: true, version: 1 })
+      .expect(201);
+
+    const firstProduct = await admin
+      .post("/api/admin/master-data/products")
+      .send({
+        name: `${token}-Model-A`,
+        categoryId: productCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    const secondProduct = await admin
+      .post("/api/admin/master-data/products")
+      .send({
+        name: `${token}-Model-B`,
+        categoryId: productCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: firstProduct.body.id,
+        componentId: null,
+        specificationId: null,
+        description: null,
+        quantity: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: secondProduct.body.id,
+        componentId: null,
+        specificationId: null,
+        description: null,
+        quantity: 1,
+      })
+      .expect(201);
+
+    await admin
+      .get(`/api/projects/${project.id}/order-items`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0].productId).toBe(secondProduct.body.id);
+        expect(res.body[0].componentId).toBeNull();
+      });
+  });
+
   it("replaces items in the same component category and supports list/delete", async () => {
     const admin = await loginAdminAgent();
     const token = `FT27-ORDER-${sequence++}`;

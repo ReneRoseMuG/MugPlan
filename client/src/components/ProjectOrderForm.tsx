@@ -14,7 +14,6 @@ interface ProjectOrderFormProps {
   plannedDateText: string;
   plannedWeek: string;
   isEditing: boolean;
-  productSelections: ProjectProductSelections;
   onNameChange: (value: string) => void;
   onOrderNumberChange: (value: string) => void;
   onAmountChange: (value: string) => void;
@@ -34,7 +33,6 @@ export function ProjectOrderForm({
   plannedDateText,
   plannedWeek,
   isEditing,
-  productSelections,
   onNameChange,
   onOrderNumberChange,
   onAmountChange,
@@ -107,8 +105,8 @@ export function ProjectProductFields({
   productSelections,
   onOpenComponentDialog,
 }: ProjectProductFieldsProps) {
-  const leftColumnFields: ProjectProductFieldKey[] = ["saunaModel", "oven", "control", "roof"];
-  const rightColumnFields: ProjectProductFieldKey[] = ["window", "frontWall", "rearWallWindow"];
+  const leftColumnFields: ProjectProductFieldKey[] = ["saunaModel", "oven", "control", "roof", "door"];
+  const rightColumnFields: ProjectProductFieldKey[] = ["window", "frontWall", "rearWallWindow", "interior"];
 
   const renderField = (fieldKey: ProjectProductFieldKey) => {
     const field = PROJECT_PRODUCT_FIELDS.find((entry) => entry.key === fieldKey)!;

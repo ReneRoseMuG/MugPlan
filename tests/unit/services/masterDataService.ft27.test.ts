@@ -60,6 +60,17 @@ import {
 } from "../../../server/services/masterDataService";
 
 describe("FT27 unit: masterDataService", () => {
+  const protectedComponentCategoryNames = [
+    "Dachvarianten",
+    "Fenster",
+    "Inneneinrichtung",
+    "Öfen",
+    "Rückwände",
+    "Steuerungen",
+    "Türen",
+    "Vorderwände",
+  ] as const;
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -136,15 +147,18 @@ describe("FT27 unit: masterDataService", () => {
     expect(repositoryMocks.deleteProductCategoryWithVersion).not.toHaveBeenCalled();
   });
 
-  it("blocks deleting protected component category as BUSINESS_CONFLICT", async () => {
-    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: "Öfen" });
+  it.each(protectedComponentCategoryNames)(
+    "blocks deleting protected component category %s as BUSINESS_CONFLICT",
+    async (categoryName) => {
+      repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: categoryName });
 
-    await expect(deleteComponentCategory(1, 7, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
-      status: 409,
-      code: "BUSINESS_CONFLICT",
-    });
-    expect(repositoryMocks.deleteComponentCategoryWithVersion).not.toHaveBeenCalled();
-  });
+      await expect(deleteComponentCategory(1, 7, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+        status: 409,
+        code: "BUSINESS_CONFLICT",
+      });
+      expect(repositoryMocks.deleteComponentCategoryWithVersion).not.toHaveBeenCalled();
+    },
+  );
 
   it("maps product create FK conflict to BUSINESS_CONFLICT", async () => {
     repositoryMocks.createProduct.mockRejectedValueOnce({

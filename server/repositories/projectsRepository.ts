@@ -488,8 +488,37 @@ async function deleteConflictingCategoryItemsTx(
   await tx.delete(projectOrderItems).where(inArray(projectOrderItems.id, conflictingIds));
 }
 
+async function deleteConflictingProductItemsTx(
+  tx: any,
+  projectId: number,
+  excludeItemId?: number,
+): Promise<void> {
+  const conditions = [
+    eq(projectOrderItems.projectId, projectId),
+    sql`${projectOrderItems.productId} is not null`,
+  ];
+  if (excludeItemId != null) {
+    conditions.push(sql`${projectOrderItems.id} <> ${excludeItemId}`);
+  }
+
+  const conflictingRows = await tx
+    .select({ id: projectOrderItems.id })
+    .from(projectOrderItems)
+    .where(and(...conditions));
+
+  const conflictingIds = conflictingRows.map((row: { id: number }) => row.id);
+  if (conflictingIds.length === 0) {
+    return;
+  }
+
+  await tx.delete(projectOrderItems).where(inArray(projectOrderItems.id, conflictingIds));
+}
+
 export async function createProjectOrderItem(input: InsertProjectOrderItem): Promise<ProjectOrderItem> {
   return db.transaction(async (tx) => {
+    if (input.productId != null) {
+      await deleteConflictingProductItemsTx(tx, input.projectId);
+    }
     if (input.componentId != null) {
       await deleteConflictingCategoryItemsTx(tx, input.projectId, input.componentId);
     }
@@ -519,6 +548,11 @@ export async function updateProjectOrderItemWithVersion(
     }
     if (existing.version !== expectedVersion) {
       return { kind: "version_conflict" as const };
+    }
+
+    const nextProductId = input.productId === undefined ? existing.productId : input.productId;
+    if (nextProductId != null) {
+      await deleteConflictingProductItemsTx(tx, projectId, itemId);
     }
 
     const nextComponentId = input.componentId === undefined ? existing.componentId : input.componentId;

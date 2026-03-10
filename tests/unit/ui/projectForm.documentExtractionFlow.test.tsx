@@ -8,7 +8,7 @@
  * - Upload ruft den Extract-Endpunkt mit project_form auf.
  * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
  * - Apply-Callback schreibt die extrahierte Artikelliste nicht direkt in den Beschreibungseditor.
- * - Projektformular verdrahtet Artikellisten-Slots und ComponentDropdown.
+ * - Projektformular verdrahtet Artikellisten-Slots mit Produktdialog fuer Saunamodell und ComponentDropdown fuer Komponenten.
  * - Auftragsnummer ist nur bei Bestandsprojekt readOnly und bei neuem Projekt editierbar.
  * - Bei single-Customer-Konflikt wird bestaetigt und vorhandener Kunde uebernommen statt Neuanlage.
  *
@@ -57,13 +57,16 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).not.toContain("setDescriptionMd(payload.articleListHtml.trim());");
   });
 
-  it("wires component slot selection and dialog rendering", () => {
+  it("wires article list slot dialogs for products and components", () => {
+    expect(source).toContain("<ProductSelectionDropdown");
     expect(source).toContain("<ComponentDropdown");
     expect(source).toContain("<ProjectProductFields");
     expect(source).toContain("value=\"article-list\"");
     expect(source).toContain("onOpenComponentDialog={setComponentDialogField}");
-    expect(projectOrderFormSource).toContain("const leftColumnFields: ProjectProductFieldKey[] = [\"saunaModel\", \"oven\", \"control\", \"roof\"]");
-    expect(projectOrderFormSource).toContain("const rightColumnFields: ProjectProductFieldKey[] = [\"window\", \"frontWall\", \"rearWallWindow\"]");
+    expect(source).toContain("void handleFieldSelection(componentDialogField, productId);");
+    expect(source).toContain("void handleFieldSelection(componentDialogField, componentId);");
+    expect(projectOrderFormSource).toContain("const leftColumnFields: ProjectProductFieldKey[] = [\"saunaModel\", \"oven\", \"control\", \"roof\", \"door\"]");
+    expect(projectOrderFormSource).toContain("const rightColumnFields: ProjectProductFieldKey[] = [\"window\", \"frontWall\", \"rearWallWindow\", \"interior\"]");
     expect(projectOrderFormSource).toContain("Auswählen");
   });
 

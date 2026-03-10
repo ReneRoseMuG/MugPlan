@@ -502,6 +502,12 @@ export function ProductManagementPage() {
     }
   }
 
+  void selectedProductComponents;
+  void createComponentForProduct;
+  void updateComponentData;
+  void removeComponentFromProduct;
+  void insertComponentIntoProduct;
+
   return (
     <ListLayout
       title="Produkte"
