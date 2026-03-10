@@ -1,14 +1,25 @@
 import { useMemo, useState } from "react";
 import type { Component, ComponentCategory } from "@shared/schema";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+
+type ComponentEditorInput = {
+  name: string;
+  categoryId: number;
+  description: string | null;
+  isActive: boolean;
+};
 
 interface AllComponentListProps {
   components: Component[];
   categories: ComponentCategory[];
   categoryNameById: Map<number, string>;
   isAdmin: boolean;
-  onInsertComponent: (component: Component) => Promise<void>;
+  onCreateComponent: (input: ComponentEditorInput) => Promise<void>;
 }
 
 export function AllComponentList({
@@ -16,10 +27,13 @@ export function AllComponentList({
   categories,
   categoryNameById,
   isAdmin,
-  onInsertComponent,
+  onCreateComponent,
 }: AllComponentListProps) {
-  const [selectedComponentId, setSelectedComponentId] = useState<string>("");
   const [categoryFilterId, setCategoryFilterId] = useState<string>("");
+  const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [draft, setDraft] = useState({ name: "", categoryId: "", description: "" });
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const filteredComponents = useMemo(() => {
     if (!categoryFilterId) return components;
@@ -28,10 +42,30 @@ export function AllComponentList({
     return components.filter((component) => component.categoryId === categoryId);
   }, [categoryFilterId, components]);
 
-  const selectedComponent = useMemo(
-    () => filteredComponents.find((component) => String(component.id) === selectedComponentId) ?? null,
-    [filteredComponents, selectedComponentId],
-  );
+  const resetDraft = () => {
+    setDraft({ name: "", categoryId: "", description: "" });
+    setError(null);
+    setSubmitting(false);
+  };
+
+  const submitNew = async () => {
+    if (!draft.name.trim() || !draft.categoryId) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onCreateComponent({
+        name: draft.name.trim(),
+        categoryId: Number(draft.categoryId),
+        description: draft.description.trim() || null,
+        isActive: true,
+      });
+      setNewDialogOpen(false);
+      resetDraft();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Komponente konnte nicht angelegt werden.");
+      setSubmitting(false);
+    }
+  };
 
   return (
     <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="all-component-list">
@@ -54,11 +88,7 @@ export function AllComponentList({
               </TableRow>
             ) : (
               filteredComponents.map((component) => (
-                <TableRow
-                  key={component.id}
-                  className={selectedComponentId === String(component.id) ? "bg-slate-100" : undefined}
-                  onClick={() => setSelectedComponentId(String(component.id))}
-                >
+                <TableRow key={component.id}>
                   <TableCell>{component.name}</TableCell>
                   <TableCell>{categoryNameById.get(component.categoryId) ?? `#${component.categoryId}`}</TableCell>
                   <TableCell>{component.isActive ? "Aktiv" : "Inaktiv"}</TableCell>
@@ -76,7 +106,6 @@ export function AllComponentList({
               value={categoryFilterId}
               onChange={(event) => {
                 setCategoryFilterId(event.target.value);
-                setSelectedComponentId("");
               }}
               className="h-10 w-full rounded border border-slate-300 bg-white px-2 text-sm"
             >
@@ -89,15 +118,65 @@ export function AllComponentList({
           <Button
             variant="outline"
             onClick={() => {
-              if (!selectedComponent) return;
-              void onInsertComponent(selectedComponent);
+              resetDraft();
+              setNewDialogOpen(true);
             }}
-            disabled={!selectedComponent}
+            data-testid="button-open-new-component-from-all-components"
           >
-            Einfuegen
+            Neue Komponente
           </Button>
         </div>
       ) : null}
+
+      <Dialog open={newDialogOpen} onOpenChange={(open) => {
+        setNewDialogOpen(open);
+        if (!open) resetDraft();
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neue Komponente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="all-components-new-name">Name</Label>
+              <Input
+                id="all-components-new-name"
+                value={draft.name}
+                onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="all-components-new-category">Komponentenkategorie</Label>
+              <select
+                id="all-components-new-category"
+                value={draft.categoryId}
+                onChange={(event) => setDraft({ ...draft, categoryId: event.target.value })}
+                className="h-10 w-full rounded border border-slate-300 bg-white px-2 text-sm"
+              >
+                <option value="">Kategorie wählen</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="all-components-new-description">Beschreibung</Label>
+              <Textarea
+                id="all-components-new-description"
+                value={draft.description}
+                onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+              />
+            </div>
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewDialogOpen(false)}>Abbrechen</Button>
+            <Button onClick={() => void submitNew()} disabled={submitting || !draft.name.trim() || !draft.categoryId}>
+              {submitting ? "Speichere..." : "Übernehmen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

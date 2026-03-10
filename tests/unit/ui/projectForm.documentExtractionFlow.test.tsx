@@ -59,8 +59,11 @@ describe("FT20 project form document extraction flow wiring", () => {
 
   it("wires component slot selection and dialog rendering", () => {
     expect(source).toContain("<ComponentDropdown");
+    expect(source).toContain("<ProjectProductFields");
+    expect(source).toContain("value=\"article-list\"");
     expect(source).toContain("onOpenComponentDialog={setComponentDialogField}");
-    expect(projectOrderFormSource).toContain("PROJECT_PRODUCT_FIELDS.map((field) => (");
+    expect(projectOrderFormSource).toContain("const leftColumnFields: ProjectProductFieldKey[] = [\"saunaModel\", \"oven\", \"control\", \"roof\"]");
+    expect(projectOrderFormSource).toContain("const rightColumnFields: ProjectProductFieldKey[] = [\"window\", \"frontWall\", \"rearWallWindow\"]");
     expect(projectOrderFormSource).toContain("Auswählen");
   });
 

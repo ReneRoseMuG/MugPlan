@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Artikellistenzeilen werden aus den gepflegten Produktslots in stabiler Reihenfolge erzeugt.
+ * - Zusätzliche Slots für Vorderwand und Rückwand werden in derselben Reihenfolge mitgeführt.
  * - Persistierte Projektbeschreibung trennt Artikelliste und Beschreibung ueber sichtbare H2-Abschnitte.
  * - Beim Oeffnen des Formulars wird nur der Beschreibungsteil in den Editor zurueckgefuehrt.
  *
@@ -26,11 +27,15 @@ describe("project product form description helpers", () => {
     const selections = createEmptyProjectProductSelections();
     selections.saunaModel.componentName = "Modell S";
     selections.oven.componentName = "Ofen X";
+    selections.frontWall.componentName = "Frontglas";
+    selections.rearWallWindow.componentName = "Rueckwand doppelt";
     selections.window.componentName = "Panoramafenster";
 
     expect(buildProjectArticleLines(selections)).toEqual([
       "Saunamodell: Modell S",
       "Ofen: Ofen X",
+      "Vorderwand: Frontglas",
+      "Rückwand: Rueckwand doppelt",
       "Fenster: Panoramafenster",
     ]);
   });

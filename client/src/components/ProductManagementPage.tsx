@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AllComponentList } from "@/components/ui/all-component-list";
-import { ProductComponentList } from "@/components/ui/product-component-list";
 import { ProductData, type ProductDataDraft } from "@/components/ui/product-data";
 import { ProductDropDown } from "@/components/ui/product-drop-down";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -100,7 +99,6 @@ export function ProductManagementPage() {
   const { toast } = useToast();
   const activeScope: ActiveScope = "all";
   const [productCategoryFilterId, setProductCategoryFilterId] = useState("");
-  const [componentCategoryFilterId, setComponentCategoryFilterId] = useState("");
 
   const [newProductCategoryName, setNewProductCategoryName] = useState("");
   const [editProductCategory, setEditProductCategory] = useState<ProductCategory | null>(null);
@@ -193,19 +191,10 @@ export function ProductManagementPage() {
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
   }, [components, productIdsByComponentId, selectedProduct]);
 
-  const allAvailableComponents = useMemo(() => {
-    if (!selectedProduct) return [];
-    return components
-      .filter((row) => !(productIdsByComponentId.get(row.id) ?? []).includes(selectedProduct.id))
-      .sort((a, b) => a.name.localeCompare(b.name, "de"));
-  }, [components, productIdsByComponentId, selectedProduct]);
-
-  const filteredAvailableComponents = useMemo(() => {
-    if (!componentCategoryFilterId) return allAvailableComponents;
-    const categoryId = Number(componentCategoryFilterId);
-    if (!Number.isFinite(categoryId) || categoryId <= 0) return allAvailableComponents;
-    return allAvailableComponents.filter((row) => row.categoryId === categoryId);
-  }, [allAvailableComponents, componentCategoryFilterId]);
+  const allComponents = useMemo(
+    () => components.slice().sort((a, b) => a.name.localeCompare(b.name, "de")),
+    [components],
+  );
 
   const createProductCategoryMutation = useMutation({
     mutationFn: async () =>
@@ -451,6 +440,23 @@ export function ProductManagementPage() {
     }
   }
 
+  async function createStandaloneComponent(input: ComponentEditorInput): Promise<void> {
+    try {
+      await apiRequest("POST", "/api/admin/master-data/components", {
+        name: input.name.trim(),
+        categoryId: input.categoryId,
+        description: input.description,
+        isActive: true,
+        version: 1,
+      });
+      await invalidateMasterDataQueries(activeScope);
+      toast({ title: "Komponente angelegt" });
+    } catch (error) {
+      const code = extractApiCode(error);
+      throw new Error(code === "BUSINESS_CONFLICT" ? "Komponentenname existiert bereits." : "Komponente konnte nicht angelegt werden.");
+    }
+  }
+
   async function updateComponentData(component: Component, input: ComponentEditorInput): Promise<void> {
     try {
       await updateComponentMutation.mutateAsync({
@@ -633,7 +639,6 @@ export function ProductManagementPage() {
                   {editComponentCategory ? (
                     <Button variant="outline" onClick={() => {
                       setEditComponentCategory(null);
-                      setComponentCategoryFilterId("");
                     }}>
                       Abbrechen
                     </Button>
@@ -655,7 +660,6 @@ export function ProductManagementPage() {
                           onClick={() => {
                             if (row.name === DEFAULT_COMPONENT_CATEGORY_NAME) return;
                             setEditComponentCategory(editComponentCategory?.id === row.id ? null : { ...row });
-                            setComponentCategoryFilterId(editComponentCategory?.id === row.id ? "" : String(row.id));
                           }}
                         >
                           <TableCell>{row.name}</TableCell>
@@ -710,21 +714,12 @@ export function ProductManagementPage() {
                   onSubmit={() => void updateSelectedProduct()}
                 />
 
-                <ProductComponentList
-                  components={selectedProductComponents}
-                  categoryNameById={componentCategoryNameById}
-                  isAdmin={isAdmin}
-                  onCreateComponent={createComponentForProduct}
-                  onUpdateComponent={updateComponentData}
-                  onRemoveComponent={removeComponentFromProduct}
-                />
-
                 <AllComponentList
-                  components={filteredAvailableComponents}
+                  components={allComponents}
                   categories={componentCategories}
                   categoryNameById={componentCategoryNameById}
                   isAdmin={isAdmin}
-                  onInsertComponent={insertComponentIntoProduct}
+                  onCreateComponent={createStandaloneComponent}
                 />
               </div>
             </section>

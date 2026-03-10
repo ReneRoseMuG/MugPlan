@@ -20,6 +20,10 @@ interface ProjectOrderFormProps {
   onAmountChange: (value: string) => void;
   onPlannedDateTextChange: (value: string) => void;
   onPlannedWeekChange: (value: string) => void;
+}
+
+interface ProjectProductFieldsProps {
+  productSelections: ProjectProductSelections;
   onOpenComponentDialog: (fieldKey: ProjectProductFieldKey) => void;
 }
 
@@ -36,7 +40,6 @@ export function ProjectOrderForm({
   onAmountChange,
   onPlannedDateTextChange,
   onPlannedWeekChange,
-  onOpenComponentDialog,
 }: ProjectOrderFormProps) {
   return (
     <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4" data-testid="project-order-form">
@@ -96,35 +99,56 @@ export function ProjectOrderForm({
           />
         </div>
       </div>
-      <div className="space-y-3 rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-product-fields">
-        <h3 className="text-sm font-bold tracking-wider text-primary">Artikelliste</h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {PROJECT_PRODUCT_FIELDS.map((field) => (
-            <div
-              key={field.key}
-              className="grid grid-cols-[minmax(0,1fr),auto] items-end gap-2"
-              data-testid={`project-product-field-${field.key}`}
-            >
-              <div className="space-y-2">
-                <Label htmlFor={`project-product-${field.key}`}>{field.label}</Label>
-                <Input
-                  id={`project-product-${field.key}`}
-                  value={productSelections[field.key].componentName}
-                  readOnly
-                  placeholder={`${field.label} auswählen`}
-                  data-testid={`input-project-product-${field.key}`}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenComponentDialog(field.key)}
-                data-testid={`button-project-product-${field.key}`}
-              >
-                Auswählen
-              </Button>
-            </div>
-          ))}
+    </div>
+  );
+}
+
+export function ProjectProductFields({
+  productSelections,
+  onOpenComponentDialog,
+}: ProjectProductFieldsProps) {
+  const leftColumnFields: ProjectProductFieldKey[] = ["saunaModel", "oven", "control", "roof"];
+  const rightColumnFields: ProjectProductFieldKey[] = ["window", "frontWall", "rearWallWindow"];
+
+  const renderField = (fieldKey: ProjectProductFieldKey) => {
+    const field = PROJECT_PRODUCT_FIELDS.find((entry) => entry.key === fieldKey)!;
+    return (
+      <div
+        key={field.key}
+        className="grid grid-cols-[minmax(0,1fr),auto] items-end gap-2"
+        data-testid={`project-product-field-${field.key}`}
+      >
+        <div className="space-y-2">
+          <Label htmlFor={`project-product-${field.key}`}>{field.label}</Label>
+          <Input
+            id={`project-product-${field.key}`}
+            value={productSelections[field.key].componentName}
+            readOnly
+            placeholder={`${field.label} auswählen`}
+            data-testid={`input-project-product-${field.key}`}
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenComponentDialog(field.key)}
+          data-testid={`button-project-product-${field.key}`}
+        >
+          Auswählen
+        </Button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-product-fields">
+      <h3 className="text-sm font-bold tracking-wider text-primary">Artikelliste</h3>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="space-y-3">
+          {leftColumnFields.map(renderField)}
+        </div>
+        <div className="space-y-3">
+          {rightColumnFields.map(renderField)}
         </div>
       </div>
     </div>

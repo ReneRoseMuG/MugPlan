@@ -4,7 +4,7 @@ import { ComponentDropdown } from "@/components/ui/component-dropdown";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
-import { ProjectOrderForm } from "@/components/ProjectOrderForm";
+import { ProjectOrderForm, ProjectProductFields } from "@/components/ProjectOrderForm";
 import { ProjectStatusPanel } from "@/components/ProjectStatusPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
@@ -1124,7 +1124,6 @@ export function ProjectForm({
                 onAmountChange={setAmount}
                 onPlannedDateTextChange={setPlannedDateText}
                 onPlannedWeekChange={setPlannedWeek}
-                onOpenComponentDialog={setComponentDialogField}
               />
 
               <div className="space-y-4">
@@ -1157,17 +1156,11 @@ export function ProjectForm({
                     />
                   </TabsContent>
                   <TabsContent value="article-list" className="pt-4">
-                    <div className="rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-article-list-slot">
-                      <h2 className="text-lg font-semibold">Artikelliste</h2>
-                      {articleLines.length === 0 ? (
-                        <p className="mt-2 text-sm text-muted-foreground">Wählen Sie im Produktformular Komponenten aus.</p>
-                      ) : (
-                        <div className="mt-2 space-y-1 text-sm">
-                          {articleLines.map((line) => (
-                            <div key={line}>{line}</div>
-                          ))}
-                        </div>
-                      )}
+                    <div data-testid="project-article-list-slot">
+                      <ProjectProductFields
+                        productSelections={productSelections}
+                        onOpenComponentDialog={setComponentDialogField}
+                      />
                     </div>
                   </TabsContent>
                 </Tabs>

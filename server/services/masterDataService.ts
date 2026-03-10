@@ -20,7 +20,15 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 
 const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
-const DEFAULT_MODEL_CATEGORY_NAME = "Saunamodell";
+const PROTECTED_COMPONENT_CATEGORY_NAMES = new Set([
+  "Dachvarianten",
+  "Inneneinrichtung",
+  "Öfen",
+  "Rückwände",
+  "Steuerungen",
+  "Türen",
+  "Vorderwände",
+]);
 
 export class MasterDataError extends Error {
   status: number;
@@ -165,7 +173,7 @@ export async function deleteComponentCategory(
   requireAdmin(roleKey);
   const category = await masterDataRepository.getComponentCategoryById(id);
   if (!category) throw new MasterDataError(404, "NOT_FOUND");
-  if (category.name === DEFAULT_MODEL_CATEGORY_NAME) {
+  if (PROTECTED_COMPONENT_CATEGORY_NAMES.has(category.name)) {
     throw new MasterDataError(409, "BUSINESS_CONFLICT");
   }
   try {

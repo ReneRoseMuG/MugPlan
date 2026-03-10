@@ -8,6 +8,7 @@
  * - CustomersPage rendert keinen Kunden-Bulk-Import mehr.
  * - ProjectsPage rendert keinen Projekt-Bulk-Import mehr.
  * - Stammdaten binden den neuen PDF-Mining-Tab an.
+ * - PDF-Mining-Ergebnisse werden tabwechselstabil restauriert, ohne die Stammdaten-Tabs global gemountet zu halten.
  * - Query-Invalidierung nutzt explizite Kunden/Projekte-Keys.
  *
  * Fehlerfaelle:
@@ -43,12 +44,16 @@ describe("FT24 unit: bulk import dialog wiring", () => {
 
     expect(masterDataPageSource).toContain("id: \"pdf-mining\"");
     expect(masterDataPageSource).toContain("content: <MasterDataPdfMiningPage />");
+    expect(masterDataPageSource).toContain("keepMounted={false}");
 
     expect(miningPageSource).toContain("/api/admin/master-data/pdf-mining/limits");
     expect(miningPageSource).toContain("/api/admin/master-data/pdf-mining/analyze");
     expect(miningPageSource).toContain("partitionMiningFiles(files, limits)");
     expect(miningPageSource).toContain("for (let index = 0; index < batches.length; index += 1)");
     expect(miningPageSource).toContain("mergeMiningAnalyzeResponses(aggregatedResult, batchResult)");
+    expect(miningPageSource).toContain("master-data-pdf-mining-result");
+    expect(miningPageSource).toContain("window.sessionStorage.getItem(MINING_RESULT_STORAGE_KEY)");
+    expect(miningPageSource).toContain("window.sessionStorage.setItem(");
     expect(miningPageSource).toContain("data-testid=\"master-data-pdf-mining-progress\"");
     expect(miningPageSource).toContain("button-adopt-mining-product");
     expect(miningPageSource).toContain("button-run-master-data-pdf-mining");

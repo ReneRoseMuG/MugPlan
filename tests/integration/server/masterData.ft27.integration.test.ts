@@ -8,7 +8,7 @@
  * - FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only.
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
- * - Default-Kategorien (Alle Produkte/Saunamodell) sind nicht loeschbar.
+ * - Default-/Schutzkategorien (Alle Produkte plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
  * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
  *
  * Fehlerfaelle:
@@ -24,6 +24,7 @@ import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
+import { ensureComponentCategoryFixture } from "../../helpers/testDataFactory";
 
 let app: express.Express;
 let userCounter = 1;
@@ -71,6 +72,16 @@ async function createAndLoginReaderAgent(admin: SuperAgentTest): Promise<SuperAg
 }
 
 describe("FT27 integration: master data admin API", () => {
+  const protectedComponentCategoryNames = [
+    "Dachvarianten",
+    "Inneneinrichtung",
+    "Öfen",
+    "Rückwände",
+    "Steuerungen",
+    "Türen",
+    "Vorderwände",
+  ] as const;
+
   it("creates, updates and deletes a product category as admin", async () => {
     const admin = await loginAdminAgent();
 
@@ -146,7 +157,7 @@ describe("FT27 integration: master data admin API", () => {
       });
   });
 
-  it("blocks deleting default categories with BUSINESS_CONFLICT", async () => {
+  it("blocks deleting default product category with BUSINESS_CONFLICT", async () => {
     const admin = await loginAdminAgent();
 
     const productCategoriesResponse = await admin
@@ -164,23 +175,23 @@ describe("FT27 integration: master data admin API", () => {
       .expect((res) => {
         expect(res.body.code).toBe("BUSINESS_CONFLICT");
       });
-
-    const modelCategoriesResponse = await admin
-      .get("/api/admin/master-data/component-categories?active=all")
-      .expect(200);
-    const defaultModelCategory = (modelCategoriesResponse.body as Array<{ id: number; name: string; version: number }>)
-      .find((row) => row.name === "Saunamodell");
-
-    expect(defaultModelCategory).toBeDefined();
-
-    await admin
-      .delete(`/api/admin/master-data/component-categories/${defaultModelCategory!.id}`)
-      .send({ version: defaultModelCategory!.version })
-      .expect(409)
-      .expect((res) => {
-        expect(res.body.code).toBe("BUSINESS_CONFLICT");
-      });
   });
+
+  it.each(protectedComponentCategoryNames)(
+    "blocks deleting protected component category %s with BUSINESS_CONFLICT",
+    async (categoryName) => {
+      const admin = await loginAdminAgent();
+      const protectedCategory = await ensureComponentCategoryFixture(categoryName);
+
+      await admin
+        .delete(`/api/admin/master-data/component-categories/${protectedCategory.id}`)
+        .send({ version: protectedCategory.version })
+        .expect(409)
+        .expect((res) => {
+          expect(res.body.code).toBe("BUSINESS_CONFLICT");
+        });
+    },
+  );
 
   it("returns FORBIDDEN for non-admin on FT27 list endpoint", async () => {
     const admin = await loginAdminAgent();

@@ -1,5 +1,5 @@
 import { eq, sql } from "drizzle-orm";
-import { componentCategories, productCategories } from "@shared/schema";
+import { productCategories } from "@shared/schema";
 import { db } from "../db";
 
 function isDuplicateKeyError(error: unknown): boolean {
@@ -40,40 +40,6 @@ async function ensureProductDefaultCategory(): Promise<void> {
   }
 }
 
-async function ensureModelDefaultCategory(): Promise<void> {
-  const [existing] = await db
-    .select({
-      id: componentCategories.id,
-      isActive: componentCategories.isActive,
-    })
-    .from(componentCategories)
-    .where(eq(componentCategories.name, "Saunamodell"))
-    .limit(1);
-
-  if (!existing) {
-    try {
-      await db.insert(componentCategories).values({
-        name: "Saunamodell",
-        isActive: true,
-        version: 1,
-      });
-      return;
-    } catch (error) {
-      if (!isDuplicateKeyError(error)) throw error;
-    }
-  }
-
-  if (existing && !existing.isActive) {
-    await db.execute(sql`
-      update component_categories
-      set is_active = true, updated_at = now(), version = version + 1
-      where id = ${existing.id}
-        and is_active = false
-    `);
-  }
-}
-
 export async function ensureMasterDataDefaults(): Promise<void> {
   await ensureProductDefaultCategory();
-  await ensureModelDefaultCategory();
 }

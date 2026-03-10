@@ -8,7 +8,7 @@
  * - Nur ADMIN darf FT27-Stammdatenoperationen ausfuehren.
  * - Duplicate-/FK-Fehler werden als BUSINESS_CONFLICT gemappt.
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
- * - Default-Kategorien (Alle Produkte/Saunamodell) sind nicht loeschbar.
+ * - Default-/Schutzkategorien (Alle Produkte plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
  * - Component-Product m:n-Operationen folgen derselben Fehlersemantik.
  * - Ohne Filter wird serverseitig auf active normalisiert.
  *
@@ -136,8 +136,8 @@ describe("FT27 unit: masterDataService", () => {
     expect(repositoryMocks.deleteProductCategoryWithVersion).not.toHaveBeenCalled();
   });
 
-  it("blocks deleting default model category as BUSINESS_CONFLICT", async () => {
-    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: "Saunamodell" });
+  it("blocks deleting protected component category as BUSINESS_CONFLICT", async () => {
+    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: "Öfen" });
 
     await expect(deleteComponentCategory(1, 7, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
       status: 409,

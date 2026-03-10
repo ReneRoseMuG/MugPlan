@@ -18,6 +18,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type ActiveScope = "all";
+const MINING_RESULT_STORAGE_KEY = "master-data-pdf-mining-result";
 type AnalyzeProgress = {
   totalBatches: number;
   currentBatch: number;
@@ -101,6 +102,38 @@ export function MasterDataPdfMiningPage() {
   const [componentSubmitting, setComponentSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<AnalyzeProgress | null>(null);
+
+  useEffect(() => {
+    const raw = window.sessionStorage.getItem(MINING_RESULT_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const persisted = JSON.parse(raw) as {
+        result?: MiningAnalyzeResponse | null;
+        selectedProductName?: string;
+        selectedDbProductId?: string;
+      };
+      setResult(persisted.result ?? null);
+      setSelectedProductName(persisted.selectedProductName ?? "");
+      setSelectedDbProductId(persisted.selectedDbProductId ?? "");
+    } catch {
+      window.sessionStorage.removeItem(MINING_RESULT_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!result && !selectedProductName && !selectedDbProductId) {
+      window.sessionStorage.removeItem(MINING_RESULT_STORAGE_KEY);
+      return;
+    }
+    window.sessionStorage.setItem(
+      MINING_RESULT_STORAGE_KEY,
+      JSON.stringify({
+        result,
+        selectedProductName,
+        selectedDbProductId,
+      }),
+    );
+  }, [result, selectedProductName, selectedDbProductId]);
 
   const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${activeScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${activeScope}`;
@@ -408,9 +441,6 @@ export function MasterDataPdfMiningPage() {
           </div>
           <div className="mt-3 text-sm text-slate-600">
             {selectedGroup?.productDescription ?? "Keine Produktbeschreibung erkannt."}
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            Quellen: {selectedGroup?.sourceFileNames.join(", ") || "-"}
           </div>
           <div className="mt-4 min-h-0 flex-1 overflow-auto rounded border border-slate-100">
             <ul className="divide-y divide-slate-100">

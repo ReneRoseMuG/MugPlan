@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { InsertCustomer } from "@shared/schema";
-import { projectTags, projects, tags } from "@shared/schema";
+import { componentCategories, projectTags, projects, tags } from "@shared/schema";
 import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
@@ -54,6 +54,45 @@ export async function createTagFixture(prefix = "TAG") {
   });
   const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
   return { id: insertedId };
+}
+
+export async function ensureComponentCategoryFixture(name: string) {
+  const [existing] = await db
+    .select({
+      id: componentCategories.id,
+      name: componentCategories.name,
+      version: componentCategories.version,
+      isActive: componentCategories.isActive,
+    })
+    .from(componentCategories)
+    .where(eq(componentCategories.name, name))
+    .limit(1);
+
+  if (existing) return existing;
+
+  const result = await db.insert(componentCategories).values({
+    name,
+    isActive: true,
+    version: 1,
+  });
+  const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
+
+  const [created] = await db
+    .select({
+      id: componentCategories.id,
+      name: componentCategories.name,
+      version: componentCategories.version,
+      isActive: componentCategories.isActive,
+    })
+    .from(componentCategories)
+    .where(eq(componentCategories.id, insertedId))
+    .limit(1);
+
+  if (!created) {
+    throw new Error(`Component category fixture ${name} could not be created.`);
+  }
+
+  return created;
 }
 
 export async function attachProjectTagFixture(projectId: number, tagId: number) {

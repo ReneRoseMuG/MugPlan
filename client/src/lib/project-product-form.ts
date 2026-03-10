@@ -5,6 +5,8 @@ export const PROJECT_PRODUCT_FIELDS = [
   { key: "oven", label: "Ofen", categoryName: "Ofen" },
   { key: "control", label: "Steuerung", categoryName: "Steuerung" },
   { key: "roof", label: "Dach", categoryName: "Dach" },
+  { key: "frontWall", label: "Vorderwand", categoryName: "Vorderwände" },
+  { key: "rearWallWindow", label: "Rückwand", categoryName: "Rückwände" },
   { key: "window", label: "Fenster", categoryName: "Fenster" },
 ] as const;
 
@@ -34,6 +36,8 @@ export function createEmptyProjectProductSelections(): ProjectProductSelections 
     oven: { componentId: null, componentName: "", itemId: null, version: null },
     control: { componentId: null, componentName: "", itemId: null, version: null },
     roof: { componentId: null, componentName: "", itemId: null, version: null },
+    frontWall: { componentId: null, componentName: "", itemId: null, version: null },
+    rearWallWindow: { componentId: null, componentName: "", itemId: null, version: null },
     window: { componentId: null, componentName: "", itemId: null, version: null },
   };
 }
@@ -46,6 +50,8 @@ export function cloneProjectProductSelections(
     oven: { ...selections.oven },
     control: { ...selections.control },
     roof: { ...selections.roof },
+    frontWall: { ...selections.frontWall },
+    rearWallWindow: { ...selections.rearWallWindow },
     window: { ...selections.window },
   };
 }
