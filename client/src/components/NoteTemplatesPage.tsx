@@ -11,9 +11,11 @@ import type { NoteTemplate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+
+const fallbackCardColor = "#f8fafc";
 
 interface TemplateCardProps {
   template: NoteTemplate;
@@ -30,52 +32,74 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
   };
 
   return (
-    <div data-testid={`template-card-${template.id}`}>
-      <ColoredEntityCard
-        testId={`template-${template.id}`}
-        title={template.title}
-        icon={<FileText className="w-4 h-4" />}
-        borderColor={template.color ?? undefined}
-        className={!template.isActive ? "opacity-60" : ""}
-        onDelete={onDelete}
-        isDeleting={isDeleting}
-        onDoubleClick={onEdit}
-      >
-        <div className="space-y-2">
-          {!template.isActive && (
-            <span className="inline-flex text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Inaktiv</span>
-          )}
-          {template.body && (
-            <div
-              className="text-sm text-slate-600 line-clamp-3"
-              dangerouslySetInnerHTML={{ __html: template.body }}
-              data-testid={`text-template-body-${template.id}`}
-            />
-          )}
-          <p className="text-xs text-slate-400" data-testid={`text-template-date-${template.id}`}>
-            Aktualisiert: {formatDate(template.updatedAt)}
-          </p>
+    <button
+      type="button"
+      className={`w-full rounded-lg border p-4 text-left shadow-sm ${!template.isActive ? "opacity-60" : ""}`}
+      style={{ backgroundColor: template.cardColor ?? fallbackCardColor }}
+      data-testid={`template-card-${template.id}`}
+      onDoubleClick={onEdit}
+    >
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <FileText className="h-4 w-4" />
+          <span>{template.title}</span>
         </div>
-      </ColoredEntityCard>
-    </div>
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${template.print ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>
+            {template.print ? "Drucken" : "Nicht drucken"}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={isDeleting}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete();
+            }}
+            data-testid={`button-delete-template-${template.id}`}
+          >
+            Loeschen
+          </Button>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {!template.isActive && (
+          <span className="inline-flex rounded bg-slate-200 px-2 py-0.5 text-xs text-slate-600">Inaktiv</span>
+        )}
+        {template.body && (
+          <div
+            className="text-sm text-slate-600 line-clamp-3"
+            dangerouslySetInnerHTML={{ __html: template.body }}
+            data-testid={`text-template-body-${template.id}`}
+          />
+        )}
+        <p className="text-xs text-slate-500" data-testid={`text-template-date-${template.id}`}>
+          Aktualisiert: {formatDate(template.updatedAt)}
+        </p>
+      </div>
+    </button>
   );
 }
 
 export function NoteTemplatesPage() {
   const { toast } = useToast();
-  const defaultColor = "#94a3b8";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<NoteTemplate | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formBody, setFormBody] = useState("");
-  const [formColor, setFormColor] = useState(defaultColor);
+  const [formCardColor, setFormCardColor] = useState(fallbackCardColor);
+  const [useCardColor, setUseCardColor] = useState(false);
+  const [formPrint, setFormPrint] = useState(true);
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+
   const extractApiCode = (error: unknown): string | null => {
     if (!(error instanceof Error)) return null;
     const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
     return match?.[1] ?? null;
   };
+
   const invalidateNoteTemplateQueries = async () => {
     await queryClient.invalidateQueries({
       predicate: (query) => {
@@ -90,7 +114,7 @@ export function NoteTemplatesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { title: string; body: string; isActive: boolean; sortOrder: number; color?: string }) => {
+    mutationFn: async (data: { title: string; body: string; isActive: boolean; sortOrder: number; cardColor?: string | null; print: boolean }) => {
       return apiRequest("POST", "/api/note-templates", data);
     },
     onSuccess: () => {
@@ -100,7 +124,7 @@ export function NoteTemplatesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean; sortOrder?: number; color?: string; version: number } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { title?: string; body?: string; isActive?: boolean; sortOrder?: number; cardColor?: string | null; print?: boolean; version: number } }) => {
       return apiRequest("PUT", `/api/note-templates/${id}`, data);
     },
     onSuccess: () => {
@@ -142,7 +166,9 @@ export function NoteTemplatesPage() {
     setEditingTemplate(null);
     setFormTitle("");
     setFormBody("");
-    setFormColor(defaultColor);
+    setFormCardColor(fallbackCardColor);
+    setUseCardColor(false);
+    setFormPrint(true);
     setFormSortOrder(0);
     setFormIsActive(true);
     setDialogOpen(true);
@@ -152,7 +178,9 @@ export function NoteTemplatesPage() {
     setEditingTemplate(template);
     setFormTitle(template.title);
     setFormBody(template.body);
-    setFormColor(template.color ?? defaultColor);
+    setFormCardColor(template.cardColor ?? fallbackCardColor);
+    setUseCardColor(template.cardColor !== null);
+    setFormPrint(template.print);
     setFormSortOrder(template.sortOrder ?? 0);
     setFormIsActive(template.isActive);
     setDialogOpen(true);
@@ -163,7 +191,9 @@ export function NoteTemplatesPage() {
     setEditingTemplate(null);
     setFormTitle("");
     setFormBody("");
-    setFormColor(defaultColor);
+    setFormCardColor(fallbackCardColor);
+    setUseCardColor(false);
+    setFormPrint(true);
     setFormSortOrder(0);
     setFormIsActive(true);
   };
@@ -176,7 +206,8 @@ export function NoteTemplatesPage() {
       body: formBody,
       sortOrder: formSortOrder,
       isActive: formIsActive,
-      color: formColor,
+      cardColor: useCardColor ? formCardColor : null,
+      print: formPrint,
     };
 
     if (editingTemplate) {
@@ -190,7 +221,7 @@ export function NoteTemplatesPage() {
   };
 
   const handleDelete = (template: NoteTemplate) => {
-    if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich löschen?`)) {
+    if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich loeschen?`)) {
       deleteMutation.mutate({ id: template.id, version: template.version });
     }
   };
@@ -219,7 +250,7 @@ export function NoteTemplatesPage() {
             gridCols="2"
             isEmpty={templates.length === 0}
             emptyState={(
-              <p className="text-sm text-slate-400 text-center py-8 col-span-2">
+              <p className="col-span-2 py-8 text-center text-sm text-slate-400">
                 Keine Vorlagen vorhanden
               </p>
             )}
@@ -242,14 +273,18 @@ export function NoteTemplatesPage() {
         onOpenChange={setDialogOpen}
         title={editingTemplate ? "Vorlage bearbeiten" : "Neue Vorlage"}
         icon={FileText}
-        selectedColor={formColor}
-        onColorChange={setFormColor}
+        selectedColor={formCardColor}
+        onColorChange={(color) => {
+          setUseCardColor(true);
+          setFormCardColor(color);
+        }}
         onSave={handleSave}
         onCancel={handleCloseDialog}
         isSaving={createMutation.isPending || updateMutation.isPending}
         saveDisabled={!formTitle.trim()}
         maxWidth="max-w-lg"
         colorPickerTestId="button-template-color-picker"
+        colorPickerDisabled={!useCardColor}
         saveTestId="button-save-template"
         cancelTestId="button-cancel-template"
       >
@@ -272,6 +307,30 @@ export function NoteTemplatesPage() {
             className="min-h-[150px]"
           />
         </div>
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-sm font-medium">Kartenfarbe</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setUseCardColor((current) => !current)}
+            data-testid="button-template-toggle-card-color"
+          >
+            {useCardColor ? "Farbe entfernen" : "Farbe aktivieren"}
+          </Button>
+        </div>
+        <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
+          <div>
+            <Label htmlFor="switch-template-print" className="text-sm font-medium">Drucken</Label>
+            <p className="text-xs text-slate-500">Wird an neu erstellte Notizen aus dieser Vorlage vererbt.</p>
+          </div>
+          <Switch
+            id="switch-template-print"
+            checked={formPrint}
+            onCheckedChange={setFormPrint}
+            data-testid="switch-template-print"
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="template-sort-order">Sortierreihenfolge</Label>
           <Input
@@ -290,14 +349,13 @@ export function NoteTemplatesPage() {
             id="template-active"
             checked={formIsActive}
             disabled={true}
-            className="w-4 h-4 cursor-not-allowed"
+            className="h-4 w-4 cursor-not-allowed"
             data-testid="checkbox-template-active"
           />
           <Label htmlFor="template-active" className="text-muted-foreground">
-            Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
+            Aktiv <span className="text-xs">(nur durch Administrator aenderbar)</span>
           </Label>
         </div>
-        <p className="text-xs text-muted-foreground">Farbe</p>
       </ColorSelectEntityEditDialog>
     </>
   );

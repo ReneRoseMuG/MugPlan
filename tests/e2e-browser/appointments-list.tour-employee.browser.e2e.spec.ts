@@ -76,17 +76,17 @@ test("tour form appointments table: date sorting persists after show-all and no 
 
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Far");
-  await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Near");
+  await expect(rows.nth(0).locator("td").nth(1)).toContainText("Tour Far");
+  await expect(rows.nth(1).locator("td").nth(1)).toContainText("Tour Near");
 
   await table.locator("thead").getByRole("button", { name: "Datum" }).click();
-  await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Near");
-  await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Far");
+  await expect(rows.nth(0).locator("td").nth(1)).toContainText("Tour Near");
+  await expect(rows.nth(1).locator("td").nth(1)).toContainText("Tour Far");
 
   await page.getByRole("switch", { name: "Alle Termine" }).click();
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0).locator("td").nth(1)).toHaveText("Tour Near");
-  await expect(rows.nth(1).locator("td").nth(1)).toHaveText("Tour Far");
+  await expect(rows.nth(0).locator("td").nth(1)).toContainText("Tour Near");
+  await expect(rows.nth(1).locator("td").nth(1)).toContainText("Tour Far");
 });
 
 test("employee form appointments table: structure, sorting persistence and vertical inner scroll", async ({ page }) => {
@@ -123,22 +123,22 @@ test("employee form appointments table: structure, sorting persistence and verti
 
   const table = page.getByTestId("table-appointments-list");
   await expect(table).toBeVisible();
-  await expect(table.locator("thead th")).toHaveCount(3);
+  await expect(table.locator("thead th")).toHaveCount(4);
   const headerTexts = await table.locator("thead th").allTextContents();
   expect(headerTexts.join(" ")).toContain("Datum");
   expect(headerTexts.join(" ")).toContain("Projekt");
   expect(headerTexts.join(" ")).toContain("Kunde");
+  expect(headerTexts.join(" ")).toContain("Tour");
   expect(headerTexts.join(" ")).not.toContain("Ganztag");
-  expect(headerTexts.join(" ")).not.toContain("Tour");
   await expect(page.getByText("Alle Touren")).toHaveCount(0);
 
   const rows = table.locator("tbody tr");
-  await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Filler");
+  await expect(rows.first().locator("td").nth(1)).toContainText("Emp Filler");
 
   await table.locator("thead").getByRole("button", { name: "Datum" }).click();
-  await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Near");
+  await expect(rows.first().locator("td").nth(1)).toContainText("Emp Near");
   await page.getByRole("switch", { name: "Alle Termine" }).click();
-  await expect(rows.first().locator("td").nth(1)).toHaveText("Emp Near");
+  await expect(rows.first().locator("td").nth(1)).toContainText("Emp Near");
 
   const scrollMeta = await table.evaluate((element) => ({
     overflowY: window.getComputedStyle(element).overflowY,

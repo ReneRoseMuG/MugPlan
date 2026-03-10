@@ -49,7 +49,7 @@ describe("FT04/FT05+ customer data appointment cache invalidation wiring", () =>
   });
 
   it("wires appointment invalidation in all customer note mutations", () => {
-    expect(source).toContain("apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body, templateId })");
+    expect(source).toContain("apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body, cardColor, print, templateId })");
     expect(source).toContain("apiRequest('PATCH', `/api/notes/${noteId}/pin`, { isPinned, version })");
     expect(source).toContain("apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`, { version })");
     const invalidationCalls = source.match(/void invalidateAppointmentProjectionQueries\(\);/g) ?? [];

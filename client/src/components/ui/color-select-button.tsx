@@ -7,13 +7,18 @@ interface ColorSelectButtonProps {
   disabled?: boolean;
 }
 
-export function ColorSelectButton({ 
-  color, 
-  onChange, 
+export function ColorSelectButton({
+  color,
+  onChange,
   testId = "button-color-select",
   disabled = false,
 }: ColorSelectButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const applyColor = (nextColor: string) => {
+    if (!/^#[0-9a-fA-F]{6}$/.test(nextColor)) return;
+    onChange(nextColor.toLowerCase());
+  };
 
   const handleClick = () => {
     if (disabled) return;
@@ -30,18 +35,29 @@ export function ColorSelectButton({
       disabled={disabled}
       data-testid={testId}
     >
-      <div 
+      <div
         className="w-8 h-8 rounded border border-border flex-shrink-0"
         style={{ backgroundColor: color }}
         data-testid={`${testId}-preview`}
       />
-      <span className="font-medium text-foreground">Farbe wählen</span>
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="font-medium text-foreground">Farbe waehlen</span>
+        <input
+          type="text"
+          value={color}
+          disabled={disabled}
+          onChange={(event) => applyColor(event.target.value)}
+          className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1 text-sm"
+          data-testid={`${testId}-hex`}
+        />
+      </div>
       <input
         ref={inputRef}
         type="color"
         value={color}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
+        onInput={(event) => applyColor((event.target as HTMLInputElement).value)}
+        onChange={(event) => applyColor(event.target.value)}
         className="sr-only"
         data-testid={`${testId}-input`}
       />

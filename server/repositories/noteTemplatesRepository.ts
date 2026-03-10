@@ -35,7 +35,8 @@ export async function updateNoteTemplateWithVersion(
     set
       title = coalesce(${data.title ?? null}, title),
       body = coalesce(${data.body ?? null}, body),
-      color = ${data.color ?? null},
+      card_color = ${data.cardColor ?? null},
+      print = coalesce(${data.print ?? null}, print),
       sort_order = coalesce(${data.sortOrder ?? null}, sort_order),
       is_active = coalesce(${data.isActive ?? null}, is_active),
       updated_at = now(),

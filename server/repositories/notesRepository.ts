@@ -94,6 +94,12 @@ export async function updateNoteWithVersion(
     set
       title = coalesce(${data.title ?? null}, title),
       body = coalesce(${data.body ?? null}, body),
+      card_color = case
+        when card_color_locked then card_color
+        when ${data.cardColor === undefined} then card_color
+        else ${data.cardColor ?? null}
+      end,
+      print = coalesce(${data.print ?? null}, print),
       updated_at = now(),
       version = version + 1
     where id = ${noteId}

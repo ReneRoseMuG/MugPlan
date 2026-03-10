@@ -43,6 +43,13 @@
       "when": 1773014400000,
       "tag": "0005_refactor_product_management",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1773108000000,
+      "tag": "0006_notes_card_color_print",
+      "breakpoints": true
     }
   ]
 }

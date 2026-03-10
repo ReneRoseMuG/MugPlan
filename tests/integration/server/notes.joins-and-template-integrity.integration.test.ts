@@ -110,25 +110,29 @@ async function createProjectEntity(
   return { id: Number(res.body.id), version: Number(res.body.version) };
 }
 
-async function createTemplate(agent: SuperAgentTest, input: { marker: string; isActive: boolean; color: string }) {
+async function createTemplate(
+  agent: SuperAgentTest,
+  input: { marker: string; isActive: boolean; cardColor: string; print?: boolean },
+) {
   const res = await agent
     .post("/api/note-templates")
     .send({
       title: nextId(`TPL-${input.marker}`),
       body: `<p>Template ${input.marker}</p>`,
-      color: input.color,
+      cardColor: input.cardColor,
+      print: input.print ?? true,
       sortOrder: 0,
       isActive: input.isActive,
     })
     .expect(201);
-  return res.body as { id: number; version: number; isActive: boolean; color: string | null };
+  return res.body as { id: number; version: number; isActive: boolean; cardColor: string | null; print: boolean };
 }
 
 describe("FT09/FT13 integration: note joins and template integrity", () => {
   it("creates customer note from template and persists only customer_note join", async () => {
     const agent = await loginAdminAgent();
     const customerId = await createCustomer(agent, "JOIN-CUST");
-    const template = await createTemplate(agent, { marker: "JOIN-CUST", isActive: true, color: "#22c55e" });
+    const template = await createTemplate(agent, { marker: "JOIN-CUST", isActive: true, cardColor: "#22c55e", print: false });
 
     const createRes = await agent
       .post(`/api/customers/${customerId}/notes`)
@@ -140,7 +144,9 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
       .expect(201);
 
     const noteId = Number(createRes.body.id);
-    expect(createRes.body.color).toBe("#22c55e");
+    expect(createRes.body.cardColor).toBe("#22c55e");
+    expect(createRes.body.print).toBe(false);
+    expect(createRes.body.cardColorLocked).toBe(true);
 
     const customerJoin = await db
       .select()
@@ -156,7 +162,7 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
     const agent = await loginAdminAgent();
     const customerId = await createCustomer(agent, "JOIN-PRJ");
     const projectId = await createProject(agent, customerId, "JOIN-PRJ");
-    const template = await createTemplate(agent, { marker: "JOIN-PRJ", isActive: true, color: "#3b82f6" });
+    const template = await createTemplate(agent, { marker: "JOIN-PRJ", isActive: true, cardColor: "#3b82f6" });
 
     const createRes = await agent
       .post(`/api/projects/${projectId}/notes`)
@@ -168,7 +174,9 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
       .expect(201);
 
     const noteId = Number(createRes.body.id);
-    expect(createRes.body.color).toBe("#3b82f6");
+    expect(createRes.body.cardColor).toBe("#3b82f6");
+    expect(createRes.body.print).toBe(true);
+    expect(createRes.body.cardColorLocked).toBe(true);
 
     const projectJoin = await db
       .select()
@@ -187,7 +195,7 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
     const created = await agent
       .post(`/api/projects/${projectId}/notes`)
-      .send({ title: "Vorher", body: "<p>Vorher</p>" })
+      .send({ title: "Vorher", body: "<p>Vorher</p>", cardColor: "#f59e0b", print: false })
       .expect(201);
 
     const noteId = Number(created.body.id);
@@ -195,19 +203,74 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
     await agent
       .put(`/api/notes/${noteId}`)
-      .send({ title: "Nachher", body: "<p>Nachher</p>", version })
+      .send({ title: "Nachher", body: "<p>Nachher</p>", cardColor: "#0ea5e9", print: true, version })
       .expect(200)
       .expect((res) => {
         expect(res.body.title).toBe("Nachher");
         expect(res.body.body).toBe("<p>Nachher</p>");
+        expect(res.body.cardColor).toBe("#0ea5e9");
+        expect(res.body.print).toBe(true);
       });
 
     const list = await agent.get(`/api/projects/${projectId}/notes`).expect(200);
-    const updated = (list.body as Array<{ id: number; title: string; body: string }>).find(
+    const updated = (list.body as Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>).find(
       (entry) => Number(entry.id) === noteId,
     );
     expect(updated?.title).toBe("Nachher");
     expect(updated?.body).toBe("<p>Nachher</p>");
+    expect(updated?.cardColor).toBe("#0ea5e9");
+    expect(updated?.print).toBe(true);
+  });
+
+  it("persists free customer and project note cardColor/print on create", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent, "FREE-CREATE");
+    const projectId = await createProject(agent, customerId, "FREE-CREATE");
+
+    await agent
+      .post(`/api/customers/${customerId}/notes`)
+      .send({ title: "Freie Kundennotiz", body: "<p>Kunde</p>", cardColor: "#f97316", print: false })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body.cardColor).toBe("#f97316");
+        expect(res.body.print).toBe(false);
+        expect(res.body.cardColorLocked).toBe(false);
+      });
+
+    await agent
+      .post(`/api/projects/${projectId}/notes`)
+      .send({ title: "Freie Projektnotiz", body: "<p>Projekt</p>", cardColor: "#22c55e", print: true })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body.cardColor).toBe("#22c55e");
+        expect(res.body.print).toBe(true);
+        expect(res.body.cardColorLocked).toBe(false);
+      });
+  });
+
+  it("keeps template-derived cardColor immutable while allowing print updates", async () => {
+    const agent = await loginAdminAgent();
+    const customerId = await createCustomer(agent, "LOCK-COLOR");
+    const projectId = await createProject(agent, customerId, "LOCK-COLOR");
+    const template = await createTemplate(agent, { marker: "LOCK-COLOR", isActive: true, cardColor: "#7c3aed", print: true });
+
+    const created = await agent
+      .post(`/api/projects/${projectId}/notes`)
+      .send({ title: "Locked", body: "<p>Locked</p>", templateId: template.id })
+      .expect(201);
+
+    const noteId = Number(created.body.id);
+    const version = Number(created.body.version);
+
+    await agent
+      .put(`/api/notes/${noteId}`)
+      .send({ cardColor: "#ef4444", print: false, version })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.cardColor).toBe("#7c3aed");
+        expect(res.body.print).toBe(false);
+        expect(res.body.cardColorLocked).toBe(true);
+      });
   });
 
   it("returns VERSION_CONFLICT on stale note update", async () => {
@@ -217,7 +280,7 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
     const created = await agent
       .post(`/api/projects/${projectId}/notes`)
-      .send({ title: "Initial", body: "<p>Initial</p>" })
+      .send({ title: "Initial", body: "<p>Initial</p>", print: true })
       .expect(201);
 
     const noteId = Number(created.body.id);
@@ -225,12 +288,12 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
     await agent
       .put(`/api/notes/${noteId}`)
-      .send({ title: "Erstes Update", body: "<p>Eins</p>", version: staleVersion })
+      .send({ title: "Erstes Update", body: "<p>Eins</p>", print: false, version: staleVersion })
       .expect(200);
 
     await agent
       .put(`/api/notes/${noteId}`)
-      .send({ title: "Stale", body: "<p>Zwei</p>", version: staleVersion })
+      .send({ title: "Stale", body: "<p>Zwei</p>", print: true, version: staleVersion })
       .expect(409)
       .expect((res) => {
         expect(res.body).toEqual({ code: "VERSION_CONFLICT" });
@@ -307,8 +370,8 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
   it("returns only active templates by default and returns active+inactive with active=false", async () => {
     const agent = await loginAdminAgent();
-    const active = await createTemplate(agent, { marker: "TPL-ACTIVE", isActive: true, color: "#0ea5e9" });
-    const inactive = await createTemplate(agent, { marker: "TPL-INACTIVE", isActive: false, color: "#64748b" });
+    const active = await createTemplate(agent, { marker: "TPL-ACTIVE", isActive: true, cardColor: "#0ea5e9" });
+    const inactive = await createTemplate(agent, { marker: "TPL-INACTIVE", isActive: false, cardColor: "#64748b" });
 
     const defaultList = await agent.get("/api/note-templates").expect(200);
     const allList = await agent.get("/api/note-templates?active=false").expect(200);
@@ -485,11 +548,13 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
   it("persists template creation in note_template table with versioning defaults", async () => {
     const agent = await loginAdminAgent();
-    const template = await createTemplate(agent, { marker: "TPL-DB", isActive: true, color: "#f97316" });
+    const template = await createTemplate(agent, { marker: "TPL-DB", isActive: true, cardColor: "#f97316", print: false });
 
     const rows = await db.select().from(noteTemplates).where(eq(noteTemplates.id, template.id));
     expect(rows).toHaveLength(1);
     expect(rows[0].isActive).toBe(true);
+    expect(rows[0].cardColor).toBe("#f97316");
+    expect(rows[0].print).toBe(false);
     expect(rows[0].version).toBeGreaterThanOrEqual(1);
   });
 });

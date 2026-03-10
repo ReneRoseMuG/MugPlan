@@ -54,6 +54,7 @@ async function openCustomerPickerAndSelect(page: Page, customerLabel: string) {
 
 async function openProjectById(page: Page, projectId: number) {
   await openProjects(page);
+  await page.getByLabel("Alle Projekte").click();
   await page.getByTestId(`project-card-${projectId}`).dblclick();
   await expect(page.getByTestId("button-save-project")).toBeVisible();
 }
@@ -70,7 +71,7 @@ test("creates a project via UI after customer selection and keeps validation err
 
   await page.getByTestId("input-project-name").fill("FT02 Browser Projekt");
   await page.getByTestId("button-save-project").click();
-  await expect(page.getByText("Kunde muss ausgewaehlt werden")).toBeVisible();
+  await expect(page.getByText(/Kunde muss ausgew/)).toBeVisible();
 
   await openCustomerPickerAndSelect(page, customer.fullName ?? customer.lastName ?? customer.customerNumber);
   await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
@@ -164,11 +165,12 @@ test("creates and deletes a project note in the edit form", async ({ page }) => 
 
   await openProjectById(page, project.id);
   await page.getByTestId("button-new-note").click();
-  await expect(page.getByTestId("button-save-note")).toBeDisabled();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByTestId("button-save-note")).toBeDisabled();
 
-  await page.getByTestId("input-note-title").fill("Browser Notiz");
-  await page.getByTestId("richtext-editor").fill("Notizinhalt aus dem Browsertest");
-  await page.getByTestId("button-save-note").click();
+  await dialog.getByTestId("input-note-title").fill("Browser Notiz");
+  await dialog.getByTestId("richtext-editor").fill("Notizinhalt aus dem Browsertest");
+  await dialog.getByTestId("button-save-note").click();
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/projects/${project.id}/notes`);
@@ -206,7 +208,7 @@ test("deletes projects without appointments and keeps projects with appointments
   await openProjectById(page, blockedProject.id);
   await page.getByTestId("button-delete-project").click();
   await page.getByTestId("button-confirm-delete-project").click();
-  await expect(page.getByText("Projekt kann nicht geloescht werden")).toBeVisible();
+  await expect(page.getByText("Projekt kann nicht geloescht werden", { exact: true })).toBeVisible();
   await expect.poll(async () => {
     const response = await page.request.get(`/api/projects/${blockedProject.id}`);
     return response.status();
@@ -215,6 +217,7 @@ test("deletes projects without appointments and keeps projects with appointments
   await page.getByTestId("button-close-project").click();
   await expect(page.getByTestId("button-new-project")).toBeVisible();
 
+  await page.getByLabel("Alle Projekte").click();
   await page.getByTestId(`project-card-${deletableProject.id}`).dblclick();
   await page.getByTestId("button-delete-project").click();
   await page.getByTestId("button-confirm-delete-project").click();

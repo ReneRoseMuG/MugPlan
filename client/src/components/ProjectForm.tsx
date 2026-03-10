@@ -482,7 +482,7 @@ export function ProjectForm({
   };
 
   const createNoteMutation = useMutation({
-    mutationFn: async (data: { title: string; body: string; templateId?: number }) => {
+    mutationFn: async (data: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
       const res = await apiRequest('POST', `/api/projects/${projectId}/notes`, data);
       return res.json();
     },
@@ -493,8 +493,8 @@ export function ProjectForm({
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: async ({ noteId, title, body, version }: { noteId: number; title: string; body: string; version: number }) => {
-      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, version });
+    mutationFn: async ({ noteId, title, body, cardColor, print, version }: { noteId: number; title: string; body: string; cardColor?: string | null; print: boolean; version: number }) => {
+      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
       return res.json();
     },
     onSuccess: () => {
@@ -903,6 +903,8 @@ export function ProjectForm({
                 amount={amount}
                 plannedDateText={plannedDateText}
                 plannedWeek={plannedWeek}
+                isEditing={isEditing}
+                onOrderNumberChange={setOrderNumber}
                 onAmountChange={setAmount}
                 onPlannedDateTextChange={setPlannedDateText}
                 onPlannedWeekChange={setPlannedWeek}

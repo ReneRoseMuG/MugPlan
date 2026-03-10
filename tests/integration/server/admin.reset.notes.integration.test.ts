@@ -25,14 +25,17 @@ describe("PKG-02 integration: admin reset clears seeded notes and note templates
     const template = await noteTemplatesRepository.createNoteTemplate({
       title: "Reset Seed Vorlage",
       body: "Reset Seed Body",
-      color: "#0f766e",
+      cardColor: "#0f766e",
+      print: true,
       sortOrder: 1,
       isActive: true,
     });
     const note = await notesRepository.createNote({
       title: "Reset Seed Notiz",
       body: "Reset Seed Hinweis",
-      color: "#1d4ed8",
+      cardColor: "#1d4ed8",
+      print: false,
+      cardColorLocked: false,
     });
 
     const [templateBeforeRow] = await notesRepository.withNotesTransaction(async (tx) =>

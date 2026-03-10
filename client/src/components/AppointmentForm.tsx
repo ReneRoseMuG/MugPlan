@@ -909,8 +909,8 @@ export function AppointmentForm({
   };
 
   const createAppointmentNoteMutation = useMutation({
-    mutationFn: async ({ title, body, templateId }: { title: string; body: string; templateId?: number }) => {
-      const res = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, { title, body, templateId });
+    mutationFn: async ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
+      const res = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, { title, body, cardColor, print, templateId });
       return res.json();
     },
     onSuccess: () => {
@@ -924,8 +924,8 @@ export function AppointmentForm({
   });
 
   const updateAppointmentNoteMutation = useMutation({
-    mutationFn: async ({ noteId, title, body, version }: { noteId: number; title: string; body: string; version: number }) => {
-      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, version });
+    mutationFn: async ({ noteId, title, body, cardColor, print, version }: { noteId: number; title: string; body: string; cardColor?: string | null; print: boolean; version: number }) => {
+      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
       return res.json();
     },
     onSuccess: () => {
