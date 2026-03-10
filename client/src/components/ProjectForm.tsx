@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
@@ -880,30 +878,14 @@ export function ProjectForm({
       <div className="grid grid-cols-3 gap-6">
         {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
         <div className="col-span-2 space-y-6">
-              <div className="space-y-4">
-                <div className="grid grid-cols-[minmax(220px,1fr),150px,150px] gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="projectName" data-testid="label-project-name">Projektname *</Label>
-                    <Input 
-                      id="projectName" 
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      data-testid="input-project-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="projectType" data-testid="label-project-type">Projekttyp</Label>
-                    <Input id="projectType" value={resolvedProjectEditForm.label} readOnly data-testid="input-project-type" />
-                  </div>
-                </div>
-              </div>
-
               <ProjectOrderForm
+                name={name}
                 orderNumber={orderNumber}
                 amount={amount}
                 plannedDateText={plannedDateText}
                 plannedWeek={plannedWeek}
                 isEditing={isEditing}
+                onNameChange={setName}
                 onOrderNumberChange={setOrderNumber}
                 onAmountChange={setAmount}
                 onPlannedDateTextChange={setPlannedDateText}
