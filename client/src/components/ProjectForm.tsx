@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { DEFAULT_PROJECT_TYPE, resolveProjectEditForm } from "@/lib/project-edit-form";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, Customer, Note, ProjectStatus } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
@@ -89,6 +90,7 @@ export function ProjectForm({
   };
   
   const [name, setName] = useState("");
+  const [projectType, setProjectType] = useState<number>(DEFAULT_PROJECT_TYPE);
   const [orderNumber, setOrderNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [plannedDateText, setPlannedDateText] = useState("");
@@ -158,6 +160,7 @@ export function ProjectForm({
   useEffect(() => {
     if (projectData) {
       const projectName = projectData.project.name.trim();
+      setProjectType(projectData.project.type ?? DEFAULT_PROJECT_TYPE);
       setName(projectName);
       setOrderNumber(projectData.project.orderNumber ?? "");
       setAmount(projectData.project.amount != null ? String(projectData.project.amount) : "");
@@ -177,6 +180,7 @@ export function ProjectForm({
         }),
       );
     } else if (!isEditing) {
+      setProjectType(DEFAULT_PROJECT_TYPE);
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: "",
@@ -195,6 +199,7 @@ export function ProjectForm({
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
   const projectNamePreview = name.trim();
   const projectVersion = projectData?.project.version;
+  const resolvedProjectEditForm = resolveProjectEditForm(projectType);
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
@@ -413,7 +418,7 @@ export function ProjectForm({
 
   // Create project mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; orderNumber?: string | null; amount?: string | null; customerId: number; descriptionMd?: string; projectOrder?: { amount?: string | null; plannedDateText?: string | null; plannedWeek?: string | null } }) => {
+    mutationFn: async (data: { name: string; type: number; orderNumber?: string | null; amount?: string | null; customerId: number; descriptionMd?: string; projectOrder?: { amount?: string | null; plannedDateText?: string | null; plannedWeek?: string | null } }) => {
       const res = await apiRequest('POST', '/api/projects', data);
       return res.json();
     },
@@ -437,7 +442,7 @@ export function ProjectForm({
 
   // Update project mutation
   const updateMutation = useMutation({
-    mutationFn: async (data: { version: number; name?: string; orderNumber?: string | null; amount?: string | null; customerId?: number; descriptionMd?: string; projectOrder?: { amount?: string | null; plannedDateText?: string | null; plannedWeek?: string | null } }) => {
+    mutationFn: async (data: { version: number; type?: number; name?: string; orderNumber?: string | null; amount?: string | null; customerId?: number; descriptionMd?: string; projectOrder?: { amount?: string | null; plannedDateText?: string | null; plannedWeek?: string | null } }) => {
       const res = await apiRequest('PATCH', `/api/projects/${projectId}`, data);
       return res.json();
     },
@@ -661,6 +666,7 @@ export function ProjectForm({
       }
       await updateMutation.mutateAsync({
         version: projectVersion,
+        type: resolvedProjectEditForm.normalizedType,
         name: storedProjectName,
         orderNumber: normalizedOrderNumber,
         amount: normalizedAmount,
@@ -675,6 +681,7 @@ export function ProjectForm({
     } else {
       const createdProject = await createMutation.mutateAsync({
         name: storedProjectName,
+        type: resolvedProjectEditForm.normalizedType,
         orderNumber: normalizedOrderNumber,
         amount: normalizedAmount,
         customerId,
@@ -886,7 +893,7 @@ export function ProjectForm({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="projectType" data-testid="label-project-type">Projekttyp</Label>
-                    <Input id="projectType" value="Typ 1 - Sauna" readOnly data-testid="input-project-type" />
+                    <Input id="projectType" value={resolvedProjectEditForm.label} readOnly data-testid="input-project-type" />
                   </div>
                 </div>
               </div>

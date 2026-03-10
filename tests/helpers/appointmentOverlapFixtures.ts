@@ -53,6 +53,7 @@ export async function createProjectFixture(prefix = "PROJ") {
   const suffix = nextSuffix(prefix);
   const project = await projectsService.createProject({
     name: suffix,
+    type: 1,
     customerId: customer.id,
     orderNumber: `ORD-${suffix}`,
     descriptionMd: null,

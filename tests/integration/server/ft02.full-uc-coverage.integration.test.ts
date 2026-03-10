@@ -30,7 +30,7 @@ import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import { db } from "../../../server/db";
-import { projectProjectStatus } from "../../../shared/schema";
+import { projectOrder, projectProjectStatus } from "../../../shared/schema";
 
 let app: express.Express;
 let seq = 1;
@@ -75,6 +75,7 @@ async function createProject(customerId: number, name: string) {
   return projectsService.createProject({
     customerId,
     name,
+    type: 1,
     orderNumber: `ORD-${name.replace(/\s+/g, "-")}-${seq++}`,
     descriptionMd: null,
     version: 1,
@@ -92,16 +93,52 @@ describe("FT02 integration: full uc coverage", () => {
 
     const created = await admin
       .post("/api/projects")
-      .send({ customerId: customer.id, name: "UC02-01 Project", orderNumber: "ORD-UC02-01", descriptionMd: null })
+      .send({ customerId: customer.id, name: "UC02-01 Project", type: 1, orderNumber: "ORD-UC02-01", descriptionMd: null })
       .expect(201);
 
     expect(created.body.customerId).toBe(customer.id);
+    expect(created.body.type).toBe(1);
     expect(Number.isInteger(created.body.version)).toBe(true);
 
     await admin
       .post("/api/projects")
       .send({ name: "Missing customer", orderNumber: "ORD-UC02-MISSING" })
       .expect(422);
+  });
+
+  it("UC 02/01a create project persists project_order row and defaults type for edit form selection", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0201A");
+
+    const created = await admin
+      .post("/api/projects")
+      .send({
+        customerId: customer.id,
+        name: "UC02-01a Project",
+        orderNumber: "ORD-UC02-01A",
+        amount: "1234.50",
+        projectOrder: {
+          amount: "1234.50",
+          plannedDateText: "KW 14 / 2099",
+          plannedWeek: "2099-W14",
+        },
+      })
+      .expect(201);
+
+    expect(created.body.type).toBe(1);
+    expect(created.body.orderNumber).toBe("ORD-UC02-01A");
+    expect(created.body.amount).toBe("1234.50");
+
+    const [persistedOrder] = await db
+      .select()
+      .from(projectOrder)
+      .where(eq(projectOrder.projectId, Number(created.body.id)));
+
+    expect(persistedOrder).toBeDefined();
+    expect(persistedOrder?.orderNumber).toBe("ORD-UC02-01A");
+    expect(persistedOrder?.amount).toBe("1234.50");
+    expect(persistedOrder?.plannedDateText).toBe("KW 14 / 2099");
+    expect(persistedOrder?.plannedWeek).toBe("2099-W14");
   });
 
   it("UC 02/03: create project rejects inactive customer assignment", async () => {
@@ -178,6 +215,36 @@ describe("FT02 integration: full uc coverage", () => {
       .expect((res) => {
         expect(res.body.code).toBe("INACTIVE_ENTITY_ASSIGNMENT");
       });
+  });
+
+  it("UC 02/04d detail payload exposes project type and project_order aggregate for form resolution", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0204D");
+
+    const created = await admin
+      .post("/api/projects")
+      .send({
+        customerId: customer.id,
+        name: "UC02-04d Project",
+        orderNumber: "ORD-UC02-04D",
+        projectOrder: {
+          orderNumber: "ORD-UC02-04D",
+          plannedDateText: "April 2099",
+          plannedWeek: "2099-W16",
+        },
+      })
+      .expect(201);
+
+    const detail = await admin.get(`/api/projects/${created.body.id}`).expect(200);
+
+    expect(detail.body.project.type).toBe(1);
+    expect(detail.body.project.orderNumber).toBe("ORD-UC02-04D");
+    expect(detail.body.projectOrder).toMatchObject({
+      projectId: Number(created.body.id),
+      orderNumber: "ORD-UC02-04D",
+      plannedDateText: "April 2099",
+      plannedWeek: "2099-W16",
+    });
   });
 
   it("UC 02/04 status relation add/remove with inactive block", async () => {
