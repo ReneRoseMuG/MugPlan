@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - CustomersPage rendert keinen Kunden-Bulk-Import mehr.
  * - ProjectsPage rendert keinen Projekt-Bulk-Import mehr.
- * - Stammdaten binden den neuen PDF-Mining-Tab an.
+ * - Stammdaten binden den neuen PDF-Mining-Tab und den Seed-Tab an.
  * - PDF-Mining-Ergebnisse werden tabwechselstabil restauriert, ohne die Stammdaten-Tabs global gemountet zu halten.
  * - Query-Invalidierung nutzt explizite Kunden/Projekte-Keys.
  *
@@ -44,6 +44,8 @@ describe("FT24 unit: bulk import dialog wiring", () => {
 
     expect(masterDataPageSource).toContain("id: \"pdf-mining\"");
     expect(masterDataPageSource).toContain("content: <MasterDataPdfMiningPage />");
+    expect(masterDataPageSource).toContain("id: \"seed\"");
+    expect(masterDataPageSource).toContain("content: <MasterDataSeedPage />");
     expect(masterDataPageSource).toContain("keepMounted={false}");
 
     expect(miningPageSource).toContain("/api/admin/master-data/pdf-mining/limits");

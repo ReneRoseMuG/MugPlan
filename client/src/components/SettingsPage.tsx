@@ -5,7 +5,6 @@ import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { SaunaTourImportPreviewPanel } from "@/components/settings/SaunaTourImportPreviewPanel";
 
 function stringifyValue(value: unknown): string {
   if (value === null || value === undefined) return "-";
@@ -829,9 +828,6 @@ export function SettingsPage() {
           )}
             </div>
           </section>
-
-          <SaunaTourImportPreviewPanel />
-
         </div>
       </div>
     </div>

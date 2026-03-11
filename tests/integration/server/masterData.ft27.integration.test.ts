@@ -8,7 +8,8 @@
  * - FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only.
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
- * - Default-/Schutzkategorien (Alle Produkte plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
+ * - Default-/Schutzkategorien (Fass Saunen plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
+ * - Der Produktverwaltungs-Seed ist dateibasiert, idempotent und reaktiviert vorhandene inaktive Seed-Kategorien.
  * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
  *
  * Fehlerfaelle:
@@ -20,11 +21,17 @@
  */
 import express from "express";
 import { createServer } from "http";
+import { eq } from "drizzle-orm";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
+import { componentCategories, productCategories } from "@shared/schema";
+import { db } from "../../../server/db";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { ensureComponentCategoryFixture } from "../../helpers/testDataFactory";
+import { ensureComponentCategoryFixture, ensureProductCategoryFixture } from "../../helpers/testDataFactory";
+import { getAttachmentStoragePath } from "../../../server/config/storagePaths";
 
 let app: express.Express;
 let userCounter = 1;
@@ -82,6 +89,14 @@ describe("FT27 integration: master data admin API", () => {
     "Türen",
     "Vorderwände",
   ] as const;
+
+  async function writeSeedFile(fileName: string, content: string) {
+    const uploadsPath = await getAttachmentStoragePath();
+    const seedDirectory = path.resolve(uploadsPath, "seed");
+    await mkdir(seedDirectory, { recursive: true });
+    const seedPath = path.resolve(seedDirectory, fileName);
+    await writeFile(seedPath, content, "utf8");
+  }
 
   it("creates, updates and deletes a product category as admin", async () => {
     const admin = await loginAdminAgent();
@@ -161,11 +176,16 @@ describe("FT27 integration: master data admin API", () => {
   it("blocks deleting default product category with BUSINESS_CONFLICT", async () => {
     const admin = await loginAdminAgent();
 
+    await admin
+      .post("/api/admin/master-data/seed/product-management/apply")
+      .send({})
+      .expect(200);
+
     const productCategoriesResponse = await admin
       .get("/api/admin/master-data/product-categories?active=all")
       .expect(200);
     const defaultProductCategory = (productCategoriesResponse.body as Array<{ id: number; name: string; version: number }>)
-      .find((row) => row.name === "Alle Produkte");
+      .find((row) => row.name === "Fass Saunen");
 
     expect(defaultProductCategory).toBeDefined();
 
@@ -176,6 +196,16 @@ describe("FT27 integration: master data admin API", () => {
       .expect((res) => {
         expect(res.body.code).toBe("BUSINESS_CONFLICT");
       });
+  });
+
+  it("allows deleting legacy product category name when it is not referenced", async () => {
+    const admin = await loginAdminAgent();
+    const legacyCategory = await ensureProductCategoryFixture("Alle Produkte");
+
+    await admin
+      .delete(`/api/admin/master-data/product-categories/${legacyCategory.id}`)
+      .send({ version: legacyCategory.version })
+      .expect(204);
   });
 
   it.each(protectedComponentCategoryNames)(
@@ -203,6 +233,94 @@ describe("FT27 integration: master data admin API", () => {
       .expect(403)
       .expect((res) => {
         expect(res.body.code).toBe("FORBIDDEN");
+      });
+  });
+
+  it("runs the product management seed idempotently and returns log lines", async () => {
+    const admin = await loginAdminAgent();
+    await writeSeedFile("products.csv", "Name;Beschreibung;Kategorie\nFT27 Seed Produkt;Beschreibung A;Fass Saunen\n");
+    await writeSeedFile("components.csv", "Name;Beschreibung;Kategorie\nFT27 Seed Komponente;Beschreibung B;Öfen\n");
+
+    const firstRun = await admin
+      .post("/api/admin/master-data/seed/product-management/apply")
+      .send({})
+      .expect(200);
+
+    expect((firstRun.body.logLines as string[]).some((line) => line.includes("FT27 Seed Produkt"))).toBe(true);
+    expect((firstRun.body.logLines as string[]).some((line) => line.includes("FT27 Seed Komponente"))).toBe(true);
+
+    const secondRun = await admin
+      .post("/api/admin/master-data/seed/product-management/apply")
+      .send({})
+      .expect(200);
+
+    expect(secondRun.body.logLines).toContain("Produkt aktualisiert: FT27 Seed Produkt");
+    expect(secondRun.body.logLines).toContain("Komponente aktualisiert: FT27 Seed Komponente");
+  });
+
+  it("reactivates inactive seed categories through the product management seed", async () => {
+    const admin = await loginAdminAgent();
+    const productCategory = await ensureProductCategoryFixture("Fass Saunen");
+    const componentCategory = await ensureComponentCategoryFixture("Dachvarianten");
+
+    await db
+      .update(productCategories)
+      .set({ isActive: false, version: productCategory.version + 1 })
+      .where(eq(productCategories.id, productCategory.id));
+    await db
+      .update(componentCategories)
+      .set({ isActive: false, version: componentCategory.version + 1 })
+      .where(eq(componentCategories.id, componentCategory.id));
+
+    const response = await admin
+      .post("/api/admin/master-data/seed/product-management/apply")
+      .send({})
+      .expect(200);
+
+    expect(response.body.logLines).toContain("Produktkategorie reaktiviert: Fass Saunen");
+    expect(response.body.logLines).toContain("Komponentenkategorie reaktiviert: Dachvarianten");
+
+    const [refreshedProductCategory] = await db
+      .select({
+        isActive: productCategories.isActive,
+      })
+      .from(productCategories)
+      .where(eq(productCategories.id, productCategory.id))
+      .limit(1);
+    const [refreshedComponentCategory] = await db
+      .select({
+        isActive: componentCategories.isActive,
+      })
+      .from(componentCategories)
+      .where(eq(componentCategories.id, componentCategory.id))
+      .limit(1);
+
+    expect(refreshedProductCategory?.isActive).toBe(true);
+    expect(refreshedComponentCategory?.isActive).toBe(true);
+  });
+
+  it("returns FORBIDDEN for non-admin on product management seed endpoint", async () => {
+    const admin = await loginAdminAgent();
+    const reader = await createAndLoginReaderAgent(admin);
+
+    await reader
+      .post("/api/admin/master-data/seed/product-management/apply")
+      .send({})
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+  });
+
+  it("returns product management seed status with extra component file metadata", async () => {
+    const admin = await loginAdminAgent();
+
+    await admin
+      .get("/api/admin/master-data/seed/product-management")
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.sourceFile).toBe("products.csv");
+        expect(Array.isArray(res.body.extraFiles)).toBe(true);
       });
   });
 

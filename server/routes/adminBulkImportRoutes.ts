@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { api } from "@shared/routes";
 import * as adminBulkImportController from "../controllers/adminBulkImportController";
-import * as adminSaunaTourImportController from "../controllers/adminSaunaTourImportController";
 
 const router = Router();
 
@@ -14,10 +13,5 @@ router.post(api.admin.projectBulkImportApplyNew.path, adminBulkImportController.
 router.post(api.admin.projectBulkImportApplySpecialCase.path, adminBulkImportController.applyProjectsBulkImportSpecialCase);
 router.get(api.admin.masterDataPdfMiningLimits.path, adminBulkImportController.getMasterDataPdfMiningLimits);
 router.post(api.admin.masterDataPdfMiningAnalyze.path, adminBulkImportController.analyzeMasterDataPdfMining);
-
-router.post(api.admin.saunaTourImportPreview.path, adminSaunaTourImportController.createSaunaTourPreview);
-router.post(api.admin.saunaTourImportPreviewWeekRows.path, adminSaunaTourImportController.getSaunaTourPreviewWeekRows);
-router.post(api.admin.saunaTourImportPreviewSheetRows.path, adminSaunaTourImportController.getSaunaTourPreviewSheetRows);
-router.post(api.admin.saunaTourImportPreviewCleanup.path, adminSaunaTourImportController.cleanupSaunaTourPreview);
 
 export default router;

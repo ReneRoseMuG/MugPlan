@@ -10,8 +10,6 @@ import { Switch } from "@/components/ui/switch";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { StickyNote, Plus, Pin, PinOff, X } from "lucide-react";
 import type { Note, NoteTemplate } from "@shared/schema";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 
 const fallbackCardColor = "#f8fafc";
 
@@ -44,11 +42,12 @@ function NoteCard({
   onTogglePin?: (isPinned: boolean) => void;
   onDelete?: () => void;
 }) {
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return "";
-    const parsed = typeof date === "string" ? new Date(date) : date;
-    return format(parsed, "dd.MM.yyyy", { locale: de });
-  };
+  const hasCustomCardColor = note.cardColor !== null;
+  const titleClassName = hasCustomCardColor ? "text-white" : "text-slate-800 dark:text-slate-200";
+  const bodyClassName = hasCustomCardColor ? "text-white/90" : "text-slate-600 dark:text-slate-400";
+  const iconButtonClassName = hasCustomCardColor
+    ? "text-white/80 hover:bg-white/15 hover:text-white"
+    : "text-slate-400 hover:bg-slate-100 hover:text-slate-600";
 
   return (
     <div
@@ -67,8 +66,10 @@ function NoteCard({
             }}
             className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
               note.isPinned
-                ? "text-primary hover:bg-primary/10"
-                : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                ? hasCustomCardColor
+                  ? "text-white hover:bg-white/15"
+                  : "text-primary hover:bg-primary/10"
+                : iconButtonClassName
             }`}
             data-testid={`button-pin-note-${note.id}`}
             title={note.isPinned ? "Anheften aufheben" : "Anheften"}
@@ -83,7 +84,7 @@ function NoteCard({
               event.stopPropagation();
               onDelete();
             }}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${iconButtonClassName}`}
             data-testid={`button-delete-note-${note.id}`}
             title="Notiz loeschen"
           >
@@ -92,7 +93,7 @@ function NoteCard({
         ) : null}
       </div>
       <div className="mb-2 flex items-center gap-2 pr-16">
-        <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200" data-testid={`text-note-title-${note.id}`}>
+        <h4 className={`text-sm font-medium ${titleClassName}`} data-testid={`text-note-title-${note.id}`}>
           {note.title}
         </h4>
         <span
@@ -104,14 +105,11 @@ function NoteCard({
       </div>
       {note.body ? (
         <div
-          className="text-sm text-slate-600 dark:text-slate-400"
+          className={`text-sm ${bodyClassName}`}
           dangerouslySetInnerHTML={{ __html: note.body }}
           data-testid={`text-note-body-${note.id}`}
         />
       ) : null}
-      <p className="mt-2 text-xs text-slate-500" data-testid={`text-note-date-${note.id}`}>
-        {formatDate(note.updatedAt)}
-      </p>
     </div>
   );
 }

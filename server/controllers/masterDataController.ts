@@ -2,6 +2,16 @@
 import { ZodError } from "zod";
 import { api } from "@shared/routes";
 import * as masterDataService from "../services/masterDataService";
+import { getEmployeesSeedStatus, applyEmployeesSeed, exportEmployeesSeed } from "../services/seedEmployeesService";
+import { getHelpTextsSeedStatus, applyHelpTextsSeed, exportHelpTextsSeed } from "../services/seedHelpTextsService";
+import {
+  getProductSeedStatus,
+  getComponentSeedStatus,
+  applyProductManagementSeed,
+  exportProductManagementSeed,
+} from "../services/seedProductManagementService";
+import { getProjectStatusSeedStatus, applyProjectStatusSeed, exportProjectStatusSeed } from "../services/seedProjectStatusService";
+import { getNoteTemplatesSeedStatus, applyNoteTemplatesSeed, exportNoteTemplatesSeed } from "../services/seedNoteTemplatesService";
 
 function parseId(value: string | string[]): number {
   if (Array.isArray(value)) {
@@ -98,6 +108,104 @@ export async function deleteProductCategory(req: Request, res: Response, next: N
     if (handleServiceError(error, res)) return;
     next(error);
   }
+}
+
+export async function getEmployeesSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = ensureRoleKey(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    await masterDataService.assertMasterDataAdmin(roleKey);
+    const result = await getEmployeesSeedStatus();
+    res.json(result);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+async function handleSeedExecution(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  parseInput: () => void,
+  execute: () => Promise<unknown>,
+): Promise<void> {
+  try {
+    const roleKey = ensureRoleKey(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    await masterDataService.assertMasterDataAdmin(roleKey);
+    parseInput();
+    const result = await execute();
+    res.json(result);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+export async function applyEmployeesSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.employees.apply.input.parse(req.body ?? {}), applyEmployeesSeed);
+}
+
+export async function exportEmployeesSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.employees.export.input.parse(req.body ?? {}), exportEmployeesSeed);
+}
+
+export async function getHelpTextsSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => undefined, getHelpTextsSeedStatus);
+}
+
+export async function applyHelpTextsSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.helpTexts.apply.input.parse(req.body ?? {}), applyHelpTextsSeed);
+}
+
+export async function exportHelpTextsSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.helpTexts.export.input.parse(req.body ?? {}), exportHelpTextsSeed);
+}
+
+export async function getProductManagementSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => undefined, async () => ({
+    ...(await getProductSeedStatus()),
+    extraFiles: [await getComponentSeedStatus()],
+  }));
+}
+
+export async function applyProductManagementSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.productManagement.apply.input.parse(req.body ?? {}), applyProductManagementSeed);
+}
+
+export async function exportProductManagementSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.productManagement.export.input.parse(req.body ?? {}), exportProductManagementSeed);
+}
+
+export async function getProjectStatusSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => undefined, getProjectStatusSeedStatus);
+}
+
+export async function applyProjectStatusSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.projectStatus.apply.input.parse(req.body ?? {}), applyProjectStatusSeed);
+}
+
+export async function exportProjectStatusSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.projectStatus.export.input.parse(req.body ?? {}), exportProjectStatusSeed);
+}
+
+export async function getNoteTemplatesSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => undefined, getNoteTemplatesSeedStatus);
+}
+
+export async function applyNoteTemplatesSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.noteTemplates.apply.input.parse(req.body ?? {}), applyNoteTemplatesSeed);
+}
+
+export async function exportNoteTemplatesSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.noteTemplates.export.input.parse(req.body ?? {}), exportNoteTemplatesSeed);
 }
 
 export async function listComponentCategories(req: Request, res: Response, next: NextFunction): Promise<void> {

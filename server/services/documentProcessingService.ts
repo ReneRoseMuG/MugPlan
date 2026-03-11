@@ -55,30 +55,52 @@ function buildExtractionDescription(name: string, description: string | null): s
   return `${normalizedName} - ${normalizedDescription}`;
 }
 
-function buildExtractionContentFromDocument(extractedText: string): {
+function buildLegacyExtractionContent(extractedText: string): {
   saunaModel: string;
   articleItems: Array<{ quantity: string; description: string; category: string }>;
 } {
+  const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
+  return {
+    saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),
+    articleItems: articleItems.map((item) => ({
+      quantity: item.quantity,
+      description: item.description,
+      category: "Artikel",
+    })),
+  };
+}
+
+function buildMiningExtractionContent(extractedText: string): {
+  saunaModel: string;
+  articleItems: Array<{ quantity: string; description: string; category: string }>;
+} {
+  const parsed = parseMasterDataArticleItemsDeterministically(extractedText);
+  return {
+    saunaModel: parsed.productName.trim(),
+    articleItems: parsed.articleItems.map((item) => ({
+      quantity: item.quantity,
+      description: buildExtractionDescription(item.name, item.description),
+      category: item.kind === "product" ? "Produkt" : "Komponente",
+    })),
+  };
+}
+
+function buildExtractionContentFromDocument(
+  scope: ExtractionScope,
+  extractedText: string,
+): {
+  saunaModel: string;
+  articleItems: Array<{ quantity: string; description: string; category: string }>;
+} {
+  const preferMiningParser = scope === "project_form" || scope === "appointment_form";
+  if (!preferMiningParser) {
+    return buildLegacyExtractionContent(extractedText);
+  }
+
   try {
-    const parsed = parseMasterDataArticleItemsDeterministically(extractedText);
-    return {
-      saunaModel: parsed.productName.trim(),
-      articleItems: parsed.articleItems.map((item) => ({
-        quantity: item.quantity,
-        description: buildExtractionDescription(item.name, item.description),
-        category: item.kind === "product" ? "Produkt" : "Komponente",
-      })),
-    };
+    return buildMiningExtractionContent(extractedText);
   } catch {
-    const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
-    return {
-      saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),
-      articleItems: articleItems.map((item) => ({
-        quantity: item.quantity,
-        description: item.description,
-        category: "Artikel",
-      })),
-    };
+    return buildLegacyExtractionContent(extractedText);
   }
 }
 
@@ -98,7 +120,7 @@ export async function extractFromPdf(params: {
         throw new DocumentExtractionOrderConflictError("Auftrag schon importiert");
       }
     }
-    const extractionContent = buildExtractionContentFromDocument(extractedText);
+    const extractionContent = buildExtractionContentFromDocument(params.scope, extractedText);
     const amount = parseDocumentTotalAmountDeterministically(extractedText);
 
     return validateAndNormalizeExtraction({

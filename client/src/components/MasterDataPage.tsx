@@ -1,13 +1,14 @@
 ﻿import { useMemo } from "react";
-import { Boxes, FileText, ListChecks, Package, Tags } from "lucide-react";
+import { Boxes, DatabaseZap, FileText, ListChecks, Package, Tags } from "lucide-react";
 import { EntityFormWithTabsLayout } from "@/components/ui/entity-form-with-tabs-layout";
 import { ProductManagementPage } from "@/components/ProductManagementPage";
 import { MasterDataPdfMiningPage } from "@/components/MasterDataPdfMiningPage";
 import { TagManagementPage } from "@/components/TagManagementPage";
 import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
+import { MasterDataSeedPage } from "@/components/MasterDataSeedPage";
 
-export type MasterDataTabId = "products" | "pdf-mining" | "tags" | "project-status" | "note-templates";
+export type MasterDataTabId = "products" | "pdf-mining" | "tags" | "project-status" | "note-templates" | "seed";
 
 interface MasterDataPageProps {
   initialTabId?: MasterDataTabId;
@@ -45,6 +46,12 @@ export function MasterDataPage({ initialTabId = "products" }: MasterDataPageProp
         label: "Notiz Vorlagen",
         icon: <FileText className="h-4 w-4" />,
         content: <NoteTemplatesPage />,
+      },
+      {
+        id: "seed",
+        label: "Seed",
+        icon: <DatabaseZap className="h-4 w-4" />,
+        content: <MasterDataSeedPage />,
       },
     ],
     [],

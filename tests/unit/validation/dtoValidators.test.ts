@@ -9,6 +9,7 @@
  * - Extraktionsservice persistiert keine Kunden implizit.
  * - Deterministische Parserfehler werden als kontrollierter Fehler propagiert.
  * - Extrahierte Auftragsummen werden in den zentralen Extract-Output uebernommen.
+ * - Projekt- und Termin-Extract bevorzugen den Mining-Parser; customer_form bleibt beim Legacy-Parser.
  *
  * Fehlerfaelle:
  * - Ungueltige DTO-Payload.
@@ -171,6 +172,53 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
 
+  it("extractFromPdf maps appointment_form through the mining parser as well", async () => {
+    extractTextFromPdfBufferMock.mockResolvedValue("doc text");
+    parseDocumentHeaderDeterministicallyMock.mockReturnValue({
+      orderNumber: "A-9",
+      customerNumber: "K-9",
+      mobile: "0170123456",
+      firstName: "Anna",
+      lastName: "Beispiel",
+      company: null,
+      addressLine1: "Beispielweg 9",
+      postalCode: "10115",
+      city: "Berlin",
+    });
+    parseMasterDataArticleItemsDeterministicallyMock.mockReturnValue({
+      productName: "Nordic Sauna",
+      productDescription: "Panoramafenster",
+      articleItems: [
+        {
+          kind: "product",
+          quantity: "1",
+          articleNumber: "P100",
+          name: "Nordic Sauna",
+          description: "Panoramafenster",
+        },
+        {
+          kind: "component",
+          quantity: "2",
+          articleNumber: "C200",
+          name: "Bankset",
+          description: null,
+        },
+      ],
+    });
+
+    const result = await extractFromPdf({
+      scope: "appointment_form",
+      fileBuffer: Buffer.from("dummy"),
+    });
+
+    expect(result.customer.phone).toBe("0170123456");
+    expect(result.saunaModel).toBe("Nordic Sauna");
+    expect(result.articleItems).toEqual([
+      { quantity: "1", description: "Nordic Sauna - Panoramafenster", category: "Produkt" },
+      { quantity: "2", description: "Bankset", category: "Komponente" },
+    ]);
+  });
+
   it("extractFromPdf returns extracted total amount when Gesamtbetrag is present", async () => {
     parseDocumentHeaderDeterministicallyMock.mockReturnValue({
       orderNumber: "A-2",
@@ -211,7 +259,39 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(result.amount).toBe("17136.00");
   });
 
-  it("falls back to the legacy article parser when the new parser cannot derive a product", async () => {
+  it("keeps customer_form on the legacy article parser path", async () => {
+    extractTextFromPdfBufferMock.mockResolvedValue("doc text");
+    parseDocumentHeaderDeterministicallyMock.mockReturnValue({
+      orderNumber: "A-3",
+      customerNumber: "K-3",
+      mobile: null,
+      firstName: "Erika",
+      lastName: "Muster",
+      company: null,
+      addressLine1: "Teststrasse 3",
+      postalCode: "12345",
+      city: "Leipzig",
+    });
+    parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
+      { quantity: "1", description: "Sauna Modell Z" },
+      { quantity: "2", description: "Ofenrohr Set" },
+    ]);
+
+    const result = await extractFromPdf({
+      scope: "customer_form",
+      fileBuffer: Buffer.from("dummy"),
+    });
+
+    expect(parseMasterDataArticleItemsDeterministicallyMock).not.toHaveBeenCalled();
+    expect(result.customer.customerNumber).toBe("K-3");
+    expect(result.saunaModel).toBe("Sauna Modell Z");
+    expect(result.articleItems).toEqual([
+      { quantity: "1", description: "Sauna Modell Z", category: "Artikel" },
+      { quantity: "2", description: "Ofenrohr Set", category: "Artikel" },
+    ]);
+  });
+
+  it("falls back to the legacy article parser when the mining parser cannot derive a product", async () => {
     extractTextFromPdfBufferMock.mockResolvedValue("doc text");
     parseDocumentHeaderDeterministicallyMock.mockReturnValue({
       orderNumber: "A-3",
@@ -233,7 +313,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     ]);
 
     const result = await extractFromPdf({
-      scope: "customer_form",
+      scope: "project_form",
       fileBuffer: Buffer.from("dummy"),
     });
 

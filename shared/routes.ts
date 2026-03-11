@@ -236,49 +236,13 @@ const bulkImportLimitsSchema = z.object({
   maxTotalBytes: z.number().int().positive(),
 });
 
-const saunaTourPreviewYearSchema = z.enum(["2025", "2026"]);
-
-const saunaTourPreviewWeekRowSchema = z.object({
-  rowIndex: z.number().int().min(0),
-  cells: z.array(z.string()),
+const masterDataSeedFileStatusSchema = z.object({
+  sourceFile: z.string().min(1),
+  exists: z.boolean(),
 });
 
-const saunaTourPreviewSheetChunkSchema = z.object({
-  year: saunaTourPreviewYearSchema,
-  offset: z.number().int().min(0),
-  limit: z.number().int().min(1),
-  totalRows: z.number().int().min(0),
-  hasMore: z.boolean(),
-  nextOffset: z.number().int().min(0),
-  columnCount: z.number().int().min(0),
-  rows: z.array(saunaTourPreviewWeekRowSchema),
-});
-
-const saunaTourPreviewWeekSchema = z.object({
-  weekId: z.string().min(1),
-  startDate: z.string(),
-  endDate: z.string(),
-  startColumn: z.number().int().min(1),
-  endColumn: z.number().int().min(1),
-  totalRows: z.number().int().min(0),
-});
-
-const saunaTourPreviewYearDataSchema = z.object({
-  year: saunaTourPreviewYearSchema,
-  rowCount: z.number().int().min(0),
-  columnCount: z.number().int().min(0),
-  weeks: z.array(saunaTourPreviewWeekSchema),
-});
-
-const saunaTourPreviewChunkSchema = z.object({
-  year: saunaTourPreviewYearSchema,
-  weekId: z.string().min(1),
-  offset: z.number().int().min(0),
-  limit: z.number().int().min(1),
-  totalRows: z.number().int().min(0),
-  hasMore: z.boolean(),
-  nextOffset: z.number().int().min(0),
-  rows: z.array(saunaTourPreviewWeekRowSchema),
+const masterDataSeedExecutionSchema = masterDataSeedFileStatusSchema.extend({
+  logLines: z.array(z.string()),
 });
 
 export const api = {
@@ -1654,6 +1618,163 @@ export const api = {
         },
       },
     },
+    seed: {
+      employees: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/employees",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/employees/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/employees/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      helpTexts: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/help-texts",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/help-texts/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/help-texts/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      productManagement: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/product-management",
+          responses: {
+            200: z.object({
+              sourceFile: z.string().min(1),
+              exists: z.boolean(),
+              extraFiles: z.array(masterDataSeedFileStatusSchema),
+            }),
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/product-management/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/product-management/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      projectStatus: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/project-status",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/project-status/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/project-status/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      noteTemplates: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/note-templates",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/note-templates/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/note-templates/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+    },
   },
   // Tour employees (for Tour/Team management)
   tourEmployees: {
@@ -2784,75 +2905,6 @@ export const api = {
         400: errorSchemas.validation,
         403: z.object({ code: z.literal("FORBIDDEN") }),
         413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
-      },
-    },
-    saunaTourImportPreview: {
-      method: "POST" as const,
-      path: "/api/admin/sauna-tour-import/preview",
-      responses: {
-        200: z.object({
-          previewSessionId: z.string().min(1),
-          years: z.array(saunaTourPreviewYearDataSchema),
-          initialSheetChunk: saunaTourPreviewSheetChunkSchema,
-        }),
-        400: errorSchemas.validation,
-        403: z.object({ code: z.literal("FORBIDDEN") }),
-        422: z.object({
-          code: z.enum([
-            "VALIDATION_ERROR",
-            "UNSUPPORTED_FILE_TYPE",
-            "MISSING_REQUIRED_SHEETS",
-            "PREVIEW_PARSE_FAILED",
-          ]),
-          message: z.string(),
-        }),
-      },
-    },
-    saunaTourImportPreviewWeekRows: {
-      method: "POST" as const,
-      path: "/api/admin/sauna-tour-import/preview/week-rows",
-      input: z.object({
-        previewSessionId: z.string().min(1),
-        year: saunaTourPreviewYearSchema,
-        weekId: z.string().min(1),
-        offset: z.number().int().min(0),
-        limit: z.number().int().min(1).max(500),
-      }).strict(),
-      responses: {
-        200: saunaTourPreviewChunkSchema,
-        400: errorSchemas.validation,
-        403: z.object({ code: z.literal("FORBIDDEN") }),
-        404: z.object({ code: z.literal("PREVIEW_SESSION_NOT_FOUND"), message: z.string() }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR"), message: z.string() }),
-      },
-    },
-    saunaTourImportPreviewSheetRows: {
-      method: "POST" as const,
-      path: "/api/admin/sauna-tour-import/preview/sheet-rows",
-      input: z.object({
-        previewSessionId: z.string().min(1),
-        year: saunaTourPreviewYearSchema,
-        offset: z.number().int().min(0),
-        limit: z.number().int().min(1).max(500),
-      }).strict(),
-      responses: {
-        200: saunaTourPreviewSheetChunkSchema,
-        400: errorSchemas.validation,
-        403: z.object({ code: z.literal("FORBIDDEN") }),
-        404: z.object({ code: z.literal("PREVIEW_SESSION_NOT_FOUND"), message: z.string() }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR"), message: z.string() }),
-      },
-    },
-    saunaTourImportPreviewCleanup: {
-      method: "POST" as const,
-      path: "/api/admin/sauna-tour-import/preview/cleanup",
-      input: z.object({
-        previewSessionId: z.string().min(1),
-      }).strict(),
-      responses: {
-        200: z.object({ ok: z.literal(true) }),
-        400: errorSchemas.validation,
-        403: z.object({ code: z.literal("FORBIDDEN") }),
       },
     },
   },
