@@ -69,6 +69,11 @@ export type ProjectArticleItem = {
   value: string;
 };
 
+const REPORT_SAUNA_PRODUCT_CATEGORY_ALIASES = [
+  "Fass Saunen",
+  "Fasssaunen",
+] as const;
+
 export function normalizeProjectArticleValue(value: string): string {
   return value
     .normalize("NFKD")
@@ -98,4 +103,9 @@ export function getProjectArticleFieldByCategoryName(categoryName: string): Proj
     if (field.source !== "component") return false;
     return getProjectArticleCategoryAliases(field.key).some((alias) => normalizeProjectArticleValue(alias) === normalized);
   })?.key ?? null;
+}
+
+export function isReportSaunaProductCategoryName(categoryName: string): boolean {
+  const normalized = normalizeProjectArticleValue(categoryName);
+  return REPORT_SAUNA_PRODUCT_CATEGORY_ALIASES.some((alias) => normalizeProjectArticleValue(alias) === normalized);
 }

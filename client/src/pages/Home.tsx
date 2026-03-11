@@ -18,6 +18,7 @@ import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
 import { MasterDataPage } from "@/components/MasterDataPage";
+import { ReportsPage } from "@/components/ReportsPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
 import { addMonths, subMonths } from "date-fns";
@@ -43,7 +44,8 @@ export type ViewType =
   | "settings"
   | "demoData"
   | "masterData"
-  | "users";
+  | "users"
+  | "reports";
 
 export type CalendarNavCommand = {
   id: number;
@@ -95,6 +97,7 @@ export default function Home({ onLogout }: HomeProps) {
   const [pendingWeekScrollRestore, setPendingWeekScrollRestore] = useState<number | null>(null);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const canAccessReports = isAdmin || userRole === "DISPATCHER";
   const backupEnabled = useSetting("backup_enabled");
   const backupDisabled = backupEnabled === false;
 
@@ -323,6 +326,8 @@ export default function Home({ onLogout }: HomeProps) {
             <MasterDataPage initialTabId="products" />
           ) : view === "users" && isAdmin ? (
             <UsersPage />
+          ) : view === "reports" && canAccessReports ? (
+            <ReportsPage />
           ) : isContextualCalendarView ? (
             <CalendarWorkspace
               mode="contextual"

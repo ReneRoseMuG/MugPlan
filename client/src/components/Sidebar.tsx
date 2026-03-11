@@ -1,4 +1,4 @@
-import { CalendarDays, Calendar, MapPin, FolderKanban, UserCircle, UsersRound, Layers, Settings, HelpCircle, Table2, LogOut, Boxes } from "lucide-react";
+import { CalendarDays, Calendar, MapPin, FolderKanban, UserCircle, UsersRound, Layers, Settings, HelpCircle, Table2, LogOut, Boxes, FileText } from "lucide-react";
 import type { ViewType } from "@/pages/Home";
 
 interface SidebarProps {
@@ -95,6 +95,7 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
 
 export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupDisabled = false }: SidebarProps) {
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
+  const canAccessReports = isAdmin || userRole?.toUpperCase() === "DISPATCHER";
   return (
     <div
       className={`w-auto min-w-[260px] max-w-[360px] h-full bg-slate-50 border-r border-border flex flex-col p-4 overflow-y-auto ${
@@ -125,6 +126,12 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
             onViewChange={onViewChange} 
           />
         </NavGroup>
+
+        {canAccessReports && (
+          <NavGroup title="Reports">
+            <NavButton icon={FileText} label="Reports" isActive={currentView === 'reports'} onClick={() => onViewChange('reports')} />
+          </NavGroup>
+        )}
 
         <NavGroup title="Mitarbeiter Verwaltung">
           <NavButton icon={UsersRound} label="Mitarbeiter" isActive={currentView === 'employees'} onClick={() => onViewChange('employees')} />

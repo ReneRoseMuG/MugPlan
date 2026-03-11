@@ -1,0 +1,233 @@
+import { and, asc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
+
+import { db } from "../db";
+import {
+  appointments,
+  componentCategories,
+  components,
+  customers,
+  productCategories,
+  products,
+  projectOrder,
+  projectOrderItems,
+  projects,
+} from "@shared/schema";
+import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
+import { resolveReportComponentSlot, stripReportHtmlToText } from "../lib/reportVorlaufliste";
+
+export type VorlauflisteRow = {
+  projectId: number;
+  amount: string | null;
+  customerFullName: string | null;
+  postalCode: string | null;
+  city: string | null;
+  sauna: string | null;
+  door: string | null;
+  window: string | null;
+  oven: string | null;
+  control: string | null;
+  roof: string | null;
+  plannedDateText: string | null;
+  plannedWeek: string | null;
+  actualDate: string;
+  projectDescription: string | null;
+};
+
+export type VorlauflistePagedResult = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  items: VorlauflisteRow[];
+};
+
+type ReportArticleBuckets = {
+  sauna: Set<string>;
+  door: Set<string>;
+  window: Set<string>;
+  oven: Set<string>;
+  control: Set<string>;
+  roof: Set<string>;
+};
+
+function createEmptyBuckets(): ReportArticleBuckets {
+  return {
+    sauna: new Set<string>(),
+    door: new Set<string>(),
+    window: new Set<string>(),
+    oven: new Set<string>(),
+    control: new Set<string>(),
+    roof: new Set<string>(),
+  };
+}
+
+function normalizeDateOnly(value: unknown): string | null {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "string") return value.slice(0, 10);
+  return null;
+}
+
+function joinSorted(values: Set<string>): string | null {
+  if (values.size === 0) return null;
+  return Array.from(values).sort((left, right) => left.localeCompare(right, "de")).join(", ");
+}
+
+export async function getVorlauflistePaged(params: {
+  fromDate: string;
+  toDate?: string;
+  page: number;
+  pageSize: number;
+}): Promise<VorlauflistePagedResult> {
+  const appointmentConditions: SQL<unknown>[] = [
+    isNotNull(appointments.projectId),
+    gte(appointments.startDate, new Date(`${params.fromDate}T00:00:00`)),
+  ];
+
+  if (params.toDate) {
+    appointmentConditions.push(lte(appointments.startDate, new Date(`${params.toDate}T00:00:00`)));
+  }
+
+  const totalRows = await db
+    .select({
+      count: sql<number>`count(distinct ${appointments.projectId})`,
+    })
+    .from(appointments)
+    .where(and(...appointmentConditions));
+
+  const total = Number(totalRows[0]?.count ?? 0);
+  if (total === 0) {
+    return {
+      page: params.page,
+      pageSize: params.pageSize,
+      total: 0,
+      totalPages: 0,
+      items: [],
+    };
+  }
+
+  const offset = (params.page - 1) * params.pageSize;
+  const pagedProjectRows = await db
+    .select({
+      projectId: appointments.projectId,
+      actualDate: sql<string>`min(${appointments.startDate})`,
+    })
+    .from(appointments)
+    .where(and(...appointmentConditions))
+    .groupBy(appointments.projectId)
+    .orderBy(sql`min(${appointments.startDate}) asc`, asc(appointments.projectId))
+    .limit(params.pageSize)
+    .offset(offset);
+
+  const projectIds = pagedProjectRows
+    .map((row) => row.projectId)
+    .filter((value): value is number => typeof value === "number");
+
+  if (projectIds.length === 0) {
+    return {
+      page: params.page,
+      pageSize: params.pageSize,
+      total,
+      totalPages: Math.ceil(total / params.pageSize),
+      items: [],
+    };
+  }
+
+  const projectRows = await db
+    .select({
+      project: projects,
+      customer: customers,
+      order: projectOrder,
+    })
+    .from(projects)
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(inArray(projects.id, projectIds));
+
+  const orderItemRows = await db
+    .select({
+      item: projectOrderItems,
+      product: products,
+      productCategory: productCategories,
+      component: components,
+      componentCategory: componentCategories,
+    })
+    .from(projectOrderItems)
+    .leftJoin(products, eq(projectOrderItems.productId, products.id))
+    .leftJoin(productCategories, eq(products.categoryId, productCategories.id))
+    .leftJoin(components, eq(projectOrderItems.componentId, components.id))
+    .leftJoin(componentCategories, eq(components.categoryId, componentCategories.id))
+    .where(inArray(projectOrderItems.projectId, projectIds));
+
+  const projectById = new Map(projectRows.map((row) => [row.project.id, row] as const));
+  const bucketsByProjectId = new Map<number, ReportArticleBuckets>();
+
+  for (const row of orderItemRows) {
+    const projectId = row.item.projectId;
+    const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+
+    if (row.product && row.productCategory && isReportSaunaProductCategoryName(row.productCategory.name)) {
+      buckets.sauna.add(row.product.name.trim());
+      bucketsByProjectId.set(projectId, buckets);
+      continue;
+    }
+
+    if (!row.component || !row.componentCategory) {
+      bucketsByProjectId.set(projectId, buckets);
+      continue;
+    }
+
+    const fieldKey = resolveReportComponentSlot(row.componentCategory.name);
+    const componentName = row.component.name.trim();
+    if (fieldKey === "door") buckets.door.add(componentName);
+    if (fieldKey === "window") buckets.window.add(componentName);
+    if (fieldKey === "oven") buckets.oven.add(componentName);
+    if (fieldKey === "control") buckets.control.add(componentName);
+    if (fieldKey === "roof") buckets.roof.add(componentName);
+
+    bucketsByProjectId.set(projectId, buckets);
+  }
+
+  const actualDateByProjectId = new Map(
+    pagedProjectRows
+      .map((row) => {
+        const projectId = row.projectId;
+        const actualDate = normalizeDateOnly(row.actualDate);
+        if (typeof projectId !== "number" || actualDate === null) return null;
+        return [projectId, actualDate] as const;
+      })
+      .filter((entry): entry is readonly [number, string] => entry !== null),
+  );
+
+  return {
+    page: params.page,
+    pageSize: params.pageSize,
+    total,
+    totalPages: Math.ceil(total / params.pageSize),
+    items: projectIds
+      .map((projectId) => {
+        const row = projectById.get(projectId);
+        const actualDate = actualDateByProjectId.get(projectId);
+        if (!row || !actualDate) return null;
+        const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+
+        return {
+          projectId,
+          amount: row.order?.amount ?? null,
+          customerFullName: row.customer.fullName ?? null,
+          postalCode: row.customer.postalCode ?? null,
+          city: row.customer.city ?? null,
+          sauna: joinSorted(buckets.sauna),
+          door: joinSorted(buckets.door),
+          window: joinSorted(buckets.window),
+          oven: joinSorted(buckets.oven),
+          control: joinSorted(buckets.control),
+          roof: joinSorted(buckets.roof),
+          plannedDateText: row.order?.plannedDateText ?? null,
+          plannedWeek: row.order?.plannedWeek ?? null,
+          actualDate,
+          projectDescription: stripReportHtmlToText(row.project.descriptionMd),
+        };
+      })
+      .filter((entry): entry is VorlauflisteRow => entry !== null),
+  };
+}

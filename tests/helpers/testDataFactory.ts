@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { InsertCustomer } from "@shared/schema";
-import { componentCategories, productCategories, projectTags, projects, tags } from "@shared/schema";
+import { componentCategories, components, productCategories, products, projectTags, projects, tags } from "@shared/schema";
 import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
@@ -42,6 +42,27 @@ export function buildCustomerPayload(prefix = "CUST"): InsertCustomer {
 
 export async function createCustomerFixture(prefix = "CUST") {
   return customersService.createCustomer(buildCustomerPayload(prefix));
+}
+
+export async function createCustomerFixtureWithOverrides(params?: {
+  prefix?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  fullName?: string | null;
+  company?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+}) {
+  const payload = buildCustomerPayload(params?.prefix ?? "CUST");
+  return customersService.createCustomer({
+    ...payload,
+    firstName: params?.firstName ?? payload.firstName,
+    lastName: params?.lastName ?? payload.lastName,
+    fullName: params?.fullName ?? payload.fullName,
+    company: params?.company ?? payload.company,
+    postalCode: params?.postalCode ?? payload.postalCode,
+    city: params?.city ?? payload.city,
+  });
 }
 
 export async function createTagFixture(prefix = "TAG") {
@@ -134,6 +155,62 @@ export async function ensureProductCategoryFixture(name: string) {
   return created;
 }
 
+export async function createProductFixture(params: {
+  categoryName: string;
+  name: string;
+  description?: string | null;
+}) {
+  const category = await ensureProductCategoryFixture(params.categoryName);
+  const result = await db.insert(products).values({
+    name: params.name,
+    categoryId: category.id,
+    description: params.description ?? null,
+    isActive: true,
+    version: 1,
+  });
+  const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
+
+  const [created] = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, insertedId))
+    .limit(1);
+
+  if (!created) {
+    throw new Error(`Product fixture ${params.name} could not be created.`);
+  }
+
+  return created;
+}
+
+export async function createComponentFixture(params: {
+  categoryName: string;
+  name: string;
+  description?: string | null;
+}) {
+  const category = await ensureComponentCategoryFixture(params.categoryName);
+  const result = await db.insert(components).values({
+    name: params.name,
+    categoryId: category.id,
+    description: params.description ?? null,
+    isActive: true,
+    version: 1,
+  });
+  const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
+
+  const [created] = await db
+    .select()
+    .from(components)
+    .where(eq(components.id, insertedId))
+    .limit(1);
+
+  if (!created) {
+    throw new Error(`Component fixture ${params.name} could not be created.`);
+  }
+
+  return created;
+}
+
 export async function attachProjectTagFixture(projectId: number, tagId: number) {
   await db.insert(projectTags).values({
     projectId,
@@ -193,6 +270,25 @@ export async function createAppointmentFixture(params: {
     startTime: params.startTime ?? null,
     employeeIds: params.employeeIds ?? [],
     tourId: params.tourId ?? null,
+  });
+}
+
+export async function createProjectOrderItemFixture(params: {
+  projectId: number;
+  orderNumber: string;
+  productId?: number | null;
+  componentId?: number | null;
+  description?: string | null;
+  quantity?: number;
+}) {
+  return projectsService.createProjectOrderItem(params.projectId, {
+    projectId: params.projectId,
+    orderNumber: params.orderNumber,
+    productId: params.productId ?? null,
+    componentId: params.componentId ?? null,
+    specificationId: null,
+    description: params.description ?? null,
+    quantity: params.quantity ?? 1,
   });
 }
 

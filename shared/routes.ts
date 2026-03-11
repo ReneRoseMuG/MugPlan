@@ -207,6 +207,28 @@ const projectBoardListResponseSchema = pagedListMetaSchema.extend({
   items: z.array(projectBoardListItemSchema),
 });
 
+const reportVorlauflisteItemSchema = z.object({
+  projectId: z.number().int().positive(),
+  amount: z.string().nullable(),
+  customerFullName: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  city: z.string().nullable(),
+  sauna: z.string().nullable(),
+  door: z.string().nullable(),
+  window: z.string().nullable(),
+  oven: z.string().nullable(),
+  control: z.string().nullable(),
+  roof: z.string().nullable(),
+  plannedDateText: z.string().nullable(),
+  plannedWeek: z.string().nullable(),
+  actualDate: z.string(),
+  projectDescription: z.string().nullable(),
+});
+
+const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
+  items: z.array(reportVorlauflisteItemSchema),
+});
+
 const attachmentDuplicateHitSchema = z.object({
   domain: z.enum(["customer", "project", "employee"]),
   attachmentId: z.number().int().positive(),
@@ -3101,6 +3123,25 @@ export const api = {
         200: z.any(),
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
+      },
+    },
+  },
+  reports: {
+    vorlaufliste: {
+      list: {
+        method: "GET" as const,
+        path: "/api/reports/vorlaufliste",
+        input: z.object({
+          fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          page: z.coerce.number().int().min(1).default(1),
+          pageSize: z.coerce.number().int().min(1).max(100).default(100),
+        }).strict(),
+        responses: {
+          200: reportVorlauflisteResponseSchema,
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
       },
     },
   },

@@ -24,6 +24,7 @@ import projectNotesRoutes from "./routes/projectNotesRoutes";
 import projectStatusRelationsRoutes from "./routes/projectStatusRelationsRoutes";
 import projectStatusRoutes from "./routes/projectStatusRoutes";
 import projectsRoutes from "./routes/projectsRoutes";
+import reportsRoutes from "./routes/reportsRoutes";
 import teamEmployeesRoutes from "./routes/teamEmployeesRoutes";
 import teamsRoutes from "./routes/teamsRoutes";
 import tourEmployeesRoutes from "./routes/tourEmployeesRoutes";
@@ -64,6 +65,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(tourEmployeesRoutes);
   app.use(teamEmployeesRoutes);
   app.use(projectsRoutes);
+  app.use(reportsRoutes);
   app.use(projectNotesRoutes);
   app.use(projectAttachmentsRoutes);
   app.use(projectStatusRelationsRoutes);
