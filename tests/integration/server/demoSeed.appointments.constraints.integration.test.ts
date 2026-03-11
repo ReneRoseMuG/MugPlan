@@ -12,18 +12,19 @@
  * - Touren ohne Mitarbeitende werden im appointments-Run nicht beplant.
  * - Bei Engpaessen wird ueber das initiale Seed-Fenster hinaus weitergeplant.
  * - Montage-Termine nutzen nur 1- oder 2-Tages-Dauern im Verhaeltnis 4:1; Freitage bleiben deutlich unterrepraesentiert.
- * - Base-seeded Projekte erhalten fortlaufende Auftragsnummern im Muster A000000A, einen Betrag zwischen 7500 und 18000, und nur ein begrenzter Anteil aller Seed-Termine ist intraday.
- * - Base- und legacy-Seeds befuellen den FT27-Produktkatalog idempotent; Purge laesst die Katalogtabellen unberuehrt.
+ * - Base-seeded Projekte erhalten fortlaufende Auftragsnummern im Muster A000000A, einen Betrag zwischen 7500 und 18000, kurze Lorem-Beschreibungen und vollstaendige Artikellisten aus vorhandenen Stammdaten.
+ * - Base- und appointments-Seeds veraendern vorhandene Produkt-/Komponenten-/Status-/Notizvorlagen-Stammdaten nicht; Purge laesst diese Tabellen unberuehrt.
  *
  * Fehlerfaelle:
  * - Basis-Seed legt dieselben CSV-Mitarbeitenden mehrfach an oder trackt sie als purge-bare Seed-Entitaeten.
  * - Terminzuweisung enthaelt Mitarbeitende mit abweichender Tour.
  * - Tour-Tag-Slots uebersteigen die erlaubte Obergrenze oder enthalten verbotene Kombinationen.
  * - Seed-Dauern, Freitaggewichtung, Intraday-Anteil, Auftragsnummern oder Projekt-Betraege weichen von der Sollverteilung ab.
- * - Produktkatalog wird doppelt angelegt, im appointments-Run veraendert oder beim Purge eines Seed-Runs geloescht.
+ * - Seed erzeugt oder loescht Stammdaten entgegen der manuellen Importlogik.
+ * - Projekt-Artikellisten bleiben unvollstaendig oder Beschreibungen enthalten keine kurzen Lorem-Saetze.
  *
  * Ziel:
- * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung sowie den FT27-Produktkatalog stabil, idempotent und purge-resistent erzeugt.
+ * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung sowie die neue manuelle Stammdaten-Nutzung stabil und purge-resistent umsetzt.
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { existsSync } from "fs";
@@ -31,6 +32,8 @@ import path from "path";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../../../server/db";
+import * as noteTemplatesRepository from "../../../server/repositories/noteTemplatesRepository";
+import * as projectStatusService from "../../../server/services/projectStatusService";
 import { createSeedRun, purgeSeedRun } from "../../../server/services/demoSeedService";
 import {
   appointments,
@@ -48,12 +51,14 @@ import {
   productCategories,
   productComponent,
   projectNotes,
+  projectOrderItems,
   projectTags,
   products,
   projects,
   seedRunEntities,
   tags,
 } from "../../../shared/schema";
+import { createComponentFixture, createProductFixture } from "../../helpers/testDataFactory";
 
 function toDateKey(date: Date) {
   const y = date.getFullYear();
@@ -120,33 +125,93 @@ async function readDemoTagCounts() {
   };
 }
 
+async function seedManualProjectMasterData(prefix: string) {
+  const productA = await createProductFixture({
+    categoryName: `${prefix}-Produkte`,
+    name: `${prefix}-Modell-A`,
+  });
+  const productB = await createProductFixture({
+    categoryName: `${prefix}-Produkte`,
+    name: `${prefix}-Modell-B`,
+  });
+
+  const componentCategories = [
+    { categoryName: "Ofen", names: [`${prefix}-Ofen-A`, `${prefix}-Ofen-B`] },
+    { categoryName: "Steuerung", names: [`${prefix}-Steuerung-A`, `${prefix}-Steuerung-B`] },
+    { categoryName: "Dach", names: [`${prefix}-Dach-A`, `${prefix}-Dach-B`] },
+    { categoryName: "Fenster", names: [`${prefix}-Fenster-A`, `${prefix}-Fenster-B`] },
+    { categoryName: "Tuer", names: [`${prefix}-Tuer-A`, `${prefix}-Tuer-B`] },
+    { categoryName: "Vorderwand", names: [`${prefix}-Vorderwand-A`, `${prefix}-Vorderwand-B`] },
+    { categoryName: "Rueckwand", names: [`${prefix}-Rueckwand-A`, `${prefix}-Rueckwand-B`] },
+    { categoryName: "Inneneinrichtung", names: [`${prefix}-Innen-A`, `${prefix}-Innen-B`] },
+  ] as const;
+
+  for (const category of componentCategories) {
+    for (const name of category.names) {
+      await createComponentFixture({
+        categoryName: category.categoryName,
+        name,
+      });
+    }
+  }
+
+  return {
+    productIds: [productA.id, productB.id],
+  };
+}
+
+async function seedActiveProjectStatuses(prefix: string) {
+  await projectStatusService.createProjectStatus({
+    title: `${prefix}-Status-A`,
+    color: "#0f766e",
+    description: `${prefix}-status-a`,
+    sortOrder: 10,
+  }, "ADMIN");
+  await projectStatusService.createProjectStatus({
+    title: `${prefix}-Status-B`,
+    color: "#1d4ed8",
+    description: `${prefix}-status-b`,
+    sortOrder: 20,
+  }, "ADMIN");
+}
+
+async function seedActiveNoteTemplates() {
+  for (const [sortOrder, title] of ["Anreise beachten", "Aufbau Start beachten", "Messeaufbau"].entries()) {
+    await noteTemplatesRepository.createNoteTemplate({
+      title,
+      body: `${title} Body`,
+      cardColor: ["#1d4ed8", "#b45309", "#0f766e"][sortOrder] ?? "#1d4ed8",
+      print: true,
+      sortOrder: (sortOrder + 1) * 10,
+      isActive: true,
+    });
+  }
+}
+
 beforeEach(() => {
   // resetDatabase() laeuft zentral ueber tests/setup.env.ts vor jedem Integrationstest.
 });
 
 describe("FT20 integration: appointments-seed tour/day constraints", () => {
   const demoDataDir = path.resolve(process.cwd(), "../../shared/uploads/demodata");
-  const hasRequiredDemoSeedFiles =
-    existsSync(path.join(demoDataDir, "fasssauna_modelle.csv")) &&
-    existsSync(path.join(demoDataDir, "Personal.csv"));
+  const hasRequiredDemoSeedFiles = existsSync(path.join(demoDataDir, "Personal.csv"));
 
   const itIfDemoSeedFilesPresent = hasRequiredDemoSeedFiles ? it : it.skip;
 
-  itIfDemoSeedFilesPresent("seeds FT27 product catalog once, keeps purge off catalog tables and skips appointments-only runs", async () => {
+  itIfDemoSeedFilesPresent("uses existing project master data unchanged, creates full article lists and keeps purge off master-data tables", async () => {
     let firstBaseSeedRunId: string | null = null;
     let secondBaseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
 
     try {
+      const manualMasterData = await seedManualProjectMasterData("DEMOSEED");
+      await seedActiveProjectStatuses("DEMOSEED");
       const firstSummary = await createSeedRun({
         runType: "base",
         randomSeed: 5101,
         employees: 1,
         customers: 2,
         projects: 2,
-        projectStatuses: [
-          { title: "SeedStatus-Catalog-A", color: "#0f766e", description: "seed-status-catalog-a" },
-        ],
       });
       firstBaseSeedRunId = firstSummary.seedRunId;
 
@@ -185,9 +250,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 1,
         customers: 2,
         projects: 2,
-        projectStatuses: [
-          { title: "SeedStatus-Catalog-B", color: "#1d4ed8", description: "seed-status-catalog-b" },
-        ],
       });
       secondBaseSeedRunId = secondSummary.seedRunId;
 
@@ -239,6 +301,8 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     let secondBaseSeedRunId: string | null = null;
 
     try {
+      await seedManualProjectMasterData("EMPLOYEES");
+      await seedActiveProjectStatuses("EMPLOYEES");
       const [employeeCountBeforeRow] = await db.select({ count: sql<number>`count(*)` }).from(employees);
 
       const firstSummary = await createSeedRun({
@@ -246,9 +310,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         randomSeed: 5404,
         customers: 1,
         projects: 1,
-        projectStatuses: [
-          { title: "SeedStatus-Employees-A", color: "#0f766e", description: "seed-status-employees-a" },
-        ],
       });
       firstBaseSeedRunId = firstSummary.seedRunId;
 
@@ -271,9 +332,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         randomSeed: 5505,
         customers: 1,
         projects: 1,
-        projectStatuses: [
-          { title: "SeedStatus-Employees-B", color: "#1d4ed8", description: "seed-status-employees-b" },
-        ],
       });
       secondBaseSeedRunId = secondSummary.seedRunId;
 
@@ -293,24 +351,33 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 
+  itIfDemoSeedFilesPresent("fails fast when required project master data is missing", async () => {
+    await expect(createSeedRun({
+      runType: "base",
+      randomSeed: 5606,
+      customers: 1,
+      projects: 1,
+    })).rejects.toThrow("Keine aktiven Produkte fuer den Demo-Seed verfuegbar.");
+  });
+
   itIfDemoSeedFilesPresent("seeds note templates plus scoped notes for half of customers, projects and appointments and purges them again", async () => {
     let baseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
 
     try {
+      await seedManualProjectMasterData("NOTES");
+      await seedActiveProjectStatuses("NOTES");
+      await seedActiveNoteTemplates();
       const baseSummary = await createSeedRun({
         runType: "base",
         randomSeed: 6101,
         employees: 2,
         customers: 6,
         projects: 6,
-        projectStatuses: [
-          { title: "SeedStatus-Notes", color: "#0f766e", description: "seed-status-notes" },
-        ],
       });
       baseSeedRunId = baseSummary.seedRunId;
 
-      expect(baseSummary.created.noteTemplates).toBe(3);
+      expect(baseSummary.created.noteTemplates).toBe(0);
       expect(baseSummary.created.notes).toBe(6);
 
       const baseSeedEntities = await db
@@ -336,7 +403,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
       expect(seededCustomerIds.length).toBe(6);
       expect(seededProjectIds.length).toBe(6);
-      expect(seededNoteTemplateIds.length).toBe(3);
+      expect(seededNoteTemplateIds.length).toBe(0);
       expect(seededNoteIds.length).toBe(6);
 
       const seededTemplateRows = await db
@@ -345,7 +412,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
           title: noteTemplates.title,
         })
         .from(noteTemplates)
-        .where(inArray(noteTemplates.id, seededNoteTemplateIds))
         .orderBy(noteTemplates.sortOrder);
 
       expect(seededTemplateRows.map((row) => row.title)).toEqual([
@@ -443,7 +509,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       const purgeBaseSummary = await purgeSeedRun(baseSeedRunId);
       baseSeedRunId = null;
 
-      expect(purgeBaseSummary.deleted.noteTemplates).toBe(3);
+      expect(purgeBaseSummary.deleted.noteTemplates).toBe(0);
       expect(purgeBaseSummary.deleted.notes).toBe(seededNoteIds.length);
       expect(purgeBaseSummary.deleted.customerNotes).toBe(3);
       expect(purgeBaseSummary.deleted.projectNotes).toBe(3);
@@ -454,7 +520,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       const [remainingNoteCountRow] = await db
         .select({ count: sql<number>`count(*)` })
         .from(notes);
-      expect(Number(remainingTemplateCountRow?.count ?? 0)).toBe(0);
+      expect(Number(remainingTemplateCountRow?.count ?? 0)).toBe(3);
       expect(Number(remainingNoteCountRow?.count ?? 0)).toBe(0);
     } finally {
       if (appointmentsSeedRunId) {
@@ -471,15 +537,14 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     let appointmentsSeedRunId: string | null = null;
 
     try {
+      await seedManualProjectMasterData("TOURDAY");
+      await seedActiveProjectStatuses("TOURDAY");
       const baseSummary = await createSeedRun({
         runType: "base",
         randomSeed: 1101,
         employees: 2,
         customers: 8,
         projects: 12,
-        projectStatuses: [
-          { title: "SeedStatus", color: "#0f766e", description: "seed-status" },
-        ],
       });
       baseSeedRunId = baseSummary.seedRunId;
 
@@ -678,15 +743,14 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     let secondBaseSeedRunId: string | null = null;
 
     try {
+      await seedManualProjectMasterData("ORDERNUM");
+      await seedActiveProjectStatuses("ORDERNUM");
       const firstSummary = await createSeedRun({
         runType: "base",
         randomSeed: 3303,
         employees: 1,
         customers: 2,
         projects: 2,
-        projectStatuses: [
-          { title: "SeedStatus-First", color: "#0f766e", description: "seed-status-first" },
-        ],
       });
       firstBaseSeedRunId = firstSummary.seedRunId;
 
@@ -696,9 +760,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 1,
         customers: 2,
         projects: 2,
-        projectStatuses: [
-          { title: "SeedStatus-Second", color: "#1d4ed8", description: "seed-status-second" },
-        ],
       });
       secondBaseSeedRunId = secondSummary.seedRunId;
 

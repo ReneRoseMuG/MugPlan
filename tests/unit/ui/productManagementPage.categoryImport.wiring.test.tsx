@@ -30,6 +30,15 @@ describe("FT27 UI: category import wiring in product management", () => {
     expect(source).toContain("button-component-category-import-");
   });
 
+  it("maps import error codes to specific user-facing messages", () => {
+    expect(source).toContain("function resolveCategoryImportError(");
+    expect(source).toContain('code === "INVALID_CSV_FORMAT"');
+    expect(source).toContain('code === "INVALID_CSV_CONTENT"');
+    expect(source).toContain('code === "NOT_FOUND"');
+    expect(source).toContain('code === "FORBIDDEN"');
+    expect(source).toContain("description: message.description");
+  });
+
   it("uses the shortened delete label", () => {
     expect(source).toMatch(/>\s*-\s*<\/Button>/);
   });

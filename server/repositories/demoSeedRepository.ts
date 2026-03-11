@@ -10,7 +10,6 @@ import {
   employeeAttachments,
   employees,
   notes,
-  noteTemplates,
   projectAttachments,
   projectNotes,
   projectProjectStatus,
@@ -135,7 +134,6 @@ export async function purgeSeedRun(seedRunId: string, idsByType: Record<string, 
     const customerIds = idsByType.customer ?? [];
     const employeeIds = idsByType.employee ?? [];
     const noteIds = idsByType.note ?? [];
-    const noteTemplateIds = idsByType.note_template ?? [];
     const teamIds = idsByType.team ?? [];
     const tourIds = idsByType.tour ?? [];
     const projectAttachmentIds = idsByType.project_attachment ?? [];
@@ -182,7 +180,7 @@ export async function purgeSeedRun(seedRunId: string, idsByType: Record<string, 
     const customersDeleted = await deleteByIds(customers, customers.id, customerIds);
     const employeesDeleted = await deleteByIds(employees, employees.id, employeeIds);
     const notesDeleted = await deleteByIds(notes, notes.id, noteIds);
-    const noteTemplatesDeleted = await deleteByIds(noteTemplates, noteTemplates.id, noteTemplateIds);
+    const noteTemplatesDeleted = 0;
     const teamsDeleted = await deleteByIds(teams, teams.id, teamIds);
     const toursDeleted = await deleteByIds(tours, tours.id, tourIds);
 

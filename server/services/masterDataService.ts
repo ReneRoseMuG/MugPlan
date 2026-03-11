@@ -190,6 +190,19 @@ function detectCategoryImportDelimiter(headerLine: string): string {
 
   if (matching.length === 1) return matching[0];
   if (matching.length > 1) {
+    const semicolonParsed = parseCsvRow(headerLine, ";");
+    const commaParsed = parseCsvRow(headerLine, ",");
+    if (!semicolonParsed.error && !commaParsed.error) {
+      const semicolonValues = semicolonParsed.values.map((entry) => entry.trim());
+      const commaValues = commaParsed.values.map((entry) => entry.trim());
+      const isSingleColumnHeader = semicolonValues.length === 1
+        && commaValues.length === 1
+        && semicolonValues[0]?.toLocaleLowerCase("de") === "name"
+        && commaValues[0]?.toLocaleLowerCase("de") === "name";
+      if (isSingleColumnHeader) {
+        return ";";
+      }
+    }
     throw new MasterDataError(422, "INVALID_CSV_FORMAT");
   }
   throw new MasterDataError(400, "INVALID_CSV_HEADER");

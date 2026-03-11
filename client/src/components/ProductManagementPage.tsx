@@ -65,6 +65,43 @@ function extractApiCode(error: unknown): string | null {
   }
 }
 
+function resolveCategoryImportError(code: string | null, entityLabel: "Produkte" | "Komponenten"): { title: string; description?: string } {
+  if (code === "INVALID_CSV_HEADER") {
+    return {
+      title: `CSV-Header fuer ${entityLabel.toLocaleLowerCase("de")} ungueltig`,
+      description: 'Erwartet wird mindestens eine Spalte "Name". Optional sind "Beschreibung" und "IsActive".',
+    };
+  }
+  if (code === "INVALID_CSV_FORMAT") {
+    return {
+      title: `CSV-Datei fuer ${entityLabel.toLocaleLowerCase("de")} ist formal ungueltig`,
+      description: "Bitte Trennzeichen, Quotes und Dateiformat pruefen.",
+    };
+  }
+  if (code === "INVALID_CSV_CONTENT") {
+    return {
+      title: `CSV-Datei fuer ${entityLabel.toLocaleLowerCase("de")} enthaelt keine gueltigen Daten`,
+      description: "Nach dem Header muss mindestens eine verwertbare Zeile mit Name vorhanden sein.",
+    };
+  }
+  if (code === "NOT_FOUND") {
+    return {
+      title: `${entityLabel} konnten nicht importiert werden`,
+      description: "Die gewaehlte Kategorie wurde nicht gefunden.",
+    };
+  }
+  if (code === "FORBIDDEN") {
+    return {
+      title: `${entityLabel} konnten nicht importiert werden`,
+      description: "Der Import ist nur fuer Admins erlaubt.",
+    };
+  }
+  return {
+    title: `${entityLabel}import fehlgeschlagen`,
+    description: code ? `Servercode: ${code}` : "Die genaue Ursache konnte nicht aufgeloest werden.",
+  };
+}
+
 function toProductDraft(product: Product | null): ProductDataDraft {
   if (!product) {
     return {
@@ -344,8 +381,10 @@ export function ProductManagementPage() {
     },
     onError: (error) => {
       const code = extractApiCode(error);
+      const message = resolveCategoryImportError(code, "Produkte");
       toast({
-        title: code === "INVALID_CSV_HEADER" ? "CSV-Header fuer Produkte ungueltig" : "Produktimport fehlgeschlagen",
+        title: message.title,
+        description: message.description,
         variant: "destructive",
       });
     },
@@ -380,8 +419,10 @@ export function ProductManagementPage() {
     },
     onError: (error) => {
       const code = extractApiCode(error);
+      const message = resolveCategoryImportError(code, "Komponenten");
       toast({
-        title: code === "INVALID_CSV_HEADER" ? "CSV-Header fuer Komponenten ungueltig" : "Komponentenimport fehlgeschlagen",
+        title: message.title,
+        description: message.description,
         variant: "destructive",
       });
     },

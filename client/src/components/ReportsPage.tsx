@@ -45,6 +45,25 @@ type SubmittedFilters = {
 
 const REPORT_PAGE_SIZE = 100;
 
+function isoDateToDisplayDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `${match[3]}.${match[2]}.${match[1]}`;
+}
+
+function normalizeDisplayDateInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+}
+
+function displayDateToIsoDate(value: string): string | null {
+  const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value.trim());
+  if (!match) return null;
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
 function formatDate(value: string | null): string {
   if (!value) return "-";
   const parsed = new Date(`${value}T00:00:00`);
@@ -74,11 +93,14 @@ interface ReportsPageProps {
 }
 
 export function ReportsPage({ onCancel }: ReportsPageProps) {
-  const [fromDate, setFromDate] = useState(getBerlinTodayDateString());
+  const [fromDate, setFromDate] = useState(isoDateToDisplayDate(getBerlinTodayDateString()));
   const [toDate, setToDate] = useState("");
   const [showToDate, setShowToDate] = useState(false);
   const [page, setPage] = useState(1);
   const [submittedFilters, setSubmittedFilters] = useState<SubmittedFilters | null>(null);
+  const resolvedFromDate = displayDateToIsoDate(fromDate);
+  const resolvedToDate = displayDateToIsoDate(toDate);
+  const canGenerateReport = resolvedFromDate !== null && (!showToDate || toDate.trim().length === 0 || resolvedToDate !== null);
 
   const { data, isLoading } = useQuery<VorlauflisteResponse>({
     queryKey: ["reports-vorlaufliste", submittedFilters, page],
@@ -115,7 +137,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     },
     {
       id: "customerFullName",
-      header: "Fullname Kunde",
+      header: "Kunde",
       accessor: (row) => row.customerFullName ?? "",
       minWidth: 220,
       cell: ({ row }) => <span>{resolveValue(row.customerFullName)}</span>,
@@ -225,25 +247,31 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         filterSlot={(
           <div className="flex w-full flex-col gap-4" data-testid="reports-vorlaufliste-panel">
             <div className="flex w-full flex-wrap items-end gap-4">
-              <div className="flex min-w-[220px] flex-1 flex-col gap-1">
-                <Label htmlFor="reports-vorlaufliste-from-date">Von Datum</Label>
+              <div className="flex w-[150px] flex-none flex-col gap-1">
+                <Label htmlFor="reports-vorlaufliste-from-date">Datum Beginn</Label>
                 <Input
                   id="reports-vorlaufliste-from-date"
-                  type="date"
+                  type="text"
                   value={fromDate}
-                  onChange={(event) => setFromDate(event.target.value)}
+                  onChange={(event) => setFromDate(normalizeDisplayDateInput(event.target.value))}
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="dd.mm.yyyy"
                   data-testid="reports-vorlaufliste-from-date"
                 />
               </div>
 
               {showToDate ? (
-                <div className="flex min-w-[220px] flex-1 flex-col gap-1">
-                  <Label htmlFor="reports-vorlaufliste-to-date">Bis Datum</Label>
+                <div className="flex w-[150px] flex-none flex-col gap-1">
+                  <Label htmlFor="reports-vorlaufliste-to-date">Datum Ende</Label>
                   <Input
                     id="reports-vorlaufliste-to-date"
-                    type="date"
+                    type="text"
                     value={toDate}
-                    onChange={(event) => setToDate(event.target.value)}
+                    onChange={(event) => setToDate(normalizeDisplayDateInput(event.target.value))}
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="dd.mm.yyyy"
                     data-testid="reports-vorlaufliste-to-date"
                   />
                 </div>
@@ -264,13 +292,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 <Button
                   type="button"
                   onClick={() => {
+                    if (!resolvedFromDate) return;
                     setPage(1);
                     setSubmittedFilters({
-                      fromDate,
-                      toDate: showToDate && toDate.trim().length > 0 ? toDate : undefined,
+                      fromDate: resolvedFromDate,
+                      toDate: showToDate && toDate.trim().length > 0 ? (resolvedToDate ?? undefined) : undefined,
                     });
                   }}
-                  disabled={fromDate.trim().length === 0}
+                  disabled={!canGenerateReport}
                   data-testid="button-reports-vorlaufliste-generate"
                 >
                   Report erzeugen
@@ -291,7 +320,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 fallbackTitle={hasReport ? "Keine Treffer gefunden." : "Noch kein Report erzeugt."}
                 fallbackBody={hasReport
                   ? "Fuer den gewaehlten Datumsbereich konnten keine passenden Projekte ermittelt werden."
-                  : "Waehlen Sie mindestens ein Von-Datum und erzeugen Sie den Report."}
+                  : "Waehlen Sie mindestens ein Datum Beginn und erzeugen Sie den Report."}
               />
             )}
           />

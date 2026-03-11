@@ -325,6 +325,25 @@ describe("FT27 unit: masterDataService", () => {
     expect(result.rows.find((row) => row.lineNumber === 4)?.message).toContain("Duplikat");
   });
 
+  it("accepts single-column Name csv for component import", async () => {
+    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 6, name: "Komponenten A", version: 1, isActive: true });
+    repositoryMocks.getComponentByNormalizedName.mockResolvedValueOnce(undefined);
+    repositoryMocks.createComponent.mockResolvedValueOnce({ id: 30 });
+
+    const csv = Buffer.from("Name\nNur Dach\n", "utf8");
+    const result = await importComponentsForCategory(6, csv, "ADMIN");
+
+    expect(repositoryMocks.createComponent).toHaveBeenCalledWith({
+      name: "Nur Dach",
+      categoryId: 6,
+      description: null,
+      isActive: true,
+      version: 1,
+    });
+    expect(result.summary.createdRows).toBe(1);
+    expect(result.summary.invalidRows).toBe(0);
+  });
+
   it("creates missing seed categories and logs the actions", async () => {
     repositoryMocks.getProductCategoryByName.mockResolvedValueOnce(undefined);
     repositoryMocks.createProductCategory.mockResolvedValueOnce({ id: 10, name: "Fass Saunen", isActive: true, version: 1 });

@@ -33,6 +33,10 @@ describe("FT26 reports page wiring", () => {
   it("wires the vorlaufliste panel, help key and fixed paging", () => {
     expect(reportsPageSource).toContain("helpKey=\"reports.vorlaufliste\"");
     expect(reportsPageSource).toContain("Bis Datum anzeigen");
+    expect(reportsPageSource).toContain("Datum Beginn");
+    expect(reportsPageSource).toContain("Datum Ende");
+    expect(reportsPageSource).toContain("maxLength={10}");
+    expect(reportsPageSource).toContain('placeholder="dd.mm.yyyy"');
     expect(reportsPageSource).toContain("Report erzeugen");
     expect(reportsPageSource).toContain("const REPORT_PAGE_SIZE = 100;");
     expect(reportsPageSource).toContain("enabled: submittedFilters !== null");

@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import type { InsertAppointment } from "@shared/schema";
+import { PROJECT_ARTICLE_FIELDS } from "@shared/projectArticleList";
+import type { Component, InsertAppointment, NoteTemplate, Product } from "@shared/schema";
 import {
   buildStoredFilename,
   resolveMimeType,
@@ -9,10 +10,7 @@ import {
   writeAttachmentBuffer,
 } from "../lib/attachmentFiles";
 import { renderTemplate } from "../lib/templateRender";
-import { loadSaunaSeedData } from "../seed/csvLoader";
-import { seedProductsAndComponents } from "../seed/productComponentSeeder";
 import { assignDemoTags, ensureDemoTags } from "../seed/tagSeeder";
-import type { OvenRow, SaunaModelRow } from "../seed/types";
 import { createDemoDataFiller } from "./demoDataFiller";
 import * as customersService from "./customersService";
 import * as employeesService from "./employeesService";
@@ -25,6 +23,7 @@ import * as employeesRepository from "../repositories/employeesRepository";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as usersRepository from "../repositories/usersRepository";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
+import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
 import * as notesRepository from "../repositories/notesRepository";
 import * as projectAttachmentsService from "./projectAttachmentsService";
@@ -137,8 +136,8 @@ type SeedSummary = {
     employeeIds?: number[];
     projectContexts: Array<{
       projectId: number;
-      modelId: string;
-      ovenId: string | null;
+      modelName: string;
+      ovenName: string | null;
     }>;
   };
 };
@@ -172,8 +171,8 @@ type IntentKind = "mount" | "rekl";
 
 type ProjectSeedContext = {
   projectId: number;
-  model: SaunaModelRow;
-  selectedOven: OvenRow | null;
+  modelName: string;
+  ovenName: string | null;
 };
 
 type AppointmentIntent = {
@@ -209,6 +208,11 @@ type SeedRunLike = {
   createdAt: Date;
   configJson: unknown;
   summaryJson: unknown;
+};
+
+type SeedMasterData = {
+  products: Product[];
+  componentsByFieldKey: Map<string, Component[]>;
 };
 
 type DemoNoteTemplateSeed = {
@@ -319,23 +323,6 @@ function buildSeedNoteBody(scope: "customer" | "project" | "appointment", entity
     return `Seed-Hinweis fuer Projekt ${entityId}: Materialstatus, Ansprechpartner und Ablauf vor Ausfuehrung abstimmen.`;
   }
   return `Seed-Hinweis fuer Termin ${entityId}: Zeitfenster, Team und Einsatzdetails vor Start gegenpruefen.`;
-}
-
-async function seedNoteTemplates(seedRunId: string) {
-  const createdTemplates = [];
-  for (const template of DEMO_NOTE_TEMPLATES) {
-    const createdTemplate = await noteTemplatesRepository.createNoteTemplate({
-      title: template.title,
-      body: template.body,
-      cardColor: template.cardColor,
-      print: true,
-      sortOrder: template.sortOrder,
-      isActive: true,
-    });
-    createdTemplates.push(createdTemplate);
-    await demoSeedRepository.addSeedRunEntity(seedRunId, "note_template", createdTemplate.id);
-  }
-  return createdTemplates;
 }
 
 async function seedScopedNotes(params: {
@@ -530,55 +517,105 @@ function formatSeedOrderNumber(value: number) {
   return `A${String(value).padStart(6, "0")}A`;
 }
 
-function createSaunaContext(model: SaunaModelRow, oven: OvenRow | null) {
+function createProjectTemplateContext(modelName: string, ovenName: string | null) {
   return {
-    sauna_model_name: model.saunaModelName,
-    sauna_art_nr: model.saunaArtNr,
-    sauna_gtin: model.saunaGtin,
-    sauna_category: model.saunaCategory,
-    sauna_shape: model.saunaShape,
-    sauna_has_vorraum: model.saunaHasVorraum,
-    sauna_l_cm: model.saunaLCm,
-    sauna_w_cm: model.saunaWCm,
-    sauna_h_cm: model.saunaHCm,
-    sauna_wall_thickness_mm: model.saunaWallThicknessMm,
-    sauna_outer_wood: model.saunaOuterWood,
-    sauna_interior_wood: model.saunaInteriorWood,
-    sauna_roof_variants: model.saunaRoofVariants,
-    sauna_roof_colors: model.saunaRoofColors,
-    sauna_windows_doors: model.saunaWindowsDoors,
-    sauna_dimensions_note: model.saunaDimensionsNote,
-    sauna_product_page_url: model.saunaProductPageUrl,
-    oven_name: oven?.ovenName,
-    oven_type: oven?.ovenType,
-    oven_power_kw: oven?.ovenPowerKw,
-    oven_brand: oven?.ovenBrand,
-    oven_price_eur: oven?.ovenPriceEur,
+    sauna_model_name: modelName,
+    sauna_art_nr: undefined,
+    sauna_gtin: undefined,
+    sauna_category: undefined,
+    sauna_shape: undefined,
+    sauna_has_vorraum: undefined,
+    sauna_l_cm: undefined,
+    sauna_w_cm: undefined,
+    sauna_h_cm: undefined,
+    sauna_wall_thickness_mm: undefined,
+    sauna_outer_wood: undefined,
+    sauna_interior_wood: undefined,
+    sauna_roof_variants: undefined,
+    sauna_roof_colors: undefined,
+    sauna_windows_doors: undefined,
+    sauna_dimensions_note: undefined,
+    sauna_product_page_url: undefined,
+    oven_name: ovenName ?? undefined,
+    oven_type: undefined,
+    oven_power_kw: undefined,
+    oven_brand: undefined,
+    oven_price_eur: undefined,
   } satisfies Record<string, string | undefined>;
 }
 
-function resolveSelectedOven(
-  seedRunId: string,
-  modelId: string,
-  ovenById: Map<string, OvenRow>,
-  ovenIdsForModel: string[],
-  allOvens: OvenRow[],
-) {
-  if (ovenIdsForModel.length > 0) {
-    const index = hashInt(`${seedRunId}:${modelId}`) % ovenIdsForModel.length;
-    const selectedId = ovenIdsForModel[index];
-    const mapped = ovenById.get(selectedId);
-    if (mapped) return mapped;
+async function loadSeedMasterData(): Promise<SeedMasterData> {
+  const products = await masterDataRepository.listProducts("active");
+  if (products.length === 0) {
+    throw createBadRequestError("Keine aktiven Produkte fuer den Demo-Seed verfuegbar.");
   }
-  if (allOvens.length === 0) return null;
-  const fallbackIndex = hashInt(`${seedRunId}:${modelId}:fallback`) % allOvens.length;
-  return allOvens[fallbackIndex] ?? null;
+
+  const [components, componentCategories] = await Promise.all([
+    masterDataRepository.listComponents("active"),
+    masterDataRepository.listComponentCategories("active"),
+  ]);
+  const componentsByFieldKey = new Map<string, Component[]>();
+
+  for (const field of PROJECT_ARTICLE_FIELDS) {
+    if (field.source !== "component") continue;
+    const matchingCategory = componentCategories.find((category) => {
+      const normalizedName = category.name.trim().toLocaleLowerCase("de");
+      return (field.categoryAliases ?? [field.categoryName]).some((alias) => alias.trim().toLocaleLowerCase("de") === normalizedName);
+    });
+    if (!matchingCategory) {
+      throw createBadRequestError(`Keine aktive Komponenten-Kategorie fuer Seed-Slot "${field.label}" verfuegbar.`);
+    }
+
+    const matchingComponents = components.filter((component) => component.categoryId === matchingCategory.id);
+    if (matchingComponents.length === 0) {
+      throw createBadRequestError(`Keine aktiven Komponenten fuer Seed-Slot "${field.label}" verfuegbar.`);
+    }
+    componentsByFieldKey.set(field.key, matchingComponents);
+  }
+
+  return {
+    products,
+    componentsByFieldKey,
+  };
+}
+
+function pickSeedMasterDataSelection(
+  seedRunId: string,
+  projectIndex: number,
+  random: DeterministicRandom,
+  masterData: SeedMasterData,
+) {
+  const selectedProduct = random.pick(masterData.products);
+  const selectedComponents = new Map<string, Component>();
+
+  for (const field of PROJECT_ARTICLE_FIELDS) {
+    if (field.source !== "component") continue;
+    const pool = masterData.componentsByFieldKey.get(field.key) ?? [];
+    if (pool.length === 0) {
+      throw createBadRequestError(`Keine aktiven Komponenten fuer Seed-Slot "${field.label}" verfuegbar.`);
+    }
+    const selected = pool[hashInt(`${seedRunId}:project:${projectIndex}:${field.key}`) % pool.length] ?? pool[0];
+    selectedComponents.set(field.key, selected);
+  }
+
+  return { selectedProduct, selectedComponents };
+}
+
+function buildShortLoremDescription(random: DeterministicRandom) {
+  const sentences = [
+    "Lorem ipsum dolor sit amet.",
+    "Sed do eiusmod tempor.",
+    "Ut enim ad minim veniam.",
+    "Quis nostrud exercitation ullamco.",
+    "Duis aute irure dolor.",
+    "Excepteur sint occaecat cupidatat.",
+  ];
+  return seededShuffle(sentences, random).slice(0, random.int(1, 2)).join(" ");
 }
 
 async function buildProjectSeedContextsFromBaseRun(
   baseRun: SeedRunLike,
   projectIds: number[],
-  saunaData: ReturnType<typeof loadSaunaSeedData>,
 ) {
   const uniqueProjectIds = uniqueNumberList(projectIds);
   if (uniqueProjectIds.length === 0) return [] as ProjectSeedContext[];
@@ -589,29 +626,19 @@ async function buildProjectSeedContextsFromBaseRun(
   const projectMetaByProjectId = new Map<
     number,
     {
-      modelId: string;
-      ovenId: string | null;
+      modelName: string;
+      ovenName: string | null;
     }
   >();
   for (const item of projectContextsMetaRaw) {
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
     const projectId = Number(record.projectId);
-    const modelId = String(record.modelId ?? "");
-    const ovenIdRaw = record.ovenId;
-    const ovenId = ovenIdRaw == null ? null : String(ovenIdRaw);
-    if (!Number.isFinite(projectId) || projectId <= 0 || modelId.trim().length === 0) continue;
-    projectMetaByProjectId.set(projectId, { modelId, ovenId });
-  }
-
-  const modelById = new Map(saunaData.saunaModels.map((model) => [model.modelId, model]));
-  const ovenById = new Map(saunaData.ovens.map((oven) => [oven.ovenId, oven]));
-  const ovenIdsByModelId = new Map<string, string[]>();
-  for (const mapping of saunaData.mappings) {
-    if (!mapping.modelId || !mapping.ovenId) continue;
-    const list = ovenIdsByModelId.get(mapping.modelId) ?? [];
-    list.push(mapping.ovenId);
-    ovenIdsByModelId.set(mapping.modelId, list);
+    const modelName = String(record.modelName ?? "");
+    const ovenNameRaw = record.ovenName;
+    const ovenName = ovenNameRaw == null ? null : String(ovenNameRaw);
+    if (!Number.isFinite(projectId) || projectId <= 0 || modelName.trim().length === 0) continue;
+    projectMetaByProjectId.set(projectId, { modelName, ovenName });
   }
 
   const contexts: ProjectSeedContext[] = [];
@@ -619,28 +646,10 @@ async function buildProjectSeedContextsFromBaseRun(
     const project = await projectsService.getProject(projectId);
     if (!project) continue;
     const metaItem = projectMetaByProjectId.get(projectId);
-
-    const model =
-      (metaItem?.modelId ? modelById.get(metaItem.modelId) : undefined) ??
-      saunaData.saunaModels[
-        hashInt(`${baseRun.id}:project-model:${projectId}`) % Math.max(1, saunaData.saunaModels.length)
-      ];
-    if (!model) continue;
-
-    const selectedOven =
-      (metaItem?.ovenId ? ovenById.get(metaItem.ovenId) : undefined) ??
-      resolveSelectedOven(
-        baseRun.id,
-        model.modelId,
-        ovenById,
-        ovenIdsByModelId.get(model.modelId) ?? [],
-        saunaData.ovens,
-      );
-
     contexts.push({
       projectId: Number(project.id),
-      model,
-      selectedOven,
+      modelName: metaItem?.modelName?.trim() || project.name,
+      ovenName: metaItem?.ovenName?.trim() || null,
     });
   }
 
@@ -1242,13 +1251,13 @@ async function materializeAppointmentIntents(params: {
         attempt += 1;
         continue;
       }
-      const ctx = createSaunaContext(intent.project.model, intent.project.selectedOven);
+      const ctx = createProjectTemplateContext(intent.project.modelName, intent.project.ovenName);
       const endDate = intent.durationDays > 1 ? addDays(startDate, intent.durationDays - 1) : null;
       const titleTemplate = intent.kind === "rekl" ? TEMPLATE_KEYS.reklTitle : TEMPLATE_KEYS.mountTitle;
       const fallbackTitle =
         intent.kind === "rekl"
-          ? `Rekl. ${intent.project.selectedOven?.ovenName ?? "Ofen"}`
-          : `Montage: ${intent.project.model.saunaModelName}`;
+          ? `Rekl. ${intent.project.ovenName ?? "Ofen"}`
+          : `Montage: ${intent.project.modelName}`;
       const linkedProject = await projectsService.getProject(intent.project.projectId);
       if (!linkedProject) {
         attempt += 1;
@@ -1320,7 +1329,7 @@ function buildReklIntents(params: {
   let reklMissingOven = 0;
   let forcedProjectId: number | null = null;
   if (config.reklShare > 0) {
-    const withOven = mountAppointments.filter((mount) => mount.project.selectedOven !== null);
+    const withOven = mountAppointments.filter((mount) => mount.project.ovenName !== null);
     const sharePercent = Math.round(config.reklShare * 100);
     const selected = withOven.filter(
       (mount) => (hashInt(`${seedRunId}:rekl:${mount.project.projectId}`) % 100) < sharePercent,
@@ -1337,7 +1346,7 @@ function buildReklIntents(params: {
       (hashInt(`${seedRunId}:rekl:${mount.project.projectId}`) % 100) < sharePercent ||
       mount.project.projectId === forcedProjectId;
     if (!selectedByShare) continue;
-    if (!mount.project.selectedOven) {
+    if (!mount.project.ovenName) {
       reklMissingOven += 1;
       continue;
     }
@@ -1403,11 +1412,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
   const random = new DeterministicRandom(deriveSeed(seedRunId, config.randomSeed));
   const filler = createDemoDataFiller(deriveSeed(seedRunId, config.randomSeed));
   const templates = await resolveSeedTemplates(seedRunId, config.locale);
-  const saunaData = loadSaunaSeedData();
-  warnings.push(...saunaData.warnings);
-  if (saunaData.saunaModels.length === 0) {
-    throw createBadRequestError("Keine Sauna-Modelle verfuegbar. Bitte CSV-Daten pruefen.");
-  }
 
   let seedRunPersisted = false;
   try {
@@ -1425,20 +1429,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       const message = error instanceof Error ? error.message : String(error);
       logError(`${logPrefix} demo tag seed failed`, { seedRunId, message });
       warnings.push(`Tag-Seed fehlgeschlagen: ${message}`);
-    }
-
-    if (config.runType !== "appointments") {
-      try {
-        const productSeedResult = await seedProductsAndComponents(
-          saunaData.saunaModels,
-          saunaData.ovens,
-        );
-        logInfo(`${logPrefix} product/component seed`, { seedRunId, ...productSeedResult });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logError(`${logPrefix} product/component seed failed`, { seedRunId, message });
-        warnings.push(`Produkt-/Komponenten-Seed fehlgeschlagen: ${message}`);
-      }
     }
 
     const created = {
@@ -1461,15 +1451,17 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       reklSkippedConstraints: 0,
     };
 
-      const teams: number[] = [];
-      const tours: number[] = [];
-      const employees: number[] = [];
+    const teams: number[] = [];
+    const tours: number[] = [];
+    const employees: number[] = [];
     const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
     const projectSeedContexts: ProjectSeedContext[] = [];
-    let seedNoteTemplatesPool: Array<{ id: number; title: string; body: string; cardColor: string | null }> = [];
+    let seedNoteTemplatesPool: NoteTemplate[] = [];
+    let seedMasterData: SeedMasterData | null = null;
 
     if (config.runType === "appointments") {
+      seedNoteTemplatesPool = await noteTemplatesRepository.getNoteTemplates(true);
       if (!config.baseSeedRunId) {
         throw createBadRequestError("Fuer Termine-Seed ist baseSeedRunId erforderlich.");
       }
@@ -1535,14 +1527,14 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       tours.splice(0, tours.length, ...filteredTours);
 
       projectSeedContexts.push(
-        ...(await buildProjectSeedContextsFromBaseRun(baseRun, baseProjectIds, saunaData)),
+        ...(await buildProjectSeedContextsFromBaseRun(baseRun, baseProjectIds)),
       );
       if (projectSeedContexts.length === 0) {
         throw createBadRequestError("Keine gueltigen Projekt-Kontexte aus dem Basis-Run verfuegbar.");
       }
     } else {
-      seedNoteTemplatesPool = await seedNoteTemplates(seedRunId);
-      created.noteTemplates += seedNoteTemplatesPool.length;
+      seedNoteTemplatesPool = await noteTemplatesRepository.getNoteTemplates(true);
+      seedMasterData = await loadSeedMasterData();
 
       for (let i = 0; i < 3; i += 1) {
         const team = await teamsService.createTeam({ color: random.pick(["#0f766e", "#0369a1", "#be123c", "#4d7c0f"]) });
@@ -1646,75 +1638,66 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       created.notes += customerNotesSeed.createdNotes;
 
       const projectsToCreate = config.projects;
-      const ovenById = new Map(saunaData.ovens.map((oven) => [oven.ovenId, oven]));
-      const ovenIdsByModelId = new Map<string, string[]>();
-      for (const mapping of saunaData.mappings) {
-        if (!mapping.modelId || !mapping.ovenId) continue;
-        const list = ovenIdsByModelId.get(mapping.modelId) ?? [];
-        list.push(mapping.ovenId);
-        ovenIdsByModelId.set(mapping.modelId, list);
-      }
-
-      let statusIdsForProjectAssignment: number[] = [];
-      if (config.runType === "base") {
-        if (config.projectStatuses.length === 0) {
-          throw createBadRequestError("Mindestens ein Projekt-Status fuer Basis-Seed erforderlich.");
-        }
-        for (let i = 0; i < config.projectStatuses.length; i += 1) {
-          const item = config.projectStatuses[i];
-          if (!item.title || item.title.trim().length === 0) {
-            throw createBadRequestError("Projekt-Status-Titel darf nicht leer sein.");
-          }
-          if (!item.color || item.color.trim().length === 0) {
-            throw createBadRequestError("Projekt-Status-Farbe darf nicht leer sein.");
-          }
-          const status = await projectStatusService.createProjectStatus({
-            title: item.title.trim(),
-            color: item.color.trim(),
-            description: item.description ?? null,
-            sortOrder: i,
-          }, "ADMIN");
-          statusIdsForProjectAssignment.push(Number(status.id));
-        }
-      } else {
-        const statuses = await projectStatusService.listProjectStatuses("active", "ADMIN");
-        statusIdsForProjectAssignment = statuses.map((status) => Number(status.id));
-        if (statusIdsForProjectAssignment.length === 0) {
-          warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
-        }
+      const statuses = await projectStatusService.listProjectStatuses("active", "ADMIN");
+      const statusIdsForProjectAssignment = statuses.map((status) => Number(status.id));
+      if (statusIdsForProjectAssignment.length === 0) {
+        warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
       }
 
       for (let i = 0; i < projectsToCreate; i += 1) {
-        const model = random.pick(saunaData.saunaModels);
         const customerId = customers.length > 0 ? random.pick(customers) : null;
         if (!customerId) {
           warnings.push("Keine Kunden erzeugt; Projektanlage uebersprungen.");
           break;
         }
-        const possibleOvenIds = ovenIdsByModelId.get(model.modelId) ?? [];
-        const selectedOven = resolveSelectedOven(
-          seedRunId,
-          model.modelId,
-          ovenById,
-          possibleOvenIds,
-          saunaData.ovens,
+        if (!seedMasterData) {
+          throw createBadRequestError("Seed-Stammdaten konnten nicht geladen werden.");
+        }
+        const selectedMasterData = pickSeedMasterDataSelection(seedRunId, i, random, seedMasterData);
+        const selectedOven = selectedMasterData.selectedComponents.get("oven") ?? null;
+        const projectTemplateContext = createProjectTemplateContext(
+          selectedMasterData.selectedProduct.name,
+          selectedOven?.name ?? null,
         );
-        const ctx = createSaunaContext(model, selectedOven);
-
         const rawProjectName =
-          renderTemplate(templates[TEMPLATE_KEYS.projectTitle], ctx, { allowedKeys: allowedTemplateKeys }) ||
-          model.saunaModelName ||
-          `Sauna ${i + 1}`;
+          renderTemplate(templates[TEMPLATE_KEYS.projectTitle], projectTemplateContext, { allowedKeys: allowedTemplateKeys }) ||
+          `${selectedMasterData.selectedProduct.name} Projekt ${i + 1}`;
+        const orderNumber = formatSeedOrderNumber(nextOrderNumber);
         const project = await projectsService.createProject({
           name: rawProjectName.trim(),
-          orderNumber: formatSeedOrderNumber(nextOrderNumber),
+          orderNumber,
           customerId,
           amount: String(random.int(7500, 18000)),
-          descriptionMd: renderTemplate(templates[TEMPLATE_KEYS.projectDescription], ctx, { allowedKeys: allowedTemplateKeys }),
+          descriptionMd: buildShortLoremDescription(random),
         });
         nextOrderNumber += 1;
         created.projects += 1;
         await demoSeedRepository.addSeedRunEntity(seedRunId, "project", project.id);
+        await projectsService.createProjectOrderItem(project.id, {
+          projectId: project.id,
+          orderNumber,
+          productId: selectedMasterData.selectedProduct.id,
+          componentId: null,
+          specificationId: null,
+          description: null,
+          quantity: 1,
+        });
+        for (const field of PROJECT_ARTICLE_FIELDS) {
+          if (field.source !== "component") continue;
+          const component = selectedMasterData.selectedComponents.get(field.key);
+          if (!component) {
+            throw createBadRequestError(`Komponente fuer Seed-Slot "${field.label}" konnte nicht ausgewaehlt werden.`);
+          }
+          await projectsService.createProjectOrderItem(project.id, {
+            projectId: project.id,
+            orderNumber,
+            productId: null,
+            componentId: component.id,
+            specificationId: null,
+            description: null,
+            quantity: 1,
+          });
+        }
 
         if (statusIdsForProjectAssignment.length > 0) {
           const maxCount = Math.min(statusIdsForProjectAssignment.length, config.runType === "base" ? 2 : 1);
@@ -1728,8 +1711,8 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
 
         projectSeedContexts.push({
           projectId: project.id,
-          model,
-          selectedOven,
+          modelName: selectedMasterData.selectedProduct.name,
+          ovenName: selectedOven?.name ?? null,
         });
       }
 
@@ -1908,8 +1891,8 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
               employeeIds: employees,
               projectContexts: projectSeedContexts.map((ctx) => ({
                 projectId: ctx.projectId,
-                modelId: ctx.model.modelId,
-                ovenId: ctx.selectedOven?.ovenId ?? null,
+                modelName: ctx.modelName,
+                ovenName: ctx.ovenName,
               })),
             }
           : undefined,
