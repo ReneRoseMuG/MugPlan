@@ -100,6 +100,22 @@ export async function deleteProductCategory(req: Request, res: Response, next: N
   }
 }
 
+export async function runProductManagementSeed(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = ensureRoleKey(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    api.masterData.seed.productManagement.run.input.parse(req.body ?? {});
+    const result = await masterDataService.runProductManagementSeed(roleKey);
+    res.json(result);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
 export async function listComponentCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = ensureRoleKey(req);

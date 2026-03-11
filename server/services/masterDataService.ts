@@ -19,8 +19,8 @@
 import type { CanonicalRoleKey } from "../settings/registry";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 
-const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
-const PROTECTED_COMPONENT_CATEGORY_NAMES = new Set([
+const DEFAULT_PRODUCT_CATEGORY_NAME = "Fass Saunen";
+const PROTECTED_COMPONENT_CATEGORY_NAMES = [
   "Dachvarianten",
   "Fenster",
   "Inneneinrichtung",
@@ -29,7 +29,12 @@ const PROTECTED_COMPONENT_CATEGORY_NAMES = new Set([
   "Steuerungen",
   "Türen",
   "Vorderwände",
-]);
+] as const;
+const PROTECTED_COMPONENT_CATEGORY_NAME_SET = new Set<string>(PROTECTED_COMPONENT_CATEGORY_NAMES);
+
+export type MasterDataSeedResult = {
+  logLines: string[];
+};
 
 export class MasterDataError extends Error {
   status: number;
@@ -83,6 +88,12 @@ function normalizeReadFilterForRole(
     return normalizeFilter(filter);
   }
   return "active";
+}
+
+function buildSeedLog(action: "created" | "reactivated" | "existing", kind: "Produktkategorie" | "Komponentenkategorie", name: string): string {
+  if (action === "created") return `${kind} angelegt: ${name}`;
+  if (action === "reactivated") return `${kind} reaktiviert: ${name}`;
+  return `${kind} bereits vorhanden: ${name}`;
 }
 
 export async function listProductCategories(
@@ -184,7 +195,7 @@ export async function deleteComponentCategory(
   requireAdmin(roleKey);
   const category = await masterDataRepository.getComponentCategoryById(id);
   if (!category) throw new MasterDataError(404, "NOT_FOUND");
-  if (PROTECTED_COMPONENT_CATEGORY_NAMES.has(category.name)) {
+  if (PROTECTED_COMPONENT_CATEGORY_NAME_SET.has(category.name)) {
     throw new MasterDataError(409, "BUSINESS_CONFLICT");
   }
   try {
@@ -470,6 +481,53 @@ export async function replaceComponentProducts(
     }
     throw error;
   }
+}
+
+export async function runProductManagementSeed(roleKey: CanonicalRoleKey): Promise<MasterDataSeedResult> {
+  requireAdmin(roleKey);
+  const logLines: string[] = [];
+
+  const productCategory = await masterDataRepository.getProductCategoryByName(DEFAULT_PRODUCT_CATEGORY_NAME);
+  if (!productCategory) {
+    await masterDataRepository.createProductCategory({
+      name: DEFAULT_PRODUCT_CATEGORY_NAME,
+      isActive: true,
+      version: 1,
+    });
+    logLines.push(buildSeedLog("created", "Produktkategorie", DEFAULT_PRODUCT_CATEGORY_NAME));
+  } else if (!productCategory.isActive) {
+    await masterDataRepository.updateProductCategoryWithVersion(productCategory.id, productCategory.version, {
+      isActive: true,
+    });
+    logLines.push(buildSeedLog("reactivated", "Produktkategorie", DEFAULT_PRODUCT_CATEGORY_NAME));
+  } else {
+    logLines.push(buildSeedLog("existing", "Produktkategorie", DEFAULT_PRODUCT_CATEGORY_NAME));
+  }
+
+  for (const categoryName of PROTECTED_COMPONENT_CATEGORY_NAMES) {
+    const componentCategory = await masterDataRepository.getComponentCategoryByName(categoryName);
+    if (!componentCategory) {
+      await masterDataRepository.createComponentCategory({
+        name: categoryName,
+        isActive: true,
+        version: 1,
+      });
+      logLines.push(buildSeedLog("created", "Komponentenkategorie", categoryName));
+      continue;
+    }
+
+    if (!componentCategory.isActive) {
+      await masterDataRepository.updateComponentCategoryWithVersion(componentCategory.id, componentCategory.version, {
+        isActive: true,
+      });
+      logLines.push(buildSeedLog("reactivated", "Komponentenkategorie", categoryName));
+      continue;
+    }
+
+    logLines.push(buildSeedLog("existing", "Komponentenkategorie", categoryName));
+  }
+
+  return { logLines };
 }
 
 export function isMasterDataError(error: unknown): error is MasterDataError {

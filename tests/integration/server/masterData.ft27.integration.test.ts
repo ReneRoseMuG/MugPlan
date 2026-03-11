@@ -8,7 +8,8 @@
  * - FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only.
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
- * - Default-/Schutzkategorien (Alle Produkte plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
+ * - Default-/Schutzkategorien (Fass Saunen plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
+ * - Der Produktverwaltungs-Seed ist idempotent und reaktiviert vorhandene inaktive Seed-Kategorien.
  * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
  *
  * Fehlerfaelle:
@@ -20,11 +21,14 @@
  */
 import express from "express";
 import { createServer } from "http";
+import { eq } from "drizzle-orm";
 import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
+import { componentCategories, productCategories } from "@shared/schema";
+import { db } from "../../../server/db";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { ensureComponentCategoryFixture } from "../../helpers/testDataFactory";
+import { ensureComponentCategoryFixture, ensureProductCategoryFixture } from "../../helpers/testDataFactory";
 
 let app: express.Express;
 let userCounter = 1;
@@ -161,11 +165,16 @@ describe("FT27 integration: master data admin API", () => {
   it("blocks deleting default product category with BUSINESS_CONFLICT", async () => {
     const admin = await loginAdminAgent();
 
+    await admin
+      .post("/api/admin/master-data/seed/product-management")
+      .send({})
+      .expect(200);
+
     const productCategoriesResponse = await admin
       .get("/api/admin/master-data/product-categories?active=all")
       .expect(200);
     const defaultProductCategory = (productCategoriesResponse.body as Array<{ id: number; name: string; version: number }>)
-      .find((row) => row.name === "Alle Produkte");
+      .find((row) => row.name === "Fass Saunen");
 
     expect(defaultProductCategory).toBeDefined();
 
@@ -176,6 +185,16 @@ describe("FT27 integration: master data admin API", () => {
       .expect((res) => {
         expect(res.body.code).toBe("BUSINESS_CONFLICT");
       });
+  });
+
+  it("allows deleting legacy product category name when it is not referenced", async () => {
+    const admin = await loginAdminAgent();
+    const legacyCategory = await ensureProductCategoryFixture("Alle Produkte");
+
+    await admin
+      .delete(`/api/admin/master-data/product-categories/${legacyCategory.id}`)
+      .send({ version: legacyCategory.version })
+      .expect(204);
   });
 
   it.each(protectedComponentCategoryNames)(
@@ -200,6 +219,80 @@ describe("FT27 integration: master data admin API", () => {
 
     await reader
       .get("/api/admin/master-data/product-categories?active=all")
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+  });
+
+  it("runs the product management seed idempotently and returns log lines", async () => {
+    const admin = await loginAdminAgent();
+
+    const firstRun = await admin
+      .post("/api/admin/master-data/seed/product-management")
+      .send({})
+      .expect(200);
+
+    expect((firstRun.body.logLines as string[]).some((line) => line.endsWith("Fass Saunen"))).toBe(true);
+    expect((firstRun.body.logLines as string[]).some((line) => line.endsWith("Dachvarianten"))).toBe(true);
+
+    const secondRun = await admin
+      .post("/api/admin/master-data/seed/product-management")
+      .send({})
+      .expect(200);
+
+    expect(secondRun.body.logLines).toContain("Produktkategorie bereits vorhanden: Fass Saunen");
+    expect(secondRun.body.logLines).toContain("Komponentenkategorie bereits vorhanden: Dachvarianten");
+  });
+
+  it("reactivates inactive seed categories through the product management seed", async () => {
+    const admin = await loginAdminAgent();
+    const productCategory = await ensureProductCategoryFixture("Fass Saunen");
+    const componentCategory = await ensureComponentCategoryFixture("Dachvarianten");
+
+    await db
+      .update(productCategories)
+      .set({ isActive: false, version: productCategory.version + 1 })
+      .where(eq(productCategories.id, productCategory.id));
+    await db
+      .update(componentCategories)
+      .set({ isActive: false, version: componentCategory.version + 1 })
+      .where(eq(componentCategories.id, componentCategory.id));
+
+    const response = await admin
+      .post("/api/admin/master-data/seed/product-management")
+      .send({})
+      .expect(200);
+
+    expect(response.body.logLines).toContain("Produktkategorie reaktiviert: Fass Saunen");
+    expect(response.body.logLines).toContain("Komponentenkategorie reaktiviert: Dachvarianten");
+
+    const [refreshedProductCategory] = await db
+      .select({
+        isActive: productCategories.isActive,
+      })
+      .from(productCategories)
+      .where(eq(productCategories.id, productCategory.id))
+      .limit(1);
+    const [refreshedComponentCategory] = await db
+      .select({
+        isActive: componentCategories.isActive,
+      })
+      .from(componentCategories)
+      .where(eq(componentCategories.id, componentCategory.id))
+      .limit(1);
+
+    expect(refreshedProductCategory?.isActive).toBe(true);
+    expect(refreshedComponentCategory?.isActive).toBe(true);
+  });
+
+  it("returns FORBIDDEN for non-admin on product management seed endpoint", async () => {
+    const admin = await loginAdminAgent();
+    const reader = await createAndLoginReaderAgent(admin);
+
+    await reader
+      .post("/api/admin/master-data/seed/product-management")
+      .send({})
       .expect(403)
       .expect((res) => {
         expect(res.body.code).toBe("FORBIDDEN");

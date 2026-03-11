@@ -1609,6 +1609,23 @@ export const api = {
         },
       },
     },
+    seed: {
+      productManagement: {
+        run: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/product-management",
+          input: z.object({}).strict(),
+          responses: {
+            200: z.object({
+              logLines: z.array(z.string()),
+            }),
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+    },
   },
   // Tour employees (for Tour/Team management)
   tourEmployees: {

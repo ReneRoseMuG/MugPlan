@@ -14,13 +14,13 @@ async function ensureProductDefaultCategory(): Promise<void> {
       isActive: productCategories.isActive,
     })
     .from(productCategories)
-    .where(eq(productCategories.name, "Alle Produkte"))
+    .where(eq(productCategories.name, "Fass Saunen"))
     .limit(1);
 
   if (!existing) {
     try {
       await db.insert(productCategories).values({
-        name: "Alle Produkte",
+        name: "Fass Saunen",
         isActive: true,
         version: 1,
       });

@@ -8,6 +8,7 @@ router.get(api.masterData.productCategories.list.path, masterDataController.list
 router.post(api.masterData.productCategories.create.path, masterDataController.createProductCategory);
 router.put(api.masterData.productCategories.update.path, masterDataController.updateProductCategory);
 router.delete(api.masterData.productCategories.delete.path, masterDataController.deleteProductCategory);
+router.post(api.masterData.seed.productManagement.run.path, masterDataController.runProductManagementSeed);
 
 router.get(api.masterData.componentCategories.list.path, masterDataController.listComponentCategories);
 router.post(api.masterData.componentCategories.create.path, masterDataController.createComponentCategory);
