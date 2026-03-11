@@ -87,7 +87,7 @@ Die zentrale Pipeline in `server/routes.ts` ist:
 6. `enforceAdminMaintenancePolicy`
 7. fachliche Route-Module
 
-Aktive Domänen-Routen umfassen u. a. Auth inkl. Passwort-Login, 2FA-Flow und Quick-Login, Termine, Kalender, Kunden, Projekte, Mitarbeiter, Teams, Touren, Projektstatus, Notizen, Anhänge und Attachment-Queries, User Settings, Users, Backups, Demo Seed/Purge, Dokumentextraktion, Help-Texts, Masterdata, Admin Bulk Imports und Sauna-Tour-Import-Preview.
+Aktive Domänen-Routen umfassen u. a. Auth inkl. Passwort-Login, 2FA-Flow und Quick-Login, Termine, Kalender, Kunden, Projekte, Mitarbeiter, Teams, Touren, Projektstatus, Notizen, Anhänge und Attachment-Queries, User Settings, Users, Backups, Demo Seed/Purge, Dokumentextraktion, Help-Texts, Masterdata und Admin Bulk Imports.
 
 ## 5. Rollen- und Zugriffsarchitektur
 

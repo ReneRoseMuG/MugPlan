@@ -188,13 +188,12 @@ CalDAV:
 
 - zentraler Admin-Reset löscht Demo-/Fachdaten, aber keine `users`, `roles`, `employee` oder `employee_attachment`
 
-### 5.8 Admin Bulk Import und Sauna-Tour-Preview
+### 5.8 Admin Bulk Import
 
 Admin-Importpfade laufen über `server/routes/adminBulkImportRoutes.ts` und die zugehörigen Controller/Services:
 
 - Customer Bulk Import: Analyse, Neuanlage und Update von Dubletten
 - Project Bulk Import: Analyse, Neuanlage und Special-Case-Pfad mit zusätzlicher Customer-Auflösung
-- Sauna-Tour-Import-Preview: Preview-Session mit Year-/Week-Chunking und explizitem Cleanup-Endpunkt
 
 ### 5.9 Projektaufträge, Positionen und Tags
 
@@ -242,7 +241,7 @@ Admin-Listen für Kunden und Projekte binden zusätzlich Bulk-Import-Dialoge ein
 ### 6.5 Settings im Frontend
 
 `SettingsProvider` lädt `/api/user-settings/resolved`, setzt via PATCH und macht Version-Retry bei Konflikten.
-`SettingsPage` nutzt die aufgelösten Settings für Backup-Monitoring und manuellen Backup-Run, globale 2FA-Aktivierung sowie die Sauna-Tour-Import-Preview.
+`SettingsPage` nutzt die aufgelösten Settings für Backup-Monitoring und manuellen Backup-Run sowie die globale 2FA-Aktivierung.
 
 ## 7. Sicherheitsgates für destruktive Operationen
 
