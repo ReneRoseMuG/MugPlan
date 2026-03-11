@@ -181,7 +181,7 @@ CalDAV:
 - Persistenztracking via `seed_run`, `seed_run_entity`
 - Purge mit DB-/Dateilöschung und Idempotenz
 - zusätzliche Safety-Prüfung via `assertSafeDemoSeedPurgeTarget`
-- Basis-Seed synchronisiert Mitarbeitende idempotent aus `../../shared/uploads/demodata/Personal.csv`
+- Basis-Seed nutzt vorhandene aktive Mitarbeitende aus der Datenbank
 - Mitarbeitende werden fuer den Basis-Run nicht als purge-bare Seed-Entitaeten angelegt; die Termine-Sequenz nutzt dafuer die im Run-Summary referenzierten Mitarbeiter-IDs
 
 `server/services/adminService.ts` / `server/repositories/adminRepository.ts`:

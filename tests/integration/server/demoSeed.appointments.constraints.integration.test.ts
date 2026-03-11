@@ -5,7 +5,7 @@
  * Use Case: UC20 - Realistische Terminverteilung im appointments-Run auf Basisdaten
  *
  * Abgedeckte Regeln:
- * - Basis-Seed synchronisiert Mitarbeitende idempotent aus `Personal.csv` statt sie frei zu erzeugen.
+ * - Basis-Seed nutzt vorhandene aktive Mitarbeitende aus der Datenbank statt CSV-Import oder freie Generierung.
  * - Mitarbeitende bleiben auf ihrer zugewiesenen Tour; Seed-Termine leihen keine Fremd-Tour-Mitarbeitenden.
  * - Pro Tour und Kalendertag entstehen hoechstens zwei Termine.
  * - Verbotene Tageskombinationen auf einer Tour werden verhindert (kein 2x Ganztag, keine identische Intraday-Startzeit doppelt).
@@ -16,7 +16,7 @@
  * - Base- und appointments-Seeds veraendern vorhandene Produkt-/Komponenten-/Status-/Notizvorlagen-Stammdaten nicht; Purge laesst diese Tabellen unberuehrt.
  *
  * Fehlerfaelle:
- * - Basis-Seed legt dieselben CSV-Mitarbeitenden mehrfach an oder trackt sie als purge-bare Seed-Entitaeten.
+ * - Basis-Seed legt neue Mitarbeitende an oder trackt Bestands-Mitarbeitende als purge-bare Seed-Entitaeten.
  * - Terminzuweisung enthaelt Mitarbeitende mit abweichender Tour.
  * - Tour-Tag-Slots uebersteigen die erlaubte Obergrenze oder enthalten verbotene Kombinationen.
  * - Seed-Dauern, Freitaggewichtung, Intraday-Anteil, Auftragsnummern oder Projekt-Betraege weichen von der Sollverteilung ab.
@@ -27,8 +27,6 @@
  * Sicherstellen, dass der Demo-Seed realistische Tour-Tagesplanung sowie die neue manuelle Stammdaten-Nutzung stabil und purge-resistent umsetzt.
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { existsSync } from "fs";
-import path from "path";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../../../server/db";
@@ -58,7 +56,7 @@ import {
   seedRunEntities,
   tags,
 } from "../../../shared/schema";
-import { createComponentFixture, createProductFixture } from "../../helpers/testDataFactory";
+import { createComponentFixture, createEmployeeFixture, createProductFixture } from "../../helpers/testDataFactory";
 
 function toDateKey(date: Date) {
   const y = date.getFullYear();
@@ -193,12 +191,7 @@ beforeEach(() => {
 });
 
 describe("FT20 integration: appointments-seed tour/day constraints", () => {
-  const demoDataDir = path.resolve(process.cwd(), "../../shared/uploads/demodata");
-  const hasRequiredDemoSeedFiles = existsSync(path.join(demoDataDir, "Personal.csv"));
-
-  const itIfDemoSeedFilesPresent = hasRequiredDemoSeedFiles ? it : it.skip;
-
-  itIfDemoSeedFilesPresent("uses existing project master data unchanged, creates full article lists and keeps purge off master-data tables", async () => {
+  it("uses existing project master data unchanged, creates full article lists and keeps purge off master-data tables", async () => {
     let firstBaseSeedRunId: string | null = null;
     let secondBaseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
@@ -206,6 +199,8 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     try {
       const manualMasterData = await seedManualProjectMasterData("DEMOSEED");
       await seedActiveProjectStatuses("DEMOSEED");
+      await createEmployeeFixture("DEMOSEED-EMP-A");
+      await createEmployeeFixture("DEMOSEED-EMP-B");
       const firstSummary = await createSeedRun({
         runType: "base",
         randomSeed: 5101,
@@ -296,13 +291,15 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 
-  itIfDemoSeedFilesPresent("syncs employees from Personal.csv idempotently and keeps them out of seed entity purge tracking", async () => {
+  it("uses existing employees without creating or purge-tracking them", async () => {
     let firstBaseSeedRunId: string | null = null;
     let secondBaseSeedRunId: string | null = null;
 
     try {
       await seedManualProjectMasterData("EMPLOYEES");
       await seedActiveProjectStatuses("EMPLOYEES");
+      const employeeA = await createEmployeeFixture("SEED-EMP-A");
+      const employeeB = await createEmployeeFixture("SEED-EMP-B");
       const [employeeCountBeforeRow] = await db.select({ count: sql<number>`count(*)` }).from(employees);
 
       const firstSummary = await createSeedRun({
@@ -315,8 +312,9 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
       const firstMetaEmployeeIds = firstSummary.meta?.employeeIds ?? [];
       expect(firstMetaEmployeeIds.length).toBeGreaterThan(0);
-      expect(firstSummary.created.employees).toBeGreaterThan(0);
+      expect(firstSummary.created.employees).toBe(0);
       expect(firstSummary.requested.employees).toBe(firstMetaEmployeeIds.length);
+      expect(firstMetaEmployeeIds.sort((l, r) => l - r)).toEqual([employeeA.id, employeeB.id].sort((l, r) => l - r));
 
       const firstEmployeeEntities = await db
         .select({ entityId: seedRunEntities.entityId })
@@ -325,7 +323,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       expect(firstEmployeeEntities).toHaveLength(0);
 
       const [employeeCountAfterFirstRow] = await db.select({ count: sql<number>`count(*)` }).from(employees);
-      expect(Number(employeeCountAfterFirstRow?.count ?? 0)).toBeGreaterThan(Number(employeeCountBeforeRow?.count ?? 0));
+      expect(Number(employeeCountAfterFirstRow?.count ?? 0)).toBe(Number(employeeCountBeforeRow?.count ?? 0));
 
       const secondSummary = await createSeedRun({
         runType: "base",
@@ -351,7 +349,8 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 
-  itIfDemoSeedFilesPresent("fails fast when required project master data is missing", async () => {
+  it("fails fast when required project master data is missing", async () => {
+    await createEmployeeFixture("MISSING-MD-EMP");
     await expect(createSeedRun({
       runType: "base",
       randomSeed: 5606,
@@ -360,7 +359,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     })).rejects.toThrow("Keine aktiven Produkte fuer den Demo-Seed verfuegbar.");
   });
 
-  itIfDemoSeedFilesPresent("seeds note templates plus scoped notes for half of customers, projects and appointments and purges them again", async () => {
+  it("seeds note templates plus scoped notes for half of customers, projects and appointments and purges them again", async () => {
     let baseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
 
@@ -368,6 +367,8 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       await seedManualProjectMasterData("NOTES");
       await seedActiveProjectStatuses("NOTES");
       await seedActiveNoteTemplates();
+      await createEmployeeFixture("NOTES-EMP-A");
+      await createEmployeeFixture("NOTES-EMP-B");
       const baseSummary = await createSeedRun({
         runType: "base",
         randomSeed: 6101,
@@ -532,13 +533,15 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 
-  itIfDemoSeedFilesPresent("creates only rule-conform tour/day slots and keeps employee-tour binding", async () => {
+  it("creates only rule-conform tour/day slots and keeps employee-tour binding", async () => {
     let baseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
 
     try {
       await seedManualProjectMasterData("TOURDAY");
       await seedActiveProjectStatuses("TOURDAY");
+      await createEmployeeFixture("TOURDAY-EMP-A");
+      await createEmployeeFixture("TOURDAY-EMP-B");
       const baseSummary = await createSeedRun({
         runType: "base",
         randomSeed: 1101,
@@ -738,13 +741,14 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 
-  itIfDemoSeedFilesPresent("continues seeded project order numbers across base runs", async () => {
+  it("continues seeded project order numbers across base runs", async () => {
     let firstBaseSeedRunId: string | null = null;
     let secondBaseSeedRunId: string | null = null;
 
     try {
       await seedManualProjectMasterData("ORDERNUM");
       await seedActiveProjectStatuses("ORDERNUM");
+      await createEmployeeFixture("ORDERNUM-EMP-A");
       const firstSummary = await createSeedRun({
         runType: "base",
         randomSeed: 3303,

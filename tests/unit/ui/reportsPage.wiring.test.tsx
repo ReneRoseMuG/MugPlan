@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - ReportsPage verdrahtet den Vorlaufliste-HelpKey, den Generate-Button und das optionale Bis-Datum.
+ * - ReportsPage verdrahtet den Vorlaufliste-HelpKey, den Generate-Button und die beiden Datumsfelder als Date-Picker.
  * - Home und Sidebar binden die neue Reports-Hauptansicht nur fuer Admin/Disponent ein.
  *
  * Fehlerfaelle:
@@ -32,11 +32,10 @@ describe("FT26 reports page wiring", () => {
 
   it("wires the vorlaufliste panel, help key and fixed paging", () => {
     expect(reportsPageSource).toContain("helpKey=\"reports.vorlaufliste\"");
-    expect(reportsPageSource).toContain("Bis Datum anzeigen");
+    expect(reportsPageSource).toContain("Datum Ende anzeigen");
     expect(reportsPageSource).toContain("Datum Beginn");
     expect(reportsPageSource).toContain("Datum Ende");
-    expect(reportsPageSource).toContain("maxLength={10}");
-    expect(reportsPageSource).toContain('placeholder="dd.mm.yyyy"');
+    expect(reportsPageSource).toContain('type="date"');
     expect(reportsPageSource).toContain("Report erzeugen");
     expect(reportsPageSource).toContain("const REPORT_PAGE_SIZE = 100;");
     expect(reportsPageSource).toContain("enabled: submittedFilters !== null");

@@ -86,11 +86,11 @@ export function CalendarTourPrintPreviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="h-[92vh] w-[96vw] max-w-[1400px] overflow-hidden p-0"
+        className="h-[92vh] w-[96vw] max-w-[1400px] overflow-hidden p-0 print:left-0 print:top-0 print:h-auto print:w-auto print:max-w-none print:translate-x-0 print:translate-y-0 print:overflow-visible print:border-0 print:bg-white print:shadow-none"
         data-testid="dialog-tour-print-preview"
       >
         <div className="flex h-full flex-col">
-          <DialogHeader className="border-b border-border px-6 py-4">
+          <DialogHeader className="border-b border-border px-6 py-4 print:hidden">
             <DialogTitle>Druckvorschau Tour-Zeitleiste</DialogTitle>
             <DialogDescription>
               Vorschau ohne echten Druck. Der finale Druckablauf folgt spaeter.
@@ -102,14 +102,21 @@ export function CalendarTourPrintPreviewDialog({
               {`
                 @media print {
                   body * { visibility: hidden; }
+                  [data-testid="dialog-tour-print-preview"] {
+                    position: static !important;
+                    inset: auto !important;
+                    display: block !important;
+                  }
                   [data-testid="tour-print-preview-pages"], [data-testid="tour-print-preview-pages"] * {
                     visibility: visible;
                   }
                   [data-testid="tour-print-preview-pages"] {
-                    position: absolute;
+                    position: static;
                     left: 0;
                     top: 0;
                     width: 100%;
+                    min-height: auto;
+                    overflow: visible;
                     background: white;
                     padding: 0;
                   }

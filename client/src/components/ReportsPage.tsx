@@ -45,25 +45,6 @@ type SubmittedFilters = {
 
 const REPORT_PAGE_SIZE = 100;
 
-function isoDateToDisplayDate(value: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return value;
-  return `${match[3]}.${match[2]}.${match[1]}`;
-}
-
-function normalizeDisplayDateInput(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
-}
-
-function displayDateToIsoDate(value: string): string | null {
-  const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value.trim());
-  if (!match) return null;
-  return `${match[3]}-${match[2]}-${match[1]}`;
-}
-
 function formatDate(value: string | null): string {
   if (!value) return "-";
   const parsed = new Date(`${value}T00:00:00`);
@@ -93,14 +74,12 @@ interface ReportsPageProps {
 }
 
 export function ReportsPage({ onCancel }: ReportsPageProps) {
-  const [fromDate, setFromDate] = useState(isoDateToDisplayDate(getBerlinTodayDateString()));
+  const [fromDate, setFromDate] = useState(getBerlinTodayDateString());
   const [toDate, setToDate] = useState("");
   const [showToDate, setShowToDate] = useState(false);
   const [page, setPage] = useState(1);
   const [submittedFilters, setSubmittedFilters] = useState<SubmittedFilters | null>(null);
-  const resolvedFromDate = displayDateToIsoDate(fromDate);
-  const resolvedToDate = displayDateToIsoDate(toDate);
-  const canGenerateReport = resolvedFromDate !== null && (!showToDate || toDate.trim().length === 0 || resolvedToDate !== null);
+  const canGenerateReport = fromDate.trim().length > 0;
 
   const { data, isLoading } = useQuery<VorlauflisteResponse>({
     queryKey: ["reports-vorlaufliste", submittedFilters, page],
@@ -251,12 +230,9 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 <Label htmlFor="reports-vorlaufliste-from-date">Datum Beginn</Label>
                 <Input
                   id="reports-vorlaufliste-from-date"
-                  type="text"
+                  type="date"
                   value={fromDate}
-                  onChange={(event) => setFromDate(normalizeDisplayDateInput(event.target.value))}
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="dd.mm.yyyy"
+                  onChange={(event) => setFromDate(event.target.value)}
                   data-testid="reports-vorlaufliste-from-date"
                 />
               </div>
@@ -266,12 +242,9 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   <Label htmlFor="reports-vorlaufliste-to-date">Datum Ende</Label>
                   <Input
                     id="reports-vorlaufliste-to-date"
-                    type="text"
+                    type="date"
                     value={toDate}
-                    onChange={(event) => setToDate(normalizeDisplayDateInput(event.target.value))}
-                    inputMode="numeric"
-                    maxLength={10}
-                    placeholder="dd.mm.yyyy"
+                    onChange={(event) => setToDate(event.target.value)}
                     data-testid="reports-vorlaufliste-to-date"
                   />
                 </div>
@@ -283,7 +256,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     onClick={() => setShowToDate(true)}
                     data-testid="button-reports-vorlaufliste-show-to-date"
                   >
-                    Bis Datum anzeigen
+                    Datum Ende anzeigen
                   </Button>
                 </div>
               )}
@@ -292,11 +265,11 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 <Button
                   type="button"
                   onClick={() => {
-                    if (!resolvedFromDate) return;
+                    if (fromDate.trim().length === 0) return;
                     setPage(1);
                     setSubmittedFilters({
-                      fromDate: resolvedFromDate,
-                      toDate: showToDate && toDate.trim().length > 0 ? (resolvedToDate ?? undefined) : undefined,
+                      fromDate,
+                      toDate: showToDate && toDate.trim().length > 0 ? toDate : undefined,
                     });
                   }}
                   disabled={!canGenerateReport}

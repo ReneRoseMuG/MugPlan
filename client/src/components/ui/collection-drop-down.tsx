@@ -45,16 +45,16 @@ export function CollectionDropDown({
   return (
     <div className="space-y-2">
       <div className="text-sm font-medium text-slate-900">{label}</div>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         {showRemove ? (
-          <Button type="button" variant="outline" onClick={onRemove} disabled={removeDisabled}>
+          <Button type="button" variant="outline" onClick={onRemove} disabled={removeDisabled} className="shrink-0">
             -
           </Button>
         ) : null}
         <select
           value={value}
           onChange={(event) => onSelect?.(event.target.value)}
-          className="h-10 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
+          className="h-10 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
           disabled={selectDisabled}
           data-testid={testId}
         >
@@ -64,12 +64,12 @@ export function CollectionDropDown({
           ))}
         </select>
         {showAdd ? (
-          <Button type="button" variant="outline" onClick={onAdd} disabled={addDisabled}>
+          <Button type="button" variant="outline" onClick={onAdd} disabled={addDisabled} className="shrink-0">
             +
           </Button>
         ) : null}
         {showAdopt ? (
-          <Button type="button" variant="outline" onClick={onAdopt} disabled={adoptDisabled}>
+          <Button type="button" variant="outline" onClick={onAdopt} disabled={adoptDisabled} className="shrink-0">
             Übernehmen
           </Button>
         ) : null}

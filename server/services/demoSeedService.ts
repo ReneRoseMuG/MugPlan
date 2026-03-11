@@ -13,7 +13,6 @@ import { renderTemplate } from "../lib/templateRender";
 import { assignDemoTags, ensureDemoTags } from "../seed/tagSeeder";
 import { createDemoDataFiller } from "./demoDataFiller";
 import * as customersService from "./customersService";
-import * as employeesService from "./employeesService";
 import * as projectsService from "./projectsService";
 import * as projectStatusService from "./projectStatusService";
 import * as teamsService from "./teamsService";
@@ -34,8 +33,6 @@ import { logError, logInfo } from "../lib/logger";
 import { assertSafeDemoSeedPurgeTarget } from "./demoSeedPurgeSafety";
 
 const logPrefix = "[demo-seed-service]";
-const demoDataDir = path.resolve(process.cwd(), "../../shared/uploads/demodata");
-const demoEmployeeCsvPath = path.join(demoDataDir, "Personal.csv");
 
 const TEMPLATE_KEYS = {
   projectTitle: "templates.project.title",
@@ -414,19 +411,9 @@ function defaults(config: SeedConfig) {
   };
 }
 
-function readDemoEmployeeCsv(): Buffer {
-  if (!fs.existsSync(demoEmployeeCsvPath)) {
-    throw createBadRequestError(`Mitarbeiter-CSV nicht gefunden: ${demoEmployeeCsvPath}`);
-  }
-  return fs.readFileSync(demoEmployeeCsvPath);
-}
-
-async function syncDemoEmployeesFromCsv(): Promise<{ employeeIds: number[]; importedRows: number }> {
-  const result = await employeesService.syncEmployeesFromCsv(readDemoEmployeeCsv());
-  return {
-    employeeIds: uniqueNumberList(result.employeeIds),
-    importedRows: result.summary.importedRows,
-  };
+async function loadExistingSeedEmployees(): Promise<number[]> {
+  const rows = await employeesRepository.getEmployees("active");
+  return uniqueNumberList(rows.map((row) => Number(row.id)));
 }
 
 function isFriday(date: Date) {
@@ -1550,11 +1537,9 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         await demoSeedRepository.addSeedRunEntity(seedRunId, "tour", tour.id);
       }
 
-      const syncedEmployees = await syncDemoEmployeesFromCsv();
-      employees.push(...syncedEmployees.employeeIds);
-      created.employees += syncedEmployees.importedRows;
+      employees.push(...(await loadExistingSeedEmployees()));
       if (employees.length === 0) {
-        throw createBadRequestError("Keine gueltigen Mitarbeitenden aus Personal.csv verfuegbar.");
+        throw createBadRequestError("Keine aktiven Mitarbeitenden fuer den Demo-Seed verfuegbar.");
       }
 
       const seedPrefix = seedRunId.slice(0, 8);
