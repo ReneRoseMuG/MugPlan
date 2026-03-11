@@ -109,6 +109,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       void invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
@@ -123,6 +124,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       void invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
@@ -154,6 +156,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       void invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
@@ -176,6 +179,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       void invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
@@ -223,6 +227,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       void invalidateAppointmentProjectionQueries();
       toast({ title: "Kunde angelegt", description: "Der Kunde wurde erfolgreich angelegt." });
     },
@@ -247,6 +252,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       void invalidateAppointmentProjectionQueries();
       toast({ title: "Gespeichert", description: "Die Kundendaten wurden erfolgreich aktualisiert." });
     },

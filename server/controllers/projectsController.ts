@@ -42,6 +42,40 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
   }
 }
 
+export async function listProjectsPaged(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const input = api.projects.pagedList.input.parse(req.query);
+    const statusIds = parseStatusIds(input.statusIds);
+    const customerId = input.customerId == null ? undefined : Number(input.customerId);
+
+    if (input.customerId != null && Number.isNaN(customerId)) {
+      res.status(400).json({ message: "Ungultige customerId" });
+      return;
+    }
+
+    const projects = await projectsService.listProjectsPaged({
+      filter: input.filter || "all",
+      statusIds,
+      scope: input.scope,
+      customerId,
+      title: input.title,
+      customerLastName: input.customerLastName,
+      customerNumber: input.customerNumber,
+      orderNumber: input.orderNumber,
+      page: input.page,
+      pageSize: input.pageSize,
+    });
+
+    res.json(projects);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function getProject(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const projectId = Number(req.params.id);

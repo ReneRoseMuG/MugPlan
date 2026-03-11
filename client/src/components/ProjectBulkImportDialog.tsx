@@ -80,8 +80,10 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
 
   const invalidateQueries = async () => {
     await queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
     await queryClient.invalidateQueries({ queryKey: ["/api/projects?filter=all&scope=all"] });
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
     await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "active" }] });
     await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "inactive" }] });
   };
