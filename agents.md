@@ -14,6 +14,11 @@ Codex arbeitet mit **gestufter Pflichtlektüre**. Ziel ist minimale Kontextnutzu
 
 Vor jeder Planung liest Codex die für nahezu alle Aufgaben relevanten Kernabschnitte und bestätigt danach explizit: „gelesen und verstanden".
 
+Ausnahme:
+
+- Aufgaben, die ausschließlich aus Fragen bestehen und keine Umsetzung, Planung, Codeänderung, Teständerung oder sonstige operative Ausführung verlangen, sind von dieser Basislektüre ausgenommen.
+- Aufgaben, die ausschließlich Git-Kommandos oder Git-Workflow-Schritte ohne Code-, Test-, Architektur-, Konfigurations- oder Dokumentationsänderung betreffen, sind ebenfalls von dieser Basislektüre ausgenommen.
+
 Verbindliche Basislektüre:
 
 - `docs/architecture.md`: `3. Architekturprinzipien`, `7. Fachliche Invarianten`, `10. Erweiterungspunkte`, `11. Bekannte Risiken / Architekturhinweise`
