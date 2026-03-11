@@ -452,6 +452,7 @@ export function CalendarMonthView({
                                           appointment={appointment}
                                           isFirstDay={isSameDay(segmentStart, appointmentStart)}
                                           isLastDay={isSameDay(segmentEnd, appointmentEnd)}
+                                          hideOrderNumber={true}
                                           showPopover={true}
                                           isLocked={isLocked}
                                           isDragging={draggedAppointmentId === appointment.id}

@@ -8,6 +8,7 @@ type CompactBarProps = {
   appointment: CalendarAppointment;
   isFirstDay: boolean;
   isLastDay: boolean;
+  hideOrderNumber?: boolean;
   showPopover?: boolean;
   isLocked?: boolean;
   isDragging?: boolean;
@@ -23,6 +24,7 @@ export function CalendarAppointmentCompactBar({
   appointment,
   isFirstDay,
   isLastDay,
+  hideOrderNumber = false,
   showPopover = isFirstDay,
   isLocked,
   isDragging,
@@ -42,9 +44,11 @@ export function CalendarAppointmentCompactBar({
   const orderNumber = appointment.projectOrderNumber?.trim() || "-";
   const postalCode = appointment.customer.postalCode?.trim() || "-";
   const leftContent = isMultiDay
-    ? `K: ${customerNumber} - ${orderNumber} - Name: ${customerName}`
+    ? hideOrderNumber
+      ? `K: ${customerNumber} - Name: ${customerName}`
+      : `K: ${customerNumber} - ${orderNumber} - Name: ${customerName}`
     : `K: ${customerNumber}`;
-  const middleContent = orderNumber;
+  const middleContent = hideOrderNumber ? null : orderNumber;
   const rightContent = `PLZ: ${postalCode}`;
 
   const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
@@ -94,7 +98,7 @@ export function CalendarAppointmentCompactBar({
         <span className={`inline-flex min-w-0 items-center text-[10px] ${isMultiDay ? "max-w-[72%]" : "max-w-[38%]"}`}>
           <span className="truncate">{leftContent}</span>
         </span>
-        {!isMultiDay && (
+        {!isMultiDay && middleContent && (
           <span className="inline-flex min-w-0 max-w-[27%] items-center justify-center text-[10px] text-center">
             <span className="truncate">{middleContent}</span>
           </span>

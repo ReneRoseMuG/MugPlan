@@ -8,8 +8,8 @@
  * - CalendarAppointmentCompactBar rendert Header-typischen Verlauf.
  * - CalendarAppointmentCompactBar rendert Header-typischen Inset-/Drop-Shadow.
  * - CalendarAppointmentCompactBar nutzt den gleichen Border-Look wie Header-Komponenten.
- * - Eintagestermine zeigen Kundennummer | Auftragsnummer | PLZ.
- * - Mehrtagestermine zeigen Kundennummer | Auftragsnummer | Kundenname in dieser Reihenfolge.
+ * - Standardpfad behaelt Auftragsnummer in Jahres-/sonstigen Compact-Bars bei.
+ * - Monatsansicht kann die Auftragsnummer explizit aus Compact-Bars ausblenden.
  * - Preview nutzt die standardisierte Weekly-Preview-Fabrik ohne Pointer-Event-Blockade.
  *
  * Fehlerfaelle:
@@ -35,10 +35,27 @@ describe("FT03 UI: calendar appointment compact bar header style wiring", () => 
     expect(compactBarSource).toContain("linear-gradient(180deg, rgba(255,255,255,0.24) 0%");
     expect(compactBarSource).toContain("boxShadow:");
     expect(compactBarSource).toContain("inset 0 1px 0 rgba(255,255,255,0.26)");
+    expect(compactBarSource).toContain("hideOrderNumber?: boolean;");
+    expect(compactBarSource).toContain("hideOrderNumber = false,");
     expect(compactBarSource).toContain("const orderNumber = appointment.projectOrderNumber?.trim() || \"-\"");
-    expect(compactBarSource).toContain("const middleContent = orderNumber;");
+    expect(compactBarSource).toContain("const middleContent = hideOrderNumber ? null : orderNumber;");
+    expect(compactBarSource).toContain("`K: ${customerNumber} - Name: ${customerName}`");
     expect(compactBarSource).toContain("`K: ${customerNumber} - ${orderNumber} - Name: ${customerName}`");
     expect(compactBarSource).toContain("const preview = createAppointmentWeeklyPanelPreview(appointment);");
     expect(compactBarSource).not.toContain("pointer-events-none");
+  });
+
+  it("enables order-number hiding only in CalendarMonthView while leaving shared defaults untouched", () => {
+    const monthViewSource = readFileSync(
+      path.resolve(process.cwd(), "client/src/components/calendar/CalendarMonthView.tsx"),
+      "utf8",
+    );
+    const yearViewSource = readFileSync(
+      path.resolve(process.cwd(), "client/src/components/calendar/CalendarYearView.tsx"),
+      "utf8",
+    );
+
+    expect(monthViewSource).toContain("hideOrderNumber={true}");
+    expect(yearViewSource).not.toContain("hideOrderNumber={true}");
   });
 });
