@@ -29,6 +29,7 @@ export class ProjectsError extends Error {
 
 export type ProjectScope = "upcoming" | "noAppointments" | "all";
 export type ProjectListItem = projectsRepository.ProjectListItem;
+export type ProjectBoardListResult = projectsRepository.ProjectBoardListResult;
 
 export async function listProjects(
   filter: "active" | "inactive" | "all" = "all",
@@ -36,6 +37,21 @@ export async function listProjects(
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
   return projectsRepository.getProjects(filter, statusIds, scope);
+}
+
+export async function listProjectsPaged(params: {
+  filter: "active" | "inactive" | "all";
+  statusIds: number[];
+  scope: ProjectScope;
+  customerId?: number;
+  title?: string;
+  customerLastName?: string;
+  customerNumber?: string;
+  orderNumber?: string;
+  page: number;
+  pageSize: number;
+}): Promise<ProjectBoardListResult> {
+  return projectsRepository.getProjectsPaged(params);
 }
 
 export async function listProjectsByCustomer(

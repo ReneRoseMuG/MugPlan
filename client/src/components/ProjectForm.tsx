@@ -95,6 +95,8 @@ export function ProjectForm({
       predicate: (query) => {
         const key = query.queryKey[0];
         return key === "appointments-list"
+          || key === "/api/projects/list"
+          || key === "/api/customers/list"
           || key === "projects-page-appointments"
           || key === "customers-page-appointments"
           || key === "employees-page-appointments"
@@ -403,6 +405,7 @@ export function ProjectForm({
     if (response.ok) {
       const updatedCustomer = (await response.json()) as Customer;
       await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       return updatedCustomer;
     }
 
@@ -432,6 +435,7 @@ export function ProjectForm({
 
     const updatedCustomer = (await response.json()) as Customer;
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
     return updatedCustomer;
   };
 
@@ -466,6 +470,7 @@ export function ProjectForm({
       throw new Error(json?.code === "CUSTOMER_NUMBER_CONFLICT" ? "Kundennummer ist bereits vergeben." : (json?.message ?? "Kunde konnte nicht angelegt werden"));
     }
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
     return json as Customer;
   };
 
@@ -715,6 +720,7 @@ export function ProjectForm({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
   });
@@ -726,6 +732,7 @@ export function ProjectForm({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
     onError: (error) => {
@@ -749,6 +756,7 @@ export function ProjectForm({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
     onError: (error) => {
@@ -769,6 +777,7 @@ export function ProjectForm({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
     onError: (error) => {

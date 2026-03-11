@@ -1,6 +1,7 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  appointments,
   customerNotes,
   customerAttachments,
   customers,
@@ -12,6 +13,31 @@ import {
 } from "@shared/schema";
 
 export type CustomerListItem = Customer & { notesCount: number };
+export type CustomerBoardListItem = CustomerListItem & {
+  plannedAppointmentsCount: number;
+  nextAppointmentStartDate: string | null;
+  nextAppointmentStartTimeHour: number | null;
+};
+
+export type CustomerBoardListResult = {
+  items: CustomerBoardListItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Berlin",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function getBerlinTodayDate(): Date {
+  const berlinToday = berlinFormatter.format(new Date());
+  return new Date(`${berlinToday}T00:00:00`);
+}
 
 export async function getCustomers(scope: "active" | "inactive" = "active"): Promise<CustomerListItem[]> {
   const rows = await db
@@ -34,6 +60,152 @@ export async function getCustomers(scope: "active" | "inactive" = "active"): Pro
 
   const notesCountByCustomerId = new Map(noteCountRows.map((row) => [row.customerId, Number(row.count)] as const));
   return rows.map((row) => ({ ...row, notesCount: notesCountByCustomerId.get(row.id) ?? 0 }));
+}
+
+function buildCustomerFilterConditions(params: {
+  scope: "active" | "inactive";
+  lastName?: string;
+  customerNumber?: string;
+}) {
+  const conditions = [eq(customers.isActive, params.scope === "active")];
+  const lastName = params.lastName?.trim().toLowerCase() ?? "";
+  const customerNumber = params.customerNumber?.trim() ?? "";
+
+  if (lastName.length > 0) {
+    const pattern = `%${lastName}%`;
+    conditions.push(or(
+      sql`lower(coalesce(${customers.lastName}, '')) like ${pattern}`,
+      sql`lower(coalesce(${customers.firstName}, '')) like ${pattern}`,
+      sql`lower(coalesce(${customers.fullName}, '')) like ${pattern}`,
+    )!);
+  }
+
+  if (customerNumber.length > 0) {
+    conditions.push(like(customers.customerNumber, `%${customerNumber}%`));
+  }
+
+  return conditions;
+}
+
+function normalizeAppointmentDate(dateValue: unknown): string | null {
+  if (dateValue instanceof Date) {
+    return dateValue.toISOString().slice(0, 10);
+  }
+  if (typeof dateValue === "string") {
+    return dateValue.slice(0, 10);
+  }
+  return null;
+}
+
+function normalizeStartTimeHour(value: unknown): number | null {
+  if (typeof value === "number" && Number.isInteger(value)) return value;
+  if (typeof value !== "string") return null;
+  const [hours] = value.split(":");
+  const parsed = Number(hours);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+export async function getCustomersPaged(params: {
+  scope: "active" | "inactive";
+  lastName?: string;
+  customerNumber?: string;
+  page: number;
+  pageSize: number;
+}): Promise<CustomerBoardListResult> {
+  const conditions = buildCustomerFilterConditions(params);
+  const offset = (params.page - 1) * params.pageSize;
+
+  const [totalRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(customers)
+    .where(and(...conditions));
+
+  const total = Number(totalRow?.count ?? 0);
+  if (total === 0) {
+    return {
+      items: [],
+      page: params.page,
+      pageSize: params.pageSize,
+      total: 0,
+      totalPages: 0,
+    };
+  }
+
+  const rows = await db
+    .select()
+    .from(customers)
+    .where(and(...conditions))
+    .orderBy(asc(customers.customerNumber), asc(customers.id))
+    .limit(params.pageSize)
+    .offset(offset);
+
+  const customerIds = rows.map((row) => row.id);
+
+  const noteCountRows = await db
+    .select({
+      customerId: customerNotes.customerId,
+      count: sql<number>`count(*)`,
+    })
+    .from(customerNotes)
+    .where(inArray(customerNotes.customerId, customerIds))
+    .groupBy(customerNotes.customerId);
+
+  const appointmentRows = await db
+    .select({
+      customerId: appointments.customerId,
+      startDate: appointments.startDate,
+      startTime: appointments.startTime,
+      id: appointments.id,
+    })
+    .from(appointments)
+    .where(and(
+      inArray(appointments.customerId, customerIds),
+      sql`${appointments.startDate} >= ${getBerlinTodayDate()}`,
+    ))
+    .orderBy(
+      asc(appointments.customerId),
+      asc(appointments.startDate),
+      asc(sql`coalesce(${appointments.startTime}, '23:59:59')`),
+      asc(appointments.id),
+    );
+
+  const notesCountByCustomerId = new Map(noteCountRows.map((row) => [row.customerId, Number(row.count)] as const));
+  const appointmentSummaryByCustomerId = new Map<number, {
+    plannedAppointmentsCount: number;
+    nextAppointmentStartDate: string | null;
+    nextAppointmentStartTimeHour: number | null;
+  }>();
+
+  for (const row of appointmentRows) {
+    const current = appointmentSummaryByCustomerId.get(row.customerId);
+    if (!current) {
+      appointmentSummaryByCustomerId.set(row.customerId, {
+        plannedAppointmentsCount: 1,
+        nextAppointmentStartDate: normalizeAppointmentDate(row.startDate),
+        nextAppointmentStartTimeHour: normalizeStartTimeHour(row.startTime),
+      });
+      continue;
+    }
+
+    current.plannedAppointmentsCount += 1;
+  }
+
+  return {
+    items: rows.map((row) => {
+      const appointmentSummary = appointmentSummaryByCustomerId.get(row.id);
+      return {
+        ...row,
+        notesCount: notesCountByCustomerId.get(row.id) ?? 0,
+        plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
+        nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
+        nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
+      };
+    }),
+    page: params.page,
+    pageSize: params.pageSize,
+    total,
+    totalPages: Math.ceil(total / params.pageSize),
+  };
 }
 
 export async function getCustomer(id: number): Promise<Customer | null> {

@@ -312,6 +312,8 @@ export function AppointmentForm({
       predicate: (query) => {
         const firstKey = query.queryKey[0];
         return firstKey === "appointments-list"
+          || firstKey === "/api/projects/list"
+          || firstKey === "/api/customers/list"
           || firstKey === "projects-page-appointments"
           || firstKey === "customers-page-appointments"
           || firstKey === "employees-page-appointments"
@@ -684,6 +686,7 @@ export function AppointmentForm({
     if (response.ok) {
       const updatedCustomer = (await response.json()) as Customer;
       await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       return updatedCustomer;
     }
 
@@ -713,6 +716,7 @@ export function AppointmentForm({
 
     const updatedCustomer = (await response.json()) as Customer;
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
     return updatedCustomer;
   };
 
@@ -747,6 +751,7 @@ export function AppointmentForm({
       throw new Error(json?.code === "CUSTOMER_NUMBER_CONFLICT" ? "Kundennummer ist bereits vergeben." : (json?.message ?? "Kunde konnte nicht angelegt werden"));
     }
     await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
     return json as Customer;
   };
 

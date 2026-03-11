@@ -5,6 +5,7 @@ import * as projectsController from "../controllers/projectsController";
 const router = Router();
 
 router.get(api.projects.list.path, projectsController.listProjects);
+router.get(api.projects.pagedList.path, projectsController.listProjectsPaged);
 router.get(api.projects.get.path, projectsController.getProject);
 router.post(api.projects.create.path, projectsController.createProject);
 router.patch(api.projects.update.path, projectsController.updateProject);

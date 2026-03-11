@@ -17,6 +17,7 @@ export class CustomersError extends Error {
 }
 
 export type CustomerListItem = customersRepository.CustomerListItem;
+export type CustomerBoardListResult = customersRepository.CustomerBoardListResult;
 
 function isCustomerNumberDuplicateError(error: unknown): boolean {
   const mysqlError = error as { code?: string; errno?: number; sqlMessage?: string } | null;
@@ -54,6 +55,22 @@ function buildCustomerFullName(data: { firstName?: string | null; lastName?: str
 
 export async function listCustomers(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<CustomerListItem[]> {
   return customersRepository.getCustomers(resolveScope(roleKey, scope));
+}
+
+export async function listCustomersPaged(
+  roleKey: CanonicalRoleKey,
+  params: {
+    scope: "active" | "inactive";
+    lastName?: string;
+    customerNumber?: string;
+    page: number;
+    pageSize: number;
+  },
+): Promise<CustomerBoardListResult> {
+  return customersRepository.getCustomersPaged({
+    ...params,
+    scope: resolveScope(roleKey, params.scope),
+  });
 }
 
 export async function getCustomer(id: number, roleKey: CanonicalRoleKey): Promise<Customer | null> {

@@ -10,15 +10,13 @@ import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CustomerFilterPanel } from "@/components/ui/filter-panels/customer-filter-panel";
 import { defaultHeaderColor } from "@/lib/colors";
-import { applyCustomerFilters, defaultCustomerFilters } from "@/lib/customer-filters";
-import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
+import { defaultCustomerFilters } from "@/lib/customer-filters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
-import type { Customer, Project } from "@shared/schema";
-import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import type { Customer } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -26,8 +24,20 @@ type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
 type CustomerSortKey = "customerNumber" | "lastName" | "firstName" | "relevantAppointment";
 
-type CustomerAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
-type CustomerListItem = Customer & { notesCount: number };
+type CustomerListItem = Customer & {
+  notesCount: number;
+  plannedAppointmentsCount: number;
+  nextAppointmentStartDate: string | null;
+  nextAppointmentStartTimeHour: number | null;
+};
+
+type CustomerListResponse = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  items: CustomerListItem[];
+};
 
 interface CustomersPageProps {
   onCancel?: () => void;
@@ -42,26 +52,14 @@ function parseViewMode(value: unknown): ViewMode {
   return value === "table" ? "table" : "board";
 }
 
-function toAppointmentDateTime(appointment: CustomerAppointmentSummary): Date {
+function toAppointmentDateTime(appointment: { startDate: string; startTimeHour: number | null }): Date {
   const hour = appointment.startTimeHour ?? 23;
   const date = new Date(`${appointment.startDate}T00:00:00`);
   date.setHours(hour, 0, 0, 0);
   return date;
 }
 
-function resolveRelevantAppointment(
-  appointments: CustomerAppointmentSummary[],
-  berlinToday: string,
-): CustomerAppointmentSummary | null {
-  if (appointments.length === 0) return null;
-
-  const futureAppointments = appointments.filter((appointment) => appointment.startDate >= berlinToday);
-
-  return [...futureAppointments]
-    .sort((a, b) => toAppointmentDateTime(a).getTime() - toAppointmentDateTime(b).getTime())[0] ?? null;
-}
-
-function formatAppointmentLabel(appointment: CustomerAppointmentSummary | null): string {
+function formatAppointmentLabel(appointment: { startDate: string; startTimeHour: number | null } | null): string {
   if (!appointment) return "---";
 
   const date = new Date(`${appointment.startDate}T00:00:00`);
@@ -75,6 +73,8 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
   if (direction === "desc") return <ArrowDown className="w-3.5 h-3.5" />;
   return <ArrowUpDown className="w-3.5 h-3.5" />;
 }
+
+const DEFAULT_CUSTOMERS_PAGE_SIZE = 50;
 
 export function CustomersPage({
   onCancel,
@@ -90,7 +90,12 @@ export function CustomersPage({
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
-  const { filters, setFilter } = useListFilters({
+  const {
+    filters,
+    setFilter,
+    page,
+    setPage,
+  } = useListFilters({
     initialFilters: defaultCustomerFilters,
   });
   const [sortKey, setSortKey] = useState<CustomerSortKey>("customerNumber");
@@ -98,7 +103,6 @@ export function CustomersPage({
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const [customerScope, setCustomerScope] = useState<"active" | "inactive">("active");
-  const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
     setViewMode(tableOnly ? "table" : resolvedViewMode);
@@ -106,77 +110,43 @@ export function CustomersPage({
 
   const effectiveCustomerScope = isAdmin ? customerScope : "active";
 
-  const { data: customers = [], isLoading: customersLoading } = useQuery<CustomerListItem[]>({
-    queryKey: ["/api/customers", { scope: effectiveCustomerScope }],
-    queryFn: () => fetch(`/api/customers?scope=${effectiveCustomerScope}`).then((response) => response.json()),
-  });
+  const customersQueryParams = useMemo(() => {
+    const params = new URLSearchParams({
+      scope: effectiveCustomerScope,
+      page: String(page),
+      pageSize: String(DEFAULT_CUSTOMERS_PAGE_SIZE),
+    });
 
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/projects?filter=all&scope=all"],
-  });
+    if (filters.lastName.trim().length > 0) params.set("lastName", filters.lastName.trim());
+    if (filters.customerNumber.trim().length > 0) params.set("customerNumber", filters.customerNumber.trim());
 
-  const filteredCustomers = useMemo(
-    () => applyCustomerFilters(customers, filters),
-    [customers, filters],
-  );
+    return params.toString();
+  }, [effectiveCustomerScope, filters, page]);
 
-  const filteredCustomerIds = useMemo(
-    () => new Set(filteredCustomers.map((customer) => customer.id)),
-    [filteredCustomers],
-  );
-
-  const relevantProjects = useMemo(
-    () => projects.filter((project) => filteredCustomerIds.has(project.customerId)),
-    [projects, filteredCustomerIds],
-  );
-
-  const relevantProjectIds = useMemo(
-    () => relevantProjects.map((project) => project.id),
-    [relevantProjects],
-  );
-
-  const relevantProjectIdsKey = useMemo(
-    () => relevantProjectIds.join("-"),
-    [relevantProjectIds],
-  );
-
-  const { data: appointmentsByCustomerId = new Map<number, CustomerAppointmentSummary[]>() } = useQuery({
-    queryKey: ["customers-page-appointments", relevantProjectIdsKey, PROJECT_APPOINTMENTS_ALL_FROM_DATE, userRole],
+  const { data, isLoading: customersLoading } = useQuery<CustomerListResponse>({
+    queryKey: ["/api/customers/list", customersQueryParams],
     queryFn: async () => {
-      const responses = await Promise.all(
-        relevantProjects.map(async (project) => {
-          const response = await fetch(
-            `/api/projects/${project.id}/appointments?fromDate=${PROJECT_APPOINTMENTS_ALL_FROM_DATE}`,
-            {
-              credentials: "include",
-              headers: {
-              },
-            },
-          );
-          if (!response.ok) throw new Error("Termine konnten nicht geladen werden");
-          const payload = (await response.json()) as CustomerAppointmentSummary[];
-          return { customerId: project.customerId, appointments: payload };
-        }),
-      );
-
-      const byCustomer = new Map<number, CustomerAppointmentSummary[]>();
-      for (const entry of responses) {
-        const current = byCustomer.get(entry.customerId) ?? [];
-        current.push(...entry.appointments);
-        byCustomer.set(entry.customerId, current);
-      }
-
-      return byCustomer;
+      const response = await fetch(`/api/customers/list?${customersQueryParams}`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Kunden konnten nicht geladen werden");
+      return (await response.json()) as CustomerListResponse;
     },
-    enabled: relevantProjects.length > 0,
   });
+
+  const customers = data?.items ?? [];
 
   const customerRows = useMemo(() => {
-    return filteredCustomers.map((customer) => ({
+    return customers.map((customer) => ({
       customer,
-      relevantAppointment: resolveRelevantAppointment(appointmentsByCustomerId.get(customer.id) ?? [], berlinToday),
+      relevantAppointment: customer.nextAppointmentStartDate
+        ? {
+            startDate: customer.nextAppointmentStartDate,
+            startTimeHour: customer.nextAppointmentStartTimeHour,
+          }
+        : null,
     }));
-  }, [filteredCustomers, appointmentsByCustomerId, berlinToday]);
+  }, [customers]);
 
   const sortedCustomerRows = useMemo(() => {
     const rows = [...customerRows];
@@ -294,6 +264,9 @@ export function CustomersPage({
   );
 
   const resolvedTitle = title ?? "Kunden";
+  const totalPages = data?.totalPages ?? 0;
+  const canGoPrev = page > 1;
+  const canGoNext = totalPages > 0 && page < totalPages;
   const hasActiveFilters = filters.lastName.trim().length > 0 || filters.customerNumber.trim().length > 0 || (isAdmin && customerScope !== "active");
   const emptyState = hasActiveFilters ? (
     <ListEmptyState
@@ -312,156 +285,212 @@ export function CustomersPage({
   return (
     <>
       <ListLayout
-      title={resolvedTitle}
-      icon={<User className="w-5 h-5" />}
-      viewModeKey={viewModeKey}
-      helpKey="customers"
-      isLoading={customersLoading}
-      onClose={onCancel}
-      showCloseButton={showCloseButton}
-      closeTestId="button-close-customers"
-      filterSlot={
-        <CustomerFilterPanel
-          title="Kundenfilter"
-          customerLastName={filters.lastName}
-          onCustomerLastNameChange={(value) => setFilter("lastName", value)}
-          onCustomerLastNameClear={() => setFilter("lastName", "")}
-          customerNumber={filters.customerNumber}
-          onCustomerNumberChange={(value) => setFilter("customerNumber", value)}
-          onCustomerNumberClear={() => setFilter("customerNumber", "")}
-          customerScope={isAdmin ? customerScope : undefined}
-          onCustomerScopeChange={isAdmin ? setCustomerScope : undefined}
-        />
-      }
-      viewModeToggle={tableOnly ? undefined : (
-        <ToggleGroup
-          type="single"
-          value={viewMode}
-          onValueChange={handleViewModeChange}
-          variant="outline"
-          size="sm"
-          data-testid="toggle-customers-view-mode"
-        >
-          <ToggleGroupItem value="board" aria-label="Board-Ansicht" data-testid="toggle-customers-board">
-            <LayoutGrid className="w-4 h-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="table" aria-label="Tabellen-Ansicht" data-testid="toggle-customers-table">
-            <Table2 className="w-4 h-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
-      )}
-      footerSlot={
-        <div className="flex justify-between items-center">
-          {onNewCustomer ? (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={onNewCustomer}
-                className="flex items-center gap-2"
-                data-testid="button-new-customer"
-              >
-                <Plus className="w-4 h-4" />
-                Neuer Kunde
-              </Button>
-            </div>
-          ) : <span />}
-
-          {onCancel ? (
-            <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-customers">
-              Schliessen
-            </Button>
-          ) : null}
-        </div>
-      }
-      contentSlot={
-        !tableOnly && viewMode === "board" ? (
-          <BoardView
-            gridTestId="list-customers"
-            gridCols="3"
-            isEmpty={filteredCustomers.length === 0}
-            emptyState={emptyState}
-          >
-            {filteredCustomers.map((customer) => {
-              const appointments = appointmentsByCustomerId.get(customer.id) ?? [];
-              const plannedAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
-              const handleSelect = () => onSelectCustomer?.(customer.id);
-
-              return (
-                <EntityCard
-                  key={customer.id}
-                  title={customer.fullName ?? "Ohne Name"}
-                  icon={<User className="w-4 h-4" />}
-                  headerColor={defaultHeaderColor}
-                  testId={`customer-card-${customer.id}`}
-                  onDoubleClick={handleSelect}
-                  footer={
-                    <div className="flex w-full flex-col gap-1">
-                      <AppointmentCountBadge
-                        count={plannedAppointmentsCount}
-                        testId={`text-customer-planned-appointments-${customer.id}`}
-                        fullWidth
-                      />
-                      <span data-testid={`text-customer-notes-count-${customer.id}`}>
-                        <EntityNotesHoverPreview
-                          sourceMode="single-parent"
-                          sources={{ type: "customer", id: customer.id, count: (customer as CustomerListItem).notesCount ?? 0 }}
-                          triggerTestId={`text-customer-notes-count-${customer.id}`}
-                        />
-                      </span>
-                    </div>
-                  }
-                  footerVisibility="visible"
-                >
-                  <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                    {customer.company && (
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-3 h-3 text-slate-400" />
-                        <span className="font-medium">{customer.company}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3 h-3 text-slate-400" />
-                      <span>{customer.phone}</span>
-                    </div>
-                    {customer.email && (
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3 h-3 text-slate-400" />
-                        <span>{customer.email}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3 h-3 text-slate-400" />
-                      <span>{customer.postalCode} {customer.city}</span>
-                    </div>
-                  </div>
-                </EntityCard>
-              );
-            })}
-          </BoardView>
-        ) : (
-          <TableView
-            testId="table-customers"
-            columns={tableColumns}
-            rows={sortedCustomerRows}
-            rowKey={(row) => row.customer.id}
-            onRowDoubleClick={(row) => onSelectCustomer?.(row.customer.id)}
-            rowPreviewRenderer={(row) => {
-              if (!row.relevantAppointment) {
-                return (
-                  <div className="rounded-md border border-border bg-card p-3">
-                    Keine Termine geplant
-                  </div>
-                );
-              }
-
-              return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
-            }}
-            emptyState={emptyState}
-            stickyHeader
+        title={resolvedTitle}
+        icon={<User className="w-5 h-5" />}
+        viewModeKey={viewModeKey}
+        helpKey="customers"
+        isLoading={customersLoading}
+        onClose={onCancel}
+        showCloseButton={showCloseButton}
+        closeTestId="button-close-customers"
+        filterSlot={(
+          <CustomerFilterPanel
+            title="Kundenfilter"
+            customerLastName={filters.lastName}
+            onCustomerLastNameChange={(value) => setFilter("lastName", value)}
+            onCustomerLastNameClear={() => setFilter("lastName", "")}
+            customerNumber={filters.customerNumber}
+            onCustomerNumberChange={(value) => setFilter("customerNumber", value)}
+            onCustomerNumberClear={() => setFilter("customerNumber", "")}
+            customerScope={isAdmin ? customerScope : undefined}
+            onCustomerScopeChange={isAdmin ? setCustomerScope : undefined}
           />
-        )
-      }
-    />
+        )}
+        viewModeToggle={tableOnly ? undefined : (
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={handleViewModeChange}
+            variant="outline"
+            size="sm"
+            data-testid="toggle-customers-view-mode"
+          >
+            <ToggleGroupItem value="board" aria-label="Board-Ansicht" data-testid="toggle-customers-board">
+              <LayoutGrid className="w-4 h-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" aria-label="Tabellen-Ansicht" data-testid="toggle-customers-table">
+              <Table2 className="w-4 h-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        )}
+        footerSlot={(
+          <div className="flex justify-between items-center gap-4">
+            {onNewCustomer ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={onNewCustomer}
+                  className="flex items-center gap-2"
+                  data-testid="button-new-customer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Neuer Kunde
+                </Button>
+              </div>
+            ) : <span />}
+
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground" data-testid="text-customers-page-state">
+                {data?.total ?? 0} Eintraege - Seite {totalPages === 0 ? 0 : page} von {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => canGoPrev && setPage((current) => current - 1)}
+                  disabled={!canGoPrev}
+                  data-testid="button-customers-page-prev"
+                >
+                  Zurueck
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => canGoNext && setPage((current) => current + 1)}
+                  disabled={!canGoNext}
+                  data-testid="button-customers-page-next"
+                >
+                  Weiter
+                </Button>
+              </div>
+              {onCancel ? (
+                <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-customers">
+                  Schliessen
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        )}
+        contentSlot={
+          !tableOnly && viewMode === "board" ? (
+            <BoardView
+              gridTestId="list-customers"
+              gridCols="3"
+              isEmpty={customers.length === 0}
+              emptyState={emptyState}
+            >
+              {customers.map((customer) => {
+                const handleSelect = () => onSelectCustomer?.(customer.id);
+
+                return (
+                  <EntityCard
+                    key={customer.id}
+                    title={customer.fullName ?? "Ohne Name"}
+                    icon={<User className="w-4 h-4" />}
+                    headerColor={defaultHeaderColor}
+                    testId={`customer-card-${customer.id}`}
+                    onDoubleClick={handleSelect}
+                    footer={(
+                      <div className="flex w-full flex-col gap-1">
+                        <AppointmentCountBadge
+                          count={customer.plannedAppointmentsCount}
+                          testId={`text-customer-planned-appointments-${customer.id}`}
+                          fullWidth
+                        />
+                        <span data-testid={`text-customer-notes-count-${customer.id}`}>
+                          <EntityNotesHoverPreview
+                            sourceMode="single-parent"
+                            sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
+                            triggerTestId={`text-customer-notes-count-${customer.id}`}
+                          />
+                        </span>
+                      </div>
+                    )}
+                    footerVisibility="visible"
+                  >
+                    <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                      {customer.company && (
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-3 h-3 text-slate-400" />
+                          <span className="font-medium">{customer.company}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        <span>{customer.phone}</span>
+                      </div>
+                      {customer.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-3 h-3 text-slate-400" />
+                          <span>{customer.email}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3 h-3 text-slate-400" />
+                        <span>{customer.postalCode} {customer.city}</span>
+                      </div>
+                    </div>
+                  </EntityCard>
+                );
+              })}
+            </BoardView>
+          ) : (
+            <TableView
+              testId="table-customers"
+              columns={tableColumns}
+              rows={sortedCustomerRows}
+              rowKey={(row) => row.customer.id}
+              onRowDoubleClick={(row) => onSelectCustomer?.(row.customer.id)}
+              rowPreviewRenderer={(row) => {
+                if (!row.relevantAppointment) {
+                  return (
+                    <div className="rounded-md border border-border bg-card p-3">
+                      Keine Termine geplant
+                    </div>
+                  );
+                }
+
+                return createAppointmentWeeklyPanelPreview({
+                  id: row.customer.id,
+                  startDate: row.relevantAppointment.startDate,
+                  endDate: null,
+                  startTime: row.relevantAppointment.startTimeHour == null ? null : `${String(row.relevantAppointment.startTimeHour).padStart(2, "0")}:00:00`,
+                  projectId: null,
+                  projectName: row.customer.fullName ?? "Kunde",
+                  projectVersion: row.customer.version,
+                  projectOrderNumber: null,
+                  projectArticleItems: [],
+                  projectDescription: null,
+                  projectStatuses: [],
+                  tourId: null,
+                  tourName: null,
+                  tourColor: null,
+                  customer: {
+                    id: row.customer.id,
+                    customerNumber: row.customer.customerNumber,
+                    fullName: row.customer.fullName,
+                    addressLine1: row.customer.addressLine1,
+                    addressLine2: row.customer.addressLine2,
+                    postalCode: row.customer.postalCode,
+                    city: row.customer.city,
+                  },
+                  employees: [],
+                  customerNotesCount: row.customer.notesCount,
+                  projectNotesCount: 0,
+                  appointmentNotesCount: 0,
+                  displayMode: "compact",
+                  isLocked: false,
+                  version: row.customer.version,
+                }, { sizeProfile: "sidebarTable" });
+              }}
+              emptyState={emptyState}
+              stickyHeader
+            />
+          )
+        }
+      />
     </>
   );
 }

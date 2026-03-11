@@ -118,9 +118,11 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
         throw new Error(payload?.message ?? "Uebernahme fehlgeschlagen");
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "active" }] });
       await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "inactive" }] });
       await queryClient.invalidateQueries({ queryKey: ["/api/projects?filter=all&scope=all"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       toast({ title: "Neue Kunden uebernommen" });
     } catch (applyError) {
       setError(applyError instanceof Error ? applyError.message : "Uebernahme fehlgeschlagen");
@@ -150,9 +152,11 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
         throw new Error(payload?.message ?? "Duplikat-Update fehlgeschlagen");
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "active" }] });
       await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "inactive" }] });
       await queryClient.invalidateQueries({ queryKey: ["/api/projects?filter=all&scope=all"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       toast({ title: "Duplikatdaten aktualisiert" });
     } catch (applyError) {
       setError(applyError instanceof Error ? applyError.message : "Duplikat-Update fehlgeschlagen");

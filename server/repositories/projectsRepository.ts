@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, like, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointments,
@@ -23,6 +23,7 @@ import {
   type InsertProjectAttachment,
 } from "@shared/schema";
 import type { ProjectScope } from "../services/projectsService";
+import { getProjectStatusesByProjectIds } from "./projectStatusRepository";
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -150,10 +151,247 @@ export async function getProjects(
 }
 
 export type ProjectListItem = Project & { notesCount: number };
+export type ProjectBoardListItem = ProjectListItem & {
+  customer: {
+    id: number;
+    customerNumber: string;
+    fullName: string | null;
+    lastName: string | null;
+  };
+  statuses: Array<{
+    id: number;
+    title: string;
+    color: string;
+  }>;
+  plannedAppointmentsCount: number;
+  nextAppointmentStartDate: string | null;
+  nextAppointmentStartTimeHour: number | null;
+};
+
+export type ProjectBoardListResult = {
+  items: ProjectBoardListItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
 type VersionedMutationResult<T> =
   | { kind: "updated"; row: T }
   | { kind: "not_found" }
   | { kind: "version_conflict" };
+
+function buildProjectFilterConditions(params: {
+  filter: "active" | "inactive" | "all";
+  statusIds: number[];
+  scope: ProjectScope;
+  customerId?: number;
+  title?: string;
+  customerLastName?: string;
+  customerNumber?: string;
+  orderNumber?: string;
+}) {
+  const conditions = [];
+
+  if (params.customerId != null) {
+    conditions.push(eq(projects.customerId, params.customerId));
+  }
+  if (params.filter === "active") {
+    conditions.push(eq(projects.isActive, true));
+  }
+  if (params.filter === "inactive") {
+    conditions.push(eq(projects.isActive, false));
+  }
+  if (params.statusIds.length > 0) {
+    const statusIdList = sql.join(params.statusIds.map((id) => sql`${id}`), sql`, `);
+    conditions.push(sql`exists (
+      select 1
+      from ${projectProjectStatus}
+      where ${projectProjectStatus.projectId} = ${projects.id}
+        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
+    )`);
+  }
+  const scopeCondition = buildScopeCondition(params.scope);
+  if (scopeCondition) {
+    conditions.push(scopeCondition);
+  }
+
+  const title = params.title?.trim().toLowerCase() ?? "";
+  if (title.length > 0) {
+    conditions.push(sql`lower(${projects.name}) like ${`%${title}%`}`);
+  }
+
+  const customerLastName = params.customerLastName?.trim().toLowerCase() ?? "";
+  if (customerLastName.length > 0) {
+    conditions.push(sql`lower(coalesce(${customers.lastName}, '')) like ${`%${customerLastName}%`}`);
+  }
+
+  const customerNumber = params.customerNumber?.trim() ?? "";
+  if (customerNumber.length > 0) {
+    conditions.push(like(customers.customerNumber, `%${customerNumber}%`));
+  }
+
+  const orderNumber = params.orderNumber?.trim() ?? "";
+  if (orderNumber.length > 0) {
+    conditions.push(like(sql`coalesce(${projectOrder.orderNumber}, '')`, `%${orderNumber}%`));
+  }
+
+  return conditions;
+}
+
+function normalizeAppointmentDate(dateValue: unknown): string | null {
+  if (dateValue instanceof Date) {
+    return dateValue.toISOString().slice(0, 10);
+  }
+  if (typeof dateValue === "string") {
+    return dateValue.slice(0, 10);
+  }
+  return null;
+}
+
+function normalizeStartTimeHour(value: unknown): number | null {
+  if (typeof value === "number" && Number.isInteger(value)) return value;
+  if (typeof value !== "string") return null;
+  const [hours] = value.split(":");
+  const parsed = Number(hours);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+export async function getProjectsPaged(params: {
+  filter: "active" | "inactive" | "all";
+  statusIds: number[];
+  scope: ProjectScope;
+  customerId?: number;
+  title?: string;
+  customerLastName?: string;
+  customerNumber?: string;
+  orderNumber?: string;
+  page: number;
+  pageSize: number;
+}): Promise<ProjectBoardListResult> {
+  const conditions = buildProjectFilterConditions(params);
+  const offset = (params.page - 1) * params.pageSize;
+
+  const countRows = await db
+    .select({ count: sql<number>`count(distinct ${projects.id})` })
+    .from(projects)
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(and(...conditions));
+
+  const total = Number(countRows[0]?.count ?? 0);
+  if (total === 0) {
+    return {
+      items: [],
+      page: params.page,
+      pageSize: params.pageSize,
+      total: 0,
+      totalPages: 0,
+    };
+  }
+
+  const rows = await db
+    .select({
+      project: projects,
+      customer: customers,
+      order: projectOrder,
+    })
+    .from(projects)
+    .innerJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(and(...conditions))
+    .orderBy(desc(projects.updatedAt), desc(projects.id))
+    .limit(params.pageSize)
+    .offset(offset);
+
+  const projectIds = rows.map((row) => row.project.id);
+
+  const noteCountRows = await db
+    .select({
+      projectId: projectNotes.projectId,
+      count: sql<number>`count(*)`,
+    })
+    .from(projectNotes)
+    .where(inArray(projectNotes.projectId, projectIds))
+    .groupBy(projectNotes.projectId);
+
+  const appointmentRows = await db
+    .select({
+      projectId: appointments.projectId,
+      startDate: appointments.startDate,
+      startTime: appointments.startTime,
+      id: appointments.id,
+    })
+    .from(appointments)
+    .where(and(
+      inArray(appointments.projectId, projectIds),
+      gte(appointments.startDate, getBerlinTodayDate()),
+    ))
+    .orderBy(
+      asc(appointments.projectId),
+      asc(appointments.startDate),
+      asc(sql`coalesce(${appointments.startTime}, '23:59:59')`),
+      asc(appointments.id),
+    );
+
+  const statusesRows = await getProjectStatusesByProjectIds(projectIds);
+
+  const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+  const appointmentSummaryByProjectId = new Map<number, {
+    plannedAppointmentsCount: number;
+    nextAppointmentStartDate: string | null;
+    nextAppointmentStartTimeHour: number | null;
+  }>();
+  const statusesByProjectId = new Map<number, Array<{ id: number; title: string; color: string }>>();
+
+  for (const row of appointmentRows) {
+    if (row.projectId == null) continue;
+    const current = appointmentSummaryByProjectId.get(row.projectId);
+    if (!current) {
+      appointmentSummaryByProjectId.set(row.projectId, {
+        plannedAppointmentsCount: 1,
+        nextAppointmentStartDate: normalizeAppointmentDate(row.startDate),
+        nextAppointmentStartTimeHour: normalizeStartTimeHour(row.startTime),
+      });
+      continue;
+    }
+    current.plannedAppointmentsCount += 1;
+  }
+
+  for (const row of statusesRows) {
+    const current = statusesByProjectId.get(row.projectId) ?? [];
+    current.push({
+      id: row.status.id,
+      title: row.status.title,
+      color: row.status.color,
+    });
+    statusesByProjectId.set(row.projectId, current);
+  }
+
+  return {
+    items: rows.map((row) => {
+      const mergedProject = mergeProjectWithOrder(row.project, row.order ?? null);
+      const appointmentSummary = appointmentSummaryByProjectId.get(row.project.id);
+      return {
+        ...mergedProject,
+        notesCount: notesCountByProjectId.get(row.project.id) ?? 0,
+        plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
+        nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
+        nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
+        customer: {
+          id: row.customer.id,
+          customerNumber: row.customer.customerNumber,
+          fullName: row.customer.fullName,
+          lastName: row.customer.lastName,
+        },
+        statuses: statusesByProjectId.get(row.project.id) ?? [],
+      };
+    }),
+    page: params.page,
+    pageSize: params.pageSize,
+    total,
+    totalPages: Math.ceil(total / params.pageSize),
+  };
+}
 
 export async function getProjectsByCustomer(
   customerId: number,

@@ -34,6 +34,30 @@ export async function listCustomers(req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function listCustomersPaged(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const input = api.customers.pagedList.input.parse(req.query);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const customers = await customersService.listCustomersPaged(roleKey, input);
+    res.json(customers);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof customersService.CustomersError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function getCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = getRoleKeyFromRequest(req);

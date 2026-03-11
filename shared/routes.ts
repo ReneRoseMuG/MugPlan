@@ -139,6 +139,74 @@ const projectOrderResponseSchema = z.object({
 
 const projectWithOrderSchema = z.custom<Project & { notesCount?: number; projectOrder?: ProjectOrder | null }>();
 
+const pagedListMetaSchema = z.object({
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+  total: z.number().int().min(0),
+  totalPages: z.number().int().min(0),
+});
+
+const customerBoardListItemSchema = z.object({
+  id: z.number(),
+  customerNumber: z.string(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  fullName: z.string().nullable(),
+  company: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  isActive: z.boolean(),
+  addressLine1: z.string().nullable(),
+  addressLine2: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  city: z.string().nullable(),
+  version: z.number().int().min(1),
+  notesCount: z.number().int().min(0),
+  plannedAppointmentsCount: z.number().int().min(0),
+  nextAppointmentStartDate: z.string().nullable(),
+  nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
+});
+
+const projectBoardStatusSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  color: z.string(),
+});
+
+const projectBoardListItemSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  type: z.number(),
+  customerId: z.number(),
+  descriptionMd: z.string().nullable(),
+  isActive: z.boolean(),
+  version: z.number().int().min(1),
+  createdAt: z.any(),
+  updatedAt: z.any(),
+  orderNumber: z.string().nullable(),
+  amount: z.string().nullable(),
+  projectOrder: projectOrderResponseSchema.nullable(),
+  notesCount: z.number().int().min(0),
+  plannedAppointmentsCount: z.number().int().min(0),
+  nextAppointmentStartDate: z.string().nullable(),
+  nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
+  customer: z.object({
+    id: z.number(),
+    customerNumber: z.string(),
+    fullName: z.string().nullable(),
+    lastName: z.string().nullable(),
+  }),
+  statuses: z.array(projectBoardStatusSchema),
+});
+
+const customerBoardListResponseSchema = pagedListMetaSchema.extend({
+  items: z.array(customerBoardListItemSchema),
+});
+
+const projectBoardListResponseSchema = pagedListMetaSchema.extend({
+  items: z.array(projectBoardListItemSchema),
+});
+
 const attachmentDuplicateHitSchema = z.object({
   domain: z.enum(["customer", "project", "employee"]),
   attachmentId: z.number().int().positive(),
@@ -869,6 +937,20 @@ export const api = {
       }).strict(),
       responses: {
         200: z.array(z.custom<typeof customers.$inferSelect & { notesCount: number }>()),
+      },
+    },
+    pagedList: {
+      method: 'GET' as const,
+      path: '/api/customers/list',
+      input: z.object({
+        scope: z.enum(["active", "inactive"]).default("active"),
+        lastName: z.string().trim().optional(),
+        customerNumber: z.string().trim().optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        pageSize: z.coerce.number().int().min(1).max(100).default(50),
+      }).strict(),
+      responses: {
+        200: customerBoardListResponseSchema,
       },
     },
     get: {
@@ -2025,6 +2107,32 @@ export const api = {
       }),
       responses: {
         200: z.array(projectWithOrderSchema),
+      },
+    },
+    pagedList: {
+      method: 'GET' as const,
+      path: '/api/projects/list',
+      input: z.object({
+        filter: z.enum(["active", "inactive", "all"]).optional(),
+        customerId: z.union([z.string(), z.number()]).optional(),
+        statusIds: z
+          .union([
+            z.string(),
+            z.number(),
+            z.array(z.string()),
+            z.array(z.number()),
+          ])
+          .optional(),
+        scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
+        title: z.string().trim().optional(),
+        customerLastName: z.string().trim().optional(),
+        customerNumber: z.string().trim().optional(),
+        orderNumber: z.string().trim().optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        pageSize: z.coerce.number().int().min(1).max(100).default(50),
+      }).strict(),
+      responses: {
+        200: projectBoardListResponseSchema,
       },
     },
     get: {
