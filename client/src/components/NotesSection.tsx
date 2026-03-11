@@ -128,7 +128,7 @@ export function NotesSection({
   const [noteBody, setNoteBody] = useState("");
   const [noteCardColor, setNoteCardColor] = useState<string>(fallbackCardColor);
   const [useCardColor, setUseCardColor] = useState(false);
-  const [notePrint, setNotePrint] = useState(true);
+  const [notePrint, setNotePrint] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [cardColorLocked, setCardColorLocked] = useState(false);
@@ -143,7 +143,7 @@ export function NotesSection({
     setNoteBody("");
     setNoteCardColor(fallbackCardColor);
     setUseCardColor(false);
-    setNotePrint(true);
+    setNotePrint(false);
     setSelectedTemplateId("none");
     setEditingNoteId(null);
     setCardColorLocked(false);
@@ -156,7 +156,7 @@ export function NotesSection({
     setNoteBody("");
     setNoteCardColor(fallbackCardColor);
     setUseCardColor(false);
-    setNotePrint(true);
+    setNotePrint(false);
     setSelectedTemplateId("none");
     setCardColorLocked(false);
     setDialogOpen(true);

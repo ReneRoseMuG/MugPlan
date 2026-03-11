@@ -1,5 +1,6 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import type { InsertAppointment } from "@shared/schema";
+import { addWeeks, differenceInCalendarDays, endOfWeek, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import {
   getProjectArticleField,
@@ -8,7 +9,9 @@ import {
   type ProjectArticleItem,
 } from "@shared/projectArticleList";
 import * as customersRepository from "../repositories/customersRepository";
+import * as employeesRepository from "../repositories/employeesRepository";
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
+import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import { logDebug, logInfo } from "../lib/logger";
@@ -248,6 +251,12 @@ const buildProjectArticleItemsByProject = async (projectIds: number[]) => {
 
   return articleItemsByProject;
 };
+
+function getProjectSaunaModel(projectArticleItems: ProjectArticleItem[]): string | null {
+  const saunaLabel = getProjectArticleField("saunaModel").label;
+  const saunaItem = projectArticleItems.find((item) => item.label === saunaLabel);
+  return saunaItem?.value ?? null;
+}
 
 const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: CanonicalRoleKey) => {
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
@@ -648,6 +657,109 @@ export async function listTourAppointments(
   );
 
   return mapSidebarAppointments(appointments, roleKey);
+}
+
+export async function getTourPrintPreview(params: { tourId: number; fromDate: string; weekCount: number }) {
+  const tour = await toursRepository.getTour(params.tourId);
+  if (!tour) return null;
+
+  const normalizedWeekCount = Math.max(1, Math.min(params.weekCount, 12));
+  const requestedFromDate = parseDateOnly(params.fromDate);
+  const firstWeekStart = startOfWeek(requestedFromDate, { weekStartsOn: 1 });
+  const lastWeekStart = addWeeks(firstWeekStart, normalizedWeekCount - 1);
+  const finalToDate = endOfWeek(lastWeekStart, { weekStartsOn: 1 });
+
+  const [members, rows] = await Promise.all([
+    employeesRepository.getEmployeesByTour(params.tourId),
+    appointmentsRepository.listAppointmentsByTourForDateRange(params.tourId, firstWeekStart, finalToDate),
+  ]);
+
+  const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
+  const projectIds = Array.from(new Set(rows.map((row) => row.project?.id).filter((id): id is number => Number.isFinite(id))));
+  const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
+
+  const [
+    employeesByAppointment,
+    projectArticleItemsByProject,
+    customerPrintNotesByCustomer,
+    projectPrintNotesByProject,
+    appointmentPrintNotesByAppointment,
+  ] = await Promise.all([
+    buildEmployeesByAppointment(appointmentIds),
+    buildProjectArticleItemsByProject(projectIds),
+    appointmentsRepository.getCustomerPrintNotesByCustomerIds(customerIds),
+    appointmentsRepository.getProjectPrintNotesByProjectIds(projectIds),
+    appointmentsRepository.getAppointmentPrintNotesByAppointmentIds(appointmentIds),
+  ]);
+
+  const weeks = Array.from({ length: normalizedWeekCount }, (_, index) => {
+    const weekStart = addWeeks(firstWeekStart, index);
+    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+    return {
+      weekStart: toDateOnlyString(weekStart) ?? "",
+      weekEnd: toDateOnlyString(weekEnd) ?? "",
+    };
+  });
+
+  const appointments = rows.map((row) => {
+    const projectId = row.project?.id ?? null;
+    const projectArticleItems = projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [];
+    const normalizedStartDate = toDateOnlyString(row.appointment.startDate) ?? "";
+    const normalizedEndDate = toDateOnlyString(row.appointment.endDate);
+    const printNotes = [
+      ...(customerPrintNotesByCustomer.get(row.customer.id) ?? []).map((note) => ({ sourceType: "customer" as const, note })),
+      ...(projectId ? (projectPrintNotesByProject.get(projectId) ?? []) : []).map((note) => ({ sourceType: "project" as const, note })),
+      ...(appointmentPrintNotesByAppointment.get(row.appointment.id) ?? []).map((note) => ({ sourceType: "appointment" as const, note })),
+    ].map(({ sourceType, note }) => ({
+      id: note.id,
+      sourceType,
+      title: note.title,
+      body: note.body ?? null,
+      cardColor: note.cardColor ?? null,
+      updatedAt: new Date(note.updatedAt).toISOString(),
+    }));
+
+    return {
+      id: row.appointment.id,
+      projectId,
+      projectName: row.project?.name ?? "Ohne Projekt",
+      startDate: normalizedStartDate,
+      endDate: normalizedEndDate,
+      startTime: row.appointment.startTime ?? null,
+      durationDays: differenceInCalendarDays(
+        parseDateOnly(normalizedEndDate ?? normalizedStartDate),
+        parseDateOnly(normalizedStartDate),
+      ) + 1,
+      saunaModel: getProjectSaunaModel(projectArticleItems),
+      customer: {
+        id: row.customer.id,
+        customerNumber: row.customer.customerNumber,
+        fullName: row.customer.fullName,
+        addressLine1: row.customer.addressLine1 ?? null,
+        addressLine2: row.customer.addressLine2 ?? null,
+        postalCode: row.customer.postalCode ?? null,
+        city: row.customer.city ?? null,
+      },
+      employees: employeesByAppointment.get(row.appointment.id) ?? [],
+      printNotes,
+    };
+  });
+
+  return {
+    fromDate: toDateOnlyString(firstWeekStart) ?? "",
+    toDate: toDateOnlyString(finalToDate) ?? "",
+    weeks,
+    tour: {
+      id: tour.id,
+      name: tour.name,
+      color: tour.color,
+    },
+    members: members.map((member) => ({
+      id: member.id,
+      fullName: member.fullName,
+    })),
+    appointments,
+  };
 }
 
 export async function listCalendarAppointments({

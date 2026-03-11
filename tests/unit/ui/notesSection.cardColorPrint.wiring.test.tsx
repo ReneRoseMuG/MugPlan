@@ -23,6 +23,8 @@ describe("FT13 UI: notes section cardColor/print wiring", () => {
 
     expect(source).toContain("cardColor?: string | null;");
     expect(source).toContain("print: boolean;");
+    expect(source).toContain("const [notePrint, setNotePrint] = useState(false);");
+    expect(source).toContain("setNotePrint(false);");
     expect(source).toContain("note.cardColorLocked");
     expect(source).toContain('testId="button-note-card-color-picker"');
     expect(source).toContain('data-testid="switch-note-print"');

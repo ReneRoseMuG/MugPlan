@@ -168,6 +168,33 @@ export async function listTourAppointments(req: Request, res: Response, next: Ne
   }
 }
 
+export async function getTourPrintPreview(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const tourId = Number(req.params.tourId);
+    if (Number.isNaN(tourId)) {
+      res.status(400).json({ message: "Ungueltige tourId" });
+      return;
+    }
+
+    const input = api.tourPrintPreview.get.input.parse(req.query);
+    const preview = await appointmentsService.getTourPrintPreview({
+      tourId,
+      fromDate: input.fromDate,
+      weekCount: input.weekCount,
+    });
+
+    if (!preview) {
+      res.status(404).json({ message: "Tour nicht gefunden" });
+      return;
+    }
+
+    res.json(preview);
+  } catch (err) {
+    if (handleZodError(err, res)) return;
+    next(err);
+  }
+}
+
 export async function listAppointmentsList(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.list.input.parse(req.query);

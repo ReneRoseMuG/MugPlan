@@ -23,6 +23,8 @@ describe("FT13 UI: note templates cardColor/print wiring", () => {
 
     expect(source).toContain("cardColor?: string | null");
     expect(source).toContain("print: boolean");
+    expect(source).toContain("const [formPrint, setFormPrint] = useState(false);");
+    expect(source).toContain("setFormPrint(false);");
     expect(source).toContain('colorPickerTestId="button-template-color-picker"');
     expect(source).toContain('data-testid="switch-template-print"');
     expect(source).toContain("cardColor: useCardColor ? formCardColor : null");

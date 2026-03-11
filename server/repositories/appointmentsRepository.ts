@@ -9,6 +9,7 @@ import {
   customerNotes,
   customers,
   employees,
+  notes,
   projectOrder,
   projectOrderItems,
   projectNotes,
@@ -17,6 +18,7 @@ import {
   tours,
   type Appointment,
   type InsertAppointment,
+  type Note,
 } from "@shared/schema";
 import { logDebug } from "../lib/logger";
 
@@ -146,6 +148,69 @@ export async function getAppointmentNoteCountsByAppointmentIds(appointmentIds: n
     .groupBy(appointmentNotes.appointmentId);
 
   return new Map(rows.map((row) => [row.appointmentId, Number(row.count)] as const));
+}
+
+function buildNotesByOwnerMap<TId extends number>(
+  rows: Array<{ ownerId: TId; note: Note }>,
+): Map<TId, Note[]> {
+  const notesByOwner = new Map<TId, Note[]>();
+  for (const row of rows) {
+    const existing = notesByOwner.get(row.ownerId) ?? [];
+    existing.push(row.note);
+    notesByOwner.set(row.ownerId, existing);
+  }
+  return notesByOwner;
+}
+
+export async function getCustomerPrintNotesByCustomerIds(customerIds: number[]): Promise<Map<number, Note[]>> {
+  const uniqueCustomerIds = Array.from(new Set(customerIds.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueCustomerIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      ownerId: customerNotes.customerId,
+      note: notes,
+    })
+    .from(customerNotes)
+    .innerJoin(notes, eq(customerNotes.noteId, notes.id))
+    .where(and(inArray(customerNotes.customerId, uniqueCustomerIds), eq(notes.print, true)))
+    .orderBy(desc(notes.isPinned), desc(notes.updatedAt), desc(notes.id));
+
+  return buildNotesByOwnerMap(rows);
+}
+
+export async function getProjectPrintNotesByProjectIds(projectIds: number[]): Promise<Map<number, Note[]>> {
+  const uniqueProjectIds = Array.from(new Set(projectIds.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueProjectIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      ownerId: projectNotes.projectId,
+      note: notes,
+    })
+    .from(projectNotes)
+    .innerJoin(notes, eq(projectNotes.noteId, notes.id))
+    .where(and(inArray(projectNotes.projectId, uniqueProjectIds), eq(notes.print, true)))
+    .orderBy(desc(notes.isPinned), desc(notes.updatedAt), desc(notes.id));
+
+  return buildNotesByOwnerMap(rows);
+}
+
+export async function getAppointmentPrintNotesByAppointmentIds(appointmentIds: number[]): Promise<Map<number, Note[]>> {
+  const uniqueAppointmentIds = Array.from(new Set(appointmentIds.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueAppointmentIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      ownerId: appointmentNotes.appointmentId,
+      note: notes,
+    })
+    .from(appointmentNotes)
+    .innerJoin(notes, eq(appointmentNotes.noteId, notes.id))
+    .where(and(inArray(appointmentNotes.appointmentId, uniqueAppointmentIds), eq(notes.print, true)))
+    .orderBy(desc(notes.isPinned), desc(notes.updatedAt), desc(notes.id));
+
+  return buildNotesByOwnerMap(rows);
 }
 
 export async function getAppointment(id: number): Promise<Appointment | null> {
@@ -540,6 +605,31 @@ export async function listSidebarAppointmentsByTourFromDate(tourId: number, from
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(eq(appointments.tourId, tourId), gte(appointments.startDate, fromDate)))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}
+
+export async function listAppointmentsByTourForDateRange(tourId: number, fromDate: Date, toDate: Date) {
+  logDebug(`${logPrefix} list tour print appointments tourId=${tourId} fromDate=${fromDate} toDate=${toDate}`);
+  return db
+    .select({
+      appointment: appointments,
+      project: projects,
+      projectOrder,
+      customer: customers,
+      tour: tours,
+    })
+    .from(appointments)
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(
+      and(
+        eq(appointments.tourId, tourId),
+        lte(appointments.startDate, toDate),
+        or(isNull(appointments.endDate), gte(appointments.endDate, fromDate)),
+      ),
+    )
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 

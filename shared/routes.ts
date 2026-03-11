@@ -229,6 +229,65 @@ const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
   items: z.array(reportVorlauflisteItemSchema),
 });
 
+const tourPrintPreviewNoteSchema = z.object({
+  id: z.number().int().positive(),
+  sourceType: z.enum(["customer", "project", "appointment"]),
+  title: z.string(),
+  body: z.string().nullable(),
+  cardColor: z.string().nullable(),
+  updatedAt: z.string(),
+});
+
+const tourPrintPreviewAppointmentSchema = z.object({
+  id: z.number().int().positive(),
+  projectId: z.number().nullable(),
+  projectName: z.string(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  durationDays: z.number().int().min(1),
+  saunaModel: z.string().nullable(),
+  customer: z.object({
+    id: z.number().int().positive(),
+    customerNumber: z.string(),
+    fullName: z.string().nullable(),
+    addressLine1: z.string().nullable(),
+    addressLine2: z.string().nullable(),
+    postalCode: z.string().nullable(),
+    city: z.string().nullable(),
+  }),
+  employees: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      fullName: z.string(),
+    }),
+  ),
+  printNotes: z.array(tourPrintPreviewNoteSchema),
+});
+
+const tourPrintPreviewResponseSchema = z.object({
+  fromDate: z.string(),
+  toDate: z.string(),
+  weeks: z.array(
+    z.object({
+      weekStart: z.string(),
+      weekEnd: z.string(),
+    }),
+  ),
+  tour: z.object({
+    id: z.number().int().positive(),
+    name: z.string(),
+    color: z.string(),
+  }),
+  members: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      fullName: z.string(),
+    }),
+  ),
+  appointments: z.array(tourPrintPreviewAppointmentSchema),
+});
+
 const attachmentDuplicateHitSchema = z.object({
   domain: z.enum(["customer", "project", "employee"]),
   attachmentId: z.number().int().positive(),
@@ -2412,6 +2471,21 @@ export const api = {
           appointmentNotesCount: z.number().int().min(0),
           isLocked: z.boolean(),
         })),
+      },
+    },
+  },
+  tourPrintPreview: {
+    get: {
+      method: "GET" as const,
+      path: "/api/tours/:tourId/print-preview",
+      input: z.object({
+        fromDate: z.string(),
+        weekCount: z.coerce.number().int().min(1).max(12),
+      }).strict(),
+      responses: {
+        200: tourPrintPreviewResponseSchema,
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
       },
     },
   },
