@@ -8,8 +8,6 @@ import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { FileText } from "lucide-react";
 import type { NoteTemplate } from "@shared/schema";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
 import { Switch } from "@/components/ui/switch";
@@ -25,11 +23,12 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardProps) {
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return "";
-    const d = typeof date === "string" ? new Date(date) : date;
-    return format(d, "dd.MM.yyyy", { locale: de });
-  };
+  const hasCustomCardColor = template.cardColor !== null;
+  const contentClassName = hasCustomCardColor ? "text-white" : "text-slate-800";
+  const bodyClassName = hasCustomCardColor ? "text-white/90" : "text-slate-600";
+  const deleteButtonClassName = hasCustomCardColor
+    ? "text-white hover:bg-white/15 hover:text-white"
+    : undefined;
 
   return (
     <button
@@ -40,7 +39,7 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
       onDoubleClick={onEdit}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <div className={`flex items-center gap-2 text-sm font-semibold ${contentClassName}`}>
           <FileText className="h-4 w-4" />
           <span>{template.title}</span>
         </div>
@@ -53,6 +52,7 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
             variant="ghost"
             size="sm"
             disabled={isDeleting}
+            className={deleteButtonClassName}
             onClick={(event) => {
               event.stopPropagation();
               onDelete();
@@ -69,14 +69,11 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
         )}
         {template.body && (
           <div
-            className="text-sm text-slate-600 line-clamp-3"
+            className={`text-sm line-clamp-3 ${bodyClassName}`}
             dangerouslySetInnerHTML={{ __html: template.body }}
             data-testid={`text-template-body-${template.id}`}
           />
         )}
-        <p className="text-xs text-slate-500" data-testid={`text-template-date-${template.id}`}>
-          Aktualisiert: {formatDate(template.updatedAt)}
-        </p>
       </div>
     </button>
   );

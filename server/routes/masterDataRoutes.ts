@@ -8,7 +8,25 @@ router.get(api.masterData.productCategories.list.path, masterDataController.list
 router.post(api.masterData.productCategories.create.path, masterDataController.createProductCategory);
 router.put(api.masterData.productCategories.update.path, masterDataController.updateProductCategory);
 router.delete(api.masterData.productCategories.delete.path, masterDataController.deleteProductCategory);
-router.post(api.masterData.seed.productManagement.run.path, masterDataController.runProductManagementSeed);
+router.get(api.masterData.seed.employees.status.path, masterDataController.getEmployeesSeedStatusController);
+router.post(api.masterData.seed.employees.apply.path, masterDataController.applyEmployeesSeedController);
+router.post(api.masterData.seed.employees.export.path, masterDataController.exportEmployeesSeedController);
+
+router.get(api.masterData.seed.helpTexts.status.path, masterDataController.getHelpTextsSeedStatusController);
+router.post(api.masterData.seed.helpTexts.apply.path, masterDataController.applyHelpTextsSeedController);
+router.post(api.masterData.seed.helpTexts.export.path, masterDataController.exportHelpTextsSeedController);
+
+router.get(api.masterData.seed.productManagement.status.path, masterDataController.getProductManagementSeedStatusController);
+router.post(api.masterData.seed.productManagement.apply.path, masterDataController.applyProductManagementSeedController);
+router.post(api.masterData.seed.productManagement.export.path, masterDataController.exportProductManagementSeedController);
+
+router.get(api.masterData.seed.projectStatus.status.path, masterDataController.getProjectStatusSeedStatusController);
+router.post(api.masterData.seed.projectStatus.apply.path, masterDataController.applyProjectStatusSeedController);
+router.post(api.masterData.seed.projectStatus.export.path, masterDataController.exportProjectStatusSeedController);
+
+router.get(api.masterData.seed.noteTemplates.status.path, masterDataController.getNoteTemplatesSeedStatusController);
+router.post(api.masterData.seed.noteTemplates.apply.path, masterDataController.applyNoteTemplatesSeedController);
+router.post(api.masterData.seed.noteTemplates.export.path, masterDataController.exportNoteTemplatesSeedController);
 
 router.get(api.masterData.componentCategories.list.path, masterDataController.listComponentCategories);
 router.post(api.masterData.componentCategories.create.path, masterDataController.createComponentCategory);

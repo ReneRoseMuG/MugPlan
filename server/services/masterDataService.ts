@@ -56,6 +56,10 @@ function requireAdmin(roleKey: CanonicalRoleKey): void {
   }
 }
 
+export function assertMasterDataAdmin(roleKey: CanonicalRoleKey): void {
+  requireAdmin(roleKey);
+}
+
 function isDuplicateKeyError(error: unknown): boolean {
   const mysqlError = error as { code?: string; errno?: number } | null;
   return mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062;

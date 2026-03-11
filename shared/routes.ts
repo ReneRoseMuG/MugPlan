@@ -236,6 +236,15 @@ const bulkImportLimitsSchema = z.object({
   maxTotalBytes: z.number().int().positive(),
 });
 
+const masterDataSeedFileStatusSchema = z.object({
+  sourceFile: z.string().min(1),
+  exists: z.boolean(),
+});
+
+const masterDataSeedExecutionSchema = masterDataSeedFileStatusSchema.extend({
+  logLines: z.array(z.string()),
+});
+
 export const api = {
   auth: {
     setupStatus: {
@@ -1610,17 +1619,157 @@ export const api = {
       },
     },
     seed: {
-      productManagement: {
-        run: {
+      employees: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/employees",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
           method: "POST" as const,
-          path: "/api/admin/master-data/seed/product-management",
+          path: "/api/admin/master-data/seed/employees/apply",
           input: z.object({}).strict(),
           responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/employees/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      helpTexts: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/help-texts",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/help-texts/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/help-texts/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      productManagement: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/product-management",
+          responses: {
             200: z.object({
-              logLines: z.array(z.string()),
+              sourceFile: z.string().min(1),
+              exists: z.boolean(),
+              extraFiles: z.array(masterDataSeedFileStatusSchema),
             }),
             403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/product-management/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
             409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/product-management/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      projectStatus: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/project-status",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/project-status/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/project-status/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
+      noteTemplates: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/note-templates",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/note-templates/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/note-templates/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
             422: z.object({ code: z.literal("VALIDATION_ERROR") }),
           },
         },
