@@ -26,7 +26,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
-import { componentCategories, productCategories } from "@shared/schema";
+import { componentCategories, components, productCategories, products } from "@shared/schema";
 import { db } from "../../../server/db";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
@@ -230,6 +230,112 @@ describe("FT27 integration: master data admin API", () => {
 
     await reader
       .get("/api/admin/master-data/product-categories?active=all")
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+  });
+
+  it("imports products into the selected product category idempotently", async () => {
+    const admin = await loginAdminAgent();
+    const category = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: "PK-FT27-IMPORT", isActive: true, version: 1 })
+      .expect(201);
+
+    const firstImport = await admin
+      .post(`/api/admin/master-data/product-categories/${category.body.id}/import-csv`)
+      .attach("file", Buffer.from("Name;Beschreibung;IsActive\nFT27 Import Produkt;Text A;\n", "utf8"), "products.csv")
+      .expect(200);
+
+    expect(firstImport.body.summary.createdRows).toBe(1);
+
+    const secondImport = await admin
+      .post(`/api/admin/master-data/product-categories/${category.body.id}/import-csv`)
+      .attach("file", Buffer.from("Name;Beschreibung;IsActive\nFT27 Import Produkt;Text B;true\n", "utf8"), "products.csv")
+      .expect(200);
+
+    expect(secondImport.body.summary.updatedRows + secondImport.body.summary.reactivatedRows).toBe(1);
+
+    const [importedProduct] = await db
+      .select()
+      .from(products)
+      .where(eq(products.name, "FT27 Import Produkt"))
+      .limit(1);
+
+    expect(importedProduct).toBeDefined();
+    expect(importedProduct?.categoryId).toBe(category.body.id);
+    expect(importedProduct?.description).toBe("Text B");
+    expect(importedProduct?.isActive).toBe(true);
+  });
+
+  it("reactivates existing component on component category import", async () => {
+    const admin = await loginAdminAgent();
+    const category = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: "CK-FT27-IMPORT", isActive: true, version: 1 })
+      .expect(201);
+
+    const component = await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: "FT27 Import Komponente",
+        categoryId: category.body.id,
+        description: "Alt",
+        isActive: false,
+        version: 1,
+      })
+      .expect(201);
+
+    await db
+      .update(components)
+      .set({ isActive: false, version: component.body.version + 1 })
+      .where(eq(components.id, component.body.id));
+
+    const response = await admin
+      .post(`/api/admin/master-data/component-categories/${category.body.id}/import-csv`)
+      .attach("file", Buffer.from("Name;Beschreibung\nFT27 Import Komponente;Neu\n", "utf8"), "components.csv")
+      .expect(200);
+
+    expect(response.body.summary.reactivatedRows).toBe(1);
+
+    const [refreshedComponent] = await db
+      .select()
+      .from(components)
+      .where(eq(components.id, component.body.id))
+      .limit(1);
+
+    expect(refreshedComponent?.isActive).toBe(true);
+    expect(refreshedComponent?.description).toBe("Neu");
+  });
+
+  it("returns CSV validation errors and forbids non-admin category imports", async () => {
+    const admin = await loginAdminAgent();
+    const category = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: "PK-FT27-IMPORT-ERR", isActive: true, version: 1 })
+      .expect(201);
+    const reader = await createAndLoginReaderAgent(admin);
+
+    await admin
+      .post(`/api/admin/master-data/product-categories/${category.body.id}/import-csv`)
+      .attach("file", Buffer.from("Titel;Beschreibung\nX;Y\n", "utf8"), "products.csv")
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.code).toBe("INVALID_CSV_HEADER");
+      });
+
+    await admin
+      .post(`/api/admin/master-data/product-categories/${category.body.id}/import-csv`)
+      .attach("file", Buffer.from("", "utf8"), "products.csv")
+      .expect(422)
+      .expect((res) => {
+        expect(res.body.code).toBe("INVALID_CSV_CONTENT");
+      });
+
+    await reader
+      .post(`/api/admin/master-data/product-categories/${category.body.id}/import-csv`)
+      .attach("file", Buffer.from("Name\nX\n", "utf8"), "products.csv")
       .expect(403)
       .expect((res) => {
         expect(res.body.code).toBe("FORBIDDEN");

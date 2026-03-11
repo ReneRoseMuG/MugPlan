@@ -2,6 +2,8 @@
 import { ZodError } from "zod";
 import { api } from "@shared/routes";
 import * as masterDataService from "../services/masterDataService";
+import { MAX_UPLOAD_BYTES } from "../lib/attachmentFiles";
+import { parseMultipartFile } from "../lib/multipart";
 import { getEmployeesSeedStatus, applyEmployeesSeed, exportEmployeesSeed } from "../services/seedEmployeesService";
 import { getHelpTextsSeedStatus, applyHelpTextsSeed, exportHelpTextsSeed } from "../services/seedHelpTextsService";
 import {
@@ -34,6 +36,11 @@ function handleServiceError(error: unknown, res: Response): boolean {
     return true;
   }
   return false;
+}
+
+function isMultipartShapeError(error: unknown): boolean {
+  return error instanceof Error
+    && (error.message === "Missing multipart boundary" || error.message === "No file found in multipart payload");
 }
 
 export async function listProductCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -105,6 +112,38 @@ export async function deleteProductCategory(req: Request, res: Response, next: N
     await masterDataService.deleteProductCategory(id, input.version, roleKey);
     res.status(204).send();
   } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+export async function importProductCategoryCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = parseId(req.params.id);
+    const roleKey = ensureRoleKey(req);
+    if (!Number.isFinite(id) || id <= 0) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const parsed = await parseMultipartFile(req, {
+      fieldName: "file",
+      maxSizeBytes: MAX_UPLOAD_BYTES,
+    });
+    const result = await masterDataService.importProductsForCategory(id, parsed.buffer, roleKey);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Payload too large") {
+      res.status(413).json({ code: "PAYLOAD_TOO_LARGE" });
+      return;
+    }
+    if (isMultipartShapeError(error)) {
+      res.status(422).json({ code: "INVALID_CSV_FORMAT" });
+      return;
+    }
     if (handleServiceError(error, res)) return;
     next(error);
   }
@@ -277,6 +316,38 @@ export async function deleteComponentCategory(req: Request, res: Response, next:
     await masterDataService.deleteComponentCategory(id, input.version, roleKey);
     res.status(204).send();
   } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+export async function importComponentCategoryCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = parseId(req.params.id);
+    const roleKey = ensureRoleKey(req);
+    if (!Number.isFinite(id) || id <= 0) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const parsed = await parseMultipartFile(req, {
+      fieldName: "file",
+      maxSizeBytes: MAX_UPLOAD_BYTES,
+    });
+    const result = await masterDataService.importComponentsForCategory(id, parsed.buffer, roleKey);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Payload too large") {
+      res.status(413).json({ code: "PAYLOAD_TOO_LARGE" });
+      return;
+    }
+    if (isMultipartShapeError(error)) {
+      res.status(422).json({ code: "INVALID_CSV_FORMAT" });
+      return;
+    }
     if (handleServiceError(error, res)) return;
     next(error);
   }

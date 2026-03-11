@@ -211,6 +211,16 @@ export async function getProductById(id: number): Promise<Product | undefined> {
   return row;
 }
 
+export async function getProductByNormalizedName(name: string): Promise<Product | undefined> {
+  const normalizedName = name.trim().toLocaleLowerCase("de");
+  const [row] = await db
+    .select()
+    .from(products)
+    .where(sql`lower(trim(${products.name})) = ${normalizedName}`)
+    .limit(1);
+  return row;
+}
+
 export async function getProductsByIds(ids: number[]): Promise<Product[]> {
   const uniqueIds = Array.from(new Set(ids.filter((value) => Number.isFinite(value) && value > 0)));
   if (uniqueIds.length === 0) return [];
@@ -275,6 +285,16 @@ export async function createComponent(input: InsertComponent): Promise<Component
 
 export async function getComponentById(id: number): Promise<Component | undefined> {
   const [row] = await db.select().from(components).where(eq(components.id, id));
+  return row;
+}
+
+export async function getComponentByNormalizedName(name: string): Promise<Component | undefined> {
+  const normalizedName = name.trim().toLocaleLowerCase("de");
+  const [row] = await db
+    .select()
+    .from(components)
+    .where(sql`lower(trim(${components.name})) = ${normalizedName}`)
+    .limit(1);
   return row;
 }
 

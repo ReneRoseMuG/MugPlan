@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Component, ComponentCategory, Product, ProductCategory, ProductComponent } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
@@ -37,6 +37,17 @@ type ComponentEditorInput = {
   categoryId: number;
   description: string | null;
   isActive: boolean;
+};
+
+type CategoryImportResponse = {
+  summary: {
+    totalRows: number;
+    createdRows: number;
+    updatedRows: number;
+    reactivatedRows: number;
+    invalidRows: number;
+    errorRows: number;
+  };
 };
 
 const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
@@ -105,6 +116,10 @@ export function ProductManagementPage() {
 
   const [newComponentCategoryName, setNewComponentCategoryName] = useState("");
   const [editComponentCategory, setEditComponentCategory] = useState<ComponentCategory | null>(null);
+  const productCategoryImportInputRef = useRef<HTMLInputElement | null>(null);
+  const componentCategoryImportInputRef = useRef<HTMLInputElement | null>(null);
+  const [pendingProductCategoryImportId, setPendingProductCategoryImportId] = useState<number | null>(null);
+  const [pendingComponentCategoryImportId, setPendingComponentCategoryImportId] = useState<number | null>(null);
 
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [productDraft, setProductDraft] = useState<ProductDataDraft>(toProductDraft(null));
@@ -303,6 +318,78 @@ export function ProductManagementPage() {
         title: code === "BUSINESS_CONFLICT" ? "Komponentenkategorie wird noch verwendet" : "Komponentenkategorie konnte nicht gelöscht werden",
         variant: "destructive",
       });
+    },
+  });
+
+  const productCategoryImportMutation = useMutation({
+    mutationFn: async (input: { categoryId: number; file: File }) => {
+      const body = new FormData();
+      body.append("file", input.file);
+      const response = await fetch(`/api/admin/master-data/product-categories/${input.categoryId}/import-csv`, {
+        method: "POST",
+        body,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Produktimport fehlgeschlagen");
+      }
+      return response.json() as Promise<CategoryImportResponse>;
+    },
+    onSuccess: async (result) => {
+      await invalidateMasterDataQueries(activeScope);
+      toast({
+        title: `Produktimport: ${result.summary.createdRows} neu, ${result.summary.updatedRows} aktualisiert, ${result.summary.reactivatedRows} reaktiviert`,
+      });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "INVALID_CSV_HEADER" ? "CSV-Header fuer Produkte ungueltig" : "Produktimport fehlgeschlagen",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setPendingProductCategoryImportId(null);
+      if (productCategoryImportInputRef.current) {
+        productCategoryImportInputRef.current.value = "";
+      }
+    },
+  });
+
+  const componentCategoryImportMutation = useMutation({
+    mutationFn: async (input: { categoryId: number; file: File }) => {
+      const body = new FormData();
+      body.append("file", input.file);
+      const response = await fetch(`/api/admin/master-data/component-categories/${input.categoryId}/import-csv`, {
+        method: "POST",
+        body,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Komponentenimport fehlgeschlagen");
+      }
+      return response.json() as Promise<CategoryImportResponse>;
+    },
+    onSuccess: async (result) => {
+      await invalidateMasterDataQueries(activeScope);
+      toast({
+        title: `Komponentenimport: ${result.summary.createdRows} neu, ${result.summary.updatedRows} aktualisiert, ${result.summary.reactivatedRows} reaktiviert`,
+      });
+    },
+    onError: (error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "INVALID_CSV_HEADER" ? "CSV-Header fuer Komponenten ungueltig" : "Komponentenimport fehlgeschlagen",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setPendingComponentCategoryImportId(null);
+      if (componentCategoryImportInputRef.current) {
+        componentCategoryImportInputRef.current.value = "";
+      }
     },
   });
 
@@ -508,6 +595,16 @@ export function ProductManagementPage() {
   void removeComponentFromProduct;
   void insertComponentIntoProduct;
 
+  const triggerProductCategoryImport = (categoryId: number) => {
+    setPendingProductCategoryImportId(categoryId);
+    productCategoryImportInputRef.current?.click();
+  };
+
+  const triggerComponentCategoryImport = (categoryId: number) => {
+    setPendingComponentCategoryImportId(categoryId);
+    componentCategoryImportInputRef.current?.click();
+  };
+
   return (
     <ListLayout
       title="Produkte"
@@ -516,6 +613,30 @@ export function ProductManagementPage() {
       hideHeader
       contentSlot={(
         <div className="flex h-full min-h-0 flex-col gap-4">
+          <input
+            ref={productCategoryImportInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            data-testid="input-product-category-import-file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file || !pendingProductCategoryImportId) return;
+              productCategoryImportMutation.mutate({ categoryId: pendingProductCategoryImportId, file });
+            }}
+          />
+          <input
+            ref={componentCategoryImportInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            data-testid="input-component-category-import-file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file || !pendingComponentCategoryImportId) return;
+              componentCategoryImportMutation.mutate({ categoryId: pendingComponentCategoryImportId, file });
+            }}
+          />
           <div className="order-2 min-h-0 basis-1/3 overflow-hidden">
             <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
               <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="master-data-product-categories">
@@ -591,6 +712,17 @@ export function ProductManagementPage() {
                             </Button>
                             <Button
                               size="sm"
+                              variant="outline"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                triggerProductCategoryImport(row.id);
+                              }}
+                              data-testid={`button-product-category-import-${row.id}`}
+                            >
+                              Daten importieren
+                            </Button>
+                            <Button
+                              size="sm"
                               variant="destructive"
                               onClick={(event) => {
                                 event.stopPropagation();
@@ -598,7 +730,7 @@ export function ProductManagementPage() {
                                 deleteProductCategoryMutation.mutate({ id: row.id, version: row.version });
                               }}
                             >
-                              Löschen
+                              -
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -679,6 +811,17 @@ export function ProductManagementPage() {
                             </Button>
                             <Button
                               size="sm"
+                              variant="outline"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                triggerComponentCategoryImport(row.id);
+                              }}
+                              data-testid={`button-component-category-import-${row.id}`}
+                            >
+                              Daten importieren
+                            </Button>
+                            <Button
+                              size="sm"
                               variant="destructive"
                               onClick={(event) => {
                                 event.stopPropagation();
@@ -686,7 +829,7 @@ export function ProductManagementPage() {
                                 deleteComponentCategoryMutation.mutate({ id: row.id, version: row.version });
                               }}
                             >
-                              Löschen
+                              -
                             </Button>
                           </TableCell>
                         </TableRow>

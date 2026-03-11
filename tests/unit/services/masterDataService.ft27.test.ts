@@ -25,15 +25,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const repositoryMocks = vi.hoisted(() => ({
   listProductCategories: vi.fn(),
   createProductCategory: vi.fn(),
+  createComponent: vi.fn(),
   getProductCategoryById: vi.fn(),
   getProductCategoryByName: vi.fn(),
+  getProductByNormalizedName: vi.fn(),
   getComponentCategoryById: vi.fn(),
   getComponentCategoryByName: vi.fn(),
   getComponentById: vi.fn(),
+  getComponentByNormalizedName: vi.fn(),
   getProductsByIds: vi.fn(),
   updateProductCategoryWithVersion: vi.fn(),
   updateComponentCategoryWithVersion: vi.fn(),
   updateProductWithVersion: vi.fn(),
+  updateComponentWithVersion: vi.fn(),
   deleteProductCategoryWithVersion: vi.fn(),
   deleteComponentCategoryWithVersion: vi.fn(),
   createProduct: vi.fn(),
@@ -45,15 +49,19 @@ const repositoryMocks = vi.hoisted(() => ({
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
   listProductCategories: repositoryMocks.listProductCategories,
   createProductCategory: repositoryMocks.createProductCategory,
+  createComponent: repositoryMocks.createComponent,
   getProductCategoryById: repositoryMocks.getProductCategoryById,
   getProductCategoryByName: repositoryMocks.getProductCategoryByName,
+  getProductByNormalizedName: repositoryMocks.getProductByNormalizedName,
   getComponentCategoryById: repositoryMocks.getComponentCategoryById,
   getComponentCategoryByName: repositoryMocks.getComponentCategoryByName,
   getComponentById: repositoryMocks.getComponentById,
+  getComponentByNormalizedName: repositoryMocks.getComponentByNormalizedName,
   getProductsByIds: repositoryMocks.getProductsByIds,
   updateProductCategoryWithVersion: repositoryMocks.updateProductCategoryWithVersion,
   updateComponentCategoryWithVersion: repositoryMocks.updateComponentCategoryWithVersion,
   updateProductWithVersion: repositoryMocks.updateProductWithVersion,
+  updateComponentWithVersion: repositoryMocks.updateComponentWithVersion,
   deleteProductCategoryWithVersion: repositoryMocks.deleteProductCategoryWithVersion,
   deleteComponentCategoryWithVersion: repositoryMocks.deleteComponentCategoryWithVersion,
   createProduct: repositoryMocks.createProduct,
@@ -67,6 +75,8 @@ import {
   createProductCategory,
   deleteComponentCategory,
   deleteProductCategory,
+  importComponentsForCategory,
+  importProductsForCategory,
   listComponentProducts,
   listProductCategories,
   MasterDataError,
@@ -239,6 +249,80 @@ describe("FT27 unit: masterDataService", () => {
       status: 409,
       code: "BUSINESS_CONFLICT",
     });
+  });
+
+  it("imports products for a category with create update reactivate and defaults", async () => {
+    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 3, name: "Kategorie A", version: 1, isActive: true });
+    repositoryMocks.getProductByNormalizedName
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ id: 10, name: "Bestand", categoryId: 2, description: "Alt", isActive: true, version: 4 })
+      .mockResolvedValueOnce({ id: 11, name: "Schlafend", categoryId: 2, description: "Alt", isActive: false, version: 7 });
+    repositoryMocks.createProduct.mockResolvedValueOnce({ id: 20 });
+    repositoryMocks.updateProductWithVersion
+      .mockResolvedValueOnce({ kind: "updated", row: { id: 10 } })
+      .mockResolvedValueOnce({ kind: "updated", row: { id: 11 } });
+
+    const csv = Buffer.from("Name;Beschreibung;IsActive\nNeu;Text;\nBestand;;true\nSchlafend;;\n", "utf8");
+    const result = await importProductsForCategory(3, csv, "ADMIN");
+
+    expect(repositoryMocks.createProduct).toHaveBeenCalledWith({
+      name: "Neu",
+      categoryId: 3,
+      description: "Text",
+      isActive: true,
+      version: 1,
+    });
+    expect(repositoryMocks.updateProductWithVersion).toHaveBeenNthCalledWith(1, 10, 4, {
+      name: "Bestand",
+      categoryId: 3,
+      description: null,
+      isActive: true,
+    });
+    expect(repositoryMocks.updateProductWithVersion).toHaveBeenNthCalledWith(2, 11, 7, {
+      name: "Schlafend",
+      categoryId: 3,
+      description: null,
+      isActive: true,
+    });
+    expect(result.summary.createdRows).toBe(1);
+    expect(result.summary.updatedRows).toBe(1);
+    expect(result.summary.reactivatedRows).toBe(1);
+    expect(result.summary.invalidRows).toBe(0);
+  });
+
+  it("rejects product import without Name header", async () => {
+    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 3, name: "Kategorie A", version: 1, isActive: true });
+
+    await expect(importProductsForCategory(3, Buffer.from("Titel;Beschreibung\nX;Y\n", "utf8"), "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 400,
+      code: "INVALID_CSV_HEADER",
+    });
+  });
+
+  it("rejects component import for missing category", async () => {
+    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce(undefined);
+
+    await expect(importComponentsForCategory(99, Buffer.from("Name\nX\n", "utf8"), "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 404,
+      code: "NOT_FOUND",
+    });
+  });
+
+  it("imports components idempotently and marks duplicate rows inside csv as invalid", async () => {
+    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 6, name: "Komponenten A", version: 1, isActive: true });
+    repositoryMocks.getComponentByNormalizedName
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ id: 31, name: "Vorhanden", categoryId: 1, description: null, isActive: true, version: 5 });
+    repositoryMocks.createComponent.mockResolvedValueOnce({ id: 30 });
+    repositoryMocks.updateComponentWithVersion.mockResolvedValueOnce({ kind: "updated", row: { id: 31 } });
+
+    const csv = Buffer.from("Name,Beschreibung,IsActive\nNeu,Info,true\nVorhanden,,true\nneu,,true\n", "utf8");
+    const result = await importComponentsForCategory(6, csv, "ADMIN");
+
+    expect(result.summary.createdRows).toBe(1);
+    expect(result.summary.updatedRows).toBe(1);
+    expect(result.summary.invalidRows).toBe(1);
+    expect(result.rows.find((row) => row.lineNumber === 4)?.message).toContain("Duplikat");
   });
 
   it("creates missing seed categories and logs the actions", async () => {

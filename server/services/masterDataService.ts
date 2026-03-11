@@ -36,13 +36,48 @@ export type MasterDataSeedResult = {
   logLines: string[];
 };
 
+export type MasterDataCategoryImportRow = {
+  lineNumber: number;
+  name: string;
+  status: "CREATED" | "UPDATED" | "REACTIVATED" | "INVALID" | "ERROR";
+  message: string;
+};
+
+export type MasterDataCategoryImportResult = {
+  summary: {
+    totalRows: number;
+    createdRows: number;
+    updatedRows: number;
+    reactivatedRows: number;
+    invalidRows: number;
+    errorRows: number;
+  };
+  rows: MasterDataCategoryImportRow[];
+};
+
 export class MasterDataError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN" | "BUSINESS_CONFLICT";
+  code:
+    | "VERSION_CONFLICT"
+    | "NOT_FOUND"
+    | "VALIDATION_ERROR"
+    | "FORBIDDEN"
+    | "BUSINESS_CONFLICT"
+    | "INVALID_CSV_FORMAT"
+    | "INVALID_CSV_HEADER"
+    | "INVALID_CSV_CONTENT";
 
   constructor(
     status: number,
-    code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN" | "BUSINESS_CONFLICT",
+    code:
+      | "VERSION_CONFLICT"
+      | "NOT_FOUND"
+      | "VALIDATION_ERROR"
+      | "FORBIDDEN"
+      | "BUSINESS_CONFLICT"
+      | "INVALID_CSV_FORMAT"
+      | "INVALID_CSV_HEADER"
+      | "INVALID_CSV_CONTENT",
   ) {
     super(code);
     this.status = status;
@@ -100,12 +135,267 @@ function buildSeedLog(action: "created" | "reactivated" | "existing", kind: "Pro
   return `${kind} bereits vorhanden: ${name}`;
 }
 
+function toLines(content: string) {
+  return content
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((raw, index) => ({ raw, lineNumber: index + 1 }));
+}
+
+function parseCsvRow(line: string, delimiter: string): { values: string[]; error?: "UNBALANCED_QUOTES" } {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const nextChar = line[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        current += '"';
+        index += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === delimiter && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (inQuotes) {
+    return { values: [], error: "UNBALANCED_QUOTES" };
+  }
+
+  values.push(current);
+  return { values };
+}
+
+function detectCategoryImportDelimiter(headerLine: string): string {
+  const candidates = [";", ","];
+  const matching = candidates.filter((candidate) => {
+    const parsed = parseCsvRow(headerLine, candidate);
+    if (parsed.error) return false;
+    const normalized = parsed.values.map((entry) => entry.trim().toLocaleLowerCase("de"));
+    return normalized.includes("name");
+  });
+
+  if (matching.length === 1) return matching[0];
+  if (matching.length > 1) {
+    throw new MasterDataError(422, "INVALID_CSV_FORMAT");
+  }
+  throw new MasterDataError(400, "INVALID_CSV_HEADER");
+}
+
+function parseOptionalCsvBoolean(value: string): boolean | null {
+  const normalized = value.trim().toLocaleLowerCase("de");
+  if (!normalized) return null;
+  if (["true", "1", "ja", "yes", "y"].includes(normalized)) return true;
+  if (["false", "0", "nein", "no", "n"].includes(normalized)) return false;
+  return null;
+}
+
+type CategoryImportCandidate = {
+  lineNumber: number;
+  name: string;
+  normalizedName: string;
+  description: string | null;
+  isActive: boolean;
+};
+
+function parseCategoryImportCsv(rawBuffer: Buffer): {
+  candidates: CategoryImportCandidate[];
+  rows: MasterDataCategoryImportRow[];
+} {
+  const content = rawBuffer.toString("utf8").replace(/^\uFEFF/, "");
+  const lines = toLines(content);
+  const nonEmpty = lines.filter((line) => line.raw.trim().length > 0);
+  if (nonEmpty.length === 0) {
+    throw new MasterDataError(422, "INVALID_CSV_CONTENT");
+  }
+
+  const headerLine = nonEmpty[0];
+  const delimiter = detectCategoryImportDelimiter(headerLine.raw);
+  const parsedHeader = parseCsvRow(headerLine.raw, delimiter);
+  if (parsedHeader.error) {
+    throw new MasterDataError(422, "INVALID_CSV_FORMAT");
+  }
+
+  const normalizedHeaders = parsedHeader.values.map((entry) => entry.trim().toLocaleLowerCase("de"));
+  const nameIndex = normalizedHeaders.indexOf("name");
+  const descriptionIndex = normalizedHeaders.indexOf("beschreibung");
+  const isActiveIndex = normalizedHeaders.indexOf("isactive");
+
+  if (nameIndex < 0) {
+    throw new MasterDataError(400, "INVALID_CSV_HEADER");
+  }
+
+  const rows: MasterDataCategoryImportRow[] = [];
+  const candidates: CategoryImportCandidate[] = [];
+  const seenInFile = new Set<string>();
+
+  for (const line of nonEmpty.slice(1)) {
+    const parsed = parseCsvRow(line.raw, delimiter);
+    if (parsed.error) {
+      rows.push({
+        lineNumber: line.lineNumber,
+        name: "",
+        status: "INVALID",
+        message: "CSV-Zeile ist ungueltig formatiert",
+      });
+      continue;
+    }
+
+    const name = (parsed.values[nameIndex] ?? "").trim();
+    const descriptionRaw = descriptionIndex >= 0 ? (parsed.values[descriptionIndex] ?? "").trim() : "";
+    const isActiveRaw = isActiveIndex >= 0 ? (parsed.values[isActiveIndex] ?? "").trim() : "";
+
+    if (!name) {
+      rows.push({
+        lineNumber: line.lineNumber,
+        name,
+        status: "INVALID",
+        message: "Name ist ein Pflichtfeld",
+      });
+      continue;
+    }
+
+    if (name.length > 255) {
+      rows.push({
+        lineNumber: line.lineNumber,
+        name,
+        status: "INVALID",
+        message: "Name darf maximal 255 Zeichen lang sein",
+      });
+      continue;
+    }
+
+    const normalizedName = name.toLocaleLowerCase("de");
+    if (seenInFile.has(normalizedName)) {
+      rows.push({
+        lineNumber: line.lineNumber,
+        name,
+        status: "INVALID",
+        message: "Duplikat innerhalb der CSV-Datei",
+      });
+      continue;
+    }
+
+    seenInFile.add(normalizedName);
+    candidates.push({
+      lineNumber: line.lineNumber,
+      name,
+      normalizedName,
+      description: descriptionRaw ? descriptionRaw : null,
+      isActive: parseOptionalCsvBoolean(isActiveRaw) ?? true,
+    });
+  }
+
+  if (candidates.length === 0 && rows.length === 0) {
+    throw new MasterDataError(422, "INVALID_CSV_CONTENT");
+  }
+
+  return { candidates, rows };
+}
+
+function buildCategoryImportSummary(rows: MasterDataCategoryImportRow[]): MasterDataCategoryImportResult["summary"] {
+  return {
+    totalRows: rows.length,
+    createdRows: rows.filter((row) => row.status === "CREATED").length,
+    updatedRows: rows.filter((row) => row.status === "UPDATED").length,
+    reactivatedRows: rows.filter((row) => row.status === "REACTIVATED").length,
+    invalidRows: rows.filter((row) => row.status === "INVALID").length,
+    errorRows: rows.filter((row) => row.status === "ERROR").length,
+  };
+}
+
 export async function listProductCategories(
   filter: "active" | "inactive" | "all" | undefined,
   roleKey: CanonicalRoleKey,
 ): Promise<ProductCategory[]> {
   requireAdmin(roleKey);
   return masterDataRepository.listProductCategories(normalizeFilter(filter));
+}
+
+export async function importProductsForCategory(
+  categoryId: number,
+  rawBuffer: Buffer,
+  roleKey: CanonicalRoleKey,
+): Promise<MasterDataCategoryImportResult> {
+  requireAdmin(roleKey);
+  const category = await masterDataRepository.getProductCategoryById(categoryId);
+  if (!category) {
+    throw new MasterDataError(404, "NOT_FOUND");
+  }
+
+  const parsed = parseCategoryImportCsv(rawBuffer);
+  const rows = [...parsed.rows];
+
+  for (const candidate of parsed.candidates) {
+    try {
+      const existing = await masterDataRepository.getProductByNormalizedName(candidate.name);
+      if (!existing) {
+        await masterDataRepository.createProduct({
+          name: candidate.name,
+          categoryId,
+          description: candidate.description,
+          isActive: candidate.isActive,
+          version: 1,
+        });
+        rows.push({
+          lineNumber: candidate.lineNumber,
+          name: candidate.name,
+          status: "CREATED",
+          message: "Produkt angelegt",
+        });
+        continue;
+      }
+
+      const result = await masterDataRepository.updateProductWithVersion(existing.id, existing.version, {
+        name: candidate.name,
+        categoryId,
+        description: candidate.description,
+        isActive: candidate.isActive,
+      });
+
+      if (result.kind !== "updated") {
+        rows.push({
+          lineNumber: candidate.lineNumber,
+          name: candidate.name,
+          status: "ERROR",
+          message: "Produkt konnte nicht aktualisiert werden",
+        });
+        continue;
+      }
+
+      rows.push({
+        lineNumber: candidate.lineNumber,
+        name: candidate.name,
+        status: existing.isActive || !candidate.isActive ? "UPDATED" : "REACTIVATED",
+        message: existing.isActive || !candidate.isActive ? "Produkt aktualisiert" : "Produkt reaktiviert",
+      });
+    } catch {
+      rows.push({
+        lineNumber: candidate.lineNumber,
+        name: candidate.name,
+        status: "ERROR",
+        message: "Insert oder Update fehlgeschlagen",
+      });
+    }
+  }
+
+  return {
+    summary: buildCategoryImportSummary(rows),
+    rows: rows.sort((a, b) => a.lineNumber - b.lineNumber),
+  };
 }
 
 export async function createProductCategory(input: InsertProductCategory, roleKey: CanonicalRoleKey): Promise<ProductCategory> {
@@ -164,6 +454,79 @@ export async function listComponentCategories(
     throw new MasterDataError(403, "FORBIDDEN");
   }
   return masterDataRepository.listComponentCategories(normalizeReadFilterForRole(filter, roleKey));
+}
+
+export async function importComponentsForCategory(
+  categoryId: number,
+  rawBuffer: Buffer,
+  roleKey: CanonicalRoleKey,
+): Promise<MasterDataCategoryImportResult> {
+  requireAdmin(roleKey);
+  const category = await masterDataRepository.getComponentCategoryById(categoryId);
+  if (!category) {
+    throw new MasterDataError(404, "NOT_FOUND");
+  }
+
+  const parsed = parseCategoryImportCsv(rawBuffer);
+  const rows = [...parsed.rows];
+
+  for (const candidate of parsed.candidates) {
+    try {
+      const existing = await masterDataRepository.getComponentByNormalizedName(candidate.name);
+      if (!existing) {
+        await masterDataRepository.createComponent({
+          name: candidate.name,
+          categoryId,
+          description: candidate.description,
+          isActive: candidate.isActive,
+          version: 1,
+        });
+        rows.push({
+          lineNumber: candidate.lineNumber,
+          name: candidate.name,
+          status: "CREATED",
+          message: "Komponente angelegt",
+        });
+        continue;
+      }
+
+      const result = await masterDataRepository.updateComponentWithVersion(existing.id, existing.version, {
+        name: candidate.name,
+        categoryId,
+        description: candidate.description,
+        isActive: candidate.isActive,
+      });
+
+      if (result.kind !== "updated") {
+        rows.push({
+          lineNumber: candidate.lineNumber,
+          name: candidate.name,
+          status: "ERROR",
+          message: "Komponente konnte nicht aktualisiert werden",
+        });
+        continue;
+      }
+
+      rows.push({
+        lineNumber: candidate.lineNumber,
+        name: candidate.name,
+        status: existing.isActive || !candidate.isActive ? "UPDATED" : "REACTIVATED",
+        message: existing.isActive || !candidate.isActive ? "Komponente aktualisiert" : "Komponente reaktiviert",
+      });
+    } catch {
+      rows.push({
+        lineNumber: candidate.lineNumber,
+        name: candidate.name,
+        status: "ERROR",
+        message: "Insert oder Update fehlgeschlagen",
+      });
+    }
+  }
+
+  return {
+    summary: buildCategoryImportSummary(rows),
+    rows: rows.sort((a, b) => a.lineNumber - b.lineNumber),
+  };
 }
 
 export async function createComponentCategory(input: InsertComponentCategory, roleKey: CanonicalRoleKey): Promise<ComponentCategory> {

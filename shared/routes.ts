@@ -313,6 +313,27 @@ const masterDataSeedExecutionSchema = masterDataSeedFileStatusSchema.extend({
   logLines: z.array(z.string()),
 });
 
+const masterDataCategoryImportSummarySchema = z.object({
+  totalRows: z.number().int().min(0),
+  createdRows: z.number().int().min(0),
+  updatedRows: z.number().int().min(0),
+  reactivatedRows: z.number().int().min(0),
+  invalidRows: z.number().int().min(0),
+  errorRows: z.number().int().min(0),
+});
+
+const masterDataCategoryImportRowSchema = z.object({
+  lineNumber: z.number().int().min(1),
+  name: z.string(),
+  status: z.enum(["CREATED", "UPDATED", "REACTIVATED", "INVALID", "ERROR"]),
+  message: z.string(),
+});
+
+const masterDataCategoryImportResponseSchema = z.object({
+  summary: masterDataCategoryImportSummarySchema,
+  rows: z.array(masterDataCategoryImportRowSchema),
+});
+
 export const api = {
   auth: {
     setupStatus: {
@@ -1413,6 +1434,18 @@ export const api = {
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },
+      importCsv: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/product-categories/:id/import-csv",
+        responses: {
+          200: masterDataCategoryImportResponseSchema,
+          400: z.object({ code: z.literal("INVALID_CSV_HEADER") }),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          413: z.object({ code: z.literal("PAYLOAD_TOO_LARGE") }),
+          422: z.object({ code: z.enum(["INVALID_CSV_FORMAT", "INVALID_CSV_CONTENT", "VALIDATION_ERROR"]) }),
+        },
+      },
     },
     componentCategories: {
       list: {
@@ -1463,6 +1496,18 @@ export const api = {
           404: z.object({ code: z.literal("NOT_FOUND") }),
           409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      importCsv: {
+        method: "POST" as const,
+        path: "/api/admin/master-data/component-categories/:id/import-csv",
+        responses: {
+          200: masterDataCategoryImportResponseSchema,
+          400: z.object({ code: z.literal("INVALID_CSV_HEADER") }),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          413: z.object({ code: z.literal("PAYLOAD_TOO_LARGE") }),
+          422: z.object({ code: z.enum(["INVALID_CSV_FORMAT", "INVALID_CSV_CONTENT", "VALIDATION_ERROR"]) }),
         },
       },
     },
