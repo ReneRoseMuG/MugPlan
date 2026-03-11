@@ -1,35 +1,203 @@
 /**
  * Test Scope:
  *
- * Feature: FT03 – Vorschau- und Kalenderverhalten
- * Use Case: UC03 – Projekte Tabellen-Preview
- *
  * Abgedeckte Regeln:
- * - Projekte-Tabelle verwendet die gleiche Weekly-Preview-Erzeugung wie andere Terminlisten.
- * - Fallback fuer fehlende Termine bleibt erhalten.
+ * - Projekte-Tabelle verwendet die standardisierte Weekly-Preview im Sidebar-/Tabellenprofil.
+ * - Der Fallback fuer fehlende Termine bleibt in der Tabellenvorschau sichtbar.
  *
- * Fehlerfälle:
- * - Keine.
+ * Fehlerfaelle:
+ * - Tabellenpreview ruft den gemeinsamen Preview-Builder nicht mehr auf.
+ * - Fehlende Termine rendern keinen stabilen Fallback mehr.
  *
  * Ziel:
- * Sicherstellen, dass die Projekte-Tabellenpreview auf die standardisierte Weekly-Preview umgestellt ist.
+ * Die Projekt-Tabellenpreview ueber den tatsaechlichen rowPreviewRenderer statt ueber Quelltext-Strings absichern.
  */
-import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
-import path from "path";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const useQueryMock = vi.fn();
+const useSettingsMock = vi.fn();
+const useListFiltersMock = vi.fn();
+const tableViewCalls: Array<Record<string, unknown>> = [];
+const createAppointmentWeeklyPanelPreviewMock = vi.fn(() => <div>weekly-preview</div>);
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: (options: unknown) => useQueryMock(options),
+}));
+
+vi.mock("@/hooks/useSettings", () => ({
+  useSettings: () => useSettingsMock(),
+}));
+
+vi.mock("@/hooks/useListFilters", () => ({
+  useListFilters: (options: unknown) => useListFiltersMock(options),
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+}));
+
+vi.mock("@/components/ui/list-layout", () => ({
+  ListLayout: ({ contentSlot }: { contentSlot?: React.ReactNode }) => <section>{contentSlot}</section>,
+}));
+
+vi.mock("@/components/ui/board-view", () => ({
+  BoardView: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/list-empty-state", () => ({
+  ListEmptyState: ({ fallbackTitle }: { fallbackTitle: string }) => <div>{fallbackTitle}</div>,
+}));
+
+vi.mock("@/components/ui/toggle-group", () => ({
+  ToggleGroup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  ToggleGroupItem: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+}));
+
+vi.mock("@/components/ui/entity-card", () => ({
+  EntityCard: ({ children, footer }: { children?: React.ReactNode; footer?: React.ReactNode }) => (
+    <article>
+      {children}
+      {footer}
+    </article>
+  ),
+}));
+
+vi.mock("@/components/ui/appointment-count-badge", () => ({
+  AppointmentCountBadge: ({ count }: { count: number }) => <div>{count}</div>,
+}));
+
+vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
+  EntityNotesHoverPreview: () => <div>notes-preview</div>,
+}));
+
+vi.mock("@/components/ui/project-status-info-badge", () => ({
+  ProjectStatusInfoBadge: ({ status }: { status: { title: string } }) => <span>{status.title}</span>,
+}));
+
+vi.mock("@/components/ui/filter-panels/project-filter-panel", () => ({
+  ProjectFilterPanel: () => <div>project-filter-panel</div>,
+}));
+
+vi.mock("@/components/ui/table-view", () => ({
+  TableView: (props: Record<string, unknown>) => {
+    tableViewCalls.push(props);
+    return <div>table-view</div>;
+  },
+}));
+
+vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
+  createAppointmentWeeklyPanelPreview: (...args: unknown[]) => createAppointmentWeeklyPanelPreviewMock(...args),
+}));
+
+import { ProjectsPage } from "../../../client/src/components/ProjectsPage";
 
 describe("FT03 projects table preview wiring", () => {
-  it("uses createAppointmentWeeklyPanelPreview with sidebar/table profile for relevant appointments", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
-    const source = readFileSync(filePath, "utf8");
+  beforeEach(() => {
+    Object.assign(globalThis, { React });
+    tableViewCalls.length = 0;
+    createAppointmentWeeklyPanelPreviewMock.mockClear();
 
-    expect(source).toContain('createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" })');
+    useSettingsMock.mockReturnValue({
+      settingsByKey: new Map(),
+      setSetting: vi.fn().mockResolvedValue(undefined),
+    });
+    useListFiltersMock.mockReturnValue({
+      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "", statusIds: [] },
+      setFilter: vi.fn(),
+      page: 1,
+      setPage: vi.fn(),
+    });
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/projects/list") {
+        return {
+          data: {
+            page: 1,
+            pageSize: 50,
+            total: 2,
+            totalPages: 1,
+            items: [
+              {
+                id: 31,
+                customerId: 4,
+                name: "Projekt Mit Termin",
+                orderNumber: "ORD-31",
+                amount: null,
+                descriptionMd: null,
+                isActive: true,
+                version: 9,
+                notesCount: 5,
+                plannedAppointmentsCount: 1,
+                nextAppointmentStartDate: "2099-08-09",
+                nextAppointmentStartTimeHour: 14,
+                customer: {
+                  id: 4,
+                  customerNumber: "C-4",
+                  fullName: "Kunde Vier",
+                  lastName: "Vier",
+                },
+                statuses: [{ id: 1, title: "Geplant", color: "#00ff00" }],
+              },
+              {
+                id: 32,
+                customerId: 5,
+                name: "Projekt Ohne Termin",
+                orderNumber: "ORD-32",
+                amount: null,
+                descriptionMd: null,
+                isActive: true,
+                version: 10,
+                notesCount: 0,
+                plannedAppointmentsCount: 0,
+                nextAppointmentStartDate: null,
+                nextAppointmentStartTimeHour: null,
+                customer: {
+                  id: 5,
+                  customerNumber: "C-5",
+                  fullName: "Kunde Fuenf",
+                  lastName: "Fuenf",
+                },
+                statuses: [],
+              },
+            ],
+          },
+          isLoading: false,
+        };
+      }
+      if (key === "/api/project-status") {
+        return { data: [], isLoading: false };
+      }
+      return { data: undefined, isLoading: false };
+    });
+  });
+
+  it("uses createAppointmentWeeklyPanelPreview with sidebar/table profile for relevant appointments", () => {
+    renderToStaticMarkup(<ProjectsPage tableOnly />);
+
+    const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
+    rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[0]);
+
+    expect(createAppointmentWeeklyPanelPreviewMock).toHaveBeenCalledTimes(1);
+    expect(createAppointmentWeeklyPanelPreviewMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 31,
+        projectId: 31,
+        projectName: "Projekt Mit Termin",
+        projectOrderNumber: "ORD-31",
+        projectNotesCount: 5,
+      }),
+      { sizeProfile: "sidebarTable" },
+    );
   });
 
   it("keeps no-appointment fallback text", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectsPage.tsx");
-    const source = readFileSync(filePath, "utf8");
+    renderToStaticMarkup(<ProjectsPage tableOnly />);
 
-    expect(source).toContain("Keine Termine vorhanden.");
+    const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
+    const markup = renderToStaticMarkup(rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[1]));
+
+    expect(markup).toContain("Keine Termine vorhanden.");
   });
 });
