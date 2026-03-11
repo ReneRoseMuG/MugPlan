@@ -20,8 +20,7 @@ import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
   FolderKanban, 
-  UserCircle, 
-  FileText
+  UserCircle
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1151,54 +1150,84 @@ export function ProjectForm({
         </Button>
       ) : undefined}
     >
-      <div className="grid grid-cols-3 gap-6">
-        {/* Linke Spalte: Projektdaten, Kunde, Beschreibung */}
-        <div className="col-span-2 space-y-6">
-                <ProjectOrderForm
-                  name={name}
-                  orderNumber={orderNumber}
-                  amount={amount}
-                  plannedDateText={plannedDateText}
-                  plannedWeek={plannedWeek}
-                  isEditing={isEditing}
-                  onNameChange={setName}
-                  onOrderNumberChange={setOrderNumber}
-                  onAmountChange={setAmount}
+      <div className="space-y-6">
+        {isEditing ? (
+          <div className="grid grid-cols-3 items-stretch gap-6">
+            <div className="col-span-2 h-full">
+              <ProjectOrderForm
+                name={name}
+                orderNumber={orderNumber}
+                amount={amount}
+                plannedDateText={plannedDateText}
+                plannedWeek={plannedWeek}
+                isEditing={isEditing}
+                onNameChange={setName}
+                onOrderNumberChange={setOrderNumber}
+                onAmountChange={setAmount}
                 onPlannedDateTextChange={setPlannedDateText}
                 onPlannedWeekChange={setPlannedWeek}
               />
+            </div>
+            <div className="h-full">
+              <ProjectStatusPanel
+                assignedStatuses={assignedStatuses}
+                availableStatuses={allStatuses}
+                isLoading={statusesLoading}
+                className="h-full"
+                canEdit={canManageProjectStatuses}
+                onAdd={(statusId) => {
+                  if (!canManageProjectStatuses) return;
+                  addStatusMutation.mutate(statusId);
+                }}
+                onRemove={(item) => {
+                  if (!canManageProjectStatuses) return;
+                  removeStatusMutation.mutate(item);
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <ProjectOrderForm
+            name={name}
+            orderNumber={orderNumber}
+            amount={amount}
+            plannedDateText={plannedDateText}
+            plannedWeek={plannedWeek}
+            isEditing={isEditing}
+            onNameChange={setName}
+            onOrderNumberChange={setOrderNumber}
+            onAmountChange={setAmount}
+            onPlannedDateTextChange={setPlannedDateText}
+            onPlannedWeekChange={setPlannedWeek}
+          />
+        )}
 
+        <div className="grid grid-cols-3 gap-6">
+          {/* Linke Spalte: Beschreibung und Kunde */}
+          <div className="col-span-2 space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Beschreibung
-                </h3>
                 <Tabs defaultValue="description" className="w-full" data-testid="project-description-tabs">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="description">Beschreibung</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 rounded-b-none">
+                    <TabsTrigger value="description">Anmerkungen</TabsTrigger>
                     <TabsTrigger value="article-list">Artikelliste</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="description" className="pt-4">
-                    <div className="mb-4 rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-article-list-preview">
-                      <h2 className="text-lg font-semibold">Artikelliste</h2>
-                      {articleLines.length === 0 ? (
-                        <p className="mt-2 text-sm text-muted-foreground">Keine Artikelliste gepflegt.</p>
-                      ) : (
-                        <div className="mt-2 space-y-1 text-sm">
-                          {articleLines.map((line) => (
-                            <div key={line}>{line}</div>
-                          ))}
-                        </div>
-                      )}
+                  <TabsContent value="description" className="mt-0">
+                    <div
+                      className="rounded-b-lg border border-border/60 border-t-0 bg-background/70 p-4"
+                      data-testid="project-description-editor-panel"
+                    >
+                      <RichTextEditor
+                        value={descriptionMd}
+                        onChange={setDescriptionMd}
+                        placeholder="Projektbeschreibung eingeben..."
+                      />
                     </div>
-                    <RichTextEditor
-                      value={descriptionMd}
-                      onChange={setDescriptionMd}
-                      placeholder="Projektbeschreibung eingeben..."
-                    />
                   </TabsContent>
-                  <TabsContent value="article-list" className="pt-4">
-                    <div data-testid="project-article-list-slot">
+                  <TabsContent value="article-list" className="mt-0">
+                    <div
+                      className="rounded-b-lg border border-border/60 border-t-0 bg-background/70"
+                      data-testid="project-article-list-panel"
+                    >
                       <ProjectProductFields
                         productSelections={productSelections}
                         onOpenComponentDialog={setComponentDialogField}
@@ -1264,29 +1293,10 @@ export function ProjectForm({
                   }}
                 />
               )}
-            </div>
+          </div>
 
-            {/* Rechte Spalte: Status, Termine und Dokumente */}
-            <div className="space-y-6">
-              {/* Status - nur bei Bearbeitung */}
-              {isEditing && (
-                <ProjectStatusPanel
-                  assignedStatuses={assignedStatuses}
-                  availableStatuses={allStatuses}
-                  isLoading={statusesLoading}
-                  className="h-auto"
-                  canEdit={canManageProjectStatuses}
-                  onAdd={(statusId) => {
-                    if (!canManageProjectStatuses) return;
-                    addStatusMutation.mutate(statusId);
-                  }}
-                  onRemove={(item) => {
-                    if (!canManageProjectStatuses) return;
-                    removeStatusMutation.mutate(item);
-                  }}
-                />
-              )}
-
+          {/* Rechte Spalte: Termine und Dokumente */}
+          <div className="space-y-6">
               <ProjectAppointmentsPanel
                 projectId={projectId}
                 projectName={projectNamePreview}
@@ -1304,7 +1314,8 @@ export function ProjectForm({
                   className="h-auto"
                 />
               )}
-            </div>
+          </div>
+        </div>
       </div>
 
       <DocumentExtractionDialog

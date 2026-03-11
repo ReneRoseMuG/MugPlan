@@ -1,26 +1,20 @@
 import React from "react";
+import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Project, ProjectStatus } from "@shared/schema";
+import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
 import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 
 type ProjectStatusBadgeItem = Pick<ProjectStatus, "id" | "title" | "color">;
 
 export interface ProjectDetailCardProps {
-  project: Pick<Project, "name" | "orderNumber" | "amount" | "descriptionMd" | "isActive">;
+  project: Pick<Project, "name" | "orderNumber" | "amount" | "descriptionMd" | "isActive"> & {
+    projectArticleItems?: ProjectArticleItem[];
+  };
   projectStatuses?: ProjectStatusBadgeItem[];
   testId?: string;
 }
 
 const fallbackText = "nicht hinterlegt";
-
-const hasVisibleDescriptionContent = (value: string | null | undefined) => {
-  if (!value) return false;
-  const normalized = value
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return normalized.length > 0;
-};
 
 const resolveValue = (value: string | null | undefined) => {
   const trimmed = value?.trim();
@@ -43,8 +37,6 @@ export function ProjectDetailCard({ project, projectStatuses = [], testId }: Pro
   const projectNameValue = resolveValue(project.name);
   const orderNumberValue = resolveValue(project.orderNumber);
   const amountValue = formatProjectAmount(project.amount);
-  const descriptionHtml = project.descriptionMd ?? "";
-  const hasDescription = hasVisibleDescriptionContent(project.descriptionMd);
 
   return (
     <div className="flex h-full flex-col gap-3" data-testid={testId}>
@@ -80,10 +72,16 @@ export function ProjectDetailCard({ project, projectStatuses = [], testId }: Pro
       </div>
       <div className="min-h-0 flex-1 text-sm">
         <div data-testid={testId ? `${testId}-description` : undefined}>
-          {hasDescription ? (
-            <div
-              className="text-sm leading-snug [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-0.5"
-              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+          {project.projectArticleItems?.length || project.descriptionMd ? (
+            <ProjectArticleDescriptionRenderer
+              articleItems={project.projectArticleItems}
+              descriptionHtml={project.descriptionMd}
+              showSectionTitles
+              articleSectionClassName="space-y-1"
+              articleListClassName="list-disc space-y-0.5 pl-5 text-sm leading-snug text-slate-700"
+              descriptionSectionClassName="space-y-1"
+              descriptionHtmlClassName="text-sm leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-0.5"
+              testIdPrefix={testId ? `${testId}-project-content` : undefined}
             />
           ) : (
             fallbackText

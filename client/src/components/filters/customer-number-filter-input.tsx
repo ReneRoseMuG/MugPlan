@@ -6,6 +6,9 @@ interface CustomerNumberFilterInputProps {
   onChange: (value: string) => void;
   onClear: () => void;
   className?: string;
+  label?: string;
+  placeholderLabel?: string;
+  maxLength?: number;
 }
 
 export function CustomerNumberFilterInput({
@@ -13,16 +16,21 @@ export function CustomerNumberFilterInput({
   onChange,
   onClear,
   className,
+  label = "Kundennummer",
+  placeholderLabel,
+  maxLength,
 }: CustomerNumberFilterInputProps) {
   return (
     <SearchFilterInput
       id="customer-filter-number"
-      label="Kundennummer"
+      label={label}
+      placeholderLabel={placeholderLabel}
       labelAdornment={<HelpIcon helpKey="customers.filter.number" size="sm" />}
       value={value}
       onChange={onChange}
       onClear={onClear}
       numericOnly
+      maxLength={maxLength}
       className={className}
     />
   );

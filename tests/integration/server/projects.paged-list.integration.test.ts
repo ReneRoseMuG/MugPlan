@@ -4,15 +4,15 @@
  * Abgedeckte Regeln:
  * - Die paginierte Projektliste liefert nur den angeforderten Seitenausschnitt.
  * - Projektfilter (Titel, Auftragsnummer, Status) wirken vor dem Paging auf die Grundmenge.
- * - Die Listenaggregation liefert Status- und Terminfelder fuer die Kartenansicht.
+ * - Die Listenaggregation liefert Status-, Termin- und Artikellistenfelder fuer die Kartenansicht.
  *
  * Fehlerfaelle:
  * - Paging liefert Vollmengen oder falsche Seiten.
  * - Filter greifen nur auf den Seitenausschnitt statt auf die Gesamtmenge.
- * - Status-/Terminaggregation fehlt in der Listenantwort.
+ * - Status-/Terminaggregation oder Projekt-Artikelliste fehlt in der Listenantwort.
  *
  * Ziel:
- * Den API-Vertrag der neuen paginierten Projektliste fuer grosse Mengen regressionssicher absichern.
+ * Den API-Vertrag der neuen paginierten Projektliste inklusive Kartenaggregation regressionssicher absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -21,7 +21,13 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import { loginAdminAgent } from "../../helpers/appointmentOverlapFixtures";
-import { createAppointmentFixture, createProjectFixture } from "../../helpers/testDataFactory";
+import {
+  createAppointmentFixture,
+  createComponentFixture,
+  createProductFixture,
+  createProjectFixture,
+  createProjectOrderItemFixture,
+} from "../../helpers/testDataFactory";
 import * as projectStatusService from "../../../server/services/projectStatusService";
 
 let app: express.Express;
@@ -72,7 +78,25 @@ describe("FT30 integration: paged projects list", () => {
       prefix: "FT30-PROJ-FILTER",
       name: "FT30 Target Project",
     });
+    const saunaProduct = await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: "FT30 Sauna Modell",
+    });
+    const windowComponent = await createComponentFixture({
+      categoryName: "Fenster",
+      name: "FT30 Rundfenster",
+    });
     await projectStatusService.addProjectStatus(project.id, status.id, 0, "ADMIN");
+    await createProjectOrderItemFixture({
+      projectId: project.id,
+      orderNumber: project.orderNumber ?? "",
+      productId: saunaProduct.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: project.id,
+      orderNumber: project.orderNumber ?? "",
+      componentId: windowComponent.id,
+    });
     await createAppointmentFixture({
       projectId: project.id,
       startDate: "2099-12-20",
@@ -89,6 +113,10 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.items[0]?.nextAppointmentStartDate).toBe("2099-12-20");
     expect(response.body.items[0]?.statuses).toEqual([
       expect.objectContaining({ id: status.id, title: "FT30 Status" }),
+    ]);
+    expect(response.body.items[0]?.projectArticleItems).toEqual([
+      { label: "Saunamodell", value: "FT30 Sauna Modell" },
+      { label: "Fenster", value: "FT30 Rundfenster" },
     ]);
   });
 });

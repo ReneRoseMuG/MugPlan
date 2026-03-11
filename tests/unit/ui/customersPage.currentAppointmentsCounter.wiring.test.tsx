@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Die Kundenkarte zeigt den Footer-Baustein fuer geplante Termine mit dem gelieferten Zaehlerwert.
  * - Die Kundenkarte bindet fuer Notizen den wiederverwendbaren EntityNotesHoverPreview-Trigger.
+ * - Die Kundenkarte teilt die Footer-Zeile 2:1 fuer Termine und Notizen auf.
  * - Der Kartenfooter bleibt explizit sichtbar.
  *
  * Fehlerfaelle:
@@ -178,6 +179,7 @@ describe("FT05+ customers page current appointments counter wiring", () => {
 
     expect(markup).toContain("Geplante Termine:4");
     expect(markup).toContain("Notizen:2");
+    expect(markup).toContain("grid-cols-[2fr_1fr]");
     expect(appointmentBadgeCalls).toHaveLength(1);
     expect(appointmentBadgeCalls[0]).toMatchObject({
       count: 4,
@@ -190,6 +192,53 @@ describe("FT05+ customers page current appointments counter wiring", () => {
       triggerTestId: "text-customer-notes-count-7",
       sources: { type: "customer", id: 7, count: 2 },
     });
+    expect(renderToStaticMarkup(entityCardCalls[0].headerMeta as React.ReactElement)).toContain("K-Nr. K-007");
+  });
+
+  it("omits the notes slot when the customer has no notes", () => {
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/customers/list") {
+        return {
+          data: {
+            page: 1,
+            pageSize: 50,
+            total: 1,
+            totalPages: 1,
+            items: [
+              {
+                id: 7,
+                customerNumber: "K-007",
+                fullName: "Mina Muster",
+                firstName: "Mina",
+                lastName: "Muster",
+                company: null,
+                phone: "01234",
+                email: null,
+                postalCode: "12345",
+                city: "Berlin",
+                addressLine1: null,
+                addressLine2: null,
+                isActive: true,
+                version: 3,
+                notesCount: 0,
+                plannedAppointmentsCount: 4,
+                nextAppointmentStartDate: "2099-05-20",
+                nextAppointmentStartTimeHour: 9,
+              },
+            ],
+          },
+          isLoading: false,
+        };
+      }
+      return { data: undefined, isLoading: false };
+    });
+
+    const markup = renderToStaticMarkup(<CustomersPage />);
+
+    expect(markup).toContain("Geplante Termine:4");
+    expect(markup).not.toContain("Notizen:");
+    expect(markup).not.toContain("text-customer-notes-count-7");
   });
 
   it("keeps the entity card footer explicitly visible", () => {

@@ -6,6 +6,7 @@ import { defaultHeaderColor } from "@/lib/colors";
 interface EntityCardProps {
   title: string;
   icon?: ReactNode;
+  headerMeta?: ReactNode;
   headerColor?: string;
   onDelete?: () => void;
   isDeleting?: boolean;
@@ -23,6 +24,7 @@ interface EntityCardProps {
 export function EntityCard({
   title,
   icon,
+  headerMeta,
   headerColor = defaultHeaderColor,
   onDelete,
   isDeleting,
@@ -53,9 +55,16 @@ export function EntityCard({
         className="px-4 py-1.5 border-b border-border flex items-center justify-between gap-2"
         style={{ backgroundColor: headerColor }}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          {icon && <span className="flex-shrink-0 text-slate-600">{icon}</span>}
-          <span className="font-semibold text-slate-700 truncate">{title}</span>
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            {icon && <span className="flex-shrink-0 text-slate-600">{icon}</span>}
+            <span className="font-semibold text-slate-700 truncate">{title}</span>
+          </div>
+          {headerMeta ? (
+            <div className="flex shrink-0 justify-end text-right text-xs font-semibold text-slate-600">
+              {headerMeta}
+            </div>
+          ) : null}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {actions}

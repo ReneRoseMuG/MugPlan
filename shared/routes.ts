@@ -24,6 +24,7 @@ import {
   productComponent,
 } from './schema';
 import type { Project, ProjectOrder } from "./schema";
+import type { ProjectArticleItem } from "./projectArticleList";
 
 export const errorSchemas = {
   validation: z.object({
@@ -138,6 +139,11 @@ const projectOrderResponseSchema = z.object({
 });
 
 const projectWithOrderSchema = z.custom<Project & { notesCount?: number; projectOrder?: ProjectOrder | null }>();
+const projectListItemSchema = z.custom<Project & {
+  notesCount?: number;
+  projectOrder?: ProjectOrder | null;
+  projectArticleItems?: ProjectArticleItem[];
+}>();
 
 const pagedListMetaSchema = z.object({
   page: z.number().int().min(1),
@@ -190,6 +196,7 @@ const projectBoardListItemSchema = z.object({
   plannedAppointmentsCount: z.number().int().min(0),
   nextAppointmentStartDate: z.string().nullable(),
   nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
+  projectArticleItems: z.array(projectArticleItemSchema),
   customer: z.object({
     id: z.number(),
     customerNumber: z.string(),
@@ -2232,7 +2239,7 @@ export const api = {
         scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
       }),
       responses: {
-        200: z.array(projectWithOrderSchema),
+        200: z.array(projectListItemSchema),
       },
     },
     pagedList: {

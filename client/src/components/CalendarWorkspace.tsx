@@ -3,7 +3,6 @@ import { addMonths, addWeeks, subMonths, subWeeks } from "date-fns";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
-import { CalendarWeekPrintPanel } from "@/components/calendar/CalendarWeekPrintPanel";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { normalizeTourPrintWeekCount } from "@/lib/tour-print-preview";
@@ -186,22 +185,16 @@ export function CalendarWorkspace({
 
       {hideMainNavigation ? null : (
         <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
-          <div className="flex flex-col gap-4">
-            <CalendarFilterPanel
-              employeeId={employeeFilterId}
-              onEmployeeIdChange={onEmployeeFilterChange}
-              showWeekDisplayMode={activeView === "week"}
-            />
-            {activeView === "week" ? (
-              <CalendarWeekPrintPanel
-                selectedTourId={selectedPrintTourId}
-                onSelectedTourIdChange={setSelectedPrintTourId}
-                weekCount={printWeekCount}
-                onWeekCountChange={(value) => setPrintWeekCount(normalizeTourPrintWeekCount(value))}
-                onOpenPreview={() => setIsPrintPreviewOpen(true)}
-              />
-            ) : null}
-          </div>
+          <CalendarFilterPanel
+            employeeId={employeeFilterId}
+            onEmployeeIdChange={onEmployeeFilterChange}
+            showWeekDisplayMode={activeView === "week"}
+            selectedPrintTourId={selectedPrintTourId}
+            onSelectedPrintTourIdChange={setSelectedPrintTourId}
+            printWeekCount={printWeekCount}
+            onPrintWeekCountChange={(value) => setPrintWeekCount(normalizeTourPrintWeekCount(value))}
+            onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
+          />
         </div>
       )}
 

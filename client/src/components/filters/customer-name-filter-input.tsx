@@ -6,6 +6,7 @@ interface CustomerNameFilterInputProps {
   onChange: (value: string) => void;
   onClear: () => void;
   className?: string;
+  maxLength?: number;
 }
 
 export function CustomerNameFilterInput({
@@ -13,6 +14,7 @@ export function CustomerNameFilterInput({
   onChange,
   onClear,
   className,
+  maxLength,
 }: CustomerNameFilterInputProps) {
   return (
     <SearchFilterInput
@@ -22,6 +24,7 @@ export function CustomerNameFilterInput({
       value={value}
       onChange={onChange}
       onClear={onClear}
+      maxLength={maxLength}
       className={className}
     />
   );

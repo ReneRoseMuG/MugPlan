@@ -8,7 +8,7 @@
  * - Upload ruft den Extract-Endpunkt mit project_form auf.
  * - Erfolgsfall oeffnet Dialog und uebergibt Extraktionsdaten.
  * - Apply-Callback schreibt die extrahierte Artikelliste nicht direkt in den Beschreibungseditor.
- * - Projektformular verdrahtet Artikellisten-Slots mit Produktdialog fuer Saunamodell und ComponentDropdown fuer Komponenten.
+ * - Projektformular verdrahtet den Tab `Anmerkungen` getrennt von den Artikellisten-Slots mit Produktdialog fuer Saunamodell und ComponentDropdown.
  * - Auftragsnummer ist nur bei Bestandsprojekt readOnly und bei neuem Projekt editierbar.
  * - Bei single-Customer-Konflikt wird bestaetigt und vorhandener Kunde uebernommen statt Neuanlage.
  *
@@ -62,12 +62,19 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("<ComponentDropdown");
     expect(source).toContain("<ProjectProductFields");
     expect(source).toContain("value=\"article-list\"");
+    expect(source).toContain(">Anmerkungen</TabsTrigger>");
+    expect(source).toContain("rounded-b-lg border border-border/60 border-t-0 bg-background/70 p-4");
+    expect(source).toContain("data-testid=\"project-description-editor-panel\"");
+    expect(source).toContain("data-testid=\"project-article-list-panel\"");
+    expect(source).not.toContain("data-testid=\"project-article-list-preview\"");
+    expect(source).not.toContain("<FileText className=\"w-4 h-4\" />");
     expect(source).toContain("onOpenComponentDialog={setComponentDialogField}");
     expect(source).toContain("void handleFieldSelection(componentDialogField, productId);");
     expect(source).toContain("void handleFieldSelection(componentDialogField, componentId);");
     expect(projectOrderFormSource).toContain("const leftColumnFields: ProjectProductFieldKey[] = [\"saunaModel\", \"oven\", \"control\", \"roof\", \"door\"]");
     expect(projectOrderFormSource).toContain("const rightColumnFields: ProjectProductFieldKey[] = [\"window\", \"frontWall\", \"rearWallWindow\", \"interior\"]");
     expect(projectOrderFormSource).toContain("Auswählen");
+    expect(projectOrderFormSource).not.toContain(">Artikelliste</h3>");
   });
 
   it("keeps order number editable for new project and readonly for existing project", () => {

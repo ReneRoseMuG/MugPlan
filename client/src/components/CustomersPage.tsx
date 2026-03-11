@@ -389,23 +389,29 @@ export function CustomersPage({
                     key={customer.id}
                     title={customer.fullName ?? "Ohne Name"}
                     icon={<User className="w-4 h-4" />}
+                    headerMeta={<span>{`K-Nr. ${customer.customerNumber?.trim() || "-"}`}</span>}
                     headerColor={defaultHeaderColor}
                     testId={`customer-card-${customer.id}`}
                     onDoubleClick={handleSelect}
                     footer={(
-                      <div className="flex w-full flex-col gap-1">
+                      <div className="grid w-full grid-cols-[2fr_1fr] gap-2">
                         <AppointmentCountBadge
                           count={customer.plannedAppointmentsCount}
                           testId={`text-customer-planned-appointments-${customer.id}`}
                           fullWidth
                         />
-                        <span data-testid={`text-customer-notes-count-${customer.id}`}>
-                          <EntityNotesHoverPreview
-                            sourceMode="single-parent"
-                            sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
-                            triggerTestId={`text-customer-notes-count-${customer.id}`}
-                          />
-                        </span>
+                        {customer.notesCount > 0 ? (
+                          <div
+                            className="flex min-h-[32px] items-center justify-end px-1 text-[10px] font-semibold text-slate-700"
+                            data-testid={`text-customer-notes-count-${customer.id}`}
+                          >
+                            <EntityNotesHoverPreview
+                              sourceMode="single-parent"
+                              sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
+                              triggerTestId={`text-customer-notes-count-${customer.id}`}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     )}
                     footerVisibility="visible"

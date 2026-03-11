@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Product, Project, Team, Tour } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
@@ -75,6 +76,10 @@ interface AppointmentDetail {
   endTime: string | null;
   employees: Employee[];
 }
+
+type AppointmentFormProject = Project & {
+  projectArticleItems?: ProjectArticleItem[];
+};
 
 type AppointmentApiError = Error & { status?: number; code?: string };
 type ApiConflictEmployee = { id?: unknown; fullName?: unknown };
@@ -331,9 +336,9 @@ export function AppointmentForm({
     });
   };
 
-  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<AppointmentFormProject[]>({
     queryKey: projectsQueryKey,
-    queryFn: () => fetchJson<Project[]>("/api/projects?filter=all&scope=all"),
+    queryFn: () => fetchJson<AppointmentFormProject[]>("/api/projects?filter=all&scope=all"),
   });
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({

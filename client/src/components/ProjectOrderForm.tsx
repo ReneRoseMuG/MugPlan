@@ -140,7 +140,6 @@ export function ProjectProductFields({
 
   return (
     <div className="space-y-3 rounded-lg border border-border/60 bg-background/70 p-4" data-testid="project-product-fields">
-      <h3 className="text-sm font-bold tracking-wider text-primary">Artikelliste</h3>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="space-y-3">
           {leftColumnFields.map(renderField)}

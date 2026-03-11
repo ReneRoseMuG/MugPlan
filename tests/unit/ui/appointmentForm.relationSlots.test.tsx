@@ -175,6 +175,7 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
           customerId: 21,
           name: "Projekt A",
           orderNumber: "ORD-11",
+          projectArticleItems: [{ label: "Saunamodell", value: "Modell A" }],
           descriptionMd: null,
           isActive: true,
           type: 1,
@@ -259,7 +260,11 @@ describe("FT01 appointment form relation slots", () => {
     expect(customerSlot.state).toBe("readonly");
     expect(projectDetailCardCalls[0]).toMatchObject({
       testId: "badge-project",
-      project: expect.objectContaining({ id: 11, customerId: 21 }),
+      project: expect.objectContaining({
+        id: 11,
+        customerId: 21,
+        projectArticleItems: [{ label: "Saunamodell", value: "Modell A" }],
+      }),
       projectStatuses: [{ id: 1, title: "Status", color: "#123456" }],
     });
     expect(customerDetailCardCalls[0]).toMatchObject({

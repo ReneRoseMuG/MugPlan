@@ -25,6 +25,8 @@ const useListFiltersMock = vi.fn();
 const projectFilterPanelCalls: Array<Record<string, unknown>> = [];
 const tableViewCalls: Array<Record<string, unknown>> = [];
 const projectStatusBadgeCalls: Array<Record<string, unknown>> = [];
+const hoverPreviewCalls: Array<Record<string, unknown>> = [];
+const projectArticleRendererCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -65,8 +67,19 @@ vi.mock("@/components/ui/toggle-group", () => ({
 }));
 
 vi.mock("@/components/ui/entity-card", () => ({
-  EntityCard: ({ children, footer, testId }: { children?: React.ReactNode; footer?: React.ReactNode; testId?: string }) => (
+  EntityCard: ({
+    children,
+    footer,
+    headerMeta,
+    testId,
+  }: {
+    children?: React.ReactNode;
+    footer?: React.ReactNode;
+    headerMeta?: React.ReactNode;
+    testId?: string;
+  }) => (
     <article data-testid={testId}>
+      {headerMeta}
       {children}
       {footer}
     </article>
@@ -75,6 +88,25 @@ vi.mock("@/components/ui/entity-card", () => ({
 
 vi.mock("@/components/ui/appointment-count-badge", () => ({
   AppointmentCountBadge: ({ count }: { count: number }) => <div>{count}</div>,
+}));
+
+vi.mock("@/components/ui/hover-preview", () => ({
+  HoverPreview: (props: Record<string, unknown> & { children?: React.ReactNode; preview?: React.ReactNode }) => {
+    hoverPreviewCalls.push(props);
+    return (
+      <div data-testid="hover-preview">
+        {props.children}
+        {props.preview}
+      </div>
+    );
+  },
+}));
+
+vi.mock("@/components/ui/project-article-description-renderer", () => ({
+  ProjectArticleDescriptionRenderer: (props: Record<string, unknown>) => {
+    projectArticleRendererCalls.push(props);
+    return <div data-testid={String(props.testIdPrefix ?? "project-article-renderer")}>article-renderer</div>;
+  },
 }));
 
 vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
@@ -114,6 +146,8 @@ describe("FT02 projects page order number wiring", () => {
     projectFilterPanelCalls.length = 0;
     tableViewCalls.length = 0;
     projectStatusBadgeCalls.length = 0;
+    hoverPreviewCalls.length = 0;
+    projectArticleRendererCalls.length = 0;
 
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map(),
@@ -144,6 +178,7 @@ describe("FT02 projects page order number wiring", () => {
                 descriptionMd: "<strong>Wichtig</strong>",
                 isActive: true,
                 version: 4,
+                projectArticleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
                 notesCount: 1,
                 plannedAppointmentsCount: 2,
                 nextAppointmentStartDate: "2099-07-10",
@@ -216,13 +251,31 @@ describe("FT02 projects page order number wiring", () => {
   it("renders status badges and html description in board cards without leaking customer address data", () => {
     const markup = renderToStaticMarkup(<ProjectsPage />);
 
-    expect(markup).toContain("Auftrag:");
-    expect(markup).toContain("ORD-1");
-    expect(markup).toContain("<strong>Wichtig</strong>");
+    expect(markup).toContain("A-Nr. ORD-1");
     expect(markup).not.toContain("99999");
     expect(markup).not.toContain("Hamburg");
+    expect(markup).toContain("project-card-description-hover-trigger-11");
+    expect(markup).toContain("mt-auto");
+    expect(hoverPreviewCalls).toHaveLength(1);
+    expect(projectArticleRendererCalls).toHaveLength(2);
+    expect(projectArticleRendererCalls[0]).toMatchObject({
+      articleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
+      descriptionHtml: "<strong>Wichtig</strong>",
+      showSectionTitles: false,
+      testIdPrefix: "project-card-renderer-11",
+    });
+    expect(projectArticleRendererCalls[1]).toMatchObject({
+      articleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
+      descriptionHtml: "<strong>Wichtig</strong>",
+      showSectionTitles: true,
+      testIdPrefix: "project-card-preview-renderer-11",
+    });
     expect(projectStatusBadgeCalls).toHaveLength(2);
-    expect(projectStatusBadgeCalls[0]).toMatchObject({ size: "sm", fullWidth: true });
-    expect(projectStatusBadgeCalls[1]).toMatchObject({ size: "sm", fullWidth: true });
+    expect(markup).toContain("grid-cols-2");
+    expect(markup).toContain("justify-self-end");
+    expect(projectStatusBadgeCalls[0]).toMatchObject({ size: "sm" });
+    expect(projectStatusBadgeCalls[1]).toMatchObject({ size: "sm" });
+    expect(projectStatusBadgeCalls[0]).not.toHaveProperty("fullWidth");
+    expect(projectStatusBadgeCalls[1]).not.toHaveProperty("fullWidth");
   });
 });

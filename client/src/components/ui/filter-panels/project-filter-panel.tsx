@@ -35,7 +35,7 @@ interface ProjectFilterPanelProps {
 }
 
 export function ProjectFilterPanel({
-  title,
+  title: _title,
   projectTitle,
   onProjectTitleChange,
   onProjectTitleClear,
@@ -59,13 +59,37 @@ export function ProjectFilterPanel({
 }: ProjectFilterPanelProps) {
   return (
     <div className="flex w-full flex-col gap-4">
-      <FilterPanel title={title} layout="row" showTitle>
+      <FilterPanel title="Projektfilter" layout="row">
         <ProjectTitleFilterInput
           value={projectTitle}
           onChange={onProjectTitleChange}
           onClear={onProjectTitleClear}
-          className="flex-1"
+          maxLength={20}
+          className="w-full sm:min-w-[12rem] sm:max-w-[20ch]"
         />
+        <CustomerNameFilterInput
+          value={customerLastName}
+          onChange={onCustomerLastNameChange}
+          onClear={onCustomerLastNameClear}
+          maxLength={20}
+          className="w-full sm:min-w-[12rem] sm:max-w-[20ch]"
+        />
+          <CustomerNumberFilterInput
+            value={customerNumber}
+            onChange={onCustomerNumberChange}
+            onClear={onCustomerNumberClear}
+            placeholderLabel="Nr."
+            maxLength={8}
+            className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
+          />
+          <ProjectOrderNumberFilterInput
+            value={orderNumber}
+            onChange={onOrderNumberChange}
+            onClear={onOrderNumberClear}
+            placeholderLabel="Nr."
+            maxLength={8}
+            className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
+          />
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex min-w-[150px] flex-col gap-1">
             <div className="flex items-center gap-1 min-h-5">
@@ -105,27 +129,6 @@ export function ProjectFilterPanel({
           onOpenChange={onStatusPickerOpenChange}
           onAddStatus={onAddStatus}
           onRemoveStatus={onRemoveStatus}
-        />
-      </FilterPanel>
-
-      <FilterPanel title="Kundenfilter" layout="row" showTitle>
-        <CustomerNameFilterInput
-          value={customerLastName}
-          onChange={onCustomerLastNameChange}
-          onClear={onCustomerLastNameClear}
-          className="flex-1"
-        />
-        <CustomerNumberFilterInput
-          value={customerNumber}
-          onChange={onCustomerNumberChange}
-          onClear={onCustomerNumberClear}
-          className="flex-1"
-        />
-        <ProjectOrderNumberFilterInput
-          value={orderNumber}
-          onChange={onOrderNumberChange}
-          onClear={onOrderNumberClear}
-          className="flex-1"
         />
       </FilterPanel>
     </div>

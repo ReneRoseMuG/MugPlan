@@ -22,8 +22,15 @@ import {
   type UpdateProjectOrderItem,
   type InsertProjectAttachment,
 } from "@shared/schema";
+import {
+  getProjectArticleField,
+  getProjectArticleFieldByCategoryName,
+  type ProjectArticleFieldKey,
+  type ProjectArticleItem,
+} from "@shared/projectArticleList";
 import type { ProjectScope } from "../services/projectsService";
 import { getProjectStatusesByProjectIds } from "./projectStatusRepository";
+import { listProjectArticleRowsByProjectIds } from "./appointmentsRepository";
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -65,6 +72,68 @@ function mergeProjectWithOrder(project: typeof projects.$inferSelect, order: Pro
     amount: order?.amount == null ? null : String(order.amount),
     projectOrder: order,
   };
+}
+
+const PROJECT_ARTICLE_FIELD_ORDER: ProjectArticleFieldKey[] = [
+  "saunaModel",
+  "oven",
+  "control",
+  "roof",
+  "window",
+  "door",
+  "frontWall",
+  "rearWallWindow",
+  "interior",
+];
+
+async function buildProjectArticleItemsByProject(projectIds: number[]) {
+  const articleRows = await listProjectArticleRowsByProjectIds(projectIds);
+  const slotsByProject = new Map<number, Map<ProjectArticleFieldKey, ProjectArticleItem>>();
+
+  for (const row of articleRows) {
+    const slots = slotsByProject.get(row.projectId) ?? new Map<ProjectArticleFieldKey, ProjectArticleItem>();
+
+    if (row.productId != null && row.productName?.trim()) {
+      if (!slots.has("saunaModel")) {
+        slots.set("saunaModel", {
+          label: getProjectArticleField("saunaModel").label,
+          value: row.productName.trim(),
+        });
+      }
+      slotsByProject.set(row.projectId, slots);
+      continue;
+    }
+
+    if (row.componentId == null || !row.componentName?.trim() || !row.componentCategoryName?.trim()) {
+      slotsByProject.set(row.projectId, slots);
+      continue;
+    }
+
+    const fieldKey = getProjectArticleFieldByCategoryName(row.componentCategoryName);
+    if (!fieldKey || slots.has(fieldKey)) {
+      slotsByProject.set(row.projectId, slots);
+      continue;
+    }
+
+    slots.set(fieldKey, {
+      label: getProjectArticleField(fieldKey).label,
+      value: row.componentName.trim(),
+    });
+    slotsByProject.set(row.projectId, slots);
+  }
+
+  const articleItemsByProject = new Map<number, ProjectArticleItem[]>();
+  for (const [projectId, slots] of Array.from(slotsByProject.entries())) {
+    articleItemsByProject.set(
+      projectId,
+      PROJECT_ARTICLE_FIELD_ORDER.flatMap((fieldKey) => {
+        const item = slots.get(fieldKey);
+        return item ? [item] : [];
+      }),
+    );
+  }
+
+  return articleItemsByProject;
 }
 
 async function getProjectOrdersByProjectIds(projectIds: number[]): Promise<Map<number, ProjectOrder>> {
@@ -133,6 +202,7 @@ export async function getProjects(
   const projectIds = rows.map((row) => row.id);
   if (projectIds.length === 0) return [];
   const orderByProjectId = await getProjectOrdersByProjectIds(projectIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
 
   const noteCountRows = await db
     .select({
@@ -147,11 +217,13 @@ export async function getProjects(
   return rows.map((row) => ({
     ...mergeProjectWithOrder(row, orderByProjectId.get(row.id) ?? null),
     notesCount: notesCountByProjectId.get(row.id) ?? 0,
+    projectArticleItems: projectArticleItemsByProject.get(row.id) ?? [],
   }));
 }
 
-export type ProjectListItem = Project & { notesCount: number };
+export type ProjectListItem = Project & { notesCount: number; projectArticleItems: ProjectArticleItem[] };
 export type ProjectBoardListItem = ProjectListItem & {
+  projectArticleItems: ProjectArticleItem[];
   customer: {
     id: number;
     customerNumber: string;
@@ -304,6 +376,7 @@ export async function getProjectsPaged(params: {
     .offset(offset);
 
   const projectIds = rows.map((row) => row.project.id);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
 
   const noteCountRows = await db
     .select({
@@ -377,6 +450,7 @@ export async function getProjectsPaged(params: {
         plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
+        projectArticleItems: projectArticleItemsByProject.get(row.project.id) ?? [],
         customer: {
           id: row.customer.id,
           customerNumber: row.customer.customerNumber,
@@ -428,6 +502,7 @@ export async function getProjectsByCustomer(
   const projectIds = rows.map((row) => row.id);
   if (projectIds.length === 0) return [];
   const orderByProjectId = await getProjectOrdersByProjectIds(projectIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
 
   const noteCountRows = await db
     .select({
@@ -442,6 +517,7 @@ export async function getProjectsByCustomer(
   return rows.map((row) => ({
     ...mergeProjectWithOrder(row, orderByProjectId.get(row.id) ?? null),
     notesCount: notesCountByProjectId.get(row.id) ?? 0,
+    projectArticleItems: projectArticleItemsByProject.get(row.id) ?? [],
   }));
 }
 

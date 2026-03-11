@@ -11,6 +11,8 @@ import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProjectFilterPanel } from "@/components/ui/filter-panels/project-filter-panel";
+import { HoverPreview } from "@/components/ui/hover-preview";
+import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
 import { defaultHeaderColor } from "@/lib/colors";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { useSettings } from "@/hooks/useSettings";
@@ -19,6 +21,7 @@ import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previ
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Project, ProjectStatus } from "@shared/schema";
+import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -31,6 +34,7 @@ type ProjectListItem = Project & {
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
+  projectArticleItems: ProjectArticleItem[];
   customer: {
     id: number;
     customerNumber: string;
@@ -84,6 +88,22 @@ function formatProjectAmount(amount: unknown): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(normalized);
+}
+
+function hasVisibleProjectCardContent(
+  articleItems: ProjectArticleItem[] | null | undefined,
+  descriptionHtml: string | null | undefined,
+): boolean {
+  if ((articleItems ?? []).length > 0) return true;
+  if (!descriptionHtml) return false;
+
+  const normalized = descriptionHtml
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return normalized.length > 0;
 }
 
 function SortIcon({ direction }: { direction: SortDirection | null }) {
@@ -428,61 +448,94 @@ export function ProjectsPage({
             >
               {projects.map((project) => {
                 const handleSelect = () => onSelectProject?.(project.id);
+                const hasProjectCardContent = hasVisibleProjectCardContent(project.projectArticleItems, project.descriptionMd);
+                const resolvedProjectPreviewHeader = [`A-Nr. ${project.orderNumber?.trim() || "-"}`, project.name].join(" - ");
 
                 return (
                   <EntityCard
                     key={project.id}
                     title={project.name}
                     icon={<FolderKanban className="w-4 h-4" />}
+                    headerMeta={<span>{`A-Nr. ${project.orderNumber?.trim() || "-"}`}</span>}
                     headerColor={defaultHeaderColor}
                     testId={`project-card-${project.id}`}
                     onDoubleClick={handleSelect}
                     footer={(
-                      <div className="flex w-full flex-col gap-1">
-                        <AppointmentCountBadge
-                          count={project.plannedAppointmentsCount}
-                          testId={`text-project-planned-appointments-${project.id}`}
-                          fullWidth
-                        />
-                        <span data-testid={`text-project-notes-count-${project.id}`}>
-                          <EntityNotesHoverPreview
-                            sourceMode="single-parent"
-                            sources={{ type: "project", id: project.id, count: project.notesCount ?? 0 }}
-                            triggerTestId={`text-project-notes-count-${project.id}`}
+                      <div className="flex w-full flex-col gap-2">
+                        <div className="grid w-full grid-cols-[max-content_1fr] gap-2">
+                          <AppointmentCountBadge
+                            count={project.plannedAppointmentsCount}
+                            testId={`text-project-planned-appointments-${project.id}`}
                           />
-                        </span>
+                          {project.notesCount > 0 ? (
+                            <div
+                              className="flex min-h-[32px] items-center justify-end px-1 text-[10px] font-semibold text-slate-700"
+                              data-testid={`text-project-notes-count-${project.id}`}
+                            >
+                              <EntityNotesHoverPreview
+                                sourceMode="single-parent"
+                                sources={{ type: "project", id: project.id, count: project.notesCount ?? 0 }}
+                                triggerTestId={`text-project-notes-count-${project.id}`}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                        {project.statuses.length > 0 ? (
+                          <div
+                            className="grid w-full grid-cols-2 gap-1 justify-items-start [&>*:nth-child(even)]:justify-self-end"
+                            data-testid={`project-status-footer-${project.id}`}
+                          >
+                            {project.statuses.map((status) => (
+                              <ProjectStatusInfoBadge
+                                key={status.id}
+                                status={status}
+                                action="none"
+                                size="sm"
+                                testId={`badge-project-status-${project.id}-${status.id}`}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     )}
                     footerVisibility="visible"
                   >
-                    <div className="space-y-2">
-                      <div className="text-xs text-slate-600">
-                        <span className="font-semibold">Auftrag:</span> {project.orderNumber?.trim() || "-"}
-                      </div>
-
-                      {project.statuses.length > 0 && (
-                        <div className="space-y-1" data-testid={`project-status-stack-${project.id}`}>
-                          {project.statuses.map((status) => (
-                            <ProjectStatusInfoBadge
-                              key={status.id}
-                              status={status}
-                              action="none"
-                              size="sm"
-                              fullWidth
-                              testId={`badge-project-status-${project.id}-${status.id}`}
+                    <div className="flex h-full flex-col gap-2">
+                      {hasProjectCardContent ? (
+                        <HoverPreview
+                          preview={(
+                            <div className="rounded-lg bg-white p-2">
+                              <div className="mb-2 text-xs font-semibold text-slate-800">{resolvedProjectPreviewHeader}</div>
+                              <ProjectArticleDescriptionRenderer
+                                articleItems={project.projectArticleItems}
+                                descriptionHtml={project.descriptionMd}
+                                showSectionTitles
+                                testIdPrefix={`project-card-preview-renderer-${project.id}`}
+                              />
+                            </div>
+                          )}
+                          closeDelay={80}
+                          side="right"
+                          align="start"
+                          maxWidth={420}
+                          maxHeight={320}
+                          className="z-[9999] w-[420px]"
+                        >
+                          <div
+                            className="max-h-[6.5rem] overflow-hidden pt-1"
+                            data-testid={`project-card-description-hover-trigger-${project.id}`}
+                          >
+                            <ProjectArticleDescriptionRenderer
+                              articleItems={project.projectArticleItems}
+                              descriptionHtml={project.descriptionMd}
+                              showSectionTitles={false}
+                              testIdPrefix={`project-card-renderer-${project.id}`}
                             />
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        </HoverPreview>
+                      ) : null}
 
-                      {project.descriptionMd && (
-                        <div
-                          className="text-xs text-slate-500 line-clamp-2 pt-1"
-                          dangerouslySetInnerHTML={{ __html: project.descriptionMd }}
-                        />
-                      )}
-
-                      <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <div className="mt-auto flex items-center gap-3 text-sm text-slate-600">
                         <span className="inline-flex items-center gap-1">
                           <User className="w-3 h-3 text-slate-400" />
                           <span className="font-medium">{project.customer.fullName ?? "-"}</span>
@@ -523,7 +576,7 @@ export function ProjectsPage({
                   projectName: row.project.name,
                   projectVersion: row.project.version,
                   projectOrderNumber: row.project.orderNumber ?? null,
-                  projectArticleItems: [],
+                  projectArticleItems: row.project.projectArticleItems,
                   projectDescription: row.project.descriptionMd ?? null,
                   projectStatuses: row.project.statuses,
                   tourId: null,
