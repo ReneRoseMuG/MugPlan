@@ -1,6 +1,6 @@
 import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
 import { getSeedFileStatus, readSeedFileUtf8, writeSeedFileUtf8, type SeedFileStatus } from "./seedFileStoreService";
-import { parseBooleanFlag, parseCsv, stringifyCsv } from "./seedCsvService";
+import { hasCsvHeader, parseBooleanFlag, parseCsvWithHeaders, stringifyCsv } from "./seedCsvService";
 
 const FILE_NAME = "notetemplates.csv";
 
@@ -35,7 +35,9 @@ export async function applyNoteTemplatesSeed(): Promise<SeedExecutionResult> {
     return { ...status, logLines: [`Quelldatei fehlt: ${FILE_NAME}`] };
   }
 
-  const rows = parseCsv(await readSeedFileUtf8(FILE_NAME));
+  const parsed = parseCsvWithHeaders(await readSeedFileUtf8(FILE_NAME));
+  const hasStatusHeader = hasCsvHeader(parsed.headers, "Status");
+  const rows = parsed.rows;
   const existingTemplates = await noteTemplatesRepository.getNoteTemplates(false);
   const templatesByTitle = new Map(existingTemplates.map((entry) => [entry.title.trim().toLocaleLowerCase("de"), entry]));
   const logLines: string[] = [];
@@ -51,7 +53,9 @@ export async function applyNoteTemplatesSeed(): Promise<SeedExecutionResult> {
     const sortOrder = Number.parseInt((row.Sortierreihenfolge ?? "0").trim(), 10);
     const existing = templatesByTitle.get(title.toLocaleLowerCase("de"));
     const print = parseBooleanFlag(row.Drucken ?? "", existing?.print ?? true);
-    const isActive = parseBooleanFlag(row.Status ?? "", existing?.isActive ?? true);
+    const isActive = hasStatusHeader
+      ? parseBooleanFlag(row.Status ?? "", existing?.isActive ?? true)
+      : true;
 
     if (!existing) {
       await noteTemplatesRepository.createNoteTemplate({

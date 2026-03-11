@@ -183,6 +183,44 @@ describe("FT27 integration: seed file services", () => {
     await expect(applyProductManagementSeed()).rejects.toThrow("INVALID_CSV_FORMAT");
   });
 
+  it("defaults product and component seed rows to active when the Is Active header is missing", async () => {
+    const productCategory = await ensureProductCategoryFixture("Fass Saunen");
+    const componentCategory = await ensureComponentCategoryFixture("Dachvarianten");
+    const inactiveProduct = await masterDataRepository.createProduct({
+      name: "Inaktives Produkt",
+      description: "Alt",
+      categoryId: productCategory.id,
+      isActive: false,
+      version: 1,
+    });
+    const inactiveComponent = await masterDataRepository.createComponent({
+      name: "Inaktive Komponente",
+      description: "Alt",
+      categoryId: componentCategory.id,
+      isActive: false,
+      version: 1,
+    });
+
+    await writeSeedFile(
+      "products.csv",
+      "Name;Beschreibung;Kategorie\nInaktives Produkt;Neu;Fass Saunen\nNeues Produkt;Beschreibung;Fass Saunen\n",
+    );
+    await writeSeedFile(
+      "components.csv",
+      "Name;Beschreibung;Kategorie\nInaktive Komponente;Neu;Dachvarianten\nNeue Komponente;Beschreibung;Dachvarianten\n",
+    );
+
+    await applyProductManagementSeed();
+
+    const products = await masterDataRepository.listProducts("all");
+    const components = await masterDataRepository.listComponents("all");
+
+    expect(products.find((entry) => entry.id === inactiveProduct.id)?.isActive).toBe(true);
+    expect(products.find((entry) => entry.name === "Neues Produkt")?.isActive).toBe(true);
+    expect(components.find((entry) => entry.id === inactiveComponent.id)?.isActive).toBe(true);
+    expect(components.find((entry) => entry.name === "Neue Komponente")?.isActive).toBe(true);
+  });
+
   it("exports and reapplies project states from the external seed directory", async () => {
     await projectStatusRepository.createProjectStatus({
       title: "Planung",

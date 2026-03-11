@@ -1,6 +1,6 @@
 import * as projectStatusRepository from "../repositories/projectStatusRepository";
 import { getSeedFileStatus, readSeedFileUtf8, writeSeedFileUtf8, type SeedFileStatus } from "./seedFileStoreService";
-import { parseBooleanFlag, parseCsv, stringifyCsv } from "./seedCsvService";
+import { hasCsvHeader, parseBooleanFlag, parseCsvWithHeaders, stringifyCsv } from "./seedCsvService";
 
 const FILE_NAME = "projectstates.csv";
 
@@ -28,7 +28,9 @@ export async function applyProjectStatusSeed(): Promise<SeedExecutionResult> {
     return { ...status, logLines: [`Quelldatei fehlt: ${FILE_NAME}`] };
   }
 
-  const rows = parseCsv(await readSeedFileUtf8(FILE_NAME));
+  const parsed = parseCsvWithHeaders(await readSeedFileUtf8(FILE_NAME));
+  const hasStatusHeader = hasCsvHeader(parsed.headers, "Status");
+  const rows = parsed.rows;
   const existingStatuses = await projectStatusRepository.getProjectStatuses("all");
   const statusesByTitle = new Map(existingStatuses.map((entry) => [entry.title.trim().toLocaleLowerCase("de"), entry]));
   const logLines: string[] = [];
@@ -42,7 +44,9 @@ export async function applyProjectStatusSeed(): Promise<SeedExecutionResult> {
     }
 
     const existing = statusesByTitle.get(title.toLocaleLowerCase("de"));
-    const isActive = parseBooleanFlag(row.Status ?? "", existing?.isActive ?? true);
+    const isActive = hasStatusHeader
+      ? parseBooleanFlag(row.Status ?? "", existing?.isActive ?? true)
+      : true;
     if (!existing) {
       await projectStatusRepository.createProjectStatus({
         title,

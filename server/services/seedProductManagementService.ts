@@ -1,6 +1,6 @@
 import * as masterDataRepository from "../repositories/masterDataRepository";
 import { getSeedFileStatus, readSeedFileUtf8, writeSeedFileUtf8, type SeedFileStatus } from "./seedFileStoreService";
-import { parseCsv, stringifyCsv } from "./seedCsvService";
+import { hasCsvHeader, parseBooleanFlag, parseCsvWithHeaders, stringifyCsv } from "./seedCsvService";
 
 const PRODUCTS_FILE_NAME = "products.csv";
 const COMPONENTS_FILE_NAME = "components.csv";
@@ -108,7 +108,9 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
   await ensureDefaultCategories(logLines);
 
   if (productsStatus.exists) {
-    const productRows = parseCsv(await readSeedFileUtf8(PRODUCTS_FILE_NAME));
+    const parsedProducts = parseCsvWithHeaders(await readSeedFileUtf8(PRODUCTS_FILE_NAME));
+    const hasProductIsActiveHeader = hasCsvHeader(parsedProducts.headers, "Is Active");
+    const productRows = parsedProducts.rows;
     for (const row of productRows) {
       const name = (row.Name ?? "").trim();
       if (!name) {
@@ -117,12 +119,15 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
       }
       const categoryId = await ensureProductCategory((row.Kategorie ?? "").trim() || DEFAULT_PRODUCT_CATEGORY_NAME, logLines);
       const existing = (await masterDataRepository.listProducts("all")).find((product) => product.name === name);
+      const isActive = hasProductIsActiveHeader
+        ? parseBooleanFlag(row["Is Active"] ?? "", existing?.isActive ?? true)
+        : true;
       if (!existing) {
         await masterDataRepository.createProduct({
           name,
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
-          isActive: true,
+          isActive,
           version: 1,
         });
         logLines.push(`Produkt angelegt: ${name}`);
@@ -130,7 +135,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
         await masterDataRepository.updateProductWithVersion(existing.id, existing.version, {
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
-          isActive: true,
+          isActive,
         });
         logLines.push(`Produkt aktualisiert: ${name}`);
       }
@@ -140,7 +145,9 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
   }
 
   if (componentsStatus.exists) {
-    const componentRows = parseCsv(await readSeedFileUtf8(COMPONENTS_FILE_NAME));
+    const parsedComponents = parseCsvWithHeaders(await readSeedFileUtf8(COMPONENTS_FILE_NAME));
+    const hasComponentIsActiveHeader = hasCsvHeader(parsedComponents.headers, "Is Active");
+    const componentRows = parsedComponents.rows;
     for (const row of componentRows) {
       const name = (row.Name ?? "").trim();
       if (!name) {
@@ -149,12 +156,15 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
       }
       const categoryId = await ensureComponentCategory((row.Kategorie ?? "").trim() || DEFAULT_COMPONENT_CATEGORY_NAMES[0], logLines);
       const existing = (await masterDataRepository.listComponents("all")).find((component) => component.name === name);
+      const isActive = hasComponentIsActiveHeader
+        ? parseBooleanFlag(row["Is Active"] ?? "", existing?.isActive ?? true)
+        : true;
       if (!existing) {
         await masterDataRepository.createComponent({
           name,
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
-          isActive: true,
+          isActive,
           version: 1,
         });
         logLines.push(`Komponente angelegt: ${name}`);
@@ -162,7 +172,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
         await masterDataRepository.updateComponentWithVersion(existing.id, existing.version, {
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
-          isActive: true,
+          isActive,
         });
         logLines.push(`Komponente aktualisiert: ${name}`);
       }

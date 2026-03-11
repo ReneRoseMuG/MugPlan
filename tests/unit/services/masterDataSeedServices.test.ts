@@ -355,6 +355,24 @@ describe("FT27 unit: master data seed services", () => {
     expect(state.employees.find((entry) => entry.firstName === "Ada")?.isActive).toBe(false);
   });
 
+  it("defaults employee seed rows to active when the IsActive header is missing", async () => {
+    state.employees = [
+      { id: 1, firstName: "Ada", lastName: "Lovelace", isActive: false, version: 1 },
+    ];
+
+    await writeSeedFile(
+      tempRoot,
+      "employees.csv",
+      "Vorname;Nachname\nAda;Lovelace\nGrace;Hopper\n",
+    );
+
+    const { applyEmployeesSeed } = await import("../../../server/services/seedEmployeesService");
+    await applyEmployeesSeed();
+
+    expect(state.employees.find((entry) => entry.firstName === "Ada")?.isActive).toBe(true);
+    expect(state.employees.find((entry) => entry.firstName === "Grace")?.isActive).toBe(true);
+  });
+
   it("reports missing employees seed files", async () => {
     const { applyEmployeesSeed } = await import("../../../server/services/seedEmployeesService");
 
@@ -447,6 +465,34 @@ describe("FT27 unit: master data seed services", () => {
     expect(state.productCategories.some((entry) => entry.name === "Fass Saunen")).toBe(true);
   });
 
+  it("defaults product and component seed rows to active when the Is Active header is missing", async () => {
+    state.productCategories = [{ id: 1, name: "Fass Saunen", isActive: true, version: 1 }];
+    state.componentCategories = [{ id: 1, name: "Dachvarianten", isActive: true, version: 1 }];
+    state.products = [{ id: 1, name: "Produkt A", description: "Alt", categoryId: 1, isActive: false, version: 1 }];
+    state.components = [{ id: 1, name: "Komponente A", description: "Alt", categoryId: 1, isActive: false, version: 1 }];
+    state.ids.product = 2;
+    state.ids.component = 2;
+
+    await writeSeedFile(
+      tempRoot,
+      "products.csv",
+      "Name;Beschreibung;Kategorie\nProdukt A;Neu;Fass Saunen\nProdukt B;Beschreibung B;Fass Saunen\n",
+    );
+    await writeSeedFile(
+      tempRoot,
+      "components.csv",
+      "Name;Beschreibung;Kategorie\nKomponente A;Neu;Dachvarianten\nKomponente B;Beschreibung B;Dachvarianten\n",
+    );
+
+    const { applyProductManagementSeed } = await import("../../../server/services/seedProductManagementService");
+    await applyProductManagementSeed();
+
+    expect(state.products.find((entry) => entry.name === "Produkt A")?.isActive).toBe(true);
+    expect(state.products.find((entry) => entry.name === "Produkt B")?.isActive).toBe(true);
+    expect(state.components.find((entry) => entry.name === "Komponente A")?.isActive).toBe(true);
+    expect(state.components.find((entry) => entry.name === "Komponente B")?.isActive).toBe(true);
+  });
+
   it("reports missing product management files and surfaces malformed csv", async () => {
     const { applyProductManagementSeed } = await import("../../../server/services/seedProductManagementService");
 
@@ -492,6 +538,22 @@ describe("FT27 unit: master data seed services", () => {
     expect(state.projectStatuses.find((entry) => entry.title === "Planung")?.isActive).toBe(false);
   });
 
+  it("defaults project state seed rows to active when the Status header is missing", async () => {
+    state.projectStatuses = [{ id: 1, title: "Planung", color: "#000000", isActive: false, version: 1 }];
+
+    await writeSeedFile(
+      tempRoot,
+      "projectstates.csv",
+      "Name;Farbe\nPlanung;#ffffff\nMontage;#112233\n",
+    );
+
+    const { applyProjectStatusSeed } = await import("../../../server/services/seedProjectStatusService");
+    await applyProjectStatusSeed();
+
+    expect(state.projectStatuses.find((entry) => entry.title === "Planung")?.isActive).toBe(true);
+    expect(state.projectStatuses.find((entry) => entry.title === "Montage")?.isActive).toBe(true);
+  });
+
   it("exports and applies note templates with duplicate updates and sort fallback", async () => {
     state.noteTemplates = [{
       id: 1,
@@ -525,5 +587,30 @@ describe("FT27 unit: master data seed services", () => {
     ]);
     expect(state.noteTemplates.find((entry) => entry.title === "Checkliste")?.sortOrder).toBe(7);
     expect(state.noteTemplates.find((entry) => entry.title === "Checkliste")?.print).toBe(false);
+  });
+
+  it("defaults note template seed rows to active when the Status header is missing", async () => {
+    state.noteTemplates = [{
+      id: 1,
+      title: "Checkliste",
+      body: "Alt",
+      cardColor: "#111111",
+      print: true,
+      sortOrder: 7,
+      isActive: false,
+      version: 1,
+    }];
+
+    await writeSeedFile(
+      tempRoot,
+      "notetemplates.csv",
+      "Titel;Inhalt;Farbe;Drucken;Sortierreihenfolge\nCheckliste;Neu;#222222;nein;3\nNeu;Body;;ja;5\n",
+    );
+
+    const { applyNoteTemplatesSeed } = await import("../../../server/services/seedNoteTemplatesService");
+    await applyNoteTemplatesSeed();
+
+    expect(state.noteTemplates.find((entry) => entry.title === "Checkliste")?.isActive).toBe(true);
+    expect(state.noteTemplates.find((entry) => entry.title === "Neu")?.isActive).toBe(true);
   });
 });

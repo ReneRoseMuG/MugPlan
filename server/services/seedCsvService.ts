@@ -5,6 +5,11 @@ function escapeCsvValue(value: string): string {
   return value;
 }
 
+export type ParsedCsvContent = {
+  headers: string[];
+  rows: Array<Record<string, string>>;
+};
+
 function parseCsvRow(row: string, delimiter: string): string[] {
   const values: string[] = [];
   let current = "";
@@ -37,15 +42,18 @@ function parseCsvRow(row: string, delimiter: string): string[] {
   return values;
 }
 
-export function parseCsv(content: string): Array<Record<string, string>> {
+export function parseCsvWithHeaders(content: string): ParsedCsvContent {
   const normalized = content.replace(/^\uFEFF/, "");
   const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length === 0) {
-    return [];
+    return {
+      headers: [],
+      rows: [],
+    };
   }
 
   const headerValues = parseCsvRow(lines[0], ";").map((value) => value.trim());
-  return lines.slice(1).map((line) => {
+  const rows = lines.slice(1).map((line) => {
     const rowValues = parseCsvRow(line, ";");
     const row: Record<string, string> = {};
     for (let index = 0; index < headerValues.length; index += 1) {
@@ -53,6 +61,14 @@ export function parseCsv(content: string): Array<Record<string, string>> {
     }
     return row;
   });
+  return {
+    headers: headerValues,
+    rows,
+  };
+}
+
+export function parseCsv(content: string): Array<Record<string, string>> {
+  return parseCsvWithHeaders(content).rows;
 }
 
 export function stringifyCsv(headers: string[], rows: string[][]): string {
@@ -68,4 +84,8 @@ export function parseBooleanFlag(value: string, fallback: boolean): boolean {
   if (["true", "1", "ja", "yes", "aktiv"].includes(normalized)) return true;
   if (["false", "0", "nein", "no", "inaktiv"].includes(normalized)) return false;
   return fallback;
+}
+
+export function hasCsvHeader(headers: string[], expectedHeader: string): boolean {
+  return headers.some((header) => header === expectedHeader);
 }

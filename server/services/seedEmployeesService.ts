@@ -1,7 +1,7 @@
 import * as employeesRepository from "../repositories/employeesRepository";
 import { createEmployee } from "./employeesService";
 import { getSeedFileStatus, readSeedFileUtf8, writeSeedFileUtf8, type SeedFileStatus } from "./seedFileStoreService";
-import { parseBooleanFlag, parseCsv, stringifyCsv } from "./seedCsvService";
+import { hasCsvHeader, parseBooleanFlag, parseCsvWithHeaders, stringifyCsv } from "./seedCsvService";
 
 const FILE_NAME = "employees.csv";
 
@@ -38,7 +38,9 @@ export async function applyEmployeesSeed(): Promise<SeedExecutionResult> {
   }
 
   const content = await readSeedFileUtf8(FILE_NAME);
-  const rows = parseCsv(content);
+  const parsed = parseCsvWithHeaders(content);
+  const hasIsActiveHeader = hasCsvHeader(parsed.headers, "IsActive");
+  const rows = parsed.rows;
   const existingEmployees = await employeesRepository.getAllEmployees();
   const employeesByKey = new Map(existingEmployees.map((employee) => [employeeKey(employee.firstName, employee.lastName), employee]));
   const logLines: string[] = [];
@@ -53,7 +55,9 @@ export async function applyEmployeesSeed(): Promise<SeedExecutionResult> {
 
     const key = employeeKey(firstName, lastName);
     const existingEmployee = employeesByKey.get(key);
-    const isActive = parseBooleanFlag(row.IsActive ?? "", existingEmployee?.isActive ?? true);
+    const isActive = hasIsActiveHeader
+      ? parseBooleanFlag(row.IsActive ?? "", existingEmployee?.isActive ?? true)
+      : true;
 
     if (!existingEmployee) {
       await createEmployee({
