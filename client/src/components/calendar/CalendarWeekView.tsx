@@ -557,7 +557,7 @@ export function CalendarWeekView({
           throw new Error("Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
         }
         if (error?.code === "VALIDATION_ERROR") {
-          throw new Error("Termin kann nicht verschoben werden. Bitte neu laden.");
+          throw new Error(error?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");
         }
         throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
       }
