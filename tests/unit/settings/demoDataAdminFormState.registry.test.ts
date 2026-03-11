@@ -27,7 +27,6 @@ describe("FT20 settings registry: demoData.adminFormState", () => {
   it("accepts only valid serialized demo admin form states", () => {
     const setting = userSettingsRegistry.demoDataAdminFormState;
     const validState = JSON.stringify({
-      baseEmployees: 20,
       baseCustomers: 10,
       baseProjects: 30,
       baseGenerateAttachments: true,
@@ -49,6 +48,7 @@ describe("FT20 settings registry: demoData.adminFormState", () => {
 
     expect(setting.validate(validState)).toBe(true);
     expect(setting.validate("{")).toBe(false);
+    expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), baseCustomers: undefined }))).toBe(false);
     expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), reklShare: "0.33" }))).toBe(false);
     expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), baseProjectStatuses: [{}] }))).toBe(false);
   });

@@ -106,7 +106,6 @@ function isValidDemoDataAdminFormState(value: unknown): value is string {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
 
     const integerKeys = [
-      "baseEmployees",
       "baseCustomers",
       "baseProjects",
       "appointmentsPerProject",
