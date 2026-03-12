@@ -23,22 +23,26 @@ import { describe, expect, it } from "vitest";
 describe("FT04/FT02 project form appointment cache invalidation wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
   const source = readFileSync(filePath, "utf8");
+  const helperSource = readFileSync(path.resolve(process.cwd(), "client/src/lib/tag-invalidation.ts"), "utf8");
 
   it("invalidates calendar appointments explicitly", () => {
-    expect(source).toContain("queryKey: [\"calendarAppointments\"]");
+    expect(helperSource).toContain("queryKey: [\"calendarAppointments\"]");
   });
 
   it("invalidates appointment projection query families via predicate", () => {
-    expect(source).toContain("key === \"appointments-list\"");
-    expect(source).toContain("key === \"projects-page-appointments\"");
-    expect(source).toContain("key === \"customers-page-appointments\"");
-    expect(source).toContain("key === \"employees-page-appointments\"");
-    expect(source).toContain("key === \"customerAppointments\"");
-    expect(source).toContain("key === \"projectAppointments\"");
+    expect(helperSource).toContain("firstKey === \"appointments-list\"");
+    expect(helperSource).toContain("firstKey === \"/api/projects/list\"");
+    expect(helperSource).toContain("firstKey === \"/api/customers/list\"");
+    expect(helperSource).toContain("firstKey === \"projects-page-appointments\"");
+    expect(helperSource).toContain("firstKey === \"customers-page-appointments\"");
+    expect(helperSource).toContain("firstKey === \"employees-page-appointments\"");
+    expect(helperSource).toContain("firstKey === \"customerAppointments\"");
+    expect(helperSource).toContain("firstKey === \"projectAppointments\"");
   });
 
   it("wires appointment invalidation into invalidateProjectQueries", () => {
     expect(source).toContain("const invalidateAppointmentProjectionQueries = async () => {");
+    expect(source).toContain("await invalidateTagProjectionQueries();");
     expect(source).toContain("await invalidateAppointmentProjectionQueries();");
   });
 

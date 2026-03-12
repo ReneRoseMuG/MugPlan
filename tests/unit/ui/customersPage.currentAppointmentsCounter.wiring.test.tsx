@@ -121,7 +121,7 @@ describe("FT05+ customers page current appointments counter wiring", () => {
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
-      filters: { lastName: "", customerNumber: "" },
+      filters: { lastName: "", customerNumber: "", tagIds: [] },
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),
@@ -151,6 +151,7 @@ describe("FT05+ customers page current appointments counter wiring", () => {
                 addressLine2: null,
                 isActive: true,
                 version: 3,
+                tags: [],
                 notesCount: 2,
                 plannedAppointmentsCount: 4,
                 nextAppointmentStartDate: "2099-05-20",
@@ -160,6 +161,9 @@ describe("FT05+ customers page current appointments counter wiring", () => {
           },
           isLoading: false,
         };
+      }
+      if (key === "/api/tags") {
+        return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };
     });
@@ -221,6 +225,7 @@ describe("FT05+ customers page current appointments counter wiring", () => {
                 addressLine2: null,
                 isActive: true,
                 version: 3,
+                tags: [],
                 notesCount: 0,
                 plannedAppointmentsCount: 4,
                 nextAppointmentStartDate: "2099-05-20",
@@ -230,6 +235,9 @@ describe("FT05+ customers page current appointments counter wiring", () => {
           },
           isLoading: false,
         };
+      }
+      if (key === "/api/tags") {
+        return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };
     });

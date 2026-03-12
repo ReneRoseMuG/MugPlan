@@ -204,6 +204,36 @@ describe("FT02 integration: full uc coverage", () => {
       });
   });
 
+  it("UC 02/04e: project customer reassignment is blocked after an appointment exists", async () => {
+    const admin = await loginAdminAgent();
+    const sourceCustomer = await createCustomer("UC0204E-A");
+    const targetCustomer = await createCustomer("UC0204E-B");
+    const project = await createProject(sourceCustomer.id, "UC02-04e Base");
+
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-12-22",
+      employeeIds: [],
+    });
+    expect(appointment.id).toBeDefined();
+
+    await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, customerId: targetCustomer.id })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    const [projectDetail, appointmentDetail] = await Promise.all([
+      admin.get(`/api/projects/${project.id}`).expect(200),
+      admin.get(`/api/appointments/${appointment.id}`).expect(200),
+    ]);
+
+    expect(projectDetail.body.project.customerId).toBe(sourceCustomer.id);
+    expect(appointmentDetail.body.customerId).toBe(sourceCustomer.id);
+  });
+
   it("UC 02/04d detail payload exposes project type and project_order aggregate for form resolution", async () => {
     const admin = await loginAdminAgent();
     const customer = await createCustomer("UC0204D");

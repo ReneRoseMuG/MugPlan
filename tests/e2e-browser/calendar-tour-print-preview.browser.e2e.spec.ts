@@ -51,18 +51,19 @@ test("opens the print preview and navigates from summary to weekly pages", async
   await page.getByTestId("input-tour-print-week-count").fill("2");
   await page.getByTestId("button-open-tour-print-preview").click();
 
+  const activePageShell = page.getByTestId("tour-print-preview-active-page-shell");
   await expect(page.getByTestId("dialog-tour-print-preview")).toBeVisible();
   await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 1 von 3");
-  await expect(page.getByTestId("tour-print-summary-page")).toBeVisible();
-  await expect(page.getByTestId("tour-print-summary-headline")).toContainText(`Tour ${tour.name}`);
+  await expect(activePageShell.getByTestId("tour-print-summary-page")).toBeVisible();
+  await expect(activePageShell.getByTestId("tour-print-summary-headline")).toContainText(`Tour ${tour.name}`);
 
   await page.getByTestId("button-tour-print-preview-next").click();
   await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 2 von 3");
-  await expect(page.getByTestId("tour-print-week-page-1")).toBeVisible();
-  await expect(page.getByTestId(`tour-print-appointment-card-${appointment!.id}`)).toContainText("Print Browser Projekt");
-  await expect(page.getByTestId(`tour-print-day-${getRelativeBerlinDate(1)}`)).toContainText("Nur fuer Druck sichtbar");
+  await expect(activePageShell.getByTestId("tour-print-week-page-1")).toBeVisible();
+  await expect(activePageShell.getByTestId(`tour-print-appointment-card-${appointment!.id}`).first()).toContainText("Print Browser Projekt");
+  await expect(activePageShell.getByTestId(`tour-print-day-${getRelativeBerlinDate(1)}`)).toContainText("Nur fuer Druck sichtbar");
 
-  const noteStyles = await page.getByTestId(`tour-print-note-${appointment!.id}-0`).evaluate((element) => ({
+  const noteStyles = await activePageShell.getByTestId(`tour-print-note-${appointment!.id}-0`).first().evaluate((element) => ({
     borderColor: window.getComputedStyle(element).borderColor,
     backgroundColor: window.getComputedStyle(element).backgroundColor,
   }));

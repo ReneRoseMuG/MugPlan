@@ -39,7 +39,8 @@ async function openProjects(page: Page) {
 async function openCustomerPickerAndSelect(page: Page, customerNumber: string) {
   await page.getByTestId("button-select-customer").click();
   await expect(page.getByTestId("table-customers")).toBeVisible();
-  await page.locator("tr").filter({ hasText: customerNumber }).first().dblclick();
+  await page.locator("#customer-filter-last-name").fill(customerNumber.slice(-12));
+  await page.getByTestId("table-customers").locator("tr").filter({ hasText: customerNumber }).first().dblclick();
 }
 
 async function openProjectById(page: Page, projectId: number) {
@@ -100,7 +101,7 @@ test("switches project list scopes and keeps filters inside the selected ground 
   await expect(page.getByTestId("list-projects")).toContainText(noAppointmentProject.name);
   await expect(page.getByTestId("list-projects")).not.toContainText(upcomingProject.name);
 
-  await page.getByPlaceholder("Suche: Projekttitel").fill("Kein Treffer");
+  await page.locator("#project-filter-title").fill("Kein Treffer");
   await expect(page.getByText("Keine Treffer gefunden.")).toBeVisible();
 });
 

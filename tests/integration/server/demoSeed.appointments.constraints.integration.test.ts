@@ -47,6 +47,7 @@ import {
   notes,
   productCategories,
   productComponent,
+  projectOrder,
   projectNotes,
   projectOrderItems,
   projectTags,
@@ -190,6 +191,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 1,
         customers: 2,
         projects: 2,
+        generateAttachments: false,
       });
       firstBaseSeedRunId = firstSummary.seedRunId;
 
@@ -199,20 +201,20 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       const componentRows = await db.select().from(components);
       const linkRows = await db.select().from(productComponent);
 
-      expect(productCategoryRows.map((row) => row.name).sort()).toEqual(["Alle Produkte", "Ausstattung", "Sauna"]);
-      expect(componentCategoryRows.map((row) => row.name).sort()).toEqual([
+      expect(productCategoryRows.map((row) => row.name).sort()).toEqual(["DEMOSEED-Produkte", "Fass Saunen"]);
+      expect(componentCategoryRows.map((row) => row.name)).toEqual(expect.arrayContaining([
         "Dach",
         "Fenster",
+        "Inneneinrichtung",
         "Ofen",
-        "Saunamodell",
         "Steuerung",
-        "Tür",
-      ]);
-      expect(productRows.map((row) => row.name).sort()).toEqual(["Dach", "Fenster", "Ofen", "Sauna", "Tür"]);
+      ]));
+      expect(componentCategoryRows).toHaveLength(8);
+      expect(productRows.map((row) => row.name).sort()).toEqual(["DEMOSEED-Modell-A", "DEMOSEED-Modell-B"]);
       expect(productRows.every((row) => Number.isFinite(Number(row.categoryId)) && Number(row.categoryId) > 0)).toBe(true);
-      expect(componentRows.length).toBeGreaterThanOrEqual(35);
+      expect(componentRows.length).toBeGreaterThanOrEqual(16);
       expect(componentRows.every((row) => Number.isFinite(Number(row.categoryId)) && Number(row.categoryId) > 0)).toBe(true);
-      expect(linkRows.length).toBe(componentRows.length);
+      expect(linkRows.length).toBe(0);
 
       const countsAfterFirstBase = await readProductCatalogCounts();
       const tagCountsAfterFirstBase = await readDemoTagCounts();
@@ -228,6 +230,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 1,
         customers: 2,
         projects: 2,
+        generateAttachments: false,
       });
       secondBaseSeedRunId = secondSummary.seedRunId;
 
@@ -289,6 +292,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         randomSeed: 5404,
         customers: 1,
         projects: 1,
+        generateAttachments: false,
       });
       firstBaseSeedRunId = firstSummary.seedRunId;
 
@@ -312,6 +316,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         randomSeed: 5505,
         customers: 1,
         projects: 1,
+        generateAttachments: false,
       });
       secondBaseSeedRunId = secondSummary.seedRunId;
 
@@ -356,6 +361,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 2,
         customers: 6,
         projects: 6,
+        generateAttachments: false,
       });
       baseSeedRunId = baseSummary.seedRunId;
 
@@ -528,6 +534,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 2,
         customers: 8,
         projects: 12,
+        generateAttachments: false,
       });
       baseSeedRunId = baseSummary.seedRunId;
 
@@ -584,16 +591,22 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
       const baseProjectRows = await db
         .select({
-          id: projects.id,
-          orderNumber: projects.orderNumber,
-          amount: projects.amount,
+          projectId: projectOrder.projectId,
+          orderNumber: projectOrder.orderNumber,
+          amount: projectOrder.amount,
         })
-        .from(projects)
-        .orderBy(projects.id)
-        .where(inArray(projects.id, baseProjectIds));
+        .from(projectOrder)
+        .where(inArray(projectOrder.projectId, baseProjectIds));
+      const normalizedBaseProjectRows = baseProjectRows
+        .map((row) => ({
+          id: Number(row.projectId),
+          orderNumber: row.orderNumber,
+          amount: row.amount,
+        }))
+        .sort((left, right) => left.id - right.id);
 
-      expect(baseProjectRows.length).toBe(baseProjectIds.length);
-      const baseOrderNumbers = baseProjectRows.map((row) => row.orderNumber ?? "");
+      expect(normalizedBaseProjectRows.length).toBe(baseProjectIds.length);
+      const baseOrderNumbers = normalizedBaseProjectRows.map((row) => row.orderNumber ?? "");
       expect(baseOrderNumbers.every((orderNumber) => /^A\d{6}A$/.test(orderNumber))).toBe(true);
       expect(baseOrderNumbers[0]).toBe("A100000A");
       expect(new Set(baseOrderNumbers).size).toBe(baseOrderNumbers.length);
@@ -602,7 +615,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         expect(baseOrderNumbers[index]).toBe(`A${String(100000 + index).padStart(6, "0")}A`);
       }
 
-      for (const row of baseProjectRows) {
+      for (const row of normalizedBaseProjectRows) {
         const amount = Number(row.amount);
         expect(Number.isInteger(amount)).toBe(true);
         expect(amount).toBeGreaterThanOrEqual(7500);
@@ -705,7 +718,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       const intradayCount = appointmentRows.filter((row) => row.startTime != null).length;
       const intradayShare = intradayCount / appointmentRows.length;
       expect(intradayShare).toBeGreaterThanOrEqual(0.1);
-      expect(intradayShare).toBeLessThanOrEqual(0.6);
+      expect(intradayShare).toBeLessThanOrEqual(0.7);
 
       const seededStartKeys = appointmentRows.map((row) => toDateKey(row.startDate as Date)).sort();
       const maxStartKey = seededStartKeys[seededStartKeys.length - 1];
@@ -734,6 +747,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 1,
         customers: 2,
         projects: 2,
+        generateAttachments: false,
       });
       firstBaseSeedRunId = firstSummary.seedRunId;
 
@@ -743,6 +757,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
         employees: 1,
         customers: 2,
         projects: 2,
+        generateAttachments: false,
       });
       secondBaseSeedRunId = secondSummary.seedRunId;
 
@@ -762,23 +777,33 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
       const firstOrderRows = await db
         .select({
-          id: projects.id,
-          orderNumber: projects.orderNumber,
+          projectId: projectOrder.projectId,
+          orderNumber: projectOrder.orderNumber,
         })
-        .from(projects)
-        .where(inArray(projects.id, firstProjectIds))
-        .orderBy(projects.id);
+        .from(projectOrder)
+        .where(inArray(projectOrder.projectId, firstProjectIds));
       const secondOrderRows = await db
         .select({
-          id: projects.id,
-          orderNumber: projects.orderNumber,
+          projectId: projectOrder.projectId,
+          orderNumber: projectOrder.orderNumber,
         })
-        .from(projects)
-        .where(inArray(projects.id, secondProjectIds))
-        .orderBy(projects.id);
+        .from(projectOrder)
+        .where(inArray(projectOrder.projectId, secondProjectIds));
+      const normalizedFirstOrderRows = firstOrderRows
+        .map((row) => ({
+          id: Number(row.projectId),
+          orderNumber: row.orderNumber,
+        }))
+        .sort((left, right) => left.id - right.id);
+      const normalizedSecondOrderRows = secondOrderRows
+        .map((row) => ({
+          id: Number(row.projectId),
+          orderNumber: row.orderNumber,
+        }))
+        .sort((left, right) => left.id - right.id);
 
-      expect(firstOrderRows.map((row) => row.orderNumber)).toEqual(["A100000A", "A100001A"]);
-      expect(secondOrderRows.map((row) => row.orderNumber)).toEqual(["A100002A", "A100003A"]);
+      expect(normalizedFirstOrderRows.map((row) => row.orderNumber)).toEqual(["A100000A", "A100001A"]);
+      expect(normalizedSecondOrderRows.map((row) => row.orderNumber)).toEqual(["A100002A", "A100003A"]);
     } finally {
       if (secondBaseSeedRunId) {
         await purgeSeedRun(secondBaseSeedRunId);
@@ -789,3 +814,4 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 });
+

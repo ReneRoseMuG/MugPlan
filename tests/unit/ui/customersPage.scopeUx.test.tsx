@@ -126,7 +126,7 @@ describe("FT05+ customers scope UX wiring", () => {
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
-      filters: { lastName: "", customerNumber: "" },
+      filters: { lastName: "", customerNumber: "", tagIds: [] },
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),
@@ -138,6 +138,9 @@ describe("FT05+ customers scope UX wiring", () => {
           data: { page: 1, pageSize: 50, total: 0, totalPages: 0, items: [] },
           isLoading: false,
         };
+      }
+      if (key === "/api/tags") {
+        return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };
     });

@@ -674,6 +674,16 @@ export async function updateProjectWithVersion(
   });
 }
 
+export async function hasAppointmentsForProject(projectId: number): Promise<boolean> {
+  const [existingAppointment] = await db
+    .select({ id: appointments.id })
+    .from(appointments)
+    .where(eq(appointments.projectId, projectId))
+    .limit(1);
+
+  return Boolean(existingAppointment);
+}
+
 export async function deleteProjectWithVersion(
   id: number,
   expectedVersion: number,

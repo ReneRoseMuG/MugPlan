@@ -124,12 +124,13 @@ export async function updateProject(
   let normalizedData = { ...data };
   const shouldValidateCustomer = data.customerId !== undefined;
   const shouldNormalizeName = data.name !== undefined;
+  let existingProject: projectsRepository.ProjectWithTags | null = null;
 
   if (shouldValidateCustomer) {
-    const existing = await projectsRepository.getProject(id);
-    if (!existing) return null;
+    existingProject = await projectsRepository.getProject(id);
+    if (!existingProject) return null;
 
-    const targetCustomerId = data.customerId ?? existing.customerId;
+    const targetCustomerId = data.customerId ?? existingProject.customerId;
     const targetCustomer = await customersRepository.getCustomer(targetCustomerId);
     if (!targetCustomer) {
       throw new ProjectsError(422, "VALIDATION_ERROR");
@@ -137,7 +138,10 @@ export async function updateProject(
     if (!targetCustomer.isActive) {
       throw new ProjectsError(409, "INACTIVE_ENTITY_ASSIGNMENT");
     }
-
+    const changesCustomerAssignment = targetCustomerId !== existingProject.customerId;
+    if (changesCustomerAssignment && await projectsRepository.hasAppointmentsForProject(id)) {
+      throw new ProjectsError(409, "BUSINESS_CONFLICT");
+    }
   }
 
   if (shouldNormalizeName) {
