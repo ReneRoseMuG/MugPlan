@@ -877,6 +877,9 @@ export async function listAppointmentsList(params: {
   employeeId?: number;
   projectId?: number;
   customerId?: number;
+  projectTitle?: string;
+  customerLastName?: string;
+  customerNumber?: string;
   orderNumber?: string;
   tagIds?: number[];
   tourId?: number;
@@ -898,12 +901,18 @@ export async function listAppointmentsList(params: {
 
   const berlinToday = parseDateOnly(getBerlinTodayDateString());
   const normalizedOrderNumber = params.orderNumber?.trim();
+  const normalizedProjectTitle = params.projectTitle?.trim();
+  const normalizedCustomerLastName = params.customerLastName?.trim();
+  const normalizedCustomerNumber = params.customerNumber?.trim();
 
   const { rows, total } = await appointmentsRepository.listAppointmentsForList(
     {
       employeeId: params.employeeId,
       projectId: params.projectId,
       customerId: params.customerId,
+      projectTitle: normalizedProjectTitle && normalizedProjectTitle.length > 0 ? normalizedProjectTitle : undefined,
+      customerLastName: normalizedCustomerLastName && normalizedCustomerLastName.length > 0 ? normalizedCustomerLastName : undefined,
+      customerNumber: normalizedCustomerNumber && normalizedCustomerNumber.length > 0 ? normalizedCustomerNumber : undefined,
       orderNumber: normalizedOrderNumber && normalizedOrderNumber.length > 0 ? normalizedOrderNumber : undefined,
       tagIds: params.tagIds,
       tourId: params.tourId,

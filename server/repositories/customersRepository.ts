@@ -5,6 +5,8 @@ import {
   customerNotes,
   customerAttachments,
   customers,
+  projectOrder,
+  projects,
   type Customer,
   type CustomerAttachment,
   type InsertCustomer,
@@ -20,6 +22,13 @@ export type CustomerBoardListItem = CustomerListItem & {
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
+  historicalAppointments: Array<{
+    id: number;
+    startDate: string;
+    startTime: string | null;
+    orderNumber: string | null;
+    projectName: string;
+  }>;
 };
 
 export type CustomerBoardListResult = {
@@ -194,6 +203,29 @@ export async function getCustomersPaged(params: {
       asc(appointments.id),
     );
 
+  const historicalAppointmentRows = await db
+    .select({
+      customerId: appointments.customerId,
+      id: appointments.id,
+      startDate: appointments.startDate,
+      startTime: appointments.startTime,
+      orderNumber: sql<string | null>`coalesce(${projectOrder.orderNumber}, null)`,
+      projectName: sql<string>`coalesce(${projects.name}, 'Ohne Projekt')`,
+    })
+    .from(appointments)
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(and(
+      inArray(appointments.customerId, customerIds),
+      sql`${appointments.startDate} < ${getBerlinTodayDate()}`,
+    ))
+    .orderBy(
+      asc(appointments.customerId),
+      desc(appointments.startDate),
+      desc(sql`coalesce(${appointments.startTime}, '23:59:59')`),
+      desc(appointments.id),
+    );
+
   const notesCountByCustomerId = new Map(noteCountRows.map((row) => [row.customerId, Number(row.count)] as const));
   const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
   const appointmentSummaryByCustomerId = new Map<number, {
@@ -201,6 +233,7 @@ export async function getCustomersPaged(params: {
     nextAppointmentStartDate: string | null;
     nextAppointmentStartTimeHour: number | null;
   }>();
+  const historicalAppointmentsByCustomerId = new Map<number, CustomerBoardListItem["historicalAppointments"]>();
 
   for (const row of appointmentRows) {
     const current = appointmentSummaryByCustomerId.get(row.customerId);
@@ -216,6 +249,19 @@ export async function getCustomersPaged(params: {
     current.plannedAppointmentsCount += 1;
   }
 
+  for (const row of historicalAppointmentRows) {
+    const list = historicalAppointmentsByCustomerId.get(row.customerId) ?? [];
+    if (list.length >= 5) continue;
+    list.push({
+      id: row.id,
+      startDate: normalizeAppointmentDate(row.startDate) ?? "",
+      startTime: typeof row.startTime === "string" ? row.startTime : null,
+      orderNumber: row.orderNumber,
+      projectName: row.projectName,
+    });
+    historicalAppointmentsByCustomerId.set(row.customerId, list);
+  }
+
   return {
     items: rows.map((row) => {
       const appointmentSummary = appointmentSummaryByCustomerId.get(row.id);
@@ -226,6 +272,7 @@ export async function getCustomersPaged(params: {
         plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
+        historicalAppointments: historicalAppointmentsByCustomerId.get(row.id) ?? [],
       };
     }),
     page: params.page,

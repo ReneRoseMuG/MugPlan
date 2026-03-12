@@ -361,6 +361,11 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält ausschließlich lesenden Zugriff
 - keine schreibenden Endpunkte verfügbar
 
+### Listenfilter (serverseitig)
+
+- `/api/appointments/list` unterstützt serverseitig die Filter `employeeId`, `tourId`, `projectTitle`, `customerLastName`, `customerNumber`, `orderNumber`, `tagIds`, `dateFrom` und `dateTo`
+- Textfilter in der Terminliste werden serverseitig über Projekt- und Kundenfelder ausgewertet; UI-Filter dienen nur als Eingabeoberfläche
+
 ---
 
 ## Schutzregel

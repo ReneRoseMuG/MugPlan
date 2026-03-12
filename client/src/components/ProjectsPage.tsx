@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FolderKanban, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityCard } from "@/components/ui/entity-card";
@@ -17,17 +17,17 @@ import { defaultHeaderColor } from "@/lib/colors";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
-import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Project, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { domainIcons } from "@/lib/domain-icons";
+import { formatListDateTime } from "@/lib/list-display-format";
+import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
-type ProjectSortKey = "title" | "customer";
+type ProjectSortKey = "title" | "customer" | "customerNumber" | "orderNumber";
 
 type ProjectListItem = Project & {
   notesCount: number;
@@ -63,15 +63,6 @@ interface ProjectsPageProps {
 
 function parseViewMode(value: unknown): ViewMode {
   return value === "table" ? "table" : "board";
-}
-
-function formatAppointmentLabel(appointment: { startDate: string; startTimeHour: number | null } | null): string {
-  if (!appointment) return "---";
-
-  const date = new Date(`${appointment.startDate}T00:00:00`);
-  const dateLabel = format(date, "dd.MM.yyyy", { locale: de });
-  if (appointment.startTimeHour == null) return dateLabel;
-  return `${dateLabel}, ${String(appointment.startTimeHour).padStart(2, "0")}:00`;
 }
 
 function formatProjectAmount(amount: unknown): string {
@@ -229,12 +220,6 @@ export function ProjectsPage({
     return projects.map((project) => ({
       project,
       customer: project.customer,
-      relevantAppointment: project.nextAppointmentStartDate
-        ? {
-            startDate: project.nextAppointmentStartDate,
-            startTimeHour: project.nextAppointmentStartTimeHour,
-          }
-        : null,
     }));
   }, [projects]);
 
@@ -248,6 +233,12 @@ export function ProjectsPage({
         const right = b.customer.fullName ?? "";
         return left.localeCompare(right, "de") * directionMultiplier;
       }
+      if (sortKey === "customerNumber") {
+        return a.customer.customerNumber.localeCompare(b.customer.customerNumber, "de", { numeric: true }) * directionMultiplier;
+      }
+      if (sortKey === "orderNumber") {
+        return (a.project.orderNumber ?? "").localeCompare(b.project.orderNumber ?? "", "de", { numeric: true }) * directionMultiplier;
+      }
 
       return a.project.name.localeCompare(b.project.name, "de") * directionMultiplier;
     });
@@ -258,29 +249,31 @@ export function ProjectsPage({
   const tableColumns = useMemo<TableViewColumnDef<(typeof sortedProjectRows)[number]>[]>(
     () => [
       {
+        id: "orderNumber",
+        header: renderSortHeader("Auftrag Nr.", "orderNumber"),
+        accessor: (row) => row.project.orderNumber ?? "",
+        minWidth: 130,
+        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "-"}</span>,
+      },
+      {
         id: "title",
-        header: renderSortHeader("Titel", "title"),
+        header: renderSortHeader("Projektname", "title"),
         accessor: (row) => row.project.name,
         minWidth: 220,
         cell: ({ row }) => <span className="font-medium">{row.project.name}</span>,
+      },
+      {
+        id: "customerNumber",
+        header: renderSortHeader("Kund Nr.", "customerNumber"),
+        accessor: (row) => row.customer.customerNumber,
+        minWidth: 110,
       },
       {
         id: "customer",
         header: renderSortHeader("Kunde", "customer"),
         accessor: (row) => row.customer.fullName ?? "",
         minWidth: 220,
-        cell: ({ row }) => (
-          <span>
-            {row.customer.fullName ? `${row.customer.fullName} (K: ${row.customer.customerNumber})` : "-"}
-          </span>
-        ),
-      },
-      {
-        id: "orderNumber",
-        header: "Auftragsnummer",
-        accessor: (row) => row.project.orderNumber ?? "",
-        minWidth: 160,
-        cell: ({ row }) => <span>{row.project.orderNumber?.trim() || "-"}</span>,
+        cell: ({ row }) => <span>{row.customer.fullName ?? "-"}</span>,
       },
       {
         id: "amount",
@@ -291,10 +284,17 @@ export function ProjectsPage({
       },
       {
         id: "relevantAppointment",
-        header: "Nächster Termin",
-        accessor: (row) => row.relevantAppointment?.startDate ?? "",
-        minWidth: 220,
-        cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
+        header: "Naechster Termin",
+        accessor: (row) => row.project.nextAppointmentStartDate ?? "",
+        minWidth: 180,
+        cell: ({ row }) => (
+          <span>
+            {formatListDateTime({
+              startDate: row.project.nextAppointmentStartDate,
+              startTimeHour: row.project.nextAppointmentStartTimeHour,
+            })}
+          </span>
+        ),
       },
     ],
     [sortDirection, sortKey],
@@ -325,11 +325,14 @@ export function ProjectsPage({
     />
   );
 
+  const ProjectsIcon = domainIcons.projects;
+  const CustomersIcon = domainIcons.customers;
+
   return (
     <>
       <ListLayout
         title={resolvedTitle}
-        icon={<FolderKanban className="w-5 h-5" />}
+        icon={<ProjectsIcon className="w-5 h-5" />}
         viewModeKey={viewModeKey}
         helpKey="projects"
         isLoading={projectsLoading}
@@ -445,7 +448,7 @@ export function ProjectsPage({
                   <EntityCard
                     key={project.id}
                     title={project.name}
-                    icon={<FolderKanban className="w-4 h-4" />}
+                    icon={<ProjectsIcon className="w-4 h-4" />}
                     headerMeta={<span>{`A-Nr. ${project.orderNumber?.trim() || "-"}`}</span>}
                     headerColor={defaultHeaderColor}
                     testId={`project-card-${project.id}`}
@@ -512,16 +515,16 @@ export function ProjectsPage({
 
                       <div className="mt-auto flex items-center gap-3 text-sm text-slate-600">
                         <span className="inline-flex items-center gap-1">
-                          <User className="w-3 h-3 text-slate-400" />
+                          <CustomersIcon className="w-3 h-3 text-slate-400" />
                           <span className="font-medium">{project.customer.fullName ?? "-"}</span>
                         </span>
                       </div>
 
-                      {!project.isActive && (
+                      {!project.isActive ? (
                         <Badge variant="secondary" className="text-xs">
                           Inaktiv
                         </Badge>
-                      )}
+                      ) : null}
                     </div>
                   </EntityCard>
                 );
@@ -534,49 +537,31 @@ export function ProjectsPage({
               rows={sortedProjectRows}
               rowKey={(row) => row.project.id}
               onRowDoubleClick={(row) => onSelectProject?.(row.project.id)}
-              rowPreviewRenderer={(row) => {
-                if (!row.relevantAppointment) {
-                  return (
-                    <div className="rounded-md border border-border bg-card p-3">
-                      Keine Termine vorhanden.
-                    </div>
-                  );
-                }
-                return createAppointmentWeeklyPanelPreview({
-                  id: row.project.id,
-                  startDate: row.relevantAppointment.startDate,
-                  endDate: null,
-                  startTime: row.relevantAppointment.startTimeHour == null ? null : `${String(row.relevantAppointment.startTimeHour).padStart(2, "0")}:00:00`,
-                  projectId: row.project.id,
-                  projectName: row.project.name,
-                  projectVersion: row.project.version,
-                  projectOrderNumber: row.project.orderNumber ?? null,
-                  projectArticleItems: row.project.projectArticleItems,
-                  projectDescription: row.project.descriptionMd ?? null,
-                  tourId: null,
-                  tourName: null,
-                  tourColor: null,
-                  customer: {
-                    id: row.customer.id,
-                    customerNumber: row.customer.customerNumber,
-                    fullName: row.customer.fullName,
-                    addressLine1: null,
-                    addressLine2: null,
-                    postalCode: null,
-                    city: null,
-                  },
-                  employees: [],
-                  customerNotesCount: 0,
-                  projectNotesCount: row.project.notesCount,
-                  appointmentNotesCount: 0,
-                  appointmentTags: [],
-                  customerTags: [],
-                  projectTags: row.project.tags,
-                  displayMode: "compact",
-                  isLocked: false,
-                  version: row.project.version,
-                }, { sizeProfile: "sidebarTable" });
-              }}
+              rowPreviewRenderer={(row) => (
+                <ProjectTableHoverPreview
+                  header={{
+                    orderNumber: row.project.orderNumber?.trim() || "-",
+                    name: row.project.name,
+                  }}
+                  customer={{
+                    number: row.customer.customerNumber,
+                    name: row.customer.fullName ?? "-",
+                  }}
+                  project={{
+                    description: row.project.descriptionMd?.replace(/<[^>]+>/g, " ").trim() || "-",
+                    amount: formatProjectAmount(row.project.amount),
+                  }}
+                  nextAppointmentLabel={formatListDateTime({
+                    startDate: row.project.nextAppointmentStartDate,
+                    startTimeHour: row.project.nextAppointmentStartTimeHour,
+                  })}
+                  notes={[
+                    { type: "customer", id: row.customer.id, count: 0 },
+                    { type: "project", id: row.project.id, count: row.project.notesCount },
+                  ]}
+                  tags={[...(row.project.tags ?? [])]}
+                />
+              )}
               emptyState={emptyState}
               stickyHeader
             />

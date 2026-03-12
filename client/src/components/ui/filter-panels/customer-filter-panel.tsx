@@ -53,13 +53,19 @@ export function CustomerFilterPanel({
         value={customerLastName}
         onChange={onCustomerLastNameChange}
         onClear={onCustomerLastNameClear}
-        className="flex-1"
+        className="w-full sm:min-w-[12rem] sm:max-w-[18ch]"
+        label="Nachname Kunde"
+        helpKey="customers.filter.lastName"
       />
       <CustomerNumberFilterInput
         value={customerNumber}
         onChange={onCustomerNumberChange}
         onClear={onCustomerNumberClear}
-        className="flex-1"
+        className="w-full sm:min-w-[8rem] sm:max-w-[12ch]"
+        label="Kunde Nr."
+        placeholderLabel="Nr."
+        maxLength={12}
+        helpKey="customers.filter.customerNumber"
       />
       <TagFilterInput
         selectedTags={selectedTags}

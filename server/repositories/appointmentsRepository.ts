@@ -38,6 +38,9 @@ export type AppointmentListFilters = {
   employeeId?: number;
   projectId?: number;
   customerId?: number;
+  projectTitle?: string;
+  customerLastName?: string;
+  customerNumber?: string;
   orderNumber?: string;
   tagIds?: number[];
   tourId?: number;
@@ -708,6 +711,18 @@ function buildAppointmentListConditions(filters: AppointmentListFilters) {
   }
   if (filters.customerId) {
     conditions.push(eq(appointments.customerId, filters.customerId));
+  }
+  if (filters.projectTitle) {
+    conditions.push(sql`lower(coalesce(${projects.name}, '')) like ${`%${filters.projectTitle.toLowerCase()}%`}`);
+  }
+  if (filters.customerLastName) {
+    conditions.push(or(
+      sql`lower(coalesce(${customers.lastName}, '')) like ${`%${filters.customerLastName.toLowerCase()}%`}`,
+      sql`lower(coalesce(${customers.fullName}, '')) like ${`%${filters.customerLastName.toLowerCase()}%`}`,
+    )!);
+  }
+  if (filters.customerNumber) {
+    conditions.push(like(customers.customerNumber, `%${filters.customerNumber}%`));
   }
   if (filters.orderNumber) {
     conditions.push(like(projectOrder.orderNumber, `%${filters.orderNumber}%`));

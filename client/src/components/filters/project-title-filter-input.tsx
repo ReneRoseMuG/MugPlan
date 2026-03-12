@@ -7,6 +7,9 @@ interface ProjectTitleFilterInputProps {
   onClear: () => void;
   className?: string;
   maxLength?: number;
+  id?: string;
+  label?: string;
+  helpKey?: string;
 }
 
 export function ProjectTitleFilterInput({
@@ -15,12 +18,15 @@ export function ProjectTitleFilterInput({
   onClear,
   className,
   maxLength,
+  id = "project-filter-title",
+  label = "Projektname",
+  helpKey = "projects.filter.projectName",
 }: ProjectTitleFilterInputProps) {
   return (
     <SearchFilterInput
-      id="project-filter-title"
-      label="Projektname"
-      labelAdornment={<HelpIcon helpKey="projects.filter.title" size="sm" />}
+      id={id}
+      label={label}
+      labelAdornment={<HelpIcon helpKey={helpKey} size="sm" />}
       value={value}
       onChange={onChange}
       onClear={onClear}

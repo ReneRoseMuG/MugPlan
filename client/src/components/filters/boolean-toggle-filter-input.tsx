@@ -21,14 +21,16 @@ export function BooleanToggleFilterInput({
   className,
 }: BooleanToggleFilterInputProps) {
   return (
-    <div className={cn("flex flex-col gap-1 rounded-md border px-3 py-2", className)}>
-      <div className="flex items-center gap-1 min-h-5">
+    <div className={cn("flex min-w-[10rem] flex-col justify-end gap-1", className)}>
+      <div className="flex min-h-5 items-center gap-1">
+        {labelAdornment}
         <Label htmlFor={id} className="text-xs tracking-wide text-slate-500">
           {label}
         </Label>
-        {labelAdornment}
       </div>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      <div className="flex h-9 items-center">
+        <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      </div>
     </div>
   );
 }

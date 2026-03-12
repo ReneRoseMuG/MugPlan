@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays } from "lucide-react";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { ListLayout } from "@/components/ui/list-layout";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
@@ -14,7 +12,9 @@ import { Button } from "@/components/ui/button";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
-import type { Customer, Employee, Project, Tag, Tour } from "@shared/schema";
+import type { Tag, Tour } from "@shared/schema";
+import { domainIcons } from "@/lib/domain-icons";
+import { formatListDate, formatListTime } from "@/lib/list-display-format";
 
 type AppointmentListItem = CalendarAppointment & {
   startTimeHour: number | null;
@@ -31,6 +31,7 @@ type AppointmentListResponse = {
 };
 
 type SortDirection = "asc" | "desc";
+type SortKey = "date" | "customer" | "customerNumber" | "orderNumber";
 
 export type AppointmentsListContext =
   | { type: "standalone" }
@@ -58,32 +59,22 @@ interface AppointmentsListPageProps {
 
 const DEFAULT_PAGE_SIZE = 25;
 
-function formatDateLabel(appointment: AppointmentListItem): string {
-  const date = new Date(`${appointment.startDate}T00:00:00`);
-  const day = format(date, "dd.MM.yyyy", { locale: de });
-  if (appointment.startTimeHour == null) {
-    return day;
-  }
-  return `${day}, ${String(appointment.startTimeHour).padStart(2, "0")}:00`;
-}
-
 function SortIcon({ direction }: { direction: SortDirection | null }) {
   if (direction === "asc") return <ArrowUp className="w-3.5 h-3.5" />;
   if (direction === "desc") return <ArrowDown className="w-3.5 h-3.5" />;
   return <ArrowUpDown className="w-3.5 h-3.5" />;
 }
 
-function resolveAppointmentProjectDisplayName(storedProjectName: string): string {
-  return storedProjectName.trim();
+function resolveCustomerSortName(row: AppointmentListItem): string {
+  return row.customer.fullName ?? "";
 }
 
-function resolveAppointmentProjectColumnValue(row: AppointmentListItem): string {
-  const projectName = resolveAppointmentProjectDisplayName(row.projectName);
-  const orderNumber = row.projectOrderNumber?.trim();
-  if (!orderNumber) {
-    return projectName;
-  }
-  return `${projectName} (${orderNumber})`;
+function resolveDateSortValue(row: AppointmentListItem): string {
+  return `${row.startDate}|${row.startTime ?? ""}|${String(row.id).padStart(12, "0")}`;
+}
+
+function resolveAppointmentProjectDisplayName(storedProjectName: string): string {
+  return storedProjectName.trim();
 }
 
 function hasUserControlledAppointmentFilters(
@@ -95,8 +86,9 @@ function hasUserControlledAppointmentFilters(
     resolvedEnforceFromToday: boolean;
   },
 ): boolean {
-  if (filters.projectId !== undefined) return true;
-  if (filters.customerId !== undefined) return true;
+  if (filters.projectTitle.trim().length > 0) return true;
+  if (filters.customerLastName.trim().length > 0) return true;
+  if (filters.customerNumber.trim().length > 0) return true;
   if (filters.orderNumber.trim().length > 0) return true;
   if (filters.tagIds.length > 0) return true;
   if (filters.dateTo !== undefined) return true;
@@ -140,13 +132,13 @@ export function AppointmentsListPage({
   const resolvedTourId = context?.type === "tour" ? context.tourId : lockedTourId;
   const resolvedEmployeeId = context?.type === "employee" ? context.employeeId : undefined;
   const resolvedHideTourFilter = (isTourContext || isEmployeeContext) ? true : hideTourFilter;
-  const resolvedHideEmployeeFilter = isEmployeeContext;
   const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;
   const resolvedShowCloseButton = (isTourContext || isEmployeeContext) ? false : showCloseButton;
   const resolvedEnforceFromToday = contextType === "standalone" ? true : (isTourContext || isEmployeeContext || enforceFromToday);
 
   const todayBerlin = getBerlinTodayDateString();
   const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [hasLoadedAtLeastOnce, setHasLoadedAtLeastOnce] = useState(false);
@@ -154,8 +146,9 @@ export function AppointmentsListPage({
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [filters, setFilters] = useState<AppointmentListFilters>({
     employeeId: resolvedEmployeeId,
-    projectId: undefined,
-    customerId: undefined,
+    projectTitle: "",
+    customerLastName: "",
+    customerNumber: "",
     orderNumber: "",
     tagIds: [],
     tourId: resolvedTourId ?? undefined,
@@ -183,19 +176,6 @@ export function AppointmentsListPage({
     });
   }, [resolvedEnforceFromToday, showAllAppointments, todayBerlin]);
 
-  const { data: employees = [] } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { scope: "active" }],
-    queryFn: () => fetch("/api/employees?scope=active").then((response) => response.json()),
-  });
-
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/projects?filter=all&scope=all"],
-  });
-
-  const { data: customers = [] } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
-  });
-
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
@@ -213,8 +193,9 @@ export function AppointmentsListPage({
       });
 
       if (filters.employeeId) params.set("employeeId", String(filters.employeeId));
-      if (filters.projectId) params.set("projectId", String(filters.projectId));
-      if (filters.customerId) params.set("customerId", String(filters.customerId));
+      if (filters.projectTitle.trim().length > 0) params.set("projectTitle", filters.projectTitle.trim());
+      if (filters.customerLastName.trim().length > 0) params.set("customerLastName", filters.customerLastName.trim());
+      if (filters.customerNumber.trim().length > 0) params.set("customerNumber", filters.customerNumber.trim());
       if (filters.orderNumber.trim().length > 0) params.set("orderNumber", filters.orderNumber.trim());
       if (filters.tagIds.length > 0) params.set("tagIds", filters.tagIds.join(","));
       if (filters.tourId) params.set("tourId", String(filters.tourId));
@@ -223,7 +204,6 @@ export function AppointmentsListPage({
 
       const response = await fetch(`/api/appointments/list?${params.toString()}`, {
         credentials: "include",
-        headers: {},
       });
       if (!response.ok) {
         throw new Error("Terminliste konnte nicht geladen werden");
@@ -243,55 +223,81 @@ export function AppointmentsListPage({
     const source = data?.items ?? [];
     const multiplier = sortDirection === "asc" ? 1 : -1;
     return [...source].sort((left, right) => {
-      const dateCompare = left.startDate.localeCompare(right.startDate) * multiplier;
-      if (dateCompare !== 0) return dateCompare;
-
-      const leftTime = left.startTimeHour ?? -1;
-      const rightTime = right.startTimeHour ?? -1;
-      const timeCompare = (leftTime - rightTime) * multiplier;
-      if (timeCompare !== 0) return timeCompare;
-
-      return (left.id - right.id) * multiplier;
+      if (sortKey === "customer") {
+        return resolveCustomerSortName(left).localeCompare(resolveCustomerSortName(right), "de") * multiplier;
+      }
+      if (sortKey === "customerNumber") {
+        return left.customer.customerNumber.localeCompare(right.customer.customerNumber, "de", { numeric: true }) * multiplier;
+      }
+      if (sortKey === "orderNumber") {
+        return (left.projectOrderNumber ?? "").localeCompare(right.projectOrderNumber ?? "", "de", { numeric: true }) * multiplier;
+      }
+      return resolveDateSortValue(left).localeCompare(resolveDateSortValue(right), "de") * multiplier;
     });
-  }, [data?.items, resolvedTourId, sortDirection]);
+  }, [data?.items, resolvedTourId, sortDirection, sortKey]);
 
-  const handleDateSortToggle = () => {
-    setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDirection(key === "date" ? "desc" : "asc");
   };
+
+  const renderSortHeader = (label: string, key: SortKey) => (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 text-xs tracking-wide"
+      onClick={() => toggleSort(key)}
+    >
+      <span>{label}</span>
+      <SortIcon direction={sortKey === key ? sortDirection : null} />
+    </button>
+  );
 
   const tableColumns = useMemo<TableViewColumnDef<AppointmentListItem>[]>(() => {
     const columns: TableViewColumnDef<AppointmentListItem>[] = [
       {
+        id: "time",
+        header: "Uhrzeit",
+        accessor: (row) => formatListTime(row.startTime),
+        minWidth: 90,
+        cell: ({ row }) => <span>{formatListTime(row.startTime) || " "}</span>,
+      },
+      {
         id: "date",
-        header: (
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 text-xs tracking-wide"
-            onClick={handleDateSortToggle}
-          >
-            <span>Datum</span>
-            <SortIcon direction={sortDirection} />
-          </button>
-        ),
+        header: renderSortHeader("Datum", "date"),
         accessor: (row) => row.startDate,
-        minWidth: 140,
-        cell: ({ row }) => <span>{formatDateLabel(row)}</span>,
+        minWidth: 100,
+        cell: ({ row }) => <span>{formatListDate(row.startDate)}</span>,
+      },
+      {
+        id: "orderNumber",
+        header: renderSortHeader("Auftrag Nr.", "orderNumber"),
+        accessor: (row) => row.projectOrderNumber ?? "",
+        minWidth: 120,
+        cell: ({ row }) => <span>{row.projectOrderNumber?.trim() || "-"}</span>,
       },
       {
         id: "project",
         header: "Projekt",
-        accessor: (row) => resolveAppointmentProjectColumnValue(row),
+        accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName),
         minWidth: 220,
-        cell: ({ row }) => <span className="font-medium">{resolveAppointmentProjectColumnValue(row)}</span>,
+        cell: ({ row }) => <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>,
+      },
+      {
+        id: "customerNumber",
+        header: renderSortHeader("Kunde Nr.", "customerNumber"),
+        accessor: (row) => row.customer.customerNumber,
+        minWidth: 110,
       },
       {
         id: "customer",
-        header: "Kunde",
-        accessor: (row) => row.customer.fullName,
+        header: renderSortHeader("Kunde", "customer"),
+        accessor: (row) => resolveCustomerSortName(row),
         minWidth: 220,
-        cell: ({ row }) => (
-          <span>{row.customer.fullName} (K: {row.customer.customerNumber})</span>
-        ),
+        cell: ({ row }) => <span>{row.customer.fullName ?? "-"}</span>,
       },
     ];
 
@@ -306,7 +312,7 @@ export function AppointmentsListPage({
     }
 
     return columns;
-  }, [resolvedHideTourColumn, sortDirection]);
+  }, [resolvedHideTourColumn, sortDirection, sortKey]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
     const patchWithDate = (!showAllAppointments && resolvedEnforceFromToday)
@@ -365,10 +371,12 @@ export function AppointmentsListPage({
     />
   );
 
+  const AppointmentsIcon = domainIcons.appointmentsList;
+
   return (
     <ListLayout
       title={title}
-      icon={<CalendarDays className="w-5 h-5" />}
+      icon={<AppointmentsIcon className="w-5 h-5" />}
       viewModeKey="appointments"
       helpKey={helpKey}
       isLoading={isLoading && !hasLoadedAtLeastOnce}
@@ -383,15 +391,11 @@ export function AppointmentsListPage({
           showAllAppointments={showAllAppointments}
           onShowAllAppointmentsChange={handleShowAllAppointmentsChange}
           showAllAppointmentsHelpKey="appointments.filter.showAll"
-          employees={employees}
-          projects={projects}
-          customers={customers}
           tours={tours}
           selectedTags={selectedTags}
           availableTags={unselectedTags}
           tagPickerOpen={tagPickerOpen}
           onTagPickerOpenChange={setTagPickerOpen}
-          hideEmployeeFilter={resolvedHideEmployeeFilter}
           hideTourFilter={resolvedHideTourFilter}
         />
       }

@@ -4,11 +4,10 @@ import { ProjectOrderNumberFilterInput } from "@/components/filters/project-orde
 import { ProjectTitleFilterInput } from "@/components/filters/project-title-filter-input";
 import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { HelpIcon } from "@/components/ui/help/help-icon";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import type { Tag } from "@shared/schema";
 import type { ProjectScope } from "@/lib/project-filters";
+import { BooleanToggleFilterInput } from "@/components/filters/boolean-toggle-filter-input";
 
 interface ProjectFilterPanelProps {
   title: string;
@@ -65,63 +64,58 @@ export function ProjectFilterPanel({
           onChange={onProjectTitleChange}
           onClear={onProjectTitleClear}
           maxLength={20}
-          className="w-full sm:min-w-[12rem] sm:max-w-[20ch]"
+          className="w-full sm:min-w-[11rem] sm:max-w-[18ch]"
+          helpKey="projects.filter.projectName"
         />
         <CustomerNameFilterInput
           value={customerLastName}
           onChange={onCustomerLastNameChange}
           onClear={onCustomerLastNameClear}
           maxLength={20}
-          className="w-full sm:min-w-[12rem] sm:max-w-[20ch]"
+          className="w-full sm:min-w-[11rem] sm:max-w-[18ch]"
+          label="Nachname Kunde"
+          helpKey="projects.filter.customerLastName"
         />
-          <CustomerNumberFilterInput
-            value={customerNumber}
-            onChange={onCustomerNumberChange}
-            onClear={onCustomerNumberClear}
-            placeholderLabel="Nr."
-            maxLength={8}
-            className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
-          />
-          <ProjectOrderNumberFilterInput
-            value={orderNumber}
-            onChange={onOrderNumberChange}
-            onClear={onOrderNumberClear}
-            placeholderLabel="Nr."
-            maxLength={8}
-            className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
-          />
-        <div className="flex flex-wrap items-start gap-3">
-          <div className="flex min-w-[150px] flex-col gap-1">
-            <div className="flex items-center gap-1 min-h-5">
-              <Label htmlFor="project-scope-all" className="text-xs font-semibold text-muted-foreground">
-                Alle Projekte
-              </Label>
-              <HelpIcon helpKey="projects.filter.scope.upcoming" size="sm" />
-            </div>
-            <Switch
-              id="project-scope-all"
-              checked={projectScope === "all"}
-              onCheckedChange={(checked) => {
-                onProjectScopeChange(checked ? "all" : "upcoming");
-              }}
-            />
-          </div>
-          <div className="flex min-w-[150px] flex-col gap-1">
-            <div className="flex items-center gap-1 min-h-5">
-              <Label htmlFor="project-scope-no-appointments" className="text-xs font-semibold text-muted-foreground">
-                Ohne Termine
-              </Label>
-              <HelpIcon helpKey="projects.filter.scope.noAppointments" size="sm" />
-            </div>
-            <Switch
-              id="project-scope-no-appointments"
-              checked={projectScope === "noAppointments"}
-              onCheckedChange={(checked) => {
-                onProjectScopeChange(checked ? "noAppointments" : "all");
-              }}
-            />
-          </div>
-        </div>
+        <CustomerNumberFilterInput
+          value={customerNumber}
+          onChange={onCustomerNumberChange}
+          onClear={onCustomerNumberClear}
+          placeholderLabel="Nr."
+          maxLength={8}
+          className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
+          label="Kunde Nr."
+          helpKey="projects.filter.customerNumber"
+        />
+        <ProjectOrderNumberFilterInput
+          value={orderNumber}
+          onChange={onOrderNumberChange}
+          onClear={onOrderNumberClear}
+          placeholderLabel="Nr."
+          maxLength={8}
+          className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
+          label="Auftrag Nr."
+          helpKey="projects.filter.orderNumber"
+        />
+        <BooleanToggleFilterInput
+          id="project-scope-all"
+          checked={projectScope === "all"}
+          onCheckedChange={(checked) => {
+            onProjectScopeChange(checked ? "all" : "upcoming");
+          }}
+          label="Alle Projekte"
+          labelAdornment={<HelpIcon helpKey="projects.filter.scope.all" size="sm" />}
+          className="w-full sm:min-w-[10rem]"
+        />
+        <BooleanToggleFilterInput
+          id="project-scope-no-appointments"
+          checked={projectScope === "noAppointments"}
+          onCheckedChange={(checked) => {
+            onProjectScopeChange(checked ? "noAppointments" : "all");
+          }}
+          label="Ohne Termine"
+          labelAdornment={<HelpIcon helpKey="projects.filter.scope.noAppointments" size="sm" />}
+          className="w-full sm:min-w-[10rem]"
+        />
         <TagFilterInput
           selectedTags={selectedTags}
           availableTags={availableTags}

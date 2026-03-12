@@ -9,6 +9,8 @@ interface ProjectOrderNumberFilterInputProps {
   label?: string;
   placeholderLabel?: string;
   maxLength?: number;
+  id?: string;
+  helpKey?: string;
 }
 
 export function ProjectOrderNumberFilterInput({
@@ -16,16 +18,18 @@ export function ProjectOrderNumberFilterInput({
   onChange,
   onClear,
   className,
-  label = "Auftragsnummer",
+  label = "Auftrag Nr.",
   placeholderLabel,
   maxLength,
+  id = "project-filter-order-number",
+  helpKey = "projects.filter.orderNumber",
 }: ProjectOrderNumberFilterInputProps) {
   return (
     <SearchFilterInput
-      id="project-filter-order-number"
+      id={id}
       label={label}
       placeholderLabel={placeholderLabel}
-      labelAdornment={<HelpIcon helpKey="projects.filter.orderNumber" size="sm" />}
+      labelAdornment={<HelpIcon helpKey={helpKey} size="sm" />}
       value={value}
       onChange={onChange}
       onClear={onClear}

@@ -180,6 +180,13 @@ const customerBoardListItemSchema = z.object({
   nextAppointmentStartDate: z.string().nullable(),
   nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
   tags: z.array(tagSchema),
+  historicalAppointments: z.array(z.object({
+    id: z.number(),
+    startDate: z.string(),
+    startTime: z.string().nullable(),
+    orderNumber: z.string().nullable(),
+    projectName: z.string(),
+  })),
 });
 
 const projectBoardStatusSchema = z.object({
@@ -643,6 +650,9 @@ export const api = {
         employeeId: z.coerce.number().int().positive().optional(),
         projectId: z.coerce.number().int().positive().optional(),
         customerId: z.coerce.number().int().positive().optional(),
+        projectTitle: z.string().trim().optional(),
+        customerLastName: z.string().trim().optional(),
+        customerNumber: z.string().trim().optional(),
         orderNumber: z.string().trim().optional(),
         tagIds: z
           .union([

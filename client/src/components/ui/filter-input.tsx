@@ -34,8 +34,7 @@ export function FilterInput({
 
   const handleChange = (nextValue: string) => {
     if (numericOnly) {
-      const digitsOnly = nextValue.replace(/\D/g, "");
-      onChange(digitsOnly);
+      onChange(nextValue.replace(/\D/g, ""));
       return;
     }
 
@@ -44,11 +43,11 @@ export function FilterInput({
 
   return (
     <div className={cn("space-y-1", className)}>
-      <div className="flex items-center gap-1">
+      <div className="flex min-h-5 items-center gap-1">
+        {labelAdornment}
         <Label htmlFor={id} className="text-xs tracking-wide text-slate-500">
           {label}
         </Label>
-        {labelAdornment}
       </div>
       <div className="relative">
         <Input
@@ -59,18 +58,18 @@ export function FilterInput({
           onChange={(event) => handleChange(event.target.value)}
           className="pr-10"
         />
-        {hasValue && (
+        {hasValue ? (
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={onClear}
             className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
-            aria-label={`${label} zurücksetzen`}
+            aria-label={`${label} zuruecksetzen`}
           >
             <X className="h-4 w-4" />
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -7,6 +7,9 @@ interface CustomerNameFilterInputProps {
   onClear: () => void;
   className?: string;
   maxLength?: number;
+  id?: string;
+  label?: string;
+  helpKey?: string;
 }
 
 export function CustomerNameFilterInput({
@@ -15,12 +18,15 @@ export function CustomerNameFilterInput({
   onClear,
   className,
   maxLength,
+  id = "customer-filter-last-name",
+  label = "Nachname Kunde",
+  helpKey = "customers.filter.lastName",
 }: CustomerNameFilterInputProps) {
   return (
     <SearchFilterInput
-      id="customer-filter-last-name"
-      label="Nachname"
-      labelAdornment={<HelpIcon helpKey="customers.filter.name" size="sm" />}
+      id={id}
+      label={label}
+      labelAdornment={<HelpIcon helpKey={helpKey} size="sm" />}
       value={value}
       onChange={onChange}
       onClear={onClear}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User, Phone, MapPin, Building2, Mail, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { Phone, MapPin, Building2, Mail, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
@@ -18,8 +18,9 @@ import { useListFilters } from "@/hooks/useListFilters";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Customer, Tag } from "@shared/schema";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { domainIcons } from "@/lib/domain-icons";
+import { formatListDateTime } from "@/lib/list-display-format";
+import { CustomerTableHoverPreview } from "@/components/ui/table-hover-previews";
 
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
@@ -31,6 +32,13 @@ type CustomerListItem = Customer & {
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   tags: Tag[];
+  historicalAppointments: Array<{
+    id: number;
+    startDate: string;
+    startTime: string | null;
+    orderNumber: string | null;
+    projectName: string;
+  }>;
 };
 
 type CustomerListResponse = {
@@ -54,20 +62,8 @@ function parseViewMode(value: unknown): ViewMode {
   return value === "table" ? "table" : "board";
 }
 
-function toAppointmentDateTime(appointment: { startDate: string; startTimeHour: number | null }): Date {
-  const hour = appointment.startTimeHour ?? 23;
-  const date = new Date(`${appointment.startDate}T00:00:00`);
-  date.setHours(hour, 0, 0, 0);
-  return date;
-}
-
-function formatAppointmentLabel(appointment: { startDate: string; startTimeHour: number | null } | null): string {
-  if (!appointment) return "---";
-
-  const date = new Date(`${appointment.startDate}T00:00:00`);
-  const dateLabel = format(date, "dd.MM.yyyy", { locale: de });
-  if (appointment.startTimeHour == null) return dateLabel;
-  return `${dateLabel}, ${String(appointment.startTimeHour).padStart(2, "0")}:00`;
+function toAppointmentDateTime(appointment: { startDate: string; startTimeHour: number | null }): string {
+  return `${appointment.startDate}|${String(appointment.startTimeHour ?? 99).padStart(2, "0")}`;
 }
 
 function SortIcon({ direction }: { direction: SortDirection | null }) {
@@ -180,14 +176,14 @@ export function CustomersPage({
       }
 
       if (sortKey === "relevantAppointment") {
-        const leftDate = a.relevantAppointment ? toAppointmentDateTime(a.relevantAppointment).getTime() : null;
-        const rightDate = b.relevantAppointment ? toAppointmentDateTime(b.relevantAppointment).getTime() : null;
+        const leftDate = a.relevantAppointment ? toAppointmentDateTime(a.relevantAppointment) : null;
+        const rightDate = b.relevantAppointment ? toAppointmentDateTime(b.relevantAppointment) : null;
 
         if (leftDate == null && rightDate == null) return 0;
         if (leftDate == null) return 1;
         if (rightDate == null) return -1;
 
-        return (leftDate - rightDate) * directionMultiplier;
+        return leftDate.localeCompare(rightDate, "de") * directionMultiplier;
       }
 
       return a.customer.customerNumber.localeCompare(b.customer.customerNumber, "de", { numeric: true }) * directionMultiplier;
@@ -240,7 +236,7 @@ export function CustomersPage({
     () => [
       {
         id: "customerNumber",
-        header: renderSortHeader("Kundennummer", "customerNumber"),
+        header: renderSortHeader("Kund Nr.", "customerNumber"),
         accessor: (row) => row.customer.customerNumber,
         minWidth: 150,
         cell: ({ row }) => <span>{row.customer.customerNumber}</span>,
@@ -272,10 +268,17 @@ export function CustomersPage({
       },
       {
         id: "relevantAppointment",
-        header: renderSortHeader("Nächster Termin", "relevantAppointment"),
+        header: renderSortHeader("Naechster Termin", "relevantAppointment"),
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
-        minWidth: 220,
-        cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
+        minWidth: 180,
+        cell: ({ row }) => (
+          <span>
+            {formatListDateTime({
+              startDate: row.relevantAppointment?.startDate,
+              startTimeHour: row.relevantAppointment?.startTimeHour,
+            })}
+          </span>
+        ),
       },
     ],
     [sortDirection, sortKey],
@@ -304,11 +307,13 @@ export function CustomersPage({
     />
   );
 
+  const CustomersIcon = domainIcons.customers;
+
   return (
     <>
       <ListLayout
         title={resolvedTitle}
-        icon={<User className="w-5 h-5" />}
+        icon={<CustomersIcon className="w-5 h-5" />}
         viewModeKey={viewModeKey}
         helpKey="customers"
         isLoading={customersLoading}
@@ -416,7 +421,7 @@ export function CustomersPage({
                   <EntityCard
                     key={customer.id}
                     title={customer.fullName ?? "Ohne Name"}
-                    icon={<User className="w-4 h-4" />}
+                    icon={<CustomersIcon className="w-4 h-4" />}
                     headerMeta={<span>{`K-Nr. ${customer.customerNumber?.trim() || "-"}`}</span>}
                     headerColor={defaultHeaderColor}
                     testId={`customer-card-${customer.id}`}
@@ -448,22 +453,22 @@ export function CustomersPage({
                     footerVisibility="visible"
                   >
                     <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                      {customer.company && (
+                      {customer.company ? (
                         <div className="flex items-center gap-2">
                           <Building2 className="w-3 h-3 text-slate-400" />
                           <span className="font-medium">{customer.company}</span>
                         </div>
-                      )}
+                      ) : null}
                       <div className="flex items-center gap-2">
                         <Phone className="w-3 h-3 text-slate-400" />
                         <span>{customer.phone}</span>
                       </div>
-                      {customer.email && (
+                      {customer.email ? (
                         <div className="flex items-center gap-2">
                           <Mail className="w-3 h-3 text-slate-400" />
                           <span>{customer.email}</span>
                         </div>
-                      )}
+                      ) : null}
                       <div className="flex items-center gap-2">
                         <MapPin className="w-3 h-3 text-slate-400" />
                         <span>{customer.postalCode} {customer.city}</span>
@@ -481,48 +486,59 @@ export function CustomersPage({
               rowKey={(row) => row.customer.id}
               onRowDoubleClick={(row) => onSelectCustomer?.(row.customer.id)}
               rowPreviewRenderer={(row) => {
-                if (!row.relevantAppointment) {
-                  return (
-                    <div className="rounded-md border border-border bg-card p-3">
-                      Keine Termine geplant
-                    </div>
-                  );
+                if (row.relevantAppointment) {
+                  return createAppointmentWeeklyPanelPreview({
+                    id: row.customer.id,
+                    startDate: row.relevantAppointment.startDate,
+                    endDate: null,
+                    startTime: row.relevantAppointment.startTimeHour == null ? null : `${String(row.relevantAppointment.startTimeHour).padStart(2, "0")}:00:00`,
+                    projectId: null,
+                    projectName: row.customer.fullName ?? "Kunde",
+                    projectVersion: row.customer.version,
+                    projectOrderNumber: null,
+                    projectArticleItems: [],
+                    projectDescription: null,
+                    tourId: null,
+                    tourName: null,
+                    tourColor: null,
+                    customer: {
+                      id: row.customer.id,
+                      customerNumber: row.customer.customerNumber,
+                      fullName: row.customer.fullName,
+                      addressLine1: row.customer.addressLine1,
+                      addressLine2: row.customer.addressLine2,
+                      postalCode: row.customer.postalCode,
+                      city: row.customer.city,
+                    },
+                    employees: [],
+                    customerNotesCount: row.customer.notesCount,
+                    projectNotesCount: 0,
+                    appointmentNotesCount: 0,
+                    appointmentTags: [],
+                    customerTags: row.customer.tags,
+                    projectTags: [],
+                    displayMode: "compact",
+                    isLocked: false,
+                    version: row.customer.version,
+                  }, { sizeProfile: "sidebarTable" });
                 }
 
-                return createAppointmentWeeklyPanelPreview({
-                  id: row.customer.id,
-                  startDate: row.relevantAppointment.startDate,
-                  endDate: null,
-                  startTime: row.relevantAppointment.startTimeHour == null ? null : `${String(row.relevantAppointment.startTimeHour).padStart(2, "0")}:00:00`,
-                  projectId: null,
-                  projectName: row.customer.fullName ?? "Kunde",
-                  projectVersion: row.customer.version,
-                  projectOrderNumber: null,
-                  projectArticleItems: [],
-                  projectDescription: null,
-                  tourId: null,
-                  tourName: null,
-                  tourColor: null,
-                  customer: {
-                    id: row.customer.id,
-                    customerNumber: row.customer.customerNumber,
-                    fullName: row.customer.fullName,
-                    addressLine1: row.customer.addressLine1,
-                    addressLine2: row.customer.addressLine2,
-                    postalCode: row.customer.postalCode,
-                    city: row.customer.city,
-                  },
-                  employees: [],
-                  customerNotesCount: row.customer.notesCount,
-                  projectNotesCount: 0,
-                  appointmentNotesCount: 0,
-                  appointmentTags: [],
-                  customerTags: row.customer.tags,
-                  projectTags: [],
-                  displayMode: "compact",
-                  isLocked: false,
-                  version: row.customer.version,
-                }, { sizeProfile: "sidebarTable" });
+                return (
+                  <CustomerTableHoverPreview
+                    customer={{
+                      id: row.customer.id,
+                      fullName: row.customer.fullName ?? "Ohne Name",
+                      customerNumber: row.customer.customerNumber,
+                      company: row.customer.company ?? "-",
+                      phone: row.customer.phone ?? "-",
+                      email: row.customer.email ?? "-",
+                      city: [row.customer.postalCode, row.customer.city].filter(Boolean).join(" ") || "-",
+                    }}
+                    notesCount={row.customer.notesCount}
+                    tags={row.customer.tags}
+                    historicalAppointments={row.customer.historicalAppointments}
+                  />
+                );
               }}
               emptyState={emptyState}
               stickyHeader

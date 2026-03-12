@@ -5,18 +5,16 @@ type SearchFilterInputProps = Omit<ComponentProps<typeof FilterInput>, "placehol
 
 export function SearchFilterInput({
   label,
-  placeholderLabel,
+  placeholderLabel: _placeholderLabel,
   labelAdornment,
   ...props
 }: SearchFilterInputProps & { placeholderLabel?: string }) {
-  const resolvedPlaceholder = `Suche: ${placeholderLabel ?? label}`;
-
   return (
     <FilterInput
       label={label}
       labelAdornment={labelAdornment}
       {...props}
-      placeholder={resolvedPlaceholder}
+      placeholder=""
     />
   );
 }
