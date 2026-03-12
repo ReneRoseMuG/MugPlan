@@ -4,15 +4,14 @@
  * Abgedeckte Regeln:
  * - ProjectsPage verdrahtet den Auftragsnummer-Filter in das Projektfilterpanel.
  * - Auftragsnummer und Betrag bleiben in der Tabellenansicht verfuegbar.
- * - Board-Karten zeigen Auftragsnummer, Statusbadges und HTML-Beschreibung.
- * - Statusbadges verteilen sich in der Board-Karte links/rechts und umbrechen konsistent.
+ * - Board-Karten zeigen Auftragsnummer und HTML-Beschreibung.
  * - Die Kundenzeile bleibt als unterer Kartenabschluss sichtbar.
  * - Notiz-Trigger erscheint nur bei `notesCount > 0`.
  * - PLZ/Ort aus ueberschuessigen Kundendaten erscheinen nicht in der Projektkarte.
  *
  * Fehlerfaelle:
  * - Filterhandler oder Spalten gehen bei Refactorings verloren.
- * - Projektstatus-Badges oder HTML-Beschreibung verschwinden aus der Board-Karte.
+ * - HTML-Beschreibung verschwindet aus der Board-Karte.
  * - Die Kundenzeile rutscht aus dem Footer-Anschluss heraus.
  * - Leere Notizzaehler rendern weiter einen Trigger.
  * - Unerwuenschte Adressdaten tauchen in Projektkarten wieder auf.
@@ -29,7 +28,6 @@ const useSettingsMock = vi.fn();
 const useListFiltersMock = vi.fn();
 const projectFilterPanelCalls: Array<Record<string, unknown>> = [];
 const tableViewCalls: Array<Record<string, unknown>> = [];
-const projectStatusBadgeCalls: Array<Record<string, unknown>> = [];
 const hoverPreviewCalls: Array<Record<string, unknown>> = [];
 const projectArticleRendererCalls: Array<Record<string, unknown>> = [];
 const notesPreviewCalls: Array<Record<string, unknown>> = [];
@@ -122,13 +120,6 @@ vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
   },
 }));
 
-vi.mock("@/components/ui/project-status-info-badge", () => ({
-  ProjectStatusInfoBadge: (props: Record<string, unknown> & { status: { title: string } }) => {
-    projectStatusBadgeCalls.push(props);
-    return <span>{props.status.title}</span>;
-  },
-}));
-
 vi.mock("@/components/ui/filter-panels/project-filter-panel", () => ({
   ProjectFilterPanel: (props: Record<string, unknown>) => {
     projectFilterPanelCalls.push(props);
@@ -154,7 +145,6 @@ describe("FT02 projects page order number wiring", () => {
     Object.assign(globalThis, { React });
     projectFilterPanelCalls.length = 0;
     tableViewCalls.length = 0;
-    projectStatusBadgeCalls.length = 0;
     hoverPreviewCalls.length = 0;
     projectArticleRendererCalls.length = 0;
     notesPreviewCalls.length = 0;
@@ -164,7 +154,7 @@ describe("FT02 projects page order number wiring", () => {
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
-      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "ORD-1", statusIds: [] },
+      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "ORD-1", tagIds: [] },
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),
@@ -189,6 +179,7 @@ describe("FT02 projects page order number wiring", () => {
                 isActive: true,
                 version: 4,
                 projectArticleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
+                tags: [],
                 notesCount: 1,
                 plannedAppointmentsCount: 2,
                 nextAppointmentStartDate: "2099-07-10",
@@ -201,18 +192,13 @@ describe("FT02 projects page order number wiring", () => {
                   postalCode: "99999",
                   city: "Hamburg",
                 },
-                statuses: [
-                  { id: 1, title: "Offen", color: "#ff0000" },
-                  { id: 2, title: "Geplant", color: "#00ff00" },
-                  { id: 3, title: "Montage", color: "#0000ff" },
-                ],
               },
             ],
           },
           isLoading: false,
         };
       }
-      if (key === "/api/project-status") {
+      if (key === "/api/tags") {
         return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };
@@ -259,7 +245,7 @@ describe("FT02 projects page order number wiring", () => {
     expect(renderToStaticMarkup((amountColumn?.cell as ({ row }: { row: typeof row }) => React.ReactNode)({ row }))).toContain("1.234,50");
   });
 
-  it("renders status badges and html description in board cards without leaking customer address data", () => {
+  it("renders html description in board cards without leaking customer address data", () => {
     const markup = renderToStaticMarkup(<ProjectsPage />);
 
     expect(markup).toContain("A-Nr. ORD-1");
@@ -281,15 +267,8 @@ describe("FT02 projects page order number wiring", () => {
       showSectionTitles: true,
       testIdPrefix: "project-card-preview-renderer-11",
     });
-    expect(projectStatusBadgeCalls).toHaveLength(3);
-    expect(markup).toContain("grid-cols-2");
-    expect(markup).toContain("justify-self-end");
-    expect(projectStatusBadgeCalls[0]).toMatchObject({ size: "sm" });
-    expect(projectStatusBadgeCalls[1]).toMatchObject({ size: "sm" });
-    expect(projectStatusBadgeCalls[2]).toMatchObject({ size: "sm" });
-    expect(projectStatusBadgeCalls[0]).not.toHaveProperty("fullWidth");
-    expect(projectStatusBadgeCalls[1]).not.toHaveProperty("fullWidth");
-    expect(projectStatusBadgeCalls[2]).not.toHaveProperty("fullWidth");
+    expect(markup).toContain("grid-cols-[max-content_1fr]");
+    expect(markup).toContain("justify-end");
     expect(markup).toContain("Kunde Nord");
     expect(markup).toContain("mt-auto flex items-center gap-3");
     expect(markup).toContain("text-project-notes-count-11");
@@ -317,6 +296,7 @@ describe("FT02 projects page order number wiring", () => {
                 isActive: true,
                 version: 4,
                 projectArticleItems: [],
+                tags: [],
                 notesCount: 0,
                 plannedAppointmentsCount: 0,
                 nextAppointmentStartDate: null,
@@ -327,14 +307,13 @@ describe("FT02 projects page order number wiring", () => {
                   fullName: "Kunde Nord",
                   lastName: "Nord",
                 },
-                statuses: [],
               },
             ],
           },
           isLoading: false,
         };
       }
-      if (key === "/api/project-status") {
+      if (key === "/api/tags") {
         return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };

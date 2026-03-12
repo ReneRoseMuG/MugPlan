@@ -5,7 +5,7 @@
  * Use Case: UC Termin-Projekt/Kunde Relationen in Slots
  *
  * Abgedeckte Regeln:
- * - Projektrelation im Terminformular nutzt RelationSlot mit Statusdaten.
+ * - Projektrelation im Terminformular nutzt RelationSlot mit Projektdaten.
  * - Die Projektdatenquelle des Formulars nutzt `scope=all`.
  * - Bei Projektkontext ist der Kundenslot readonly und zeigt die abgeleitete Kundenkarte.
  * - Ohne Projektkontext bleiben Projekt- und Kundenslot leer und selektierbar.
@@ -201,13 +201,6 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
     };
   }
 
-  if (key === "/api/projects") {
-    return {
-      data: [{ status: { id: 1, title: "Status", color: "#123456" } }],
-      isLoading: false,
-    };
-  }
-
   if (key === "/api/tours" || key === "/api/teams" || key === "/api/employees" || key === "/api/appointments") {
     return { data: [], isLoading: false };
   }
@@ -265,7 +258,6 @@ describe("FT01 appointment form relation slots", () => {
         customerId: 21,
         projectArticleItems: [{ label: "Saunamodell", value: "Modell A" }],
       }),
-      projectStatuses: [{ id: 1, title: "Status", color: "#123456" }],
     });
     expect(customerDetailCardCalls[0]).toMatchObject({
       testId: "badge-customer",

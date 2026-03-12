@@ -17,17 +17,15 @@
  * Ziel:
  * Soll-Regeln fuer Historien-Schutz auf API-Ebene deterministisch absichern.
  */
-import express from "express";
-import { createServer } from "http";
+import type express from "express";
 import type { SuperAgentTest } from "supertest";
 import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 
-import { registerRoutes } from "../../../server/routes";
-import { errorHandler } from "../../../server/middleware/errorHandler";
 import { getBerlinTodayDateString } from "../../../client/src/lib/project-appointments";
 import { db } from "../../../server/db";
 import { appointments } from "@shared/schema";
+import { createApiTestApp } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
   createProjectFixture,
@@ -38,12 +36,7 @@ import {
 let app: express.Express;
 
 beforeAll(async () => {
-  app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  const httpServer = createServer(app);
-  await registerRoutes(httpServer, app);
-  app.use(errorHandler);
+  app = await createApiTestApp();
 });
 
 beforeEach(async () => {

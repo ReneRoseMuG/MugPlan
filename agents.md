@@ -321,6 +321,11 @@ Ohne bestandenes Safety Gate gilt jeder Testlauf als ungültig.
 Verbotene Muster:
 - Direkter Insert/Update-Sprawl in Testdateien ohne zentralen Einstieg
 - Demo-/Bestandsdaten als implizite Voraussetzung
+- `readFileSync` oder gleichwertige Direktzugriffe auf produktive Quelldateien in Tests
+- Schreibzugriffe in Tests ausserhalb von `os.tmpdir()`
+- Assertions auf mehrere alternative HTTP-Statuscodes fuer denselben fachlichen Fehler
+- Eigene Express-/HTTP-App-Aufbauten in Integrationstests statt `createApiTestApp()`
+- Abweichende HTTP-Status-/Fehlercode-Semantik fuer denselben fachlichen Fehler in verschiedenen Testdateien
 
 ### Test-Runs dürfen nicht in eigenständigen Fixes münden
 

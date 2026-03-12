@@ -10,7 +10,6 @@
  * - Weekly-Kontext aktiviert den Full-Description-Hover ueber enableFullDescriptionPreview.
  * - Project-Panel enthaelt die HoverPreview-Verdrahtung fuer den Description-Block inklusive Headerzeile.
  * - Vollbeschreibung rendert weiterhin HTML via dangerouslySetInnerHTML.
- * - Projektstatus wird unterhalb des Projektblocks separat gerendert.
  *
  * Fehlerfaelle:
  * - Kundenpraefix bleibt im Weekly-Projektnamen sichtbar.
@@ -33,7 +32,6 @@ describe("FT03 UI: weekly project description preview wiring", () => {
     expect(source).toContain("projectArticleItems={appointment.projectArticleItems}");
     expect(source).toContain('context === "week-calendar"');
     expect(source).toContain("enableFullDescriptionPreview={context === \"week-calendar\"}");
-    expect(source).toContain("<CalendarWeekProjectStatusSection");
   });
 
   it("contains hover preview wiring for project description", () => {

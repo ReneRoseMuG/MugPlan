@@ -18,6 +18,7 @@ import {
   type InsertProject,
   type InsertProjectOrderItem,
   type ProjectOrderItem,
+  type Tag,
   type UpdateProject,
   type UpdateProjectOrderItem,
   type InsertProjectAttachment,
@@ -29,9 +30,10 @@ import {
   type ProjectArticleItem,
 } from "@shared/projectArticleList";
 import type { ProjectScope } from "../services/projectsService";
-import { getProjectStatusesByProjectIds } from "./projectStatusRepository";
 import { listProjectArticleRowsByProjectIds } from "./appointmentsRepository";
+import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
+export type ProjectWithTags = Project & { tags: Tag[] };
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
   year: "numeric",
@@ -170,7 +172,7 @@ function resolveProjectOrderInput(
 
 export async function getProjects(
   filter: "active" | "inactive" | "all" = "all",
-  statusIds: number[] = [],
+  tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
   const conditions = [];
@@ -180,13 +182,13 @@ export async function getProjects(
   if (filter === "inactive") {
     conditions.push(eq(projects.isActive, false));
   }
-  if (statusIds.length > 0) {
-    const statusIdList = sql.join(statusIds.map((id) => sql`${id}`), sql`, `);
+  if (tagIds.length > 0) {
+    const tagIdList = sql.join(tagIds.map((id) => sql`${id}`), sql`, `);
     conditions.push(sql`exists (
       select 1
-      from ${projectProjectStatus}
-      where ${projectProjectStatus.projectId} = ${projects.id}
-        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
+      from project_tags
+      where project_tags.project_id = ${projects.id}
+        and project_tags.tag_id in (${tagIdList})
     )`);
   }
   const scopeCondition = buildScopeCondition(scope);
@@ -214,14 +216,16 @@ export async function getProjects(
     .groupBy(projectNotes.projectId);
 
   const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   return rows.map((row) => ({
     ...mergeProjectWithOrder(row, orderByProjectId.get(row.id) ?? null),
     notesCount: notesCountByProjectId.get(row.id) ?? 0,
     projectArticleItems: projectArticleItemsByProject.get(row.id) ?? [],
+    tags: tagsByProjectId.get(row.id) ?? [],
   }));
 }
 
-export type ProjectListItem = Project & { notesCount: number; projectArticleItems: ProjectArticleItem[] };
+export type ProjectListItem = Project & { notesCount: number; projectArticleItems: ProjectArticleItem[]; tags: Tag[] };
 export type ProjectBoardListItem = ProjectListItem & {
   projectArticleItems: ProjectArticleItem[];
   customer: {
@@ -230,11 +234,6 @@ export type ProjectBoardListItem = ProjectListItem & {
     fullName: string | null;
     lastName: string | null;
   };
-  statuses: Array<{
-    id: number;
-    title: string;
-    color: string;
-  }>;
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
@@ -254,7 +253,7 @@ type VersionedMutationResult<T> =
 
 function buildProjectFilterConditions(params: {
   filter: "active" | "inactive" | "all";
-  statusIds: number[];
+  tagIds: number[];
   scope: ProjectScope;
   customerId?: number;
   title?: string;
@@ -273,13 +272,13 @@ function buildProjectFilterConditions(params: {
   if (params.filter === "inactive") {
     conditions.push(eq(projects.isActive, false));
   }
-  if (params.statusIds.length > 0) {
-    const statusIdList = sql.join(params.statusIds.map((id) => sql`${id}`), sql`, `);
+  if (params.tagIds.length > 0) {
+    const tagIdList = sql.join(params.tagIds.map((id) => sql`${id}`), sql`, `);
     conditions.push(sql`exists (
       select 1
-      from ${projectProjectStatus}
-      where ${projectProjectStatus.projectId} = ${projects.id}
-        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
+      from project_tags
+      where project_tags.project_id = ${projects.id}
+        and project_tags.tag_id in (${tagIdList})
     )`);
   }
   const scopeCondition = buildScopeCondition(params.scope);
@@ -330,7 +329,7 @@ function normalizeStartTimeHour(value: unknown): number | null {
 
 export async function getProjectsPaged(params: {
   filter: "active" | "inactive" | "all";
-  statusIds: number[];
+  tagIds: number[];
   scope: ProjectScope;
   customerId?: number;
   title?: string;
@@ -406,16 +405,13 @@ export async function getProjectsPaged(params: {
       asc(appointments.id),
     );
 
-  const statusesRows = await getProjectStatusesByProjectIds(projectIds);
-
   const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   const appointmentSummaryByProjectId = new Map<number, {
     plannedAppointmentsCount: number;
     nextAppointmentStartDate: string | null;
     nextAppointmentStartTimeHour: number | null;
   }>();
-  const statusesByProjectId = new Map<number, Array<{ id: number; title: string; color: string }>>();
-
   for (const row of appointmentRows) {
     if (row.projectId == null) continue;
     const current = appointmentSummaryByProjectId.get(row.projectId);
@@ -430,16 +426,6 @@ export async function getProjectsPaged(params: {
     current.plannedAppointmentsCount += 1;
   }
 
-  for (const row of statusesRows) {
-    const current = statusesByProjectId.get(row.projectId) ?? [];
-    current.push({
-      id: row.status.id,
-      title: row.status.title,
-      color: row.status.color,
-    });
-    statusesByProjectId.set(row.projectId, current);
-  }
-
   return {
     items: rows.map((row) => {
       const mergedProject = mergeProjectWithOrder(row.project, row.order ?? null);
@@ -451,13 +437,13 @@ export async function getProjectsPaged(params: {
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
         projectArticleItems: projectArticleItemsByProject.get(row.project.id) ?? [],
+        tags: tagsByProjectId.get(row.project.id) ?? [],
         customer: {
           id: row.customer.id,
           customerNumber: row.customer.customerNumber,
           fullName: row.customer.fullName,
           lastName: row.customer.lastName,
         },
-        statuses: statusesByProjectId.get(row.project.id) ?? [],
       };
     }),
     page: params.page,
@@ -470,7 +456,7 @@ export async function getProjectsPaged(params: {
 export async function getProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
-  statusIds: number[] = [],
+  tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
   const conditions = [eq(projects.customerId, customerId)];
@@ -480,13 +466,13 @@ export async function getProjectsByCustomer(
   if (filter === "inactive") {
     conditions.push(eq(projects.isActive, false));
   }
-  if (statusIds.length > 0) {
-    const statusIdList = sql.join(statusIds.map((id) => sql`${id}`), sql`, `);
+  if (tagIds.length > 0) {
+    const tagIdList = sql.join(tagIds.map((id) => sql`${id}`), sql`, `);
     conditions.push(sql`exists (
       select 1
-      from ${projectProjectStatus}
-      where ${projectProjectStatus.projectId} = ${projects.id}
-        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
+      from project_tags
+      where project_tags.project_id = ${projects.id}
+        and project_tags.tag_id in (${tagIdList})
     )`);
   }
   const scopeCondition = buildScopeCondition(scope);
@@ -514,18 +500,24 @@ export async function getProjectsByCustomer(
     .groupBy(projectNotes.projectId);
 
   const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   return rows.map((row) => ({
     ...mergeProjectWithOrder(row, orderByProjectId.get(row.id) ?? null),
     notesCount: notesCountByProjectId.get(row.id) ?? 0,
     projectArticleItems: projectArticleItemsByProject.get(row.id) ?? [],
+    tags: tagsByProjectId.get(row.id) ?? [],
   }));
 }
 
-export async function getProject(id: number): Promise<Project | null> {
+export async function getProject(id: number): Promise<ProjectWithTags | null> {
   const [project] = await db.select().from(projects).where(eq(projects.id, id));
   if (!project) return null;
   const [order] = await db.select().from(projectOrder).where(eq(projectOrder.projectId, id));
-  return mergeProjectWithOrder(project, order ?? null);
+  const tagsByProjectId = await getProjectTagsByProjectIds([id]);
+  return {
+    ...mergeProjectWithOrder(project, order ?? null),
+    tags: tagsByProjectId.get(id) ?? [],
+  };
 }
 
 export async function existsProjectByOrderNumber(orderNumber: string): Promise<boolean> {
@@ -561,7 +553,7 @@ export async function listProjectOrderNumbers(): Promise<string[]> {
 
 export async function getProjectWithCustomer(
   id: number,
-): Promise<{ project: Project; customer: typeof customers.$inferSelect } | null> {
+): Promise<{ project: ProjectWithTags; customer: typeof customers.$inferSelect } | null> {
   const [result] = await db
     .select({ project: projects, customer: customers, order: projectOrder })
     .from(projects)
@@ -569,8 +561,12 @@ export async function getProjectWithCustomer(
     .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .where(eq(projects.id, id));
   if (!result) return null;
+  const tagsByProjectId = await getProjectTagsByProjectIds([id]);
   return {
-    project: mergeProjectWithOrder(result.project, result.order ?? null),
+    project: {
+      ...mergeProjectWithOrder(result.project, result.order ?? null),
+      tags: tagsByProjectId.get(id) ?? [],
+    },
     customer: result.customer,
   };
 }
@@ -676,6 +672,16 @@ export async function updateProjectWithVersion(
     const [order] = await tx.select().from(projectOrder).where(eq(projectOrder.projectId, id));
     return { kind: "updated" as const, project: mergeProjectWithOrder(project, order ?? null) };
   });
+}
+
+export async function hasAppointmentsForProject(projectId: number): Promise<boolean> {
+  const [existingAppointment] = await db
+    .select({ id: appointments.id })
+    .from(appointments)
+    .where(eq(appointments.projectId, projectId))
+    .limit(1);
+
+  return Boolean(existingAppointment);
 }
 
 export async function deleteProjectWithVersion(

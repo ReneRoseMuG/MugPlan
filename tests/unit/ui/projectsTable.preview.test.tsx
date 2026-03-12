@@ -72,10 +72,6 @@ vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
   EntityNotesHoverPreview: () => <div>notes-preview</div>,
 }));
 
-vi.mock("@/components/ui/project-status-info-badge", () => ({
-  ProjectStatusInfoBadge: ({ status }: { status: { title: string } }) => <span>{status.title}</span>,
-}));
-
 vi.mock("@/components/ui/filter-panels/project-filter-panel", () => ({
   ProjectFilterPanel: () => <div>project-filter-panel</div>,
 }));
@@ -104,7 +100,7 @@ describe("FT03 projects table preview wiring", () => {
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
-      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "", statusIds: [] },
+      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "", tagIds: [] },
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),
@@ -139,7 +135,6 @@ describe("FT03 projects table preview wiring", () => {
                   fullName: "Kunde Vier",
                   lastName: "Vier",
                 },
-                statuses: [{ id: 1, title: "Geplant", color: "#00ff00" }],
               },
               {
                 id: 32,
@@ -161,14 +156,13 @@ describe("FT03 projects table preview wiring", () => {
                   fullName: "Kunde Fuenf",
                   lastName: "Fuenf",
                 },
-                statuses: [],
               },
             ],
           },
           isLoading: false,
         };
       }
-      if (key === "/api/project-status") {
+      if (key === "/api/tags") {
         return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };

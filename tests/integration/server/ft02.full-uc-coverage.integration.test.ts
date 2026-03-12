@@ -5,7 +5,7 @@
  * Use Case: UC 02/01 bis UC 02/20 (Hauptsuite)
  *
  * Abgedeckte Regeln:
- * - Kernverhalten fuer Projekt create/update/delete, status-join, notes und Projektionen.
+ * - Kernverhalten fuer Projekt create/update/delete, notes und Projektionen.
  * - Optimistic locking fuer Projektupdates.
  * - Join-Cleanup bei Projektloeschung.
  * - Cross-View Nachweis: Detail-Aggregat ist konsistent zu den dedizierten Projekt-Endpoints.
@@ -18,13 +18,13 @@
  * Ziel:
  * FT02-UC-Traceability in einer zentralen Integrationssuite herstellen.
  */
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import { db } from "../../../server/db";
-import { projectOrder, projectProjectStatus } from "../../../shared/schema";
+import { projectOrder } from "../../../shared/schema";
 import { createApiTestApp, loginAdminAgent as loginAdminAgentBase } from "../../helpers/apiTestHarness";
 import type express from "express";
 import type { SuperAgentTest } from "supertest";
@@ -204,6 +204,36 @@ describe("FT02 integration: full uc coverage", () => {
       });
   });
 
+  it("UC 02/04e: project customer reassignment is blocked after an appointment exists", async () => {
+    const admin = await loginAdminAgent();
+    const sourceCustomer = await createCustomer("UC0204E-A");
+    const targetCustomer = await createCustomer("UC0204E-B");
+    const project = await createProject(sourceCustomer.id, "UC02-04e Base");
+
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-12-22",
+      employeeIds: [],
+    });
+    expect(appointment.id).toBeDefined();
+
+    await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, customerId: targetCustomer.id })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    const [projectDetail, appointmentDetail] = await Promise.all([
+      admin.get(`/api/projects/${project.id}`).expect(200),
+      admin.get(`/api/appointments/${appointment.id}`).expect(200),
+    ]);
+
+    expect(projectDetail.body.project.customerId).toBe(sourceCustomer.id);
+    expect(appointmentDetail.body.customerId).toBe(sourceCustomer.id);
+  });
+
   it("UC 02/04d detail payload exposes project type and project_order aggregate for form resolution", async () => {
     const admin = await loginAdminAgent();
     const customer = await createCustomer("UC0204D");
@@ -232,42 +262,6 @@ describe("FT02 integration: full uc coverage", () => {
       plannedDateText: "April 2099",
       plannedWeek: "2099-W16",
     });
-  });
-
-  it("UC 02/04 status relation add/remove with inactive block", async () => {
-    const admin = await loginAdminAgent();
-    const customer = await createCustomer("UC0204");
-    const project = await createProject(customer.id, "UC02-04");
-
-    const activeStatus = await admin
-      .post("/api/project-status")
-      .send({ title: `UC0204-Active-${Date.now()}-${seq++}`, color: "#16a34a", description: null, sortOrder: 1 })
-      .expect(201);
-
-    await admin
-      .post(`/api/projects/${project.id}/statuses`)
-      .send({ statusId: activeStatus.body.id, expectedVersion: 0 })
-      .expect(201);
-
-    await admin
-      .delete(`/api/projects/${project.id}/statuses/${activeStatus.body.id}`)
-      .send({ version: 1 })
-      .expect(204);
-
-    const inactiveStatus = await admin
-      .post("/api/project-status")
-      .send({ title: `UC0204-Inactive-${Date.now()}-${seq++}`, color: "#64748b", description: null, sortOrder: 2 })
-      .expect(201);
-
-    await admin
-      .patch(`/api/project-status/${inactiveStatus.body.id}/active`)
-      .send({ isActive: false, version: inactiveStatus.body.version })
-      .expect(200);
-
-    await admin
-      .post(`/api/projects/${project.id}/statuses`)
-      .send({ statusId: inactiveStatus.body.id, expectedVersion: 0 })
-      .expect(409);
   });
 
   it("UC 02/05 project notes create/list/delete", async () => {
@@ -353,74 +347,6 @@ describe("FT02 integration: full uc coverage", () => {
     expect(row?.projectName.includes("UC02-09 Changed")).toBe(true);
   });
 
-  it("UC 02/10: project status projection appears in appointments payload", async () => {
-    const admin = await loginAdminAgent();
-    const customer = await createCustomer("UC0210");
-    const project = await createProject(customer.id, "UC02-10");
-
-    await appointmentsService.createAppointment({
-      projectId: project.id,
-      startDate: "2099-12-22",
-      employeeIds: [],
-    });
-
-    const status = await admin
-      .post("/api/project-status")
-      .send({ title: `UC0210-Status-${Date.now()}-${seq++}`, color: "#3344cc", description: null, sortOrder: 1 })
-      .expect(201);
-
-    await admin
-      .post(`/api/projects/${project.id}/statuses`)
-      .send({ statusId: status.body.id, expectedVersion: 0 })
-      .expect(201);
-
-    const response = await admin
-      .get(`/api/customers/${customer.id}/appointments?scope=all`)
-      .expect(200);
-
-    const item = (response.body as Array<{ projectId: number; projectStatuses: Array<{ id: number }> }>).find(
-      (row) => row.projectId === project.id,
-    );
-
-    expect(item).toBeDefined();
-    expect(item?.projectStatuses.some((entry) => entry.id === status.body.id)).toBe(true);
-  });
-
-  it("UC 02/11 + UC 02/15: deleting project removes status join relations", async () => {
-    const admin = await loginAdminAgent();
-    const customer = await createCustomer("UC0211");
-    const project = await createProject(customer.id, "UC02-11");
-
-    const status = await admin
-      .post("/api/project-status")
-      .send({ title: `UC0211-Status-${Date.now()}-${seq++}`, color: "#882299", description: null, sortOrder: 1 })
-      .expect(201);
-
-    await admin
-      .post(`/api/projects/${project.id}/statuses`)
-      .send({ statusId: status.body.id, expectedVersion: 0 })
-      .expect(201);
-
-    const beforeRows = await db
-      .select()
-      .from(projectProjectStatus)
-      .where(and(eq(projectProjectStatus.projectId, project.id), eq(projectProjectStatus.projectStatusId, status.body.id)));
-    expect(beforeRows).toHaveLength(1);
-
-    await admin
-      .delete(`/api/projects/${project.id}`)
-      .send({ version: project.version })
-      .expect(204);
-
-    const afterRows = await db
-      .select()
-      .from(projectProjectStatus)
-      .where(and(eq(projectProjectStatus.projectId, project.id), eq(projectProjectStatus.projectStatusId, status.body.id)));
-    expect(afterRows).toHaveLength(0);
-
-    await admin.get(`/api/projects/${project.id}`).expect(404);
-  });
-
   it("UC 02/14: two clients with same version cause stale conflict", async () => {
     const a = await loginAdminAgent();
     const b = await loginAdminAgent();
@@ -455,16 +381,6 @@ describe("FT02 integration: full uc coverage", () => {
       .send({ title: "UC02-12 Note", body: "<p>UC02/12</p>" })
       .expect(201);
 
-    const status = await admin
-      .post("/api/project-status")
-      .send({ title: `UC0212-Status-${Date.now()}-${seq++}`, color: "#0f766e", description: null, sortOrder: 1 })
-      .expect(201);
-
-    await admin
-      .post(`/api/projects/${project.id}/statuses`)
-      .send({ statusId: status.body.id, expectedVersion: 0 })
-      .expect(201);
-
     await admin
       .post(`/api/projects/${project.id}/attachments`)
       .attach("file", Buffer.from("UC0212 attachment"), "uc0212.txt")
@@ -478,27 +394,18 @@ describe("FT02 integration: full uc coverage", () => {
     expect(appointment?.id).toBeDefined();
     expect(note.body.id).toBeDefined();
 
-    const [detail, statuses, notes, attachments, appointments] = await Promise.all([
+    const [detail, notes, attachments, appointments] = await Promise.all([
       admin.get(`/api/projects/${project.id}`).expect(200),
-      admin.get(`/api/projects/${project.id}/statuses`).expect(200),
       admin.get(`/api/projects/${project.id}/notes`).expect(200),
       admin.get(`/api/projects/${project.id}/attachments`).expect(200),
       admin.get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`).expect(200),
     ]);
 
     const detailBody = detail.body as {
-      projectStatuses: Array<{ status: { id: number } }>;
       projectNotes: Array<{ id: number }>;
       projectAttachments: Array<{ id: number }>;
       projectAppointments: Array<{ id: number }>;
     };
-
-    const detailStatusIds = detailBody.projectStatuses.map((entry) => entry.status.id).sort((a, b) => a - b);
-    const endpointStatusIds = (statuses.body as Array<{ status: { id: number } }>)
-      .map((entry) => entry.status.id)
-      .sort((a, b) => a - b);
-
-    expect(detailStatusIds).toEqual(endpointStatusIds);
     expect(listIds(detailBody.projectNotes)).toEqual(listIds(notes.body));
     expect(listIds(detailBody.projectAttachments)).toEqual(listIds(attachments.body));
     expect(listIds(detailBody.projectAppointments)).toEqual(listIds(appointments.body));
@@ -508,16 +415,6 @@ describe("FT02 integration: full uc coverage", () => {
     const admin = await loginAdminAgent();
     const customer = await createCustomer("UC0219");
     const project = await createProject(customer.id, "UC02-19 Base");
-
-    const status = await admin
-      .post("/api/project-status")
-      .send({ title: `UC0219-Status-${Date.now()}-${seq++}`, color: "#4338ca", description: null, sortOrder: 1 })
-      .expect(201);
-
-    const addStatus = await admin
-      .post(`/api/projects/${project.id}/statuses`)
-      .send({ statusId: status.body.id, expectedVersion: 0 })
-      .expect(201);
 
     const note = await admin
       .post(`/api/projects/${project.id}/notes`)
@@ -541,33 +438,22 @@ describe("FT02 integration: full uc coverage", () => {
       .send({ version: note.body.version })
       .expect(204);
 
-    await admin
-      .delete(`/api/projects/${project.id}/statuses/${status.body.id}`)
-      .send({ version: addStatus.body.relationVersion })
-      .expect(204);
-
-    const [detail, statuses, notes, appointments] = await Promise.all([
+    const [detail, notes, appointments] = await Promise.all([
       admin.get(`/api/projects/${project.id}`).expect(200),
-      admin.get(`/api/projects/${project.id}/statuses`).expect(200),
       admin.get(`/api/projects/${project.id}/notes`).expect(200),
       admin.get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`).expect(200),
     ]);
 
     const detailBody = detail.body as {
       project: { name: string };
-      projectStatuses: Array<{ status: { id: number } }>;
       projectNotes: Array<{ id: number }>;
       projectAppointments: Array<{ id: number; projectName: string }>;
     };
 
     expect(detailBody.project.name.includes("UC02-19 Changed")).toBe(true);
-    expect(detailBody.projectStatuses).toHaveLength(0);
     expect(detailBody.projectNotes).toHaveLength(0);
     expect(detailBody.projectAppointments.some((entry) => entry.id === createdAppointment?.id)).toBe(true);
     expect(detailBody.projectAppointments.every((entry) => entry.projectName.includes("UC02-19 Changed"))).toBe(true);
-
-    const endpointStatusIds = (statuses.body as Array<{ status: { id: number } }>).map((entry) => entry.status.id);
-    expect(endpointStatusIds).toEqual([]);
     expect(listIds(detailBody.projectNotes)).toEqual(listIds(notes.body));
     expect(listIds(detailBody.projectAppointments)).toEqual(listIds(appointments.body));
   });

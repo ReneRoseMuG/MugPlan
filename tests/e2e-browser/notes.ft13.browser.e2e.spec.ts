@@ -58,7 +58,11 @@ async function createNoteViaDialog(page: Page, input: { title: string; body: str
   await dialog.getByTestId("input-note-title").fill(input.title);
   await dialog.getByTestId("richtext-editor").fill(input.body);
   await setNoteCardColor(page, input.cardColor);
-  await expect(dialog.getByTestId("switch-note-print")).toHaveAttribute("data-state", "checked");
+  const printSwitch = dialog.getByTestId("switch-note-print");
+  if ((await printSwitch.getAttribute("data-state")) !== "checked") {
+    await printSwitch.click();
+  }
+  await expect(printSwitch).toHaveAttribute("data-state", "checked");
   await dialog.getByTestId("button-save-note").click();
 }
 

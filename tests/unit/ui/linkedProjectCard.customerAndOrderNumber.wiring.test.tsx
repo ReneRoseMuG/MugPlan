@@ -38,9 +38,4 @@ describe("FT02 linked project card customer and order number wiring", () => {
     expect(source).toContain("text-linked-project-order-number");
   });
 
-  it("maps project status relation payload to colored badge fields", () => {
-    expect(source).toContain("useQuery<ProjectStatusRelationItem[]>");
-    expect(source).toContain("entry.status.title");
-    expect(source).toContain("getProjectStatusColor(entry.status)");
-  });
 });

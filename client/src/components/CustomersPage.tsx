@@ -9,6 +9,7 @@ import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CustomerFilterPanel } from "@/components/ui/filter-panels/customer-filter-panel";
+import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { defaultHeaderColor } from "@/lib/colors";
 import { defaultCustomerFilters } from "@/lib/customer-filters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
@@ -16,7 +17,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
-import type { Customer } from "@shared/schema";
+import type { Customer, Tag } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -29,6 +30,7 @@ type CustomerListItem = Customer & {
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
+  tags: Tag[];
 };
 
 type CustomerListResponse = {
@@ -103,6 +105,7 @@ export function CustomersPage({
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const [customerScope, setCustomerScope] = useState<"active" | "inactive">("active");
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
 
   useEffect(() => {
     setViewMode(tableOnly ? "table" : resolvedViewMode);
@@ -119,6 +122,7 @@ export function CustomersPage({
 
     if (filters.lastName.trim().length > 0) params.set("lastName", filters.lastName.trim());
     if (filters.customerNumber.trim().length > 0) params.set("customerNumber", filters.customerNumber.trim());
+    if (filters.tagIds.length > 0) params.set("tagIds", filters.tagIds.join(","));
 
     return params.toString();
   }, [effectiveCustomerScope, filters, page]);
@@ -133,8 +137,22 @@ export function CustomersPage({
       return (await response.json()) as CustomerListResponse;
     },
   });
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
+  });
 
   const customers = data?.items ?? [];
+  const selectedTags = useMemo(
+    () => filters.tagIds
+      .map((id) => availableTags.find((tag) => tag.id === id))
+      .filter((tag): tag is Tag => Boolean(tag)),
+    [availableTags, filters.tagIds],
+  );
+  const selectedTagIds = useMemo(() => new Set(filters.tagIds), [filters.tagIds]);
+  const unselectedTags = useMemo(
+    () => availableTags.filter((tag) => !selectedTagIds.has(tag.id)),
+    [availableTags, selectedTagIds],
+  );
 
   const customerRows = useMemo(() => {
     return customers.map((customer) => ({
@@ -267,7 +285,11 @@ export function CustomersPage({
   const totalPages = data?.totalPages ?? 0;
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
-  const hasActiveFilters = filters.lastName.trim().length > 0 || filters.customerNumber.trim().length > 0 || (isAdmin && customerScope !== "active");
+  const hasActiveFilters =
+    filters.lastName.trim().length > 0
+    || filters.customerNumber.trim().length > 0
+    || filters.tagIds.length > 0
+    || (isAdmin && customerScope !== "active");
   const emptyState = hasActiveFilters ? (
     <ListEmptyState
       helpKey="customers.emptyFiltered"
@@ -302,6 +324,12 @@ export function CustomersPage({
             customerNumber={filters.customerNumber}
             onCustomerNumberChange={(value) => setFilter("customerNumber", value)}
             onCustomerNumberClear={() => setFilter("customerNumber", "")}
+            selectedTags={selectedTags}
+            availableTags={unselectedTags}
+            tagPickerOpen={tagPickerOpen}
+            onTagPickerOpenChange={setTagPickerOpen}
+            onAddTag={(tagId) => setFilter("tagIds", [...filters.tagIds, tagId])}
+            onRemoveTag={(tagId) => setFilter("tagIds", filters.tagIds.filter((id) => id !== tagId))}
             customerScope={isAdmin ? customerScope : undefined}
             onCustomerScopeChange={isAdmin ? setCustomerScope : undefined}
           />
@@ -394,24 +422,27 @@ export function CustomersPage({
                     testId={`customer-card-${customer.id}`}
                     onDoubleClick={handleSelect}
                     footer={(
-                      <div className="grid w-full grid-cols-[2fr_1fr] gap-2">
-                        <AppointmentCountBadge
-                          count={customer.plannedAppointmentsCount}
-                          testId={`text-customer-planned-appointments-${customer.id}`}
-                          fullWidth
-                        />
-                        {customer.notesCount > 0 ? (
-                          <div
-                            className="flex min-h-[32px] items-center justify-end px-1 text-[10px] font-semibold text-slate-700"
-                            data-testid={`text-customer-notes-count-${customer.id}`}
-                          >
-                            <EntityNotesHoverPreview
-                              sourceMode="single-parent"
-                              sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
-                              triggerTestId={`text-customer-notes-count-${customer.id}`}
-                            />
-                          </div>
-                        ) : null}
+                      <div className="flex w-full flex-col gap-2">
+                        <div className="grid w-full grid-cols-[2fr_1fr] gap-2">
+                          <AppointmentCountBadge
+                            count={customer.plannedAppointmentsCount}
+                            testId={`text-customer-planned-appointments-${customer.id}`}
+                            fullWidth
+                          />
+                          {customer.notesCount > 0 ? (
+                            <div
+                              className="flex min-h-[32px] items-center justify-end px-1 text-[10px] font-semibold text-slate-700"
+                              data-testid={`text-customer-notes-count-${customer.id}`}
+                            >
+                              <EntityNotesHoverPreview
+                                sourceMode="single-parent"
+                                sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
+                                triggerTestId={`text-customer-notes-count-${customer.id}`}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                        <EntityTagFooterRow tags={customer.tags} testId={`customer-card-tags-${customer.id}`} />
                       </div>
                     )}
                     footerVisibility="visible"
@@ -469,7 +500,6 @@ export function CustomersPage({
                   projectOrderNumber: null,
                   projectArticleItems: [],
                   projectDescription: null,
-                  projectStatuses: [],
                   tourId: null,
                   tourName: null,
                   tourColor: null,
@@ -486,6 +516,9 @@ export function CustomersPage({
                   customerNotesCount: row.customer.notesCount,
                   projectNotesCount: 0,
                   appointmentNotesCount: 0,
+                  appointmentTags: [],
+                  customerTags: row.customer.tags,
+                  projectTags: [],
                   displayMode: "compact",
                   isLocked: false,
                   version: row.customer.version,

@@ -4,14 +4,14 @@
  * Feature: FT02 - Projektlistenfilter Layout
  *
  * Abgedeckte Regeln:
- * - Projektname, Nachname, Kundennummer, Auftragsnummer, Scope-Switches und Statusfilter liegen in einer gemeinsamen Reihenstruktur.
+ * - Projektname, Nachname, Kundennummer, Auftragsnummer, Scope-Switches und Tagfilter liegen in einer gemeinsamen Reihenstruktur.
  * - Kundennummer und Auftragsnummer bleiben als sichtbare Labels mit Placeholder `Suche: Nr.` erhalten.
  * - Die sichtbaren Feldbreiten bleiben fuer die Nummernfelder begrenzt.
  *
  * Fehlerfaelle:
  * - Projektfilter zerfaellt wieder in mehrere Zeilen oder verliert Felder.
  * - Nummernfelder verlieren Label oder Placeholder.
- * - Die beiden Switches oder der Statusfilter fallen aus der gemeinsamen Reihe.
+ * - Die beiden Switches oder der Tagfilter fallen aus der gemeinsamen Reihe.
  *
  * Ziel:
  * Das Projektfilter-Panel ueber gerendertes Markup und Props statt ueber Quelltextmarker absichern.
@@ -21,7 +21,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const filterPanelCalls: Array<Record<string, unknown>> = [];
-const statusFilterCalls: Array<Record<string, unknown>> = [];
+const tagFilterCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@/components/ui/filter-panels/filter-panel", () => ({
   FilterPanel: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
@@ -82,10 +82,10 @@ vi.mock("@/components/filters/project-order-number-filter-input", () => ({
   ),
 }));
 
-vi.mock("@/components/filters/project-status-filter-input", () => ({
-  ProjectStatusFilterInput: (props: Record<string, unknown>) => {
-    statusFilterCalls.push(props);
-    return <div data-testid="filter-project-status">Statusfilter</div>;
+vi.mock("@/components/filters/tag-filter-input", () => ({
+  TagFilterInput: (props: Record<string, unknown>) => {
+    tagFilterCalls.push(props);
+    return <div data-testid="filter-project-tag">Tagfilter</div>;
   },
 }));
 
@@ -96,36 +96,39 @@ describe("FT02 UI: project filter panel layout wiring", () => {
 
   beforeEach(() => {
     filterPanelCalls.length = 0;
-    statusFilterCalls.length = 0;
+    tagFilterCalls.length = 0;
     vi.stubGlobal("React", React);
   });
 
+  const renderPanel = (overrides?: Partial<React.ComponentProps<typeof ProjectFilterPanel>>) => renderToStaticMarkup(
+    <ProjectFilterPanel
+      title="Projektfilter"
+      projectTitle=""
+      onProjectTitleChange={noop}
+      onProjectTitleClear={noop}
+      customerLastName=""
+      onCustomerLastNameChange={noop}
+      onCustomerLastNameClear={noop}
+      customerNumber=""
+      onCustomerNumberChange={noop}
+      onCustomerNumberClear={noop}
+      orderNumber=""
+      onOrderNumberChange={noop}
+      onOrderNumberClear={noop}
+      selectedTags={[]}
+      availableTags={[]}
+      tagPickerOpen={false}
+      onTagPickerOpenChange={noop}
+      onAddTag={noop}
+      onRemoveTag={noop}
+      projectScope="upcoming"
+      onProjectScopeChange={noop}
+      {...overrides}
+    />,
+  );
+
   it("renders the shared row with project and customer filters in the expected order", () => {
-    const html = renderToStaticMarkup(
-      <ProjectFilterPanel
-        title="Projektfilter"
-        projectTitle="Projekt A"
-        onProjectTitleChange={noop}
-        onProjectTitleClear={noop}
-        customerLastName="Muster"
-        onCustomerLastNameChange={noop}
-        onCustomerLastNameClear={noop}
-        customerNumber="C-1"
-        onCustomerNumberChange={noop}
-        onCustomerNumberClear={noop}
-        orderNumber="ORD-1"
-        onOrderNumberChange={noop}
-        onOrderNumberClear={noop}
-        selectedStatuses={[]}
-        availableStatuses={[]}
-        statusPickerOpen={false}
-        onStatusPickerOpenChange={noop}
-        onAddStatus={noop}
-        onRemoveStatus={noop}
-        projectScope="upcoming"
-        onProjectScopeChange={noop}
-      />,
-    );
+    const html = renderPanel({ projectTitle: "Projekt A", customerLastName: "Muster", customerNumber: "C-1", orderNumber: "ORD-1" });
 
     const projectIndex = html.indexOf("filter-project-title");
     const customerIndex = html.indexOf("filter-customer-last-name");
@@ -133,7 +136,7 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     const orderNumberIndex = html.indexOf("filter-project-order-number");
     const allProjectsIndex = html.indexOf("Alle Projekte");
     const noAppointmentsIndex = html.indexOf("Ohne Termine");
-    const statusIndex = html.indexOf("filter-project-status");
+    const tagIndex = html.indexOf("filter-project-tag");
 
     expect(projectIndex).toBeGreaterThan(-1);
     expect(customerIndex).toBeGreaterThan(projectIndex);
@@ -141,76 +144,28 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     expect(orderNumberIndex).toBeGreaterThan(customerNumberIndex);
     expect(allProjectsIndex).toBeGreaterThan(orderNumberIndex);
     expect(noAppointmentsIndex).toBeGreaterThan(allProjectsIndex);
-    expect(statusIndex).toBeGreaterThan(noAppointmentsIndex);
+    expect(tagIndex).toBeGreaterThan(noAppointmentsIndex);
   });
 
   it("keeps visible number labels and the normalized number placeholder", () => {
-    const html = renderToStaticMarkup(
-      <ProjectFilterPanel
-        title="Projektfilter"
-        projectTitle=""
-        onProjectTitleChange={noop}
-        onProjectTitleClear={noop}
-        customerLastName=""
-        onCustomerLastNameChange={noop}
-        onCustomerLastNameClear={noop}
-        customerNumber=""
-        onCustomerNumberChange={noop}
-        onCustomerNumberClear={noop}
-        orderNumber=""
-        onOrderNumberChange={noop}
-        onOrderNumberClear={noop}
-        selectedStatuses={[]}
-        availableStatuses={[]}
-        statusPickerOpen={false}
-        onStatusPickerOpenChange={noop}
-        onAddStatus={noop}
-        onRemoveStatus={noop}
-        projectScope="upcoming"
-        onProjectScopeChange={noop}
-      />,
-    );
+    const html = renderPanel();
 
     expect(html).toContain("Kundennummer");
     expect(html).toContain("Auftragsnummer");
     expect(html).toContain("Suche: Nr.");
   });
 
-  it("keeps constrained field widths and forwards the status picker wiring", () => {
-    renderToStaticMarkup(
-      <ProjectFilterPanel
-        title="Projektfilter"
-        projectTitle=""
-        onProjectTitleChange={noop}
-        onProjectTitleClear={noop}
-        customerLastName=""
-        onCustomerLastNameChange={noop}
-        onCustomerLastNameClear={noop}
-        customerNumber=""
-        onCustomerNumberChange={noop}
-        onCustomerNumberClear={noop}
-        orderNumber=""
-        onOrderNumberChange={noop}
-        onOrderNumberClear={noop}
-        selectedStatuses={[]}
-        availableStatuses={[]}
-        statusPickerOpen
-        onStatusPickerOpenChange={noop}
-        onAddStatus={noop}
-        onRemoveStatus={noop}
-        projectScope="all"
-        onProjectScopeChange={noop}
-      />,
-    );
+  it("keeps constrained field widths and forwards the tag picker wiring", () => {
+    renderPanel({ tagPickerOpen: true, projectScope: "all" });
 
     expect(filterPanelCalls[0]).toMatchObject({
       title: "Projektfilter",
       layout: "row",
     });
-    expect(statusFilterCalls[0]).toMatchObject({
+    expect(tagFilterCalls[0]).toMatchObject({
       isOpen: true,
-      selectedStatuses: [],
-      availableStatuses: [],
+      selectedTags: [],
+      availableTags: [],
     });
   });
 });

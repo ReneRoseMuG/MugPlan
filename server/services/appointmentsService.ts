@@ -10,11 +10,11 @@ import {
 } from "@shared/projectArticleList";
 import * as customersRepository from "../repositories/customersRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
-import * as projectStatusRepository from "../repositories/projectStatusRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import { logDebug, logInfo } from "../lib/logger";
+import * as tagRelationsService from "./tagRelationsService";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
@@ -31,6 +31,7 @@ class AppointmentError extends Error {
   code:
     | "LOCK_VIOLATION"
     | "BUSINESS_CONFLICT"
+    | "FORBIDDEN"
     | "VERSION_CONFLICT"
     | "VALIDATION_ERROR"
     | "EMPLOYEE_OVERLAP_CONFLICT"
@@ -44,6 +45,7 @@ class AppointmentError extends Error {
     code:
       | "LOCK_VIOLATION"
       | "BUSINESS_CONFLICT"
+      | "FORBIDDEN"
       | "VERSION_CONFLICT"
       | "VALIDATION_ERROR"
       | "EMPLOYEE_OVERLAP_CONFLICT"
@@ -141,6 +143,12 @@ function normalizeEmployeeIds(employeeIds?: number[]) {
   return Array.from(new Set(employeeIds ?? [])).filter((id) => Number.isFinite(id));
 }
 
+function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
+  if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
+    throw new AppointmentError("Keine Berechtigung fuer Tag-Aenderungen", 403, "FORBIDDEN");
+  }
+}
+
 async function assertNoInactiveEmployeesTx(
   tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
   employeeIds: number[],
@@ -173,21 +181,6 @@ const buildEmployeesByAppointment = async (appointmentIds: number[]) => {
     employeesByAppointment.set(row.appointmentId, list);
   }
   return employeesByAppointment;
-};
-
-const buildStatusesByProject = async (projectIds: number[]) => {
-  const statusRows = await projectStatusRepository.getProjectStatusesByProjectIds(projectIds);
-  const statusesByProject = new Map<number, { id: number; title: string; color: string }[]>();
-  for (const row of statusRows) {
-    const list = statusesByProject.get(row.projectId) ?? [];
-    list.push({
-      id: row.status.id,
-      title: row.status.title,
-      color: row.status.color,
-    });
-    statusesByProject.set(row.projectId, list);
-  }
-  return statusesByProject;
 };
 
 const PROJECT_ARTICLE_FIELD_ORDER: ProjectArticleFieldKey[] = [
@@ -262,12 +255,25 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project?.id).filter((id): id is number => Number.isFinite(id))));
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
-  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
-  const statusesByProject = await buildStatusesByProject(projectIds);
-  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
-  const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
-  const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
-  const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const [
+    employeesByAppointment,
+    projectArticleItemsByProject,
+    customerNoteCounts,
+    projectNoteCounts,
+    appointmentNoteCounts,
+    appointmentTagsByAppointmentId,
+    customerTagsByCustomerId,
+    projectTagsByProjectId,
+  ] = await Promise.all([
+    buildEmployeesByAppointment(appointmentIds),
+    buildProjectArticleItemsByProject(projectIds),
+    appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds),
+    appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds),
+    appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds),
+    appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds),
+    appointmentsRepository.getCustomerTagsByCustomerIds(customerIds),
+    appointmentsRepository.getProjectTagsByProjectIds(projectIds),
+  ]);
 
   return rows.map((row) => {
     const projectId = row.project?.id ?? null;
@@ -280,7 +286,6 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
-      projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,
@@ -301,6 +306,9 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+      appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+      customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
+      projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
       isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
     };
@@ -382,6 +390,13 @@ function resolveTitle(projectName: string | null, customerName: string | null, c
 export async function getAppointmentDetails(id: number) {
   const appointment = await appointmentsRepository.getAppointmentWithEmployees(id);
   if (!appointment) return null;
+  const [appointmentTagsByAppointmentId] = await Promise.all([
+    appointmentsRepository.getAppointmentTagsByAppointmentIds([id]),
+  ]);
+  const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds([appointment.customerId]);
+  const projectTagsByProjectId = appointment.projectId != null
+    ? await appointmentsRepository.getProjectTagsByProjectIds([appointment.projectId])
+    : await appointmentsRepository.getProjectTagsByProjectIds([]);
 
   return {
     id: appointment.id,
@@ -397,6 +412,9 @@ export async function getAppointmentDetails(id: number) {
     endDate: toDateOnlyString(appointment.endDate),
     endTime: appointment.endTime ?? null,
     employees: appointment.employees,
+    appointmentTags: appointmentTagsByAppointmentId.get(id) ?? [],
+    customerTags: customerTagsByCustomerId.get(appointment.customerId) ?? [],
+    projectTags: appointment.projectId != null ? (projectTagsByProjectId.get(appointment.projectId) ?? []) : [],
   };
 }
 
@@ -787,11 +805,13 @@ export async function listCalendarAppointments({
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
 
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
-  const statusesByProject = await buildStatusesByProject(projectIds);
   const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds);
+  const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
+  const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
 
   return rows.map((row) => {
     const projectId = row.project?.id ?? null;
@@ -804,7 +824,6 @@ export async function listCalendarAppointments({
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
-      projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,
@@ -821,6 +840,9 @@ export async function listCalendarAppointments({
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+      appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+      customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
+      projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
       employees: employeesByAppointment.get(row.appointment.id) ?? [],
       isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
@@ -856,6 +878,7 @@ export async function listAppointmentsList(params: {
   projectId?: number;
   customerId?: number;
   orderNumber?: string;
+  tagIds?: number[];
   tourId?: number;
   dateFrom?: string;
   dateTo?: string;
@@ -882,6 +905,7 @@ export async function listAppointmentsList(params: {
       projectId: params.projectId,
       customerId: params.customerId,
       orderNumber: normalizedOrderNumber && normalizedOrderNumber.length > 0 ? normalizedOrderNumber : undefined,
+      tagIds: params.tagIds,
       tourId: params.tourId,
       dateFrom,
       dateTo,
@@ -901,11 +925,13 @@ export async function listAppointmentsList(params: {
   const projectIds = Array.from(new Set(rows.map((row) => row.project?.id).filter((id): id is number => Number.isFinite(id))));
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
-  const statusesByProject = await buildStatusesByProject(projectIds);
   const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds);
+  const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
+  const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
 
   const items = rows.map((row) => {
     const projectId = row.project?.id ?? null;
@@ -918,7 +944,6 @@ export async function listAppointmentsList(params: {
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
-      projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,
@@ -939,6 +964,9 @@ export async function listAppointmentsList(params: {
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+      appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+      customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
+      projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
       isLocked: params.roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
       allDay: row.appointment.startTime == null,
@@ -979,6 +1007,55 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
     dispatchCalDavDelete(deleted.id, deleted.externalEventId ?? null);
   }
   return deleted;
+}
+
+export async function listAppointmentTagRelations(appointmentId: number) {
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return null;
+  return tagRelationsService.listTagRelations("appointment", appointmentId);
+}
+
+export async function addAppointmentTag(
+  appointmentId: number,
+  tagId: number,
+  roleKey: CanonicalRoleKey,
+) {
+  requireDispatcherOrAdmin(roleKey);
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return null;
+  if (isStartDateLocked(appointment.startDate)) {
+    throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
+  }
+  const tag = await tagRelationsService.getTagById(tagId);
+  if (!tag) {
+    return null;
+  }
+  return tagRelationsService.addTagRelation("appointment", appointmentId, tagId);
+}
+
+export async function removeAppointmentTag(
+  appointmentId: number,
+  tagId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+) {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+  }
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return null;
+  if (isStartDateLocked(appointment.startDate)) {
+    throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
+  }
+  const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
+  if (result.kind === "version_conflict") {
+    throw new AppointmentError("Termin-Tag wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+  }
+  if (result.kind === "not_found") {
+    return null;
+  }
+  return;
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {

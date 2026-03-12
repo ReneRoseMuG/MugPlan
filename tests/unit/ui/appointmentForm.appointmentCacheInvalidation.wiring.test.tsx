@@ -24,28 +24,32 @@ import { describe, expect, it } from "vitest";
 describe("FT01/FT04 appointment form appointment cache invalidation wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentForm.tsx");
   const source = readFileSync(filePath, "utf8");
+  const helperSource = readFileSync(path.resolve(process.cwd(), "client/src/lib/tag-invalidation.ts"), "utf8");
 
   it("invalidates calendar appointments explicitly", () => {
-    expect(source).toContain("queryKey: [\"calendarAppointments\"]");
+    expect(helperSource).toContain("queryKey: [\"calendarAppointments\"]");
   });
 
   it("invalidates appointment projection query families via predicate", () => {
-    expect(source).toContain("firstKey === \"appointments-list\"");
-    expect(source).toContain("firstKey === \"projects-page-appointments\"");
-    expect(source).toContain("firstKey === \"customers-page-appointments\"");
-    expect(source).toContain("firstKey === \"employees-page-appointments\"");
-    expect(source).toContain("firstKey === \"customerAppointments\"");
-    expect(source).toContain("firstKey === \"projectAppointments\"");
-    expect(source).toContain("firstKey === \"entityAppointments\"");
-    expect(source).toContain("firstKey === \"tour-management-appointments-count\"");
+    expect(helperSource).toContain("firstKey === \"appointments-list\"");
+    expect(helperSource).toContain("firstKey === \"/api/projects/list\"");
+    expect(helperSource).toContain("firstKey === \"/api/customers/list\"");
+    expect(helperSource).toContain("firstKey === \"projects-page-appointments\"");
+    expect(helperSource).toContain("firstKey === \"customers-page-appointments\"");
+    expect(helperSource).toContain("firstKey === \"employees-page-appointments\"");
+    expect(helperSource).toContain("firstKey === \"customerAppointments\"");
+    expect(helperSource).toContain("firstKey === \"projectAppointments\"");
+    expect(helperSource).toContain("firstKey === \"entityAppointments\"");
+    expect(helperSource).toContain("firstKey === \"tour-management-appointments-count\"");
   });
 
   it("invalidates URL-based current-appointments queries", () => {
-    expect(source).toContain("firstKey.includes(\"/current-appointments?\")");
+    expect(helperSource).toContain("firstKey.includes(\"/current-appointments?\")");
   });
 
   it("wires appointment invalidation through the shared helper", () => {
     expect(source).toContain("const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {");
+    expect(source).toContain("await invalidateTagProjectionQueries();");
     expect(source).toContain("await invalidateRelatedAppointmentQueries(payload.projectId);");
   });
 });

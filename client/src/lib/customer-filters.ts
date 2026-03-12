@@ -3,11 +3,13 @@ import type { Customer } from "@shared/schema";
 export interface CustomerFilters {
   lastName: string;
   customerNumber: string;
+  tagIds: number[];
 }
 
 export const defaultCustomerFilters: CustomerFilters = {
   lastName: "",
   customerNumber: "",
+  tagIds: [],
 };
 
 const normalizeText = (value: string) =>

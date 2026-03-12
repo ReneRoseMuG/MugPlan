@@ -8,13 +8,10 @@
  * - ProjectDetailCard zeigt Projektname, Auftragsnummer und Betrag in getrennten Kopf-Feldern.
  * - Projektinhalt rendert Artikelliste und Anmerkungen ueber den kombinierten Renderer.
  * - Leere Werte fallen sichtbar auf `nicht hinterlegt` zurueck.
- * - Projektstatus bleibt als Badge-Footer erhalten.
  *
  * Fehlerfaelle:
  * - Der Renderer zeigt nur noch rohe HTML-Strings oder versteckt Teilbereiche.
  * - Leere Inhalte rendern eine leere Karte statt des Fallbacks.
- * - Status-Badges verschwinden oder fallen aus dem Footer.
- *
  * Ziel:
  * Die Projekt-Detailkarte ueber reales Markup statt ueber Quelltextmarker absichern.
  */
@@ -94,47 +91,5 @@ describe("FT02 project detail card order number", () => {
 
     expect(html).toContain("nicht hinterlegt");
     expect(html).toContain("project-detail-description");
-    expect(html).toContain("project-detail-statuses");
-  });
-
-  it("keeps project statuses as footer badges and falls back when none exist", () => {
-    const withStatuses = renderToStaticMarkup(
-      <ProjectDetailCard
-        testId="project-detail"
-        project={{
-          name: "Projekt Nord",
-          orderNumber: "ORD-001",
-          amount: 1234.5,
-          descriptionMd: null,
-          isActive: true,
-          projectArticleItems: [],
-        }}
-        projectStatuses={[
-          { id: 1, title: "Offen", color: "#ff0000" },
-          { id: 2, title: "Geplant", color: "#00ff00" },
-        ]}
-      />,
-    );
-    const withoutStatuses = renderToStaticMarkup(
-      <ProjectDetailCard
-        testId="project-detail-empty"
-        project={{
-          name: "Projekt Nord",
-          orderNumber: "ORD-001",
-          amount: 1234.5,
-          descriptionMd: null,
-          isActive: true,
-          projectArticleItems: [],
-        }}
-        projectStatuses={[]}
-      />,
-    );
-
-    expect(withStatuses).toContain("project-detail-status-1");
-    expect(withStatuses).toContain("project-detail-status-2");
-    expect(withStatuses).toContain("Offen");
-    expect(withStatuses).toContain("Geplant");
-    expect(withoutStatuses).toContain("project-detail-empty-statuses");
-    expect(withoutStatuses).toContain("nicht hinterlegt");
   });
 });

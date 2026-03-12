@@ -173,13 +173,15 @@ Erweitert InfoBadge um einen farbigen linken Rand. Wird nicht direkt fachlich ei
 
 ### Fachliche Badges
 
+Zusatz FT28:
+- `TagBadge` (`client/src/components/ui/tag-badge.tsx`) basiert auf `ColoredInfoBadge`, nutzt eine Hover-Preview fuer den vollen Tag-Namen und wird in `TagPickerPanel`, Tag-Filtern, Karten-Footern und Wochenkarten eingesetzt.
+
 | Badge | Datei | Basis | Preview vorhanden | Wo eingesetzt |
 |---|---|---|---|---|
 | `CustomerInfoBadge` | `customer-info-badge.tsx` | PersonInfoBadge | ✅ | AppointmentForm, Projektkontexte |
 | `EmployeeInfoBadge` | `employee-info-badge.tsx` | PersonInfoBadge | ✅ | AppointmentForm, Team/Tour-Verwaltung |
 | `TeamInfoBadge` | `team-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), EmployeeForm (Sidebar) |
 | `TourInfoBadge` | `tour-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), EmployeeForm (Sidebar) |
-| `ProjectStatusInfoBadge` | `project-status-info-badge.tsx` | ColoredInfoBadge | ❌ (keine Preview) | ProjectsPage (Board), ProjectForm |
 | `ProjectInfoBadge` | `project-info-badge.tsx` | InfoBadge (direkt) | ✅ | AppointmentForm |
 | `TerminInfoBadge` | `termin-info-badge.tsx` | InfoBadge (direkt) | ✅ (AppointmentWeeklyPanel) | AllAppointmentsPanel, Kalenderansichten |
 | `AttachmentInfoBadge` | `attachment-info-badge.tsx` | InfoBadge (direkt) | ✅ (Vollvorschau mit PDF/Bild) | AttachmentsPanels |
@@ -215,6 +217,9 @@ Previews öffnen sich als Hover-Popover. Alle Previews laufen über `HoverPrevie
 
 ---
 
+Zusatz FT28 Preview:
+- `badge-previews/tag-badge-preview.tsx` liefert die Hover-Preview fuer `TagBadge` und zeigt immer den vollen Tag-Namen.
+
 ## 5. Filter-System
 
 Alle Filter-Panels bauen auf `FilterPanel` als technischer Basiskomponente auf.
@@ -241,6 +246,9 @@ Layout-Container für Filterzeilen. Props: `title` (Screenreader-Label), `layout
 **Hinweis zu `AppointmentsFilterPanel`:** Der Switch „Alle Termine" ist zustandslos — der Zustand wird in `AppointmentsListPage` gehalten und per Props gesteuert. Der Switch ist in allen Kontexten sichtbar und hat überall default Off. Off setzt `dateFrom` auf heute, On hebt die Datumseinschränkung auf. Ein optionaler `helpKey` aktiviert das Hilfe-Icon neben dem Switch-Label.
 
 ---
+
+Zusatz FT28 Filter:
+- `TagFilterInput` (`client/src/components/filters/tag-filter-input.tsx`) ist der gemeinsame Mehrfachfilter fuer Tags und wird in Kunden-, Projekt- und Terminfiltern eingesetzt.
 
 ## 6. Terminliste: `AppointmentsListPage`
 
@@ -288,6 +296,10 @@ Auswahldialog für Mitarbeiter. Nutzt `ListLayout` + `BoardView` + `EntityCard` 
 
 ### Kunden
 
+FT28-Ergaenzung:
+- `TagPickerPanel` sitzt in `CustomerData` in der linken Spalte oberhalb der `NotesSection`.
+- Kundenkarten nutzen `EntityTagFooterRow` fuer die sichtbare Tag-Zeile im Footer.
+
 | Verwendungskontext | Komponenten |
 |---|---|
 | Übersichtsliste | ListLayout + BoardView/TableView + EntityCard + CustomerFilterPanel |
@@ -301,14 +313,17 @@ Auswahldialog für Mitarbeiter. Nutzt `ListLayout` + `BoardView` + `EntityCard` 
 
 ### Projekte
 
+FT28-Ergaenzung:
+- `TagPickerPanel` sitzt in `ProjectForm` in der rechten Spalte.
+- Projektkarten nutzen `EntityTagFooterRow` fuer die sichtbare Tag-Zeile im Footer.
+
 | Verwendungskontext | Komponenten |
 |---|---|
 | Übersichtsliste | ListLayout + BoardView/TableView + EntityCard + ProjectFilterPanel |
-| Board-Karte | EntityCard mit ProjectStatusInfoBadge (sm, fullWidth) |
+| Board-Karte | EntityCard mit Auftragsnummer, Beschreibungsvorschau und Tag-Footer |
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview (nächster Termin) |
 | Detailformular | EntityFormLayout (ProjectForm) |
 | Badge in anderen Formularen | ProjectInfoBadge → ProjectInfoBadgePreview |
-| Status-Anzeige | ProjectStatusInfoBadge (keine Preview) |
 | Sub-Panel Termine | ProjectAppointmentsPanel (Wrapper über AllAppointmentsPanel, mit Add-Button) |
 | Sub-Panel Anhänge | ProjectAttachmentsPanel |
 
@@ -332,6 +347,10 @@ Auswahldialog für Mitarbeiter. Nutzt `ListLayout` + `BoardView` + `EntityCard` 
 ---
 
 ### Termine
+
+FT28-Ergaenzung:
+- `TagPickerPanel` sitzt in `AppointmentForm` in der rechten Spalte unter dem Tour-Panel.
+- `CalendarWeekAppointmentPanel` nutzt `EntityTagFooterRow` fuer die deduplizierte Tag-Zeile aus Termin-, Kunden- und Projekttags.
 
 | Verwendungskontext | Komponenten |
 |---|---|
@@ -368,6 +387,18 @@ Auswahldialog für Mitarbeiter. Nutzt `ListLayout` + `BoardView` + `EntityCard` 
 | Einzelanzeige | AttachmentInfoBadge → AttachmentInfoBadgePreview (PDF/Bild/Word/Text) |
 
 ---
+
+## 8.1 Tagging-Erweiterungen
+
+### `TagPickerPanel`
+**Datei:** `client/src/components/TagPickerPanel.tsx`
+
+Gemeinsames Sidebar-Panel fuer Tag-Zuweisungen an Kunde, Projekt und Termin. Nutzt `SidebarChildPanel` fuer die Panel-Huelle und `EntityEditDialog` fuer die Add-Liste. Zuweisungen werden als `TagBadge` gerendert; im Edit-Modus mit Remove-Aktion, sonst read-only.
+
+### `EntityTagFooterRow`
+**Datei:** `client/src/components/ui/entity-tag-footer-row.tsx`
+
+Gemeinsame Footer-Zeile fuer Karten und Wochenpanels. Rendert kleine `TagBadge`-Instanzen und wird in Kunden-/Projektkarten sowie in `CalendarWeekAppointmentPanel` eingesetzt.
 
 ## 9. Regeln für Codex
 

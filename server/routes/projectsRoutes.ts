@@ -14,5 +14,8 @@ router.get(api.projects.orderItems.list.path, projectsController.listProjectOrde
 router.post(api.projects.orderItems.create.path, projectsController.createProjectOrderItem);
 router.put(api.projects.orderItems.update.path, projectsController.updateProjectOrderItem);
 router.delete(api.projects.orderItems.delete.path, projectsController.deleteProjectOrderItem);
+router.get(api.projectTags.list.path, projectsController.listProjectTags);
+router.post(api.projectTags.add.path, projectsController.addProjectTag);
+router.delete(api.projectTags.remove.path, projectsController.removeProjectTag);
 
 export default router;

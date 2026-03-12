@@ -346,7 +346,6 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält nur `is_active = true` bei:
   - Mitarbeiter
   - Kunden
-  - Projektstatus
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
 
@@ -355,6 +354,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält aktive und inaktive Einträge
 - kann Aktiv-Status ändern
 - kann archivierte Einträge einsehen
+- erhält den Projektstatus-Katalog nur noch im Admin-Stammdatenbereich
 
 ### Leser
 

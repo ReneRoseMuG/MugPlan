@@ -1,6 +1,7 @@
 import type { Customer, InsertCustomer, UpdateCustomer } from "@shared/schema";
 import * as customersRepository from "../repositories/customersRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
+import * as tagRelationsService from "./tagRelationsService";
 
 export class CustomersError extends Error {
   status: number;
@@ -18,6 +19,12 @@ export class CustomersError extends Error {
 
 export type CustomerListItem = customersRepository.CustomerListItem;
 export type CustomerBoardListResult = customersRepository.CustomerBoardListResult;
+
+function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
+  if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
+    throw new CustomersError(403, "FORBIDDEN");
+  }
+}
 
 function isCustomerNumberDuplicateError(error: unknown): boolean {
   const mysqlError = error as { code?: string; errno?: number; sqlMessage?: string } | null;
@@ -53,8 +60,12 @@ function buildCustomerFullName(data: { firstName?: string | null; lastName?: str
   return null;
 }
 
-export async function listCustomers(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<CustomerListItem[]> {
-  return customersRepository.getCustomers(resolveScope(roleKey, scope));
+export async function listCustomers(
+  roleKey: CanonicalRoleKey,
+  scope: "active" | "inactive" = "active",
+  tagIds: number[] = [],
+): Promise<CustomerListItem[]> {
+  return customersRepository.getCustomers(resolveScope(roleKey, scope), tagIds);
 }
 
 export async function listCustomersPaged(
@@ -63,6 +74,7 @@ export async function listCustomersPaged(
     scope: "active" | "inactive";
     lastName?: string;
     customerNumber?: string;
+    tagIds?: number[];
     page: number;
     pageSize: number;
   },
@@ -73,14 +85,19 @@ export async function listCustomersPaged(
   });
 }
 
-export async function getCustomer(id: number, roleKey: CanonicalRoleKey): Promise<Customer | null> {
+export async function getCustomer(
+  id: number,
+  roleKey: CanonicalRoleKey,
+): Promise<customersRepository.CustomerWithTags | null> {
   const customer = await customersRepository.getCustomer(id);
   if (!customer) return null;
   if (roleKey !== "ADMIN" && !customer.isActive) return null;
   return customer;
 }
 
-export async function getCustomersByCustomerNumber(customerNumber: string): Promise<Customer[]> {
+export async function getCustomersByCustomerNumber(
+  customerNumber: string,
+): Promise<customersRepository.CustomerWithTags[]> {
   return customersRepository.getCustomersByCustomerNumber(customerNumber);
 }
 
@@ -157,4 +174,51 @@ export async function updateCustomer(
     throw new CustomersError(409, "VERSION_CONFLICT");
   }
   return result.customer;
+}
+
+export async function listCustomerTagRelations(id: number, roleKey: CanonicalRoleKey) {
+  const customer = await customersRepository.getCustomer(id);
+  if (!customer) return null;
+  if (roleKey !== "ADMIN" && !customer.isActive) return null;
+  return tagRelationsService.listTagRelations("customer", id);
+}
+
+export async function addCustomerTag(
+  id: number,
+  tagId: number,
+  roleKey: CanonicalRoleKey,
+) {
+  requireDispatcherOrAdmin(roleKey);
+  const customer = await customersRepository.getCustomer(id);
+  if (!customer) return null;
+  if (roleKey !== "ADMIN" && !customer.isActive) return null;
+  const tag = await tagRelationsService.getTagById(tagId);
+  if (!tag) {
+    throw new CustomersError(404, "NOT_FOUND");
+  }
+  return tagRelationsService.addTagRelation("customer", id, tagId);
+}
+
+export async function removeCustomerTag(
+  id: number,
+  tagId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+) {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new CustomersError(422, "VALIDATION_ERROR");
+  }
+  const customer = await customersRepository.getCustomer(id);
+  if (!customer) return null;
+  if (roleKey !== "ADMIN" && !customer.isActive) return null;
+
+  const result = await tagRelationsService.removeTagRelation("customer", id, tagId, expectedVersion);
+  if (result.kind === "version_conflict") {
+    throw new CustomersError(409, "VERSION_CONFLICT");
+  }
+  if (result.kind === "not_found") {
+    throw new CustomersError(404, "NOT_FOUND");
+  }
+  return;
 }

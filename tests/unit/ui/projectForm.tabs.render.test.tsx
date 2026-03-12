@@ -92,10 +92,6 @@ vi.mock("@/components/ProjectOrderForm", () => ({
   ProjectProductFields: () => <div>product-fields</div>,
 }));
 
-vi.mock("@/components/ProjectStatusPanel", () => ({
-  ProjectStatusPanel: () => <div>status-panel</div>,
-}));
-
 vi.mock("@/components/RichTextEditor", () => ({
   RichTextEditor: () => <div data-testid="richtext-editor">editor</div>,
 }));

@@ -5,7 +5,7 @@
  * Use Case: UC 02/03
  *
  * Abgedeckte Regeln:
- * - Projektdetail soll laut FT02 Kunde, Statuse, Notizen, Anhaenge und Termine konsistent bereitstellen.
+ * - Projektdetail soll laut FT02 Kunde, Notizen, Anhaenge und Termine konsistent bereitstellen.
  *
  * Fehlerfaelle:
  * - Endpoint liefert nur Teilobjekte und verletzt den geforderten Aggregate-Vertrag.
@@ -90,12 +90,10 @@ describe("FT02 integration: project detail aggregate contract", () => {
     // FT02 aggregate contract expectation (intentional gap exposure)
     expect(body).toHaveProperty("project");
     expect(body).toHaveProperty("customer");
-    expect(body).toHaveProperty("projectStatuses");
     expect(body).toHaveProperty("projectNotes");
     expect(body).toHaveProperty("projectAttachments");
     expect(body).toHaveProperty("projectAppointments");
 
-    expect(Array.isArray(body.projectStatuses)).toBe(true);
     expect(Array.isArray(body.projectNotes)).toBe(true);
     expect(Array.isArray(body.projectAttachments)).toBe(true);
     expect(Array.isArray(body.projectAppointments)).toBe(true);

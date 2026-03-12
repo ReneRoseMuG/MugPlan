@@ -19,7 +19,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Customer, Note } from "@shared/schema";
+import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
+import type { Customer, Note, Tag } from "@shared/schema";
 
 interface CustomerDataProps {
   customerId?: number | null;
@@ -41,32 +43,15 @@ type CustomerSubmitPayload = {
   city: string | null;
 };
 
+type CustomerDetail = Customer & { tags: Tag[] };
+
 export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: CustomerDataProps) {
   const { toast } = useToast();
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const canManageCustomerTags = isAdmin || userRole === "DISPATCHER";
   const invalidateAppointmentProjectionQueries = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: ["calendarAppointments"],
-    });
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        const firstKey = query.queryKey[0];
-        return firstKey === "appointments-list"
-          || firstKey === "customers-page-appointments"
-          || firstKey === "employees-page-appointments"
-          || firstKey === "projects-page-appointments"
-          || firstKey === "customerAppointments"
-          || firstKey === "entityAppointments"
-          || firstKey === "projectAppointments";
-      },
-    });
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        const firstKey = query.queryKey[0];
-        return typeof firstKey === "string" && firstKey.includes("/current-appointments?");
-      },
-    });
+    await invalidateTagProjectionQueries();
   };
   
   const [formData, setFormData] = useState({
@@ -92,8 +77,20 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     return trimmed.length > 0 ? trimmed : null;
   };
 
-  const { data: customer, isLoading } = useQuery<Customer>({
+  const { data: customer, isLoading } = useQuery<CustomerDetail>({
     queryKey: ['/api/customers', customerId],
+    enabled: isEditMode,
+  });
+  const {
+    data: customerTagRelations = [],
+    isLoading: customerTagsLoading,
+    error: customerTagsError,
+  } = useQuery<TagRelationItem[]>({
+    queryKey: ['/api/customers', customerId, 'tags'],
+    enabled: isEditMode && Boolean(customerId),
+  });
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ['/api/tags'],
     enabled: isEditMode,
   });
 
@@ -271,6 +268,47 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         return;
       }
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    },
+  });
+  const addCustomerTagMutation = useMutation({
+    mutationFn: async (tagId: number) => {
+      const response = await apiRequest('POST', `/api/customers/${customerId}/tags`, { tagId });
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'tags'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers/list'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/projects/list'] });
+      await invalidateAppointmentProjectionQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractErrorCode(error);
+      toast({
+        title: code === "FORBIDDEN" ? "Tag kann nicht zugewiesen werden" : "Tag-Zuweisung fehlgeschlagen",
+        description: code === "FORBIDDEN" ? "Keine Berechtigung fuer Tag-Aenderungen." : error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  const removeCustomerTagMutation = useMutation({
+    mutationFn: async (item: TagRelationItem) => {
+      await apiRequest('DELETE', `/api/customers/${customerId}/tags/${item.tag.id}`, { version: item.relationVersion });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'tags'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers/list'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/projects/list'] });
+      await invalidateAppointmentProjectionQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractErrorCode(error);
+      toast({
+        title: code === "VERSION_CONFLICT" ? "Tag wurde zwischenzeitlich geaendert" : "Tag konnte nicht entfernt werden",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -481,7 +519,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       testIdPrefix="customer"
     >
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-6">
+        <div className="col-span-2 min-w-0 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
@@ -642,7 +680,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           />
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <LinkedProjectsPanel
             customerId={customerId}
             customerNumber={formData.customerNumber}
@@ -652,6 +690,22 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           <CustomerAppointmentsPanel customerId={customerId} className="h-auto" />
 
           {isEditMode && <CustomerAttachmentsPanel customerId={customerId} className="h-auto" />}
+
+          {isEditMode && customerId ? (
+            <TagPickerPanel
+              assignedTags={customerTagRelations}
+              availableTags={availableTags}
+              isLoading={customerTagsLoading}
+              loadErrorMessage={customerTagsError instanceof Error ? customerTagsError.message : null}
+              canEdit={canManageCustomerTags}
+              title="Tags"
+              addDialogTitle="Tag zu Kunden hinzufügen"
+              testIdPrefix="customer-tag-picker"
+              onAdd={(tagId) => addCustomerTagMutation.mutate(tagId)}
+              onRemove={(item) => removeCustomerTagMutation.mutate(item)}
+              className="h-auto"
+            />
+          ) : null}
         </div>
       </div>
 

@@ -11,6 +11,16 @@ function getRoleKeyFromRequest(req: Request) {
   return req.userContext?.roleKey;
 }
 
+function parseTagIds(value: unknown): number[] {
+  if (!value) return [];
+  const rawValues = Array.isArray(value) ? value : [value];
+  const ids = rawValues
+    .flatMap((entry) => String(entry).split(","))
+    .map((entry) => Number(entry.trim()))
+    .filter((entry) => Number.isFinite(entry) && entry > 0);
+  return Array.from(new Set(ids));
+}
+
 export async function getAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const appointmentId = Number(req.params.id);
@@ -207,6 +217,7 @@ export async function listAppointmentsList(req: Request, res: Response, next: Ne
 
     const result = await appointmentsService.listAppointmentsList({
       ...input,
+      tagIds: parseTagIds(input.tagIds),
       roleKey,
     });
     res.json(result);
@@ -214,6 +225,77 @@ export async function listAppointmentsList(req: Request, res: Response, next: Ne
     if (handleZodError(err, res)) return;
     if (appointmentsService.isAppointmentError(err)) {
       res.status(err.status).json({ message: err.message, field: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function listAppointmentTags(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const appointmentId = Number(req.params.appointmentId);
+    const relations = await appointmentsService.listAppointmentTagRelations(appointmentId);
+    if (!relations) {
+      res.status(404).json({ message: "Termin nicht gefunden" });
+      return;
+    }
+    res.json(relations);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function addAppointmentTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const appointmentId = Number(req.params.appointmentId);
+    const input = api.appointmentTags.add.input.parse(req.body);
+    const relation = await appointmentsService.addAppointmentTag(appointmentId, input.tagId, roleKey);
+    if (!relation) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.status(201).json(relation);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function removeAppointmentTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const appointmentId = Number(req.params.appointmentId);
+    const tagId = Number(req.params.tagId);
+    const input = api.appointmentTags.remove.input.parse(req.body);
+    const result = await appointmentsService.removeAppointmentTag(appointmentId, tagId, input.version, roleKey);
+    if (result === null) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.status(204).send();
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
       return;
     }
     next(err);

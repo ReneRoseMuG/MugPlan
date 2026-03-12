@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
+import type { Tag } from "@shared/schema";
 
 export type CalendarAppointment = {
   id: number;
@@ -10,7 +11,6 @@ export type CalendarAppointment = {
   projectOrderNumber: string | null;
   projectArticleItems: ProjectArticleItem[];
   projectDescription: string | null;
-  projectStatuses: { id: number; title: string; color: string }[];
   project?: {
     id: number;
     customerId: number;
@@ -37,6 +37,9 @@ export type CalendarAppointment = {
   customerNotesCount: number;
   projectNotesCount: number;
   appointmentNotesCount: number;
+  appointmentTags: Tag[];
+  customerTags: Tag[];
+  projectTags: Tag[];
   displayMode: "standard" | "compact" | "detail";
   employees: { id: number; fullName: string }[];
   isLocked: boolean;
@@ -106,6 +109,9 @@ export function useCalendarAppointments({
           customerNotesCount,
           projectNotesCount,
           appointmentNotesCount,
+          appointmentTags: Array.isArray(rawAppointment.appointmentTags) ? rawAppointment.appointmentTags : [],
+          customerTags: Array.isArray(rawAppointment.customerTags) ? rawAppointment.customerTags : [],
+          projectTags: Array.isArray(rawAppointment.projectTags) ? rawAppointment.projectTags : [],
         };
       });
       console.info(`${logPrefix} fetch success`, { count: data.length });

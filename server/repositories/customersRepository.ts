@@ -9,10 +9,13 @@ import {
   type CustomerAttachment,
   type InsertCustomer,
   type InsertCustomerAttachment,
+  type Tag,
   type UpdateCustomer,
 } from "@shared/schema";
+import { getCustomerTagsByCustomerIds } from "./tagRelationsRepository";
 
-export type CustomerListItem = Customer & { notesCount: number };
+export type CustomerWithTags = Customer & { tags: Tag[] };
+export type CustomerListItem = Customer & { notesCount: number; tags: Tag[] };
 export type CustomerBoardListItem = CustomerListItem & {
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
@@ -39,11 +42,15 @@ function getBerlinTodayDate(): Date {
   return new Date(`${berlinToday}T00:00:00`);
 }
 
-export async function getCustomers(scope: "active" | "inactive" = "active"): Promise<CustomerListItem[]> {
+export async function getCustomers(
+  scope: "active" | "inactive" = "active",
+  tagIds: number[] = [],
+): Promise<CustomerListItem[]> {
+  const conditions = buildCustomerFilterConditions({ scope, tagIds });
   const rows = await db
     .select()
     .from(customers)
-    .where(eq(customers.isActive, scope === "active"))
+    .where(and(...conditions))
     .orderBy(customers.id);
 
   const customerIds = rows.map((row) => row.id);
@@ -59,17 +66,24 @@ export async function getCustomers(scope: "active" | "inactive" = "active"): Pro
     .groupBy(customerNotes.customerId);
 
   const notesCountByCustomerId = new Map(noteCountRows.map((row) => [row.customerId, Number(row.count)] as const));
-  return rows.map((row) => ({ ...row, notesCount: notesCountByCustomerId.get(row.id) ?? 0 }));
+  const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
+  return rows.map((row) => ({
+    ...row,
+    notesCount: notesCountByCustomerId.get(row.id) ?? 0,
+    tags: tagsByCustomerId.get(row.id) ?? [],
+  }));
 }
 
 function buildCustomerFilterConditions(params: {
   scope: "active" | "inactive";
   lastName?: string;
   customerNumber?: string;
+  tagIds?: number[];
 }) {
   const conditions = [eq(customers.isActive, params.scope === "active")];
   const lastName = params.lastName?.trim().toLowerCase() ?? "";
   const customerNumber = params.customerNumber?.trim() ?? "";
+  const tagIds = Array.from(new Set((params.tagIds ?? []).filter((value) => Number.isFinite(value) && value > 0)));
 
   if (lastName.length > 0) {
     const pattern = `%${lastName}%`;
@@ -82,6 +96,16 @@ function buildCustomerFilterConditions(params: {
 
   if (customerNumber.length > 0) {
     conditions.push(like(customers.customerNumber, `%${customerNumber}%`));
+  }
+
+  if (tagIds.length > 0) {
+    const tagIdList = sql.join(tagIds.map((id) => sql`${id}`), sql`, `);
+    conditions.push(sql`exists (
+      select 1
+      from customer_tags
+      where customer_tags.customer_id = ${customers.id}
+        and customer_tags.tag_id in (${tagIdList})
+    )`);
   }
 
   return conditions;
@@ -109,6 +133,7 @@ export async function getCustomersPaged(params: {
   scope: "active" | "inactive";
   lastName?: string;
   customerNumber?: string;
+  tagIds?: number[];
   page: number;
   pageSize: number;
 }): Promise<CustomerBoardListResult> {
@@ -170,6 +195,7 @@ export async function getCustomersPaged(params: {
     );
 
   const notesCountByCustomerId = new Map(noteCountRows.map((row) => [row.customerId, Number(row.count)] as const));
+  const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
   const appointmentSummaryByCustomerId = new Map<number, {
     plannedAppointmentsCount: number;
     nextAppointmentStartDate: string | null;
@@ -196,6 +222,7 @@ export async function getCustomersPaged(params: {
       return {
         ...row,
         notesCount: notesCountByCustomerId.get(row.id) ?? 0,
+        tags: tagsByCustomerId.get(row.id) ?? [],
         plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
@@ -208,9 +235,14 @@ export async function getCustomersPaged(params: {
   };
 }
 
-export async function getCustomer(id: number): Promise<Customer | null> {
+export async function getCustomer(id: number): Promise<CustomerWithTags | null> {
   const [customer] = await db.select().from(customers).where(eq(customers.id, id));
-  return customer || null;
+  if (!customer) return null;
+  const tagsByCustomerId = await getCustomerTagsByCustomerIds([id]);
+  return {
+    ...customer,
+    tags: tagsByCustomerId.get(id) ?? [],
+  };
 }
 
 export async function listCustomerNumbers(): Promise<string[]> {
@@ -220,11 +252,20 @@ export async function listCustomerNumbers(): Promise<string[]> {
   return rows.map((row) => row.customerNumber);
 }
 
-export async function getCustomersByCustomerNumber(customerNumber: string): Promise<Customer[]> {
-  return db
+export async function getCustomersByCustomerNumber(customerNumber: string): Promise<CustomerWithTags[]> {
+  const rows = await db
     .select()
     .from(customers)
     .where(eq(customers.customerNumber, customerNumber.trim()));
+
+  const customerIds = rows.map((row) => row.id);
+  if (customerIds.length === 0) return [];
+
+  const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
+  return rows.map((row) => ({
+    ...row,
+    tags: tagsByCustomerId.get(row.id) ?? [],
+  }));
 }
 
 export async function createCustomer(data: InsertCustomer & { fullName: string | null }): Promise<Customer> {

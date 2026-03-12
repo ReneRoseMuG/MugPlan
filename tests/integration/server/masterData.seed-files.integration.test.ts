@@ -25,13 +25,11 @@ import * as employeesRepository from "../../../server/repositories/employeesRepo
 import * as helpTextsRepository from "../../../server/repositories/helpTextsRepository";
 import * as masterDataRepository from "../../../server/repositories/masterDataRepository";
 import * as noteTemplatesRepository from "../../../server/repositories/noteTemplatesRepository";
-import * as projectStatusRepository from "../../../server/repositories/projectStatusRepository";
 import { createEmployeeFixture, ensureComponentCategoryFixture, ensureProductCategoryFixture } from "../../helpers/testDataFactory";
 import { applyEmployeesSeed, exportEmployeesSeed } from "../../../server/services/seedEmployeesService";
 import { applyHelpTextsSeed, exportHelpTextsSeed } from "../../../server/services/seedHelpTextsService";
 import { applyNoteTemplatesSeed, exportNoteTemplatesSeed } from "../../../server/services/seedNoteTemplatesService";
 import { applyProductManagementSeed, exportProductManagementSeed } from "../../../server/services/seedProductManagementService";
-import { applyProjectStatusSeed, exportProjectStatusSeed } from "../../../server/services/seedProjectStatusService";
 import { applyTagsSeed, exportTagsSeed } from "../../../server/services/seedTagsService";
 
 const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "mugplan-seed-integration-"));
@@ -251,42 +249,6 @@ describe("FT27 integration: seed file services", () => {
     expect(products.find((entry) => entry.name === "Neues Produkt")?.isActive).toBe(true);
     expect(components.find((entry) => entry.id === inactiveComponent.id)?.isActive).toBe(true);
     expect(components.find((entry) => entry.name === "Neue Komponente")?.isActive).toBe(true);
-  });
-
-  it("exports and reapplies project states from the external seed directory", async () => {
-    await projectStatusRepository.createProjectStatus({
-      title: "Planung",
-      description: null,
-      color: "#111111",
-      sortOrder: 0,
-    });
-
-    await exportProjectStatusSeed();
-    await expect(readSeedFile("projectstates.csv")).resolves.toContain("Planung;#111111;true");
-
-    await writeSeedFile(
-      "projectstates.csv",
-      "Name;Farbe;Status\nPlanung;#abcdef;false\nMontage;#123456;ja\n",
-    );
-
-    const result = await applyProjectStatusSeed();
-    const rows = await projectStatusRepository.getProjectStatuses("all");
-
-    expect(result.logLines).toContain("Projektstatus aktualisiert: Planung");
-    expect(result.logLines).toContain("Projektstatus angelegt: Montage");
-    expect(rows.find((entry) => entry.title === "Planung")?.isActive).toBe(false);
-    expect(rows.find((entry) => entry.title === "Montage")?.color).toBe("#123456");
-  });
-
-  it("does not write a project status seed file when no project statuses exist", async () => {
-    const result = await exportProjectStatusSeed();
-
-    expect(result).toEqual({
-      sourceFile: "projectstates.csv",
-      exists: false,
-      logLines: ["Kein Export geschrieben: projectstates.csv (keine Projektstatus vorhanden)"],
-    });
-    await expectSeedFileMissing("projectstates.csv");
   });
 
   it("exports and reapplies note templates from the external seed directory", async () => {

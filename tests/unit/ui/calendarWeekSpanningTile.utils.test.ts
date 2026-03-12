@@ -31,7 +31,6 @@ const baseAppointment: CalendarAppointment = {
   projectVersion: 1,
   projectOrderNumber: "A-1",
   projectDescription: "Beschreibung",
-  projectStatuses: [],
   project: null,
   startDate: "2026-03-02",
   endDate: null,

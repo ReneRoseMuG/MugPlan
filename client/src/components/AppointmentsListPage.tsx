@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
-import type { Customer, Employee, Project, Tour } from "@shared/schema";
+import type { Customer, Employee, Project, Tag, Tour } from "@shared/schema";
 
 type AppointmentListItem = CalendarAppointment & {
   startTimeHour: number | null;
@@ -98,6 +98,7 @@ function hasUserControlledAppointmentFilters(
   if (filters.projectId !== undefined) return true;
   if (filters.customerId !== undefined) return true;
   if (filters.orderNumber.trim().length > 0) return true;
+  if (filters.tagIds.length > 0) return true;
   if (filters.dateTo !== undefined) return true;
 
   if (filters.employeeId !== undefined && filters.employeeId !== options.resolvedEmployeeId) {
@@ -150,11 +151,13 @@ export function AppointmentsListPage({
   const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [hasLoadedAtLeastOnce, setHasLoadedAtLeastOnce] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [filters, setFilters] = useState<AppointmentListFilters>({
     employeeId: resolvedEmployeeId,
     projectId: undefined,
     customerId: undefined,
     orderNumber: "",
+    tagIds: [],
     tourId: resolvedTourId ?? undefined,
     dateFrom: todayBerlin,
     dateTo: undefined,
@@ -196,6 +199,9 @@ export function AppointmentsListPage({
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
+  });
 
   const { data, isLoading } = useQuery<AppointmentListResponse>({
     queryKey: ["appointments-list", filters, page, DEFAULT_PAGE_SIZE, userRole],
@@ -210,6 +216,7 @@ export function AppointmentsListPage({
       if (filters.projectId) params.set("projectId", String(filters.projectId));
       if (filters.customerId) params.set("customerId", String(filters.customerId));
       if (filters.orderNumber.trim().length > 0) params.set("orderNumber", filters.orderNumber.trim());
+      if (filters.tagIds.length > 0) params.set("tagIds", filters.tagIds.join(","));
       if (filters.tourId) params.set("tourId", String(filters.tourId));
       if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
       if (filters.dateTo) params.set("dateTo", filters.dateTo);
@@ -327,6 +334,17 @@ export function AppointmentsListPage({
   const totalPages = data?.totalPages ?? 0;
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
+  const selectedTags = useMemo(
+    () => filters.tagIds
+      .map((id) => availableTags.find((tag) => tag.id === id))
+      .filter((tag): tag is Tag => Boolean(tag)),
+    [availableTags, filters.tagIds],
+  );
+  const selectedTagIds = useMemo(() => new Set(filters.tagIds), [filters.tagIds]);
+  const unselectedTags = useMemo(
+    () => availableTags.filter((tag) => !selectedTagIds.has(tag.id)),
+    [availableTags, selectedTagIds],
+  );
   const hasUserControlledFilters = hasUserControlledAppointmentFilters(filters, {
     todayBerlin,
     resolvedTourId,
@@ -369,6 +387,10 @@ export function AppointmentsListPage({
           projects={projects}
           customers={customers}
           tours={tours}
+          selectedTags={selectedTags}
+          availableTags={unselectedTags}
+          tagPickerOpen={tagPickerOpen}
+          onTagPickerOpenChange={setTagPickerOpen}
           hideEmployeeFilter={resolvedHideEmployeeFilter}
           hideTourFilter={resolvedHideTourFilter}
         />

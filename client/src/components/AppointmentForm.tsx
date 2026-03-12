@@ -2,8 +2,7 @@
 import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
-import type { Customer, Employee, Product, Project, Team, Tour } from "@shared/schema";
-import type { ProjectStatusRelationItem } from "@shared/routes";
+import type { Customer, Employee, Product, Project, Tag, Team, Tour } from "@shared/schema";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { ProjectDetailCard } from "@/components/ui/project-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
+import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { CustomersPage } from "@/components/CustomersPage";
@@ -39,6 +39,7 @@ import {
 } from "@/components/DocumentExtractionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import {
   createEmptyProjectProductSelections,
   resolveSelectionsFromExtraction,
@@ -292,6 +293,7 @@ export function AppointmentForm({
     window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
   );
   const isAdmin = userRole === "ADMIN";
+  const canManageAppointmentTags = isAdmin || userRole === "DISPATCHER";
   const masterDataScope = isAdmin ? "all" : "active";
   const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
@@ -312,28 +314,7 @@ export function AppointmentForm({
       await queryClient.invalidateQueries({ queryKey: upcomingAppointmentsQueryKey });
       await queryClient.invalidateQueries({ queryKey: allAppointmentsQueryKey });
     }
-    await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        const firstKey = query.queryKey[0];
-        return firstKey === "appointments-list"
-          || firstKey === "/api/projects/list"
-          || firstKey === "/api/customers/list"
-          || firstKey === "projects-page-appointments"
-          || firstKey === "customers-page-appointments"
-          || firstKey === "employees-page-appointments"
-          || firstKey === "customerAppointments"
-          || firstKey === "projectAppointments"
-          || firstKey === "entityAppointments"
-          || firstKey === "tour-management-appointments-count";
-      },
-    });
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        const firstKey = query.queryKey[0];
-        return typeof firstKey === "string" && firstKey.includes("/current-appointments?");
-      },
-    });
+    await invalidateTagProjectionQueries();
   };
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<AppointmentFormProject[]>({
@@ -356,12 +337,6 @@ export function AppointmentForm({
   const { data: components = [] } = useQuery<Component[]>({
     queryKey: [componentsUrl],
     queryFn: () => fetchJson<Component[]>(componentsUrl),
-  });
-
-  const { data: selectedProjectStatuses = [] } = useQuery<ProjectStatusRelationItem[]>({
-    queryKey: ["/api/projects", selectedProjectId, "statuses"],
-    queryFn: () => fetchJson<ProjectStatusRelationItem[]>(`/api/projects/${selectedProjectId}/statuses`),
-    enabled: selectedProjectId !== null,
   });
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
@@ -387,11 +362,52 @@ export function AppointmentForm({
     refetchOnMount: "always",
     refetchOnReconnect: true,
   });
+  const {
+    data: appointmentTagRelations = [],
+    isLoading: appointmentTagsLoading,
+    error: appointmentTagsError,
+  } = useQuery<TagRelationItem[]>({
+    queryKey: ["/api/appointments", appointmentId, "tags"],
+    queryFn: () => fetchJson<TagRelationItem[]>(`/api/appointments/${appointmentId}/tags`),
+    enabled: Boolean(appointmentId),
+  });
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
+    queryFn: () => fetchJson<Tag[]>("/api/tags"),
+    enabled: Boolean(appointmentId),
+  });
 
   const { data: appointmentNotes = [], isLoading: appointmentNotesLoading } = useQuery<Note[]>({
     queryKey: ["/api/appointments", appointmentId, "notes"],
     queryFn: () => fetchJson<Note[]>(`/api/appointments/${appointmentId}/notes`),
     enabled: Boolean(appointmentId),
+  });
+  const addAppointmentTagMutation = useMutation({
+    mutationFn: async (tagId: number) => {
+      const response = await apiRequest("POST", `/api/appointments/${appointmentId}/tags`, { tagId });
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+      await invalidateRelatedAppointmentQueries(selectedProjectId);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Tag-Zuweisung fehlgeschlagen", description: error.message, variant: "destructive" });
+    },
+  });
+  const removeAppointmentTagMutation = useMutation({
+    mutationFn: async (item: TagRelationItem) => {
+      await apiRequest("DELETE", `/api/appointments/${appointmentId}/tags/${item.tag.id}`, { version: item.relationVersion });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+      await invalidateRelatedAppointmentQueries(selectedProjectId);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Tag konnte nicht entfernt werden", description: error.message, variant: "destructive" });
+    },
   });
 
   const isLoading =
@@ -1372,7 +1388,6 @@ export function AppointmentForm({
           {selectedProject ? (
             <ProjectDetailCard
               project={selectedProject}
-              projectStatuses={selectedProjectStatuses.map((item) => item.status)}
               testId="badge-project"
             />
           ) : null}
@@ -1493,46 +1508,63 @@ export function AppointmentForm({
           className="col-span-2"
         />
 
-        <div className="sub-panel space-y-3 h-full">
-          <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-            <Route className="w-4 h-4" />
-            Tour
-          </h3>
+        <div className="min-w-0 space-y-6 h-full">
+          <div className="sub-panel space-y-3 h-full">
+            <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+              <Route className="w-4 h-4" />
+              Tour
+            </h3>
 
-          {selectedTour ? (
-            <TourInfoBadge
-              id={selectedTour.id}
-              name={selectedTour.name}
-              color={selectedTour.color}
-              members={tourMembersById.get(selectedTour.id) ?? []}
-              action={isLocked ? "none" : "remove"}
-              onRemove={() => handleTourChange(null)}
-              fullWidth
-              testId="badge-tour"
+            {selectedTour ? (
+              <TourInfoBadge
+                id={selectedTour.id}
+                name={selectedTour.name}
+                color={selectedTour.color}
+                members={tourMembersById.get(selectedTour.id) ?? []}
+                action={isLocked ? "none" : "remove"}
+                onRemove={() => handleTourChange(null)}
+                fullWidth
+                testId="badge-tour"
+              />
+            ) : (
+              <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
+                Keine Tour ausgewählt
+              </div>
+            )}
+
+            {!selectedTour && (
+              <div className="flex flex-wrap gap-2">
+                {tours.map((tour) => (
+                  <TourInfoBadge
+                    key={tour.id}
+                    id={tour.id}
+                    name={tour.name}
+                    color={tour.color}
+                    members={tourMembersById.get(tour.id) ?? []}
+                    action={isLocked ? "none" : "add"}
+                    onAdd={() => handleTourChange(tour.id)}
+                    size="sm"
+                    testId={`badge-tour-select-${tour.id}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {isEditing && appointmentId ? (
+            <TagPickerPanel
+              assignedTags={appointmentTagRelations}
+              availableTags={availableTags}
+              isLoading={appointmentTagsLoading}
+              loadErrorMessage={appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
+              canEdit={canManageAppointmentTags && !isLocked}
+              title="Tags"
+              addDialogTitle="Tag zu Termin hinzufügen"
+              testIdPrefix="appointment-tag-picker"
+              onAdd={(tagId) => addAppointmentTagMutation.mutate(tagId)}
+              onRemove={(item) => removeAppointmentTagMutation.mutate(item)}
             />
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-              Keine Tour ausgewählt
-            </div>
-          )}
-
-          {!selectedTour && (
-            <div className="flex flex-wrap gap-2">
-              {tours.map((tour) => (
-                <TourInfoBadge
-                  key={tour.id}
-                  id={tour.id}
-                  name={tour.name}
-                  color={tour.color}
-                  members={tourMembersById.get(tour.id) ?? []}
-                  action={isLocked ? "none" : "add"}
-                  onAdd={() => handleTourChange(tour.id)}
-                  size="sm"
-                  testId={`badge-tour-select-${tour.id}`}
-                />
-              ))}
-            </div>
-          )}
+          ) : null}
         </div>
 
         {selectedProjectId === null ? (

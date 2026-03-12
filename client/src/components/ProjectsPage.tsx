@@ -4,7 +4,6 @@ import { FolderKanban, User, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, Arrow
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EntityCard } from "@/components/ui/entity-card";
-import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
@@ -13,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProjectFilterPanel } from "@/components/ui/filter-panels/project-filter-panel";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
+import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { defaultHeaderColor } from "@/lib/colors";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { useSettings } from "@/hooks/useSettings";
@@ -20,7 +20,7 @@ import { useListFilters } from "@/hooks/useListFilters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
-import type { Project, ProjectStatus } from "@shared/schema";
+import type { Project, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -35,17 +35,13 @@ type ProjectListItem = Project & {
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   projectArticleItems: ProjectArticleItem[];
+  tags: Tag[];
   customer: {
     id: number;
     customerNumber: string;
     fullName: string | null;
     lastName: string | null;
   };
-  statuses: Array<{
-    id: number;
-    title: string;
-    color: string;
-  }>;
 };
 
 type ProjectListResponse = {
@@ -128,7 +124,7 @@ export function ProjectsPage({
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
-  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const {
     filters,
     setFilter,
@@ -156,7 +152,7 @@ export function ProjectsPage({
     if (filters.customerLastName.trim().length > 0) params.set("customerLastName", filters.customerLastName.trim());
     if (filters.customerNumber.trim().length > 0) params.set("customerNumber", filters.customerNumber.trim());
     if (filters.orderNumber.trim().length > 0) params.set("orderNumber", filters.orderNumber.trim());
-    if (filters.statusIds.length > 0) params.set("statusIds", filters.statusIds.join(","));
+    if (filters.tagIds.length > 0) params.set("tagIds", filters.tagIds.join(","));
 
     return params.toString();
   }, [filters, page, projectScope]);
@@ -172,27 +168,21 @@ export function ProjectsPage({
     },
   });
 
-  const { data: projectStatuses = [] } = useQuery<ProjectStatus[]>({
-    queryKey: ["/api/project-status"],
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
   });
 
   const projects = data?.items ?? [];
-
-  const selectedStatusIds = useMemo(
-    () => new Set(filters.statusIds),
-    [filters.statusIds],
+  const selectedTagIds = useMemo(() => new Set(filters.tagIds), [filters.tagIds]);
+  const selectedTags = useMemo(
+    () => filters.tagIds
+      .map((id) => availableTags.find((tag) => tag.id === id))
+      .filter((tag): tag is Tag => Boolean(tag)),
+    [availableTags, filters.tagIds],
   );
-
-  const selectedStatuses = useMemo(
-    () => filters.statusIds
-      .map((id) => projectStatuses.find((status) => status.id === id))
-      .filter((status): status is ProjectStatus => Boolean(status)),
-    [filters.statusIds, projectStatuses],
-  );
-
-  const availableStatuses = useMemo(
-    () => projectStatuses.filter((status) => status.isActive && !selectedStatusIds.has(status.id)),
-    [projectStatuses, selectedStatusIds],
+  const unselectedTags = useMemo(
+    () => availableTags.filter((tag) => !selectedTagIds.has(tag.id)),
+    [availableTags, selectedTagIds],
   );
 
   const handleViewModeChange = (next: string) => {
@@ -319,7 +309,7 @@ export function ProjectsPage({
     || filters.customerLastName.trim().length > 0
     || filters.customerNumber.trim().length > 0
     || filters.orderNumber.trim().length > 0
-    || filters.statusIds.length > 0
+    || filters.tagIds.length > 0
     || projectScope !== "upcoming";
   const emptyState = hasActiveFilters ? (
     <ListEmptyState
@@ -361,12 +351,12 @@ export function ProjectsPage({
             orderNumber={filters.orderNumber}
             onOrderNumberChange={(value) => setFilter("orderNumber", value)}
             onOrderNumberClear={() => setFilter("orderNumber", "")}
-            selectedStatuses={selectedStatuses}
-            availableStatuses={availableStatuses}
-            statusPickerOpen={statusPickerOpen}
-            onStatusPickerOpenChange={setStatusPickerOpen}
-            onAddStatus={(statusId) => setFilter("statusIds", [...filters.statusIds, statusId])}
-            onRemoveStatus={(statusId) => setFilter("statusIds", filters.statusIds.filter((id) => id !== statusId))}
+            selectedTags={selectedTags}
+            availableTags={unselectedTags}
+            tagPickerOpen={tagPickerOpen}
+            onTagPickerOpenChange={setTagPickerOpen}
+            onAddTag={(tagId) => setFilter("tagIds", [...filters.tagIds, tagId])}
+            onRemoveTag={(tagId) => setFilter("tagIds", filters.tagIds.filter((id) => id !== tagId))}
             projectScope={projectScope}
             onProjectScopeChange={setProjectScope}
           />
@@ -480,22 +470,7 @@ export function ProjectsPage({
                             </div>
                           ) : null}
                         </div>
-                        {project.statuses.length > 0 ? (
-                          <div
-                            className="grid w-full grid-cols-2 gap-1 justify-items-start [&>*:nth-child(even)]:justify-self-end"
-                            data-testid={`project-status-footer-${project.id}`}
-                          >
-                            {project.statuses.map((status) => (
-                              <ProjectStatusInfoBadge
-                                key={status.id}
-                                status={status}
-                                action="none"
-                                size="sm"
-                                testId={`badge-project-status-${project.id}-${status.id}`}
-                              />
-                            ))}
-                          </div>
-                        ) : null}
+                        <EntityTagFooterRow tags={project.tags} testId={`project-card-tags-${project.id}`} />
                       </div>
                     )}
                     footerVisibility="visible"
@@ -578,7 +553,6 @@ export function ProjectsPage({
                   projectOrderNumber: row.project.orderNumber ?? null,
                   projectArticleItems: row.project.projectArticleItems,
                   projectDescription: row.project.descriptionMd ?? null,
-                  projectStatuses: row.project.statuses,
                   tourId: null,
                   tourName: null,
                   tourColor: null,
@@ -595,6 +569,9 @@ export function ProjectsPage({
                   customerNotesCount: 0,
                   projectNotesCount: row.project.notesCount,
                   appointmentNotesCount: 0,
+                  appointmentTags: [],
+                  customerTags: [],
+                  projectTags: row.project.tags,
                   displayMode: "compact",
                   isLocked: false,
                   version: row.project.version,

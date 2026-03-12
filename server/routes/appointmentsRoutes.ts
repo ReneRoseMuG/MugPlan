@@ -14,5 +14,8 @@ router.post(api.appointments.create.path, appointmentsController.createAppointme
 router.patch(api.appointments.update.path, appointmentsController.updateAppointment);
 router.patch(api.appointments.setDisplayMode.path, appointmentsController.setAppointmentDisplayMode);
 router.delete(api.appointments.delete.path, appointmentsController.deleteAppointment);
+router.get(api.appointmentTags.list.path, appointmentsController.listAppointmentTags);
+router.post(api.appointmentTags.add.path, appointmentsController.addAppointmentTag);
+router.delete(api.appointmentTags.remove.path, appointmentsController.removeAppointmentTag);
 
 export default router;

@@ -106,10 +106,6 @@ vi.mock("@/components/ProjectOrderForm", () => ({
   ProjectProductFields: () => <div>product-fields</div>,
 }));
 
-vi.mock("@/components/ProjectStatusPanel", () => ({
-  ProjectStatusPanel: () => <div>status-panel</div>,
-}));
-
 vi.mock("@/components/RichTextEditor", () => ({
   RichTextEditor: () => <div>editor</div>,
 }));
@@ -133,6 +129,17 @@ vi.mock("@/components/NotesSection", () => ({
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/tooltip", () => ({
+  TooltipProvider: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TooltipContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ui/tabs", () => ({
@@ -154,6 +161,14 @@ vi.mock("@/components/ui/alert-dialog", () => ({
 }));
 
 function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolean } {
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/projects" && queryKey[2] === "tags") {
+    return { data: [], isLoading: false };
+  }
+
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/tags") {
+    return { data: [], isLoading: false };
+  }
+
   if (Array.isArray(queryKey) && queryKey[0] === "/api/projects" && queryKey[1] === 7) {
     return {
       data: {

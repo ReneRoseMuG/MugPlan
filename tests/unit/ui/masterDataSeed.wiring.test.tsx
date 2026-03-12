@@ -6,7 +6,7 @@
  * Abgedeckte Regeln:
  * - Stammdaten binden einen eigenen Seed-Tab an.
  * - Der Seed-Tab rendert die neue MasterDataSeedPage.
- * - Die MasterDataSeedPage verdrahtet auch das Tag-Panel an Status-, Import- und Export-Endpunkte.
+ * - Die MasterDataSeedPage verdrahtet die verbleibenden Seed-Panels an Status-, Import- und Export-Endpunkte.
  * - SeedPanel rendert Titel, Dateistatus, Import-/Export-Aktionen und Logfenster als wiederverwendbares UI-Muster.
  *
  * Fehlerfaelle:
@@ -38,17 +38,14 @@ describe("FT27 unit: master data seed wiring", () => {
     expect(source).toContain('"/api/admin/master-data/seed/product-management"');
     expect(source).toContain('"/api/admin/master-data/seed/employees"');
     expect(source).toContain('"/api/admin/master-data/seed/help-texts"');
-    expect(source).toContain('"/api/admin/master-data/seed/project-status"');
     expect(source).toContain('"/api/admin/master-data/seed/note-templates"');
     expect(source).toContain('"/api/admin/master-data/seed/tags"');
     expect(source).toContain('"/api/admin/master-data/tags"');
-    expect(source).toContain('"/api/project-status"');
     expect(source).toContain('"/api/note-templates"');
     expect(source).toContain('title: "Produktverwaltung"');
     expect(source).toContain('testId={`master-data-seed-${panel.key}`}');
     expect(source).toContain('title: "Mitarbeiter"');
     expect(source).toContain('title: "Hilfetexte"');
-    expect(source).toContain('title: "Projekt Status"');
     expect(source).toContain('title: "Notiz Vorlagen"');
     expect(source).toContain('title: "Tags"');
   });

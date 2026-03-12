@@ -210,7 +210,6 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
         projectName: string;
         projectOrderNumber: string | null;
         projectDescription: string | null;
-        projectStatuses: Array<{ id: number; title: string; color: string }>;
         startDate: string;
         startTime: string | null;
         customer: {
@@ -236,7 +235,6 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
         id: expect.any(Number),
         version: expect.any(Number),
         projectName: expect.any(String),
-        projectStatuses: expect.any(Array),
         startDate: expect.any(String),
         customer: expect.objectContaining({
           customerNumber: expect.any(String),

@@ -6,7 +6,6 @@ import { ProductSelectionDropdown } from "@/components/ui/product-selection-drop
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
 import { ProjectOrderForm, ProjectProductFields } from "@/components/ProjectOrderForm";
-import { ProjectStatusPanel } from "@/components/ProjectStatusPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -16,6 +15,7 @@ import {
 } from "@/components/DocumentExtractionDialog";
 import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
+import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { DEFAULT_PROJECT_TYPE, resolveProjectEditForm } from "@/lib/project-edit-form";
 import {
   buildPersistedProjectDescription,
@@ -52,8 +53,7 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, ProjectStatus, Component, ComponentCategory, ProjectOrderItem, Product } from "@shared/schema";
-import type { ProjectStatusRelationItem } from "@shared/routes";
+import type { Project, Customer, Note, Component, ComponentCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -87,22 +87,7 @@ export function ProjectForm({
   const { toast } = useToast();
   const isEditing = !!projectId;
   const invalidateAppointmentProjectionQueries = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: ["calendarAppointments"],
-    });
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        const key = query.queryKey[0];
-        return key === "appointments-list"
-          || key === "/api/projects/list"
-          || key === "/api/customers/list"
-          || key === "projects-page-appointments"
-          || key === "customers-page-appointments"
-          || key === "employees-page-appointments"
-          || key === "customerAppointments"
-          || key === "projectAppointments";
-      },
-    });
+    await invalidateTagProjectionQueries();
   };
   const invalidateProjectQueries = async () => {
     await queryClient.invalidateQueries({
@@ -139,7 +124,7 @@ export function ProjectForm({
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
-  const canManageProjectStatuses = isAdmin || userRole === "DISPATCHER";
+  const canManageProjectTags = isAdmin || userRole === "DISPATCHER";
 
   const buildFormSnapshot = (input: {
     name: string;
@@ -168,6 +153,18 @@ export function ProjectForm({
     queryKey: ['/api/projects', projectId],
     enabled: isEditing,
   });
+  const {
+    data: assignedTags = [],
+    isLoading: assignedTagsLoading,
+    error: assignedTagsError,
+  } = useQuery<TagRelationItem[]>({
+    queryKey: ['/api/projects', projectId, 'tags'],
+    enabled: isEditing,
+  });
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ['/api/tags'],
+    enabled: isEditing,
+  });
 
   // Fetch customers for selection
   const { data: customers = [] } = useQuery<Customer[]>({
@@ -180,26 +177,6 @@ export function ProjectForm({
     enabled: isEditing,
   });
 
-  // Fetch project statuses assigned to this project
-  const {
-    data: assignedStatuses = [],
-    isLoading: assignedStatusesLoading,
-    isError: assignedStatusesError,
-    error: assignedStatusesQueryError,
-  } = useQuery<ProjectStatusRelationItem[]>({
-    queryKey: ['/api/projects', projectId, 'statuses'],
-    enabled: isEditing,
-  });
-
-  // Fetch all available project statuses
-  const {
-    data: allStatuses = [],
-    isLoading: allStatusesLoading,
-    isError: allStatusesError,
-    error: allStatusesQueryError,
-  } = useQuery<ProjectStatus[]>({
-    queryKey: ['/api/project-status'],
-  });
   const masterDataScope = isAdmin ? "all" : "active";
   const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
@@ -322,15 +299,6 @@ export function ProjectForm({
     selectedComponentDialogField && selectedComponentDialogField.source === "component"
       ? selectedComponentDialogField.categoryName
       : null;
-  const statusPanelLoading = assignedStatusesLoading || allStatusesLoading;
-  const statusPanelLoadErrorMessage = assignedStatusesError || allStatusesError
-    ? (assignedStatusesQueryError instanceof Error
-      ? assignedStatusesQueryError.message
-      : allStatusesQueryError instanceof Error
-        ? allStatusesQueryError.message
-        : "Projektstatus konnten nicht geladen werden.")
-    : null;
-
   useEffect(() => {
     if (!isEditing || !projectData || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
     setInitialFormSnapshot(
@@ -809,36 +777,42 @@ export function ProjectForm({
     },
   });
 
-  // Status mutations
-  const addStatusMutation = useMutation({
-    mutationFn: async (statusId: number) => {
-      await apiRequest('POST', `/api/projects/${projectId}/statuses`, { statusId, expectedVersion: 0 });
+  const addProjectTagMutation = useMutation({
+    mutationFn: async (tagId: number) => {
+      const response = await apiRequest('POST', `/api/projects/${projectId}/tags`, { tagId });
+      return response.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
       void invalidateProjectQueries();
     },
     onError: (error) => {
-      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
-      }
+      toast({
+        title: "Tag-Zuweisung fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
     },
   });
 
-  const removeStatusMutation = useMutation({
-    mutationFn: async (item: ProjectStatusRelationItem) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/statuses/${item.status.id}`, {
+  const removeProjectTagMutation = useMutation({
+    mutationFn: async (item: TagRelationItem) => {
+      await apiRequest('DELETE', `/api/projects/${projectId}/tags/${item.tag.id}`, {
         version: item.relationVersion,
       });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
       void invalidateProjectQueries();
     },
     onError: (error) => {
-      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
-      }
+      toast({
+        title: "Tag konnte nicht entfernt werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
     },
   });
 
@@ -1170,41 +1144,19 @@ export function ProjectForm({
     >
       <div className="space-y-6">
         {isEditing ? (
-          <div className="grid grid-cols-3 items-stretch gap-6">
-            <div className="col-span-2 h-full">
-              <ProjectOrderForm
-                name={name}
-                orderNumber={orderNumber}
-                amount={amount}
-                plannedDateText={plannedDateText}
-                plannedWeek={plannedWeek}
-                isEditing={isEditing}
-                onNameChange={setName}
-                onOrderNumberChange={setOrderNumber}
-                onAmountChange={setAmount}
-                onPlannedDateTextChange={setPlannedDateText}
-                onPlannedWeekChange={setPlannedWeek}
-              />
-            </div>
-            <div className="h-full">
-              <ProjectStatusPanel
-                assignedStatuses={assignedStatuses}
-                availableStatuses={allStatuses}
-                isLoading={statusPanelLoading}
-                loadErrorMessage={statusPanelLoadErrorMessage}
-                className="h-full"
-                canEdit={canManageProjectStatuses}
-                onAdd={(statusId) => {
-                  if (!canManageProjectStatuses) return;
-                  addStatusMutation.mutate(statusId);
-                }}
-                onRemove={(item) => {
-                  if (!canManageProjectStatuses) return;
-                  removeStatusMutation.mutate(item);
-                }}
-              />
-            </div>
-          </div>
+          <ProjectOrderForm
+            name={name}
+            orderNumber={orderNumber}
+            amount={amount}
+            plannedDateText={plannedDateText}
+            plannedWeek={plannedWeek}
+            isEditing={isEditing}
+            onNameChange={setName}
+            onOrderNumberChange={setOrderNumber}
+            onAmountChange={setAmount}
+            onPlannedDateTextChange={setPlannedDateText}
+            onPlannedWeekChange={setPlannedWeek}
+          />
         ) : (
           <ProjectOrderForm
             name={name}
@@ -1223,7 +1175,7 @@ export function ProjectForm({
 
         <div className="grid grid-cols-3 gap-6">
           {/* Linke Spalte: Beschreibung und Kunde */}
-          <div className="col-span-2 space-y-6">
+          <div className="col-span-2 min-w-0 space-y-6">
               <div className="space-y-4">
                 <Tabs defaultValue="description" className="w-full" data-testid="project-description-tabs">
                   <TabsList className="grid w-full grid-cols-2 rounded-b-none">
@@ -1315,7 +1267,7 @@ export function ProjectForm({
           </div>
 
           {/* Rechte Spalte: Termine und Dokumente */}
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
               <ProjectAppointmentsPanel
                 projectId={projectId}
                 projectName={projectNamePreview}
@@ -1333,6 +1285,22 @@ export function ProjectForm({
                   className="h-auto"
                 />
               )}
+
+              {isEditing ? (
+                <TagPickerPanel
+                  assignedTags={assignedTags}
+                  availableTags={availableTags}
+                  isLoading={assignedTagsLoading}
+                  loadErrorMessage={assignedTagsError instanceof Error ? assignedTagsError.message : null}
+                  canEdit={canManageProjectTags}
+                  title="Tags"
+                  addDialogTitle="Tag zu Projekt hinzufügen"
+                  testIdPrefix="project-tag-picker"
+                  onAdd={(tagId) => addProjectTagMutation.mutate(tagId)}
+                  onRemove={(item) => removeProjectTagMutation.mutate(item)}
+                  className="h-auto"
+                />
+              ) : null}
           </div>
         </div>
       </div>

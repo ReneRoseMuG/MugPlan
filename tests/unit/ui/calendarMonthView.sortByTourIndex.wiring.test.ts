@@ -41,7 +41,6 @@ function appointment(input: ComparableAppointment) {
     projectId: 1,
     projectName: "P",
     projectDescription: null,
-    projectStatuses: [],
     tourId: null,
     tourColor: null,
     customer: {

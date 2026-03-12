@@ -41,9 +41,9 @@ export function SidebarChildPanel({
   const hasCount = typeof count === "number";
 
   return (
-    <div className={cn("sub-panel flex h-full flex-col gap-4", className)}>
+    <div className={cn("sub-panel flex min-w-0 flex-col gap-4", className)}>
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center flex-wrap gap-3">
+        <div className="flex min-w-0 items-center flex-wrap gap-3">
           <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
             {icon}
             {title}
@@ -55,7 +55,7 @@ export function SidebarChildPanel({
           )}
           {helpKey && <HelpIcon helpKey={helpKey} />}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {headerActions ?? (
             <>
               {addAction && (
@@ -83,7 +83,7 @@ export function SidebarChildPanel({
         </div>
       </div>
 
-      <div className="flex-1 space-y-3">
+      <div className="min-w-0 flex-1 space-y-3">
         {children}
       </div>
 

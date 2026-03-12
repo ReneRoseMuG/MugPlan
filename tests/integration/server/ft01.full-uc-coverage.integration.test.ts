@@ -26,6 +26,7 @@ import {
   assignEmployeesToTourFixture,
   assertNoDuplicateAppointmentEmployeePairs,
   createAppointmentFixture,
+  createCustomerFixture,
   createEmployeeFixture,
   createProjectFixture,
   createTeamFixture,
@@ -100,6 +101,39 @@ describe("FT01 UC coverage integration", () => {
 
     const afterList = await agent.get(`/api/projects/${project.id}/appointments?fromDate=1900-01-01`).expect(200);
     expect((afterList.body as Array<unknown>).length).toBe(beforeCount + 1);
+  });
+
+  it("UC 01/01 happy: create with customer only and no project persists a direct appointment", async () => {
+    const agent = await loginAdminAgent(app);
+    const customer = await createCustomerFixture("UC01-01-DIRECT");
+
+    const created = await agent
+      .post("/api/appointments")
+      .send({
+        customerId: customer.id,
+        startDate: "2099-10-01",
+        employeeIds: [],
+      })
+      .expect(201);
+
+    const id = Number(created.body.id);
+    expect(Number.isInteger(id)).toBe(true);
+
+    const detail = await agent.get(`/api/appointments/${id}`).expect(200);
+    expect(detail.body.projectId ?? null).toBeNull();
+    expect(detail.body.customerId).toBe(customer.id);
+
+    const customerAppointments = await agent
+      .get(`/api/customers/${customer.id}/appointments?scope=all`)
+      .expect(200);
+    const appointmentRow = (customerAppointments.body as Array<{ id: number; projectId: number | null; customer: { id: number } }>).find(
+      (row) => row.id === id,
+    );
+    expect(appointmentRow).toMatchObject({
+      id,
+      projectId: null,
+      customer: { id: customer.id },
+    });
   });
 
   it("UC 01/01 rule: startTime is only startTime and does not imply default duration", async () => {
@@ -588,6 +622,7 @@ describe("FT01 UC coverage integration", () => {
       employeeIds: [],
     });
     expect(historicalCreate.status).toBe(409);
+    expect(historicalCreate.body.code).toBe("PAST_APPOINTMENT_READONLY");
 
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Berlin",
@@ -602,7 +637,8 @@ describe("FT01 UC coverage integration", () => {
       startTime: "00:00:00",
       employeeIds: [],
     });
-    expect([409, 422]).toContain(historicalTime.status);
+    expect(historicalTime.status).toBe(409);
+    expect(historicalTime.body.code).toBe("VALIDATION_ERROR");
   });
 
   it("UC 01/14 rule: historical delete is blocked for ADMIN", async () => {

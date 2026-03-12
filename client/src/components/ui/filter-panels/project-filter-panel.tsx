@@ -1,13 +1,13 @@
 import { CustomerNameFilterInput } from "@/components/filters/customer-name-filter-input";
 import { CustomerNumberFilterInput } from "@/components/filters/customer-number-filter-input";
 import { ProjectOrderNumberFilterInput } from "@/components/filters/project-order-number-filter-input";
-import { ProjectStatusFilterInput } from "@/components/filters/project-status-filter-input";
 import { ProjectTitleFilterInput } from "@/components/filters/project-title-filter-input";
+import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
-import type { ProjectStatus } from "@shared/schema";
+import type { Tag } from "@shared/schema";
 import type { ProjectScope } from "@/lib/project-filters";
 
 interface ProjectFilterPanelProps {
@@ -24,12 +24,12 @@ interface ProjectFilterPanelProps {
   orderNumber: string;
   onOrderNumberChange: (value: string) => void;
   onOrderNumberClear: () => void;
-  selectedStatuses: ProjectStatus[];
-  availableStatuses: ProjectStatus[];
-  statusPickerOpen: boolean;
-  onStatusPickerOpenChange: (open: boolean) => void;
-  onAddStatus: (statusId: number) => void;
-  onRemoveStatus: (statusId: number) => void;
+  selectedTags: Tag[];
+  availableTags: Tag[];
+  tagPickerOpen: boolean;
+  onTagPickerOpenChange: (open: boolean) => void;
+  onAddTag: (tagId: number) => void;
+  onRemoveTag: (tagId: number) => void;
   projectScope: ProjectScope;
   onProjectScopeChange: (scope: ProjectScope) => void;
 }
@@ -48,12 +48,12 @@ export function ProjectFilterPanel({
   orderNumber,
   onOrderNumberChange,
   onOrderNumberClear,
-  selectedStatuses,
-  availableStatuses,
-  statusPickerOpen,
-  onStatusPickerOpenChange,
-  onAddStatus,
-  onRemoveStatus,
+  selectedTags,
+  availableTags,
+  tagPickerOpen,
+  onTagPickerOpenChange,
+  onAddTag,
+  onRemoveTag,
   projectScope,
   onProjectScopeChange,
 }: ProjectFilterPanelProps) {
@@ -122,13 +122,16 @@ export function ProjectFilterPanel({
             />
           </div>
         </div>
-        <ProjectStatusFilterInput
-          selectedStatuses={selectedStatuses}
-          availableStatuses={availableStatuses}
-          isOpen={statusPickerOpen}
-          onOpenChange={onStatusPickerOpenChange}
-          onAddStatus={onAddStatus}
-          onRemoveStatus={onRemoveStatus}
+        <TagFilterInput
+          selectedTags={selectedTags}
+          availableTags={availableTags}
+          isOpen={tagPickerOpen}
+          onOpenChange={onTagPickerOpenChange}
+          onAddTag={onAddTag}
+          onRemoveTag={onRemoveTag}
+          helpKey="projects.filter.tags"
+          addButtonTestId="button-add-project-tag-filter"
+          testIdPrefix="project-filter-tag"
         />
       </FilterPanel>
     </div>
