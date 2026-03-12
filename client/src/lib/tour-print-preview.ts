@@ -5,6 +5,36 @@ import { api } from "@shared/routes";
 
 export type TourPrintPreviewResponse = z.infer<typeof api.tourPrintPreview.get.responses[200]>;
 export type TourPrintPreviewAppointment = TourPrintPreviewResponse["appointments"][number];
+export type TourPrintPreviewNote = TourPrintPreviewAppointment["printNotes"][number];
+
+export type TourPrintSummaryRow = ReturnType<typeof buildTourPrintSummaryRows>[number];
+
+export type TourPrintWeekPage = ReturnType<typeof buildTourPrintWeekPages>[number];
+
+export type TourPrintPreviewPage =
+  | {
+      kind: "summary";
+      pageIndex: number;
+      pageNumber: number;
+      title: string;
+      orientation: "portrait";
+      rangeLabel: string;
+      headline: string;
+      members: TourPrintPreviewResponse["members"];
+      rows: TourPrintSummaryRow[];
+    }
+  | {
+      kind: "week";
+      pageIndex: number;
+      pageNumber: number;
+      title: string;
+      orientation: "landscape";
+      rangeLabel: string;
+      weekIndex: number;
+      weekStart: string;
+      weekEnd: string;
+      days: TourPrintWeekPage["days"];
+    };
 
 export function normalizeTourPrintWeekCount(value: number): number {
   if (!Number.isFinite(value)) return 1;
@@ -63,6 +93,14 @@ export function buildTourPrintDateRange(data: TourPrintPreviewResponse): string 
   return `${formatTourPrintDate(data.fromDate)} bis ${formatTourPrintDate(data.toDate)}`;
 }
 
+export function buildTourPrintHeadline(data: TourPrintPreviewResponse): string {
+  return `Tourenplanung fuer Tour ${data.tour.name} - Zeitraum ${formatTourPrintDate(data.fromDate)} / ${formatTourPrintDate(data.toDate)}`;
+}
+
+export function buildTourPrintWeekTitle(data: TourPrintPreviewResponse, weekStart: string, weekIndex: number): string {
+  return `Tour ${data.tour.name} - Woche ${weekIndex + 1} - KW ${format(parseISO(weekStart), "II", { locale: de })}`;
+}
+
 export function getAppointmentPrimaryLocation(appointment: TourPrintPreviewAppointment): string {
   const locationParts = [
     appointment.customer.fullName ?? appointment.customer.customerNumber,
@@ -78,9 +116,48 @@ export function buildPrintNotesText(appointment: TourPrintPreviewAppointment): s
     .filter((value) => value.length > 0);
 }
 
+export function resolvePrintNoteAccentColor(note: TourPrintPreviewNote): string {
+  return note.cardColor?.trim() || "#cbd5e1";
+}
+
+export function resolvePrintNoteTintColor(note: TourPrintPreviewNote): string {
+  const color = resolvePrintNoteAccentColor(note);
+  return `${color}1a`;
+}
+
 export function getAppointmentDateKeys(appointment: TourPrintPreviewAppointment): string[] {
   return eachDayOfInterval({
     start: parseISO(appointment.startDate),
     end: parseISO(appointment.endDate ?? appointment.startDate),
   }).map((date) => format(date, "yyyy-MM-dd"));
+}
+
+export function buildTourPrintPages(data: TourPrintPreviewResponse): TourPrintPreviewPage[] {
+  const rangeLabel = buildTourPrintDateRange(data);
+  const summaryPage: TourPrintPreviewPage = {
+    kind: "summary",
+    pageIndex: 0,
+    pageNumber: 1,
+    title: `Seite 1 - ${data.tour.name}`,
+    orientation: "portrait",
+    rangeLabel,
+    headline: buildTourPrintHeadline(data),
+    members: data.members,
+    rows: buildTourPrintSummaryRows(data),
+  };
+
+  const weekPages = buildTourPrintWeekPages(data).map<TourPrintPreviewPage>((week, weekIndex) => ({
+    kind: "week",
+    pageIndex: weekIndex + 1,
+    pageNumber: weekIndex + 2,
+    title: buildTourPrintWeekTitle(data, week.weekStart, weekIndex),
+    orientation: "landscape",
+    rangeLabel: `${formatTourPrintDate(week.weekStart)} / ${formatTourPrintDate(week.weekEnd)}`,
+    weekIndex,
+    weekStart: week.weekStart,
+    weekEnd: week.weekEnd,
+    days: week.days,
+  }));
+
+  return [summaryPage, ...weekPages];
 }

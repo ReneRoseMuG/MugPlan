@@ -1,19 +1,14 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
-import { de } from "date-fns/locale";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
-  buildPrintNotesText,
-  buildTourPrintDateRange,
-  buildTourPrintSummaryRows,
-  buildTourPrintWeekPages,
-  formatTourPrintDateShort,
-  getAppointmentPrimaryLocation,
+  buildTourPrintPages,
   normalizeTourPrintWeekCount,
-  type TourPrintPreviewAppointment,
   type TourPrintPreviewResponse,
 } from "@/lib/tour-print-preview";
+import { CalendarTourPrintSummaryPage } from "./CalendarTourPrintSummaryPage";
+import { CalendarTourPrintWeekPage } from "./CalendarTourPrintWeekPage";
 
 type CalendarTourPrintPreviewDialogProps = {
   open: boolean;
@@ -24,35 +19,6 @@ type CalendarTourPrintPreviewDialogProps = {
   weekendColumnPercent: number;
 };
 
-function formatTime(value: string | null): string {
-  return value ? value.slice(0, 5) : "Ganztag";
-}
-
-function PrintAppointmentCard({ appointment }: { appointment: TourPrintPreviewAppointment }) {
-  const notes = buildPrintNotesText(appointment);
-
-  return (
-    <article className="rounded-md border border-slate-300 bg-white p-2 text-[11px] shadow-sm">
-      <div className="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-        <span>{formatTime(appointment.startTime)}</span>
-        <span>{appointment.durationDays} T</span>
-      </div>
-      <div className="mt-1 font-semibold text-slate-900">{appointment.projectName}</div>
-      <div className="mt-1 text-slate-700">{getAppointmentPrimaryLocation(appointment)}</div>
-      {appointment.saunaModel ? <div className="mt-1 text-slate-700">Sauna: {appointment.saunaModel}</div> : null}
-      {notes.length > 0 ? (
-        <div className="mt-2 space-y-1 border-t border-slate-200 pt-2 text-slate-700">
-          {notes.map((note, index) => (
-            <p key={`${appointment.id}-note-${index}`} className="line-clamp-4">
-              {note}
-            </p>
-          ))}
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
 export function CalendarTourPrintPreviewDialog({
   open,
   onOpenChange,
@@ -61,6 +27,7 @@ export function CalendarTourPrintPreviewDialog({
   fromDate,
   weekendColumnPercent,
 }: CalendarTourPrintPreviewDialogProps) {
+  const [activePageIndex, setActivePageIndex] = useState(0);
   const normalizedWeekCount = normalizeTourPrintWeekCount(weekCount);
 
   const { data, isLoading, isError } = useQuery<TourPrintPreviewResponse>({
@@ -81,23 +48,64 @@ export function CalendarTourPrintPreviewDialog({
     },
   });
 
-  const dayGridTemplate = buildDayGridTemplate(getDayWeights(normalizeWeekendColumnPercent(weekendColumnPercent)));
+  const pages = useMemo(() => (data ? buildTourPrintPages(data) : []), [data]);
+  const activePage = pages[activePageIndex] ?? null;
+  const canGoPrev = activePageIndex > 0;
+  const canGoNext = activePageIndex < pages.length - 1;
+
+  useEffect(() => {
+    if (!open) {
+      setActivePageIndex(0);
+      return;
+    }
+    setActivePageIndex(0);
+  }, [data, open, tourId, normalizedWeekCount]);
+
+  useEffect(() => {
+    if (!open || pages.length === 0) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft" && canGoPrev) {
+        event.preventDefault();
+        setActivePageIndex((current) => Math.max(0, current - 1));
+      }
+      if (event.key === "ArrowRight" && canGoNext) {
+        event.preventDefault();
+        setActivePageIndex((current) => Math.min(pages.length - 1, current + 1));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canGoNext, canGoPrev, open, pages.length]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="h-[92vh] w-[96vw] max-w-[1400px] overflow-hidden p-0 print:left-0 print:top-0 print:h-auto print:w-auto print:max-w-none print:translate-x-0 print:translate-y-0 print:overflow-visible print:border-0 print:bg-white print:shadow-none"
+        className="h-[94vh] w-[98vw] max-w-[1500px] overflow-hidden p-0 print:left-0 print:top-0 print:h-auto print:w-auto print:max-w-none print:translate-x-0 print:translate-y-0 print:overflow-visible print:border-0 print:bg-white print:shadow-none"
         data-testid="dialog-tour-print-preview"
       >
         <div className="flex h-full flex-col">
           <DialogHeader className="border-b border-border px-6 py-4 print:hidden">
             <DialogTitle>Druckvorschau Tour-Zeitleiste</DialogTitle>
             <DialogDescription>
-              Vorschau ohne echten Druck. Der finale Druckablauf folgt spaeter.
+              Vorschau ohne echten Druck. Die Seiten werden einzeln geblaettert; der finale Druckablauf folgt spaeter.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-auto bg-slate-200 px-6 py-6 print:bg-white" data-testid="tour-print-preview-pages">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 text-sm print:hidden">
+            <div className="font-medium text-slate-700" data-testid="tour-print-preview-page-indicator">
+              {pages.length > 0 ? `Seite ${activePageIndex + 1} von ${pages.length}` : "Keine Seiten geladen"}
+            </div>
+            <div className="min-w-0 truncate text-right text-slate-500" data-testid="tour-print-preview-page-title">
+              {activePage?.title ?? ""}
+            </div>
+          </div>
+
+          <div
+            className="relative flex-1 overflow-auto bg-slate-200 px-6 py-6 print:bg-white print:px-0 print:py-0"
+            data-testid="tour-print-preview-pages"
+          >
             <style>
               {`
                 @media print {
@@ -112,30 +120,37 @@ export function CalendarTourPrintPreviewDialog({
                   }
                   [data-testid="tour-print-preview-pages"] {
                     position: static;
-                    left: 0;
-                    top: 0;
                     width: 100%;
                     min-height: auto;
                     overflow: visible;
                     background: white;
-                    padding: 0;
+                  }
+                  [data-testid="tour-print-preview-active-page-shell"] {
+                    display: none !important;
+                  }
+                  [data-testid="tour-print-preview-print-stack"] {
+                    display: flex !important;
+                    flex-direction: column;
+                    gap: 0 !important;
                   }
                   .tour-print-page {
                     box-shadow: none !important;
                     margin: 0 !important;
                     border: none !important;
+                    break-after: page;
                     page-break-after: always;
                   }
                   .tour-print-page:last-child {
+                    break-after: auto;
                     page-break-after: auto;
                   }
                   .tour-print-page--portrait {
-                    width: 210mm;
-                    min-height: 297mm;
+                    width: 210mm !important;
+                    min-height: 297mm !important;
                   }
                   .tour-print-page--landscape {
-                    width: 297mm;
-                    min-height: 210mm;
+                    width: 297mm !important;
+                    min-height: 210mm !important;
                   }
                 }
               `}
@@ -144,105 +159,52 @@ export function CalendarTourPrintPreviewDialog({
             {isLoading ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
             {isError ? <div className="text-sm text-destructive">Druckvorschau konnte nicht geladen werden.</div> : null}
 
-            {data ? (
-              <div className="space-y-6">
-                <section
-                  className="tour-print-page tour-print-page--portrait mx-auto flex min-h-[1020px] w-[720px] flex-col gap-6 border border-slate-300 bg-white p-8 shadow-lg"
-                  data-testid="tour-print-summary-page"
+            {pages.length > 0 ? (
+              <>
+                <button
+                  type="button"
+                  className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-300 bg-white/95 p-3 text-slate-700 shadow transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 print:hidden"
+                  onClick={() => setActivePageIndex((current) => Math.max(0, current - 1))}
+                  disabled={!canGoPrev}
+                  aria-label="Vorherige Seite"
+                  data-testid="button-tour-print-preview-prev"
                 >
-                  <header className="space-y-4 border-b border-slate-200 pb-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Tour-Druckvorschau</p>
-                        <h2 className="mt-2 text-3xl font-semibold text-slate-900">{data.tour.name}</h2>
-                      </div>
-                      <div
-                        className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white"
-                        style={{ backgroundColor: data.tour.color }}
-                      >
-                        {buildTourPrintDateRange(data)}
-                      </div>
-                    </div>
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
 
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Betroffene Mitarbeiter</p>
-                      <div className="mt-2 flex flex-wrap gap-2" data-testid="tour-print-members">
-                        {data.members.map((member) => (
-                          <span key={member.id} className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-800">
-                            {member.fullName}
-                          </span>
-                        ))}
-                        {data.members.length === 0 ? <span className="text-sm text-slate-500">Keine Tour-Mitglieder</span> : null}
-                      </div>
-                    </div>
-                  </header>
+                <div className="flex min-h-full items-center justify-center" data-testid="tour-print-preview-active-page-shell">
+                  {activePage?.kind === "summary" ? (
+                    <CalendarTourPrintSummaryPage page={activePage} />
+                  ) : activePage?.kind === "week" ? (
+                    <CalendarTourPrintWeekPage page={activePage} weekendColumnPercent={weekendColumnPercent} />
+                  ) : null}
+                </div>
 
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Terminliste</p>
-                    <div className="overflow-hidden rounded-lg border border-slate-200">
-                      <table className="w-full border-collapse text-sm" data-testid="tour-print-summary-table">
-                        <thead className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
-                          <tr>
-                            <th className="px-3 py-2">Datum</th>
-                            <th className="px-3 py-2">Dauer</th>
-                            <th className="px-3 py-2">Saunamodell</th>
-                            <th className="px-3 py-2">Postleitzahl</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {buildTourPrintSummaryRows(data).map((row) => (
-                            <tr key={row.id} className="border-t border-slate-200">
-                              <td className="px-3 py-2">{row.dateLabel}</td>
-                              <td className="px-3 py-2">{row.durationDays}</td>
-                              <td className="px-3 py-2">{row.saunaModel}</td>
-                              <td className="px-3 py-2">{row.postalCode}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </section>
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-300 bg-white/95 p-3 text-slate-700 shadow transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 print:hidden"
+                  onClick={() => setActivePageIndex((current) => Math.min(pages.length - 1, current + 1))}
+                  disabled={!canGoNext}
+                  aria-label="Naechste Seite"
+                  data-testid="button-tour-print-preview-next"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
 
-                {buildTourPrintWeekPages(data).map((week, weekIndex) => (
-                  <section
-                    key={week.weekStart}
-                    className="tour-print-page tour-print-page--landscape mx-auto flex min-h-[720px] w-[1080px] flex-col gap-4 border border-slate-300 bg-white p-6 shadow-lg"
-                    data-testid={`tour-print-week-page-${weekIndex + 1}`}
-                  >
-                    <header className="flex items-center justify-between gap-4 border-b border-slate-200 pb-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Wochenansicht</p>
-                        <h3 className="mt-1 text-2xl font-semibold text-slate-900">
-                          {data.tour.name} · KW {format(parseISO(week.weekStart), "II", { locale: de })}
-                        </h3>
-                      </div>
-                      <div className="text-sm font-medium text-slate-700">
-                        {buildTourPrintDateRange({
-                          ...data,
-                          fromDate: week.weekStart,
-                          toDate: week.weekEnd,
-                        })}
-                      </div>
-                    </header>
-
-                    <div className="grid gap-3" style={{ gridTemplateColumns: dayGridTemplate }}>
-                      {week.days.map((day) => (
-                        <div key={day.dateKey} className="min-w-0 rounded-lg border border-slate-200 bg-slate-50">
-                          <div className="border-b border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800">
-                            {formatTourPrintDateShort(day.dateKey)}
-                          </div>
-                          <div className="flex min-h-[540px] flex-col gap-2 px-2 py-2" data-testid={`tour-print-day-${day.dateKey}`}>
-                            {day.appointments.map((appointment) => (
-                              <PrintAppointmentCard key={`${day.dateKey}-${appointment.id}`} appointment={appointment} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
+                <div className="hidden print:flex print:flex-col" data-testid="tour-print-preview-print-stack">
+                  {pages.map((page) =>
+                    page.kind === "summary" ? (
+                      <CalendarTourPrintSummaryPage key={`print-page-${page.pageNumber}`} page={page} />
+                    ) : (
+                      <CalendarTourPrintWeekPage
+                        key={`print-page-${page.pageNumber}`}
+                        page={page}
+                        weekendColumnPercent={weekendColumnPercent}
+                      />
+                    ),
+                  )}
+                </div>
+              </>
             ) : null}
           </div>
         </div>

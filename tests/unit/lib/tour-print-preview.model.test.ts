@@ -14,6 +14,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  buildTourPrintPages,
   buildTourPrintSummaryRows,
   buildTourPrintWeekPages,
   normalizeTourPrintWeekCount,
@@ -101,5 +102,34 @@ describe("FT31 UI model: tour print preview page builder", () => {
     expect(pages[0].days.find((day) => day.dateKey === "2099-06-16")?.appointments.map((item) => item.id)).toContain(101);
     expect(pages[0].days.find((day) => day.dateKey === "2099-06-17")?.appointments.map((item) => item.id)).toContain(101);
     expect(pages[1].days.find((day) => day.dateKey === "2099-06-24")?.appointments.map((item) => item.id)).toContain(102);
+  });
+
+  it("builds a flat page list with portrait summary followed by landscape weeks", () => {
+    const pages = buildTourPrintPages(fixture);
+
+    expect(pages).toHaveLength(3);
+    expect(pages[0]).toEqual(
+      expect.objectContaining({
+        kind: "summary",
+        pageNumber: 1,
+        orientation: "portrait",
+      }),
+    );
+    expect(pages[1]).toEqual(
+      expect.objectContaining({
+        kind: "week",
+        pageNumber: 2,
+        orientation: "landscape",
+        weekIndex: 0,
+      }),
+    );
+    expect(pages[2]).toEqual(
+      expect.objectContaining({
+        kind: "week",
+        pageNumber: 3,
+        orientation: "landscape",
+        weekIndex: 1,
+      }),
+    );
   });
 });
