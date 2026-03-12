@@ -76,8 +76,8 @@ export async function exportProductManagementSeed(): Promise<SeedExecutionResult
     await writeSeedFileUtf8(
       PRODUCTS_FILE_NAME,
       stringifyCsv(
-        ["Name", "Beschreibung", "Kategorie"],
-        products.map((product) => [product.name, product.description ?? "", productCategoryNameById.get(product.categoryId) ?? ""]),
+        ["Name", "ShortCode", "Beschreibung", "Kategorie"],
+        products.map((product) => [product.name, product.shortCode ?? "", product.description ?? "", productCategoryNameById.get(product.categoryId) ?? ""]),
       ),
     );
     logLines.push(`Export geschrieben: ${PRODUCTS_FILE_NAME}`);
@@ -92,8 +92,8 @@ export async function exportProductManagementSeed(): Promise<SeedExecutionResult
     await writeSeedFileUtf8(
       COMPONENTS_FILE_NAME,
       stringifyCsv(
-        ["Name", "Beschreibung", "Kategorie"],
-        components.map((component) => [component.name, component.description ?? "", componentCategoryNameById.get(component.categoryId) ?? ""]),
+        ["Name", "ShortCode", "Beschreibung", "Kategorie"],
+        components.map((component) => [component.name, component.shortCode ?? "", component.description ?? "", componentCategoryNameById.get(component.categoryId) ?? ""]),
       ),
     );
     logLines.push(`Export geschrieben: ${COMPONENTS_FILE_NAME}`);
@@ -119,6 +119,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
   if (productsStatus.exists) {
     const parsedProducts = parseCsvWithHeaders(await readSeedFileUtf8(PRODUCTS_FILE_NAME));
     const hasProductIsActiveHeader = hasCsvHeader(parsedProducts.headers, "Is Active");
+    const hasProductShortCodeHeader = hasCsvHeader(parsedProducts.headers, "ShortCode");
     const productRows = parsedProducts.rows;
     for (const row of productRows) {
       const name = (row.Name ?? "").trim();
@@ -134,6 +135,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
       if (!existing) {
         await masterDataRepository.createProduct({
           name,
+          shortCode: hasProductShortCodeHeader ? ((row.ShortCode ?? "").trim() || null) : null,
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
           isActive,
@@ -142,6 +144,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
         logLines.push(`Produkt angelegt: ${name}`);
       } else {
         await masterDataRepository.updateProductWithVersion(existing.id, existing.version, {
+          shortCode: hasProductShortCodeHeader ? ((row.ShortCode ?? "").trim() || null) : undefined,
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
           isActive,
@@ -156,6 +159,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
   if (componentsStatus.exists) {
     const parsedComponents = parseCsvWithHeaders(await readSeedFileUtf8(COMPONENTS_FILE_NAME));
     const hasComponentIsActiveHeader = hasCsvHeader(parsedComponents.headers, "Is Active");
+    const hasComponentShortCodeHeader = hasCsvHeader(parsedComponents.headers, "ShortCode");
     const componentRows = parsedComponents.rows;
     for (const row of componentRows) {
       const name = (row.Name ?? "").trim();
@@ -171,6 +175,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
       if (!existing) {
         await masterDataRepository.createComponent({
           name,
+          shortCode: hasComponentShortCodeHeader ? ((row.ShortCode ?? "").trim() || null) : null,
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
           isActive,
@@ -179,6 +184,7 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
         logLines.push(`Komponente angelegt: ${name}`);
       } else {
         await masterDataRepository.updateComponentWithVersion(existing.id, existing.version, {
+          shortCode: hasComponentShortCodeHeader ? ((row.ShortCode ?? "").trim() || null) : undefined,
           description: (row.Beschreibung ?? "").trim() || null,
           categoryId,
           isActive,

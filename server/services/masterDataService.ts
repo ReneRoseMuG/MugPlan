@@ -129,6 +129,41 @@ function normalizeReadFilterForRole(
   return "active";
 }
 
+function normalizeOptionalText(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const normalized = value.trim();
+  return normalized.length === 0 ? null : normalized;
+}
+
+function normalizeProductInput(input: InsertProduct): InsertProduct {
+  return {
+    ...input,
+    shortCode: normalizeOptionalText(input.shortCode),
+  };
+}
+
+function normalizeProductUpdate(input: UpdateProduct): UpdateProduct {
+  return {
+    ...input,
+    shortCode: normalizeOptionalText(input.shortCode),
+  };
+}
+
+function normalizeComponentInput(input: InsertComponent): InsertComponent {
+  return {
+    ...input,
+    shortCode: normalizeOptionalText(input.shortCode),
+  };
+}
+
+function normalizeComponentUpdate(input: UpdateComponent): UpdateComponent {
+  return {
+    ...input,
+    shortCode: normalizeOptionalText(input.shortCode),
+  };
+}
+
 function buildSeedLog(action: "created" | "reactivated" | "existing", kind: "Produktkategorie" | "Komponentenkategorie", name: string): string {
   if (action === "created") return `${kind} angelegt: ${name}`;
   if (action === "reactivated") return `${kind} reaktiviert: ${name}`;
@@ -358,6 +393,7 @@ export async function importProductsForCategory(
       if (!existing) {
         await masterDataRepository.createProduct({
           name: candidate.name,
+          shortCode: null,
           categoryId,
           description: candidate.description,
           isActive: candidate.isActive,
@@ -374,6 +410,7 @@ export async function importProductsForCategory(
 
       const result = await masterDataRepository.updateProductWithVersion(existing.id, existing.version, {
         name: candidate.name,
+        shortCode: null,
         categoryId,
         description: candidate.description,
         isActive: candidate.isActive,
@@ -489,6 +526,7 @@ export async function importComponentsForCategory(
       if (!existing) {
         await masterDataRepository.createComponent({
           name: candidate.name,
+          shortCode: null,
           categoryId,
           description: candidate.description,
           isActive: candidate.isActive,
@@ -505,6 +543,7 @@ export async function importComponentsForCategory(
 
       const result = await masterDataRepository.updateComponentWithVersion(existing.id, existing.version, {
         name: candidate.name,
+        shortCode: null,
         categoryId,
         description: candidate.description,
         isActive: candidate.isActive,
@@ -603,7 +642,7 @@ export async function listProducts(
 export async function createProduct(input: InsertProduct, roleKey: CanonicalRoleKey): Promise<Product> {
   requireAdmin(roleKey);
   try {
-    return await masterDataRepository.createProduct(input);
+    return await masterDataRepository.createProduct(normalizeProductInput(input));
   } catch (error) {
     if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
       throw new MasterDataError(409, "BUSINESS_CONFLICT");
@@ -620,7 +659,7 @@ export async function updateProduct(
 ): Promise<Product> {
   requireAdmin(roleKey);
   try {
-    const result = await masterDataRepository.updateProductWithVersion(id, expectedVersion, input);
+    const result = await masterDataRepository.updateProductWithVersion(id, expectedVersion, normalizeProductUpdate(input));
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
     return result.row;
@@ -663,7 +702,7 @@ export async function listComponents(
 export async function createComponent(input: InsertComponent, roleKey: CanonicalRoleKey): Promise<Component> {
   requireAdmin(roleKey);
   try {
-    return await masterDataRepository.createComponent(input);
+    return await masterDataRepository.createComponent(normalizeComponentInput(input));
   } catch (error) {
     if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
       throw new MasterDataError(409, "BUSINESS_CONFLICT");
@@ -680,7 +719,7 @@ export async function updateComponent(
 ): Promise<Component> {
   requireAdmin(roleKey);
   try {
-    const result = await masterDataRepository.updateComponentWithVersion(id, expectedVersion, input);
+    const result = await masterDataRepository.updateComponentWithVersion(id, expectedVersion, normalizeComponentUpdate(input));
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
     return result.row;

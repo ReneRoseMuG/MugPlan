@@ -42,6 +42,7 @@ type ComponentCategoryRow = ProductCategoryRow;
 type ProductRow = {
   id: number;
   name: string;
+  shortCode?: string | null;
   description: string | null;
   categoryId: number;
   isActive: boolean;
@@ -181,6 +182,7 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   updateProductWithVersion: vi.fn(async (id: number, expectedVersion: number, input: Partial<ProductRow>) => {
     const row = state.products.find((entry) => entry.id === id && entry.version === expectedVersion);
     if (!row) return { kind: "version_conflict" };
+    row.shortCode = input.shortCode ?? row.shortCode;
     row.description = input.description ?? row.description;
     row.categoryId = input.categoryId ?? row.categoryId;
     row.isActive = input.isActive ?? row.isActive;
@@ -196,6 +198,7 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   updateComponentWithVersion: vi.fn(async (id: number, expectedVersion: number, input: Partial<ComponentRow>) => {
     const row = state.components.find((entry) => entry.id === id && entry.version === expectedVersion);
     if (!row) return { kind: "version_conflict" };
+    row.shortCode = input.shortCode ?? row.shortCode;
     row.description = input.description ?? row.description;
     row.categoryId = input.categoryId ?? row.categoryId;
     row.isActive = input.isActive ?? row.isActive;
@@ -412,8 +415,8 @@ describe("FT27 unit: master data seed services", () => {
   it("exports and applies product management data with category upserts", async () => {
     state.productCategories = [{ id: 1, name: "Bestehend", isActive: true, version: 1 }];
     state.componentCategories = [{ id: 1, name: "Vorhanden", isActive: true, version: 1 }];
-    state.products = [{ id: 1, name: "Produkt A", description: "Alt", categoryId: 1, isActive: true, version: 1 }];
-    state.components = [{ id: 1, name: "Komponente A", description: "Alt", categoryId: 1, isActive: true, version: 1 }];
+    state.products = [{ id: 1, name: "Produkt A", shortCode: "PA", description: "Alt", categoryId: 1, isActive: true, version: 1 }];
+    state.components = [{ id: 1, name: "Komponente A", shortCode: "KA", description: "Alt", categoryId: 1, isActive: true, version: 1 }];
     state.ids.productCategory = 2;
     state.ids.componentCategory = 2;
     state.ids.product = 2;
@@ -422,18 +425,18 @@ describe("FT27 unit: master data seed services", () => {
     const { exportProductManagementSeed, applyProductManagementSeed } = await import("../../../server/services/seedProductManagementService");
 
     await exportProductManagementSeed();
-    await expect(readSeedFile(tempRoot, "products.csv")).resolves.toContain("Produkt A;Alt;Bestehend");
-    await expect(readSeedFile(tempRoot, "components.csv")).resolves.toContain("Komponente A;Alt;Vorhanden");
+    await expect(readSeedFile(tempRoot, "products.csv")).resolves.toContain("Produkt A;PA;Alt;Bestehend");
+    await expect(readSeedFile(tempRoot, "components.csv")).resolves.toContain("Komponente A;KA;Alt;Vorhanden");
 
     await writeSeedFile(
       tempRoot,
       "products.csv",
-      "Name;Beschreibung;Kategorie\nProdukt A;Neu;Neue Kategorie\nProdukt B;Beschreibung B;\n;Leer;Ignoriert\n",
+      "Name;ShortCode;Beschreibung;Kategorie\nProdukt A;PX;Neu;Neue Kategorie\nProdukt B;PB;Beschreibung B;\n;LX;Leer;Ignoriert\n",
     );
     await writeSeedFile(
       tempRoot,
       "components.csv",
-      "Name;Beschreibung;Kategorie\nKomponente A;Neu;Neue Komponentenkategorie\nKomponente B;Beschreibung B;\n",
+      "Name;ShortCode;Beschreibung;Kategorie\nKomponente A;KX;Neu;Neue Komponentenkategorie\nKomponente B;KB;Beschreibung B;\n",
     );
 
     const firstRun = await applyProductManagementSeed();
@@ -445,6 +448,8 @@ describe("FT27 unit: master data seed services", () => {
     expect(firstRun.logLines).toContain("Komponente aktualisiert: Komponente A");
     expect(firstRun.logLines).toContain("Komponente angelegt: Komponente B");
     expect(state.products.filter((entry) => entry.name === "Produkt B")).toHaveLength(1);
+    expect(state.products.find((entry) => entry.name === "Produkt A")?.shortCode).toBe("PX");
+    expect(state.components.find((entry) => entry.name === "Komponente B")?.shortCode).toBe("KB");
     expect(secondRun.logLines).toContain("Produkt aktualisiert: Produkt B");
     expect(state.productCategories.some((entry) => entry.name === "Fass Saunen")).toBe(true);
   });
@@ -452,8 +457,8 @@ describe("FT27 unit: master data seed services", () => {
   it("defaults product and component seed rows to active when the Is Active header is missing", async () => {
     state.productCategories = [{ id: 1, name: "Fass Saunen", isActive: true, version: 1 }];
     state.componentCategories = [{ id: 1, name: "Dachvarianten", isActive: true, version: 1 }];
-    state.products = [{ id: 1, name: "Produkt A", description: "Alt", categoryId: 1, isActive: false, version: 1 }];
-    state.components = [{ id: 1, name: "Komponente A", description: "Alt", categoryId: 1, isActive: false, version: 1 }];
+    state.products = [{ id: 1, name: "Produkt A", shortCode: null, description: "Alt", categoryId: 1, isActive: false, version: 1 }];
+    state.components = [{ id: 1, name: "Komponente A", shortCode: null, description: "Alt", categoryId: 1, isActive: false, version: 1 }];
     state.ids.product = 2;
     state.ids.component = 2;
 

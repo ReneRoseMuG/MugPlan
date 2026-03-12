@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 export type ProductDataDraft = {
   name: string;
+  shortCode: string;
   description: string;
   categoryId: string;
   isActive: boolean;
@@ -32,7 +33,7 @@ export function ProductData({
     <section className="rounded-md border border-slate-200 bg-slate-50 p-4">
       <h5 className="font-semibold text-slate-900">Produkt Stammdaten</h5>
       <div className="mt-3 grid grid-cols-1 gap-3">
-        <div className={`grid grid-cols-1 gap-3 ${isAdmin ? "md:grid-cols-[140px_minmax(0,1fr)_220px]" : "md:grid-cols-[minmax(0,1fr)_220px]"} md:items-end`}>
+        <div className={`grid grid-cols-1 gap-3 ${isAdmin ? "md:grid-cols-[140px_minmax(0,1fr)_140px_220px]" : "md:grid-cols-[minmax(0,1fr)_140px_220px]"} md:items-end`}>
           {isAdmin ? (
             <div className="space-y-2">
               <Label htmlFor="product-data-active">Status</Label>
@@ -55,6 +56,16 @@ export function ProductData({
               value={draft.name}
               disabled={disabled}
               onChange={(event) => onDraftChange({ ...draft, name: event.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="product-data-short-code">ShortCode</Label>
+            <Input
+              id="product-data-short-code"
+              value={draft.shortCode}
+              disabled={disabled}
+              onChange={(event) => onDraftChange({ ...draft, shortCode: event.target.value })}
+              placeholder="Kurzcode"
             />
           </div>
           <div className="space-y-2">

@@ -141,6 +141,7 @@ describe("FT27 integration: seed file services", () => {
     const existingComponentCategory = await ensureComponentCategoryFixture("Export Komponenten");
     await masterDataRepository.createProduct({
       name: "Export Produkt",
+      shortCode: "EXP-P",
       description: "Alt",
       categoryId: existingProductCategory.id,
       isActive: true,
@@ -148,6 +149,7 @@ describe("FT27 integration: seed file services", () => {
     });
     await masterDataRepository.createComponent({
       name: "Export Komponente",
+      shortCode: "EXP-K",
       description: "Alt",
       categoryId: existingComponentCategory.id,
       isActive: true,
@@ -155,16 +157,16 @@ describe("FT27 integration: seed file services", () => {
     });
 
     await exportProductManagementSeed();
-    await expect(readSeedFile("products.csv")).resolves.toContain("Export Produkt;Alt;Export Kategorie");
-    await expect(readSeedFile("components.csv")).resolves.toContain("Export Komponente;Alt;Export Komponenten");
+    await expect(readSeedFile("products.csv")).resolves.toContain("Export Produkt;EXP-P;Alt;Export Kategorie");
+    await expect(readSeedFile("components.csv")).resolves.toContain("Export Komponente;EXP-K;Alt;Export Komponenten");
 
     await writeSeedFile(
       "products.csv",
-      "Name;Beschreibung;Kategorie\nExport Produkt;Neu;Neue Produktkategorie\nSeed Produkt;Beschreibung;Seed Kategorie\n",
+      "Name;ShortCode;Beschreibung;Kategorie\nExport Produkt;EP2;Neu;Neue Produktkategorie\nSeed Produkt;SP1;Beschreibung;Seed Kategorie\n",
     );
     await writeSeedFile(
       "components.csv",
-      "Name;Beschreibung;Kategorie\nExport Komponente;Neu;Neue Komponenten Kategorie\nSeed Komponente;Beschreibung;Seed Komponenten\n",
+      "Name;ShortCode;Beschreibung;Kategorie\nExport Komponente;EK2;Neu;Neue Komponenten Kategorie\nSeed Komponente;SK1;Beschreibung;Seed Komponenten\n",
     );
 
     const firstRun = await applyProductManagementSeed();
@@ -179,6 +181,8 @@ describe("FT27 integration: seed file services", () => {
     expect(secondRun.logLines).toContain("Produkt aktualisiert: Seed Produkt");
     expect(products.filter((entry) => entry.name === "Seed Produkt")).toHaveLength(1);
     expect(components.filter((entry) => entry.name === "Seed Komponente")).toHaveLength(1);
+    expect(products.find((entry) => entry.name === "Seed Produkt")?.shortCode).toBe("SP1");
+    expect(components.find((entry) => entry.name === "Seed Komponente")?.shortCode).toBe("SK1");
     expect(productCategories.some((entry) => entry.name === "Seed Kategorie")).toBe(true);
     expect(componentCategories.some((entry) => entry.name === "Seed Komponenten")).toBe(true);
   });

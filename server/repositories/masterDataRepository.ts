@@ -237,6 +237,7 @@ export async function updateProductWithVersion(
     update products
     set
       name = if(${input.name === undefined}, name, ${input.name ?? null}),
+      short_code = if(${input.shortCode === undefined}, short_code, ${input.shortCode ?? null}),
       category_id = if(${input.categoryId === undefined}, category_id, ${input.categoryId ?? null}),
       description = if(${input.description === undefined}, description, ${input.description ?? null}),
       is_active = if(${input.isActive === undefined}, is_active, ${input.isActive ?? null}),
@@ -307,6 +308,7 @@ export async function updateComponentWithVersion(
     update components
     set
       name = if(${input.name === undefined}, name, ${input.name ?? null}),
+      short_code = if(${input.shortCode === undefined}, short_code, ${input.shortCode ?? null}),
       category_id = if(${input.categoryId === undefined}, category_id, ${input.categoryId ?? null}),
       description = if(${input.description === undefined}, description, ${input.description ?? null}),
       is_active = if(${input.isActive === undefined}, is_active, ${input.isActive ?? null}),

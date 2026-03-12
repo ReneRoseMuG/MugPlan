@@ -57,6 +57,13 @@
       "when": 1773148800000,
       "tag": "0007_project_product_categories_and_order_items",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1773333317735,
+      "tag": "0008_product_management_short_code",
+      "breakpoints": true
     }
   ]
 }

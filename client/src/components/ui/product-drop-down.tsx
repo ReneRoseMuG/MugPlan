@@ -12,6 +12,7 @@ interface ProductDropDownProps {
   selectedProductId: string;
   onSelectProduct: (productId: string) => void;
   onCreateProduct: (input: { name: string; categoryId: number }) => Promise<Product>;
+  onDeleteProduct?: () => void;
   isAdmin: boolean;
 }
 
@@ -21,6 +22,7 @@ export function ProductDropDown({
   selectedProductId,
   onSelectProduct,
   onCreateProduct,
+  onDeleteProduct,
   isAdmin,
 }: ProductDropDownProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -29,13 +31,10 @@ export function ProductDropDown({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const options = products.map((product) => {
-    const categoryName = categories.find((category) => category.id === product.categoryId)?.name ?? `#${product.categoryId}`;
-    return {
-      value: String(product.id),
-      label: isAdmin ? `${product.name} | ${categoryName} | ${product.isActive ? "Aktiv" : "Inaktiv"}` : `${product.name} | ${categoryName}`,
-    };
-  });
+  const options = products.map((product) => ({
+    value: String(product.id),
+    label: product.name,
+  }));
 
   const resetDialog = () => {
     setName("");
@@ -71,11 +70,14 @@ export function ProductDropDown({
           options={options}
           placeholder="Produkt auswählen"
           onSelect={onSelectProduct}
+          showRemove={isAdmin}
           showAdd={isAdmin}
+          onRemove={onDeleteProduct}
           onAdd={() => {
             resetDialog();
             setDialogOpen(true);
           }}
+          removeDisabled={!selectedProductId}
           testId="select-product-record"
         />
       </section>

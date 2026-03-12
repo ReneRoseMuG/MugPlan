@@ -52,6 +52,16 @@ const customerOptionalTextSchema = z.preprocess(
   z.string().nullable().optional(),
 );
 
+const shortCodeSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value !== "string") return value;
+    const normalized = value.trim();
+    return normalized.length === 0 ? null : normalized;
+  },
+  z.string().max(64).nullable().optional(),
+);
+
 export const insertCustomerSchema = createInsertSchema(customers).omit({ 
   id: true, 
   createdAt: true, 
@@ -409,6 +419,7 @@ export type UpdateComponentCategory = z.infer<typeof updateComponentCategorySche
 export const products = mysqlTable("products", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull().unique(),
+  shortCode: varchar("short_code", { length: 64 }),
   categoryId: bigint("category_id", { mode: "number" })
     .notNull()
     .references(() => productCategories.id, { onDelete: "restrict" }),
@@ -423,10 +434,13 @@ export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  shortCode: shortCodeSchema,
 });
 
 export const updateProductSchema = z.object({
   name: z.string().optional(),
+  shortCode: shortCodeSchema,
   categoryId: z.number().int().optional(),
   description: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
@@ -441,6 +455,7 @@ export type UpdateProduct = z.infer<typeof updateProductSchema>;
 export const components = mysqlTable("components", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull().unique(),
+  shortCode: varchar("short_code", { length: 64 }),
   categoryId: bigint("category_id", { mode: "number" })
     .notNull()
     .references(() => componentCategories.id, { onDelete: "restrict" }),
@@ -455,10 +470,13 @@ export const insertComponentSchema = createInsertSchema(components).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  shortCode: shortCodeSchema,
 });
 
 export const updateComponentSchema = z.object({
   name: z.string().optional(),
+  shortCode: shortCodeSchema,
   categoryId: z.number().int().optional(),
   description: z.string().nullable().optional(),
   isActive: z.boolean().optional(),

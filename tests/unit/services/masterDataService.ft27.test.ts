@@ -71,6 +71,7 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
 }));
 
 import {
+  createComponent,
   createProduct,
   createProductCategory,
   deleteComponentCategory,
@@ -214,6 +215,37 @@ describe("FT27 unit: masterDataService", () => {
       status: 409,
       code: "BUSINESS_CONFLICT",
     });
+  });
+
+  it("normalizes empty or trimmed shortCode values before persisting", async () => {
+    repositoryMocks.createProduct.mockResolvedValueOnce({ id: 10, shortCode: "PX", version: 1 });
+    repositoryMocks.createComponent.mockResolvedValueOnce({ id: 11, shortCode: null, version: 1 });
+
+    await createProduct(
+      {
+        name: "Produkt X",
+        shortCode: "  PX  ",
+        categoryId: 1,
+        description: null,
+        isActive: true,
+        version: 1,
+      },
+      "ADMIN",
+    );
+    await createComponent(
+      {
+        name: "Komponente X",
+        shortCode: "   ",
+        categoryId: 1,
+        description: null,
+        isActive: true,
+        version: 1,
+      },
+      "ADMIN",
+    );
+
+    expect(repositoryMocks.createProduct).toHaveBeenCalledWith(expect.objectContaining({ shortCode: "PX" }));
+    expect(repositoryMocks.createComponent).toHaveBeenCalledWith(expect.objectContaining({ shortCode: null }));
   });
 
   it("maps non-admin access for component-products list to FORBIDDEN", async () => {

@@ -236,6 +236,62 @@ describe("FT27 integration: master data admin API", () => {
       });
   });
 
+  it("persists optional shortCode on product and component create update flows", async () => {
+    const admin = await loginAdminAgent();
+    const productCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: "PK-FT27-SHORT", isActive: true, version: 1 })
+      .expect(201);
+    const componentCategory = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: "CK-FT27-SHORT", isActive: true, version: 1 })
+      .expect(201);
+
+    const createdProduct = await admin
+      .post("/api/admin/master-data/products")
+      .send({
+        name: "PRD-FT27-SHORT",
+        shortCode: "PRD1",
+        categoryId: productCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+    expect(createdProduct.body.shortCode).toBe("PRD1");
+
+    const updatedProduct = await admin
+      .put(`/api/admin/master-data/products/${createdProduct.body.id}`)
+      .send({
+        version: createdProduct.body.version,
+        shortCode: "PRD2",
+      })
+      .expect(200);
+    expect(updatedProduct.body.shortCode).toBe("PRD2");
+
+    const createdComponent = await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: "CMP-FT27-SHORT",
+        shortCode: "CMP1",
+        categoryId: componentCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+    expect(createdComponent.body.shortCode).toBe("CMP1");
+
+    const updatedComponent = await admin
+      .put(`/api/admin/master-data/components/${createdComponent.body.id}`)
+      .send({
+        version: createdComponent.body.version,
+        shortCode: "CMP2",
+      })
+      .expect(200);
+    expect(updatedComponent.body.shortCode).toBe("CMP2");
+  });
+
   it("imports products into the selected product category idempotently", async () => {
     const admin = await loginAdminAgent();
     const category = await admin

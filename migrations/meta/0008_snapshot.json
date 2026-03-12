@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "224d1d5b-f801-477b-902a-641237347805",
+  "prevId": "4d124f3b-9cc7-4cc7-bf1b-f2f3c3220ef4",
+  "note": "Manual snapshot placeholder for 0008_product_management_short_code. Authoritative migration logic lives in migrations/0008_product_management_short_code.sql."
+}
