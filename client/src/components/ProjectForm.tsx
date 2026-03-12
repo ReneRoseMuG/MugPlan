@@ -1175,7 +1175,7 @@ export function ProjectForm({
 
         <div className="grid grid-cols-3 gap-6">
           {/* Linke Spalte: Beschreibung und Kunde */}
-          <div className="col-span-2 space-y-6">
+          <div className="col-span-2 min-w-0 space-y-6">
               <div className="space-y-4">
                 <Tabs defaultValue="description" className="w-full" data-testid="project-description-tabs">
                   <TabsList className="grid w-full grid-cols-2 rounded-b-none">
@@ -1267,21 +1267,7 @@ export function ProjectForm({
           </div>
 
           {/* Rechte Spalte: Termine und Dokumente */}
-          <div className="space-y-6">
-              {isEditing ? (
-                <TagPickerPanel
-                  assignedTags={assignedTags}
-                  availableTags={availableTags}
-                  isLoading={assignedTagsLoading}
-                  loadErrorMessage={assignedTagsError instanceof Error ? assignedTagsError.message : null}
-                  canEdit={canManageProjectTags}
-                  title="Tags"
-                  addDialogTitle="Tag zu Projekt hinzufügen"
-                  testIdPrefix="project-tag-picker"
-                  onAdd={(tagId) => addProjectTagMutation.mutate(tagId)}
-                  onRemove={(item) => removeProjectTagMutation.mutate(item)}
-                />
-              ) : null}
+          <div className="min-w-0 space-y-6">
               <ProjectAppointmentsPanel
                 projectId={projectId}
                 projectName={projectNamePreview}
@@ -1299,6 +1285,22 @@ export function ProjectForm({
                   className="h-auto"
                 />
               )}
+
+              {isEditing ? (
+                <TagPickerPanel
+                  assignedTags={assignedTags}
+                  availableTags={availableTags}
+                  isLoading={assignedTagsLoading}
+                  loadErrorMessage={assignedTagsError instanceof Error ? assignedTagsError.message : null}
+                  canEdit={canManageProjectTags}
+                  title="Tags"
+                  addDialogTitle="Tag zu Projekt hinzufügen"
+                  testIdPrefix="project-tag-picker"
+                  onAdd={(tagId) => addProjectTagMutation.mutate(tagId)}
+                  onRemove={(item) => removeProjectTagMutation.mutate(item)}
+                  className="h-auto"
+                />
+              ) : null}
           </div>
         </div>
       </div>

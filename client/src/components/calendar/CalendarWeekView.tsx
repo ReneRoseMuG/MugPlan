@@ -29,6 +29,7 @@ import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
 import {
   CalendarWeekAppointmentPanel,
   DEFAULT_CONTINUATION_HEIGHT_PX,
+  MIN_WEEK_CARD_HEIGHT_PX,
   WEEK_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "./CalendarWeekSpanningTile";
@@ -727,8 +728,8 @@ export function CalendarWeekView({
                       const tileRowCount = laneRenderData.tileRowCount;
                       const needsDayCellRow = laneRenderData.needsDayCellRow;
                       const laneGridTemplateRows = [
-                        ...Array.from({ length: tileRowCount }, () => "minmax(180px, auto)"),
-                        ...(needsDayCellRow ? ["minmax(180px, auto)"] : []),
+                        ...Array.from({ length: tileRowCount }, () => `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`),
+                        ...(needsDayCellRow ? [`minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`] : []),
                       ].join(" ");
                       const totalLaneRowCount = tileRowCount + (needsDayCellRow ? 1 : 0);
                       const hasLaneContent = totalLaneRowCount > 0;
@@ -815,7 +816,7 @@ export function CalendarWeekView({
                         >
                           <div
                             className={`relative grid divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden ${
-                              hasLaneContent ? "min-h-[180px]" : ""
+                              hasLaneContent ? "min-h-[240px]" : ""
                             }`}
                             style={{
                               gridTemplateColumns: dayGridTemplate,

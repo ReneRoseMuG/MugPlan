@@ -519,7 +519,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       testIdPrefix="customer"
     >
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-6">
+        <div className="col-span-2 min-w-0 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
@@ -670,6 +670,27 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               )}
 
+          <NotesSection
+            notes={notes}
+            isLoading={notesLoading}
+            onAdd={handleAddNote}
+            onUpdate={isEditMode ? handleUpdateNote : undefined}
+            onTogglePin={isEditMode ? handleTogglePin : undefined}
+            onDelete={isEditMode ? handleDeleteNote : undefined}
+          />
+        </div>
+
+        <div className="min-w-0 space-y-6">
+          <LinkedProjectsPanel
+            customerId={customerId}
+            customerNumber={formData.customerNumber}
+            onOpenProject={onOpenProject}
+          />
+
+          <CustomerAppointmentsPanel customerId={customerId} className="h-auto" />
+
+          {isEditMode && <CustomerAttachmentsPanel customerId={customerId} className="h-auto" />}
+
           {isEditMode && customerId ? (
             <TagPickerPanel
               assignedTags={customerTagRelations}
@@ -682,29 +703,9 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               testIdPrefix="customer-tag-picker"
               onAdd={(tagId) => addCustomerTagMutation.mutate(tagId)}
               onRemove={(item) => removeCustomerTagMutation.mutate(item)}
+              className="h-auto"
             />
           ) : null}
-
-          <NotesSection
-            notes={notes}
-            isLoading={notesLoading}
-            onAdd={handleAddNote}
-            onUpdate={isEditMode ? handleUpdateNote : undefined}
-            onTogglePin={isEditMode ? handleTogglePin : undefined}
-            onDelete={isEditMode ? handleDeleteNote : undefined}
-          />
-        </div>
-
-        <div className="space-y-6">
-          <LinkedProjectsPanel
-            customerId={customerId}
-            customerNumber={formData.customerNumber}
-            onOpenProject={onOpenProject}
-          />
-
-          <CustomerAppointmentsPanel customerId={customerId} className="h-auto" />
-
-          {isEditMode && <CustomerAttachmentsPanel customerId={customerId} className="h-auto" />}
         </div>
       </div>
 

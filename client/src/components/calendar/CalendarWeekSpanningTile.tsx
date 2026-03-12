@@ -1,6 +1,8 @@
 import type { CSSProperties, DragEvent } from "react";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
+import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
+import { mergeUniqueTags } from "@/lib/tag-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
@@ -86,6 +88,11 @@ export function CalendarWeekSpanningTile({
   const resolvedStartTime = appointment.startTime?.trim().slice(0, 5) || null;
   const resolvedCustomerNumber = appointment.customer.customerNumber.trim() || "-";
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
+  const mergedTags = mergeUniqueTags(
+    appointment.appointmentTags,
+    appointment.customerTags,
+    appointment.projectTags,
+  );
 
   const mainContentPanels = (
     <>
@@ -108,7 +115,7 @@ export function CalendarWeekSpanningTile({
   );
 
   const footerContentPanels = (
-    <>
+    <div className="space-y-1.5">
       <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
       <CalendarWeekAppointmentNotesHover
         appointmentId={appointment.id}
@@ -118,7 +125,8 @@ export function CalendarWeekSpanningTile({
         projectNotesCount={appointment.projectNotesCount ?? 0}
         appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
       />
-    </>
+      <EntityTagFooterRow tags={mergedTags} testId={`week-spanning-tile-tags-${appointment.id}`} />
+    </div>
   );
 
   const bodyContent = (

@@ -9,7 +9,8 @@ import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentP
 import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
 
-export const DEFAULT_CONTINUATION_HEIGHT_PX = 180;
+export const MIN_WEEK_CARD_HEIGHT_PX = 240;
+export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;
 export const WEEK_CARD_FOOTER_SAFE_SPACE_PX = 14;
 
 export function CalendarWeekAppointmentPanel({
@@ -97,7 +98,7 @@ export function CalendarWeekAppointmentPanel({
       }}
     >
       {!isContinuation && (
-        <div className="h-full space-y-1.5 pb-1.5">
+        <div className="flex h-full min-h-0 flex-col gap-1.5 pb-1.5">
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}
@@ -124,39 +125,47 @@ export function CalendarWeekAppointmentPanel({
           </div>
           {!isCompact ? (
             <>
-              <CalendarWeekAppointmentPanelCustomer
-                fullName={appointment.customer.fullName ?? ""}
-                customerNumber={appointment.customer.customerNumber}
-                addressLine1={appointment.customer.addressLine1}
-                addressLine2={appointment.customer.addressLine2}
-                postalCode={appointment.customer.postalCode}
-                city={appointment.customer.city}
-              />
-              <CalendarWeekAppointmentPanelProject
-                projectName={resolvedProjectName}
-                projectOrderNumber={appointment.projectOrderNumber}
-                projectArticleItems={appointment.projectArticleItems}
-                projectDescription={appointment.projectDescription}
-                enableFullDescriptionPreview={context === "week-calendar"}
-              />
-              {context === "week-calendar" ? (
-                <>
-                  <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-                  <CalendarWeekAppointmentNotesHover
-                    appointmentId={appointment.id}
-                    customerId={appointment.customer.id}
-                    projectId={appointment.projectId}
-                    customerNotesCount={appointment.customerNotesCount ?? 0}
-                    projectNotesCount={appointment.projectNotesCount ?? 0}
-                    appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
-                  />
-                </>
-              ) : (
-                <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
-              )}
+              <div className="min-h-0 space-y-1.5 overflow-hidden">
+                <CalendarWeekAppointmentPanelCustomer
+                  fullName={appointment.customer.fullName ?? ""}
+                  customerNumber={appointment.customer.customerNumber}
+                  addressLine1={appointment.customer.addressLine1}
+                  addressLine2={appointment.customer.addressLine2}
+                  postalCode={appointment.customer.postalCode}
+                  city={appointment.customer.city}
+                />
+                <CalendarWeekAppointmentPanelProject
+                  projectName={resolvedProjectName}
+                  projectOrderNumber={appointment.projectOrderNumber}
+                  projectArticleItems={appointment.projectArticleItems}
+                  projectDescription={appointment.projectDescription}
+                  enableFullDescriptionPreview={context === "week-calendar"}
+                />
+              </div>
+              <div className="mt-auto shrink-0 space-y-1.5">
+                {context === "week-calendar" ? (
+                  <>
+                    <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+                    <CalendarWeekAppointmentNotesHover
+                      appointmentId={appointment.id}
+                      customerId={appointment.customer.id}
+                      projectId={appointment.projectId}
+                      customerNotesCount={appointment.customerNotesCount ?? 0}
+                      projectNotesCount={appointment.projectNotesCount ?? 0}
+                      appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+                    />
+                  </>
+                ) : (
+                  <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+                )}
+                <EntityTagFooterRow tags={mergedTags} testId={`week-appointment-tags-${appointment.id}`} />
+              </div>
             </>
-          ) : null}
-          <EntityTagFooterRow tags={mergedTags} testId={`week-appointment-tags-${appointment.id}`} />
+          ) : (
+            <div className="mt-auto shrink-0">
+              <EntityTagFooterRow tags={mergedTags} testId={`week-appointment-tags-${appointment.id}`} />
+            </div>
+          )}
         </div>
       )}
       {isContinuation && (

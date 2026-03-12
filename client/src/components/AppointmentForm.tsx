@@ -1508,7 +1508,7 @@ export function AppointmentForm({
           className="col-span-2"
         />
 
-        <div className="space-y-6 h-full">
+        <div className="min-w-0 space-y-6 h-full">
           <div className="sub-panel space-y-3 h-full">
             <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Route className="w-4 h-4" />
