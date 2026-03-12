@@ -11,7 +11,6 @@ export type CalendarAppointment = {
   projectOrderNumber: string | null;
   projectArticleItems: ProjectArticleItem[];
   projectDescription: string | null;
-  projectStatuses: { id: number; title: string; color: string }[];
   project?: {
     id: number;
     customerId: number;

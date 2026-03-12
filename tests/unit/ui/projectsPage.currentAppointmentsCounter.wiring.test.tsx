@@ -5,7 +5,6 @@
  * - Die Projektkarte zeigt den Footer-Baustein fuer geplante Termine mit dem gelieferten Zaehlerwert.
  * - Die Projektkarte bindet fuer Notizen den wiederverwendbaren EntityNotesHoverPreview-Trigger.
  * - Die Projektkarte teilt die Footer-Zeile 2:1 fuer Termine und Notizen auf.
- * - Projektstatus-Badges liegen im Footer unterhalb der Zaehlerzeile.
  * - Der Kartenfooter bleibt explizit sichtbar.
  *
  * Fehlerfaelle:
@@ -25,7 +24,6 @@ const useListFiltersMock = vi.fn();
 const entityCardCalls: Array<Record<string, unknown>> = [];
 const appointmentBadgeCalls: Array<Record<string, unknown>> = [];
 const notesPreviewCalls: Array<Record<string, unknown>> = [];
-const projectStatusBadgeCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -113,13 +111,6 @@ vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
   },
 }));
 
-vi.mock("@/components/ui/project-status-info-badge", () => ({
-  ProjectStatusInfoBadge: (props: Record<string, unknown> & { status: { title: string } }) => {
-    projectStatusBadgeCalls.push(props);
-    return <span>{props.status.title}</span>;
-  },
-}));
-
 vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
   createAppointmentWeeklyPanelPreview: vi.fn(() => <div>preview</div>),
 }));
@@ -132,14 +123,13 @@ describe("FT02 projects page current appointments counter wiring", () => {
     entityCardCalls.length = 0;
     appointmentBadgeCalls.length = 0;
     notesPreviewCalls.length = 0;
-    projectStatusBadgeCalls.length = 0;
 
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map(),
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
-      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "", statusIds: [] },
+      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "", tagIds: [] },
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),
@@ -164,6 +154,7 @@ describe("FT02 projects page current appointments counter wiring", () => {
                 isActive: true,
                 version: 5,
                 projectArticleItems: [],
+                tags: [],
                 notesCount: 3,
                 plannedAppointmentsCount: 6,
                 nextAppointmentStartDate: "2099-06-01",
@@ -174,14 +165,13 @@ describe("FT02 projects page current appointments counter wiring", () => {
                   fullName: "Mina Muster",
                   lastName: "Muster",
                 },
-                statuses: [{ id: 3, title: "Geplant", color: "#00ff00" }],
               },
             ],
           },
           isLoading: false,
         };
       }
-      if (key === "/api/project-status") {
+      if (key === "/api/tags") {
         return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };
@@ -194,7 +184,6 @@ describe("FT02 projects page current appointments counter wiring", () => {
     expect(markup).toContain("Geplante Termine:6");
     expect(markup).toContain("Notizen:3");
     expect(markup).toContain("grid-cols-[max-content_1fr]");
-    expect(markup).toContain("Geplant");
     expect(appointmentBadgeCalls).toHaveLength(1);
     expect(appointmentBadgeCalls[0]).toMatchObject({
       count: 6,
@@ -206,13 +195,8 @@ describe("FT02 projects page current appointments counter wiring", () => {
       triggerTestId: "text-project-notes-count-8",
       sources: { type: "project", id: 8, count: 3 },
     });
-    expect(markup).toContain("grid-cols-2");
-    expect(markup).toContain("justify-self-end");
-    expect(projectStatusBadgeCalls).toHaveLength(1);
-    expect(projectStatusBadgeCalls[0]).toMatchObject({
-      testId: "badge-project-status-8-3",
-      size: "sm",
-    });
+    expect(markup).toContain("grid-cols-[max-content_1fr]");
+    expect(markup).toContain("justify-end");
     expect(renderToStaticMarkup(entityCardCalls[0].headerMeta as React.ReactElement)).toContain("A-Nr. AUF-88");
   });
 
@@ -237,6 +221,7 @@ describe("FT02 projects page current appointments counter wiring", () => {
                 isActive: true,
                 version: 5,
                 projectArticleItems: [],
+                tags: [],
                 notesCount: 0,
                 plannedAppointmentsCount: 6,
                 nextAppointmentStartDate: "2099-06-01",
@@ -247,14 +232,13 @@ describe("FT02 projects page current appointments counter wiring", () => {
                   fullName: "Mina Muster",
                   lastName: "Muster",
                 },
-                statuses: [],
               },
             ],
           },
           isLoading: false,
         };
       }
-      if (key === "/api/project-status") {
+      if (key === "/api/tags") {
         return { data: [], isLoading: false };
       }
       return { data: undefined, isLoading: false };

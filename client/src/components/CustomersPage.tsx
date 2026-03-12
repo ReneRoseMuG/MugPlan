@@ -500,7 +500,6 @@ export function CustomersPage({
                   projectOrderNumber: null,
                   projectArticleItems: [],
                   projectDescription: null,
-                  projectStatuses: [],
                   tourId: null,
                   tourName: null,
                   tourColor: null,

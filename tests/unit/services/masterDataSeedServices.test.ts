@@ -50,14 +50,6 @@ type ProductRow = {
 
 type ComponentRow = ProductRow;
 
-type ProjectStatusRow = {
-  id: number;
-  title: string;
-  color: string;
-  isActive: boolean;
-  version: number;
-};
-
 type NoteTemplateRow = {
   id: number;
   title: string;
@@ -95,7 +87,6 @@ const state = vi.hoisted(() => ({
   componentCategories: [] as ComponentCategoryRow[],
   products: [] as ProductRow[],
   components: [] as ComponentRow[],
-  projectStatuses: [] as ProjectStatusRow[],
   noteTemplates: [] as NoteTemplateRow[],
   tags: [] as TagRow[],
   ids: {
@@ -104,7 +95,6 @@ const state = vi.hoisted(() => ({
     componentCategory: 1,
     product: 1,
     component: 1,
-    projectStatus: 1,
     noteTemplate: 1,
     tag: 1,
   },
@@ -229,36 +219,6 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   }),
 }));
 
-vi.mock("../../../server/repositories/projectStatusRepository", () => ({
-  getProjectStatuses: vi.fn(async () => [...state.projectStatuses]),
-  createProjectStatus: vi.fn(async ({ title, color }: { title: string; color: string }) => {
-    const row: ProjectStatusRow = {
-      id: state.ids.projectStatus++,
-      title,
-      color,
-      isActive: true,
-      version: 1,
-    };
-    state.projectStatuses.push(row);
-    return row;
-  }),
-  updateProjectStatusWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { color?: string; isActive?: boolean }) => {
-    const row = state.projectStatuses.find((entry) => entry.id === id && entry.version === expectedVersion);
-    if (!row) return { kind: "version_conflict" };
-    row.color = input.color ?? row.color;
-    row.isActive = input.isActive ?? row.isActive;
-    row.version += 1;
-    return { kind: "updated", status: { ...row } };
-  }),
-  toggleProjectStatusActiveWithVersion: vi.fn(async (id: number, expectedVersion: number, isActive: boolean) => {
-    const row = state.projectStatuses.find((entry) => entry.id === id && entry.version === expectedVersion);
-    if (!row) return { kind: "version_conflict" };
-    row.isActive = isActive;
-    row.version += 1;
-    return { kind: "updated", status: { ...row } };
-  }),
-}));
-
 vi.mock("../../../server/repositories/noteTemplatesRepository", () => ({
   getNoteTemplates: vi.fn(async () => [...state.noteTemplates]),
   createNoteTemplate: vi.fn(async (input: Omit<NoteTemplateRow, "id">) => {
@@ -299,7 +259,6 @@ function resetState() {
   state.componentCategories = [];
   state.products = [];
   state.components = [];
-  state.projectStatuses = [];
   state.noteTemplates = [];
   state.tags = [];
   state.ids = {
@@ -308,7 +267,6 @@ function resetState() {
     componentCategory: 1,
     product: 1,
     component: 1,
-    projectStatus: 1,
     noteTemplate: 1,
     tag: 1,
   };
@@ -537,47 +495,6 @@ describe("FT27 unit: master data seed services", () => {
     await writeSeedFile(tempRoot, "components.csv", "Name;Beschreibung;Kategorie\nKomponente;Okay;Kategorie\n");
 
     await expect(applyProductManagementSeed()).rejects.toThrow("INVALID_CSV_FORMAT");
-  });
-
-  it("exports and applies project states with update fallback", async () => {
-    state.projectStatuses = [{ id: 1, title: "Planung", color: "#000000", isActive: true, version: 1 }];
-    state.ids.projectStatus = 2;
-
-    const { exportProjectStatusSeed, applyProjectStatusSeed } = await import("../../../server/services/seedProjectStatusService");
-
-    await exportProjectStatusSeed();
-    await expect(readSeedFile(tempRoot, "projectstates.csv")).resolves.toContain("Planung;#000000;true");
-
-    await writeSeedFile(
-      tempRoot,
-      "projectstates.csv",
-      "Name;Farbe;Status\nPlanung;#ffffff;false\nMontage;#112233;ja\n;#000000;true\n",
-    );
-
-    const result = await applyProjectStatusSeed();
-
-    expect(result.logLines).toEqual([
-      "Projektstatus aktualisiert: Planung",
-      "Projektstatus angelegt: Montage",
-      "Projektstatus uebersprungen: Name fehlt",
-    ]);
-    expect(state.projectStatuses.find((entry) => entry.title === "Planung")?.isActive).toBe(false);
-  });
-
-  it("defaults project state seed rows to active when the Status header is missing", async () => {
-    state.projectStatuses = [{ id: 1, title: "Planung", color: "#000000", isActive: false, version: 1 }];
-
-    await writeSeedFile(
-      tempRoot,
-      "projectstates.csv",
-      "Name;Farbe\nPlanung;#ffffff\nMontage;#112233\n",
-    );
-
-    const { applyProjectStatusSeed } = await import("../../../server/services/seedProjectStatusService");
-    await applyProjectStatusSeed();
-
-    expect(state.projectStatuses.find((entry) => entry.title === "Planung")?.isActive).toBe(true);
-    expect(state.projectStatuses.find((entry) => entry.title === "Montage")?.isActive).toBe(true);
   });
 
   it("exports and applies note templates with duplicate updates and sort fallback", async () => {

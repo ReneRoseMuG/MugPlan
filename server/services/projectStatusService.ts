@@ -46,6 +46,7 @@ export async function listProjectStatuses(
   filter: "active" | "inactive" | "all" = "active",
   roleKey: CanonicalRoleKey,
 ): Promise<ProjectStatus[]> {
+  requireAdmin(roleKey);
   return projectStatusRepository.getProjectStatuses(resolveScope(roleKey, filter));
 }
 

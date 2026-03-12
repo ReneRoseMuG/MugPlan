@@ -21,10 +21,6 @@ router.get(api.masterData.seed.productManagement.status.path, masterDataControll
 router.post(api.masterData.seed.productManagement.apply.path, masterDataController.applyProductManagementSeedController);
 router.post(api.masterData.seed.productManagement.export.path, masterDataController.exportProductManagementSeedController);
 
-router.get(api.masterData.seed.projectStatus.status.path, masterDataController.getProjectStatusSeedStatusController);
-router.post(api.masterData.seed.projectStatus.apply.path, masterDataController.applyProjectStatusSeedController);
-router.post(api.masterData.seed.projectStatus.export.path, masterDataController.exportProjectStatusSeedController);
-
 router.get(api.masterData.seed.noteTemplates.status.path, masterDataController.getNoteTemplatesSeedStatusController);
 router.post(api.masterData.seed.noteTemplates.apply.path, masterDataController.applyNoteTemplatesSeedController);
 router.post(api.masterData.seed.noteTemplates.export.path, masterDataController.exportNoteTemplatesSeedController);

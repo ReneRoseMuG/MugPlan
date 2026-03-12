@@ -3,7 +3,6 @@ import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Product, Project, Tag, Team, Tour } from "@shared/schema";
-import type { ProjectStatusRelationItem } from "@shared/routes";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -338,12 +337,6 @@ export function AppointmentForm({
   const { data: components = [] } = useQuery<Component[]>({
     queryKey: [componentsUrl],
     queryFn: () => fetchJson<Component[]>(componentsUrl),
-  });
-
-  const { data: selectedProjectStatuses = [] } = useQuery<ProjectStatusRelationItem[]>({
-    queryKey: ["/api/projects", selectedProjectId, "statuses"],
-    queryFn: () => fetchJson<ProjectStatusRelationItem[]>(`/api/projects/${selectedProjectId}/statuses`),
-    enabled: selectedProjectId !== null,
   });
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
@@ -1395,7 +1388,6 @@ export function AppointmentForm({
           {selectedProject ? (
             <ProjectDetailCard
               project={selectedProject}
-              projectStatuses={selectedProjectStatuses.map((item) => item.status)}
               testId="badge-project"
             />
           ) : null}

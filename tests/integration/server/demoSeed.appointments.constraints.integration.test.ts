@@ -13,8 +13,7 @@
  * - Bei Engpaessen wird ueber das initiale Seed-Fenster hinaus weitergeplant.
  * - Montage-Termine nutzen nur 1- oder 2-Tages-Dauern im Verhaeltnis 4:1; Freitage bleiben deutlich unterrepraesentiert.
  * - Base-seeded Projekte erhalten fortlaufende Auftragsnummern im Muster A000000A, einen Betrag zwischen 7500 und 18000, kurze Lorem-Beschreibungen und vollstaendige Artikellisten aus vorhandenen Stammdaten.
- * - Base-Seed mit aktiven Projektstatus erzeugt Projektstatus-Zuordnungen fuer Seed-Projekte und macht diese pro Seed-Run auswertbar.
- * - Base- und appointments-Seeds veraendern vorhandene Produkt-/Komponenten-/Status-/Notizvorlagen-Stammdaten nicht; Purge laesst diese Tabellen unberuehrt.
+ * - Base- und appointments-Seeds veraendern vorhandene Produkt-/Komponenten-/Notizvorlagen-Stammdaten nicht; Purge laesst diese Tabellen unberuehrt.
  *
  * Fehlerfaelle:
  * - Basis-Seed legt neue Mitarbeitende an oder trackt Bestands-Mitarbeitende als purge-bare Seed-Entitaeten.
@@ -22,7 +21,6 @@
  * - Tour-Tag-Slots uebersteigen die erlaubte Obergrenze oder enthalten verbotene Kombinationen.
  * - Seed-Dauern, Freitaggewichtung, Intraday-Anteil, Auftragsnummern oder Projekt-Betraege weichen von der Sollverteilung ab.
  * - Seed erzeugt oder loescht Stammdaten entgegen der manuellen Importlogik.
- * - Seed erzeugt Projekte ohne Status-Zuordnungen trotz vorhandener aktiver Status oder laeuft ohne aktive Status still weiter.
  * - Projekt-Artikellisten bleiben unvollstaendig oder Beschreibungen enthalten keine kurzen Lorem-Saetze.
  *
  * Ziel:
@@ -33,8 +31,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../../../server/db";
 import * as noteTemplatesRepository from "../../../server/repositories/noteTemplatesRepository";
-import * as projectStatusService from "../../../server/services/projectStatusService";
-import { createSeedRun, listSeedRuns, purgeSeedRun } from "../../../server/services/demoSeedService";
+import { createSeedRun, purgeSeedRun } from "../../../server/services/demoSeedService";
 import {
   appointments,
   appointmentEmployees,
@@ -51,7 +48,6 @@ import {
   productCategories,
   productComponent,
   projectNotes,
-  projectProjectStatus,
   projectOrderItems,
   projectTags,
   products,
@@ -161,21 +157,6 @@ async function seedManualProjectMasterData(prefix: string) {
   };
 }
 
-async function seedActiveProjectStatuses(prefix: string) {
-  await projectStatusService.createProjectStatus({
-    title: `${prefix}-Status-A`,
-    color: "#0f766e",
-    description: `${prefix}-status-a`,
-    sortOrder: 10,
-  }, "ADMIN");
-  await projectStatusService.createProjectStatus({
-    title: `${prefix}-Status-B`,
-    color: "#1d4ed8",
-    description: `${prefix}-status-b`,
-    sortOrder: 20,
-  }, "ADMIN");
-}
-
 async function seedActiveNoteTemplates() {
   for (const [sortOrder, title] of ["Anreise beachten", "Aufbau Start beachten", "Messeaufbau"].entries()) {
     await noteTemplatesRepository.createNoteTemplate({
@@ -201,7 +182,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
     try {
       const manualMasterData = await seedManualProjectMasterData("DEMOSEED");
-      await seedActiveProjectStatuses("DEMOSEED");
       await createEmployeeFixture("DEMOSEED-EMP-A");
       await createEmployeeFixture("DEMOSEED-EMP-B");
       const firstSummary = await createSeedRun({
@@ -300,7 +280,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
     try {
       await seedManualProjectMasterData("EMPLOYEES");
-      await seedActiveProjectStatuses("EMPLOYEES");
       const employeeA = await createEmployeeFixture("SEED-EMP-A");
       const employeeB = await createEmployeeFixture("SEED-EMP-B");
       const [employeeCountBeforeRow] = await db.select({ count: sql<number>`count(*)` }).from(employees);
@@ -362,83 +341,12 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     })).rejects.toThrow("Keine aktiven Produkte fuer den Demo-Seed verfuegbar.");
   });
 
-  it("fails fast when base seed would create projects without active project statuses", async () => {
-    await seedManualProjectMasterData("MISSING-STATUS");
-    await createEmployeeFixture("MISSING-STATUS-EMP");
-
-    await expect(createSeedRun({
-      runType: "base",
-      randomSeed: 5607,
-      customers: 1,
-      projects: 1,
-    })).rejects.toThrow("Keine aktiven Projektstatus fuer den Demo-Seed verfuegbar.");
-  });
-
-  it("creates project-status relations for base-seeded projects and exposes per-run analysis", async () => {
-    let baseSeedRunId: string | null = null;
-
-    try {
-      await seedManualProjectMasterData("STATUS-ANALYSIS");
-      await seedActiveProjectStatuses("STATUS-ANALYSIS");
-      await createEmployeeFixture("STATUS-ANALYSIS-EMP-A");
-      await createEmployeeFixture("STATUS-ANALYSIS-EMP-B");
-
-      const baseSummary = await createSeedRun({
-        runType: "base",
-        randomSeed: 5608,
-        customers: 3,
-        projects: 4,
-      });
-      baseSeedRunId = baseSummary.seedRunId;
-
-      const seededProjectIds = (await db
-        .select({ entityId: seedRunEntities.entityId })
-        .from(seedRunEntities)
-        .where(and(eq(seedRunEntities.seedRunId, baseSeedRunId), eq(seedRunEntities.entityType, "project"))))
-        .map((entity) => Number(entity.entityId));
-
-      expect(seededProjectIds.length).toBe(4);
-      expect(baseSummary.created.projects).toBe(4);
-      expect(baseSummary.created.projectStatusRelations).toBeGreaterThanOrEqual(4);
-      expect(baseSummary.meta?.projectStatusAssignment?.activeStatusIds.length).toBe(2);
-      expect(baseSummary.meta?.projectStatusAssignment?.projectsWithRelations).toBe(4);
-      expect(baseSummary.meta?.projectStatusAssignment?.projectsWithoutRelations).toBe(0);
-      expect(baseSummary.meta?.projectStatusAssignment?.relationCount).toBe(baseSummary.created.projectStatusRelations);
-
-      const relationRows = await db
-        .select({
-          projectId: projectProjectStatus.projectId,
-          projectStatusId: projectProjectStatus.projectStatusId,
-        })
-        .from(projectProjectStatus)
-        .where(inArray(projectProjectStatus.projectId, seededProjectIds));
-
-      expect(relationRows.length).toBe(baseSummary.created.projectStatusRelations);
-      expect(new Set(relationRows.map((row) => Number(row.projectId))).size).toBe(seededProjectIds.length);
-
-      const runs = await listSeedRuns();
-      const seededRun = runs.find((run) => run.seedRunId === baseSeedRunId);
-      expect(seededRun).toBeDefined();
-      expect(seededRun?.analysis).toEqual({
-        projectCount: 4,
-        projectStatusRelationCount: relationRows.length,
-        projectsWithStatusRelations: 4,
-        projectsWithoutStatusRelations: 0,
-      });
-    } finally {
-      if (baseSeedRunId) {
-        await purgeSeedRun(baseSeedRunId);
-      }
-    }
-  });
-
   it("seeds note templates plus scoped notes for half of customers, projects and appointments and purges them again", async () => {
     let baseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
 
     try {
       await seedManualProjectMasterData("NOTES");
-      await seedActiveProjectStatuses("NOTES");
       await seedActiveNoteTemplates();
       await createEmployeeFixture("NOTES-EMP-A");
       await createEmployeeFixture("NOTES-EMP-B");
@@ -612,7 +520,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
     try {
       await seedManualProjectMasterData("TOURDAY");
-      await seedActiveProjectStatuses("TOURDAY");
       await createEmployeeFixture("TOURDAY-EMP-A");
       await createEmployeeFixture("TOURDAY-EMP-B");
       const baseSummary = await createSeedRun({
@@ -820,7 +727,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
 
     try {
       await seedManualProjectMasterData("ORDERNUM");
-      await seedActiveProjectStatuses("ORDERNUM");
       await createEmployeeFixture("ORDERNUM-EMP-A");
       const firstSummary = await createSeedRun({
         runType: "base",

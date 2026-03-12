@@ -25,7 +25,6 @@ const scopeFiles = [
   "client/src/components/ui/employee-select-entity-edit-dialog.tsx",
   "client/src/components/ui/relation-slot.tsx",
   "client/src/components/ui/sidebar-child-panel.tsx",
-  "client/src/components/filters/project-status-filter-input.tsx",
   "client/src/components/ui/info-badge.tsx",
 ] as const;
 

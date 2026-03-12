@@ -30,7 +30,6 @@ const baseAppointment: CalendarAppointment = {
   projectVersion: 1,
   projectOrderNumber: "A-1",
   projectDescription: "Beschreibung",
-  projectStatuses: [],
   project: null,
   startDate: "2026-03-02",
   endDate: null,
@@ -64,7 +63,6 @@ function createAppointment(overrides: Partial<CalendarAppointment>): CalendarApp
       ...overrides.customer,
     },
     employees: overrides.employees ?? baseAppointment.employees,
-    projectStatuses: overrides.projectStatuses ?? baseAppointment.projectStatuses,
   };
 }
 

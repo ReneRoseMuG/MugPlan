@@ -5,7 +5,6 @@ export interface ProjectFilters {
   customerLastName: string;
   customerNumber: string;
   orderNumber: string;
-  statusIds: number[];
   tagIds: number[];
 }
 
@@ -16,7 +15,6 @@ export const defaultProjectFilters: ProjectFilters = {
   customerLastName: "",
   customerNumber: "",
   orderNumber: "",
-  statusIds: [],
   tagIds: [],
 };
 
@@ -53,15 +51,11 @@ export function applyProjectFilters(
 }
 
 export function buildProjectFilterQueryParams(
-  filters: ProjectFilters,
+  _filters: ProjectFilters,
   scope: ProjectScope,
 ): string {
   const params = new URLSearchParams();
   params.set("scope", scope);
-
-  if (filters.statusIds.length > 0) {
-    params.set("statusIds", filters.statusIds.join(","));
-  }
 
   return params.toString();
 }

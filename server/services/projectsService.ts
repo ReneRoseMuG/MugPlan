@@ -43,16 +43,14 @@ function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
 
 export async function listProjects(
   filter: "active" | "inactive" | "all" = "all",
-  statusIds: number[] = [],
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
-  return projectsRepository.getProjects(filter, statusIds, tagIds, scope);
+  return projectsRepository.getProjects(filter, tagIds, scope);
 }
 
 export async function listProjectsPaged(params: {
   filter: "active" | "inactive" | "all";
-  statusIds: number[];
   tagIds: number[];
   scope: ProjectScope;
   customerId?: number;
@@ -69,11 +67,10 @@ export async function listProjectsPaged(params: {
 export async function listProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
-  statusIds: number[] = [],
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
-  return projectsRepository.getProjectsByCustomer(customerId, filter, statusIds, tagIds, scope);
+  return projectsRepository.getProjectsByCustomer(customerId, filter, tagIds, scope);
 }
 
 export async function getProject(id: number): Promise<projectsRepository.ProjectWithTags | null> {

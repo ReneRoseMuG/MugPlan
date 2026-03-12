@@ -1,16 +1,12 @@
 import React from "react";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
-import type { Project, ProjectStatus } from "@shared/schema";
+import type { Project } from "@shared/schema";
 import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
-import { ProjectStatusInfoBadge } from "@/components/ui/project-status-info-badge";
-
-type ProjectStatusBadgeItem = Pick<ProjectStatus, "id" | "title" | "color">;
 
 export interface ProjectDetailCardProps {
   project: Pick<Project, "name" | "orderNumber" | "amount" | "descriptionMd" | "isActive"> & {
     projectArticleItems?: ProjectArticleItem[];
   };
-  projectStatuses?: ProjectStatusBadgeItem[];
   testId?: string;
 }
 
@@ -33,7 +29,7 @@ const formatProjectAmount = (amount: unknown) => {
   }).format(normalized);
 };
 
-export function ProjectDetailCard({ project, projectStatuses = [], testId }: ProjectDetailCardProps) {
+export function ProjectDetailCard({ project, testId }: ProjectDetailCardProps) {
   const projectNameValue = resolveValue(project.name);
   const orderNumberValue = resolveValue(project.orderNumber);
   const amountValue = formatProjectAmount(project.amount);
@@ -87,28 +83,6 @@ export function ProjectDetailCard({ project, projectStatuses = [], testId }: Pro
             fallbackText
           )}
         </div>
-      </div>
-      <div className="border-t border-border/50 pt-3">
-        {projectStatuses.length > 0 ? (
-          <div className="flex flex-wrap gap-2" data-testid={testId ? `${testId}-statuses` : undefined}>
-            {projectStatuses.map((status) => (
-              <ProjectStatusInfoBadge
-                key={status.id}
-                status={status}
-                action="none"
-                size="sm"
-                testId={testId ? `${testId}-status-${status.id}` : undefined}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className="text-sm text-muted-foreground"
-            data-testid={testId ? `${testId}-statuses` : undefined}
-          >
-            {fallbackText}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -182,7 +182,6 @@ Zusatz FT28:
 | `EmployeeInfoBadge` | `employee-info-badge.tsx` | PersonInfoBadge | ✅ | AppointmentForm, Team/Tour-Verwaltung |
 | `TeamInfoBadge` | `team-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), EmployeeForm (Sidebar) |
 | `TourInfoBadge` | `tour-info-badge.tsx` | ColoredInfoBadge | ✅ | EmployeesPage (Board), EmployeeForm (Sidebar) |
-| `ProjectStatusInfoBadge` | `project-status-info-badge.tsx` | ColoredInfoBadge | ❌ (keine Preview) | ProjectsPage (Board), ProjectForm |
 | `ProjectInfoBadge` | `project-info-badge.tsx` | InfoBadge (direkt) | ✅ | AppointmentForm |
 | `TerminInfoBadge` | `termin-info-badge.tsx` | InfoBadge (direkt) | ✅ (AppointmentWeeklyPanel) | AllAppointmentsPanel, Kalenderansichten |
 | `AttachmentInfoBadge` | `attachment-info-badge.tsx` | InfoBadge (direkt) | ✅ (Vollvorschau mit PDF/Bild) | AttachmentsPanels |
@@ -321,11 +320,10 @@ FT28-Ergaenzung:
 | Verwendungskontext | Komponenten |
 |---|---|
 | Übersichtsliste | ListLayout + BoardView/TableView + EntityCard + ProjectFilterPanel |
-| Board-Karte | EntityCard mit ProjectStatusInfoBadge (sm, fullWidth) |
+| Board-Karte | EntityCard mit Auftragsnummer, Beschreibungsvorschau und Tag-Footer |
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview (nächster Termin) |
 | Detailformular | EntityFormLayout (ProjectForm) |
 | Badge in anderen Formularen | ProjectInfoBadge → ProjectInfoBadgePreview |
-| Status-Anzeige | ProjectStatusInfoBadge (keine Preview) |
 | Sub-Panel Termine | ProjectAppointmentsPanel (Wrapper über AllAppointmentsPanel, mit Add-Button) |
 | Sub-Panel Anhänge | ProjectAttachmentsPanel |
 

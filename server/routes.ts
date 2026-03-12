@@ -21,7 +21,6 @@ import demoSeedRoutes from "./routes/demoSeedRoutes";
 import documentExtractionRoutes from "./routes/documentExtractionRoutes";
 import projectAttachmentsRoutes from "./routes/projectAttachmentsRoutes";
 import projectNotesRoutes from "./routes/projectNotesRoutes";
-import projectStatusRelationsRoutes from "./routes/projectStatusRelationsRoutes";
 import projectStatusRoutes from "./routes/projectStatusRoutes";
 import projectsRoutes from "./routes/projectsRoutes";
 import reportsRoutes from "./routes/reportsRoutes";
@@ -70,7 +69,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(reportsRoutes);
   app.use(projectNotesRoutes);
   app.use(projectAttachmentsRoutes);
-  app.use(projectStatusRelationsRoutes);
   app.use(attachmentQueriesRoutes);
   app.use(adminBulkImportRoutes);
   app.use(userSettingsRoutes);

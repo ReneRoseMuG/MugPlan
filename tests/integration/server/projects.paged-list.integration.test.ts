@@ -3,14 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - Die paginierte Projektliste liefert nur den angeforderten Seitenausschnitt.
- * - Projektfilter (Titel, Auftragsnummer, Status) wirken vor dem Paging auf die Grundmenge.
- * - Die Listenaggregation liefert Status-, Termin- und Artikellistenfelder fuer die Kartenansicht.
+ * - Projektfilter (Titel, Auftragsnummer) wirken vor dem Paging auf die Grundmenge.
+ * - Die Listenaggregation liefert Termin- und Artikellistenfelder fuer die Kartenansicht.
  * - Der ungepaginierte `/api/projects`-Pfad liefert `projectArticleItems` konsistent fuer Slot- und Detailnutzer.
  *
  * Fehlerfaelle:
  * - Paging liefert Vollmengen oder falsche Seiten.
  * - Filter greifen nur auf den Seitenausschnitt statt auf die Gesamtmenge.
- * - Status-/Terminaggregation oder Projekt-Artikelliste fehlt in der Listenantwort.
+ * - Terminaggregation oder Projekt-Artikelliste fehlt in der Listenantwort.
  * - `/api/projects` verliert `projectArticleItems`, liefert `null` statt `[]` oder veraendert die Slot-Reihenfolge.
  *
  * Ziel:
@@ -30,8 +30,6 @@ import {
   createProjectFixture,
   createProjectOrderItemFixture,
 } from "../../helpers/testDataFactory";
-import * as projectStatusService from "../../../server/services/projectStatusService";
-
 let app: express.Express;
 
 beforeAll(async () => {
@@ -68,14 +66,8 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.items).toHaveLength(5);
   });
 
-  it("filters before paging and returns board status and appointment summary fields", async () => {
+  it("filters before paging and returns board appointment summary fields", async () => {
     const agent = await loginAdminAgent(app);
-    const status = await projectStatusService.createProjectStatus({
-      title: "FT30 Status",
-      description: null,
-      color: "#0f766e",
-      sortOrder: 10,
-    }, "ADMIN");
     const project = await createProjectFixture({
       prefix: "FT30-PROJ-FILTER",
       name: "FT30 Target Project",
@@ -88,7 +80,6 @@ describe("FT30 integration: paged projects list", () => {
       categoryName: "Fenster",
       name: "FT30 Rundfenster",
     });
-    await projectStatusService.addProjectStatus(project.id, status.id, 0, "ADMIN");
     await createProjectOrderItemFixture({
       projectId: project.id,
       orderNumber: project.orderNumber ?? "",
@@ -105,7 +96,7 @@ describe("FT30 integration: paged projects list", () => {
     });
 
     const response = await agent
-      .get("/api/projects/list?scope=upcoming&title=Target&statusIds=" + status.id + "&page=1&pageSize=50")
+      .get("/api/projects/list?scope=upcoming&title=Target&page=1&pageSize=50")
       .expect(200);
 
     expect(response.body.total).toBe(1);
@@ -113,9 +104,6 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.items[0]?.name).toBe("FT30 Target Project");
     expect(response.body.items[0]?.plannedAppointmentsCount).toBe(1);
     expect(response.body.items[0]?.nextAppointmentStartDate).toBe("2099-12-20");
-    expect(response.body.items[0]?.statuses).toEqual([
-      expect.objectContaining({ id: status.id, title: "FT30 Status" }),
-    ]);
     expect(response.body.items[0]?.projectArticleItems).toEqual([
       { label: "Saunamodell", value: "FT30 Sauna Modell" },
       { label: "Fenster", value: "FT30 Rundfenster" },

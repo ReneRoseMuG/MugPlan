@@ -2,7 +2,6 @@
 import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as projectsService from "../services/projectsService";
-import * as projectStatusService from "../services/projectStatusService";
 import * as projectNotesService from "../services/projectNotesService";
 import * as projectAttachmentsService from "../services/projectAttachmentsService";
 import * as appointmentsService from "../services/appointmentsService";
@@ -22,7 +21,6 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
     const listInput = api.projects.list.input.parse(req.query);
     const filter = req.query.filter as "active" | "inactive" | "all" | undefined;
     const customerIdParam = req.query.customerId as string | undefined;
-    const statusIds = parseStatusIds(req.query.statusIds);
     const tagIds = parseTagIds(listInput.tagIds);
     const scope = listInput.scope;
 
@@ -35,7 +33,6 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
       const projects = await projectsService.listProjectsByCustomer(
         customerId,
         filter || "all",
-        statusIds,
         tagIds,
         scope,
       );
@@ -43,7 +40,7 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const projects = await projectsService.listProjects(filter || "all", statusIds, tagIds, scope);
+    const projects = await projectsService.listProjects(filter || "all", tagIds, scope);
     res.json(projects);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -57,7 +54,6 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
 export async function listProjectsPaged(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.projects.pagedList.input.parse(req.query);
-    const statusIds = parseStatusIds(input.statusIds);
     const customerId = input.customerId == null ? undefined : Number(input.customerId);
 
     if (input.customerId != null && Number.isNaN(customerId)) {
@@ -67,7 +63,6 @@ export async function listProjectsPaged(req: Request, res: Response, next: NextF
 
     const projects = await projectsService.listProjectsPaged({
       filter: input.filter || "all",
-      statusIds,
       tagIds: parseTagIds(input.tagIds),
       scope: input.scope,
       customerId,
@@ -104,8 +99,7 @@ export async function getProject(req: Request, res: Response, next: NextFunction
       return;
     }
 
-    const [projectStatuses, projectNotes, projectAttachments, projectAppointments] = await Promise.all([
-      projectStatusService.listProjectStatusesByProject(projectId),
+    const [projectNotes, projectAttachments, projectAppointments] = await Promise.all([
       projectNotesService.listProjectNotes(projectId),
       projectAttachmentsService.listProjectAttachments(projectId),
       appointmentsService.listProjectAppointments(projectId, "1900-01-01", roleKey),
@@ -115,7 +109,6 @@ export async function getProject(req: Request, res: Response, next: NextFunction
       ...result,
       projectOrder: result.project.projectOrder ?? null,
       tags: result.project.tags ?? [],
-      projectStatuses,
       projectNotes,
       projectAttachments,
       projectAppointments,
@@ -331,14 +324,4 @@ export async function removeProjectTag(req: Request, res: Response, next: NextFu
     }
     next(err);
   }
-}
-
-function parseStatusIds(value: unknown): number[] {
-  if (!value) return [];
-  const rawValues = Array.isArray(value) ? value : [value];
-  const ids = rawValues
-    .flatMap((entry) => String(entry).split(","))
-    .map((entry) => Number(entry.trim()))
-    .filter((entry) => Number.isFinite(entry) && entry > 0);
-  return Array.from(new Set(ids));
 }

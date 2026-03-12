@@ -6,7 +6,6 @@ import { ProductSelectionDropdown } from "@/components/ui/product-selection-drop
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
 import { ProjectOrderForm, ProjectProductFields } from "@/components/ProjectOrderForm";
-import { ProjectStatusPanel } from "@/components/ProjectStatusPanel";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -54,8 +53,7 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, ProjectStatus, Component, ComponentCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
-import type { ProjectStatusRelationItem } from "@shared/routes";
+import type { Project, Customer, Note, Component, ComponentCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -126,7 +124,6 @@ export function ProjectForm({
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
-  const canManageProjectStatuses = isAdmin || userRole === "DISPATCHER";
   const canManageProjectTags = isAdmin || userRole === "DISPATCHER";
 
   const buildFormSnapshot = (input: {
@@ -180,26 +177,6 @@ export function ProjectForm({
     enabled: isEditing,
   });
 
-  // Fetch project statuses assigned to this project
-  const {
-    data: assignedStatuses = [],
-    isLoading: assignedStatusesLoading,
-    isError: assignedStatusesError,
-    error: assignedStatusesQueryError,
-  } = useQuery<ProjectStatusRelationItem[]>({
-    queryKey: ['/api/projects', projectId, 'statuses'],
-    enabled: isEditing,
-  });
-
-  // Fetch all available project statuses
-  const {
-    data: allStatuses = [],
-    isLoading: allStatusesLoading,
-    isError: allStatusesError,
-    error: allStatusesQueryError,
-  } = useQuery<ProjectStatus[]>({
-    queryKey: ['/api/project-status'],
-  });
   const masterDataScope = isAdmin ? "all" : "active";
   const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
@@ -322,15 +299,6 @@ export function ProjectForm({
     selectedComponentDialogField && selectedComponentDialogField.source === "component"
       ? selectedComponentDialogField.categoryName
       : null;
-  const statusPanelLoading = assignedStatusesLoading || allStatusesLoading;
-  const statusPanelLoadErrorMessage = assignedStatusesError || allStatusesError
-    ? (assignedStatusesQueryError instanceof Error
-      ? assignedStatusesQueryError.message
-      : allStatusesQueryError instanceof Error
-        ? allStatusesQueryError.message
-        : "Projektstatus konnten nicht geladen werden.")
-    : null;
-
   useEffect(() => {
     if (!isEditing || !projectData || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
     setInitialFormSnapshot(
@@ -809,38 +777,6 @@ export function ProjectForm({
     },
   });
 
-  // Status mutations
-  const addStatusMutation = useMutation({
-    mutationFn: async (statusId: number) => {
-      await apiRequest('POST', `/api/projects/${projectId}/statuses`, { statusId, expectedVersion: 0 });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
-      void invalidateProjectQueries();
-    },
-    onError: (error) => {
-      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
-      }
-    },
-  });
-
-  const removeStatusMutation = useMutation({
-    mutationFn: async (item: ProjectStatusRelationItem) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/statuses/${item.status.id}`, {
-        version: item.relationVersion,
-      });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'statuses'] });
-      void invalidateProjectQueries();
-    },
-    onError: (error) => {
-      if (error instanceof Error && error.message.includes("VERSION_CONFLICT")) {
-        toast({ title: "Statusliste wurde zwischenzeitlich geändert, bitte neu laden.", variant: "destructive" });
-      }
-    },
-  });
   const addProjectTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
       const response = await apiRequest('POST', `/api/projects/${projectId}/tags`, { tagId });
@@ -1208,41 +1144,19 @@ export function ProjectForm({
     >
       <div className="space-y-6">
         {isEditing ? (
-          <div className="grid grid-cols-3 items-stretch gap-6">
-            <div className="col-span-2 h-full">
-              <ProjectOrderForm
-                name={name}
-                orderNumber={orderNumber}
-                amount={amount}
-                plannedDateText={plannedDateText}
-                plannedWeek={plannedWeek}
-                isEditing={isEditing}
-                onNameChange={setName}
-                onOrderNumberChange={setOrderNumber}
-                onAmountChange={setAmount}
-                onPlannedDateTextChange={setPlannedDateText}
-                onPlannedWeekChange={setPlannedWeek}
-              />
-            </div>
-            <div className="h-full">
-              <ProjectStatusPanel
-                assignedStatuses={assignedStatuses}
-                availableStatuses={allStatuses}
-                isLoading={statusPanelLoading}
-                loadErrorMessage={statusPanelLoadErrorMessage}
-                className="h-full"
-                canEdit={canManageProjectStatuses}
-                onAdd={(statusId) => {
-                  if (!canManageProjectStatuses) return;
-                  addStatusMutation.mutate(statusId);
-                }}
-                onRemove={(item) => {
-                  if (!canManageProjectStatuses) return;
-                  removeStatusMutation.mutate(item);
-                }}
-              />
-            </div>
-          </div>
+          <ProjectOrderForm
+            name={name}
+            orderNumber={orderNumber}
+            amount={amount}
+            plannedDateText={plannedDateText}
+            plannedWeek={plannedWeek}
+            isEditing={isEditing}
+            onNameChange={setName}
+            onOrderNumberChange={setOrderNumber}
+            onAmountChange={setAmount}
+            onPlannedDateTextChange={setPlannedDateText}
+            onPlannedWeekChange={setPlannedWeek}
+          />
         ) : (
           <ProjectOrderForm
             name={name}

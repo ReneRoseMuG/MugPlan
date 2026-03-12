@@ -5,7 +5,6 @@ import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentP
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
-import { CalendarWeekProjectStatusSection } from "./CalendarWeekProjectStatusSection";
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
 
 export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = 28;
@@ -39,8 +38,8 @@ export function CalendarWeekSpanningTile({
   visibleStartDate,
   visibleDayNumberStart,
   uniformHeightPx,
-  projectStatusAreaHeightPx,
-  projectStatusAreaRef,
+  projectStatusAreaHeightPx: _projectStatusAreaHeightPx,
+  projectStatusAreaRef: _projectStatusAreaRef,
   containerRef,
   style,
   isDragging,
@@ -104,11 +103,6 @@ export function CalendarWeekSpanningTile({
         projectArticleItems={appointment.projectArticleItems}
         projectDescription={appointment.projectDescription}
         enableFullDescriptionPreview
-      />
-      <CalendarWeekProjectStatusSection
-        statuses={appointment.projectStatuses}
-        reservedHeightPx={projectStatusAreaHeightPx}
-        containerRef={appointment.projectStatuses.length > 0 ? projectStatusAreaRef : undefined}
       />
     </>
   );

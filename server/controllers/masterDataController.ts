@@ -12,7 +12,6 @@ import {
   applyProductManagementSeed,
   exportProductManagementSeed,
 } from "../services/seedProductManagementService";
-import { getProjectStatusSeedStatus, applyProjectStatusSeed, exportProjectStatusSeed } from "../services/seedProjectStatusService";
 import { getNoteTemplatesSeedStatus, applyNoteTemplatesSeed, exportNoteTemplatesSeed } from "../services/seedNoteTemplatesService";
 import { getTagsSeedStatus, applyTagsSeed, exportTagsSeed } from "../services/seedTagsService";
 
@@ -222,18 +221,6 @@ export async function applyProductManagementSeedController(req: Request, res: Re
 
 export async function exportProductManagementSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
   await handleSeedExecution(req, res, next, () => api.masterData.seed.productManagement.export.input.parse(req.body ?? {}), exportProductManagementSeed);
-}
-
-export async function getProjectStatusSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
-  await handleSeedExecution(req, res, next, () => undefined, getProjectStatusSeedStatus);
-}
-
-export async function applyProjectStatusSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
-  await handleSeedExecution(req, res, next, () => api.masterData.seed.projectStatus.apply.input.parse(req.body ?? {}), applyProjectStatusSeed);
-}
-
-export async function exportProjectStatusSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
-  await handleSeedExecution(req, res, next, () => api.masterData.seed.projectStatus.export.input.parse(req.body ?? {}), exportProjectStatusSeed);
 }
 
 export async function getNoteTemplatesSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {

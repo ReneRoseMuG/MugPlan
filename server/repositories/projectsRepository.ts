@@ -30,7 +30,6 @@ import {
   type ProjectArticleItem,
 } from "@shared/projectArticleList";
 import type { ProjectScope } from "../services/projectsService";
-import { getProjectStatusesByProjectIds } from "./projectStatusRepository";
 import { listProjectArticleRowsByProjectIds } from "./appointmentsRepository";
 import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
@@ -173,7 +172,6 @@ function resolveProjectOrderInput(
 
 export async function getProjects(
   filter: "active" | "inactive" | "all" = "all",
-  statusIds: number[] = [],
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
@@ -183,15 +181,6 @@ export async function getProjects(
   }
   if (filter === "inactive") {
     conditions.push(eq(projects.isActive, false));
-  }
-  if (statusIds.length > 0) {
-    const statusIdList = sql.join(statusIds.map((id) => sql`${id}`), sql`, `);
-    conditions.push(sql`exists (
-      select 1
-      from ${projectProjectStatus}
-      where ${projectProjectStatus.projectId} = ${projects.id}
-        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
-    )`);
   }
   if (tagIds.length > 0) {
     const tagIdList = sql.join(tagIds.map((id) => sql`${id}`), sql`, `);
@@ -245,11 +234,6 @@ export type ProjectBoardListItem = ProjectListItem & {
     fullName: string | null;
     lastName: string | null;
   };
-  statuses: Array<{
-    id: number;
-    title: string;
-    color: string;
-  }>;
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
@@ -269,7 +253,6 @@ type VersionedMutationResult<T> =
 
 function buildProjectFilterConditions(params: {
   filter: "active" | "inactive" | "all";
-  statusIds: number[];
   tagIds: number[];
   scope: ProjectScope;
   customerId?: number;
@@ -288,15 +271,6 @@ function buildProjectFilterConditions(params: {
   }
   if (params.filter === "inactive") {
     conditions.push(eq(projects.isActive, false));
-  }
-  if (params.statusIds.length > 0) {
-    const statusIdList = sql.join(params.statusIds.map((id) => sql`${id}`), sql`, `);
-    conditions.push(sql`exists (
-      select 1
-      from ${projectProjectStatus}
-      where ${projectProjectStatus.projectId} = ${projects.id}
-        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
-    )`);
   }
   if (params.tagIds.length > 0) {
     const tagIdList = sql.join(params.tagIds.map((id) => sql`${id}`), sql`, `);
@@ -355,7 +329,6 @@ function normalizeStartTimeHour(value: unknown): number | null {
 
 export async function getProjectsPaged(params: {
   filter: "active" | "inactive" | "all";
-  statusIds: number[];
   tagIds: number[];
   scope: ProjectScope;
   customerId?: number;
@@ -432,8 +405,6 @@ export async function getProjectsPaged(params: {
       asc(appointments.id),
     );
 
-  const statusesRows = await getProjectStatusesByProjectIds(projectIds);
-
   const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
   const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   const appointmentSummaryByProjectId = new Map<number, {
@@ -441,8 +412,6 @@ export async function getProjectsPaged(params: {
     nextAppointmentStartDate: string | null;
     nextAppointmentStartTimeHour: number | null;
   }>();
-  const statusesByProjectId = new Map<number, Array<{ id: number; title: string; color: string }>>();
-
   for (const row of appointmentRows) {
     if (row.projectId == null) continue;
     const current = appointmentSummaryByProjectId.get(row.projectId);
@@ -455,16 +424,6 @@ export async function getProjectsPaged(params: {
       continue;
     }
     current.plannedAppointmentsCount += 1;
-  }
-
-  for (const row of statusesRows) {
-    const current = statusesByProjectId.get(row.projectId) ?? [];
-    current.push({
-      id: row.status.id,
-      title: row.status.title,
-      color: row.status.color,
-    });
-    statusesByProjectId.set(row.projectId, current);
   }
 
   return {
@@ -485,7 +444,6 @@ export async function getProjectsPaged(params: {
           fullName: row.customer.fullName,
           lastName: row.customer.lastName,
         },
-        statuses: statusesByProjectId.get(row.project.id) ?? [],
       };
     }),
     page: params.page,
@@ -498,7 +456,6 @@ export async function getProjectsPaged(params: {
 export async function getProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
-  statusIds: number[] = [],
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
@@ -508,15 +465,6 @@ export async function getProjectsByCustomer(
   }
   if (filter === "inactive") {
     conditions.push(eq(projects.isActive, false));
-  }
-  if (statusIds.length > 0) {
-    const statusIdList = sql.join(statusIds.map((id) => sql`${id}`), sql`, `);
-    conditions.push(sql`exists (
-      select 1
-      from ${projectProjectStatus}
-      where ${projectProjectStatus.projectId} = ${projects.id}
-        and ${projectProjectStatus.projectStatusId} in (${statusIdList})
-    )`);
   }
   if (tagIds.length > 0) {
     const tagIdList = sql.join(tagIds.map((id) => sql`${id}`), sql`, `);

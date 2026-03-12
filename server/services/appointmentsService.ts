@@ -10,7 +10,6 @@ import {
 } from "@shared/projectArticleList";
 import * as customersRepository from "../repositories/customersRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
-import * as projectStatusRepository from "../repositories/projectStatusRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
@@ -184,21 +183,6 @@ const buildEmployeesByAppointment = async (appointmentIds: number[]) => {
   return employeesByAppointment;
 };
 
-const buildStatusesByProject = async (projectIds: number[]) => {
-  const statusRows = await projectStatusRepository.getProjectStatusesByProjectIds(projectIds);
-  const statusesByProject = new Map<number, { id: number; title: string; color: string }[]>();
-  for (const row of statusRows) {
-    const list = statusesByProject.get(row.projectId) ?? [];
-    list.push({
-      id: row.status.id,
-      title: row.status.title,
-      color: row.status.color,
-    });
-    statusesByProject.set(row.projectId, list);
-  }
-  return statusesByProject;
-};
-
 const PROJECT_ARTICLE_FIELD_ORDER: ProjectArticleFieldKey[] = [
   "saunaModel",
   "oven",
@@ -273,7 +257,6 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
   const [
     employeesByAppointment,
-    statusesByProject,
     projectArticleItemsByProject,
     customerNoteCounts,
     projectNoteCounts,
@@ -283,7 +266,6 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     projectTagsByProjectId,
   ] = await Promise.all([
     buildEmployeesByAppointment(appointmentIds),
-    buildStatusesByProject(projectIds),
     buildProjectArticleItemsByProject(projectIds),
     appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds),
     appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds),
@@ -304,7 +286,6 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
-      projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,
@@ -824,7 +805,6 @@ export async function listCalendarAppointments({
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
 
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
-  const statusesByProject = await buildStatusesByProject(projectIds);
   const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
@@ -844,7 +824,6 @@ export async function listCalendarAppointments({
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
-      projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,
@@ -946,7 +925,6 @@ export async function listAppointmentsList(params: {
   const projectIds = Array.from(new Set(rows.map((row) => row.project?.id).filter((id): id is number => Number.isFinite(id))));
   const customerIds = Array.from(new Set(rows.map((row) => row.customer.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
-  const statusesByProject = await buildStatusesByProject(projectIds);
   const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
@@ -966,7 +944,6 @@ export async function listAppointmentsList(params: {
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
-      projectStatuses: projectId ? (statusesByProject.get(projectId) ?? []) : [],
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,

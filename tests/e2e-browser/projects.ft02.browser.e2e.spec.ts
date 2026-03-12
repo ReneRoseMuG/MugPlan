@@ -4,7 +4,6 @@
  * Abgedeckte Regeln:
  * - Projektanlage im Browser validiert Pflichtfelder und erzeugt nach Kundenauswahl einen neuen Datensatz.
  * - Projektliste schaltet stabil zwischen Grundmengen um und filtert innerhalb der gewaehlten Menge.
- * - Projektstatus werden im Edit-Modus ueber das Relations-Panel hinzugefuegt und entfernt.
  * - Projektnotizen lassen sich im Browser anlegen und loeschen.
  * - Projektloeschung ist ohne Termine erfolgreich und mit Terminen fachlich blockiert.
  *
@@ -23,7 +22,6 @@ import {
   createProjectFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import * as projectStatusService from "../../server/services/projectStatusService";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
@@ -94,18 +92,6 @@ test("switches project list scopes and keeps filters inside the selected ground 
     startDate: getRelativeBerlinDate(3),
   });
 
-  const status = await projectStatusService.createProjectStatus(
-    {
-      title: "FT02 Browser Scope Status",
-      color: "#2563eb",
-      description: null,
-      sortOrder: 1,
-      isActive: true,
-    },
-    "ADMIN",
-  );
-  await projectStatusService.addProjectStatus(noAppointmentProject.id, status.id, 0, "ADMIN");
-
   await openProjects(page);
   await expect(page.getByTestId("list-projects")).toContainText(upcomingProject.name);
   await expect(page.getByTestId("list-projects")).not.toContainText(noAppointmentProject.name);
@@ -114,40 +100,8 @@ test("switches project list scopes and keeps filters inside the selected ground 
   await expect(page.getByTestId("list-projects")).toContainText(noAppointmentProject.name);
   await expect(page.getByTestId("list-projects")).not.toContainText(upcomingProject.name);
 
-  await page.getByTestId("button-add-project-status-filter").click();
-  await page.getByTestId(`project-filter-status-add-${status.id}`).click();
-  await expect(page.getByTestId("list-projects")).toContainText(noAppointmentProject.name);
-  await expect(page.getByTestId("list-projects")).not.toContainText(upcomingProject.name);
-
   await page.getByPlaceholder("Suche: Projekttitel").fill("Kein Treffer");
   await expect(page.getByText("Keine Treffer gefunden.")).toBeVisible();
-});
-
-test("adds and removes a project status in the edit form", async ({ page }) => {
-  const project = await createProjectFixture({
-    prefix: "FT02-BROWSER-STATUS",
-    name: "FT02 Browser Status Project",
-  });
-  const status = await projectStatusService.createProjectStatus(
-    {
-      title: "FT02 Browser Status",
-      color: "#16a34a",
-      description: null,
-      sortOrder: 1,
-      isActive: true,
-    },
-    "ADMIN",
-  );
-
-  await openProjectById(page, project.id);
-  await expect(page.getByTestId("list-project-statuses")).toContainText("Kein Status zugewiesen");
-
-  await page.getByTestId("button-add-status").click();
-  await page.getByTestId(`status-card-${status.id}`).click();
-  await expect(page.getByTestId(`status-badge-${status.id}`)).toBeVisible();
-
-  await page.getByTestId(`status-badge-${status.id}-remove`).click();
-  await expect(page.getByTestId("list-project-statuses")).toContainText("Kein Status zugewiesen");
 });
 
 test("creates and deletes a project note in the edit form", async ({ page }) => {

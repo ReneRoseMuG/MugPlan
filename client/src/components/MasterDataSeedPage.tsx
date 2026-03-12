@@ -25,8 +25,6 @@ const MASTER_DATA_QUERY_KEYS = [
   "/api/admin/master-data/products?active=all",
   "/api/admin/master-data/components?active=all",
   "/api/admin/master-data/tags",
-  "/api/project-status",
-  "/api/project-status?active=all",
   "/api/note-templates",
   "/api/note-templates?active=false",
   "/api/help-texts",
@@ -38,7 +36,6 @@ const SEED_STATUS_QUERY_KEYS = [
   "/api/admin/master-data/seed/employees",
   "/api/admin/master-data/seed/help-texts",
   "/api/admin/master-data/seed/product-management",
-  "/api/admin/master-data/seed/project-status",
   "/api/admin/master-data/seed/note-templates",
   "/api/admin/master-data/seed/tags",
 ];
@@ -64,7 +61,6 @@ export function MasterDataSeedPage() {
   const employeesStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/employees"], queryFn: () => fetchJson("/api/admin/master-data/seed/employees") });
   const helpTextsStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/help-texts"], queryFn: () => fetchJson("/api/admin/master-data/seed/help-texts") });
   const productManagementStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/product-management"], queryFn: () => fetchJson("/api/admin/master-data/seed/product-management") });
-  const projectStatusStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/project-status"], queryFn: () => fetchJson("/api/admin/master-data/seed/project-status") });
   const noteTemplatesStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/note-templates"], queryFn: () => fetchJson("/api/admin/master-data/seed/note-templates") });
   const tagsStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/tags"], queryFn: () => fetchJson("/api/admin/master-data/seed/tags") });
 
@@ -93,8 +89,6 @@ export function MasterDataSeedPage() {
   const helpTextsExportMutation = useSeedMutation("help-texts", "Hilfetexte", "/api/admin/master-data/seed/help-texts/export", "exportiert");
   const productManagementApplyMutation = useSeedMutation("product-management", "Produktverwaltung", "/api/admin/master-data/seed/product-management/apply", "importiert");
   const productManagementExportMutation = useSeedMutation("product-management", "Produktverwaltung", "/api/admin/master-data/seed/product-management/export", "exportiert");
-  const projectStatusApplyMutation = useSeedMutation("project-status", "Projekt Status", "/api/admin/master-data/seed/project-status/apply", "importiert");
-  const projectStatusExportMutation = useSeedMutation("project-status", "Projekt Status", "/api/admin/master-data/seed/project-status/export", "exportiert");
   const noteTemplatesApplyMutation = useSeedMutation("note-templates", "Notiz Vorlagen", "/api/admin/master-data/seed/note-templates/apply", "importiert");
   const noteTemplatesExportMutation = useSeedMutation("note-templates", "Notiz Vorlagen", "/api/admin/master-data/seed/note-templates/export", "exportiert");
   const tagsApplyMutation = useSeedMutation("tags", "Tags", "/api/admin/master-data/seed/tags/apply", "importiert");
@@ -104,7 +98,6 @@ export function MasterDataSeedPage() {
     { key: "employees", title: "Mitarbeiter", description: "Verwaltet employees.csv mit Vorname, Nachname und IsActive.", status: employeesStatusQuery.data, applyMutation: employeesApplyMutation, exportMutation: employeesExportMutation },
     { key: "help-texts", title: "Hilfetexte", description: "Verwaltet helptexts.yaml im bestehenden Hilfetext-Import/Export-Format.", status: helpTextsStatusQuery.data, applyMutation: helpTextsApplyMutation, exportMutation: helpTextsExportMutation },
     { key: "product-management", title: "Produktverwaltung", description: "Verwaltet products.csv und components.csv und stellt Standardkategorien sicher.", status: productManagementStatusQuery.data, applyMutation: productManagementApplyMutation, exportMutation: productManagementExportMutation },
-    { key: "project-status", title: "Projekt Status", description: "Verwaltet projectstates.csv mit Name, Farbe und Status.", status: projectStatusStatusQuery.data, applyMutation: projectStatusApplyMutation, exportMutation: projectStatusExportMutation },
     { key: "note-templates", title: "Notiz Vorlagen", description: "Verwaltet notetemplates.csv mit Inhalt, Farbe, Drucken, Sortierung und Status.", status: noteTemplatesStatusQuery.data, applyMutation: noteTemplatesApplyMutation, exportMutation: noteTemplatesExportMutation },
     { key: "tags", title: "Tags", description: "Verwaltet tags.csv mit Name und Farbe fuer den Tag-Stammdatenbestand.", status: tagsStatusQuery.data, applyMutation: tagsApplyMutation, exportMutation: tagsExportMutation },
   ] as const;

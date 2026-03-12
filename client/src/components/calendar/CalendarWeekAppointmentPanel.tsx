@@ -8,7 +8,6 @@ import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNote
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
 import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
-import { CalendarWeekProjectStatusSection } from "./CalendarWeekProjectStatusSection";
 
 export const DEFAULT_CONTINUATION_HEIGHT_PX = 180;
 export const WEEK_CARD_FOOTER_SAFE_SPACE_PX = 14;
@@ -28,8 +27,8 @@ export function CalendarWeekAppointmentPanel({
   context = "default",
   continuationHeightPx,
   uniformHeightPx,
-  projectStatusAreaHeightPx,
-  projectStatusAreaRef,
+  projectStatusAreaHeightPx: _projectStatusAreaHeightPx,
+  projectStatusAreaRef: _projectStatusAreaRef,
   showPreviewTourNameLine = false,
   containerRef,
   testId,
@@ -139,11 +138,6 @@ export function CalendarWeekAppointmentPanel({
                 projectArticleItems={appointment.projectArticleItems}
                 projectDescription={appointment.projectDescription}
                 enableFullDescriptionPreview={context === "week-calendar"}
-              />
-              <CalendarWeekProjectStatusSection
-                statuses={appointment.projectStatuses}
-                reservedHeightPx={projectStatusAreaHeightPx}
-                containerRef={appointment.projectStatuses.length > 0 ? projectStatusAreaRef : undefined}
               />
               {context === "week-calendar" ? (
                 <>
