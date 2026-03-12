@@ -5,14 +5,16 @@
  * - Die paginierte Projektliste liefert nur den angeforderten Seitenausschnitt.
  * - Projektfilter (Titel, Auftragsnummer, Status) wirken vor dem Paging auf die Grundmenge.
  * - Die Listenaggregation liefert Status-, Termin- und Artikellistenfelder fuer die Kartenansicht.
+ * - Der ungepaginierte `/api/projects`-Pfad liefert `projectArticleItems` konsistent fuer Slot- und Detailnutzer.
  *
  * Fehlerfaelle:
  * - Paging liefert Vollmengen oder falsche Seiten.
  * - Filter greifen nur auf den Seitenausschnitt statt auf die Gesamtmenge.
  * - Status-/Terminaggregation oder Projekt-Artikelliste fehlt in der Listenantwort.
+ * - `/api/projects` verliert `projectArticleItems`, liefert `null` statt `[]` oder veraendert die Slot-Reihenfolge.
  *
  * Ziel:
- * Den API-Vertrag der neuen paginierten Projektliste inklusive Kartenaggregation regressionssicher absichern.
+ * Den API-Vertrag der paginierten und ungepaginierte Projektliste inklusive Kartenaggregation regressionssicher absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -118,5 +120,56 @@ describe("FT30 integration: paged projects list", () => {
       { label: "Saunamodell", value: "FT30 Sauna Modell" },
       { label: "Fenster", value: "FT30 Rundfenster" },
     ]);
+  });
+
+  it("returns projectArticleItems on GET /api/projects with stable item ordering and empty arrays", async () => {
+    const agent = await loginAdminAgent(app);
+    const projectWithItems = await createProjectFixture({
+      prefix: "FT30-PROJ-SLOT",
+      name: "FT30 Slot Projekt",
+    });
+    const projectWithoutItems = await createProjectFixture({
+      prefix: "FT30-PROJ-EMPTY",
+      name: "FT30 Leeres Projekt",
+      descriptionMd: null,
+    });
+    const saunaProduct = await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: "FT30 Slot Sauna",
+    });
+    const ovenComponent = await createComponentFixture({
+      categoryName: "Oefen",
+      name: "FT30 Slot Ofen",
+    });
+
+    await createProjectOrderItemFixture({
+      projectId: projectWithItems.id,
+      orderNumber: projectWithItems.orderNumber ?? "",
+      productId: saunaProduct.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: projectWithItems.id,
+      orderNumber: projectWithItems.orderNumber ?? "",
+      componentId: ovenComponent.id,
+    });
+
+    const response = await agent
+      .get("/api/projects?filter=all&scope=all")
+      .expect(200);
+
+    const slotProject = response.body.find((entry: { id: number }) => entry.id === projectWithItems.id);
+    const emptyProject = response.body.find((entry: { id: number }) => entry.id === projectWithoutItems.id);
+
+    expect(slotProject).toMatchObject({
+      id: projectWithItems.id,
+      projectArticleItems: [
+        { label: "Saunamodell", value: "FT30 Slot Sauna" },
+        { label: "Ofen", value: "FT30 Slot Ofen" },
+      ],
+    });
+    expect(emptyProject).toMatchObject({
+      id: projectWithoutItems.id,
+      projectArticleItems: [],
+    });
   });
 });

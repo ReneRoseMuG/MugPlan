@@ -136,7 +136,20 @@ type SeedSummary = {
       modelName: string;
       ovenName: string | null;
     }>;
+    projectStatusAssignment?: {
+      activeStatusIds: number[];
+      relationCount: number;
+      projectsWithRelations: number;
+      projectsWithoutRelations: number;
+    };
   };
+};
+
+type SeedRunRelationAnalysis = {
+  projectCount: number;
+  projectStatusRelationCount: number;
+  projectsWithStatusRelations: number;
+  projectsWithoutStatusRelations: number;
 };
 
 type PurgeSummary = {
@@ -469,6 +482,30 @@ function findDependentAppointmentRunIds(baseSeedRunId: string, runs: SeedRunLike
     })
     .map((run) => run.id);
   return dependent;
+}
+
+async function analyzeSeedRunProjectStatusRelations(seedRunId: string): Promise<SeedRunRelationAnalysis> {
+  const entities = await demoSeedRepository.getSeedRunEntities(seedRunId);
+  const projectIds = entities
+    .filter((entity) => entity.entityType === "project")
+    .map((entity) => Number(entity.entityId));
+
+  if (projectIds.length === 0) {
+    return {
+      projectCount: 0,
+      projectStatusRelationCount: 0,
+      projectsWithStatusRelations: 0,
+      projectsWithoutStatusRelations: 0,
+    };
+  }
+
+  const relationAnalysis = await demoSeedRepository.getProjectStatusRelationAnalysis(projectIds);
+  return {
+    projectCount: projectIds.length,
+    projectStatusRelationCount: relationAnalysis.relationCount,
+    projectsWithStatusRelations: relationAnalysis.projectsWithRelations,
+    projectsWithoutStatusRelations: relationAnalysis.projectsWithoutRelations,
+  };
 }
 
 async function getNextCustomerNumberStart() {
@@ -1444,6 +1481,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     const employeeTourById = new Map<number, number>();
     const customers: number[] = [];
     const projectSeedContexts: ProjectSeedContext[] = [];
+    let activeStatusIds: number[] = [];
     let seedNoteTemplatesPool: NoteTemplate[] = [];
     let seedMasterData: SeedMasterData | null = null;
 
@@ -1522,6 +1560,13 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
     } else {
       seedNoteTemplatesPool = await noteTemplatesRepository.getNoteTemplates(true);
       seedMasterData = await loadSeedMasterData();
+      const activeStatuses = config.projects > 0
+        ? await projectStatusService.listProjectStatuses("active", "ADMIN")
+        : [];
+      activeStatusIds = activeStatuses.map((status) => Number(status.id));
+      if (config.projects > 0 && activeStatusIds.length === 0) {
+        throw createBadRequestError("Keine aktiven Projektstatus fuer den Demo-Seed verfuegbar.");
+      }
 
       for (let i = 0; i < 3; i += 1) {
         const team = await teamsService.createTeam({ color: random.pick(["#0f766e", "#0369a1", "#be123c", "#4d7c0f"]) });
@@ -1623,11 +1668,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       created.notes += customerNotesSeed.createdNotes;
 
       const projectsToCreate = config.projects;
-      const statuses = await projectStatusService.listProjectStatuses("active", "ADMIN");
-      const statusIdsForProjectAssignment = statuses.map((status) => Number(status.id));
-      if (statusIdsForProjectAssignment.length === 0) {
-        warnings.push("Keine aktiven Projektstatus gefunden; Status-Zuordnungen wurden uebersprungen.");
-      }
+      const statusIdsForProjectAssignment = activeStatusIds;
 
       for (let i = 0; i < projectsToCreate; i += 1) {
         const customerId = customers.length > 0 ? random.pick(customers) : null;
@@ -1849,6 +1890,11 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       }
     }
 
+    const projectStatusAssignment =
+      config.runType === "base" && config.projects > 0
+        ? await analyzeSeedRunProjectStatusRelations(seedRunId)
+        : null;
+
     const summary: SeedSummary = {
       seedRunId,
       createdAt,
@@ -1879,6 +1925,15 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
                 modelName: ctx.modelName,
                 ovenName: ctx.ovenName,
               })),
+              projectStatusAssignment:
+                projectStatusAssignment
+                  ? {
+                      activeStatusIds,
+                      relationCount: projectStatusAssignment.projectStatusRelationCount,
+                      projectsWithRelations: projectStatusAssignment.projectsWithStatusRelations,
+                      projectsWithoutRelations: projectStatusAssignment.projectsWithoutStatusRelations,
+                    }
+                  : undefined,
             }
           : undefined,
     };
@@ -1920,7 +1975,8 @@ export async function listSeedRuns() {
     dependentByBaseRunId.set(baseSeedRunId, list);
   }
 
-  return runs.map((run) => ({
+  return Promise.all(runs.map(async (run) => ({
+    analysis: await analyzeSeedRunProjectStatusRelations(run.id),
     seedRunId: run.id,
     createdAt: run.createdAt.toISOString(),
     config: run.configJson as SeedConfig,
@@ -1966,7 +2022,7 @@ export async function listSeedRuns() {
       },
       warnings: [],
     }) as SeedSummary,
-  }));
+  })));
 }
 
 export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {

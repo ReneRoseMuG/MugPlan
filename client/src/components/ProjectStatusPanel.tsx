@@ -13,6 +13,7 @@ interface ProjectStatusPanelProps {
   assignedStatuses: ProjectStatusRelationItem[];
   availableStatuses: ProjectStatus[];
   isLoading?: boolean;
+  loadErrorMessage?: string | null;
   onAdd: (statusId: number) => void;
   onRemove: (item: ProjectStatusRelationItem) => void;
   title?: string;
@@ -24,6 +25,7 @@ export function ProjectStatusPanel({
   assignedStatuses,
   availableStatuses,
   isLoading = false,
+  loadErrorMessage = null,
   onAdd,
   onRemove,
   title = "Status",
@@ -71,10 +73,12 @@ export function ProjectStatusPanel({
             </TooltipTrigger>
             <TooltipContent>
               {availableStatuses.length === 0
-                ? "Bitte erst Status unter Administration → Projekt Status anlegen"
+                ? (loadErrorMessage
+                  ? "Projektstatus konnten nicht geladen werden"
+                  : "Bitte erst Status unter Administration -> Projekt Status anlegen")
                 : unassignedStatuses.length === 0
                   ? "Alle Status bereits zugewiesen"
-                  : "Status hinzufügen"}
+                  : "Status hinzufuegen"}
             </TooltipContent>
           </Tooltip>
         ) : null}
@@ -82,11 +86,16 @@ export function ProjectStatusPanel({
         <div className="space-y-2" data-testid="list-project-statuses">
           {isLoading ? (
             <div className="animate-pulse space-y-2">
-              <div className="h-10 bg-slate-200 rounded-md" />
-              <div className="h-10 bg-slate-200 rounded-md" />
+              <div className="h-10 rounded-md bg-slate-200" />
+              <div className="h-10 rounded-md bg-slate-200" />
             </div>
           ) : (
             <>
+              {loadErrorMessage ? (
+                <p className="py-2 text-center text-sm text-destructive" data-testid="text-project-status-load-error">
+                  {loadErrorMessage}
+                </p>
+              ) : null}
               {assignedStatuses.map((item) => (
                 <ProjectStatusInfoBadge
                   key={item.status.id}
@@ -98,7 +107,7 @@ export function ProjectStatusPanel({
                 />
               ))}
               {assignedStatuses.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-2">
+                <p className="py-2 text-center text-sm text-slate-400">
                   Kein Status zugewiesen
                 </p>
               )}
@@ -111,7 +120,7 @@ export function ProjectStatusPanel({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onCancel={handleCancelDialog}
-        title="Status hinzufügen"
+        title="Status hinzufuegen"
         icon={ListChecks}
         maxWidth="max-w-6xl"
         hideActions
@@ -121,7 +130,7 @@ export function ProjectStatusPanel({
           isLoading={isLoading}
           mode="picker"
           onSelectStatus={handleSelectStatus}
-          title="Status auswählen"
+          title="Status auswaehlen"
           helpKey="project-status"
           onCancel={handleCancelDialog}
         />

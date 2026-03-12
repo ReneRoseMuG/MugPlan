@@ -29,6 +29,10 @@ router.get(api.masterData.seed.noteTemplates.status.path, masterDataController.g
 router.post(api.masterData.seed.noteTemplates.apply.path, masterDataController.applyNoteTemplatesSeedController);
 router.post(api.masterData.seed.noteTemplates.export.path, masterDataController.exportNoteTemplatesSeedController);
 
+router.get(api.masterData.seed.tags.status.path, masterDataController.getTagsSeedStatusController);
+router.post(api.masterData.seed.tags.apply.path, masterDataController.applyTagsSeedController);
+router.post(api.masterData.seed.tags.export.path, masterDataController.exportTagsSeedController);
+
 router.get(api.masterData.componentCategories.list.path, masterDataController.listComponentCategories);
 router.post(api.masterData.componentCategories.create.path, masterDataController.createComponentCategory);
 router.put(api.masterData.componentCategories.update.path, masterDataController.updateComponentCategory);

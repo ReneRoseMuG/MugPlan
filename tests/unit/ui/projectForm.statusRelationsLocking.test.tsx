@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Projektstatus-Panel wird fuer Nicht-Admins readonly ueber canEdit gesteuert.
+ * - Projektstatus-Panel erhaelt den kombinierten Lade-/Fehlerzustand aus Relations- und Status-Query.
  * - Add-Relation sendet expectedVersion=0 als Precondition-Create.
  * - Remove-Relation sendet die relationVersion als optimistic-lock token.
  *
@@ -28,6 +29,8 @@ describe("FT15 project form relation locking wiring", () => {
     expect(source).toContain("const isAdmin = userRole === \"ADMIN\"");
     expect(source).toContain("const canManageProjectStatuses = isAdmin || userRole === \"DISPATCHER\"");
     expect(source).toContain("canEdit={canManageProjectStatuses}");
+    expect(source).toContain("const statusPanelLoading = assignedStatusesLoading || allStatusesLoading");
+    expect(source).toContain("loadErrorMessage={statusPanelLoadErrorMessage}");
     expect(source).toContain("grid grid-cols-3 items-stretch gap-6");
     expect(source).toContain("className=\"h-full\"");
   });

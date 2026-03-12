@@ -1,10 +1,11 @@
 /**
  * Test Scope:
  *
- * Feature: FT27 - Deployment-Seed fuer Admin-Stammdaten
+ * Feature: FT27/FT28 - Deployment-Seed fuer Admin-Stammdaten und Tags
  *
  * Abgedeckte Regeln:
  * - Alle Seed-Services lesen und schreiben Dateien in einem externen Temp-Ordner ausserhalb des Projekts.
+ * - Tag-Seeds laufen ueber denselben externen Temp-Pfad und bleiben bei Wiederholung duplikatsicher.
  * - Importe erzeugen fehlende Objekte, aktualisieren Duplikate per Upsert und loeschen keine nicht gelisteten Daten.
  * - Fehlende Dateien werden pro Domaene sauber gemeldet.
  * - Formatfehler schlagen kontrolliert fehl.
@@ -31,6 +32,7 @@ import { applyHelpTextsSeed, exportHelpTextsSeed } from "../../../server/service
 import { applyNoteTemplatesSeed, exportNoteTemplatesSeed } from "../../../server/services/seedNoteTemplatesService";
 import { applyProductManagementSeed, exportProductManagementSeed } from "../../../server/services/seedProductManagementService";
 import { applyProjectStatusSeed, exportProjectStatusSeed } from "../../../server/services/seedProjectStatusService";
+import { applyTagsSeed, exportTagsSeed } from "../../../server/services/seedTagsService";
 
 const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "mugplan-seed-integration-"));
 process.env.ATTACHMENT_STORAGE_PATH = path.join(tempRoot, "uploads");
@@ -48,6 +50,10 @@ async function writeSeedFile(fileName: string, content: string) {
 
 async function readSeedFile(fileName: string) {
   return fs.readFile(path.join(tempRoot, "uploads", "seed", fileName), "utf8");
+}
+
+async function expectSeedFileMissing(fileName: string) {
+  await expect(fs.access(path.join(tempRoot, "uploads", "seed", fileName))).rejects.toThrow();
 }
 
 describe("FT27 integration: seed file services", () => {
@@ -88,6 +94,17 @@ describe("FT27 integration: seed file services", () => {
       exists: false,
       logLines: ["Quelldatei fehlt: employees.csv"],
     });
+  });
+
+  it("does not write an employee seed file when no employees exist", async () => {
+    const result = await exportEmployeesSeed();
+
+    expect(result).toEqual({
+      sourceFile: "employees.csv",
+      exists: false,
+      logLines: ["Kein Export geschrieben: employees.csv (keine Mitarbeiter vorhanden)"],
+    });
+    await expectSeedFileMissing("employees.csv");
   });
 
   it("exports and applies help texts against the external seed yaml", async () => {
@@ -183,6 +200,21 @@ describe("FT27 integration: seed file services", () => {
     await expect(applyProductManagementSeed()).rejects.toThrow("INVALID_CSV_FORMAT");
   });
 
+  it("does not write product management seed files when no products or components exist", async () => {
+    const result = await exportProductManagementSeed();
+
+    expect(result).toEqual({
+      sourceFile: "products.csv",
+      exists: false,
+      logLines: [
+        "Kein Export geschrieben: products.csv (keine Produkte vorhanden)",
+        "Kein Export geschrieben: components.csv (keine Komponenten vorhanden)",
+      ],
+    });
+    await expectSeedFileMissing("products.csv");
+    await expectSeedFileMissing("components.csv");
+  });
+
   it("defaults product and component seed rows to active when the Is Active header is missing", async () => {
     const productCategory = await ensureProductCategoryFixture("Fass Saunen");
     const componentCategory = await ensureComponentCategoryFixture("Dachvarianten");
@@ -246,6 +278,17 @@ describe("FT27 integration: seed file services", () => {
     expect(rows.find((entry) => entry.title === "Montage")?.color).toBe("#123456");
   });
 
+  it("does not write a project status seed file when no project statuses exist", async () => {
+    const result = await exportProjectStatusSeed();
+
+    expect(result).toEqual({
+      sourceFile: "projectstates.csv",
+      exists: false,
+      logLines: ["Kein Export geschrieben: projectstates.csv (keine Projektstatus vorhanden)"],
+    });
+    await expectSeedFileMissing("projectstates.csv");
+  });
+
   it("exports and reapplies note templates from the external seed directory", async () => {
     await noteTemplatesRepository.createNoteTemplate({
       title: "Checkliste",
@@ -272,5 +315,61 @@ describe("FT27 integration: seed file services", () => {
     expect(result.logLines).toContain("Notiz Vorlage angelegt: Montage");
     expect(rows.find((entry) => entry.title === "Checkliste")?.sortOrder).toBe(3);
     expect(rows.find((entry) => entry.title === "Montage")?.print).toBe(true);
+  });
+
+  it("does not write a note template seed file when no note templates exist", async () => {
+    const result = await exportNoteTemplatesSeed();
+
+    expect(result).toEqual({
+      sourceFile: "notetemplates.csv",
+      exists: false,
+      logLines: ["Kein Export geschrieben: notetemplates.csv (keine Notiz Vorlagen vorhanden)"],
+    });
+    await expectSeedFileMissing("notetemplates.csv");
+  });
+
+  it("exports and reapplies tags from the external seed directory", async () => {
+    await masterDataRepository.createTag({
+      name: "Export Tag",
+      color: "#111111",
+    });
+
+    await exportTagsSeed();
+    await expect(readSeedFile("tags.csv")).resolves.toContain("Export Tag;#111111");
+
+    await writeSeedFile(
+      "tags.csv",
+      "Name;Farbe\nExport Tag;#222222\nSeed Tag;\n",
+    );
+
+    const firstRun = await applyTagsSeed();
+    const secondRun = await applyTagsSeed();
+    const tags = await masterDataRepository.listTags();
+
+    expect(firstRun.logLines).toContain("Tag aktualisiert: Export Tag");
+    expect(firstRun.logLines).toContain("Tag angelegt: Seed Tag");
+    expect(secondRun.logLines).toContain("Tag aktualisiert: Seed Tag");
+    expect(tags.filter((entry) => entry.name === "Seed Tag")).toHaveLength(1);
+    expect(tags.find((entry) => entry.name === "Export Tag")?.color).toBe("#222222");
+    expect(tags.find((entry) => entry.name === "Seed Tag")?.color).toBe("#2563eb");
+  });
+
+  it("reports missing tag files before import", async () => {
+    await expect(applyTagsSeed()).resolves.toEqual({
+      sourceFile: "tags.csv",
+      exists: false,
+      logLines: ["Quelldatei fehlt: tags.csv"],
+    });
+  });
+
+  it("does not write a tag seed file when no tags exist", async () => {
+    const result = await exportTagsSeed();
+
+    expect(result).toEqual({
+      sourceFile: "tags.csv",
+      exists: false,
+      logLines: ["Kein Export geschrieben: tags.csv (keine Tags vorhanden)"],
+    });
+    await expectSeedFileMissing("tags.csv");
   });
 });

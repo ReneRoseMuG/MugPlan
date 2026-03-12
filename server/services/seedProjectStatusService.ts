@@ -14,6 +14,13 @@ export async function getProjectStatusSeedStatus(): Promise<SeedFileStatus> {
 
 export async function exportProjectStatusSeed(): Promise<SeedExecutionResult> {
   const statuses = await projectStatusRepository.getProjectStatuses("all");
+  if (statuses.length === 0) {
+    return {
+      sourceFile: FILE_NAME,
+      exists: false,
+      logLines: [`Kein Export geschrieben: ${FILE_NAME} (keine Projektstatus vorhanden)`],
+    };
+  }
   const content = stringifyCsv(
     ["Name", "Farbe", "Status"],
     statuses.map((status) => [status.title, status.color, status.isActive ? "true" : "false"]),

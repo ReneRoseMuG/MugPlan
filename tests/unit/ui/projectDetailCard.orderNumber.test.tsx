@@ -5,47 +5,136 @@
  * Use Case: UC Auftragsnummer in der Projekt-Detailkarte
  *
  * Abgedeckte Regeln:
- * - ProjectDetailCard zeigt die aktuelle 3-Felder-Kopfzeile (Projektname, Auftragsnummer, Betrag).
- * - Projektinhalt wird ueber den kombinierten ProjectArticleDescriptionRenderer gerendert.
- * - Projektstatus sitzt als Badge-Footer in der Karte.
+ * - ProjectDetailCard zeigt Projektname, Auftragsnummer und Betrag in getrennten Kopf-Feldern.
+ * - Projektinhalt rendert Artikelliste und Anmerkungen ueber den kombinierten Renderer.
+ * - Leere Werte fallen sichtbar auf `nicht hinterlegt` zurueck.
+ * - Projektstatus bleibt als Badge-Footer erhalten.
  *
  * Fehlerfaelle:
- * - Kopfzeile zeigt die aktuellen Felder nicht getrennt.
- * - Karteninhalt rendert wieder nur rohe HTML-Beschreibung statt der kombinierten Ausgabe.
- * - Projektstatus bleibt als Textzeile statt im Footer-Badgebereich.
+ * - Der Renderer zeigt nur noch rohe HTML-Strings oder versteckt Teilbereiche.
+ * - Leere Inhalte rendern eine leere Karte statt des Fallbacks.
+ * - Status-Badges verschwinden oder fallen aus dem Footer.
  *
  * Ziel:
- * Sicherstellen, dass die Projekt-Detailkarte die aktuelle Kopfstruktur, den kombinierten Projektinhalt und Footer-Statusbadges anzeigt.
+ * Die Projekt-Detailkarte ueber reales Markup statt ueber Quelltextmarker absichern.
  */
-import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
-import path from "path";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { ProjectDetailCard } from "../../../client/src/components/ui/project-detail-card";
 
 describe("FT02 project detail card order number", () => {
-  it("renders split top row fields for project name, order number and amount", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ui/project-detail-card.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("Projektname");
-    expect(source).toContain("Auftragsnummer");
-    expect(source).toContain("Betrag");
-    expect(source).toContain("md:grid-cols-[minmax(200px,1fr),118px,150px]");
-    expect(source).toContain("const amountValue = formatProjectAmount(project.amount);");
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
   });
 
-  it("renders combined project content via renderer and project statuses as footer badges", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ui/project-detail-card.tsx");
-    const source = readFileSync(filePath, "utf8");
+  it("renders split top row fields for project name, order number and amount", () => {
+    const html = renderToStaticMarkup(
+      <ProjectDetailCard
+        testId="project-detail"
+        project={{
+          name: "Projekt Nord",
+          orderNumber: "ORD-001",
+          amount: 1234.5,
+          descriptionMd: null,
+          isActive: true,
+          projectArticleItems: [],
+        }}
+      />,
+    );
 
-    expect(source).toContain("const projectNameValue = resolveValue(project.name);");
-    expect(source).toContain("const orderNumberValue = resolveValue(project.orderNumber);");
-    expect(source).toContain('return new Intl.NumberFormat("de-DE", {');
-    expect(source).toContain("<ProjectArticleDescriptionRenderer");
-    expect(source).toContain("articleItems={project.projectArticleItems}");
-    expect(source).toContain("descriptionHtml={project.descriptionMd}");
-    expect(source).toContain("showSectionTitles");
-    expect(source).toContain("projectStatuses.map((status) => (");
-    expect(source).toContain("<ProjectStatusInfoBadge");
-    expect(source).not.toContain("Projekt Status");
+    expect(html).toContain("Projektname");
+    expect(html).toContain("Projekt Nord");
+    expect(html).toContain("Auftragsnummer");
+    expect(html).toContain("ORD-001");
+    expect(html).toContain("Betrag");
+    expect(html).toContain("1.234,50");
+    expect(html).toContain("project-detail-name");
+    expect(html).toContain("project-detail-order-number");
+    expect(html).toContain("project-detail-amount");
+  });
+
+  it("renders article items and notes together via the combined renderer", () => {
+    const html = renderToStaticMarkup(
+      <ProjectDetailCard
+        testId="project-detail"
+        project={{
+          name: "Projekt Nord",
+          orderNumber: "ORD-001",
+          amount: 1234.5,
+          descriptionMd: "<p>Nur Hinweis</p>",
+          isActive: true,
+          projectArticleItems: [{ label: "Saunamodell", value: "Modell A" }],
+        }}
+      />,
+    );
+
+    expect(html).toContain("Artikelliste");
+    expect(html).toContain("Saunamodell");
+    expect(html).toContain("Modell A");
+    expect(html).toContain("Anmerkungen");
+    expect(html).toContain("<p>Nur Hinweis</p>");
+  });
+
+  it("renders fallback text when project content fields are empty", () => {
+    const html = renderToStaticMarkup(
+      <ProjectDetailCard
+        testId="project-detail"
+        project={{
+          name: "",
+          orderNumber: " ",
+          amount: null,
+          descriptionMd: null,
+          isActive: true,
+          projectArticleItems: [],
+        }}
+      />,
+    );
+
+    expect(html).toContain("nicht hinterlegt");
+    expect(html).toContain("project-detail-description");
+    expect(html).toContain("project-detail-statuses");
+  });
+
+  it("keeps project statuses as footer badges and falls back when none exist", () => {
+    const withStatuses = renderToStaticMarkup(
+      <ProjectDetailCard
+        testId="project-detail"
+        project={{
+          name: "Projekt Nord",
+          orderNumber: "ORD-001",
+          amount: 1234.5,
+          descriptionMd: null,
+          isActive: true,
+          projectArticleItems: [],
+        }}
+        projectStatuses={[
+          { id: 1, title: "Offen", color: "#ff0000" },
+          { id: 2, title: "Geplant", color: "#00ff00" },
+        ]}
+      />,
+    );
+    const withoutStatuses = renderToStaticMarkup(
+      <ProjectDetailCard
+        testId="project-detail-empty"
+        project={{
+          name: "Projekt Nord",
+          orderNumber: "ORD-001",
+          amount: 1234.5,
+          descriptionMd: null,
+          isActive: true,
+          projectArticleItems: [],
+        }}
+        projectStatuses={[]}
+      />,
+    );
+
+    expect(withStatuses).toContain("project-detail-status-1");
+    expect(withStatuses).toContain("project-detail-status-2");
+    expect(withStatuses).toContain("Offen");
+    expect(withStatuses).toContain("Geplant");
+    expect(withoutStatuses).toContain("project-detail-empty-statuses");
+    expect(withoutStatuses).toContain("nicht hinterlegt");
   });
 });

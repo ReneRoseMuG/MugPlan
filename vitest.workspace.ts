@@ -31,6 +31,7 @@ export default mergeConfig(
             name: "integration",
             include: [
               "tests/integration/**/*.test.ts",
+              "tests/integration/**/*.test.tsx",
             ],
             exclude: ["tests/unit/**", "tests/e2e/**", "tests/e2e-browser/**"],
             setupFiles: ["./tests/setup.integration.ts"],

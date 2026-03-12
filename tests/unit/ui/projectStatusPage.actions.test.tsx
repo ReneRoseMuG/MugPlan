@@ -8,6 +8,7 @@
  * - API-Mutationen fuer Toggle/Delete bleiben in der Page verdrahtet.
  * - Edit-Entry-Points sind zentral ueber canEdit verdrahtet.
  * - Update/Toggle/Delete senden Versionsinformationen fuer Optimistic Locking.
+ * - Nach Mutationen werden alle Projektstatus-Queryvarianten fuer Picker und Admin-Liste invalidiert.
  * - ListView rendert keine Footer-Action-Buttons (Toggle/Edit/Delete).
  *
  * Fehlerfaelle:
@@ -35,6 +36,14 @@ describe("FT15 project status page action wiring", () => {
     const source = readFileSync(filePath, "utf8");
 
     expect(source).toContain("version: status.version");
+  });
+
+  it("invalidates both active picker and admin list queries after mutations", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("async function invalidateProjectStatusQueries()");
+    expect(source).toContain('firstKey.startsWith("/api/project-status")');
   });
 
   it("removes footer action buttons in list view while keeping double-click edit wiring", () => {

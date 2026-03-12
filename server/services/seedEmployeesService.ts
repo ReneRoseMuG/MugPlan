@@ -19,6 +19,13 @@ export async function getEmployeesSeedStatus(): Promise<SeedFileStatus> {
 
 export async function exportEmployeesSeed(): Promise<SeedExecutionResult> {
   const employees = await employeesRepository.getAllEmployees();
+  if (employees.length === 0) {
+    return {
+      sourceFile: FILE_NAME,
+      exists: false,
+      logLines: [`Kein Export geschrieben: ${FILE_NAME} (keine Mitarbeiter vorhanden)`],
+    };
+  }
   const content = stringifyCsv(
     ["Vorname", "Nachname", "IsActive"],
     employees.map((employee) => [employee.firstName, employee.lastName, employee.isActive ? "true" : "false"]),

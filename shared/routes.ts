@@ -1989,6 +1989,36 @@ export const api = {
           },
         },
       },
+      tags: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/tags",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/tags/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/tags/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
     },
   },
   // Tour employees (for Tour/Team management)
@@ -2835,6 +2865,26 @@ export const api = {
             reklSkippedConstraints: z.number(),
           }),
           warnings: z.array(z.string()),
+          meta: z
+            .object({
+              employeeIds: z.array(z.number()).optional(),
+              projectContexts: z.array(
+                z.object({
+                  projectId: z.number(),
+                  modelName: z.string(),
+                  ovenName: z.string().nullable(),
+                }),
+              ),
+              projectStatusAssignment: z
+                .object({
+                  activeStatusIds: z.array(z.number()),
+                  relationCount: z.number(),
+                  projectsWithRelations: z.number(),
+                  projectsWithoutRelations: z.number(),
+                })
+                .optional(),
+            })
+            .optional(),
         }),
         400: errorSchemas.validation,
       },
@@ -2850,6 +2900,12 @@ export const api = {
             runType: z.enum(["base", "appointments", "legacy"]).optional(),
             baseSeedRunId: z.string().optional(),
             dependentRunIds: z.array(z.string()).optional(),
+            analysis: z.object({
+              projectCount: z.number(),
+              projectStatusRelationCount: z.number(),
+              projectsWithStatusRelations: z.number(),
+              projectsWithoutStatusRelations: z.number(),
+            }),
             config: z.object({
               runType: z.enum(["base", "appointments", "legacy"]).optional(),
               baseSeedRunId: z.string().optional(),
@@ -2915,12 +2971,20 @@ export const api = {
                 .object({
                   projectContexts: z.array(
                     z.object({
-                  projectId: z.number(),
-                  modelId: z.string(),
-                  ovenId: z.string().nullable(),
+                      projectId: z.number(),
+                      modelName: z.string(),
+                      ovenName: z.string().nullable(),
                     }),
                   ),
                   employeeIds: z.array(z.number()).optional(),
+                  projectStatusAssignment: z
+                    .object({
+                      activeStatusIds: z.array(z.number()),
+                      relationCount: z.number(),
+                      projectsWithRelations: z.number(),
+                      projectsWithoutRelations: z.number(),
+                    })
+                    .optional(),
                 })
                 .optional(),
             }),

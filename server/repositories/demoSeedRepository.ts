@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
@@ -89,6 +89,34 @@ export async function getSeedRunEntities(seedRunId: string) {
     .select()
     .from(seedRunEntities)
     .where(eq(seedRunEntities.seedRunId, seedRunId));
+}
+
+export async function getProjectStatusRelationAnalysis(projectIds: number[]) {
+  if (projectIds.length === 0) {
+    return {
+      relationCount: 0,
+      projectsWithRelations: 0,
+      projectsWithoutRelations: 0,
+    };
+  }
+
+  const rows = await db
+    .select({
+      projectId: projectProjectStatus.projectId,
+      relationCount: sql<number>`count(*)`,
+    })
+    .from(projectProjectStatus)
+    .where(inArray(projectProjectStatus.projectId, projectIds))
+    .groupBy(projectProjectStatus.projectId);
+
+  const relationCount = rows.reduce((sum, row) => sum + Number(row.relationCount ?? 0), 0);
+  const projectsWithRelations = rows.length;
+
+  return {
+    relationCount,
+    projectsWithRelations,
+    projectsWithoutRelations: Math.max(0, projectIds.length - projectsWithRelations),
+  };
 }
 
 export async function getProjectAttachmentsByIds(ids: number[]) {

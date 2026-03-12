@@ -1,11 +1,12 @@
 /**
  * Test Scope:
  *
- * Feature: FT27 - Deployment-Seed fuer Admin-Stammdaten
+ * Feature: FT27/FT28 - Deployment-Seed fuer Admin-Stammdaten und Tags
  *
  * Abgedeckte Regeln:
  * - Seed-Services lesen und schreiben ihre Formate gegen einen externen Seed-Ordner.
  * - Import laeuft als Upsert ohne Duplikaterzeugung und protokolliert fehlende oder ungueltige Zeilen.
+ * - Tag-Seeds erzeugen und aktualisieren Tags duplikatsicher mit Default-Farb-Fallback.
  * - Fehlende Dateien werden pro Domaene sauber gemeldet.
  * - Parser- oder Importfehler werden nicht still verschluckt.
  *
@@ -68,6 +69,14 @@ type NoteTemplateRow = {
   version: number;
 };
 
+type TagRow = {
+  id: number;
+  name: string;
+  color: string;
+  isDefault: boolean;
+  version: number;
+};
+
 const state = vi.hoisted(() => ({
   employees: [] as EmployeeRow[],
   helpTextsYaml: [] as Array<{ help_key: string; title: string; body: string }>,
@@ -88,6 +97,7 @@ const state = vi.hoisted(() => ({
   components: [] as ComponentRow[],
   projectStatuses: [] as ProjectStatusRow[],
   noteTemplates: [] as NoteTemplateRow[],
+  tags: [] as TagRow[],
   ids: {
     employee: 1,
     productCategory: 1,
@@ -96,6 +106,7 @@ const state = vi.hoisted(() => ({
     component: 1,
     projectStatus: 1,
     noteTemplate: 1,
+    tag: 1,
   },
 }));
 
@@ -203,6 +214,19 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   }),
   listProductCategories: vi.fn(async () => [...state.productCategories]),
   listComponentCategories: vi.fn(async () => [...state.componentCategories]),
+  listTags: vi.fn(async () => [...state.tags].sort((a, b) => a.name.localeCompare(b.name))),
+  createTag: vi.fn(async ({ name, color }: { name: string; color: string }) => {
+    const row: TagRow = { id: state.ids.tag++, name, color, isDefault: false, version: 1 };
+    state.tags.push(row);
+    return row;
+  }),
+  updateTagWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { color?: string }) => {
+    const row = state.tags.find((entry) => entry.id === id && entry.version === expectedVersion);
+    if (!row) return { kind: "version_conflict" };
+    row.color = input.color ?? row.color;
+    row.version += 1;
+    return { kind: "updated", row: { ...row } };
+  }),
 }));
 
 vi.mock("../../../server/repositories/projectStatusRepository", () => ({
@@ -277,6 +301,7 @@ function resetState() {
   state.components = [];
   state.projectStatuses = [];
   state.noteTemplates = [];
+  state.tags = [];
   state.ids = {
     employee: 1,
     productCategory: 1,
@@ -285,6 +310,7 @@ function resetState() {
     component: 1,
     projectStatus: 1,
     noteTemplate: 1,
+    tag: 1,
   };
 }
 
@@ -612,5 +638,50 @@ describe("FT27 unit: master data seed services", () => {
 
     expect(state.noteTemplates.find((entry) => entry.title === "Checkliste")?.isActive).toBe(true);
     expect(state.noteTemplates.find((entry) => entry.title === "Neu")?.isActive).toBe(true);
+  });
+
+  it("exports and applies tags from the temp seed directory without duplicate creation", async () => {
+    state.tags = [{
+      id: 1,
+      name: "Bestehend",
+      color: "#111111",
+      isDefault: false,
+      version: 1,
+    }];
+    state.ids.tag = 2;
+
+    const { exportTagsSeed, applyTagsSeed } = await import("../../../server/services/seedTagsService");
+
+    await exportTagsSeed();
+    await expect(readSeedFile(tempRoot, "tags.csv")).resolves.toContain("Bestehend;#111111");
+
+    await writeSeedFile(
+      tempRoot,
+      "tags.csv",
+      "Name;Farbe\nBestehend;#222222\nNeu;\n;#333333\n",
+    );
+
+    const firstRun = await applyTagsSeed();
+    const secondRun = await applyTagsSeed();
+
+    expect(firstRun.logLines).toEqual([
+      "Tag aktualisiert: Bestehend",
+      "Tag angelegt: Neu",
+      "Tag uebersprungen: Name fehlt",
+    ]);
+    expect(secondRun.logLines).toContain("Tag aktualisiert: Neu");
+    expect(state.tags).toHaveLength(2);
+    expect(state.tags.find((entry) => entry.name === "Bestehend")?.color).toBe("#222222");
+    expect(state.tags.find((entry) => entry.name === "Neu")?.color).toBe("#2563eb");
+  });
+
+  it("reports missing tag seed files", async () => {
+    const { applyTagsSeed } = await import("../../../server/services/seedTagsService");
+
+    await expect(applyTagsSeed()).resolves.toEqual({
+      sourceFile: "tags.csv",
+      exists: false,
+      logLines: ["Quelldatei fehlt: tags.csv"],
+    });
   });
 });

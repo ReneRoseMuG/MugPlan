@@ -14,6 +14,15 @@ interface StatusFormData {
   isActive: boolean;
 }
 
+async function invalidateProjectStatusQueries() {
+  await queryClient.invalidateQueries({
+    predicate: (query) => {
+      const firstKey = query.queryKey[0];
+      return typeof firstKey === "string" && firstKey.startsWith("/api/project-status");
+    },
+  });
+}
+
 export function ProjectStatusPage() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -27,8 +36,8 @@ export function ProjectStatusPage() {
     mutationFn: async (data: Omit<StatusFormData, 'isActive'>) => {
       return apiRequest("POST", "/api/project-status", data);
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
+    onSuccess: async () => {
+      await invalidateProjectStatusQueries();
       handleCloseDialog();
     },
   });
@@ -40,8 +49,8 @@ export function ProjectStatusPage() {
         version: status.version,
       });
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
+    onSuccess: async () => {
+      await invalidateProjectStatusQueries();
       handleCloseDialog();
     },
     onError: (error) => {
@@ -65,8 +74,8 @@ export function ProjectStatusPage() {
         version: status.version,
       });
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
+    onSuccess: async () => {
+      await invalidateProjectStatusQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);
@@ -88,8 +97,8 @@ export function ProjectStatusPage() {
         version: status.version,
       });
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/project-status?active=all"] });
+    onSuccess: async () => {
+      await invalidateProjectStatusQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);

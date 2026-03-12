@@ -67,36 +67,45 @@ export async function getComponentSeedStatus(): Promise<SeedFileStatus> {
 
 export async function exportProductManagementSeed(): Promise<SeedExecutionResult> {
   const products = await masterDataRepository.listProducts("all");
-  const productCategories = await masterDataRepository.listProductCategories("all");
-  const productCategoryNameById = new Map(productCategories.map((category) => [category.id, category.name]));
-  await writeSeedFileUtf8(
-    PRODUCTS_FILE_NAME,
-    stringifyCsv(
-      ["Name", "Beschreibung", "Kategorie"],
-      products.map((product) => [product.name, product.description ?? "", productCategoryNameById.get(product.categoryId) ?? ""]),
-    ),
-  );
-
   const components = await masterDataRepository.listComponents("all");
-  const componentCategories = await masterDataRepository.listComponentCategories("all");
-  const componentCategoryNameById = new Map(componentCategories.map((category) => [category.id, category.name]));
-  await writeSeedFileUtf8(
-    COMPONENTS_FILE_NAME,
-    stringifyCsv(
-      ["Name", "Beschreibung", "Kategorie"],
-      components.map((component) => [component.name, component.description ?? "", componentCategoryNameById.get(component.categoryId) ?? ""]),
-    ),
-  );
+  const logLines: string[] = [];
+
+  if (products.length > 0) {
+    const productCategories = await masterDataRepository.listProductCategories("all");
+    const productCategoryNameById = new Map(productCategories.map((category) => [category.id, category.name]));
+    await writeSeedFileUtf8(
+      PRODUCTS_FILE_NAME,
+      stringifyCsv(
+        ["Name", "Beschreibung", "Kategorie"],
+        products.map((product) => [product.name, product.description ?? "", productCategoryNameById.get(product.categoryId) ?? ""]),
+      ),
+    );
+    logLines.push(`Export geschrieben: ${PRODUCTS_FILE_NAME}`);
+    logLines.push(`Produkte exportiert: ${products.length}`);
+  } else {
+    logLines.push(`Kein Export geschrieben: ${PRODUCTS_FILE_NAME} (keine Produkte vorhanden)`);
+  }
+
+  if (components.length > 0) {
+    const componentCategories = await masterDataRepository.listComponentCategories("all");
+    const componentCategoryNameById = new Map(componentCategories.map((category) => [category.id, category.name]));
+    await writeSeedFileUtf8(
+      COMPONENTS_FILE_NAME,
+      stringifyCsv(
+        ["Name", "Beschreibung", "Kategorie"],
+        components.map((component) => [component.name, component.description ?? "", componentCategoryNameById.get(component.categoryId) ?? ""]),
+      ),
+    );
+    logLines.push(`Export geschrieben: ${COMPONENTS_FILE_NAME}`);
+    logLines.push(`Komponenten exportiert: ${components.length}`);
+  } else {
+    logLines.push(`Kein Export geschrieben: ${COMPONENTS_FILE_NAME} (keine Komponenten vorhanden)`);
+  }
 
   return {
     sourceFile: PRODUCTS_FILE_NAME,
-    exists: true,
-    logLines: [
-      `Export geschrieben: ${PRODUCTS_FILE_NAME}`,
-      `Export geschrieben: ${COMPONENTS_FILE_NAME}`,
-      `Produkte exportiert: ${products.length}`,
-      `Komponenten exportiert: ${components.length}`,
-    ],
+    exists: products.length > 0 || components.length > 0,
+    logLines,
   };
 }
 

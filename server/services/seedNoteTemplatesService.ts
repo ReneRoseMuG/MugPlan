@@ -14,6 +14,13 @@ export async function getNoteTemplatesSeedStatus(): Promise<SeedFileStatus> {
 
 export async function exportNoteTemplatesSeed(): Promise<SeedExecutionResult> {
   const templates = await noteTemplatesRepository.getNoteTemplates(false);
+  if (templates.length === 0) {
+    return {
+      sourceFile: FILE_NAME,
+      exists: false,
+      logLines: [`Kein Export geschrieben: ${FILE_NAME} (keine Notiz Vorlagen vorhanden)`],
+    };
+  }
   const content = stringifyCsv(
     ["Titel", "Inhalt", "Farbe", "Drucken", "Sortierreihenfolge", "Status"],
     templates.map((template) => [

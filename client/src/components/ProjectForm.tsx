@@ -181,13 +181,23 @@ export function ProjectForm({
   });
 
   // Fetch project statuses assigned to this project
-  const { data: assignedStatuses = [], isLoading: statusesLoading } = useQuery<ProjectStatusRelationItem[]>({
+  const {
+    data: assignedStatuses = [],
+    isLoading: assignedStatusesLoading,
+    isError: assignedStatusesError,
+    error: assignedStatusesQueryError,
+  } = useQuery<ProjectStatusRelationItem[]>({
     queryKey: ['/api/projects', projectId, 'statuses'],
     enabled: isEditing,
   });
 
   // Fetch all available project statuses
-  const { data: allStatuses = [] } = useQuery<ProjectStatus[]>({
+  const {
+    data: allStatuses = [],
+    isLoading: allStatusesLoading,
+    isError: allStatusesError,
+    error: allStatusesQueryError,
+  } = useQuery<ProjectStatus[]>({
     queryKey: ['/api/project-status'],
   });
   const masterDataScope = isAdmin ? "all" : "active";
@@ -312,6 +322,14 @@ export function ProjectForm({
     selectedComponentDialogField && selectedComponentDialogField.source === "component"
       ? selectedComponentDialogField.categoryName
       : null;
+  const statusPanelLoading = assignedStatusesLoading || allStatusesLoading;
+  const statusPanelLoadErrorMessage = assignedStatusesError || allStatusesError
+    ? (assignedStatusesQueryError instanceof Error
+      ? assignedStatusesQueryError.message
+      : allStatusesQueryError instanceof Error
+        ? allStatusesQueryError.message
+        : "Projektstatus konnten nicht geladen werden.")
+    : null;
 
   useEffect(() => {
     if (!isEditing || !projectData || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
@@ -1172,7 +1190,8 @@ export function ProjectForm({
               <ProjectStatusPanel
                 assignedStatuses={assignedStatuses}
                 availableStatuses={allStatuses}
-                isLoading={statusesLoading}
+                isLoading={statusPanelLoading}
+                loadErrorMessage={statusPanelLoadErrorMessage}
                 className="h-full"
                 canEdit={canManageProjectStatuses}
                 onAdd={(statusId) => {
