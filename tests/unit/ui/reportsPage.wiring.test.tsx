@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - ReportsPage verdrahtet den Vorlaufliste-HelpKey, den Generate-Button und die beiden Datumsfelder als Date-Picker.
+ * - Die Reports-Tabelle nutzt den gemeinsamen sticky TableView-Rahmen inklusive Tabellen-Footer.
  * - Home und Sidebar binden die neue Reports-Hauptansicht nur fuer Admin/Disponent ein.
  *
  * Fehlerfaelle:
@@ -39,6 +40,8 @@ describe("FT26 reports page wiring", () => {
     expect(reportsPageSource).toContain("Report erzeugen");
     expect(reportsPageSource).toContain("const REPORT_PAGE_SIZE = 100;");
     expect(reportsPageSource).toContain("enabled: submittedFilters !== null");
+    expect(reportsPageSource).toContain("footerSlot={tableFooter}");
+    expect(reportsPageSource).toContain("stickyHeader");
   });
 
   it("registers reports view in home and sidebar for admin or dispatcher", () => {

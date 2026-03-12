@@ -252,6 +252,31 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
       fallbackBody="Es sind aktuell keine Hilfetexte in dieser Liste vorhanden."
     />
   );
+  const tableFooter = (
+    <div className="flex justify-between items-center">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setImportExportDialogOpen(true)}
+          className="flex items-center gap-2"
+          data-testid="button-helptexts-import-export"
+        >
+          <Upload className="w-4 h-4" />
+          Import/Export
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onCreateHelpText}
+          className="flex items-center gap-2"
+          data-testid="button-new-helptext"
+        >
+          <Plus className="w-4 h-4" />
+          Neuer Hilfetext
+        </Button>
+      </div>
+    </div>
+  );
+  const layoutFooter = viewMode === "board" ? tableFooter : undefined;
 
   return (
     <>
@@ -283,30 +308,7 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
             </ToggleGroupItem>
           </ToggleGroup>
         }
-        footerSlot={
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setImportExportDialogOpen(true)}
-                className="flex items-center gap-2"
-                data-testid="button-helptexts-import-export"
-              >
-                <Upload className="w-4 h-4" />
-                Import/Export
-              </Button>
-              <Button
-                variant="outline"
-                onClick={onCreateHelpText}
-                className="flex items-center gap-2"
-                data-testid="button-new-helptext"
-              >
-                <Plus className="w-4 h-4" />
-                Neuer Hilfetext
-              </Button>
-            </div>
-          </div>
-        }
+        footerSlot={layoutFooter}
         contentSlot={
           viewMode === "board" ? (
             <BoardView
@@ -368,6 +370,7 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
                 </div>
               )}
               emptyState={emptyState}
+              footerSlot={tableFooter}
               stickyHeader
             />
           )

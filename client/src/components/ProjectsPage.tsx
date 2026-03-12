@@ -24,6 +24,7 @@ import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { domainIcons } from "@/lib/domain-icons";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
+import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
@@ -327,6 +328,37 @@ export function ProjectsPage({
 
   const ProjectsIcon = domainIcons.projects;
   const CustomersIcon = domainIcons.customers;
+  const tableFooter = (
+    <ListPagingFooter
+      summaryText={`${data?.total ?? 0} Eintraege`}
+      page={page}
+      totalPages={totalPages}
+      canGoPrev={canGoPrev}
+      canGoNext={canGoNext}
+      onPrev={() => canGoPrev && setPage((current) => current - 1)}
+      onNext={() => canGoNext && setPage((current) => current + 1)}
+      prevTestId="button-projects-page-prev"
+      nextTestId="button-projects-page-next"
+      stateTestId="text-projects-page-state"
+      leadingSlot={onNewProject ? (
+        <Button
+          variant="outline"
+          onClick={onNewProject}
+          className="flex items-center gap-2"
+          data-testid="button-new-project"
+        >
+          <Plus className="w-4 h-4" />
+          Neues Projekt
+        </Button>
+      ) : undefined}
+      trailingSlot={onCancel ? (
+        <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-projects">
+          Schliessen
+        </Button>
+      ) : undefined}
+    />
+  );
+  const layoutFooter = tableFooter;
 
   return (
     <>
@@ -381,56 +413,7 @@ export function ProjectsPage({
             </ToggleGroupItem>
           </ToggleGroup>
         )}
-        footerSlot={(
-          <div className="flex justify-between items-center gap-4">
-            {onNewProject ? (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={onNewProject}
-                  className="flex items-center gap-2"
-                  data-testid="button-new-project"
-                >
-                  <Plus className="w-4 h-4" />
-                  Neues Projekt
-                </Button>
-              </div>
-            ) : <span />}
-
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-muted-foreground" data-testid="text-projects-page-state">
-                {data?.total ?? 0} Eintraege - Seite {totalPages === 0 ? 0 : page} von {totalPages}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => canGoPrev && setPage((current) => current - 1)}
-                  disabled={!canGoPrev}
-                  data-testid="button-projects-page-prev"
-                >
-                  Zurueck
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => canGoNext && setPage((current) => current + 1)}
-                  disabled={!canGoNext}
-                  data-testid="button-projects-page-next"
-                >
-                  Weiter
-                </Button>
-              </div>
-              {onCancel ? (
-                <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-projects">
-                  Schliessen
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        )}
+        footerSlot={layoutFooter}
         contentSlot={
           !tableOnly && viewMode === "board" ? (
             <BoardView

@@ -11,6 +11,7 @@ import { ListLayout } from "@/components/ui/list-layout";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type VorlauflisteItem = {
   projectId: number;
@@ -211,6 +212,20 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
   const hasReport = submittedFilters !== null;
+  const tableFooter = (
+    <ListPagingFooter
+      summaryText={`${data?.total ?? 0} Eintraege`}
+      page={page}
+      totalPages={totalPages}
+      canGoPrev={canGoPrev}
+      canGoNext={canGoNext}
+      onPrev={() => canGoPrev && setPage((current) => current - 1)}
+      onNext={() => canGoNext && setPage((current) => current + 1)}
+      prevTestId="button-reports-vorlaufliste-page-prev"
+      nextTestId="button-reports-vorlaufliste-page-next"
+      stateTestId="text-reports-vorlaufliste-page-state"
+    />
+  );
 
   return (
     <div className="h-full w-full">
@@ -222,10 +237,10 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         showCloseButton={Boolean(onCancel)}
         isLoading={isLoading}
         className="h-full w-full"
-        filterPlacement="top"
         filterSlot={(
           <div className="flex w-full flex-col gap-4" data-testid="reports-vorlaufliste-panel">
-            <div className="flex w-full flex-wrap items-end gap-4">
+            <div className="flex w-full flex-wrap items-end justify-between gap-4">
+              <div className="flex flex-wrap items-end gap-4">
               <div className="flex w-[150px] flex-none flex-col gap-1">
                 <Label htmlFor="reports-vorlaufliste-from-date">Datum Beginn</Label>
                 <Input
@@ -278,6 +293,11 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   Report erzeugen
                 </Button>
               </div>
+              </div>
+
+              <div className="flex items-end">
+                {tableFooter}
+              </div>
             </div>
           </div>
         )}
@@ -296,36 +316,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   : "Waehlen Sie mindestens ein Datum Beginn und erzeugen Sie den Report."}
               />
             )}
+            stickyHeader
           />
-        )}
-        footerSlot={(
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground" data-testid="text-reports-vorlaufliste-page-state">
-              {data?.total ?? 0} Eintraege - Seite {totalPages === 0 ? 0 : page} von {totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => canGoPrev && setPage((current) => current - 1)}
-                disabled={!canGoPrev}
-                data-testid="button-reports-vorlaufliste-page-prev"
-              >
-                Zurueck
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => canGoNext && setPage((current) => current + 1)}
-                disabled={!canGoNext}
-                data-testid="button-reports-vorlaufliste-page-next"
-              >
-                Weiter
-              </Button>
-            </div>
-          </div>
         )}
       />
     </div>

@@ -8,13 +8,13 @@ import {
   AppointmentsFilterPanel,
   type AppointmentListFilters,
 } from "@/components/ui/filter-panels/appointments-filter-panel";
-import { Button } from "@/components/ui/button";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import type { Tag, Tour } from "@shared/schema";
 import { domainIcons } from "@/lib/domain-icons";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
+import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type AppointmentListItem = CalendarAppointment & {
   startTimeHour: number | null;
@@ -372,6 +372,20 @@ export function AppointmentsListPage({
   );
 
   const AppointmentsIcon = domainIcons.appointmentsList;
+  const tableFooter = (
+    <ListPagingFooter
+      summaryText={`${data?.total ?? 0} Eintraege`}
+      page={page}
+      totalPages={totalPages}
+      canGoPrev={canGoPrev}
+      canGoNext={canGoNext}
+      onPrev={() => canGoPrev && setPage((current) => current - 1)}
+      onNext={() => canGoNext && setPage((current) => current + 1)}
+      prevTestId="button-appointments-page-prev"
+      nextTestId="button-appointments-page-next"
+      stateTestId="text-appointments-page-state"
+    />
+  );
 
   return (
     <ListLayout
@@ -399,38 +413,7 @@ export function AppointmentsListPage({
           hideTourFilter={resolvedHideTourFilter}
         />
       }
-      footerSlot={
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            {data?.total ?? 0} Eintraege - {DEFAULT_PAGE_SIZE} pro Seite
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => canGoPrev && setPage((current) => current - 1)}
-              disabled={!canGoPrev}
-              data-testid="button-appointments-page-prev"
-            >
-              Zurueck
-            </Button>
-            <span className="text-sm text-muted-foreground" data-testid="text-appointments-page-state">
-              Seite {totalPages === 0 ? 0 : page} von {totalPages}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => canGoNext && setPage((current) => current + 1)}
-              disabled={!canGoNext}
-              data-testid="button-appointments-page-next"
-            >
-              Weiter
-            </Button>
-          </div>
-        </div>
-      }
+      footerSlot={tableFooter}
       contentSlot={
         <TableView
           testId="table-appointments-list"

@@ -21,6 +21,7 @@ import type { Customer, Tag } from "@shared/schema";
 import { domainIcons } from "@/lib/domain-icons";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { CustomerTableHoverPreview } from "@/components/ui/table-hover-previews";
+import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
@@ -308,6 +309,37 @@ export function CustomersPage({
   );
 
   const CustomersIcon = domainIcons.customers;
+  const tableFooter = (
+    <ListPagingFooter
+      summaryText={`${data?.total ?? 0} Eintraege`}
+      page={page}
+      totalPages={totalPages}
+      canGoPrev={canGoPrev}
+      canGoNext={canGoNext}
+      onPrev={() => canGoPrev && setPage((current) => current - 1)}
+      onNext={() => canGoNext && setPage((current) => current + 1)}
+      prevTestId="button-customers-page-prev"
+      nextTestId="button-customers-page-next"
+      stateTestId="text-customers-page-state"
+      leadingSlot={onNewCustomer ? (
+        <Button
+          variant="outline"
+          onClick={onNewCustomer}
+          className="flex items-center gap-2"
+          data-testid="button-new-customer"
+        >
+          <Plus className="w-4 h-4" />
+          Neuer Kunde
+        </Button>
+      ) : undefined}
+      trailingSlot={onCancel ? (
+        <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-customers">
+          Schliessen
+        </Button>
+      ) : undefined}
+    />
+  );
+  const layoutFooter = tableFooter;
 
   return (
     <>
@@ -356,56 +388,7 @@ export function CustomersPage({
             </ToggleGroupItem>
           </ToggleGroup>
         )}
-        footerSlot={(
-          <div className="flex justify-between items-center gap-4">
-            {onNewCustomer ? (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={onNewCustomer}
-                  className="flex items-center gap-2"
-                  data-testid="button-new-customer"
-                >
-                  <Plus className="w-4 h-4" />
-                  Neuer Kunde
-                </Button>
-              </div>
-            ) : <span />}
-
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-muted-foreground" data-testid="text-customers-page-state">
-                {data?.total ?? 0} Eintraege - Seite {totalPages === 0 ? 0 : page} von {totalPages}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => canGoPrev && setPage((current) => current - 1)}
-                  disabled={!canGoPrev}
-                  data-testid="button-customers-page-prev"
-                >
-                  Zurueck
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => canGoNext && setPage((current) => current + 1)}
-                  disabled={!canGoNext}
-                  data-testid="button-customers-page-next"
-                >
-                  Weiter
-                </Button>
-              </div>
-              {onCancel ? (
-                <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-customers">
-                  Schliessen
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        )}
+        footerSlot={layoutFooter}
         contentSlot={
           !tableOnly && viewMode === "board" ? (
             <BoardView

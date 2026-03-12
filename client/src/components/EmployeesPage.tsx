@@ -457,6 +457,31 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
       fallbackBody="Es sind aktuell keine Mitarbeiter in dieser Liste vorhanden."
     />
   );
+  const tableFooter = (
+    <div className="flex flex-wrap items-center gap-2">
+      {isAdmin && (
+        <Button
+          variant="outline"
+          onClick={openImportDialog}
+          className="flex items-center gap-2"
+          data-testid="button-open-employee-import-dialog"
+        >
+          <Upload className="w-4 h-4" />
+          Import
+        </Button>
+      )}
+      <Button
+        variant="outline"
+        onClick={handleOpenCreate}
+        className="flex items-center gap-2"
+        data-testid="button-new-employee"
+      >
+        <Plus className="w-4 h-4" />
+        Neuer Mitarbeiter
+      </Button>
+    </div>
+  );
+  const layoutFooter = viewMode === "board" ? tableFooter : undefined;
 
   return (
     <>
@@ -495,30 +520,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
             </ToggleGroupItem>
           </ToggleGroup>
         }
-        footerSlot={
-          <div className="flex flex-wrap items-center gap-2">
-            {isAdmin && (
-              <Button
-                variant="outline"
-                onClick={openImportDialog}
-                className="flex items-center gap-2"
-                data-testid="button-open-employee-import-dialog"
-              >
-                <Upload className="w-4 h-4" />
-                Import
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={handleOpenCreate}
-              className="flex items-center gap-2"
-              data-testid="button-new-employee"
-            >
-              <Plus className="w-4 h-4" />
-              Neuer Mitarbeiter
-            </Button>
-          </div>
-        }
+        footerSlot={layoutFooter}
         contentSlot={
           viewMode === "board" ? (
           <BoardView
@@ -637,6 +639,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                 return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
               }}
               emptyState={emptyState}
+              footerSlot={tableFooter}
               stickyHeader
             />
           )
