@@ -234,6 +234,7 @@ export function DemoDataPage() {
     () => runs.filter((run) => (run.runType ?? run.summary.runType) === "base"),
     [runs],
   );
+  const baseRunIds = useMemo(() => new Set(baseRuns.map((run) => run.seedRunId)), [baseRuns]);
   const latestBaseRunId = useMemo(() => {
     if (baseRuns.length === 0) return "";
     return baseRuns[baseRuns.length - 1]?.seedRunId ?? "";
@@ -272,10 +273,24 @@ export function DemoDataPage() {
 
   useEffect(() => {
     if (!settingsHydrated) return;
-    if (appointmentBaseSeedRunId.trim().length > 0) return;
-    if (!latestBaseRunId) return;
-    setFormState((current) => ({ ...current, appointmentBaseSeedRunId: latestBaseRunId }));
-  }, [appointmentBaseSeedRunId, latestBaseRunId, settingsHydrated]);
+    const selectedBaseRunId = appointmentBaseSeedRunId.trim();
+    if (selectedBaseRunId.length === 0) {
+      if (!latestBaseRunId) return;
+      setFormState((current) => ({ ...current, appointmentBaseSeedRunId: latestBaseRunId }));
+      return;
+    }
+    if (baseRunIds.has(selectedBaseRunId)) return;
+    setFormState((current) => ({
+      ...current,
+      appointmentBaseSeedRunId: latestBaseRunId,
+    }));
+  }, [appointmentBaseSeedRunId, baseRunIds, latestBaseRunId, settingsHydrated]);
+
+  useEffect(() => {
+    if (!lastResult) return;
+    if (runs.some((run) => run.seedRunId === lastResult.seedRunId)) return;
+    setLastResult(null);
+  }, [lastResult, runs]);
 
   useEffect(() => {
     if (!settingsHydrated) return;
@@ -392,12 +407,18 @@ export function DemoDataPage() {
 
   const submitAppointmentsConfig = () => {
     const baseSeedRunId = appointmentBaseSeedRunId.trim() || latestBaseRunId;
-    if (!baseSeedRunId) {
+    if (!baseSeedRunId || !baseRunIds.has(baseSeedRunId)) {
       toast({
         title: "Basis-Run fehlt",
-        description: "Bitte zuerst einen Basisdaten-Run auswaehlen.",
+        description: "Bitte einen vorhandenen Basisdaten-Run auswaehlen.",
         variant: "destructive",
       });
+      if (appointmentBaseSeedRunId.trim().length > 0 && appointmentBaseSeedRunId.trim() !== latestBaseRunId) {
+        setFormState((current) => ({
+          ...current,
+          appointmentBaseSeedRunId: latestBaseRunId,
+        }));
+      }
       return;
     }
     const numericSeed = appointmentsRandomSeed.trim() === "" ? undefined : Number(appointmentsRandomSeed);

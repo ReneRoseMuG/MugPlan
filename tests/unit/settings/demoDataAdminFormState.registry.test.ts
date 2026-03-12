@@ -32,9 +32,6 @@ describe("FT20 settings registry: demoData.adminFormState", () => {
       baseGenerateAttachments: true,
       baseRandomSeed: "",
       baseLocale: "de",
-      baseProjectStatuses: [
-        { title: "Neu", color: "#2563eb", description: "" },
-      ],
       appointmentBaseSeedRunId: "",
       appointmentsPerProject: 1,
       appointmentsRandomSeed: "",
@@ -47,6 +44,10 @@ describe("FT20 settings registry: demoData.adminFormState", () => {
     });
 
     expect(setting.validate(validState)).toBe(true);
+    expect(setting.validate(JSON.stringify({
+      ...JSON.parse(validState),
+      baseProjectStatuses: [{ title: "Neu", color: "#2563eb", description: "" }],
+    }))).toBe(true);
     expect(setting.validate("{")).toBe(false);
     expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), baseCustomers: undefined }))).toBe(false);
     expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), reklShare: "0.33" }))).toBe(false);

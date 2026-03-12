@@ -126,6 +126,7 @@ function isValidDemoDataAdminFormState(value: unknown): value is string {
     if (typeof parsed.appointmentsLocale !== "string") return false;
     if (typeof parsed.reklShare !== "number" || !Number.isFinite(parsed.reklShare)) return false;
 
+    if (parsed.baseProjectStatuses === undefined) return true;
     if (!Array.isArray(parsed.baseProjectStatuses)) return false;
     return parsed.baseProjectStatuses.every((entry) => {
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
