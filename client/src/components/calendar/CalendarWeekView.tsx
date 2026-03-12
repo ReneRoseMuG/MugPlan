@@ -291,14 +291,6 @@ export function CalendarWeekView({
     return map;
   }, [employees]);
 
-  const unassignedMembers = useMemo(
-    () => employees
-      .filter((employee) => !employee.tourId)
-      .map((employee) => ({ id: employee.id, fullName: employee.fullName }))
-      .sort((a, b) => a.fullName.localeCompare(b.fullName, "de", { sensitivity: "base" })),
-    [employees],
-  );
-
   const lanesByWeekStart = useMemo(() => {
     const map = new Map<string, WeekTourLane[]>();
 
@@ -333,7 +325,7 @@ export function CalendarWeekView({
         label: "Ohne Tour",
         color: CALENDAR_UNASSIGNED_TOUR_COLOR,
         tourId: null,
-        members: unassignedMembers,
+        members: [],
         dayBuckets: Array.from({ length: 7 }, (_, dayIndex) => ({
           dayIndex,
           dateKey: format(addDays(weekStart, dayIndex), "yyyy-MM-dd"),
@@ -374,7 +366,7 @@ export function CalendarWeekView({
     });
 
     return map;
-  }, [appointments, appointmentsById, membersByTourId, tours, unassignedMembers, weekStarts]);
+  }, [appointments, appointmentsById, membersByTourId, tours, weekStarts]);
 
   const getLaneRenderData = (tourLane: WeekTourLane): WeekLaneRenderData =>
     buildWeekLaneRenderData(tourLane, appointmentsById);
