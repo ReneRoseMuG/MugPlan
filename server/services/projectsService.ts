@@ -2,6 +2,8 @@ import type { Customer, InsertProject, Project, UpdateProject } from "@shared/sc
 import type { InsertProjectOrderItem, ProjectOrderItem, UpdateProjectOrderItem } from "@shared/schema";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as customersRepository from "../repositories/customersRepository";
+import type { CanonicalRoleKey } from "../settings/registry";
+import * as tagRelationsService from "./tagRelationsService";
 
 export class ProjectsError extends Error {
   status: number;
@@ -9,6 +11,7 @@ export class ProjectsError extends Error {
     | "VERSION_CONFLICT"
     | "BUSINESS_CONFLICT"
     | "NOT_FOUND"
+    | "FORBIDDEN"
     | "VALIDATION_ERROR"
     | "INACTIVE_ENTITY_ASSIGNMENT";
 
@@ -18,6 +21,7 @@ export class ProjectsError extends Error {
       | "VERSION_CONFLICT"
       | "BUSINESS_CONFLICT"
       | "NOT_FOUND"
+      | "FORBIDDEN"
       | "VALIDATION_ERROR"
       | "INACTIVE_ENTITY_ASSIGNMENT",
   ) {
@@ -31,17 +35,25 @@ export type ProjectScope = "upcoming" | "noAppointments" | "all";
 export type ProjectListItem = projectsRepository.ProjectListItem;
 export type ProjectBoardListResult = projectsRepository.ProjectBoardListResult;
 
+function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
+  if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
+    throw new ProjectsError(403, "FORBIDDEN");
+  }
+}
+
 export async function listProjects(
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
+  tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
-  return projectsRepository.getProjects(filter, statusIds, scope);
+  return projectsRepository.getProjects(filter, statusIds, tagIds, scope);
 }
 
 export async function listProjectsPaged(params: {
   filter: "active" | "inactive" | "all";
   statusIds: number[];
+  tagIds: number[];
   scope: ProjectScope;
   customerId?: number;
   title?: string;
@@ -58,12 +70,13 @@ export async function listProjectsByCustomer(
   customerId: number,
   filter: "active" | "inactive" | "all" = "all",
   statusIds: number[] = [],
+  tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
 ): Promise<ProjectListItem[]> {
-  return projectsRepository.getProjectsByCustomer(customerId, filter, statusIds, scope);
+  return projectsRepository.getProjectsByCustomer(customerId, filter, statusIds, tagIds, scope);
 }
 
-export async function getProject(id: number): Promise<Project | null> {
+export async function getProject(id: number): Promise<projectsRepository.ProjectWithTags | null> {
   return projectsRepository.getProject(id);
 }
 
@@ -73,7 +86,7 @@ export async function isOrderNumberAlreadyImported(orderNumber: string): Promise
 
 export async function getProjectWithCustomer(
   id: number,
-): Promise<{ project: Project; customer: Customer } | null> {
+): Promise<{ project: projectsRepository.ProjectWithTags; customer: Customer } | null> {
   return projectsRepository.getProjectWithCustomer(id);
 }
 
@@ -177,6 +190,49 @@ export async function deleteProject(id: number, expectedVersion: number): Promis
   if (result.kind === "business_conflict") {
     throw new ProjectsError(409, "BUSINESS_CONFLICT");
   }
+}
+
+export async function listProjectTagRelations(projectId: number) {
+  const project = await projectsRepository.getProject(projectId);
+  if (!project) return null;
+  return tagRelationsService.listTagRelations("project", projectId);
+}
+
+export async function addProjectTag(
+  projectId: number,
+  tagId: number,
+  roleKey: CanonicalRoleKey,
+) {
+  requireDispatcherOrAdmin(roleKey);
+  const project = await projectsRepository.getProject(projectId);
+  if (!project) return null;
+  const tag = await tagRelationsService.getTagById(tagId);
+  if (!tag) {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+  return tagRelationsService.addTagRelation("project", projectId, tagId);
+}
+
+export async function removeProjectTag(
+  projectId: number,
+  tagId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+) {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const project = await projectsRepository.getProject(projectId);
+  if (!project) return null;
+  const result = await tagRelationsService.removeTagRelation("project", projectId, tagId, expectedVersion);
+  if (result.kind === "version_conflict") {
+    throw new ProjectsError(409, "VERSION_CONFLICT");
+  }
+  if (result.kind === "not_found") {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+  return;
 }
 
 export async function listProjectOrderItems(projectId: number): Promise<ProjectOrderItem[]> {

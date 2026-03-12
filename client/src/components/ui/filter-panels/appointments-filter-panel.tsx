@@ -5,13 +5,15 @@ import { Input } from "@/components/ui/input";
 import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Customer, Employee, Project, Tour } from "@shared/schema";
+import { TagFilterInput } from "@/components/filters/tag-filter-input";
+import type { Customer, Employee, Project, Tag, Tour } from "@shared/schema";
 
 export type AppointmentListFilters = {
   employeeId?: number;
   projectId?: number;
   customerId?: number;
   orderNumber: string;
+  tagIds: number[];
   tourId?: number;
   dateFrom?: string;
   dateTo?: string;
@@ -27,6 +29,10 @@ interface AppointmentsFilterPanelProps {
   projects: Project[];
   customers: Customer[];
   tours: Tour[];
+  selectedTags: Tag[];
+  availableTags: Tag[];
+  tagPickerOpen: boolean;
+  onTagPickerOpenChange: (open: boolean) => void;
   hideEmployeeFilter?: boolean;
   hideTourFilter?: boolean;
 }
@@ -45,6 +51,10 @@ export function AppointmentsFilterPanel({
   projects,
   customers,
   tours,
+  selectedTags,
+  availableTags,
+  tagPickerOpen,
+  onTagPickerOpenChange,
   hideEmployeeFilter = false,
   hideTourFilter = false,
 }: AppointmentsFilterPanelProps) {
@@ -144,6 +154,17 @@ export function AppointmentsFilterPanel({
             </Select>
           </div>
         )}
+        <TagFilterInput
+          selectedTags={selectedTags}
+          availableTags={availableTags}
+          isOpen={tagPickerOpen}
+          onOpenChange={onTagPickerOpenChange}
+          onAddTag={(tagId) => onChange({ tagIds: [...filters.tagIds, tagId] })}
+          onRemoveTag={(tagId) => onChange({ tagIds: filters.tagIds.filter((id) => id !== tagId) })}
+          helpKey="appointments.filter.tags"
+          addButtonTestId="button-add-appointment-tag-filter"
+          testIdPrefix="appointment-filter-tag"
+        />
       </FilterPanel>
 
       <FilterPanel title="Datums- und Statusfilter" layout="row">

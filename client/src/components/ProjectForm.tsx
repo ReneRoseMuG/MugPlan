@@ -16,6 +16,7 @@ import {
 } from "@/components/DocumentExtractionDialog";
 import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
+import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { DEFAULT_PROJECT_TYPE, resolveProjectEditForm } from "@/lib/project-edit-form";
 import {
   buildPersistedProjectDescription,
@@ -52,7 +54,7 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, ProjectStatus, Component, ComponentCategory, ProjectOrderItem, Product } from "@shared/schema";
+import type { Project, Customer, Note, ProjectStatus, Component, ComponentCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
 import type { ProjectStatusRelationItem } from "@shared/routes";
 
 interface ProjectFormProps {
@@ -87,22 +89,7 @@ export function ProjectForm({
   const { toast } = useToast();
   const isEditing = !!projectId;
   const invalidateAppointmentProjectionQueries = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: ["calendarAppointments"],
-    });
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        const key = query.queryKey[0];
-        return key === "appointments-list"
-          || key === "/api/projects/list"
-          || key === "/api/customers/list"
-          || key === "projects-page-appointments"
-          || key === "customers-page-appointments"
-          || key === "employees-page-appointments"
-          || key === "customerAppointments"
-          || key === "projectAppointments";
-      },
-    });
+    await invalidateTagProjectionQueries();
   };
   const invalidateProjectQueries = async () => {
     await queryClient.invalidateQueries({
@@ -140,6 +127,7 @@ export function ProjectForm({
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canManageProjectStatuses = isAdmin || userRole === "DISPATCHER";
+  const canManageProjectTags = isAdmin || userRole === "DISPATCHER";
 
   const buildFormSnapshot = (input: {
     name: string;
@@ -166,6 +154,18 @@ export function ProjectForm({
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
     queryKey: ['/api/projects', projectId],
+    enabled: isEditing,
+  });
+  const {
+    data: assignedTags = [],
+    isLoading: assignedTagsLoading,
+    error: assignedTagsError,
+  } = useQuery<TagRelationItem[]>({
+    queryKey: ['/api/projects', projectId, 'tags'],
+    enabled: isEditing,
+  });
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ['/api/tags'],
     enabled: isEditing,
   });
 
@@ -841,6 +841,44 @@ export function ProjectForm({
       }
     },
   });
+  const addProjectTagMutation = useMutation({
+    mutationFn: async (tagId: number) => {
+      const response = await apiRequest('POST', `/api/projects/${projectId}/tags`, { tagId });
+      return response.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+      void invalidateProjectQueries();
+    },
+    onError: (error) => {
+      toast({
+        title: "Tag-Zuweisung fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeProjectTagMutation = useMutation({
+    mutationFn: async (item: TagRelationItem) => {
+      await apiRequest('DELETE', `/api/projects/${projectId}/tags/${item.tag.id}`, {
+        version: item.relationVersion,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+      void invalidateProjectQueries();
+    },
+    onError: (error) => {
+      toast({
+        title: "Tag konnte nicht entfernt werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    },
+  });
 
   const deleteProjectMutation = useMutation({
     mutationFn: async () => {
@@ -1316,6 +1354,20 @@ export function ProjectForm({
 
           {/* Rechte Spalte: Termine und Dokumente */}
           <div className="space-y-6">
+              {isEditing ? (
+                <TagPickerPanel
+                  assignedTags={assignedTags}
+                  availableTags={availableTags}
+                  isLoading={assignedTagsLoading}
+                  loadErrorMessage={assignedTagsError instanceof Error ? assignedTagsError.message : null}
+                  canEdit={canManageProjectTags}
+                  title="Tags"
+                  addDialogTitle="Tag zu Projekt hinzufügen"
+                  testIdPrefix="project-tag-picker"
+                  onAdd={(tagId) => addProjectTagMutation.mutate(tagId)}
+                  onRemove={(item) => removeProjectTagMutation.mutate(item)}
+                />
+              ) : null}
               <ProjectAppointmentsPanel
                 projectId={projectId}
                 projectName={projectNamePreview}

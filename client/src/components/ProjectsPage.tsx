@@ -13,6 +13,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProjectFilterPanel } from "@/components/ui/filter-panels/project-filter-panel";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
+import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { defaultHeaderColor } from "@/lib/colors";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { useSettings } from "@/hooks/useSettings";
@@ -20,7 +21,7 @@ import { useListFilters } from "@/hooks/useListFilters";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
-import type { Project, ProjectStatus } from "@shared/schema";
+import type { Project, ProjectStatus, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -35,6 +36,7 @@ type ProjectListItem = Project & {
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   projectArticleItems: ProjectArticleItem[];
+  tags: Tag[];
   customer: {
     id: number;
     customerNumber: string;
@@ -129,6 +131,7 @@ export function ProjectsPage({
 
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const {
     filters,
     setFilter,
@@ -157,6 +160,7 @@ export function ProjectsPage({
     if (filters.customerNumber.trim().length > 0) params.set("customerNumber", filters.customerNumber.trim());
     if (filters.orderNumber.trim().length > 0) params.set("orderNumber", filters.orderNumber.trim());
     if (filters.statusIds.length > 0) params.set("statusIds", filters.statusIds.join(","));
+    if (filters.tagIds.length > 0) params.set("tagIds", filters.tagIds.join(","));
 
     return params.toString();
   }, [filters, page, projectScope]);
@@ -174,6 +178,9 @@ export function ProjectsPage({
 
   const { data: projectStatuses = [] } = useQuery<ProjectStatus[]>({
     queryKey: ["/api/project-status"],
+  });
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
   });
 
   const projects = data?.items ?? [];
@@ -193,6 +200,17 @@ export function ProjectsPage({
   const availableStatuses = useMemo(
     () => projectStatuses.filter((status) => status.isActive && !selectedStatusIds.has(status.id)),
     [projectStatuses, selectedStatusIds],
+  );
+  const selectedTagIds = useMemo(() => new Set(filters.tagIds), [filters.tagIds]);
+  const selectedTags = useMemo(
+    () => filters.tagIds
+      .map((id) => availableTags.find((tag) => tag.id === id))
+      .filter((tag): tag is Tag => Boolean(tag)),
+    [availableTags, filters.tagIds],
+  );
+  const unselectedTags = useMemo(
+    () => availableTags.filter((tag) => !selectedTagIds.has(tag.id)),
+    [availableTags, selectedTagIds],
   );
 
   const handleViewModeChange = (next: string) => {
@@ -320,6 +338,7 @@ export function ProjectsPage({
     || filters.customerNumber.trim().length > 0
     || filters.orderNumber.trim().length > 0
     || filters.statusIds.length > 0
+    || filters.tagIds.length > 0
     || projectScope !== "upcoming";
   const emptyState = hasActiveFilters ? (
     <ListEmptyState
@@ -367,6 +386,12 @@ export function ProjectsPage({
             onStatusPickerOpenChange={setStatusPickerOpen}
             onAddStatus={(statusId) => setFilter("statusIds", [...filters.statusIds, statusId])}
             onRemoveStatus={(statusId) => setFilter("statusIds", filters.statusIds.filter((id) => id !== statusId))}
+            selectedTags={selectedTags}
+            availableTags={unselectedTags}
+            tagPickerOpen={tagPickerOpen}
+            onTagPickerOpenChange={setTagPickerOpen}
+            onAddTag={(tagId) => setFilter("tagIds", [...filters.tagIds, tagId])}
+            onRemoveTag={(tagId) => setFilter("tagIds", filters.tagIds.filter((id) => id !== tagId))}
             projectScope={projectScope}
             onProjectScopeChange={setProjectScope}
           />
@@ -496,6 +521,7 @@ export function ProjectsPage({
                             ))}
                           </div>
                         ) : null}
+                        <EntityTagFooterRow tags={project.tags} testId={`project-card-tags-${project.id}`} />
                       </div>
                     )}
                     footerVisibility="visible"
@@ -595,6 +621,9 @@ export function ProjectsPage({
                   customerNotesCount: 0,
                   projectNotesCount: row.project.notesCount,
                   appointmentNotesCount: 0,
+                  appointmentTags: [],
+                  customerTags: [],
+                  projectTags: row.project.tags,
                   displayMode: "compact",
                   isLocked: false,
                   version: row.project.version,

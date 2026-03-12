@@ -4,23 +4,32 @@ import {
   appointmentNotes,
   appointmentEmployees,
   appointments,
+  appointmentTags,
   componentCategories,
   components,
   customerNotes,
+  customerTags,
   customers,
   employees,
   notes,
   projectOrder,
   projectOrderItems,
   projectNotes,
+  projectTags,
   projects,
   products,
   tours,
   type Appointment,
   type InsertAppointment,
+  type Tag,
   type Note,
 } from "@shared/schema";
 import { logDebug } from "../lib/logger";
+import {
+  getAppointmentTagsByAppointmentIds as getAppointmentTagsByAppointmentIdsMap,
+  getCustomerTagsByCustomerIds as getCustomerTagsByCustomerIdsMap,
+  getProjectTagsByProjectIds as getProjectTagsByProjectIdsMap,
+} from "./tagRelationsRepository";
 
 const logPrefix = "[appointments-repo]";
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -30,6 +39,7 @@ export type AppointmentListFilters = {
   projectId?: number;
   customerId?: number;
   orderNumber?: string;
+  tagIds?: number[];
   tourId?: number;
   dateFrom?: Date;
   dateTo?: Date;
@@ -148,6 +158,18 @@ export async function getAppointmentNoteCountsByAppointmentIds(appointmentIds: n
     .groupBy(appointmentNotes.appointmentId);
 
   return new Map(rows.map((row) => [row.appointmentId, Number(row.count)] as const));
+}
+
+export async function getCustomerTagsByCustomerIds(customerIds: number[]): Promise<Map<number, Tag[]>> {
+  return getCustomerTagsByCustomerIdsMap(customerIds);
+}
+
+export async function getProjectTagsByProjectIds(projectIds: number[]): Promise<Map<number, Tag[]>> {
+  return getProjectTagsByProjectIdsMap(projectIds);
+}
+
+export async function getAppointmentTagsByAppointmentIds(appointmentIds: number[]): Promise<Map<number, Tag[]>> {
+  return getAppointmentTagsByAppointmentIdsMap(appointmentIds);
 }
 
 function buildNotesByOwnerMap<TId extends number>(
@@ -679,6 +701,7 @@ export async function listAppointmentsForCalendarRange({
 
 function buildAppointmentListConditions(filters: AppointmentListFilters) {
   const conditions: unknown[] = [];
+  const tagIds = Array.from(new Set((filters.tagIds ?? []).filter((value) => Number.isFinite(value) && value > 0)));
 
   if (filters.projectId) {
     conditions.push(eq(appointments.projectId, filters.projectId));
@@ -688,6 +711,29 @@ function buildAppointmentListConditions(filters: AppointmentListFilters) {
   }
   if (filters.orderNumber) {
     conditions.push(like(projectOrder.orderNumber, `%${filters.orderNumber}%`));
+  }
+  if (tagIds.length > 0) {
+    const tagIdList = sql.join(tagIds.map((id) => sql`${id}`), sql`, `);
+    conditions.push(sql`(
+      exists (
+        select 1
+        from ${appointmentTags}
+        where ${appointmentTags.appointmentId} = ${appointments.id}
+          and ${appointmentTags.tagId} in (${tagIdList})
+      )
+      or exists (
+        select 1
+        from ${customerTags}
+        where ${customerTags.customerId} = ${appointments.customerId}
+          and ${customerTags.tagId} in (${tagIdList})
+      )
+      or exists (
+        select 1
+        from ${projectTags}
+        where ${projectTags.projectId} = ${appointments.projectId}
+          and ${projectTags.tagId} in (${tagIdList})
+      )
+    )`);
   }
   if (filters.tourId) {
     conditions.push(eq(appointments.tourId, filters.tourId));

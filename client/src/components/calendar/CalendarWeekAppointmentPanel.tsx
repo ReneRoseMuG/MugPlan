@@ -1,5 +1,7 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
+import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
+import { mergeUniqueTags } from "@/lib/tag-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
@@ -66,6 +68,11 @@ export function CalendarWeekAppointmentPanel({
   const resolvedTourColor = appointment.tourName?.trim()
     ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)
     : CALENDAR_UNASSIGNED_TOUR_COLOR;
+  const mergedTags = mergeUniqueTags(
+    appointment.appointmentTags,
+    appointment.customerTags,
+    appointment.projectTags,
+  );
 
   const resolvedPanelStyle = isContinuation
     ? { height: `${resolvedContinuationHeightPx}px` }
@@ -155,6 +162,7 @@ export function CalendarWeekAppointmentPanel({
               )}
             </>
           ) : null}
+          <EntityTagFooterRow tags={mergedTags} testId={`week-appointment-tags-${appointment.id}`} />
         </div>
       )}
       {isContinuation && (

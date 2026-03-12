@@ -68,6 +68,11 @@ const extractedArticleCategorySchema = z.object({
 const entityAppointmentsScopeSchema = z.enum(["upcoming", "all"]);
 const tagNameSchema = z.string().min(1).max(100);
 const tagColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
+const tagSchema = z.custom<typeof tags.$inferSelect>();
+const tagRelationItemSchema = z.object({
+  tag: tagSchema,
+  relationVersion: z.number().int().min(1),
+});
 
 const entityAppointmentsQuerySchema = z.object({
   scope: entityAppointmentsScopeSchema.default("upcoming"),
@@ -79,6 +84,12 @@ const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active"
 const projectArticleItemSchema = z.object({
   label: z.string().min(1),
   value: z.string().min(1),
+});
+
+const appointmentTagGroupsSchema = z.object({
+  appointmentTags: z.array(tagSchema),
+  customerTags: z.array(tagSchema),
+  projectTags: z.array(tagSchema),
 });
 
 const entityAppointmentItemSchema = z.object({
@@ -122,6 +133,9 @@ const entityAppointmentItemSchema = z.object({
   customerNotesCount: z.number().int().min(0),
   projectNotesCount: z.number().int().min(0),
   appointmentNotesCount: z.number().int().min(0),
+  appointmentTags: z.array(tagSchema),
+  customerTags: z.array(tagSchema),
+  projectTags: z.array(tagSchema),
   displayMode: z.enum(appointmentDisplayModes),
   isLocked: z.boolean(),
 });
@@ -143,6 +157,7 @@ const projectListItemSchema = z.custom<Project & {
   notesCount?: number;
   projectOrder?: ProjectOrder | null;
   projectArticleItems?: ProjectArticleItem[];
+  tags?: typeof tags.$inferSelect[];
 }>();
 
 const pagedListMetaSchema = z.object({
@@ -171,6 +186,7 @@ const customerBoardListItemSchema = z.object({
   plannedAppointmentsCount: z.number().int().min(0),
   nextAppointmentStartDate: z.string().nullable(),
   nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
+  tags: z.array(tagSchema),
 });
 
 const projectBoardStatusSchema = z.object({
@@ -197,6 +213,7 @@ const projectBoardListItemSchema = z.object({
   nextAppointmentStartDate: z.string().nullable(),
   nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
   projectArticleItems: z.array(projectArticleItemSchema),
+  tags: z.array(tagSchema),
   customer: z.object({
     id: z.number(),
     customerNumber: z.string(),
@@ -634,6 +651,14 @@ export const api = {
         projectId: z.coerce.number().int().positive().optional(),
         customerId: z.coerce.number().int().positive().optional(),
         orderNumber: z.string().trim().optional(),
+        tagIds: z
+          .union([
+            z.string(),
+            z.number(),
+            z.array(z.string()),
+            z.array(z.number()),
+          ])
+          .optional(),
         tourId: z.coerce.number().int().positive().optional(),
         dateFrom: z.string().optional(),
         dateTo: z.string().optional(),
@@ -700,12 +725,15 @@ export const api = {
                   fullName: z.string(),
                 }),
               ),
-              customerNotesCount: z.number().int().min(0),
-              projectNotesCount: z.number().int().min(0),
-              appointmentNotesCount: z.number().int().min(0),
-              displayMode: z.enum(appointmentDisplayModes),
-              isLocked: z.boolean(),
-              allDay: z.boolean(),
+          customerNotesCount: z.number().int().min(0),
+          projectNotesCount: z.number().int().min(0),
+          appointmentNotesCount: z.number().int().min(0),
+          appointmentTags: z.array(tagSchema),
+          customerTags: z.array(tagSchema),
+          projectTags: z.array(tagSchema),
+          displayMode: z.enum(appointmentDisplayModes),
+          isLocked: z.boolean(),
+          allDay: z.boolean(),
               singleEmployee: z.boolean(),
             }),
           ),
@@ -731,7 +759,7 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
-        }),
+        }).extend(appointmentTagGroupsSchema.shape),
         404: errorSchemas.notFound,
       },
     },
@@ -847,6 +875,44 @@ export const api = {
       },
     },
   },
+  appointmentTags: {
+    list: {
+      method: "GET" as const,
+      path: "/api/appointments/:appointmentId/tags",
+      responses: {
+        200: z.array(tagRelationItemSchema),
+        404: errorSchemas.notFound,
+      },
+    },
+    add: {
+      method: "POST" as const,
+      path: "/api/appointments/:appointmentId/tags",
+      input: z.object({
+        tagId: z.number().int().positive(),
+      }).strict(),
+      responses: {
+        201: tagRelationItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    remove: {
+      method: "DELETE" as const,
+      path: "/api/appointments/:appointmentId/tags/:tagId",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   appointmentNotes: {
     list: {
       method: 'GET' as const,
@@ -933,6 +999,9 @@ export const api = {
             customerNotesCount: z.number().int().min(0),
             projectNotesCount: z.number().int().min(0),
             appointmentNotesCount: z.number().int().min(0),
+            appointmentTags: z.array(tagSchema),
+            customerTags: z.array(tagSchema),
+            projectTags: z.array(tagSchema),
             displayMode: z.enum(appointmentDisplayModes),
             employees: z.array(
               z.object({
@@ -1037,15 +1106,32 @@ export const api = {
       },
     },
   },
+  tags: {
+    list: {
+      method: "GET" as const,
+      path: "/api/tags",
+      responses: {
+        200: z.array(tagSchema),
+      },
+    },
+  },
   customers: {
     list: {
       method: 'GET' as const,
       path: '/api/customers',
       input: z.object({
         scope: z.enum(["active", "inactive"]).default("active"),
+        tagIds: z
+          .union([
+            z.string(),
+            z.number(),
+            z.array(z.string()),
+            z.array(z.number()),
+          ])
+          .optional(),
       }).strict(),
       responses: {
-        200: z.array(z.custom<typeof customers.$inferSelect & { notesCount: number }>()),
+        200: z.array(z.custom<typeof customers.$inferSelect & { notesCount: number; tags: typeof tags.$inferSelect[] }>()),
       },
     },
     pagedList: {
@@ -1055,6 +1141,14 @@ export const api = {
         scope: z.enum(["active", "inactive"]).default("active"),
         lastName: z.string().trim().optional(),
         customerNumber: z.string().trim().optional(),
+        tagIds: z
+          .union([
+            z.string(),
+            z.number(),
+            z.array(z.string()),
+            z.array(z.number()),
+          ])
+          .optional(),
         page: z.coerce.number().int().min(1).default(1),
         pageSize: z.coerce.number().int().min(1).max(100).default(50),
       }).strict(),
@@ -1066,7 +1160,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/customers/:id',
       responses: {
-        200: z.custom<typeof customers.$inferSelect>(),
+        200: z.custom<typeof customers.$inferSelect & { tags: typeof tags.$inferSelect[] }>(),
         404: errorSchemas.notFound,
       },
     },
@@ -1102,6 +1196,43 @@ export const api = {
         responses: {
           200: z.array(entityAppointmentItemSchema),
         },
+      },
+    },
+  },
+  customerTags: {
+    list: {
+      method: "GET" as const,
+      path: "/api/customers/:customerId/tags",
+      responses: {
+        200: z.array(tagRelationItemSchema),
+        404: errorSchemas.notFound,
+      },
+    },
+    add: {
+      method: "POST" as const,
+      path: "/api/customers/:customerId/tags",
+      input: z.object({
+        tagId: z.number().int().positive(),
+      }).strict(),
+      responses: {
+        201: tagRelationItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    remove: {
+      method: "DELETE" as const,
+      path: "/api/customers/:customerId/tags/:tagId",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -2266,6 +2397,14 @@ export const api = {
             z.array(z.number()),
           ])
           .optional(),
+        tagIds: z
+          .union([
+            z.string(),
+            z.number(),
+            z.array(z.string()),
+            z.array(z.number()),
+          ])
+          .optional(),
         scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
       }),
       responses: {
@@ -2279,6 +2418,14 @@ export const api = {
         filter: z.enum(["active", "inactive", "all"]).optional(),
         customerId: z.union([z.string(), z.number()]).optional(),
         statusIds: z
+          .union([
+            z.string(),
+            z.number(),
+            z.array(z.string()),
+            z.array(z.number()),
+          ])
+          .optional(),
+        tagIds: z
           .union([
             z.string(),
             z.number(),
@@ -2306,6 +2453,7 @@ export const api = {
           project: projectWithOrderSchema,
           projectOrder: projectOrderResponseSchema.nullable(),
           customer: z.custom<typeof customers.$inferSelect>(),
+          tags: z.array(tagSchema),
           projectStatuses: z.array(
             z.object({
               status: z.custom<typeof projectStatus.$inferSelect>(),
@@ -2425,6 +2573,43 @@ export const api = {
           409: z.object({ code: z.literal("VERSION_CONFLICT") }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
+      },
+    },
+  },
+  projectTags: {
+    list: {
+      method: "GET" as const,
+      path: "/api/projects/:projectId/tags",
+      responses: {
+        200: z.array(tagRelationItemSchema),
+        404: errorSchemas.notFound,
+      },
+    },
+    add: {
+      method: "POST" as const,
+      path: "/api/projects/:projectId/tags",
+      input: z.object({
+        tagId: z.number().int().positive(),
+      }).strict(),
+      responses: {
+        201: tagRelationItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    remove: {
+      method: "DELETE" as const,
+      path: "/api/projects/:projectId/tags/:tagId",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },

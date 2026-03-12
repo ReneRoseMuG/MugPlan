@@ -7,12 +7,23 @@ import * as projectNotesService from "../services/projectNotesService";
 import * as projectAttachmentsService from "../services/projectAttachmentsService";
 import * as appointmentsService from "../services/appointmentsService";
 
+function parseTagIds(value: unknown): number[] {
+  if (!value) return [];
+  const rawValues = Array.isArray(value) ? value : [value];
+  const ids = rawValues
+    .flatMap((entry) => String(entry).split(","))
+    .map((entry) => Number(entry.trim()))
+    .filter((entry) => Number.isFinite(entry) && entry > 0);
+  return Array.from(new Set(ids));
+}
+
 export async function listProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const listInput = api.projects.list.input.parse(req.query);
     const filter = req.query.filter as "active" | "inactive" | "all" | undefined;
     const customerIdParam = req.query.customerId as string | undefined;
     const statusIds = parseStatusIds(req.query.statusIds);
+    const tagIds = parseTagIds(listInput.tagIds);
     const scope = listInput.scope;
 
     if (customerIdParam) {
@@ -25,13 +36,14 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
         customerId,
         filter || "all",
         statusIds,
+        tagIds,
         scope,
       );
       res.json(projects);
       return;
     }
 
-    const projects = await projectsService.listProjects(filter || "all", statusIds, scope);
+    const projects = await projectsService.listProjects(filter || "all", statusIds, tagIds, scope);
     res.json(projects);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -56,6 +68,7 @@ export async function listProjectsPaged(req: Request, res: Response, next: NextF
     const projects = await projectsService.listProjectsPaged({
       filter: input.filter || "all",
       statusIds,
+      tagIds: parseTagIds(input.tagIds),
       scope: input.scope,
       customerId,
       title: input.title,
@@ -101,6 +114,7 @@ export async function getProject(req: Request, res: Response, next: NextFunction
     res.json({
       ...result,
       projectOrder: result.project.projectOrder ?? null,
+      tags: result.project.tags ?? [],
       projectStatuses,
       projectNotes,
       projectAttachments,
@@ -234,6 +248,77 @@ export async function deleteProjectOrderItem(req: Request, res: Response, next: 
     const itemId = Number(req.params.itemId);
     const input = api.projects.orderItems.delete.input.parse(req.body);
     await projectsService.deleteProjectOrderItem(projectId, itemId, input.version);
+    res.status(204).send();
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function listProjectTags(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const projectId = Number(req.params.projectId);
+    const relations = await projectsService.listProjectTagRelations(projectId);
+    if (!relations) {
+      res.status(404).json({ message: "Projekt nicht gefunden" });
+      return;
+    }
+    res.json(relations);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function addProjectTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const projectId = Number(req.params.projectId);
+    const input = api.projectTags.add.input.parse(req.body);
+    const relation = await projectsService.addProjectTag(projectId, input.tagId, roleKey);
+    if (!relation) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.status(201).json(relation);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function removeProjectTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const projectId = Number(req.params.projectId);
+    const tagId = Number(req.params.tagId);
+    const input = api.projectTags.remove.input.parse(req.body);
+    const result = await projectsService.removeProjectTag(projectId, tagId, input.version, roleKey);
+    if (result === null) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {
