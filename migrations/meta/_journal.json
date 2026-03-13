@@ -64,6 +64,13 @@
       "when": 1773333317735,
       "tag": "0008_product_management_short_code",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1773428400000,
+      "tag": "0009_ft30_employee_absences",
+      "breakpoints": true
     }
   ]
 }

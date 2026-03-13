@@ -40,7 +40,8 @@ describe("FT26 reports page wiring", () => {
     expect(reportsPageSource).toContain("Report erzeugen");
     expect(reportsPageSource).toContain("const REPORT_PAGE_SIZE = 100;");
     expect(reportsPageSource).toContain("enabled: submittedFilters !== null");
-    expect(reportsPageSource).toContain("footerSlot={tableFooter}");
+    expect(reportsPageSource).toContain("{tableFooter}");
+    expect(reportsPageSource).not.toContain("footerSlot={tableFooter}");
     expect(reportsPageSource).toContain("stickyHeader");
   });
 

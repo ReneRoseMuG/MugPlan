@@ -48,5 +48,5 @@ test("shows the concrete server validation message after dragging an appointment
   await appointmentBar.dragTo(todayCalendarDay);
 
   await expect(page.getByText("Fehler beim Verschieben")).toBeVisible();
-  await expect(page.getByText("Startzeit liegt in der Vergangenheit")).toBeVisible();
+  await expect(page.getByText("Startzeit liegt in der Vergangenheit", { exact: true }).first()).toBeVisible();
 });

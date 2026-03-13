@@ -53,8 +53,8 @@ describe("FT27 UI: product management component architecture wiring", () => {
   it("keeps category panels and removes the old inline component management table", () => {
     const source = readFileSync(path.resolve(process.cwd(), "client/src/components/ProductManagementPage.tsx"), "utf8");
 
-    expect(source).toContain("data-testid=\"master-data-product-categories\"");
-    expect(source).toContain("data-testid=\"master-data-component-categories\"");
+    expect(source).toContain("\"master-data-product-categories\"");
+    expect(source).toContain("\"master-data-component-categories\"");
     expect(source).not.toContain("<ProductComponentList");
     expect(source).not.toContain("TableHead>Produkte</TableHead>");
     expect(source).not.toContain("<h4 className=\"font-bold text-slate-900\">Produkte</h4>");

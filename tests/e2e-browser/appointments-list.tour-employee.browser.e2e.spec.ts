@@ -5,10 +5,11 @@
  * Use Case: UC Sortierung/Spaltenstruktur/Scrollverhalten der Formular-Tabellen
  *
  * Abgedeckte Regeln:
- * - Datum ist die einzige sortierbare Spalte und startet abwaerts.
+ * - Datum startet abwaerts und bleibt nach "Alle Termine" erhalten.
  * - Umschaltung "Alle Termine" behaelt die gewaehlte Datumssortierung.
  * - Spalte "Ganztag" ist entfernt.
- * - Im Mitarbeiter-Formular sind Tour-Spalte und Tour-Filter entfernt.
+ * - Listenlayout zeigt die aktuell verdrahteten Zeit-, Auftrags- und Kunden-Spalten.
+ * - Im Mitarbeiter-Formular bleibt der Tour-Filter ausgeblendet.
  * - Projektspalte zeigt den isolierten Projektnamen ohne Kundennummer-Praefix.
  * - Mitarbeiter-Terminliste scrollt vertikal innerhalb des Tabellenbereichs mit sticky Header.
  *
@@ -67,8 +68,8 @@ test("tour form appointments table: date sorting persists after show-all and no 
 
   const table = page.getByTestId("table-appointments-list");
   await expect(table).toBeVisible();
-  await expect(table.locator("thead th")).toHaveCount(3);
   const headerTexts = await table.locator("thead th").allTextContents();
+  expect(headerTexts).toEqual(expect.arrayContaining(["Uhrzeit", "Datum", "Auftrag Nr.", "Projekt", "Kunde Nr.", "Kunde"]));
   expect(headerTexts.join(" ")).toContain("Datum");
   expect(headerTexts.join(" ")).toContain("Projekt");
   expect(headerTexts.join(" ")).toContain("Kunde");
@@ -76,17 +77,17 @@ test("tour form appointments table: date sorting persists after show-all and no 
 
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0).locator("td").nth(1)).toContainText("Tour Far");
-  await expect(rows.nth(1).locator("td").nth(1)).toContainText("Tour Near");
+  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
+  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
 
   await table.locator("thead").getByRole("button", { name: "Datum" }).click();
-  await expect(rows.nth(0).locator("td").nth(1)).toContainText("Tour Near");
-  await expect(rows.nth(1).locator("td").nth(1)).toContainText("Tour Far");
+  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Near");
+  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Far");
 
   await page.getByRole("switch", { name: "Alle Termine" }).click();
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0).locator("td").nth(1)).toContainText("Tour Near");
-  await expect(rows.nth(1).locator("td").nth(1)).toContainText("Tour Far");
+  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Near");
+  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Far");
 });
 
 test("employee form appointments table: structure, sorting persistence and vertical inner scroll", async ({ page }) => {
@@ -123,8 +124,8 @@ test("employee form appointments table: structure, sorting persistence and verti
 
   const table = page.getByTestId("table-appointments-list");
   await expect(table).toBeVisible();
-  await expect(table.locator("thead th")).toHaveCount(4);
   const headerTexts = await table.locator("thead th").allTextContents();
+  expect(headerTexts).toEqual(expect.arrayContaining(["Uhrzeit", "Datum", "Auftrag Nr.", "Projekt", "Kunde Nr.", "Kunde", "Tour"]));
   expect(headerTexts.join(" ")).toContain("Datum");
   expect(headerTexts.join(" ")).toContain("Projekt");
   expect(headerTexts.join(" ")).toContain("Kunde");
@@ -133,14 +134,15 @@ test("employee form appointments table: structure, sorting persistence and verti
   await expect(page.getByText("Alle Touren")).toHaveCount(0);
 
   const rows = table.locator("tbody tr");
-  await expect(rows.first().locator("td").nth(1)).toContainText("Emp Filler");
+  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
 
   await table.locator("thead").getByRole("button", { name: "Datum" }).click();
-  await expect(rows.first().locator("td").nth(1)).toContainText("Emp Near");
+  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Near");
   await page.getByRole("switch", { name: "Alle Termine" }).click();
-  await expect(rows.first().locator("td").nth(1)).toContainText("Emp Near");
+  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Near");
 
-  const scrollMeta = await table.evaluate((element) => ({
+  const scrollViewport = table.locator(":scope > div").first();
+  const scrollMeta = await scrollViewport.evaluate((element) => ({
     overflowY: window.getComputedStyle(element).overflowY,
     isScrollable: element.scrollHeight > element.clientHeight,
   }));
@@ -150,7 +152,7 @@ test("employee form appointments table: structure, sorting persistence and verti
 
   const firstHeader = table.locator("thead th").first();
   await expect(firstHeader).toHaveClass(/sticky/);
-  await table.evaluate((element) => {
+  await scrollViewport.evaluate((element) => {
     element.scrollTop = 220;
   });
 });

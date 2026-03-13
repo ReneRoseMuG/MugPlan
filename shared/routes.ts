@@ -14,6 +14,7 @@ import {
   employeeAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
+  insertEmployeeAbsenceSchema, updateEmployeeAbsenceSchema, employeeAbsences,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts,
   tags,
   insertProductCategorySchema, updateProductCategorySchema, productCategories,
@@ -1492,6 +1493,65 @@ export const api = {
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    absences: {
+      list: {
+        method: "GET" as const,
+        path: "/api/employees/:employeeId/absences",
+        responses: {
+          200: z.array(z.custom<typeof employeeAbsences.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+        },
+      },
+      get: {
+        method: "GET" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId",
+        responses: {
+          200: z.custom<typeof employeeAbsences.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/employees/:employeeId/absences",
+        input: insertEmployeeAbsenceSchema,
+        responses: {
+          201: z.custom<typeof employeeAbsences.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId",
+        input: updateEmployeeAbsenceSchema.extend({
+          version: z.number().int().min(1),
+        }),
+        responses: {
+          200: z.custom<typeof employeeAbsences.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId",
+        input: z.object({
+          version: z.number().int().min(1),
+        }),
+        responses: {
+          204: z.null(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
       },
     },
     currentAppointments: {
@@ -3429,6 +3489,9 @@ export type EmployeeInput = z.infer<typeof api.employees.create.input>;
 export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
 export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
 export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
+export type EmployeeAbsenceInput = z.infer<typeof api.employees.absences.create.input>;
+export type EmployeeAbsenceUpdateInput = z.infer<typeof api.employees.absences.update.input>;
+export type EmployeeAbsenceResponse = z.infer<typeof api.employees.absences.create.responses[201]>;
 export type AuthLoginResponse = z.infer<typeof api.auth.login.responses[200]>;
 export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.responses[200]>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;

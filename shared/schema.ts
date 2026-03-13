@@ -1,4 +1,4 @@
-import { mysqlTable, text, int, date, time, boolean, bigint, decimal, primaryKey, varchar, timestamp, json, uniqueIndex, index, check } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, int, date, time, boolean, bigint, decimal, primaryKey, varchar, timestamp, json, uniqueIndex, index, check, mysqlEnum } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -848,6 +848,44 @@ export const updateEmployeeSchema = z.object({
 export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;
+
+export const employeeAbsenceTypeEnum = mysqlEnum("type", ["vacation", "sick"]);
+
+export const employeeAbsences = mysqlTable("employee_absence", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  employeeId: bigint("employee_id", { mode: "number" }).notNull().references(() => employees.id, { onDelete: "cascade" }),
+  type: employeeAbsenceTypeEnum.notNull(),
+  from: date("from_date", { mode: "string" }).notNull(),
+  until: date("until_date", { mode: "string" }).notNull(),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  byEmployeeFromUntilId: index("idx_employee_absence_employee_from_until_id").on(
+    table.employeeId,
+    table.from,
+    table.until,
+    table.id,
+  ),
+}));
+
+export const insertEmployeeAbsenceSchema = createInsertSchema(employeeAbsences).omit({
+  id: true,
+  employeeId: true,
+  version: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateEmployeeAbsenceSchema = z.object({
+  type: z.enum(["vacation", "sick"]).optional(),
+  from: z.string().optional(),
+  until: z.string().optional(),
+});
+
+export type EmployeeAbsence = typeof employeeAbsences.$inferSelect;
+export type InsertEmployeeAbsence = z.infer<typeof insertEmployeeAbsenceSchema>;
+export type UpdateEmployeeAbsence = z.infer<typeof updateEmployeeAbsenceSchema>;
 
 // Employee Attachment - Mitarbeiteranhänge (FT 19)
 export const employeeAttachments = mysqlTable("employee_attachment", {
