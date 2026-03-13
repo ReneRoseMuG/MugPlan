@@ -734,6 +734,74 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 
+  it("accepts negative seedWindowDaysMin and creates mount appointments before the anchor date", async () => {
+    let baseSeedRunId: string | null = null;
+    let appointmentsSeedRunId: string | null = null;
+
+    try {
+      await seedManualProjectMasterData("PASTWINDOW");
+      await createEmployeeFixture("PASTWINDOW-EMP-A");
+      await createEmployeeFixture("PASTWINDOW-EMP-B");
+      const baseSummary = await createSeedRun({
+        runType: "base",
+        randomSeed: 7101,
+        employees: 2,
+        customers: 4,
+        projects: 6,
+        generateAttachments: false,
+      });
+      baseSeedRunId = baseSummary.seedRunId;
+
+      const appointmentsSummary = await createSeedRun({
+        runType: "appointments",
+        baseSeedRunId,
+        randomSeed: 7202,
+        appointmentsPerProject: 1,
+        generateAttachments: false,
+        seedWindowDaysMin: -14,
+        seedWindowDaysMax: -1,
+        reklDelayDaysMin: 14,
+        reklDelayDaysMax: 21,
+        reklShare: 0.2,
+      });
+      appointmentsSeedRunId = appointmentsSummary.seedRunId;
+
+      const seededMountAppointmentIds = (await db
+        .select({ entityId: seedRunEntities.entityId })
+        .from(seedRunEntities)
+        .where(and(
+          eq(seedRunEntities.seedRunId, appointmentsSeedRunId),
+          eq(seedRunEntities.entityType, "appointment_mount"),
+        )))
+        .map((entity) => Number(entity.entityId));
+
+      expect(seededMountAppointmentIds.length).toBeGreaterThan(0);
+
+      const mountRows = await db
+        .select({
+          startDate: appointments.startDate,
+          endDate: appointments.endDate,
+        })
+        .from(appointments)
+        .where(inArray(appointments.id, seededMountAppointmentIds));
+
+      const anchorDate = new Date();
+      anchorDate.setHours(0, 0, 0, 0);
+
+      expect(mountRows.length).toBe(seededMountAppointmentIds.length);
+      expect(
+        mountRows.every((row) => {
+          const startDate = new Date(row.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          return startDate < anchorDate;
+        }),
+      ).toBe(true);
+    } finally {
+      if (appointmentsSeedRunId) await purgeSeedRun(appointmentsSeedRunId);
+      if (baseSeedRunId) await purgeSeedRun(baseSeedRunId);
+    }
+  });
+
   it("continues seeded project order numbers across base runs", async () => {
     let firstBaseSeedRunId: string | null = null;
     let secondBaseSeedRunId: string | null = null;
@@ -814,4 +882,3 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 });
-

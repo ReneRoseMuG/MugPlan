@@ -5,6 +5,7 @@
  * - Produktverwaltung verwendet wiederverwendbare UI-Bausteine fuer Auswahl, Stammdaten und Komponenteneditor.
  * - Produktauswahl reduziert die Anzeige auf den Namen und bietet Delete- und Update-Pfade.
  * - Komponentenbereich nutzt synchronisierte Komponenten- und Kategorien-Dropdowns plus Detailformular.
+ * - Komponenten-Loeschfehler unterscheiden Produktzuordnung und Projektverwendung ueber API-Konfliktdetails.
  * - Kategorie-Bereiche bleiben als eigene Bereiche erhalten.
  *
  * Fehlerfaelle:
@@ -34,9 +35,15 @@ describe("FT27 UI: product management component architecture wiring", () => {
     expect(source).toContain("async function createStandaloneComponent");
     expect(source).toContain("async function updateComponentData");
     expect(source).toContain("async function deleteSelectedComponent");
+    expect(source).toContain("function resolveComponentDeleteError");
+    expect(source).toContain("deleteSelectedComponentWithConflictDetails");
+    expect(source).toContain("assignedProductCount");
+    expect(source).toContain("projectOrderItemCount");
+    expect(source).toContain("Komponente ist noch Produkten zugeordnet.");
+    expect(source).toContain("Komponente wird noch in Projektauftragspositionen verwendet.");
     expect(source).toContain("onCreateComponent={createStandaloneComponent}");
     expect(source).toContain("onUpdateComponent={updateComponentData}");
-    expect(source).toContain("onDeleteComponent={deleteSelectedComponent}");
+    expect(source).toContain("onDeleteComponent={deleteSelectedComponentWithConflictDetails}");
     expect(allComponentListSource).toContain("select-component-record");
     expect(allComponentListSource).toContain("select-component-category-record");
     expect(allComponentListSource).toContain("Komponenten Stammdaten");

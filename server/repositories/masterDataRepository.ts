@@ -26,6 +26,7 @@ import {
   employeeTags,
   productCategories,
   productComponent,
+  projectOrderItems,
   projectTags,
   products,
   tags,
@@ -287,6 +288,25 @@ export async function createComponent(input: InsertComponent): Promise<Component
 export async function getComponentById(id: number): Promise<Component | undefined> {
   const [row] = await db.select().from(components).where(eq(components.id, id));
   return row;
+}
+
+export async function getComponentDeleteRelationCounts(componentId: number): Promise<{
+  assignedProductCount: number;
+  projectOrderItemCount: number;
+}> {
+  const [assignedProductCountRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(productComponent)
+    .where(eq(productComponent.componentId, componentId));
+  const [projectOrderItemCountRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(projectOrderItems)
+    .where(eq(projectOrderItems.componentId, componentId));
+
+  return {
+    assignedProductCount: Number(assignedProductCountRow?.count ?? 0),
+    projectOrderItemCount: Number(projectOrderItemCountRow?.count ?? 0),
+  };
 }
 
 export async function getComponentByNormalizedName(name: string): Promise<Component | undefined> {

@@ -66,6 +66,7 @@ export class MasterDataError extends Error {
     | "INVALID_CSV_FORMAT"
     | "INVALID_CSV_HEADER"
     | "INVALID_CSV_CONTENT";
+  details?: Record<string, unknown>;
 
   constructor(
     status: number,
@@ -78,10 +79,12 @@ export class MasterDataError extends Error {
       | "INVALID_CSV_FORMAT"
       | "INVALID_CSV_HEADER"
       | "INVALID_CSV_CONTENT",
+    details?: Record<string, unknown>,
   ) {
     super(code);
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -162,6 +165,13 @@ function normalizeComponentUpdate(input: UpdateComponent): UpdateComponent {
     ...input,
     shortCode: normalizeOptionalText(input.shortCode),
   };
+}
+
+function hasComponentDeleteConflictDetails(details: {
+  assignedProductCount: number;
+  projectOrderItemCount: number;
+}): boolean {
+  return details.assignedProductCount > 0 || details.projectOrderItemCount > 0;
 }
 
 function buildSeedLog(action: "created" | "reactivated" | "existing", kind: "Produktkategorie" | "Komponentenkategorie", name: string): string {
@@ -737,13 +747,22 @@ export async function deleteComponent(
   roleKey: CanonicalRoleKey,
 ): Promise<void> {
   requireAdmin(roleKey);
+  const relationCounts = await masterDataRepository.getComponentDeleteRelationCounts(id);
+  if (hasComponentDeleteConflictDetails(relationCounts)) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT", relationCounts);
+  }
   try {
     const result = await masterDataRepository.deleteComponentWithVersion(id, expectedVersion);
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
   } catch (error) {
     if (isRowReferencedError(error)) {
-      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+      const currentRelationCounts = await masterDataRepository.getComponentDeleteRelationCounts(id);
+      throw new MasterDataError(
+        409,
+        "BUSINESS_CONFLICT",
+        hasComponentDeleteConflictDetails(currentRelationCounts) ? currentRelationCounts : undefined,
+      );
     }
     throw error;
   }

@@ -8,6 +8,7 @@
  * - FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only.
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
+ * - Komponenten-Loeschkonflikte liefern Referenzdetails fuer Produktzuordnungen und Projektauftragspositionen.
  * - Default-/Schutzkategorien (Fass Saunen plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
  * - Der Produktverwaltungs-Seed ist dateibasiert, idempotent und reaktiviert vorhandene inaktive Seed-Kategorien.
  * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
@@ -630,6 +631,59 @@ describe("FT27 integration: master data admin API", () => {
       .expect(409)
       .expect((res) => {
         expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+  });
+
+  it("returns detailed BUSINESS_CONFLICT counts when deleting a product-assigned component", async () => {
+    const admin = await loginAdminAgent();
+
+    const productCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: "PK-FT27-CMP-DEL", isActive: true, version: 1 })
+      .expect(201);
+
+    const componentCategory = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: "CK-FT27-CMP-DEL", isActive: true, version: 1 })
+      .expect(201);
+
+    const product = await admin
+      .post("/api/admin/master-data/products")
+      .send({
+        name: "PRD-FT27-CMP-DEL",
+        categoryId: productCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    const component = await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: "CMP-FT27-CMP-DEL",
+        categoryId: componentCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .put(`/api/admin/master-data/components/${component.body.id}/products`)
+      .send({ version: component.body.version, productIds: [product.body.id] })
+      .expect(200);
+
+    await admin
+      .delete(`/api/admin/master-data/components/${component.body.id}`)
+      .send({ version: component.body.version + 1 })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          code: "BUSINESS_CONFLICT",
+          assignedProductCount: 1,
+          projectOrderItemCount: 0,
+        });
       });
   });
 

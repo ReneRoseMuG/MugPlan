@@ -14,20 +14,54 @@ import { useToast } from "@/hooks/use-toast";
 type ActiveScope = "active" | "inactive" | "all";
 type CategoryImportResponse = { summary: { totalRows: number; createdRows: number; updatedRows: number; reactivatedRows: number; invalidRows: number; errorRows: number } };
 type VersionedRow = { id: number; version: number; name: string };
+type ApiErrorPayload = {
+  code?: string;
+  assignedProductCount?: number;
+  projectOrderItemCount?: number;
+};
 
 const DEFAULT_PRODUCT_CATEGORY_NAME = "Alle Produkte";
 const DEFAULT_COMPONENT_CATEGORY_NAME = "Alle Komponenten";
 
-function extractApiCode(error: unknown): string | null {
+function extractApiPayload(error: unknown): ApiErrorPayload | null {
   if (!(error instanceof Error)) return null;
   const start = error.message.indexOf("{");
   if (start < 0) return null;
   try {
-    const payload = JSON.parse(error.message.slice(start)) as { code?: unknown };
-    return typeof payload.code === "string" ? payload.code : null;
+    return JSON.parse(error.message.slice(start)) as ApiErrorPayload;
   } catch {
     return null;
   }
+}
+
+function extractApiCode(error: unknown): string | null {
+  const payload = extractApiPayload(error);
+  return typeof payload?.code === "string" ? payload.code : null;
+}
+
+function resolveComponentDeleteError(error: unknown): string {
+  const payload = extractApiPayload(error);
+  if (payload?.code !== "BUSINESS_CONFLICT") {
+    return "Komponente konnte nicht geloescht werden.";
+  }
+
+  const assignedProductCount = typeof payload.assignedProductCount === "number"
+    ? payload.assignedProductCount
+    : 0;
+  const projectOrderItemCount = typeof payload.projectOrderItemCount === "number"
+    ? payload.projectOrderItemCount
+    : 0;
+
+  if (assignedProductCount > 0 && projectOrderItemCount > 0) {
+    return "Komponente ist noch Produkten zugeordnet und in Projektauftragspositionen verwendet.";
+  }
+  if (projectOrderItemCount > 0) {
+    return "Komponente wird noch in Projektauftragspositionen verwendet.";
+  }
+  if (assignedProductCount > 0) {
+    return "Komponente ist noch Produkten zugeordnet.";
+  }
+  return "Komponente wird noch verwendet.";
 }
 
 function resolveCategoryImportError(code: string | null, entityLabel: "Produkte" | "Komponenten"): { title: string; description?: string } {
@@ -167,6 +201,14 @@ export function ProductManagementPage() {
     mutationFn: async (input: { id: number; version: number }) => apiRequest("DELETE", `/api/admin/master-data/components/${input.id}`, { version: input.version }),
     onSuccess: async () => { await invalidateMasterDataQueries(activeScope); },
   });
+  const deleteSelectedComponentWithConflictDetails = async (component: Component): Promise<void> => {
+    try {
+      await deleteComponentMutation.mutateAsync({ id: component.id, version: component.version });
+      toast({ title: "Komponente geloescht" });
+    } catch (error) {
+      throw new Error(resolveComponentDeleteError(error));
+    }
+  };
 
   const productCategoryImportMutation = useMutation({
     mutationFn: async (input: { categoryId: number; file: File }) => {
@@ -276,6 +318,8 @@ export function ProductManagementPage() {
     }
   }
 
+  void deleteSelectedComponent;
+
   const renderCategorySection = (
     title: string,
     rows: Array<ProductCategory | ComponentCategory>,
@@ -357,7 +401,7 @@ export function ProductManagementPage() {
               <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} isAdmin={isAdmin} />
                 <ProductData draft={productDraft} categories={productCategories} disabled={!selectedProduct} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
-                <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponent} />
+                <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} />
               </div>
             </section>
           </div>

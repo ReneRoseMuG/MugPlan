@@ -139,4 +139,30 @@
     background-color: hsl(var(--sub-panel-background));
     @apply rounded-lg p-4 border border-border/50;
   }
+
+  .visible-horizontal-scrollbar {
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--color-blue-dark) / 0.78) hsl(var(--color-beige) / 0.75);
+    scrollbar-gutter: stable both-edges;
+  }
+
+  .visible-horizontal-scrollbar::-webkit-scrollbar {
+    height: 14px;
+  }
+
+  .visible-horizontal-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--color-beige) / 0.65);
+    border-radius: 9999px;
+  }
+
+  .visible-horizontal-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--color-blue-dark) / 0.78);
+    border-radius: 9999px;
+    border: 3px solid hsl(var(--color-cream));
+    min-width: 48px;
+  }
+
+  .visible-horizontal-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--color-blue-dark) / 0.9);
+  }
 }

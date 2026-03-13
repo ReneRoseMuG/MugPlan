@@ -24,7 +24,7 @@ describe("FT20 DemoDataPage form state parsing", () => {
       appointmentBaseSeedRunId: "seed-1",
       appointmentsPerProject: 4,
       appointmentsRandomSeed: "555",
-      seedWindowDaysMin: 10,
+      seedWindowDaysMin: -10,
       seedWindowDaysMax: 15,
       reklDelayDaysMin: 3,
       reklDelayDaysMax: 5,
@@ -36,6 +36,7 @@ describe("FT20 DemoDataPage form state parsing", () => {
     expect(parsed.baseProjects).toBe(8);
     expect(parsed.baseGenerateAttachments).toBe(false);
     expect(parsed.appointmentBaseSeedRunId).toBe("seed-1");
+    expect(parsed.seedWindowDaysMin).toBe(-10);
     expect(parsed.reklShare).toBe(0.5);
   });
 

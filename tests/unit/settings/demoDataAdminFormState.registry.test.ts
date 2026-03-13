@@ -35,7 +35,7 @@ describe("FT20 settings registry: demoData.adminFormState", () => {
       appointmentBaseSeedRunId: "",
       appointmentsPerProject: 1,
       appointmentsRandomSeed: "",
-      seedWindowDaysMin: 60,
+      seedWindowDaysMin: -14,
       seedWindowDaysMax: 90,
       reklDelayDaysMin: 14,
       reklDelayDaysMax: 42,

@@ -32,7 +32,10 @@ function handleServiceError(error: unknown, res: Response): boolean {
     return true;
   }
   if (masterDataService.isMasterDataError(error)) {
-    res.status(error.status).json({ code: error.code });
+    res.status(error.status).json({
+      code: error.code,
+      ...(error.details ?? {}),
+    });
     return true;
   }
   return false;

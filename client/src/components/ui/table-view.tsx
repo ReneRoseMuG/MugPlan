@@ -307,7 +307,7 @@ export function TableView<T>({
             <div className={cn("px-6 pb-3", footerSlot ? "border-t border-border/70 pt-2" : "pt-3")}>
               <div
                 ref={footerScrollRef}
-                className="overflow-x-auto overflow-y-hidden"
+                className="visible-horizontal-scrollbar overflow-x-scroll overflow-y-hidden rounded-full bg-muted/35"
                 data-testid={footerScrollTestId}
                 onScroll={handleFooterScroll}
               >

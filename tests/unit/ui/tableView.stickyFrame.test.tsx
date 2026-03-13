@@ -5,6 +5,7 @@
  * - TableView rendert Sticky-Header nur im aktivierten Modus.
  * - TableView zeigt den persistenten Footer-Bereich nur bei Footer-Inhalt oder horizontalem Overflow.
  * - Die horizontale Scrollposition bleibt zwischen Tabellenkoerper und Footer-Scrollbar synchron.
+ * - Die Footer-Scrollbar bleibt sichtbar und griffig ueber die gemeinsame Scrollbar-Variante.
  *
  * Fehlerfaelle:
  * - Sticky-Klassen gehen beim TableView-Refactor verloren.
@@ -140,6 +141,8 @@ describe("FT-UI table view sticky frame", () => {
     });
 
     const footerScroll = screen.getByTestId("table-sync-footer-scrollbar") as HTMLDivElement;
+    expect(footerScroll.className).toContain("visible-horizontal-scrollbar");
+    expect(footerScroll.className).toContain("overflow-x-scroll");
 
     footerScroll.scrollLeft = 240;
     fireEvent.scroll(footerScroll);
