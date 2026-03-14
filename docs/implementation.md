@@ -348,6 +348,9 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
   - Kunden
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
+- erhält bei terminbezogenen Mitarbeiterlisten (`/api/employees?appointmentDate=...`) nur am Termindatum verfuegbare aktive Mitarbeiter; Abwesenheiten und `exit_date` werden serverseitig herausgefiltert
+- erhält bei `includeUnavailable=true` zusätzlich eine rein informative Liste der nicht verfuegbaren Mitarbeiter mit Ausschlussgrund; diese Mitarbeiter bleiben im Picker nicht auswählbar
+- bei Termin-Mutationen mit verfuegbarkeitsbedingten Personaländerungen erfolgt keine stille Bereinigung mehr; der Server liefert stattdessen einen bestaetigungspflichtigen Verfuegbarkeitskonflikt und speichert erst nach explizitem Confirm
 
 ### Admin
 

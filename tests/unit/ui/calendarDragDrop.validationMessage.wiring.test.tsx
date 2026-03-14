@@ -6,6 +6,7 @@
  * Abgedeckte Regeln:
  * - Wochenansicht reicht konkrete VALIDATION_ERROR-Meldungen des Servers beim Drag & Drop durch.
  * - Monatsansicht reicht konkrete VALIDATION_ERROR-Meldungen des Servers beim Drag & Drop durch.
+ * - Beide Ansichten zeigen bei AVAILABILITY_CONFIRMATION_REQUIRED einen expliziten Confirm-Dialog.
  * - Der generische Fallback bleibt fuer fehlende Server-Messages erhalten.
  *
  * Fehlerfaelle:
@@ -32,5 +33,17 @@ describe("FT01 UI: calendar drag drop validation message wiring", () => {
   it("keeps the concrete server validation message in CalendarMonthView", () => {
     expect(monthSource).toContain('if (error?.code === "VALIDATION_ERROR") {');
     expect(monthSource).toContain(expectedWiring);
+  });
+
+  it("wires explicit availability confirmation for drag and drop in CalendarWeekView", () => {
+    expect(weekSource).toContain('if (error?.code === "AVAILABILITY_CONFIRMATION_REQUIRED") {');
+    expect(weekSource).toContain('data-testid="dialog-calendar-week-availability-conflicts"');
+    expect(weekSource).toContain("confirmAvailabilityAdjustments: true");
+  });
+
+  it("wires explicit availability confirmation for drag and drop in CalendarMonthView", () => {
+    expect(monthSource).toContain('if (error?.code === "AVAILABILITY_CONFIRMATION_REQUIRED") {');
+    expect(monthSource).toContain('data-testid="dialog-calendar-month-availability-conflicts"');
+    expect(monthSource).toContain("confirmAvailabilityAdjustments: true");
   });
 });

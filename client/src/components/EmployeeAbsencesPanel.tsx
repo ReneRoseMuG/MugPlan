@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarRange, Pencil, Plus, Trash2 } from "lucide-react";
-import type { EmployeeAbsence } from "@shared/schema";
+import type { Employee, EmployeeAbsence } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type AbsenceType = "vacation" | "sick";
 
@@ -18,6 +30,13 @@ type FormState = {
   type: AbsenceType;
   from: string;
   until: string;
+};
+
+type AffectedAppointment = {
+  appointmentId: number;
+  startDate: string;
+  tourName: string | null;
+  employees: Array<{ id: number; fullName: string }>;
 };
 
 const defaultFormState = (): FormState => {
@@ -64,18 +83,29 @@ async function fetchEmployeeAbsences(employeeId: number): Promise<EmployeeAbsenc
 
 interface EmployeeAbsencesPanelProps {
   employeeId: number;
+  employees?: Employee[];
   listVariant?: "cards" | "table";
+  onOpenAppointment?: (appointmentId: number) => void;
 }
 
 export function EmployeeAbsencesPanel({
   employeeId,
+  employees = [],
   listVariant = "cards",
+  onOpenAppointment,
 }: EmployeeAbsencesPanelProps) {
   const { toast } = useToast();
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const canManageAbsences = userRole === "ADMIN" || userRole === "DISPATCHER" || userRole === "DISPONENT";
   const [formState, setFormState] = useState<FormState>(() => defaultFormState());
   const [editingAbsenceId, setEditingAbsenceId] = useState<number | null>(null);
+  const [previewAbsenceId, setPreviewAbsenceId] = useState<number | null>(null);
+  const [previewAppointments, setPreviewAppointments] = useState<AffectedAppointment[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [replacementEmployeeId, setReplacementEmployeeId] = useState<number | null>(null);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [previewFollowUpError, setPreviewFollowUpError] = useState<string | null>(null);
 
   const queryKey = useMemo(() => ["/api/employees", employeeId, "absences"], [employeeId]);
 
@@ -90,12 +120,54 @@ export function EmployeeAbsencesPanel({
     enabled: canManageAbsences,
   });
 
+  const loadPreview = async (absenceId: number) => {
+    setPreviewLoading(true);
+    try {
+      const response = await fetch(`/api/employees/${employeeId}/absences/${absenceId}/appointments-preview`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error((await response.text()) || "Vorschau konnte nicht geladen werden");
+      }
+      const payload = await response.json() as { appointments?: AffectedAppointment[] };
+      setPreviewAbsenceId(absenceId);
+      setPreviewAppointments(Array.isArray(payload.appointments) ? payload.appointments : []);
+      setReplacementEmployeeId(null);
+      setPreviewOpen(true);
+      setPreviewFollowUpError(null);
+      return true;
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden";
+      setPreviewFollowUpError(
+        "Die Abwesenheit wurde gespeichert, aber die betroffenen Termine konnten nicht geladen werden. Bitte oeffnen Sie die Vorschau erneut, bevor Sie die Disposition abschliessen.",
+      );
+      toast({
+        title: "Vorschau konnte nicht geladen werden",
+        description,
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const createMutation = useMutation({
-    mutationFn: async (payload: FormState) => apiRequest("POST", `/api/employees/${employeeId}/absences`, payload),
-    onSuccess: () => {
+    mutationFn: async (payload: FormState) => {
+      const response = await apiRequest("POST", `/api/employees/${employeeId}/absences`, payload);
+      return response.json() as Promise<EmployeeAbsence>;
+    },
+    onSuccess: async (created) => {
       invalidateAbsences();
       setFormState(defaultFormState());
-      toast({ title: "Abwesenheit gespeichert" });
+      const previewLoaded = await loadPreview(created.id);
+      toast({
+        title: previewLoaded ? "Abwesenheit gespeichert" : "Abwesenheit gespeichert, Folgepruefung offen",
+        description: previewLoaded
+          ? undefined
+          : "Betroffene Termine konnten nicht geladen werden. Bitte pruefen Sie die Vorschau erneut.",
+        variant: previewLoaded ? "default" : "destructive",
+      });
     },
     onError: (error: Error) => {
       const code = extractApiCode(error);
@@ -108,13 +180,22 @@ export function EmployeeAbsencesPanel({
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: FormState & { version: number }) =>
-      apiRequest("PUT", `/api/employees/${employeeId}/absences/${editingAbsenceId}`, payload),
-    onSuccess: () => {
+    mutationFn: async (payload: FormState & { version: number }) => {
+      const response = await apiRequest("PUT", `/api/employees/${employeeId}/absences/${editingAbsenceId}`, payload);
+      return response.json() as Promise<EmployeeAbsence>;
+    },
+    onSuccess: async (updated) => {
       invalidateAbsences();
       setEditingAbsenceId(null);
       setFormState(defaultFormState());
-      toast({ title: "Abwesenheit aktualisiert" });
+      const previewLoaded = await loadPreview(updated.id);
+      toast({
+        title: previewLoaded ? "Abwesenheit aktualisiert" : "Abwesenheit aktualisiert, Folgepruefung offen",
+        description: previewLoaded
+          ? undefined
+          : "Betroffene Termine konnten nicht geladen werden. Bitte pruefen Sie die Vorschau erneut.",
+        variant: previewLoaded ? "default" : "destructive",
+      });
     },
     onError: (error: Error) => {
       const code = extractApiCode(error);
@@ -149,6 +230,39 @@ export function EmployeeAbsencesPanel({
     },
   });
 
+  const bulkReplaceMutation = useMutation({
+    mutationFn: async () => {
+      if (!previewAbsenceId || !replacementEmployeeId) {
+        throw new Error("Bitte Ersatzmitarbeiter waehlen.");
+      }
+      const response = await apiRequest(
+        "POST",
+        `/api/employees/${employeeId}/absences/${previewAbsenceId}/bulk-replace-appointments`,
+        { replacementEmployeeId },
+      );
+      return response.json() as Promise<{ updatedAppointmentCount: number; skippedAlreadyAssignedCount: number }>;
+    },
+    onSuccess: (result) => {
+      setBulkConfirmOpen(false);
+      setPreviewOpen(false);
+      setPreviewAppointments([]);
+      setPreviewAbsenceId(null);
+      setReplacementEmployeeId(null);
+      toast({
+        title: "Termine bereinigt",
+        description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.`,
+      });
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: "Bulk-Ersatz fehlgeschlagen",
+        description: code === "VALIDATION_ERROR" ? "Der Ersatzmitarbeiter ist fuer mindestens einen Termin nicht verfuegbar." : error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = async () => {
     if (editingAbsenceId === null) {
       await createMutation.mutateAsync(formState);
@@ -168,6 +282,7 @@ export function EmployeeAbsencesPanel({
   };
 
   const handleEdit = (absence: EmployeeAbsence) => {
+    setPreviewFollowUpError(null);
     setEditingAbsenceId(absence.id);
     setFormState({
       type: absence.type,
@@ -177,6 +292,7 @@ export function EmployeeAbsencesPanel({
   };
 
   const absenceRows = Array.isArray(absences) ? absences : [];
+  const replacementOptions = employees.filter((employee) => employee.id !== employeeId && employee.isActive);
   const tableColumns = useMemo<TableViewColumnDef<EmployeeAbsence>[]>(() => [
     {
       id: "type",
@@ -201,12 +317,15 @@ export function EmployeeAbsencesPanel({
     {
       id: "actions",
       header: "Aktionen",
-      minWidth: 260,
+      minWidth: 320,
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={() => handleEdit(row)} data-testid={`button-edit-employee-absence-${row.id}`}>
             <Pencil className="mr-2 h-4 w-4" />
             Bearbeiten
+          </Button>
+          <Button type="button" variant="outline" onClick={() => void loadPreview(row.id)} data-testid={`button-preview-employee-absence-${row.id}`}>
+            Vorschau
           </Button>
           <Button
             type="button"
@@ -220,9 +339,10 @@ export function EmployeeAbsencesPanel({
         </div>
       ),
     },
-  ], [deleteMutation, handleEdit]);
+  ], [deleteMutation]);
 
   const handleReset = () => {
+    setPreviewFollowUpError(null);
     setEditingAbsenceId(null);
     setFormState(defaultFormState());
   };
@@ -245,6 +365,12 @@ export function EmployeeAbsencesPanel({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {previewFollowUpError ? (
+            <Alert variant="destructive" data-testid="alert-employee-absence-preview-followup-required">
+              <AlertTitle>Betroffene Termine muessen noch geprueft werden</AlertTitle>
+              <AlertDescription>{previewFollowUpError}</AlertDescription>
+            </Alert>
+          ) : null}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="employee-absence-type">Typ</Label>
@@ -339,6 +465,9 @@ export function EmployeeAbsencesPanel({
                       <Pencil className="mr-2 h-4 w-4" />
                       Bearbeiten
                     </Button>
+                    <Button type="button" variant="outline" onClick={() => void loadPreview(absence.id)} data-testid={`button-preview-employee-absence-${absence.id}`}>
+                      Vorschau
+                    </Button>
                     <Button
                       type="button"
                       variant="outline"
@@ -355,6 +484,94 @@ export function EmployeeAbsencesPanel({
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl" data-testid="dialog-employee-absence-preview">
+          <DialogHeader>
+            <DialogTitle>Betroffene Termine</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {previewLoading ? (
+              <div className="text-sm text-muted-foreground">Vorschau wird geladen...</div>
+            ) : previewAppointments.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+                Keine zukuenftigen Termine betroffen.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {previewAppointments.map((appointment) => (
+                  <div key={appointment.appointmentId} className="rounded-md border border-border p-4" data-testid={`employee-absence-preview-appointment-${appointment.appointmentId}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="font-medium">{formatDate(appointment.startDate)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Tour: {appointment.tourName ?? "-"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Mitarbeiter: {appointment.employees.map((employee) => employee.fullName).join(", ") || "-"}
+                        </div>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => onOpenAppointment?.(appointment.appointmentId)}>
+                        Termin oeffnen
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+              <div className="space-y-2">
+                <Label htmlFor="employee-absence-replacement">Ersatzmitarbeiter</Label>
+                <Select
+                  value={replacementEmployeeId === null ? "" : String(replacementEmployeeId)}
+                  onValueChange={(value) => setReplacementEmployeeId(value ? Number(value) : null)}
+                >
+                  <SelectTrigger id="employee-absence-replacement" data-testid="select-employee-absence-replacement">
+                    <SelectValue placeholder="Ersatzmitarbeiter waehlen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {replacementOptions.map((employee) => (
+                      <SelectItem key={employee.id} value={String(employee.id)}>
+                        {employee.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                onClick={() => setBulkConfirmOpen(true)}
+                disabled={previewAppointments.length === 0 || replacementEmployeeId === null || bulkReplaceMutation.isPending}
+                data-testid="button-employee-absence-bulk-replace"
+              >
+                Pulkersatz ausfuehren
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pulkersatz bestaetigen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {previewAppointments.length} betroffene Termine werden bereinigt. Diese Aktion wird nur nach Ihrer Bestaetigung ausgefuehrt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                void bulkReplaceMutation.mutateAsync();
+              }}
+            >
+              Bestaetigen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

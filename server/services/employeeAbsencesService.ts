@@ -1,7 +1,9 @@
 import type { EmployeeAbsence, InsertEmployeeAbsence, UpdateEmployeeAbsence } from "@shared/schema";
 import * as employeeAbsencesRepository from "../repositories/employeeAbsencesRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
+import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
+import { getExcludedEmployeesForDate } from "./employeeAvailabilityService";
 
 type EmployeeAbsenceErrorCode = "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN";
 
@@ -80,6 +82,31 @@ function assertMutableExistingAbsence(absence: EmployeeAbsence): void {
   if (parseDateOnly(absence.from) < getBerlinTodayDateString()) {
     throw new EmployeeAbsencesError(422, "VALIDATION_ERROR");
   }
+}
+
+export type EmployeeAbsenceAffectedAppointment = {
+  appointmentId: number;
+  startDate: string;
+  tourName: string | null;
+  employees: Array<{ id: number; fullName: string }>;
+};
+
+async function getExistingAbsenceOrThrow(
+  employeeId: number,
+  absenceId: number,
+  roleKey: CanonicalRoleKey,
+): Promise<EmployeeAbsence> {
+  requireEmployeeAbsenceRole(roleKey);
+  const employee = await getAccessibleEmployee(employeeId, roleKey);
+  if (!employee) {
+    throw new EmployeeAbsencesError(404, "NOT_FOUND");
+  }
+
+  const existing = await employeeAbsencesRepository.getEmployeeAbsence(employeeId, absenceId);
+  if (!existing) {
+    throw new EmployeeAbsencesError(404, "NOT_FOUND");
+  }
+  return existing;
 }
 
 export async function listEmployeeAbsences(
@@ -191,4 +218,91 @@ export async function deleteEmployeeAbsence(
   }
 
   return true;
+}
+
+export async function previewAffectedAppointments(
+  employeeId: number,
+  absenceId: number,
+  roleKey: CanonicalRoleKey,
+): Promise<EmployeeAbsenceAffectedAppointment[]> {
+  const absence = await getExistingAbsenceOrThrow(employeeId, absenceId, roleKey);
+  const rows = await employeeAbsencesRepository.listAffectedFutureAppointments(employeeId, {
+    from: absence.from,
+    until: absence.until,
+    today: getBerlinTodayDateString(),
+  });
+
+  const employeesByAppointment = await appointmentsRepository.getAppointmentEmployeesByAppointmentIds(
+    rows.map((row) => row.appointmentId),
+  );
+  const employeesByAppointmentId = new Map<number, Array<{ id: number; fullName: string }>>();
+  for (const row of employeesByAppointment) {
+    const current = employeesByAppointmentId.get(row.appointmentId) ?? [];
+    current.push({ id: row.employee.id, fullName: row.employee.fullName });
+    employeesByAppointmentId.set(row.appointmentId, current);
+  }
+
+  return rows.map((row) => ({
+    appointmentId: row.appointmentId,
+    startDate: row.startDate instanceof Date ? row.startDate.toISOString().slice(0, 10) : String(row.startDate).slice(0, 10),
+    tourName: row.tourName ?? null,
+    employees: employeesByAppointmentId.get(row.appointmentId) ?? [],
+  }));
+}
+
+export async function bulkReplaceAffectedAppointments(
+  employeeId: number,
+  absenceId: number,
+  replacementEmployeeId: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ absenceId: number; updatedAppointmentCount: number; skippedAlreadyAssignedCount: number }> {
+  const absence = await getExistingAbsenceOrThrow(employeeId, absenceId, roleKey);
+  if (!Number.isInteger(replacementEmployeeId) || replacementEmployeeId < 1 || replacementEmployeeId === employeeId) {
+    throw new EmployeeAbsencesError(422, "VALIDATION_ERROR");
+  }
+
+  const replacementEmployee = await employeesRepository.getEmployee(replacementEmployeeId);
+  if (!replacementEmployee || !replacementEmployee.isActive) {
+    throw new EmployeeAbsencesError(422, "VALIDATION_ERROR");
+  }
+
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const rows = await employeeAbsencesRepository.listAffectedFutureAppointmentsTx(tx, employeeId, {
+      from: absence.from,
+      until: absence.until,
+      today: getBerlinTodayDateString(),
+      replacementEmployeeId,
+    });
+
+    const uniqueDates = Array.from(
+      new Set(rows.map((row) => (row.startDate instanceof Date ? row.startDate.toISOString().slice(0, 10) : String(row.startDate).slice(0, 10)))),
+    );
+    for (const date of uniqueDates) {
+      const excluded = await getExcludedEmployeesForDate([replacementEmployeeId], date);
+      if (excluded.length > 0) {
+        throw new EmployeeAbsencesError(422, "VALIDATION_ERROR");
+      }
+    }
+
+    let updatedAppointmentCount = 0;
+    let skippedAlreadyAssignedCount = 0;
+
+    for (const row of rows) {
+      await employeeAbsencesRepository.removeEmployeeFromAppointmentTx(tx, row.appointmentId, employeeId);
+      if (Number(row.replacementAlreadyAssigned ?? 0) > 0) {
+        skippedAlreadyAssignedCount += 1;
+        updatedAppointmentCount += 1;
+        continue;
+      }
+
+      await employeeAbsencesRepository.addEmployeeToAppointmentTx(tx, row.appointmentId, replacementEmployeeId);
+      updatedAppointmentCount += 1;
+    }
+
+    return {
+      absenceId,
+      updatedAppointmentCount,
+      skippedAlreadyAssignedCount,
+    };
+  });
 }

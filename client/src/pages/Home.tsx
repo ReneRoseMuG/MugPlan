@@ -244,7 +244,15 @@ export default function Home({ onLogout }: HomeProps) {
               }}
             />
           ) : view === "employeeAbsences" ? (
-            <EmployeeAbsencesPage />
+            <EmployeeAbsencesPage
+              onOpenAppointment={(appointmentId) => {
+                setAppointmentContext({
+                  appointmentId,
+                  returnContext: { targetView: "employeeAbsences" },
+                });
+                setView("appointment");
+              }}
+            />
           ) : view === "project" ? (
             <ProjectForm
               projectId={selectedProjectId || undefined}

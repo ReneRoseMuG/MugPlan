@@ -22,7 +22,11 @@ async function fetchActiveEmployees(): Promise<Employee[]> {
   return payload as Employee[];
 }
 
-export function EmployeeAbsencesPage() {
+interface EmployeeAbsencesPageProps {
+  onOpenAppointment?: (appointmentId: number) => void;
+}
+
+export function EmployeeAbsencesPage({ onOpenAppointment }: EmployeeAbsencesPageProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees", { scope: "active", view: "absences-navigation" }],
@@ -81,7 +85,12 @@ export function EmployeeAbsencesPage() {
           </div>
         ) : (
           <div className="h-full p-6">
-            <EmployeeAbsencesPanel employeeId={selectedEmployeeId} listVariant="table" />
+            <EmployeeAbsencesPanel
+              employeeId={selectedEmployeeId}
+              employees={employees}
+              listVariant="table"
+              onOpenAppointment={onOpenAppointment}
+            />
           </div>
         )
       }

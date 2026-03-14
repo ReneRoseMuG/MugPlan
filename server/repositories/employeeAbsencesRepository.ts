@@ -1,6 +1,16 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "../db";
-import { employeeAbsences, type EmployeeAbsence, type InsertEmployeeAbsence, type UpdateEmployeeAbsence } from "@shared/schema";
+import {
+  appointmentEmployees,
+  appointments,
+  employeeAbsences,
+  tours,
+  type EmployeeAbsence,
+  type InsertEmployeeAbsence,
+  type UpdateEmployeeAbsence,
+} from "@shared/schema";
+
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export async function listEmployeeAbsences(employeeId: number): Promise<EmployeeAbsence[]> {
   return db
@@ -80,4 +90,80 @@ export async function deleteEmployeeAbsenceWithVersion(
     return { kind: "version_conflict" };
   }
   return { kind: "deleted" };
+}
+
+export async function listAffectedFutureAppointments(
+  employeeId: number,
+  params: { from: string; until: string; today: string },
+) {
+  const fromDate = new Date(`${params.from}T00:00:00`);
+  const untilDate = new Date(`${params.until}T00:00:00`);
+  const todayDate = new Date(`${params.today}T00:00:00`);
+  return db
+    .select({
+      appointmentId: appointments.id,
+      startDate: appointments.startDate,
+      tourName: tours.name,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(
+      and(
+        eq(appointmentEmployees.employeeId, employeeId),
+        gte(appointments.startDate, todayDate),
+        gte(appointments.startDate, fromDate),
+        lte(appointments.startDate, untilDate),
+      ),
+    )
+    .orderBy(asc(appointments.startDate), asc(appointments.id));
+}
+
+export async function listAffectedFutureAppointmentsTx(
+  tx: DbTx,
+  employeeId: number,
+  params: { from: string; until: string; today: string; replacementEmployeeId: number },
+) {
+  const fromDate = new Date(`${params.from}T00:00:00`);
+  const untilDate = new Date(`${params.until}T00:00:00`);
+  const todayDate = new Date(`${params.today}T00:00:00`);
+  return tx
+    .select({
+      appointmentId: appointments.id,
+      startDate: appointments.startDate,
+      tourName: tours.name,
+      replacementAlreadyAssigned: sql<number>`
+        exists (
+          select 1
+          from appointment_employee ae_replacement
+          where ae_replacement.appointment_id = ${appointments.id}
+            and ae_replacement.employee_id = ${params.replacementEmployeeId}
+        )
+      `,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(
+      and(
+        eq(appointmentEmployees.employeeId, employeeId),
+        gte(appointments.startDate, todayDate),
+        gte(appointments.startDate, fromDate),
+        lte(appointments.startDate, untilDate),
+      ),
+    )
+    .orderBy(asc(appointments.startDate), asc(appointments.id));
+}
+
+export async function removeEmployeeFromAppointmentTx(tx: DbTx, appointmentId: number, employeeId: number): Promise<void> {
+  await tx
+    .delete(appointmentEmployees)
+    .where(and(eq(appointmentEmployees.appointmentId, appointmentId), eq(appointmentEmployees.employeeId, employeeId)));
+}
+
+export async function addEmployeeToAppointmentTx(tx: DbTx, appointmentId: number, employeeId: number): Promise<void> {
+  await tx.insert(appointmentEmployees).values({
+    appointmentId,
+    employeeId,
+  });
 }

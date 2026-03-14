@@ -140,3 +140,55 @@ export async function deleteEmployeeAbsence(req: Request, res: Response, next: N
     next(err);
   }
 }
+
+export async function previewAffectedAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const employeeId = parseIdParam(req.params.employeeId);
+    const absenceId = parseIdParam(req.params.absenceId);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const appointments = await employeeAbsencesService.previewAffectedAppointments(employeeId, absenceId, roleKey);
+    res.json({ absenceId, appointments });
+  } catch (err) {
+    if (err instanceof employeeAbsencesService.EmployeeAbsencesError) {
+      res.status(err.status).json(err.code === "NOT_FOUND" ? { message: "Abwesenheit nicht gefunden" } : { code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function bulkReplaceAffectedAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const employeeId = parseIdParam(req.params.employeeId);
+    const absenceId = parseIdParam(req.params.absenceId);
+    const { replacementEmployeeId } = api.employees.absences.bulkReplaceAppointments.input.parse(req.body);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const result = await employeeAbsencesService.bulkReplaceAffectedAppointments(
+      employeeId,
+      absenceId,
+      replacementEmployeeId,
+      roleKey,
+    );
+    res.json(result);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof employeeAbsencesService.EmployeeAbsencesError) {
+      res.status(err.status).json(err.code === "NOT_FOUND" ? { message: "Abwesenheit nicht gefunden" } : { code: err.code });
+      return;
+    }
+    next(err);
+  }
+}

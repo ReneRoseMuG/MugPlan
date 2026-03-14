@@ -9,5 +9,7 @@ router.get(api.employees.absences.get.path, employeeAbsencesController.getEmploy
 router.post(api.employees.absences.create.path, employeeAbsencesController.createEmployeeAbsence);
 router.put(api.employees.absences.update.path, employeeAbsencesController.updateEmployeeAbsence);
 router.delete(api.employees.absences.delete.path, employeeAbsencesController.deleteEmployeeAbsence);
+router.get(api.employees.absences.previewAppointments.path, employeeAbsencesController.previewAffectedAppointments);
+router.post(api.employees.absences.bulkReplaceAppointments.path, employeeAbsencesController.bulkReplaceAffectedAppointments);
 
 export default router;

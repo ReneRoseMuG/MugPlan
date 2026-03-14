@@ -18,6 +18,16 @@ import { de } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import {
@@ -68,6 +78,13 @@ export function CalendarMonthView({
   // Navigation/Sync-Signale werden absichtlich nicht verarbeitet.
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
+  const [availabilityConfirmOpen, setAvailabilityConfirmOpen] = useState(false);
+  const [pendingAvailabilityDrop, setPendingAvailabilityDrop] = useState<{
+    appointmentId: number;
+    targetDate: string;
+    targetEndDate: string | null;
+    conflicts: Array<{ id: number; fullName: string; reason: "absence" | "exit_date" }>;
+  } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(
@@ -170,6 +187,76 @@ export function CalendarMonthView({
     setDraggedAppointmentId(null);
   };
 
+  const persistDropMutation = async ({
+    appointmentId,
+    version,
+    projectId,
+    customerId,
+    tourId,
+    startDate,
+    endDate,
+    startTime,
+    employeeIds,
+    confirmAvailabilityAdjustments,
+  }: {
+    appointmentId: number;
+    version: number;
+    projectId: number | null;
+    customerId: number;
+    tourId: number | null;
+    startDate: string;
+    endDate: string | null;
+    startTime: string | null;
+    employeeIds: number[];
+    confirmAvailabilityAdjustments: boolean;
+  }) => {
+    const response = await fetch(`/api/appointments/${appointmentId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version,
+        projectId,
+        customerId,
+        tourId,
+        startDate,
+        endDate,
+        startTime,
+        employeeIds,
+        confirmAvailabilityAdjustments,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      if (error?.code === "VERSION_CONFLICT") {
+        throw new Error("Termin wurde zwischenzeitlich geaendert. Bitte neu laden.");
+      }
+      if (error?.code === "VALIDATION_ERROR") {
+        throw new Error(error?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");
+      }
+      if (error?.code === "AVAILABILITY_CONFIRMATION_REQUIRED") {
+        setPendingAvailabilityDrop({
+          appointmentId,
+          targetDate: startDate,
+          targetEndDate: endDate,
+          conflicts: Array.isArray(error?.availabilityConflicts) ? error.availabilityConflicts : [],
+        });
+        return false;
+      }
+      throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: ["calendarAppointments"],
+    });
+    console.info(`${logPrefix} drop success`, { appointmentId });
+    setPendingAvailabilityDrop(null);
+    setAvailabilityConfirmOpen(false);
+    return true;
+  };
+
   const handleDrop = async (event: React.DragEvent, targetDate: Date) => {
     event.preventDefault();
     const appointmentId = Number(event.dataTransfer.getData("text/plain"));
@@ -240,6 +327,7 @@ export function CalendarMonthView({
           endDate: newEndDate,
           startTime: appointment.startTime ?? null,
           employeeIds: appointment.employees.map((employee) => employee.id),
+          confirmAvailabilityAdjustments: false,
         }),
       });
 
@@ -250,6 +338,16 @@ export function CalendarMonthView({
         }
         if (error?.code === "VALIDATION_ERROR") {
           throw new Error(error?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");
+        }
+        if (error?.code === "AVAILABILITY_CONFIRMATION_REQUIRED") {
+          setPendingAvailabilityDrop({
+            appointmentId,
+            targetDate: newStartDate,
+            targetEndDate: newEndDate,
+            conflicts: Array.isArray(error?.availabilityConflicts) ? error.availabilityConflicts : [],
+          });
+          setAvailabilityConfirmOpen(true);
+          return;
         }
         throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
       }
@@ -279,6 +377,67 @@ export function CalendarMonthView({
           <span className="text-lg font-bold text-primary">{format(baseMonthStart, "MMMM yyyy", { locale: de })}</span>
         </div>
       </div>
+
+      <AlertDialog
+        open={availabilityConfirmOpen}
+        onOpenChange={(open) => {
+          setAvailabilityConfirmOpen(open);
+          if (!open) {
+            setPendingAvailabilityDrop(null);
+          }
+        }}
+      >
+        <AlertDialogContent data-testid="dialog-calendar-month-availability-conflicts">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Verschiebung mit Personalaenderung bestaetigen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Am Zieldatum sind nicht alle aktuell zugewiesenen Mitarbeiter verfuegbar. Erst nach Ihrer ausdruecklichen
+              Bestaetigung wird der Termin verschoben und die betroffenen Mitarbeiter werden entfernt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 text-sm">
+            {pendingAvailabilityDrop?.conflicts.map((employee) => (
+              <div key={employee.id} className="rounded-md border border-border bg-muted/30 px-3 py-2">
+                <span className="font-medium">{employee.fullName}</span>
+                <span className="ml-2 text-muted-foreground">
+                  {employee.reason === "absence" ? "Abwesenheit" : "Austrittsdatum erreicht"}
+                </span>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!pendingAvailabilityDrop) return;
+                const currentAppointment = appointmentsById.get(pendingAvailabilityDrop.appointmentId);
+                if (!currentAppointment) return;
+                void persistDropMutation({
+                  appointmentId: pendingAvailabilityDrop.appointmentId,
+                  version: currentAppointment.version,
+                  projectId: currentAppointment.projectId,
+                  customerId: currentAppointment.customer.id,
+                  tourId: currentAppointment.tourId ?? null,
+                  startDate: pendingAvailabilityDrop.targetDate,
+                  endDate: pendingAvailabilityDrop.targetEndDate,
+                  startTime: currentAppointment.startTime ?? null,
+                  employeeIds: currentAppointment.employees.map((employee) => employee.id),
+                  confirmAvailabilityAdjustments: true,
+                }).catch((err: unknown) => {
+                  console.error(`${logPrefix} drop confirm error`, err);
+                  toast({
+                    title: "Fehler beim Verschieben",
+                    description: err instanceof Error ? err.message : "Unbekannter Fehler",
+                    variant: "destructive",
+                  });
+                });
+              }}
+            >
+              Trotzdem verschieben
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* FIX-RULE:
        * Scroll ist bewusst passiv.

@@ -46,11 +46,14 @@ export async function createAppointment(req: Request, res: Response, next: NextF
       return;
     }
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json(
-        err.conflictEmployees
-          ? { code: err.code, message: err.message, conflictEmployees: err.conflictEmployees }
-          : { code: err.code, message: err.message },
-      );
+      const payload: Record<string, unknown> = { code: err.code, message: err.message };
+      if (err.conflictEmployees) {
+        payload.conflictEmployees = err.conflictEmployees;
+      }
+      if (err.availabilityConflicts) {
+        payload.availabilityConflicts = err.availabilityConflicts;
+      }
+      res.status(err.status).json(payload);
       return;
     }
     next(err);
@@ -80,11 +83,14 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
       return;
     }
     if (appointmentsService.isAppointmentError(err)) {
-      res.status(err.status).json(
-        err.conflictEmployees
-          ? { code: err.code, message: err.message, conflictEmployees: err.conflictEmployees }
-          : { code: err.code, message: err.message },
-      );
+      const payload: Record<string, unknown> = { code: err.code, message: err.message };
+      if (err.conflictEmployees) {
+        payload.conflictEmployees = err.conflictEmployees;
+      }
+      if (err.availabilityConflicts) {
+        payload.availabilityConflicts = err.availabilityConflicts;
+      }
+      res.status(err.status).json(payload);
       return;
     }
     next(err);
