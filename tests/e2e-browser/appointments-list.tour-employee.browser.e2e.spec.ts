@@ -68,6 +68,7 @@ test("tour form appointments table: date sorting persists after show-all and no 
 
   const table = page.getByTestId("table-appointments-list");
   await expect(table).toBeVisible();
+  await expect(page.getByTestId("text-appointments-page-state")).toBeVisible();
   const headerTexts = await table.locator("thead th").allTextContents();
   expect(headerTexts).toEqual(expect.arrayContaining(["Uhrzeit", "Datum", "Auftrag Nr.", "Projekt", "Kunde Nr.", "Kunde"]));
   expect(headerTexts.join(" ")).toContain("Datum");
@@ -124,6 +125,7 @@ test("employee form appointments table: structure, sorting persistence and verti
 
   const table = page.getByTestId("table-appointments-list");
   await expect(table).toBeVisible();
+  await expect(page.getByTestId("text-appointments-page-state")).toBeVisible();
   const headerTexts = await table.locator("thead th").allTextContents();
   expect(headerTexts).toEqual(expect.arrayContaining(["Uhrzeit", "Datum", "Auftrag Nr.", "Projekt", "Kunde Nr.", "Kunde", "Tour"]));
   expect(headerTexts.join(" ")).toContain("Datum");
@@ -152,6 +154,7 @@ test("employee form appointments table: structure, sorting persistence and verti
 
   const firstHeader = table.locator("thead th").first();
   await expect(firstHeader).toHaveClass(/sticky/);
+  await expect(firstHeader).toHaveClass(/bg-muted\/95/);
   await scrollViewport.evaluate((element) => {
     element.scrollTop = 220;
   });

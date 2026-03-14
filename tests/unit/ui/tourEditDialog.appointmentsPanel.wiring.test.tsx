@@ -8,6 +8,7 @@
  * - TourEditForm bindet AppointmentsListPage ueber context={{ type: "tour", tourId }} ein.
  * - Neue Tour (tourId=null) bleibt ueber emptyStateOverride im leeren Zustand.
  * - Individueller helpKey fuer den Tour-Form-Kontext bleibt verdrahtet.
+ * - Der Formular-Tab nutzt den eingebetteten Listenmodus ohne aeusseren Formular-Scroll.
  * - Legacy-Props hideTourFilter/lockedTourId/hideTourColumn/enforceFromToday werden im TourEditForm nicht mehr verwendet.
  *
  * Fehlerfaelle:
@@ -29,6 +30,10 @@ describe("FT04 TourEditForm appointments context wiring", () => {
     expect(tourFormSource).toContain("helpKey=\"appointments.list.tourForm\"");
     expect(tourFormSource).toContain("context={{ type: \"tour\", tourId: tour?.id ?? null }}");
     expect(tourFormSource).toContain("emptyStateOverride={leftEmptyState}");
+    expect(tourFormSource).toContain("contentScrollMode=\"contained\"");
+    expect(tourFormSource).toContain("className=\"min-h-0 flex-1\"");
+    expect(tourFormSource).toContain("<Tabs defaultValue=\"stammdaten\" className=\"flex h-full min-h-0 flex-col space-y-4\">");
+    expect(tourFormSource).toContain("<TabsContent value=\"termine\" className=\"flex min-h-0 flex-1 flex-col\">");
   });
 
   it("does not use deprecated appointments list props in tour form", () => {

@@ -250,8 +250,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       isSaving={createMutation.isPending || updateMutation.isPending}
       saveLabel="Speichern"
       testIdPrefix="employee"
+      contentScrollMode="contained"
     >
-      <Tabs defaultValue="stammdaten" className="space-y-4">
+      <Tabs defaultValue="stammdaten" className="flex h-full min-h-0 flex-col space-y-4">
         <TabsList>
           <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
           <TabsTrigger value="abwesenheiten" data-testid="tab-employee-abwesenheiten">Abwesenheiten</TabsTrigger>
@@ -392,14 +393,14 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           )}
         </TabsContent>
 
-        <TabsContent value="termine">
+        <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
           {employeeId ? (
             <AppointmentsListPage
               title="Termine"
               helpKey="appointments.list.employeeForm"
               context={{ type: "employee", employeeId }}
               onOpenAppointment={onOpenAppointment}
-              className="min-h-[620px]"
+              className="min-h-0 flex-1"
             />
           ) : (
             <p className="py-4 text-sm text-slate-400">

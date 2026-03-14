@@ -71,6 +71,13 @@
       "when": 1773428400000,
       "tag": "0009_ft30_employee_absences",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1773482400000,
+      "tag": "0010_ft30_employee_exit_date",
+      "breakpoints": true
     }
   ]
 }

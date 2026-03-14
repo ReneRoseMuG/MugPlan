@@ -18,6 +18,7 @@ interface EntityFormLayoutProps {
   cancelLabel?: string;
   testIdPrefix?: string;
   footerActions?: ReactNode;
+  contentScrollMode?: "auto" | "contained";
 }
 
 export function EntityFormLayout({
@@ -34,6 +35,7 @@ export function EntityFormLayout({
   cancelLabel = "Abbrechen",
   testIdPrefix = "entity",
   footerActions,
+  contentScrollMode = "auto",
 }: EntityFormLayoutProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitAction = onSubmit ?? (onSave ? async () => onSave() : undefined);
@@ -56,8 +58,8 @@ export function EntityFormLayout({
   };
 
   return (
-    <div className="h-full overflow-y-auto">
-      <Card className="max-w-6xl mx-auto">
+    <div className="flex h-full min-h-0 flex-col">
+      <Card className="mx-auto flex h-full min-h-0 max-w-6xl flex-1 flex-col">
         <CardHeader className="border-b border-border">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-primary flex items-center gap-3">
@@ -76,8 +78,10 @@ export function EntityFormLayout({
             )}
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
-          {children}
+        <CardContent className="flex min-h-0 flex-1 flex-col pt-6">
+          <div className={contentScrollMode === "contained" ? "min-h-0 flex-1 overflow-hidden" : "min-h-0 flex-1 overflow-y-auto"}>
+            {children}
+          </div>
 
           <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-border">
             {onCancel && (

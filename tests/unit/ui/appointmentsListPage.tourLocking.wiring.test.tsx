@@ -116,4 +116,15 @@ describe("FT04 appointments list page tour locking wiring", () => {
 
     expect(source).toContain("helpKey={helpKey}");
   });
+
+  it("keeps the paging footer below the filter panel in every context", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("footerSlot={tableFooter}");
+    expect(source).not.toContain("const isEmbeddedListContext = contextType !== \"standalone\";");
+    expect(source).not.toContain("footerSlot={isEmbeddedListContext ? undefined : tableFooter}");
+    expect(source).not.toContain("footerSlot={isEmbeddedListContext ? tableFooter : undefined}");
+    expect(source).toContain("contentClassName=\"flex min-h-0 flex-col\"");
+  });
 });

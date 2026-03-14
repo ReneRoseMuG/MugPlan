@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - EmployeesPage verwendet EmployeeForm als Detail-/Create-Ansicht.
  * - EmployeeForm rendert AppointmentsListPage im employee-Kontext nur bei bestehender employeeId.
+ * - EmployeeForm aktiviert fuer den Termine-Tab den eingebetteten Listen-/Scrollmodus.
  * - EmployeesPage nutzt EntityAppointmentsSidebarWithDialog nicht mehr.
  *
  * Fehlerfaelle:
@@ -31,6 +32,10 @@ describe("FT04 EmployeeForm wiring", () => {
     expect(employeeFormSource).toContain("context={{ type: \"employee\", employeeId }}");
     expect(employeeFormSource).toContain("helpKey=\"appointments.list.employeeForm\"");
     expect(employeeFormSource).toContain("{employeeId ? (");
+    expect(employeeFormSource).toContain("contentScrollMode=\"contained\"");
+    expect(employeeFormSource).toContain("className=\"min-h-0 flex-1\"");
+    expect(employeeFormSource).toContain("<Tabs defaultValue=\"stammdaten\" className=\"flex h-full min-h-0 flex-col space-y-4\">");
+    expect(employeeFormSource).toContain("<TabsContent value=\"termine\" className=\"flex min-h-0 flex-1 flex-col\">");
   });
 
   it("uses EmployeeForm in EmployeesPage and removes legacy sidebar integration", () => {

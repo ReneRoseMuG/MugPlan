@@ -398,6 +398,7 @@ export function AppointmentsListPage({
       showCloseButton={resolvedShowCloseButton}
       closeTestId="button-close-appointments-list"
       className={className}
+      contentClassName="flex min-h-0 flex-col"
       filterSlot={
         <AppointmentsFilterPanel
           filters={filters}

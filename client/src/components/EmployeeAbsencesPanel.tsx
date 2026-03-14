@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 
 type AbsenceType = "vacation" | "sick";
 
@@ -43,10 +44,36 @@ function formatDate(value: string): string {
   return `${day}.${month}.${year}`;
 }
 
-export function EmployeeAbsencesPanel({ employeeId }: { employeeId: number }) {
+async function fetchEmployeeAbsences(employeeId: number): Promise<EmployeeAbsence[]> {
+  const response = await fetch(`/api/employees/${employeeId}/absences`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const text = (await response.text()) || "Abwesenheiten konnten nicht geladen werden";
+    throw new Error(text);
+  }
+
+  const payload = await response.json();
+  if (!Array.isArray(payload)) {
+    throw new Error("Abwesenheiten konnten nicht geladen werden");
+  }
+
+  return payload as EmployeeAbsence[];
+}
+
+interface EmployeeAbsencesPanelProps {
+  employeeId: number;
+  listVariant?: "cards" | "table";
+}
+
+export function EmployeeAbsencesPanel({
+  employeeId,
+  listVariant = "cards",
+}: EmployeeAbsencesPanelProps) {
   const { toast } = useToast();
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
-  const canManageAbsences = userRole === "ADMIN" || userRole === "DISPONENT";
+  const canManageAbsences = userRole === "ADMIN" || userRole === "DISPATCHER" || userRole === "DISPONENT";
   const [formState, setFormState] = useState<FormState>(() => defaultFormState());
   const [editingAbsenceId, setEditingAbsenceId] = useState<number | null>(null);
 
@@ -59,7 +86,7 @@ export function EmployeeAbsencesPanel({ employeeId }: { employeeId: number }) {
 
   const { data: absences = [], isLoading } = useQuery<EmployeeAbsence[]>({
     queryKey,
-    queryFn: () => fetch(`/api/employees/${employeeId}/absences`, { credentials: "include" }).then((response) => response.json()),
+    queryFn: () => fetchEmployeeAbsences(employeeId),
     enabled: canManageAbsences,
   });
 
@@ -149,6 +176,52 @@ export function EmployeeAbsencesPanel({ employeeId }: { employeeId: number }) {
     });
   };
 
+  const absenceRows = Array.isArray(absences) ? absences : [];
+  const tableColumns = useMemo<TableViewColumnDef<EmployeeAbsence>[]>(() => [
+    {
+      id: "type",
+      header: "Typ",
+      accessor: (row) => formatAbsenceType(row.type),
+      minWidth: 160,
+    },
+    {
+      id: "from",
+      header: "Von",
+      accessor: (row) => row.from,
+      minWidth: 120,
+      cell: ({ row }) => <span>{formatDate(row.from)}</span>,
+    },
+    {
+      id: "until",
+      header: "Bis",
+      accessor: (row) => row.until,
+      minWidth: 120,
+      cell: ({ row }) => <span>{formatDate(row.until)}</span>,
+    },
+    {
+      id: "actions",
+      header: "Aktionen",
+      minWidth: 260,
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={() => handleEdit(row)} data-testid={`button-edit-employee-absence-${row.id}`}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Bearbeiten
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => deleteMutation.mutate({ absenceId: row.id, version: row.version })}
+            data-testid={`button-delete-employee-absence-${row.id}`}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Loeschen
+          </Button>
+        </div>
+      ),
+    },
+  ], [deleteMutation, handleEdit]);
+
   const handleReset = () => {
     setEditingAbsenceId(null);
     setFormState(defaultFormState());
@@ -235,13 +308,21 @@ export function EmployeeAbsencesPanel({ employeeId }: { employeeId: number }) {
         <CardContent>
           {isLoading ? (
             <div className="text-sm text-muted-foreground">Abwesenheiten werden geladen...</div>
-          ) : absences.length === 0 ? (
+          ) : absenceRows.length === 0 ? (
             <div className="rounded-md border border-dashed border-border px-4 py-6 text-sm text-muted-foreground" data-testid="empty-employee-absences">
               Fuer diesen Mitarbeiter sind noch keine Abwesenheiten erfasst.
             </div>
+          ) : listVariant === "table" ? (
+            <TableView
+              testId="table-employee-absences"
+              columns={tableColumns}
+              rows={absenceRows}
+              rowKey={(row) => row.id}
+              stickyHeader
+            />
           ) : (
             <div className="space-y-3">
-              {absences.map((absence) => (
+              {absenceRows.map((absence) => (
                 <div
                   key={absence.id}
                   className="flex flex-col gap-3 rounded-md border border-border bg-card p-4 md:flex-row md:items-center md:justify-between"

@@ -64,6 +64,7 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
   const AppointmentsIcon = domainIcons.appointmentsList;
   const ReportsIcon = domainIcons.reports;
   const EmployeesIcon = domainIcons.employees;
+  const EmployeeAbsencesIcon = domainIcons.employeeAbsences;
   const TeamsIcon = domainIcons.teams;
   const ToursIcon = domainIcons.tours;
   const AdminIcon = domainIcons.admin;
@@ -101,6 +102,7 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
 
         <NavGroup title="Mitarbeiter Verwaltung">
           <NavButton icon={EmployeesIcon} label="Mitarbeiter" isActive={currentView === "employees"} onClick={() => onViewChange("employees")} />
+          <NavButton icon={EmployeeAbsencesIcon} label="Abwesenheiten" isActive={currentView === "employeeAbsences"} onClick={() => onViewChange("employeeAbsences")} />
           <NavButton icon={TeamsIcon} label="Teams" isActive={currentView === "teams"} onClick={() => onViewChange("teams")} />
           <NavButton icon={ToursIcon} label="Touren" isActive={currentView === "tours"} onClick={() => onViewChange("tours")} />
         </NavGroup>

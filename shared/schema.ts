@@ -812,6 +812,7 @@ export const employees = mysqlTable("employee", {
   fullName: varchar("full_name", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 255 }),
   email: varchar("email", { length: 255 }),
+  exitDate: date("exit_date", { mode: "string" }),
   isActive: boolean("is_active").notNull().default(true),
   teamId: int("team_id").references(() => teams.id, { onDelete: "set null" }),
   tourId: int("tour_id").references(() => tours.id, { onDelete: "set null" }),
@@ -842,6 +843,7 @@ export const updateEmployeeSchema = z.object({
   lastName: z.string().optional(),
   phone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
+  exitDate: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
 });
 

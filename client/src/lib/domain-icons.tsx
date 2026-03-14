@@ -8,6 +8,7 @@ import {
   UserRound,
   UsersRound,
   Layers,
+  CalendarRange,
 } from "lucide-react";
 
 export const domainIcons = {
@@ -17,6 +18,7 @@ export const domainIcons = {
   appointmentsList: Table2,
   tours: MapPin,
   teams: Layers,
+  employeeAbsences: CalendarRange,
   reports: FileText,
   admin: Settings,
 } satisfies Record<string, ComponentType<{ className?: string }>>;

@@ -8,6 +8,7 @@ import { CustomersPage } from "@/components/CustomersPage";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
 import { EmployeesPage } from "@/components/EmployeesPage";
+import { EmployeeAbsencesPage } from "@/components/EmployeeAbsencesPage";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { AppointmentForm } from "@/components/AppointmentForm";
@@ -33,6 +34,7 @@ export type ViewType =
   | "tours"
   | "teams"
   | "employees"
+  | "employeeAbsences"
   | "project"
   | "projectList"
   | "appointment"
@@ -241,6 +243,8 @@ export default function Home({ onLogout }: HomeProps) {
                 setView("appointment");
               }}
             />
+          ) : view === "employeeAbsences" ? (
+            <EmployeeAbsencesPage />
           ) : view === "project" ? (
             <ProjectForm
               projectId={selectedProjectId || undefined}

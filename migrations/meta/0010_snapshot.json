@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "a4040c98-b6ed-4cf4-ab6a-6683136c1472",
+  "prevId": "79c9812d-66ae-4622-96c5-c240198ec4e9",
+  "note": "Manual snapshot placeholder for 0010_ft30_employee_exit_date. Authoritative migration logic lives in migrations/0010_ft30_employee_exit_date.sql."
+}
