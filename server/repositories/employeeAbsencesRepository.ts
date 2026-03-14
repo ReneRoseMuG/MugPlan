@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
@@ -103,6 +103,7 @@ export async function listAffectedFutureAppointments(
     .select({
       appointmentId: appointments.id,
       startDate: appointments.startDate,
+      endDate: appointments.endDate,
       tourName: tours.name,
     })
     .from(appointmentEmployees)
@@ -111,9 +112,9 @@ export async function listAffectedFutureAppointments(
     .where(
       and(
         eq(appointmentEmployees.employeeId, employeeId),
-        gte(appointments.startDate, todayDate),
-        gte(appointments.startDate, fromDate),
+        gt(appointments.startDate, todayDate),
         lte(appointments.startDate, untilDate),
+        or(gte(appointments.endDate, fromDate), gte(appointments.startDate, fromDate)),
       ),
     )
     .orderBy(asc(appointments.startDate), asc(appointments.id));
@@ -131,6 +132,7 @@ export async function listAffectedFutureAppointmentsTx(
     .select({
       appointmentId: appointments.id,
       startDate: appointments.startDate,
+      endDate: appointments.endDate,
       tourName: tours.name,
       replacementAlreadyAssigned: sql<number>`
         exists (
@@ -147,9 +149,9 @@ export async function listAffectedFutureAppointmentsTx(
     .where(
       and(
         eq(appointmentEmployees.employeeId, employeeId),
-        gte(appointments.startDate, todayDate),
-        gte(appointments.startDate, fromDate),
+        gt(appointments.startDate, todayDate),
         lte(appointments.startDate, untilDate),
+        or(gte(appointments.endDate, fromDate), gte(appointments.startDate, fromDate)),
       ),
     )
     .orderBy(asc(appointments.startDate), asc(appointments.id));

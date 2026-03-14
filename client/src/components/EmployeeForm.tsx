@@ -385,7 +385,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
         <TabsContent value="abwesenheiten">
           {employeeId ? (
-            <EmployeeAbsencesPanel employeeId={employeeId} />
+            <EmployeeAbsencesPanel employeeId={employeeId} employees={allEmployees} />
           ) : (
             <p className="py-4 text-sm text-slate-400">
               Nach dem Speichern des Mitarbeiters koennen Abwesenheiten erfasst werden.

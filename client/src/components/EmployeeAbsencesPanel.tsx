@@ -248,9 +248,12 @@ export function EmployeeAbsencesPanel({
       setPreviewAppointments([]);
       setPreviewAbsenceId(null);
       setReplacementEmployeeId(null);
+      const skippedDescription = result.skippedAlreadyAssignedCount > 0
+        ? ` ${result.skippedAlreadyAssignedCount} Termine wurden uebersprungen, weil der Ersatz bereits zugewiesen war.`
+        : "";
       toast({
         title: "Termine bereinigt",
-        description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.`,
+        description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.${skippedDescription}`,
       });
     },
     onError: (error: Error) => {
@@ -494,7 +497,10 @@ export function EmployeeAbsencesPanel({
             {previewLoading ? (
               <div className="text-sm text-muted-foreground">Vorschau wird geladen...</div>
             ) : previewAppointments.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+              <div
+                className="rounded-md border border-dashed border-border px-4 py-6 text-sm text-muted-foreground"
+                data-testid="empty-employee-absence-preview"
+              >
                 Keine zukuenftigen Termine betroffen.
               </div>
             ) : (

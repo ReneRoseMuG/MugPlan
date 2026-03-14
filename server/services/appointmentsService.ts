@@ -15,7 +15,7 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import { logDebug, logInfo } from "../lib/logger";
 import * as tagRelationsService from "./tagRelationsService";
-import { previewEmployeeAvailabilityForDate, type ExcludedEmployee } from "./employeeAvailabilityService";
+import { previewEmployeeAvailabilityForDateRange, type ExcludedEmployee } from "./employeeAvailabilityService";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
@@ -153,10 +153,11 @@ function normalizeEmployeeIds(employeeIds?: number[]) {
 
 async function resolveAvailableEmployeeIdsForMutation(
   employeeIds: number[],
-  appointmentDate: string,
+  appointmentStartDate: string,
+  appointmentEndDate: string | null,
   confirmAvailabilityAdjustments: boolean,
 ): Promise<{ employeeIds: number[]; excludedEmployees: ExcludedEmployee[] }> {
-  const preview = await previewEmployeeAvailabilityForDate(employeeIds, appointmentDate);
+  const preview = await previewEmployeeAvailabilityForDateRange(employeeIds, appointmentStartDate, appointmentEndDate);
   if (preview.unavailableEmployees.length > 0 && !confirmAvailabilityAdjustments) {
     throw new AppointmentError(
       "Nicht verfuegbare Mitarbeiter wuerden aus der Terminplanung entfernt oder nicht uebernommen.",
@@ -466,6 +467,7 @@ export async function createAppointment(
   const filteredEmployees = await resolveAvailableEmployeeIdsForMutation(
     normalizeEmployeeIds(data.employeeIds),
     data.startDate,
+    data.endDate ?? null,
     data.confirmAvailabilityAdjustments === true,
   );
   const employeeIds = filteredEmployees.employeeIds;
@@ -530,6 +532,7 @@ export async function updateAppointment(
   const filteredEmployees = await resolveAvailableEmployeeIdsForMutation(
     normalizeEmployeeIds(data.employeeIds),
     data.startDate,
+    data.endDate ?? null,
     data.confirmAvailabilityAdjustments === true,
   );
   const employeeIds = filteredEmployees.employeeIds;

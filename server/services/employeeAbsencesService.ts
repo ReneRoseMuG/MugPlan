@@ -3,7 +3,7 @@ import * as employeeAbsencesRepository from "../repositories/employeeAbsencesRep
 import * as employeesRepository from "../repositories/employeesRepository";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
-import { getExcludedEmployeesForDate } from "./employeeAvailabilityService";
+import { previewEmployeeAvailabilityForDateRange } from "./employeeAvailabilityService";
 
 type EmployeeAbsenceErrorCode = "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "FORBIDDEN";
 
@@ -84,6 +84,11 @@ function assertMutableExistingAbsence(absence: EmployeeAbsence): void {
   }
 }
 
+function isVisibleAbsenceForRole(absence: EmployeeAbsence, roleKey: CanonicalRoleKey): boolean {
+  if (roleKey === "ADMIN") return true;
+  return parseDateOnly(absence.until) >= getBerlinTodayDateString();
+}
+
 export type EmployeeAbsenceAffectedAppointment = {
   appointmentId: number;
   startDate: string;
@@ -106,6 +111,9 @@ async function getExistingAbsenceOrThrow(
   if (!existing) {
     throw new EmployeeAbsencesError(404, "NOT_FOUND");
   }
+  if (!isVisibleAbsenceForRole(existing, roleKey)) {
+    throw new EmployeeAbsencesError(404, "NOT_FOUND");
+  }
   return existing;
 }
 
@@ -118,8 +126,8 @@ export async function listEmployeeAbsences(
   if (!employee) {
     throw new EmployeeAbsencesError(404, "NOT_FOUND");
   }
-
-  return employeeAbsencesRepository.listEmployeeAbsences(employeeId);
+  const absences = await employeeAbsencesRepository.listEmployeeAbsences(employeeId);
+  return absences.filter((absence) => isVisibleAbsenceForRole(absence, roleKey));
 }
 
 export async function getEmployeeAbsence(
@@ -133,7 +141,9 @@ export async function getEmployeeAbsence(
     throw new EmployeeAbsencesError(404, "NOT_FOUND");
   }
 
-  return employeeAbsencesRepository.getEmployeeAbsence(employeeId, absenceId);
+  const absence = await employeeAbsencesRepository.getEmployeeAbsence(employeeId, absenceId);
+  if (!absence) return null;
+  return isVisibleAbsenceForRole(absence, roleKey) ? absence : null;
 }
 
 export async function createEmployeeAbsence(
@@ -274,12 +284,19 @@ export async function bulkReplaceAffectedAppointments(
       replacementEmployeeId,
     });
 
-    const uniqueDates = Array.from(
-      new Set(rows.map((row) => (row.startDate instanceof Date ? row.startDate.toISOString().slice(0, 10) : String(row.startDate).slice(0, 10)))),
-    );
-    for (const date of uniqueDates) {
-      const excluded = await getExcludedEmployeesForDate([replacementEmployeeId], date);
-      if (excluded.length > 0) {
+    for (const row of rows) {
+      const rowStartDate = row.startDate instanceof Date ? row.startDate.toISOString().slice(0, 10) : String(row.startDate).slice(0, 10);
+      const rowEndDate = row.endDate instanceof Date
+        ? row.endDate.toISOString().slice(0, 10)
+        : row.endDate
+          ? String(row.endDate).slice(0, 10)
+          : null;
+      const preview = await previewEmployeeAvailabilityForDateRange(
+        [replacementEmployeeId],
+        rowStartDate,
+        rowEndDate,
+      );
+      if (preview.unavailableEmployees.length > 0) {
         throw new EmployeeAbsencesError(422, "VALIDATION_ERROR");
       }
     }
@@ -291,7 +308,6 @@ export async function bulkReplaceAffectedAppointments(
       await employeeAbsencesRepository.removeEmployeeFromAppointmentTx(tx, row.appointmentId, employeeId);
       if (Number(row.replacementAlreadyAssigned ?? 0) > 0) {
         skippedAlreadyAssignedCount += 1;
-        updatedAppointmentCount += 1;
         continue;
       }
 

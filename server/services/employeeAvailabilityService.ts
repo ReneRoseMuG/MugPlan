@@ -15,6 +15,16 @@ export type EmployeeAvailabilityPreview = {
   unavailableEmployees: ExcludedEmployee[];
 };
 
+function normalizeDateRange(
+  startDate: string,
+  endDate?: string | null,
+): { startDate: string; endDate: string } {
+  return {
+    startDate,
+    endDate: endDate ?? startDate,
+  };
+}
+
 function normalizeEmployeeIds(employeeIds: number[]): number[] {
   return Array.from(new Set(employeeIds.filter((id) => Number.isFinite(id) && id > 0)));
 }
@@ -23,8 +33,17 @@ export async function getExcludedEmployeesForDate(
   employeeIds: number[],
   appointmentDate: string,
 ): Promise<ExcludedEmployee[]> {
+  return getExcludedEmployeesForDateRange(employeeIds, appointmentDate, appointmentDate);
+}
+
+export async function getExcludedEmployeesForDateRange(
+  employeeIds: number[],
+  appointmentStartDate: string,
+  appointmentEndDate?: string | null,
+): Promise<ExcludedEmployee[]> {
   const normalizedEmployeeIds = normalizeEmployeeIds(employeeIds);
   if (normalizedEmployeeIds.length === 0) return [];
+  const normalizedRange = normalizeDateRange(appointmentStartDate, appointmentEndDate);
 
   const rows = await db
     .select({
@@ -38,15 +57,15 @@ export async function getExcludedEmployeesForDate(
       employeeAbsences,
       and(
         eq(employeeAbsences.employeeId, employees.id),
-        lte(employeeAbsences.from, appointmentDate),
-        gte(employeeAbsences.until, appointmentDate),
+        lte(employeeAbsences.from, normalizedRange.endDate),
+        gte(employeeAbsences.until, normalizedRange.startDate),
       ),
     )
     .where(
       and(
         inArray(employees.id, normalizedEmployeeIds),
         or(
-          sql`${employees.exitDate} is not null and ${employees.exitDate} <= ${appointmentDate}`,
+          sql`${employees.exitDate} is not null and ${employees.exitDate} <= ${normalizedRange.endDate}`,
           sql`${employeeAbsences.id} is not null`,
         ),
       ),
@@ -70,12 +89,24 @@ export async function filterAvailableEmployeeIdsForDate(
   employeeIds: number[],
   appointmentDate: string,
 ): Promise<{ employeeIds: number[]; excludedEmployees: ExcludedEmployee[] }> {
+  return filterAvailableEmployeeIdsForDateRange(employeeIds, appointmentDate, appointmentDate);
+}
+
+export async function filterAvailableEmployeeIdsForDateRange(
+  employeeIds: number[],
+  appointmentStartDate: string,
+  appointmentEndDate?: string | null,
+): Promise<{ employeeIds: number[]; excludedEmployees: ExcludedEmployee[] }> {
   const normalizedEmployeeIds = normalizeEmployeeIds(employeeIds);
   if (normalizedEmployeeIds.length === 0) {
     return { employeeIds: [], excludedEmployees: [] };
   }
 
-  const excludedEmployees = await getExcludedEmployeesForDate(normalizedEmployeeIds, appointmentDate);
+  const excludedEmployees = await getExcludedEmployeesForDateRange(
+    normalizedEmployeeIds,
+    appointmentStartDate,
+    appointmentEndDate,
+  );
   const excludedIds = new Set(excludedEmployees.map((employee) => employee.id));
 
   return {
@@ -88,12 +119,24 @@ export async function previewEmployeeAvailabilityForDate(
   employeeIds: number[],
   appointmentDate: string,
 ): Promise<EmployeeAvailabilityPreview> {
+  return previewEmployeeAvailabilityForDateRange(employeeIds, appointmentDate, appointmentDate);
+}
+
+export async function previewEmployeeAvailabilityForDateRange(
+  employeeIds: number[],
+  appointmentStartDate: string,
+  appointmentEndDate?: string | null,
+): Promise<EmployeeAvailabilityPreview> {
   const normalizedEmployeeIds = normalizeEmployeeIds(employeeIds);
   if (normalizedEmployeeIds.length === 0) {
     return { availableEmployeeIds: [], unavailableEmployees: [] };
   }
 
-  const unavailableEmployees = await getExcludedEmployeesForDate(normalizedEmployeeIds, appointmentDate);
+  const unavailableEmployees = await getExcludedEmployeesForDateRange(
+    normalizedEmployeeIds,
+    appointmentStartDate,
+    appointmentEndDate,
+  );
   const unavailableIds = new Set(unavailableEmployees.map((employee) => employee.id));
 
   return {

@@ -351,6 +351,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält bei terminbezogenen Mitarbeiterlisten (`/api/employees?appointmentDate=...`) nur am Termindatum verfuegbare aktive Mitarbeiter; Abwesenheiten und `exit_date` werden serverseitig herausgefiltert
 - erhält bei `includeUnavailable=true` zusätzlich eine rein informative Liste der nicht verfuegbaren Mitarbeiter mit Ausschlussgrund; diese Mitarbeiter bleiben im Picker nicht auswählbar
 - bei Termin-Mutationen mit verfuegbarkeitsbedingten Personaländerungen erfolgt keine stille Bereinigung mehr; der Server liefert stattdessen einen bestaetigungspflichtigen Verfuegbarkeitskonflikt und speichert erst nach explizitem Confirm
+- erhält bei Mitarbeiter-Abwesenheiten nur nicht-historische Einträge; historische FT30-Einträge sind in Listen- und Detailpfaden nicht sichtbar
 
 ### Admin
 
@@ -358,11 +359,13 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - kann Aktiv-Status ändern
 - kann archivierte Einträge einsehen
 - erhält den Projektstatus-Katalog nur noch im Admin-Stammdatenbereich
+- erhält bei Mitarbeiter-Abwesenheiten historische und zukünftige FT30-Einträge
 
 ### Leser
 
 - erhält ausschließlich lesenden Zugriff
 - keine schreibenden Endpunkte verfügbar
+- kein Zugriff auf FT30-Endpunkte für Mitarbeiter-Abwesenheiten
 
 ### Listenfilter (serverseitig)
 

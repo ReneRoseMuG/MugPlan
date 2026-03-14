@@ -227,4 +227,37 @@ describe("FT30 integration: employee absences", () => {
     const statuses = [resA.status, resB.status].sort((left, right) => left - right);
     expect(statuses).toEqual([200, 409]);
   });
+
+  it("hides historical absences from DISPONENT while ADMIN still sees them", async () => {
+    const employee = await createEmployeeFixture("FT30-VISIBILITY");
+    const admin = await loginAdminAgent();
+    const dispatcher = await createRoleAgent("DISPATCHER");
+
+    const historical = await createEmployeeAbsenceFixture({
+      employeeId: employee.id,
+      from: getRelativeBerlinDate(2),
+      until: getRelativeBerlinDate(3),
+    });
+    const visible = await createEmployeeAbsenceFixture({
+      employeeId: employee.id,
+      from: getRelativeBerlinDate(4),
+      until: getRelativeBerlinDate(6),
+    });
+
+    await db
+      .update(employeeAbsences)
+      .set({ from: getRelativeBerlinDate(-4), until: getRelativeBerlinDate(-2) })
+      .where(eq(employeeAbsences.id, historical.id));
+
+    const dispatcherList = await dispatcher.get(`/api/employees/${employee.id}/absences`).expect(200);
+    expect(dispatcherList.body.map((absence: { id: number }) => absence.id)).toEqual([visible.id]);
+
+    await dispatcher.get(`/api/employees/${employee.id}/absences/${historical.id}`).expect(404);
+    await dispatcher.get(`/api/employees/${employee.id}/absences/${visible.id}`).expect(200);
+
+    const adminList = await admin.get(`/api/employees/${employee.id}/absences`).expect(200);
+    expect(adminList.body.map((absence: { id: number }) => absence.id).sort((left: number, right: number) => left - right)).toEqual(
+      [historical.id, visible.id].sort((left, right) => left - right),
+    );
+  });
 });

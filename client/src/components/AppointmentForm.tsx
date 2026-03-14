@@ -91,7 +91,12 @@ type ApiErrorPayload = {
   conflictEmployees?: ApiConflictEmployee[];
   availabilityConflicts?: AvailabilityConflictEmployee[];
 };
-type ApiSuccessPayload = { id?: number; message?: string; excludedEmployees?: AvailabilityConflictEmployee[] };
+type ApiSuccessPayload = {
+  id?: number;
+  message?: string;
+  employees?: Array<{ id: number }>;
+  excludedEmployees?: AvailabilityConflictEmployee[];
+};
 type EmployeePickerAvailabilityResponse = {
   availableEmployees: Employee[];
   unavailableEmployees: AvailabilityConflictEmployee[];
@@ -280,6 +285,7 @@ export function AppointmentForm({
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string | null>(null);
   const [pendingAvailabilityConflicts, setPendingAvailabilityConflicts] = useState<AvailabilityConflictEmployee[]>([]);
   const [availabilityConfirmOpen, setAvailabilityConfirmOpen] = useState(false);
+  const [lastExcludedEmployees, setLastExcludedEmployees] = useState<AvailabilityConflictEmployee[]>([]);
   const weekTourPrefillAppliedRef = useRef(false);
 
   const buildFormSnapshot = (input: {
@@ -1336,6 +1342,12 @@ export function AppointmentForm({
         }
         throw new Error((data as { message?: string } | null)?.message ?? "Speichern fehlgeschlagen");
       }
+      setAssignedEmployeeIds(
+        Array.isArray(data?.employees)
+          ? data.employees.map((employee) => employee.id)
+          : assignedEmployeeIds,
+      );
+      setLastExcludedEmployees(Array.isArray(data?.excludedEmployees) ? data.excludedEmployees : []);
       const savedAppointmentId = data?.id ?? appointmentId ?? null;
       console.info(`${logPrefix} save success`, {
         action: isEditing ? "edit" : "create",
@@ -1362,6 +1374,7 @@ export function AppointmentForm({
       if (isEditing && appointmentId) {
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
       }
+      const excludedEmployees = Array.isArray(data?.excludedEmployees) ? data.excludedEmployees : [];
       toast({
         title: isEditing ? "Termin gespeichert" : "Termin erstellt",
       });
@@ -1378,7 +1391,9 @@ export function AppointmentForm({
         startTimeEnabled,
         employeeIds: assignedEmployeeIds,
       }));
-      onSaved?.();
+      if (excludedEmployees.length === 0) {
+        onSaved?.();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
@@ -1420,6 +1435,19 @@ export function AppointmentForm({
           </AlertDescription>
         </Alert>
       )}
+
+      {lastExcludedEmployees.length > 0 && !isLocked ? (
+        <Alert className="mb-6" data-testid="alert-appointment-excluded-employees">
+          <AlertTitle>Nicht verfuegbare Mitarbeiter wurden ausgeschlossen</AlertTitle>
+          <AlertDescription>
+            {lastExcludedEmployees.map((employee) => (
+              <div key={`${employee.id}-${employee.reason}`}>
+                {employee.fullName}: {employee.reason === "absence" ? "Abwesenheit" : "Austrittsdatum erreicht"}
+              </div>
+            ))}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="grid grid-cols-3 gap-6">
         <RelationSlot

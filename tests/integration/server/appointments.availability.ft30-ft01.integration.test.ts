@@ -207,7 +207,153 @@ describe("FT30/FT01 integration: employee availability and absence cleanup", () 
       .expect(200);
 
     expect(bulk.body.updatedAppointmentCount).toBe(2);
-    await expect(getAppointmentEmployeeIds(firstAppointment.id)).resolves.toEqual([companionEmployee.id, replacementEmployee.id]);
+    await expect(getAppointmentEmployeeIds(firstAppointment.id)).resolves.toEqual(
+      [companionEmployee.id, replacementEmployee.id].sort((left, right) => left - right),
+    );
     await expect(getAppointmentEmployeeIds(secondAppointment.id)).resolves.toEqual([replacementEmployee.id]);
+  });
+
+  it("treats a single absence day inside a multiday appointment span as an availability conflict", async () => {
+    const admin = await loginAdminAgent(app);
+    const project = await createProjectFixture({ prefix: "FT30FT01-MULTIDAY" });
+    const affectedEmployee = await createEmployeeFixture("MULTI-AFFECTED");
+    const unaffectedEmployee = await createEmployeeFixture("MULTI-OK");
+
+    await createEmployeeAbsenceFixture({
+      employeeId: affectedEmployee.id,
+      from: "2099-10-03",
+      until: "2099-10-03",
+    });
+
+    const blocked = await admin.post("/api/appointments").send({
+      projectId: project.id,
+      startDate: "2099-10-01",
+      endDate: "2099-10-05",
+      employeeIds: [affectedEmployee.id, unaffectedEmployee.id],
+    }).expect(409);
+
+    expect(blocked.body.code).toBe("AVAILABILITY_CONFIRMATION_REQUIRED");
+    expect(blocked.body.availabilityConflicts).toEqual([
+      { id: affectedEmployee.id, fullName: affectedEmployee.fullName, reason: "absence" },
+    ]);
+
+    const confirmed = await admin.post("/api/appointments").send({
+      projectId: project.id,
+      startDate: "2099-10-01",
+      endDate: "2099-10-05",
+      employeeIds: [affectedEmployee.id, unaffectedEmployee.id],
+      confirmAvailabilityAdjustments: true,
+    }).expect(201);
+
+    expect(confirmed.body.employees.map((employee: { id: number }) => employee.id)).toEqual([unaffectedEmployee.id]);
+    expect(confirmed.body.excludedEmployees).toEqual([
+      { id: affectedEmployee.id, fullName: affectedEmployee.fullName, reason: "absence" },
+    ]);
+  });
+
+  it("treats exit dates inside a multiday appointment span as conflicts during updates", async () => {
+    const admin = await loginAdminAgent(app);
+    const project = await createProjectFixture({ prefix: "FT30FT01-MULTI-EXIT" });
+    const exitingEmployee = await createEmployeeFixture("MULTI-EXIT");
+    const retainedEmployee = await createEmployeeFixture("MULTI-KEEP");
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-11-01",
+      endDate: "2099-11-02",
+      employeeIds: [retainedEmployee.id],
+    });
+
+    await employeesService.updateEmployee(
+      exitingEmployee.id,
+      { exitDate: "2099-11-04", version: exitingEmployee.version },
+      "ADMIN",
+    );
+
+    const blocked = await admin.patch(`/api/appointments/${appointment.id}`).send({
+      version: appointment.version,
+      projectId: project.id,
+      startDate: "2099-11-01",
+      endDate: "2099-11-05",
+      employeeIds: [retainedEmployee.id, exitingEmployee.id],
+    }).expect(409);
+
+    expect(blocked.body.code).toBe("AVAILABILITY_CONFIRMATION_REQUIRED");
+    expect(blocked.body.availabilityConflicts).toEqual([
+      { id: exitingEmployee.id, fullName: exitingEmployee.fullName, reason: "exit_date" },
+    ]);
+
+    const confirmed = await admin.patch(`/api/appointments/${appointment.id}`).send({
+      version: appointment.version,
+      projectId: project.id,
+      startDate: "2099-11-01",
+      endDate: "2099-11-05",
+      employeeIds: [retainedEmployee.id, exitingEmployee.id],
+      confirmAvailabilityAdjustments: true,
+    }).expect(200);
+
+    expect(confirmed.body.employees.map((employee: { id: number }) => employee.id)).toEqual([retainedEmployee.id]);
+    expect(confirmed.body.excludedEmployees).toEqual([
+      { id: exitingEmployee.id, fullName: exitingEmployee.fullName, reason: "exit_date" },
+    ]);
+  });
+
+  it("keeps preview empty for same-day absences without future appointments and does not mutate appointments automatically", async () => {
+    const admin = await loginAdminAgent(app);
+    const project = await createProjectFixture({ prefix: "FT30FT01-PREVIEW-EMPTY" });
+    const absentEmployee = await createEmployeeFixture("PREVIEW-EMPTY-ABSENT");
+    const companionEmployee = await createEmployeeFixture("PREVIEW-EMPTY-COMPANION");
+    const futureAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-12-10",
+      employeeIds: [absentEmployee.id, companionEmployee.id],
+    });
+    const absence = await createEmployeeAbsenceFixture({
+      employeeId: absentEmployee.id,
+      from: "2099-12-05",
+      until: "2099-12-05",
+    });
+
+    const preview = await admin
+      .get(`/api/employees/${absentEmployee.id}/absences/${absence.id}/appointments-preview`)
+      .expect(200);
+
+    expect(preview.body.appointments).toEqual([]);
+    await expect(getAppointmentEmployeeIds(futureAppointment.id)).resolves.toEqual([absentEmployee.id, companionEmployee.id]);
+  });
+
+  it("skips already assigned replacement employees without counting them as updated appointments", async () => {
+    const admin = await loginAdminAgent(app);
+    const project = await createProjectFixture({ prefix: "FT30FT01-BULK-SKIP" });
+    const absentEmployee = await createEmployeeFixture("SKIP-ABSENT");
+    const replacementEmployee = await createEmployeeFixture("SKIP-REPLACEMENT");
+    const companionEmployee = await createEmployeeFixture("SKIP-COMPANION");
+
+    const alreadyAssignedAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-12-20",
+      employeeIds: [absentEmployee.id, replacementEmployee.id],
+    });
+    const replaceableAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-12-21",
+      employeeIds: [absentEmployee.id, companionEmployee.id],
+    });
+    const absence = await createEmployeeAbsenceFixture({
+      employeeId: absentEmployee.id,
+      from: "2099-12-20",
+      until: "2099-12-22",
+    });
+
+    const bulk = await admin
+      .post(`/api/employees/${absentEmployee.id}/absences/${absence.id}/bulk-replace-appointments`)
+      .send({ replacementEmployeeId: replacementEmployee.id })
+      .expect(200);
+
+    expect(bulk.body.updatedAppointmentCount).toBe(1);
+    expect(bulk.body.skippedAlreadyAssignedCount).toBe(1);
+    await expect(getAppointmentEmployeeIds(alreadyAssignedAppointment.id)).resolves.toEqual([replacementEmployee.id]);
+    await expect(getAppointmentEmployeeIds(replaceableAppointment.id)).resolves.toEqual(
+      [companionEmployee.id, replacementEmployee.id].sort((left, right) => left - right),
+    );
   });
 });
