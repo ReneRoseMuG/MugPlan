@@ -38,7 +38,6 @@ export function EmployeePickerDialogList({
   const [nameFilter, setNameFilter] = useState("");
 
   const rows = useMemo(() => {
-    if (!appointmentDate) return [];
     const value = nameFilter.trim().toLocaleLowerCase("de");
     const filtered = !value
       ? employees
@@ -92,7 +91,9 @@ export function EmployeePickerDialogList({
           isEmpty={rows.length === 0}
           emptyState={(
             <p className="text-sm text-slate-400 text-center py-8 col-span-full">
-              {appointmentDate ? "Keine verfuegbaren Mitarbeiter gefunden." : "Bitte zuerst ein Startdatum festlegen."}
+              {appointmentDate || !showAvailabilityNotice
+                ? "Keine verfuegbaren Mitarbeiter gefunden."
+                : "Bitte zuerst ein Startdatum festlegen."}
             </p>
           )}
         >

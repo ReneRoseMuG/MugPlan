@@ -6,11 +6,11 @@
  * Abgedeckte Regeln:
  * - EmployeePickerDialogList zeigt im Appointment-Kontext einen deutlichen Bereinigungshinweis.
  * - EmployeePickerDialogList listet nicht verfuegbare Mitarbeiter namentlich mit Grund auf.
- * - Ohne appointmentDate bleibt die Auswahlliste leer und zeigt den Pflicht-Hinweis zum Startdatum.
+ * - Ohne appointmentDate bleibt der Pflicht-Hinweis sichtbar; die Liste wird nicht mehr pauschal leergeraeumt.
  *
  * Fehlerfaelle:
  * - Der Hinweis auf entfernte, nicht verfuegbare Mitarbeiter fehlt.
- * - Der Picker zeigt ohne Termindatum weiterhin eine freie Mitarbeiterliste an.
+ * - Der Picker blendet den Pflicht-Hinweis ohne Termindatum nicht mehr ein.
  *
  * Ziel:
  * Die neue Hinweis- und Leerzustandsverdrahtung fuer die terminbezogene Mitarbeiterauswahl regressionssicher absichern.
@@ -37,8 +37,8 @@ describe("FT01 unit: EmployeePickerDialogList availability wiring", () => {
     expect(source).toContain('employee.reason === "absence" ? "Abwesenheit" : "Austrittsdatum erreicht"');
   });
 
-  it("requires appointmentDate before listing selectable employees", () => {
-    expect(source).toContain("if (!appointmentDate) return [];");
+  it("keeps the start-date hint wired even though the list no longer hard-resets without appointmentDate", () => {
+    expect(source).toContain("appointmentDate || !showAvailabilityNotice");
     expect(source).toContain("Bitte zuerst ein Startdatum festlegen.");
   });
 });

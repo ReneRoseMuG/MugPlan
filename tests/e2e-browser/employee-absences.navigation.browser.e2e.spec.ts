@@ -47,6 +47,8 @@ test("employee absences navigation page supports employee selection and table ba
   await page.getByTestId("input-employee-absence-from").fill(createFrom);
   await page.getByTestId("input-employee-absence-until").fill(createUntil);
   await page.getByTestId("button-save-employee-absence").click();
+  await expect(page.getByTestId("dialog-employee-absence-preview")).toBeVisible();
+  await page.keyboard.press("Escape");
 
   const table = page.getByTestId("table-employee-absences");
   await expect(table).toBeVisible();
@@ -57,6 +59,8 @@ test("employee absences navigation page supports employee selection and table ba
   await page.getByTestId("select-employee-absence-type").click();
   await page.getByRole("option", { name: "Krankheit" }).click();
   await page.getByTestId("button-save-employee-absence").click();
+  await expect(page.getByTestId("dialog-employee-absence-preview")).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(table).toContainText("Krankheit");
 
   await firstRow.getByRole("button", { name: "Loeschen" }).click();

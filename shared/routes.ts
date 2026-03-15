@@ -99,6 +99,59 @@ const excludedEmployeeSchema = z.object({
   reason: z.enum(["absence", "exit_date"]),
 });
 
+const tourEmployeeCascadeConflictReasonSchema = z.enum([
+  "EMPLOYEE_OVERLAP",
+  "EMPLOYEE_ABSENCE",
+  "EMPLOYEE_EXIT_DATE",
+  "ALREADY_ASSIGNED",
+]);
+
+const tourEmployeeCascadeSkipReasonSchema = z.enum([
+  "ALREADY_ASSIGNED",
+  "NOT_ASSIGNED",
+  "HISTORICAL_APPOINTMENT",
+  "APPOINTMENT_NOT_ON_TOUR",
+]);
+
+const tourEmployeeCascadeAppointmentEmployeeSchema = z.object({
+  id: z.number().int().positive(),
+  fullName: z.string(),
+});
+
+const tourEmployeeCascadePreviewItemSchema = z.object({
+  appointmentId: z.number().int().positive(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  tourName: z.string().nullable(),
+  currentEmployees: z.array(tourEmployeeCascadeAppointmentEmployeeSchema),
+  eligible: z.boolean(),
+  conflictReason: tourEmployeeCascadeConflictReasonSchema.nullable(),
+});
+
+const tourEmployeeCascadePreviewInputSchema = z.object({
+  employeeId: z.number().int().positive(),
+});
+
+const tourEmployeeCascadeExecuteInputSchema = z.object({
+  employeeId: z.number().int().positive(),
+  employeeVersion: z.number().int().min(1),
+  selectedAppointmentIds: z.array(z.number().int().positive()),
+});
+
+const tourEmployeeCascadeExecuteResponseSchema = z.object({
+  updatedAppointmentCount: z.number().int().min(0),
+  skipped: z.array(z.object({
+    appointmentId: z.number().int().positive(),
+    reason: tourEmployeeCascadeSkipReasonSchema,
+  })),
+});
+
+const tourEmployeeCascadeConflictResponseSchema = z.object({
+  code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT", "EMPLOYEE_OVERLAP_CONFLICT", "AVAILABILITY_CONFLICT"]),
+  conflictEmployees: z.array(tourEmployeeCascadeAppointmentEmployeeSchema).optional(),
+  availabilityConflicts: z.array(excludedEmployeeSchema).optional(),
+}).passthrough();
+
 const employeeAbsenceAffectedAppointmentSchema = z.object({
   appointmentId: z.number().int().positive(),
   startDate: z.string(),
@@ -2287,6 +2340,50 @@ export const api = {
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    addPreview: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/employees/cascade-add/preview",
+      input: tourEmployeeCascadePreviewInputSchema,
+      responses: {
+        200: z.array(tourEmployeeCascadePreviewItemSchema),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    addExecute: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/employees/cascade-add",
+      input: tourEmployeeCascadeExecuteInputSchema,
+      responses: {
+        200: tourEmployeeCascadeExecuteResponseSchema,
+        404: errorSchemas.notFound,
+        409: tourEmployeeCascadeConflictResponseSchema,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    removePreview: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/employees/cascade-remove/preview",
+      input: tourEmployeeCascadePreviewInputSchema,
+      responses: {
+        200: z.array(tourEmployeeCascadePreviewItemSchema),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    removeExecute: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/employees/cascade-remove",
+      input: tourEmployeeCascadeExecuteInputSchema,
+      responses: {
+        200: tourEmployeeCascadeExecuteResponseSchema,
+        404: errorSchemas.notFound,
+        409: tourEmployeeCascadeConflictResponseSchema,
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

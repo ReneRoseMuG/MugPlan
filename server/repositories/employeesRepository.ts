@@ -202,6 +202,28 @@ export async function setEmployeeTourWithVersion(
   return { kind: "updated", employee };
 }
 
+export async function setEmployeeTourWithVersionTx(
+  tx: DbTx,
+  employeeId: number,
+  expectedVersion: number,
+  tourId: number | null,
+): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
+  const result = await tx.execute(sql`
+    update employee
+    set
+      tour_id = ${tourId},
+      updated_at = now(),
+      version = version + 1
+    where id = ${employeeId}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  if (affectedRows === 0) return { kind: "version_conflict" };
+
+  const [employee] = await tx.select().from(employees).where(eq(employees.id, employeeId));
+  return { kind: "updated", employee };
+}
+
 // Technical exception for demo-seed flow (excluded from hardening scope).
 export async function setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {
   await db
