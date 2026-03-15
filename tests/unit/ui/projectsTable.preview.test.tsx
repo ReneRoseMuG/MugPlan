@@ -20,7 +20,6 @@ const useQueryMock = vi.fn();
 const useSettingsMock = vi.fn();
 const useListFiltersMock = vi.fn();
 const tableViewCalls: Array<Record<string, unknown>> = [];
-const createAppointmentWeeklyPanelPreviewMock = vi.fn(() => <div>weekly-preview</div>);
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -83,17 +82,12 @@ vi.mock("@/components/ui/table-view", () => ({
   },
 }));
 
-vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
-  createAppointmentWeeklyPanelPreview: (...args: unknown[]) => createAppointmentWeeklyPanelPreviewMock(...args),
-}));
-
 import { ProjectsPage } from "../../../client/src/components/ProjectsPage";
 
 describe("FT03 projects table preview wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     tableViewCalls.length = 0;
-    createAppointmentWeeklyPanelPreviewMock.mockClear();
 
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map(),
@@ -169,32 +163,27 @@ describe("FT03 projects table preview wiring", () => {
     });
   });
 
-  it("uses createAppointmentWeeklyPanelPreview with sidebar/table profile for relevant appointments", () => {
+  it("renders the shared project table hover preview with project and appointment data", () => {
     renderToStaticMarkup(<ProjectsPage tableOnly />);
 
     const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
-    rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[0]);
+    const markup = renderToStaticMarkup(rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[0]));
 
-    expect(createAppointmentWeeklyPanelPreviewMock).toHaveBeenCalledTimes(1);
-    expect(createAppointmentWeeklyPanelPreviewMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 31,
-        projectId: 31,
-        projectName: "Projekt Mit Termin",
-        projectOrderNumber: "ORD-31",
-        projectArticleItems: [{ label: "Saunamodell", value: "Modell Table" }],
-        projectNotesCount: 5,
-      }),
-      { sizeProfile: "sidebarTable" },
-    );
+    expect(markup).toContain("ORD-31");
+    expect(markup).toContain("Projekt Mit Termin");
+    expect(markup).toContain("Kunde Vier");
+    expect(markup).toContain("14:00 - 09.08.99");
   });
 
-  it("keeps no-appointment fallback text", () => {
+  it("keeps the stable no-appointment preview state without a date label", () => {
     renderToStaticMarkup(<ProjectsPage tableOnly />);
 
     const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
     const markup = renderToStaticMarkup(rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[1]));
 
-    expect(markup).toContain("Keine Termine vorhanden.");
+    expect(markup).toContain("ORD-32");
+    expect(markup).toContain("Projekt Ohne Termin");
+    expect(markup).toContain("Kunde Fuenf");
+    expect(markup).toContain(">0</span>");
   });
 });

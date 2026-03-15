@@ -3,6 +3,7 @@ import * as employeesRepository from "../repositories/employeesRepository";
 import * as teamsRepository from "../repositories/teamsRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
+import { getExcludedEmployeesForDate, type ExcludedEmployee } from "./employeeAvailabilityService";
 
 export class EmployeesError extends Error {
   status: number;
@@ -63,6 +64,36 @@ function requireAdmin(roleKey: CanonicalRoleKey): void {
 
 export async function listEmployees(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<Employee[]> {
   return employeesRepository.getEmployees(resolveScope(roleKey, scope));
+}
+
+export async function listEmployeesForAppointmentDate(
+  roleKey: CanonicalRoleKey,
+  appointmentDate: string,
+  scope: "active" | "inactive" = "active",
+): Promise<Employee[]> {
+  return employeesRepository.getEmployeesAvailableOnDate(resolveScope(roleKey, scope), appointmentDate);
+}
+
+export async function listEmployeesAvailabilityForAppointmentDate(
+  roleKey: CanonicalRoleKey,
+  appointmentDate: string,
+  scope: "active" | "inactive" = "active",
+): Promise<{ availableEmployees: Employee[]; unavailableEmployees: ExcludedEmployee[] }> {
+  const resolvedScope = resolveScope(roleKey, scope);
+  const [allEmployees, availableEmployees] = await Promise.all([
+    employeesRepository.getEmployees(resolvedScope),
+    employeesRepository.getEmployeesAvailableOnDate(resolvedScope, appointmentDate),
+  ]);
+
+  const unavailableEmployees = await getExcludedEmployeesForDate(
+    allEmployees.map((employee) => employee.id),
+    appointmentDate,
+  );
+
+  return {
+    availableEmployees,
+    unavailableEmployees,
+  };
 }
 
 export async function getEmployeeWithRelations(

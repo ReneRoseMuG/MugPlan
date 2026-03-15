@@ -46,7 +46,7 @@ describe("FT01 appointment form save and employees panel wiring", () => {
 
   it("sends version in PATCH payload", () => {
     expect(source).toContain("const payload = isEditing");
-    expect(source).toContain("? { ...basePayload, version }");
+    expect(source).toContain("? { ...basePayload, version, confirmAvailabilityAdjustments }");
   });
 
   it("loads appointment detail always fresh in edit mode", () => {

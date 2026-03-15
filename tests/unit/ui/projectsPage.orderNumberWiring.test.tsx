@@ -239,7 +239,7 @@ describe("FT02 projects page order number wiring", () => {
       relevantAppointment: null,
     };
 
-    expect(orderNumberColumn?.header).toBe("Auftragsnummer");
+    expect(renderToStaticMarkup(<>{orderNumberColumn?.header as React.ReactNode}</>)).toContain("Auftrag Nr.");
     expect(renderToStaticMarkup((orderNumberColumn?.cell as ({ row }: { row: typeof row }) => React.ReactNode)({ row }))).toContain("ORD-1");
     expect(amountColumn?.header).toBe("Betrag");
     expect(renderToStaticMarkup((amountColumn?.cell as ({ row }: { row: typeof row }) => React.ReactNode)({ row }))).toContain("1.234,50");

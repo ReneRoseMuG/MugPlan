@@ -15,6 +15,7 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import { logDebug, logInfo } from "../lib/logger";
 import * as tagRelationsService from "./tagRelationsService";
+import { previewEmployeeAvailabilityForDateRange, type ExcludedEmployee } from "./employeeAvailabilityService";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
@@ -36,8 +37,10 @@ class AppointmentError extends Error {
     | "VALIDATION_ERROR"
     | "EMPLOYEE_OVERLAP_CONFLICT"
     | "INACTIVE_ENTITY_ASSIGNMENT"
-    | "PAST_APPOINTMENT_READONLY";
+    | "PAST_APPOINTMENT_READONLY"
+    | "AVAILABILITY_CONFIRMATION_REQUIRED";
   conflictEmployees?: Array<{ id: number; fullName: string }>;
+  availabilityConflicts?: ExcludedEmployee[];
 
   constructor(
     message: string,
@@ -50,13 +53,18 @@ class AppointmentError extends Error {
       | "VALIDATION_ERROR"
       | "EMPLOYEE_OVERLAP_CONFLICT"
       | "INACTIVE_ENTITY_ASSIGNMENT"
-      | "PAST_APPOINTMENT_READONLY",
-    options?: { conflictEmployees?: Array<{ id: number; fullName: string }> },
+      | "PAST_APPOINTMENT_READONLY"
+      | "AVAILABILITY_CONFIRMATION_REQUIRED",
+    options?: {
+      conflictEmployees?: Array<{ id: number; fullName: string }>;
+      availabilityConflicts?: ExcludedEmployee[];
+    },
   ) {
     super(message);
     this.status = status;
     this.code = code;
     this.conflictEmployees = options?.conflictEmployees;
+    this.availabilityConflicts = options?.availabilityConflicts;
   }
 }
 
@@ -141,6 +149,28 @@ function assertNotHistoricalInput(data: { startDate: string; startTime?: string 
 
 function normalizeEmployeeIds(employeeIds?: number[]) {
   return Array.from(new Set(employeeIds ?? [])).filter((id) => Number.isFinite(id));
+}
+
+async function resolveAvailableEmployeeIdsForMutation(
+  employeeIds: number[],
+  appointmentStartDate: string,
+  appointmentEndDate: string | null,
+  confirmAvailabilityAdjustments: boolean,
+): Promise<{ employeeIds: number[]; excludedEmployees: ExcludedEmployee[] }> {
+  const preview = await previewEmployeeAvailabilityForDateRange(employeeIds, appointmentStartDate, appointmentEndDate);
+  if (preview.unavailableEmployees.length > 0 && !confirmAvailabilityAdjustments) {
+    throw new AppointmentError(
+      "Nicht verfuegbare Mitarbeiter wuerden aus der Terminplanung entfernt oder nicht uebernommen.",
+      409,
+      "AVAILABILITY_CONFIRMATION_REQUIRED",
+      { availabilityConflicts: preview.unavailableEmployees },
+    );
+  }
+
+  return {
+    employeeIds: preview.availableEmployeeIds,
+    excludedEmployees: preview.unavailableEmployees,
+  };
 }
 
 function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
@@ -427,13 +457,20 @@ export async function createAppointment(
     endDate?: string | null;
     startTime?: string | null;
     employeeIds?: number[];
+    confirmAvailabilityAdjustments?: boolean;
   },
 ) {
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
   assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
-  const employeeIds = normalizeEmployeeIds(data.employeeIds);
+  const filteredEmployees = await resolveAvailableEmployeeIdsForMutation(
+    normalizeEmployeeIds(data.employeeIds),
+    data.startDate,
+    data.endDate ?? null,
+    data.confirmAvailabilityAdjustments === true,
+  );
+  const employeeIds = filteredEmployees.employeeIds;
   const startDate = parseDateOnly(data.startDate);
   const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
   const startTimeHour = resolveOverlapStartTimeHour(data.startTime ?? null);
@@ -473,7 +510,7 @@ export async function createAppointment(
   if (created?.id) {
     dispatchCalDavUpsert(created.id);
   }
-  return created;
+  return created ? { ...created, excludedEmployees: filteredEmployees.excludedEmployees } : created;
 }
 
 export async function updateAppointment(
@@ -487,11 +524,18 @@ export async function updateAppointment(
     endDate?: string | null;
     startTime?: string | null;
     employeeIds?: number[];
+    confirmAvailabilityAdjustments?: boolean;
   },
   roleKey: CanonicalRoleKey,
 ) {
   validateDateRange(data.startDate, data.endDate ?? null);
-  const employeeIds = normalizeEmployeeIds(data.employeeIds);
+  const filteredEmployees = await resolveAvailableEmployeeIdsForMutation(
+    normalizeEmployeeIds(data.employeeIds),
+    data.startDate,
+    data.endDate ?? null,
+    data.confirmAvailabilityAdjustments === true,
+  );
+  const employeeIds = filteredEmployees.employeeIds;
   const startDate = parseDateOnly(data.startDate);
   const endDate = data.endDate ? parseDateOnly(data.endDate) : null;
   const startTimeHour = resolveOverlapStartTimeHour(data.startTime ?? null);
@@ -561,7 +605,7 @@ export async function updateAppointment(
   if (updated?.id) {
     dispatchCalDavUpsert(updated.id);
   }
-  return updated;
+  return updated ? { ...updated, excludedEmployees: filteredEmployees.excludedEmployees } : updated;
 }
 
 export async function setAppointmentDisplayMode(

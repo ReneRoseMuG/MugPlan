@@ -14,6 +14,7 @@ import {
   employeeAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
+  insertEmployeeAbsenceSchema, updateEmployeeAbsenceSchema, employeeAbsences,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts,
   tags,
   insertProductCategorySchema, updateProductCategorySchema, productCategories,
@@ -90,6 +91,24 @@ const appointmentTagGroupsSchema = z.object({
   appointmentTags: z.array(tagSchema),
   customerTags: z.array(tagSchema),
   projectTags: z.array(tagSchema),
+});
+
+const excludedEmployeeSchema = z.object({
+  id: z.number().int().positive(),
+  fullName: z.string(),
+  reason: z.enum(["absence", "exit_date"]),
+});
+
+const employeeAbsenceAffectedAppointmentSchema = z.object({
+  appointmentId: z.number().int().positive(),
+  startDate: z.string(),
+  tourName: z.string().nullable(),
+  employees: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      fullName: z.string(),
+    }),
+  ),
 });
 
 const entityAppointmentItemSchema = z.object({
@@ -770,6 +789,7 @@ export const api = {
         endDate: z.string().nullable().optional(),
         startTime: z.string().nullable().optional(),
         employeeIds: z.array(z.number()).optional(),
+        confirmAvailabilityAdjustments: z.boolean().optional(),
       }),
       responses: {
         201: z.object({
@@ -785,13 +805,21 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
+          excludedEmployees: z.array(excludedEmployeeSchema),
         }),
         409: z.object({
           code: z.enum([
             "EMPLOYEE_OVERLAP_CONFLICT",
             "INACTIVE_ENTITY_ASSIGNMENT",
             "PAST_APPOINTMENT_READONLY",
+            "AVAILABILITY_CONFIRMATION_REQUIRED",
           ]),
+          message: z.string().optional(),
+          conflictEmployees: z.array(z.object({
+            id: z.number().int().positive(),
+            fullName: z.string(),
+          })).optional(),
+          availabilityConflicts: z.array(excludedEmployeeSchema).optional(),
         }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
@@ -808,6 +836,7 @@ export const api = {
         endDate: z.string().nullable().optional(),
         startTime: z.string().nullable().optional(),
         employeeIds: z.array(z.number()).optional(),
+        confirmAvailabilityAdjustments: z.boolean().optional(),
       }),
       responses: {
         200: z.object({
@@ -823,6 +852,7 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
+          excludedEmployees: z.array(excludedEmployeeSchema),
         }),
         403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
@@ -832,7 +862,14 @@ export const api = {
             "EMPLOYEE_OVERLAP_CONFLICT",
             "INACTIVE_ENTITY_ASSIGNMENT",
             "PAST_APPOINTMENT_READONLY",
+            "AVAILABILITY_CONFIRMATION_REQUIRED",
           ]),
+          message: z.string().optional(),
+          conflictEmployees: z.array(z.object({
+            id: z.number().int().positive(),
+            fullName: z.string(),
+          })).optional(),
+          availabilityConflicts: z.array(excludedEmployeeSchema).optional(),
         }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
@@ -1400,9 +1437,17 @@ export const api = {
       path: '/api/employees',
       input: z.object({
         scope: z.enum(["active", "inactive"]).default("active"),
+        appointmentDate: z.string().optional(),
+        includeUnavailable: z.enum(["true", "false"]).optional(),
       }).strict(),
       responses: {
-        200: z.array(z.custom<typeof employees.$inferSelect>()),
+        200: z.union([
+          z.array(z.custom<typeof employees.$inferSelect>()),
+          z.object({
+            availableEmployees: z.array(z.custom<typeof employees.$inferSelect>()),
+            unavailableEmployees: z.array(excludedEmployeeSchema),
+          }),
+        ]),
       },
     },
     get: {
@@ -1492,6 +1537,94 @@ export const api = {
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    absences: {
+      list: {
+        method: "GET" as const,
+        path: "/api/employees/:employeeId/absences",
+        responses: {
+          200: z.array(z.custom<typeof employeeAbsences.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+        },
+      },
+      get: {
+        method: "GET" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId",
+        responses: {
+          200: z.custom<typeof employeeAbsences.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/employees/:employeeId/absences",
+        input: insertEmployeeAbsenceSchema,
+        responses: {
+          201: z.custom<typeof employeeAbsences.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      update: {
+        method: "PUT" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId",
+        input: updateEmployeeAbsenceSchema.extend({
+          version: z.number().int().min(1),
+        }),
+        responses: {
+          200: z.custom<typeof employeeAbsences.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId",
+        input: z.object({
+          version: z.number().int().min(1),
+        }),
+        responses: {
+          204: z.null(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      previewAppointments: {
+        method: "GET" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId/appointments-preview",
+        responses: {
+          200: z.object({
+            absenceId: z.number().int().positive(),
+            appointments: z.array(employeeAbsenceAffectedAppointmentSchema),
+          }),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+        },
+      },
+      bulkReplaceAppointments: {
+        method: "POST" as const,
+        path: "/api/employees/:employeeId/absences/:absenceId/bulk-replace-appointments",
+        input: z.object({
+          replacementEmployeeId: z.number().int().positive(),
+        }).strict(),
+        responses: {
+          200: z.object({
+            absenceId: z.number().int().positive(),
+            updatedAppointmentCount: z.number().int().min(0),
+            skippedAlreadyAssignedCount: z.number().int().min(0),
+          }),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: errorSchemas.notFound,
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
       },
     },
     currentAppointments: {
@@ -3429,6 +3562,9 @@ export type EmployeeInput = z.infer<typeof api.employees.create.input>;
 export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
 export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
 export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
+export type EmployeeAbsenceInput = z.infer<typeof api.employees.absences.create.input>;
+export type EmployeeAbsenceUpdateInput = z.infer<typeof api.employees.absences.update.input>;
+export type EmployeeAbsenceResponse = z.infer<typeof api.employees.absences.create.responses[201]>;
 export type AuthLoginResponse = z.infer<typeof api.auth.login.responses[200]>;
 export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.responses[200]>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;

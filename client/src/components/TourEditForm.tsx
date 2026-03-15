@@ -94,6 +94,7 @@ export function TourEditForm({
       isSaving={isSaving}
       saveLabel="Speichern"
       testIdPrefix="tour"
+      contentScrollMode="contained"
       footerActions={
         !isCreate && canDelete && tour && onDelete ? (
           <Button
@@ -111,7 +112,7 @@ export function TourEditForm({
         ) : undefined
       }
     >
-      <Tabs defaultValue="stammdaten" className="space-y-4">
+      <Tabs defaultValue="stammdaten" className="flex h-full min-h-0 flex-col space-y-4">
         <TabsList>
           <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
           <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
@@ -171,14 +172,14 @@ export function TourEditForm({
           </div>
         </TabsContent>
 
-        <TabsContent value="termine">
+        <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
           <AppointmentsListPage
             title="Termine"
             helpKey="appointments.list.tourForm"
             context={{ type: "tour", tourId: tour?.id ?? null }}
             emptyStateOverride={leftEmptyState}
             onOpenAppointment={onOpenAppointment}
-            className="min-h-[620px]"
+            className="min-h-0 flex-1"
           />
         </TabsContent>
       </Tabs>

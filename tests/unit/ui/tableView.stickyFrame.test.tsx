@@ -6,6 +6,7 @@
  * - TableView zeigt den persistenten Footer-Bereich nur bei Footer-Inhalt oder horizontalem Overflow.
  * - Die horizontale Scrollposition bleibt zwischen Tabellenkoerper und Footer-Scrollbar synchron.
  * - Die Footer-Scrollbar bleibt sichtbar und griffig ueber die gemeinsame Scrollbar-Variante.
+ * - Die gemeinsame Tabellenbasis behaelt kompakte Zellen, Zebra-Striping und klare Headerflaechen.
  *
  * Fehlerfaelle:
  * - Sticky-Klassen gehen beim TableView-Refactor verloren.
@@ -151,5 +152,26 @@ describe("FT-UI table view sticky frame", () => {
     bodyScroll.scrollLeft = 120;
     fireEvent.scroll(bodyScroll);
     expect(footerScroll.scrollLeft).toBe(120);
+  });
+
+  it("keeps compact row, zebra and header surface classes on the shared table primitives", () => {
+    render(
+      <TableView
+        columns={columns}
+        rows={[{ id: 1, name: "Alpha" }, { id: 2, name: "Beta" }]}
+        rowKey={(row) => row.id}
+        stickyHeader
+        testId="table-surface"
+      />,
+    );
+
+    const headerCell = screen.getByText("Name").closest("th");
+    const bodyRows = screen.getAllByRole("row").slice(1);
+    const firstCell = screen.getByText("Alpha").closest("td");
+
+    expect(headerCell?.className).toContain("bg-muted/80");
+    expect(headerCell?.className).toContain("font-semibold");
+    expect(bodyRows[0]?.className).toContain("even:bg-muted/20");
+    expect(firstCell?.className).toContain("py-2.5");
   });
 });

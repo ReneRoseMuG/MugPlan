@@ -22,6 +22,7 @@ Ziel: Vollstaendiges Inventar aller Pfade mit destruktivem Potenzial und Nachwei
 | `tests/integration/server/ft07.backup-and-caldav.integration.test.ts` | Integration test | `DELETE FROM backup_log` | via `db.execute` | `assertSafeDestructiveOperationTarget` + `assertSqlDatabaseIdentity` vor delete | secured |
 | `script/sql/reset_safe_dev_test.sql` | manuell SQL | drop + recreate schema | SQL client | SQL guard block + Test-DB-Namensregel + Host/Port-Plausi | partial |
 | `script/sql/reset_absolute_state.sql` | manuell SQL | drop + recreate schema | SQL client | SQL guard block (`SQLSTATE 45000`) + Test-DB-Namensregel (`*_test`) | secured |
+| `script/sql/2026-03-11_recreate_server_schema_from_repo.sql` | manuell SQL | drop + recreate schema | SQL client | SQL guard block (`@expected_database` + `SQLSTATE 45000`) + aktive DB-Identitaetspruefung | partial |
 | `script/seed-roles.ts` | script | seed writes | via `server/db.ts` | zentraler DB-Factory-Guard in `db.ts` | secured |
 | `script/verify-demo-seed.ts` | script | seed + purge writes | via `server/db.ts` | zentraler DB-Factory-Guard in `db.ts` | secured |
 | `script/migrate-project-names-with-customer-number.ts` | script | migration writes | via `server/db.ts` | zentraler DB-Factory-Guard in `db.ts` | secured |

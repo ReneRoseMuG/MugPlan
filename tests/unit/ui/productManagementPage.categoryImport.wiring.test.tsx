@@ -26,8 +26,8 @@ describe("FT27 UI: category import wiring in product management", () => {
     expect(source).toContain('data-testid="input-product-category-import-file"');
     expect(source).toContain('data-testid="input-component-category-import-file"');
     expect(source).toContain("Daten importieren");
-    expect(source).toContain("button-product-category-import-");
-    expect(source).toContain("button-component-category-import-");
+    expect(source).toContain('title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"');
+    expect(source).toContain('data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}');
   });
 
   it("maps import error codes to specific user-facing messages", () => {

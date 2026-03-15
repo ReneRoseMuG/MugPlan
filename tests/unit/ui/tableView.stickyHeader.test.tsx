@@ -32,7 +32,7 @@ describe("PKG-08 TableLayout: TableView sticky header", () => {
     );
 
     expect(html).toContain("<th");
-    expect(html).toContain("sticky top-0 z-10 bg-card border-b");
+    expect(html).toContain("sticky top-0 z-10 bg-muted/95 border-b");
   });
 
   it("does not apply sticky header classes when stickyHeader=false", () => {
@@ -45,7 +45,7 @@ describe("PKG-08 TableLayout: TableView sticky header", () => {
       }),
     );
 
-    expect(html).not.toContain("sticky top-0 z-10 bg-card border-b");
+    expect(html).not.toContain("sticky top-0 z-10 bg-muted/95 border-b");
   });
 
   it("keeps header alignment/base classes while sticky header is enabled", () => {

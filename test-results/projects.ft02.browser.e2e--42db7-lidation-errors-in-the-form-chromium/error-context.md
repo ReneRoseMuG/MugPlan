@@ -1,0 +1,167 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - region "Notifications (F8)":
+      - list [ref=e4]:
+        - status [ref=e5]:
+          - generic [ref=e7]: Kunde muss ausgewählt werden
+          - button [ref=e8] [cursor=pointer]:
+            - img [ref=e9]
+    - generic [ref=e13]:
+      - complementary [ref=e14]:
+        - generic [ref=e15]:
+          - heading "MuG Plan" [level=1] [ref=e17]
+          - navigation [ref=e18]:
+            - generic [ref=e19]:
+              - generic [ref=e20]: Terminplanung
+              - generic [ref=e21]:
+                - button "Wochenuebersicht" [ref=e22] [cursor=pointer]:
+                  - img [ref=e23]
+                  - generic [ref=e25]: Wochenuebersicht
+                - button "Monatsuebersicht" [ref=e26] [cursor=pointer]:
+                  - img [ref=e27]
+                  - generic [ref=e29]: Monatsuebersicht
+                - button "Termine" [ref=e30] [cursor=pointer]:
+                  - img [ref=e31]
+                  - generic [ref=e33]: Termine
+            - generic [ref=e34]:
+              - generic [ref=e35]: Projektplanung
+              - generic [ref=e36]:
+                - button "Projekte" [ref=e37] [cursor=pointer]:
+                  - img [ref=e38]
+                  - generic [ref=e40]: Projekte
+                - button "Kunden" [ref=e41] [cursor=pointer]:
+                  - img [ref=e42]
+                  - generic [ref=e45]: Kunden
+            - generic [ref=e46]:
+              - generic [ref=e47]: Reports
+              - button "Reports" [ref=e49] [cursor=pointer]:
+                - img [ref=e50]
+                - generic [ref=e53]: Reports
+            - generic [ref=e54]:
+              - generic [ref=e55]: Mitarbeiter Verwaltung
+              - generic [ref=e56]:
+                - button "Mitarbeiter" [ref=e57] [cursor=pointer]:
+                  - img [ref=e58]
+                  - generic [ref=e62]: Mitarbeiter
+                - button "Abwesenheiten" [ref=e63] [cursor=pointer]:
+                  - img [ref=e64]
+                  - generic [ref=e66]: Abwesenheiten
+                - button "Teams" [ref=e67] [cursor=pointer]:
+                  - img [ref=e68]
+                  - generic [ref=e72]: Teams
+                - button "Touren" [ref=e73] [cursor=pointer]:
+                  - img [ref=e74]
+                  - generic [ref=e77]: Touren
+            - generic [ref=e78]:
+              - generic [ref=e79]: Administration
+              - generic [ref=e80]:
+                - button "Stammdaten" [ref=e81] [cursor=pointer]:
+                  - img [ref=e82]
+                  - generic [ref=e85]: Stammdaten
+                - button "Hilfetexte" [ref=e86] [cursor=pointer]:
+                  - img [ref=e87]
+                  - generic [ref=e90]: Hilfetexte
+                - button "Benutzerverwaltung" [ref=e91] [cursor=pointer]:
+                  - img [ref=e92]
+                  - generic [ref=e95]: Benutzerverwaltung
+                - button "Einstellungen" [ref=e96] [cursor=pointer]:
+                  - img [ref=e97]
+                  - generic [ref=e100]: Einstellungen
+                - button "Demo-Daten" [ref=e101] [cursor=pointer]:
+                  - img [ref=e102]
+                  - generic [ref=e105]: Demo-Daten
+            - button "Logout" [ref=e107] [cursor=pointer]:
+              - img [ref=e108]
+              - generic [ref=e111]: Logout
+      - main [ref=e112]:
+        - generic [ref=e115]:
+          - generic [ref=e117]:
+            - heading "Neues Projekt" [level=2] [ref=e118]:
+              - img [ref=e119]
+              - text: Neues Projekt
+            - button [ref=e121] [cursor=pointer]:
+              - img
+          - generic [ref=e122]:
+            - generic [ref=e124]:
+              - generic [ref=e125]:
+                - generic [ref=e126]:
+                  - generic [ref=e127]:
+                    - text: Auftragsnummer
+                    - textbox "Auftragsnummer" [ref=e128]
+                  - generic [ref=e129]:
+                    - text: Projektname *
+                    - textbox "Projektname *" [ref=e130]: FT02 Browser Projekt
+                  - generic [ref=e131]:
+                    - text: Auftragswert (EUR)
+                    - textbox "Auftragswert (EUR)" [ref=e132]:
+                      - /placeholder: z. B. 14999.90
+                - generic [ref=e133]:
+                  - generic [ref=e134]:
+                    - text: Geplanter Termin
+                    - textbox "Geplanter Termin" [ref=e135]:
+                      - /placeholder: Freitext
+                  - generic [ref=e136]:
+                    - text: Geplante Kalenderwoche
+                    - textbox "Geplante Kalenderwoche" [ref=e137]:
+                      - /placeholder: z. B. KW 14
+              - generic [ref=e138]:
+                - generic [ref=e139]:
+                  - generic [ref=e141]:
+                    - tablist [ref=e142]:
+                      - tab "Anmerkungen" [selected] [ref=e143] [cursor=pointer]
+                      - tab "Artikelliste" [ref=e144] [cursor=pointer]
+                    - tabpanel "Anmerkungen" [ref=e145]:
+                      - generic [ref=e147]:
+                        - generic [ref=e148]:
+                          - button "Fett" [ref=e149] [cursor=pointer]:
+                            - img
+                          - button "Kursiv" [ref=e150] [cursor=pointer]:
+                            - img
+                          - button "Unterstrichen" [ref=e151] [cursor=pointer]:
+                            - img
+                          - button "Textfarbe" [ref=e153] [cursor=pointer]:
+                            - img
+                          - button "Hintergrundfarbe" [ref=e154] [cursor=pointer]:
+                            - img
+                          - button "Aufzählung" [ref=e156] [cursor=pointer]:
+                            - img
+                          - button "Nummerierte Liste" [ref=e157] [cursor=pointer]:
+                            - img
+                          - button "Linksbündig" [ref=e159] [cursor=pointer]:
+                            - img
+                          - button "Zentriert" [ref=e160] [cursor=pointer]:
+                            - img
+                          - button "Rechtsbündig" [ref=e161] [cursor=pointer]:
+                            - img
+                        - generic [ref=e162]: Projektbeschreibung eingeben...
+                  - generic [ref=e164]:
+                    - generic [ref=e165]:
+                      - generic [ref=e166]:
+                        - img [ref=e168]
+                        - heading "Kunde" [level=3] [ref=e172]
+                      - button "Kunde auswählen" [ref=e174] [cursor=pointer]:
+                        - img
+                    - generic [ref=e175]: Kein Kunde ausgewählt
+                  - generic [ref=e176]:
+                    - heading "Dokumentenextraktion (PDF)" [level=3] [ref=e177]
+                    - generic [ref=e178]:
+                      - generic [ref=e179]:
+                        - img [ref=e180]
+                        - generic [ref=e184]: PDF hier ablegen oder auswählen
+                      - generic [ref=e186]:
+                        - generic [ref=e187]: PDF auswählen
+                        - button "PDF auswählen" [ref=e188] [cursor=pointer]:
+                          - img
+                - generic [ref=e190]:
+                  - heading "Alle Termine (0)" [level=3] [ref=e193]:
+                    - img [ref=e194]
+                    - text: Alle Termine (0)
+                  - paragraph [ref=e198]: Keine Termine vorhanden
+            - generic [ref=e199]:
+              - button "Abbrechen" [ref=e200] [cursor=pointer]
+              - button "Projekt speichern" [ref=e201] [cursor=pointer]
+  - status [ref=e202]: Notification Kunde muss ausgewählt werden
+```

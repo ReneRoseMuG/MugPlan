@@ -1,0 +1,160 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - region "Notifications (F8)":
+      - list
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - heading [level=1]: MuG Plan
+          - navigation:
+            - generic:
+              - generic: Terminplanung
+              - generic:
+                - button:
+                  - img
+                  - generic: Wochenuebersicht
+                - button:
+                  - img
+                  - generic: Monatsuebersicht
+                - button:
+                  - img
+                  - generic: Termine
+            - generic:
+              - generic: Projektplanung
+              - generic:
+                - button:
+                  - img
+                  - generic: Projekte
+                - button:
+                  - img
+                  - generic: Kunden
+            - generic:
+              - generic: Reports
+              - generic:
+                - button:
+                  - img
+                  - generic: Reports
+            - generic:
+              - generic: Mitarbeiter Verwaltung
+              - generic:
+                - button:
+                  - img
+                  - generic: Mitarbeiter
+                - button:
+                  - img
+                  - generic: Abwesenheiten
+                - button:
+                  - img
+                  - generic: Teams
+                - button:
+                  - img
+                  - generic: Touren
+            - generic:
+              - generic: Administration
+              - generic:
+                - button:
+                  - img
+                  - generic: Stammdaten
+                - button:
+                  - img
+                  - generic: Hilfetexte
+                - button:
+                  - img
+                  - generic: Benutzerverwaltung
+                - button:
+                  - img
+                  - generic: Einstellungen
+                - button:
+                  - img
+                  - generic: Demo-Daten
+            - generic:
+              - button:
+                - img
+                - generic: Logout
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - text: Abwesenheiten
+            - generic:
+              - generic:
+                - generic: Mitarbeiter
+                - combobox:
+                  - generic: FT30-NAV-A-0001, Fixture
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - img
+                        - text: Abwesenheit anlegen
+                    - generic:
+                      - generic:
+                        - generic:
+                          - text: Typ
+                          - combobox:
+                            - generic: Urlaub
+                            - img
+                        - generic:
+                          - text: Von
+                          - textbox: 2026-03-14
+                        - generic:
+                          - text: Bis
+                          - textbox: 2026-03-14
+                      - generic:
+                        - button:
+                          - img
+                          - text: Abwesenheit speichern
+                  - generic:
+                    - generic:
+                      - generic: Abwesenheitsliste
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - table:
+                              - rowgroup:
+                                - row:
+                                  - columnheader: Typ
+                                  - columnheader: Von
+                                  - columnheader: Bis
+                                  - columnheader: Aktionen
+                              - rowgroup:
+                                - row:
+                                  - cell: Urlaub
+                                  - cell: 17.03.2026
+                                  - cell: 20.03.2026
+                                  - cell:
+                                    - generic:
+                                      - button:
+                                        - img
+                                        - text: Bearbeiten
+                                      - button: Vorschau
+                                      - button:
+                                        - img
+                                        - text: Loeschen
+  - dialog "Betroffene Termine" [ref=e2]:
+    - heading "Betroffene Termine" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]: Keine zukuenftigen Termine betroffen.
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - text: Ersatzmitarbeiter
+          - combobox "Ersatzmitarbeiter" [active] [ref=e9] [cursor=pointer]:
+            - generic: Ersatzmitarbeiter waehlen
+            - img [ref=e10]
+        - button "Pulkersatz ausfuehren" [disabled]
+    - button "Close" [ref=e12] [cursor=pointer]:
+      - img [ref=e13]
+      - generic [ref=e16]: Close
+```

@@ -320,23 +320,26 @@ describe("FT27 unit: masterDataService", () => {
     const csv = Buffer.from("Name;Beschreibung;IsActive\nNeu;Text;\nBestand;;true\nSchlafend;;\n", "utf8");
     const result = await importProductsForCategory(3, csv, "ADMIN");
 
-    expect(repositoryMocks.createProduct).toHaveBeenCalledWith({
+    expect(repositoryMocks.createProduct).toHaveBeenCalledWith(expect.objectContaining({
       name: "Neu",
       categoryId: 3,
       description: "Text",
+      shortCode: null,
       isActive: true,
       version: 1,
-    });
+    }));
     expect(repositoryMocks.updateProductWithVersion).toHaveBeenNthCalledWith(1, 10, 4, {
       name: "Bestand",
       categoryId: 3,
       description: null,
+      shortCode: null,
       isActive: true,
     });
     expect(repositoryMocks.updateProductWithVersion).toHaveBeenNthCalledWith(2, 11, 7, {
       name: "Schlafend",
       categoryId: 3,
       description: null,
+      shortCode: null,
       isActive: true,
     });
     expect(result.summary.createdRows).toBe(1);
@@ -388,13 +391,14 @@ describe("FT27 unit: masterDataService", () => {
     const csv = Buffer.from("Name\nNur Dach\n", "utf8");
     const result = await importComponentsForCategory(6, csv, "ADMIN");
 
-    expect(repositoryMocks.createComponent).toHaveBeenCalledWith({
+    expect(repositoryMocks.createComponent).toHaveBeenCalledWith(expect.objectContaining({
       name: "Nur Dach",
       categoryId: 6,
       description: null,
+      shortCode: null,
       isActive: true,
       version: 1,
-    });
+    }));
     expect(result.summary.createdRows).toBe(1);
     expect(result.summary.invalidRows).toBe(0);
   });

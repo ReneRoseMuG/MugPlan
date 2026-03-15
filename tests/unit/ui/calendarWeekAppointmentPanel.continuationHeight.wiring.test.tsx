@@ -24,7 +24,8 @@ describe("FT03 UI: CalendarWeekAppointmentPanel continuation height wiring", () 
   const source = readFileSync(path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanel.tsx"), "utf8");
 
   it("defines continuation height fallback constant and prop", () => {
-    expect(source).toContain("export const DEFAULT_CONTINUATION_HEIGHT_PX = 180;");
+    expect(source).toContain("export const MIN_WEEK_CARD_HEIGHT_PX = 240;");
+    expect(source).toContain("export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;");
     expect(source).toContain("continuationHeightPx?: number | null;");
     expect(source).toContain("const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;");
   });

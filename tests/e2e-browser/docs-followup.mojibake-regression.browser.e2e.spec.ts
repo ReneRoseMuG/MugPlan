@@ -47,9 +47,10 @@ test("keeps changed calendar and project labels free of mojibake", async ({ page
   await expect(page.getByText("Wochenplanung drucken")).toBeVisible();
 
   await page.getByTestId("nav-projekte").click();
-  await expect(page.getByText("Kundennummer")).toBeVisible();
-  await expect(page.getByText("Auftragsnummer")).toBeVisible();
-  await expect(page.getByPlaceholder("Suche: Nr.").first()).toBeVisible();
+  await expect(page.getByText("Kunde Nr.")).toBeVisible();
+  await expect(page.getByText("Auftrag Nr.")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Kunde Nr." })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Auftrag Nr." })).toBeVisible();
 
   await page.getByTestId(`project-card-${project.id}`).dblclick();
   await expect(page.getByTestId("project-description-tabs")).toBeVisible();

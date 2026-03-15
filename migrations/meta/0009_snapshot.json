@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "79c9812d-66ae-4622-96c5-c240198ec4e9",
+  "prevId": "224d1d5b-f801-477b-902a-641237347805",
+  "note": "Manual snapshot placeholder for 0009_ft30_employee_absences. Authoritative migration logic lives in migrations/0009_ft30_employee_absences.sql."
+}

@@ -82,7 +82,7 @@ export function TableView<T>({
   rowClassName,
   testId,
 }: TableViewProps<T>) {
-  const rowPaddingClass = density === "compact" ? "py-2" : "py-4";
+  const rowPaddingClass = density === "compact" ? "py-1.5" : "py-2.5";
   const bodyScrollRef = useRef<HTMLDivElement | null>(null);
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
   const footerScrollRef = useRef<HTMLDivElement | null>(null);
@@ -190,7 +190,7 @@ export function TableView<T>({
                   key={column.id}
                   className={cn(
                     alignmentClass(column.align),
-                    stickyHeader && "sticky top-0 z-10 bg-card border-b shadow-[0_1px_0_0_hsl(var(--border))]",
+                    stickyHeader && "sticky top-0 z-10 bg-muted/95 border-b shadow-[0_1px_0_0_hsl(var(--border))]",
                     column.headerClassName,
                   )}
                   style={{

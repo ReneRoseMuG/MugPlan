@@ -84,8 +84,23 @@ type AppointmentFormProject = Project & {
 
 type AppointmentApiError = Error & { status?: number; code?: string };
 type ApiConflictEmployee = { id?: unknown; fullName?: unknown };
-type ApiErrorPayload = { message?: string; code?: string; conflictEmployees?: ApiConflictEmployee[] };
-type ApiSuccessPayload = { id?: number; message?: string };
+type AvailabilityConflictEmployee = { id: number; fullName: string; reason: "absence" | "exit_date" };
+type ApiErrorPayload = {
+  message?: string;
+  code?: string;
+  conflictEmployees?: ApiConflictEmployee[];
+  availabilityConflicts?: AvailabilityConflictEmployee[];
+};
+type ApiSuccessPayload = {
+  id?: number;
+  message?: string;
+  employees?: Array<{ id: number }>;
+  excludedEmployees?: AvailabilityConflictEmployee[];
+};
+type EmployeePickerAvailabilityResponse = {
+  availableEmployees: Employee[];
+  unavailableEmployees: AvailabilityConflictEmployee[];
+};
 type ExtractedProjectDraft = {
   name: string;
   orderNumber: string;
@@ -184,12 +199,16 @@ const parseErrorPayload = (rawBody: string): ApiErrorPayload | null => {
   const payload = parsed as {
     message?: unknown;
     code?: unknown;
-    conflictEmployees?: unknown;
+      conflictEmployees?: unknown;
+      availabilityConflicts?: unknown;
   };
   return {
     message: typeof payload.message === "string" && payload.message.trim().length > 0 ? payload.message : undefined,
     code: typeof payload.code === "string" ? payload.code : undefined,
     conflictEmployees: Array.isArray(payload.conflictEmployees) ? payload.conflictEmployees as ApiConflictEmployee[] : undefined,
+    availabilityConflicts: Array.isArray(payload.availabilityConflicts)
+      ? payload.availabilityConflicts as AvailabilityConflictEmployee[]
+      : undefined,
   };
 };
 
@@ -264,6 +283,9 @@ export function AppointmentForm({
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(null);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string | null>(null);
+  const [pendingAvailabilityConflicts, setPendingAvailabilityConflicts] = useState<AvailabilityConflictEmployee[]>([]);
+  const [availabilityConfirmOpen, setAvailabilityConfirmOpen] = useState(false);
+  const [lastExcludedEmployees, setLastExcludedEmployees] = useState<AvailabilityConflictEmployee[]>([]);
   const weekTourPrefillAppliedRef = useRef(false);
 
   const buildFormSnapshot = (input: {
@@ -352,6 +374,22 @@ export function AppointmentForm({
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees", { scope: "active" }],
     queryFn: () => fetchJson<Employee[]>("/api/employees?scope=active"),
+  });
+  const employeePickerUrl = startDate
+    ? `/api/employees?scope=active&appointmentDate=${encodeURIComponent(startDate)}&includeUnavailable=true`
+    : null;
+  const { data: employeePickerAvailability, isLoading: availableEmployeesLoading } = useQuery<EmployeePickerAvailabilityResponse>({
+    queryKey: ["/api/employees", { scope: "active", appointmentDate: startDate || null, includeUnavailable: true }],
+    queryFn: async () => {
+      const payload = await fetchJson<Employee[] | EmployeePickerAvailabilityResponse>(
+        employeePickerUrl ?? "/api/employees?scope=active",
+      );
+      if (Array.isArray(payload)) {
+        return { availableEmployees: payload, unavailableEmployees: [] };
+      }
+      return payload;
+    },
+    enabled: Boolean(employeePickerUrl),
   });
 
   const { data: appointmentDetail, isLoading: appointmentLoading } = useQuery<AppointmentDetail>({
@@ -443,6 +481,8 @@ export function AppointmentForm({
         employeeIds: initialEmployeeIds,
       }),
     );
+    setPendingAvailabilityConflicts([]);
+    setAvailabilityConfirmOpen(false);
   }, [appointmentDetail]);
 
   useEffect(() => {
@@ -527,9 +567,13 @@ export function AppointmentForm({
   );
 
   const availableEmployees = useMemo(
-    () => employees.filter((employee) => employee.isActive && !assignedEmployeeIds.includes(employee.id)),
-    [employees, assignedEmployeeIds],
+    () => (employeePickerAvailability?.availableEmployees ?? []).filter(
+      (employee) => employee.isActive && !assignedEmployeeIds.includes(employee.id),
+    ),
+    [employeePickerAvailability?.availableEmployees, assignedEmployeeIds],
   );
+
+  const unavailableEmployees = employeePickerAvailability?.unavailableEmployees ?? [];
 
   const teamMembersById = useMemo(() => {
     const result = new Map<number, { id: number; fullName: string }[]>();
@@ -1177,7 +1221,7 @@ export function AppointmentForm({
     },
   });
 
-  const persistAppointment = async () => {
+  const persistAppointment = async (confirmAvailabilityAdjustments = false) => {
     const resolvedPayloadCustomerId = selectedProject?.customerId ?? selectedCustomerId;
     if (!resolvedPayloadCustomerId) {
       toast({
@@ -1213,8 +1257,8 @@ export function AppointmentForm({
       return;
     }
     const payload = isEditing
-      ? { ...basePayload, version }
-      : basePayload;
+      ? { ...basePayload, version, confirmAvailabilityAdjustments }
+      : { ...basePayload, confirmAvailabilityAdjustments };
 
     console.info(`${logPrefix} submit`, {
       method,
@@ -1287,8 +1331,23 @@ export function AppointmentForm({
           });
           return;
         }
+        if (parsed?.code === "AVAILABILITY_CONFIRMATION_REQUIRED") {
+          console.info(`${logPrefix} submit requires availability confirmation`, {
+            status: response.status,
+            conflicts: parsed.availabilityConflicts?.length ?? 0,
+          });
+          setPendingAvailabilityConflicts(parsed.availabilityConflicts ?? []);
+          setAvailabilityConfirmOpen(true);
+          return;
+        }
         throw new Error((data as { message?: string } | null)?.message ?? "Speichern fehlgeschlagen");
       }
+      setAssignedEmployeeIds(
+        Array.isArray(data?.employees)
+          ? data.employees.map((employee) => employee.id)
+          : assignedEmployeeIds,
+      );
+      setLastExcludedEmployees(Array.isArray(data?.excludedEmployees) ? data.excludedEmployees : []);
       const savedAppointmentId = data?.id ?? appointmentId ?? null;
       console.info(`${logPrefix} save success`, {
         action: isEditing ? "edit" : "create",
@@ -1315,9 +1374,12 @@ export function AppointmentForm({
       if (isEditing && appointmentId) {
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
       }
+      const excludedEmployees = Array.isArray(data?.excludedEmployees) ? data.excludedEmployees : [];
       toast({
         title: isEditing ? "Termin gespeichert" : "Termin erstellt",
       });
+      setPendingAvailabilityConflicts([]);
+      setAvailabilityConfirmOpen(false);
       setInitialFormSnapshot(buildFormSnapshot({
         projectId: selectedProjectId,
         customerId: selectedCustomerId,
@@ -1329,7 +1391,9 @@ export function AppointmentForm({
         startTimeEnabled,
         employeeIds: assignedEmployeeIds,
       }));
-      onSaved?.();
+      if (excludedEmployees.length === 0) {
+        onSaved?.();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
@@ -1371,6 +1435,19 @@ export function AppointmentForm({
           </AlertDescription>
         </Alert>
       )}
+
+      {lastExcludedEmployees.length > 0 && !isLocked ? (
+        <Alert className="mb-6" data-testid="alert-appointment-excluded-employees">
+          <AlertTitle>Nicht verfuegbare Mitarbeiter wurden ausgeschlossen</AlertTitle>
+          <AlertDescription>
+            {lastExcludedEmployees.map((employee) => (
+              <div key={`${employee.id}-${employee.reason}`}>
+                {employee.fullName}: {employee.reason === "absence" ? "Abwesenheit" : "Austrittsdatum erreicht"}
+              </div>
+            ))}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="grid grid-cols-3 gap-6">
         <RelationSlot
@@ -1677,10 +1754,13 @@ export function AppointmentForm({
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableEmployees}
+            unavailableEmployees={unavailableEmployees}
             teams={teams}
             tours={tours}
-            isLoading={employeesLoading}
-            title="Mitarbeiter auswählen"
+            isLoading={employeesLoading || availableEmployeesLoading}
+            title="Mitarbeiter auswaehlen"
+            appointmentDate={startDate || null}
+            showAvailabilityNotice
             onSelectEmployee={(employeeId) => {
               addEmployees([employeeId]);
               setEmployeePickerOpen(false);
@@ -1732,6 +1812,36 @@ export function AppointmentForm({
               }}
             >
               Trotzdem speichern
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={availabilityConfirmOpen} onOpenChange={setAvailabilityConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Verfuegbarkeitskonflikt bestaetigen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Die folgenden Mitarbeiter sind am Termindatum nicht verfuegbar. Sie werden nur nach Ihrer expliziten
+              Bestaetigung nicht uebernommen oder aus dem Termin entfernt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 text-sm" data-testid="dialog-appointment-availability-conflicts">
+            {pendingAvailabilityConflicts.map((employee) => (
+              <div key={`${employee.id}-${employee.reason}`}>
+                {employee.fullName}: {employee.reason === "absence" ? "Abwesenheit" : "Austrittsdatum erreicht"}
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setAvailabilityConfirmOpen(false);
+                void persistAppointment(true);
+              }}
+            >
+              Aenderung bestaetigen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
