@@ -20,9 +20,14 @@ import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
 import { MasterDataPage } from "@/components/MasterDataPage";
 import { ReportsPage } from "@/components/ReportsPage";
+import { MonitoringPage } from "@/components/MonitoringPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
 import { addMonths, subMonths } from "date-fns";
+import { api, type MonitoringListResponse } from "@shared/routes";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export type ViewType =
   | "month"
@@ -47,7 +52,8 @@ export type ViewType =
   | "demoData"
   | "masterData"
   | "users"
-  | "reports";
+  | "reports"
+  | "monitoring";
 
 export type CalendarNavCommand = {
   id: number;
@@ -66,9 +72,14 @@ type ReturnContext = {
 
 type HomeProps = {
   onLogout: () => void;
+  initialMonitoringSummary?: {
+    count: number;
+    triggerNames: string[];
+  };
+  onInitialMonitoringSummaryConsumed: () => void;
 };
 
-export default function Home({ onLogout }: HomeProps) {
+export default function Home({ onLogout, initialMonitoringSummary, onInitialMonitoringSummaryConsumed }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("week");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
@@ -100,8 +111,41 @@ export default function Home({ onLogout }: HomeProps) {
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canAccessReports = isAdmin || userRole === "DISPATCHER";
+  const canAccessMonitoring = canAccessReports;
   const backupEnabled = useSetting("backup_enabled");
   const backupDisabled = backupEnabled === false;
+  const { toast } = useToast();
+  const {
+    data: monitoringItems,
+    isLoading: isMonitoringLoading,
+    refetch: refetchMonitoring,
+  } = useQuery<MonitoringListResponse>({
+    queryKey: [api.monitoring.list.path],
+    enabled: canAccessMonitoring,
+    queryFn: async () => {
+      const response = await fetch(api.monitoring.list.path, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Monitoring konnte nicht geladen werden");
+      }
+      return (await response.json()) as MonitoringListResponse;
+    },
+  });
+
+  useEffect(() => {
+    if (!initialMonitoringSummary) return;
+    toast({
+      title: `${initialMonitoringSummary.count} problematische Termine im Monitoring`,
+      description: initialMonitoringSummary.triggerNames.join(", "),
+    });
+    onInitialMonitoringSummaryConsumed();
+  }, [initialMonitoringSummary, onInitialMonitoringSummaryConsumed, toast]);
+
+  useEffect(() => {
+    if (view !== "monitoring" || !canAccessMonitoring) return;
+    void refetchMonitoring();
+  }, [canAccessMonitoring, refetchMonitoring, view]);
 
   const handleWeekScrollRestoreApplied = useCallback(() => {
     setPendingWeekScrollRestore(null);
@@ -190,6 +234,7 @@ export default function Home({ onLogout }: HomeProps) {
             currentView={view}
             userRole={userRole}
             backupDisabled={backupDisabled}
+            monitoringCount={canAccessMonitoring ? monitoringItems?.length ?? 0 : undefined}
           />
         </aside>
       )}
@@ -340,6 +385,12 @@ export default function Home({ onLogout }: HomeProps) {
             <UsersPage />
           ) : view === "reports" && canAccessReports ? (
             <ReportsPage />
+          ) : view === "monitoring" && canAccessMonitoring ? (
+            <MonitoringPage
+              isAdmin={isAdmin}
+              initialItems={monitoringItems}
+              isInitialLoading={isMonitoringLoading}
+            />
           ) : isContextualCalendarView ? (
             <CalendarWorkspace
               mode="contextual"

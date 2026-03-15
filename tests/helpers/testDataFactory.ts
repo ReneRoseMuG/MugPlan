@@ -297,7 +297,6 @@ export async function createProjectOrderItemFixture(params: {
   orderNumber: string;
   productId?: number | null;
   componentId?: number | null;
-  description?: string | null;
   quantity?: number;
 }) {
   return projectsService.createProjectOrderItem(params.projectId, {
@@ -306,7 +305,6 @@ export async function createProjectOrderItemFixture(params: {
     productId: params.productId ?? null,
     componentId: params.componentId ?? null,
     specificationId: null,
-    description: params.description ?? null,
     quantity: params.quantity ?? 1,
   });
 }

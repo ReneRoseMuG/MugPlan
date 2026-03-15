@@ -8,6 +8,7 @@ interface SidebarProps {
   currentView?: ViewType;
   userRole?: string;
   backupDisabled?: boolean;
+  monitoringCount?: number;
 }
 
 function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
@@ -26,7 +27,19 @@ function NavGroup({ title, children }: { title: string; children: React.ReactNod
   );
 }
 
-function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.ElementType; label: string; isActive?: boolean; onClick?: () => void }) {
+function NavButton({
+  icon: Icon,
+  label,
+  isActive,
+  onClick,
+  count,
+}: {
+  icon: React.ElementType;
+  label: string;
+  isActive?: boolean;
+  onClick?: () => void;
+  count?: number;
+}) {
   const testId = `nav-${label.toLowerCase().replace(/\s+/g, "-")}`;
 
   if (onClick) {
@@ -41,6 +54,11 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
       >
         <Icon className="h-4 w-4 shrink-0 opacity-80" />
         <span className="min-w-0 truncate whitespace-nowrap">{label}</span>
+        {typeof count === "number" ? (
+          <span className="ml-auto rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`${testId}-count`}>
+            {count}
+          </span>
+        ) : null}
       </button>
     );
   }
@@ -56,13 +74,21 @@ function NavButton({ icon: Icon, label, isActive, onClick }: { icon: React.Eleme
   );
 }
 
-export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupDisabled = false }: SidebarProps) {
+export function Sidebar({
+  onViewChange,
+  onLogout,
+  currentView,
+  userRole,
+  backupDisabled = false,
+  monitoringCount,
+}: SidebarProps) {
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
   const canAccessReports = isAdmin || userRole?.toUpperCase() === "DISPATCHER";
   const CustomersIcon = domainIcons.customers;
   const ProjectsIcon = domainIcons.projects;
   const AppointmentsIcon = domainIcons.appointmentsList;
   const ReportsIcon = domainIcons.reports;
+  const MonitoringIcon = domainIcons.monitoring;
   const EmployeesIcon = domainIcons.employees;
   const EmployeeAbsencesIcon = domainIcons.employeeAbsences;
   const TeamsIcon = domainIcons.teams;
@@ -97,6 +123,13 @@ export function Sidebar({ onViewChange, onLogout, currentView, userRole, backupD
         {canAccessReports ? (
           <NavGroup title="Reports">
             <NavButton icon={ReportsIcon} label="Reports" isActive={currentView === "reports"} onClick={() => onViewChange("reports")} />
+            <NavButton
+              icon={MonitoringIcon}
+              label="Monitoring"
+              isActive={currentView === "monitoring"}
+              onClick={() => onViewChange("monitoring")}
+              count={monitoringCount}
+            />
           </NavGroup>
         ) : null}
 

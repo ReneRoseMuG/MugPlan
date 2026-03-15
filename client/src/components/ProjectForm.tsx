@@ -539,7 +539,6 @@ export function ProjectForm({
       productId: product?.id ?? null,
       componentId: component?.id ?? null,
       specificationId: null,
-      description: null,
       quantity: 1,
     });
     const savedItem = await response.json() as ProjectOrderItem;
@@ -607,7 +606,6 @@ export function ProjectForm({
         productId: field.source === "product" ? selection.productId : null,
         componentId: field.source === "component" ? selection.componentId : null,
         specificationId: null,
-        description: null,
         quantity: 1,
       });
     }

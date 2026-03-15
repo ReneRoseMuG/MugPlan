@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "5df1de39-c555-471e-91aa-d4fc8d1fd922",
+  "prevId": "a4040c98-b6ed-4cf4-ab6a-6683136c1472",
+  "note": "Manual snapshot placeholder for 0011_fix_fachregeln_order_items_and_cascades. Authoritative migration logic lives in migrations/0011_fix_fachregeln_order_items_and_cascades.sql."
+}

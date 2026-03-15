@@ -1636,7 +1636,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           productId: selectedMasterData.selectedProduct.id,
           componentId: null,
           specificationId: null,
-          description: null,
           quantity: 1,
         });
         for (const field of PROJECT_ARTICLE_FIELDS) {
@@ -1651,7 +1650,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
             productId: null,
             componentId: component.id,
             specificationId: null,
-            description: null,
             quantity: 1,
           });
         }

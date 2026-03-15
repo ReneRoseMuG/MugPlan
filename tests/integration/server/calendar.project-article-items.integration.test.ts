@@ -106,7 +106,6 @@ describe("calendar project article items integration", () => {
         productId: product.body.id,
         componentId: null,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(201);
@@ -119,7 +118,6 @@ describe("calendar project article items integration", () => {
         productId: null,
         componentId: component.body.id,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(201);

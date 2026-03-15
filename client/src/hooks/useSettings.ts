@@ -10,6 +10,9 @@ export type UserSettingKey =
   | "toastDesktopPosition"
   | "backup_enabled"
   | "auth_two_factor_enabled"
+  | "monitoring.tr01.enabled"
+  | "monitoring.tr01.horizonDays"
+  | "monitoring.tr01.minimumEmployees"
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
@@ -26,6 +29,9 @@ type UserSettingValueByKey = {
   toastDesktopPosition: ToastDesktopPosition;
   backup_enabled: boolean;
   auth_two_factor_enabled: boolean;
+  "monitoring.tr01.enabled": boolean;
+  "monitoring.tr01.horizonDays": number;
+  "monitoring.tr01.minimumEmployees": number;
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
@@ -106,6 +112,23 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "auth_two_factor_enabled") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
+    }
+    if (key === "monitoring.tr01.enabled") {
+      return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
+    }
+    if (key === "monitoring.tr01.horizonDays") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 365) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 14 as UserSettingValueByKey[K];
+    }
+    if (key === "monitoring.tr01.minimumEmployees") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 50) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 1 as UserSettingValueByKey[K];
     }
     if (key === "calendar.weekLanes.expandedLaneId") {
       return (typeof setting?.resolvedValue === "string" ? setting.resolvedValue : "") as UserSettingValueByKey[K];

@@ -16,6 +16,7 @@
  * Den isolierten FT30-CRUD-Flow im Browser end-to-end absichern.
  */
 import { expect, test } from "@playwright/test";
+import { loginAsAdmin } from "../helpers/browserE2e";
 import { resetDatabase } from "../helpers/resetDatabase";
 import {
   createAppointmentFixture,
@@ -29,13 +30,6 @@ test.beforeEach(async () => {
   resetTestDataFactoryState();
   await resetDatabase();
 });
-
-async function loginAsAdmin(page: Parameters<typeof test>[0]["page"]) {
-  await page.goto("/");
-  await page.getByLabel("Benutzername oder E-Mail").fill("test-admin");
-  await page.getByLabel("Passwort").fill("test-admin-password");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-}
 
 test("employee absences CRUD works inside employee form", async ({ page }) => {
   const employee = await createEmployeeFixture("FT30-BROWSER");

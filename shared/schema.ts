@@ -552,7 +552,6 @@ export const projectOrderItems = mysqlTable("project_order_items", {
     .references(() => components.id, { onDelete: "restrict" }),
   specificationId: bigint("specification_id", { mode: "number" })
     .references(() => componentSpecifications.id, { onDelete: "restrict" }),
-  description: text("description"),
   quantity: int("quantity").notNull().default(1),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -567,7 +566,6 @@ export const projectOrderItems = mysqlTable("project_order_items", {
       (
         (${table.productId} IS NOT NULL AND ${table.componentId} IS NULL)
         OR (${table.productId} IS NULL AND ${table.componentId} IS NOT NULL)
-        OR (${table.productId} IS NULL AND ${table.componentId} IS NULL AND ${table.description} IS NOT NULL)
       )
       AND (${table.specificationId} IS NULL OR ${table.componentId} IS NOT NULL)
     )`,
@@ -591,7 +589,6 @@ export const updateProjectOrderItemSchema = z.object({
   productId: z.number().int().nullable().optional(),
   componentId: z.number().int().nullable().optional(),
   specificationId: z.number().int().nullable().optional(),
-  description: z.string().nullable().optional(),
   quantity: z.number().int().positive().optional(),
   version: z.number().int().optional(),
 }).partial();

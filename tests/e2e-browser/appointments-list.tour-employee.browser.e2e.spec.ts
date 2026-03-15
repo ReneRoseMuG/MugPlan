@@ -23,6 +23,7 @@
  * Browser-E2E-Nachweis fuer FT28 in beiden Formular-Kontexten.
  */
 import { expect, test } from "@playwright/test";
+import { loginAsAdmin } from "../helpers/browserE2e";
 import { resetDatabase } from "../helpers/resetDatabase";
 import {
   createAppointmentFixture,
@@ -37,13 +38,6 @@ test.beforeEach(async () => {
   resetTestDataFactoryState();
   await resetDatabase();
 });
-
-async function loginAsAdmin(page: Parameters<typeof test>[0]["page"]) {
-  await page.goto("/");
-  await page.getByLabel("Benutzername oder E-Mail").fill("test-admin");
-  await page.getByLabel("Passwort").fill("test-admin-password");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-}
 
 test("tour form appointments table: date sorting persists after show-all and no all-day column", async ({ page }) => {
   const tour = await createTourFixture("#1f8a70");

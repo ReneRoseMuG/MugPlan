@@ -4,12 +4,13 @@
  * Feature: FT30 - Bulk-Ersatz bei Mitarbeiterabwesenheiten
  *
  * Abgedeckte Regeln:
- * - Der Ersatzmitarbeiter muss aktiv, verschieden vom ausfallenden Mitarbeiter und verfuegbar sein.
+ * - Der Ersatzmitarbeiter muss aktiv und verschieden vom ausfallenden Mitarbeiter sein.
+ * - Nicht verfuegbare Ersatztermine werden als Skip statt als Globalfehler behandelt.
  * - Bereits zugewiesener Ersatz wird nur als Skip gezaehlt.
  * - updatedAppointmentCount zaehlt nur echte Termin-Aenderungen.
  *
  * Fehlerfaelle:
- * - Inaktive oder nicht verfuegbare Ersatzmitarbeiter werden akzeptiert.
+ * - Inaktive Ersatzmitarbeiter werden akzeptiert.
  * - Skip-Faelle erhoehen faelschlich die Anzahl aktualisierter Termine.
  *
  * Ziel:
@@ -89,7 +90,7 @@ describe("FT30 unit: employeeAbsencesService bulk replacement", () => {
     });
   });
 
-  it("rejects replacement employees that are unavailable for any affected appointment span", async () => {
+  it("skips replacement appointments that are unavailable instead of failing the full bulk replace", async () => {
     listAffectedFutureAppointmentsTxMock.mockResolvedValueOnce([
       {
         appointmentId: 700,
@@ -104,10 +105,15 @@ describe("FT30 unit: employeeAbsencesService bulk replacement", () => {
       unavailableEmployees: [{ id: 10, fullName: "Replacement", reason: "absence" }],
     });
 
-    await expect(bulkReplaceAffectedAppointments(1, 50, 10, "ADMIN")).rejects.toMatchObject<EmployeeAbsencesError>({
-      status: 422,
-      code: "VALIDATION_ERROR",
+    await expect(bulkReplaceAffectedAppointments(1, 50, 10, "ADMIN")).resolves.toEqual({
+      absenceId: 50,
+      updatedAppointmentCount: 0,
+      skippedAlreadyAssignedCount: 0,
+      skipped: [{ appointmentId: 700, reason: "EMPLOYEE_ABSENCE" }],
     });
+
+    expect(removeEmployeeFromAppointmentTxMock).not.toHaveBeenCalled();
+    expect(addEmployeeToAppointmentTxMock).not.toHaveBeenCalled();
   });
 
   it("counts only real updates and tracks already assigned replacements separately", async () => {
@@ -132,6 +138,7 @@ describe("FT30 unit: employeeAbsencesService bulk replacement", () => {
       absenceId: 50,
       updatedAppointmentCount: 1,
       skippedAlreadyAssignedCount: 1,
+      skipped: [],
     });
 
     expect(removeEmployeeFromAppointmentTxMock).toHaveBeenCalledTimes(2);

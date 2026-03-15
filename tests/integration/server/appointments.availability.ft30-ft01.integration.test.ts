@@ -207,10 +207,57 @@ describe("FT30/FT01 integration: employee availability and absence cleanup", () 
       .expect(200);
 
     expect(bulk.body.updatedAppointmentCount).toBe(2);
+    expect(bulk.body.skippedAlreadyAssignedCount).toBe(0);
+    expect(bulk.body.skipped).toEqual([]);
     await expect(getAppointmentEmployeeIds(firstAppointment.id)).resolves.toEqual(
       [companionEmployee.id, replacementEmployee.id].sort((left, right) => left - right),
     );
     await expect(getAppointmentEmployeeIds(secondAppointment.id)).resolves.toEqual([replacementEmployee.id]);
+  });
+
+  it("skips unavailable replacement appointments and leaves them unchanged", async () => {
+    const admin = await loginAdminAgent(app);
+    const project = await createProjectFixture({ prefix: "FT30FT01-BULK-PARTIAL" });
+    const absentEmployee = await createEmployeeFixture("PARTIAL-ABSENT");
+    const replacementEmployee = await createEmployeeFixture("PARTIAL-REPLACEMENT");
+    const companionEmployee = await createEmployeeFixture("PARTIAL-COMPANION");
+
+    const replaceableAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-09-10",
+      employeeIds: [absentEmployee.id, companionEmployee.id],
+    });
+    const blockedAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-09-11",
+      employeeIds: [absentEmployee.id],
+    });
+    await createEmployeeAbsenceFixture({
+      employeeId: replacementEmployee.id,
+      from: "2099-09-11",
+      until: "2099-09-11",
+    });
+    const absence = await createEmployeeAbsenceFixture({
+      employeeId: absentEmployee.id,
+      from: "2099-09-10",
+      until: "2099-09-11",
+    });
+
+    const bulk = await admin
+      .post(`/api/employees/${absentEmployee.id}/absences/${absence.id}/bulk-replace-appointments`)
+      .send({ replacementEmployeeId: replacementEmployee.id })
+      .expect(200);
+
+    expect(bulk.body).toEqual({
+      absenceId: absence.id,
+      updatedAppointmentCount: 1,
+      skippedAlreadyAssignedCount: 0,
+      skipped: [{ appointmentId: blockedAppointment.id, reason: "EMPLOYEE_ABSENCE" }],
+    });
+    await expect(getAppointmentEmployeeIds(replaceableAppointment.id)).resolves.toEqual(
+      [companionEmployee.id, replacementEmployee.id].sort((left, right) => left - right),
+    );
+    await expect(getAppointmentEmployeeIds(blockedAppointment.id)).resolves.toEqual([absentEmployee.id]);
   });
 
   it("treats a single absence day inside a multiday appointment span as an availability conflict", async () => {
@@ -351,6 +398,7 @@ describe("FT30/FT01 integration: employee availability and absence cleanup", () 
 
     expect(bulk.body.updatedAppointmentCount).toBe(1);
     expect(bulk.body.skippedAlreadyAssignedCount).toBe(1);
+    expect(bulk.body.skipped).toEqual([]);
     await expect(getAppointmentEmployeeIds(alreadyAssignedAppointment.id)).resolves.toEqual([replacementEmployee.id]);
     await expect(getAppointmentEmployeeIds(replaceableAppointment.id)).resolves.toEqual(
       [companionEmployee.id, replacementEmployee.id].sort((left, right) => left - right),

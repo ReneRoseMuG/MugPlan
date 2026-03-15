@@ -4,11 +4,13 @@
  * Abgedeckte Regeln:
  * - Projekt-Auftragspositionen sind ueber die bestehenden Projekt-Endpunkte lesbar und schreibbar.
  * - Eine neue Komponentenposition ersetzt bestehende Komponenten derselben Kategorie im Projekt.
+ * - Auftragspositionen duerfen nur noch als Produkt- oder Komponentenreferenz existieren.
  * - Loeschen respektiert die Version des zuletzt gespeicherten Eintrags.
  * - Neue Auftragspositionen mit inaktiven Produkt-/Komponentenreferenzen werden blockiert.
  *
  * Fehlerfälle:
  * - Mehrere Komponenten derselben Kategorie bleiben parallel im Projekt bestehen.
+ * - Freitext-, Leer- oder Mischpositionen werden akzeptiert.
  * - Delete ignoriert die Versionspruefung oder den Projektbezug.
  *
  * Ziel:
@@ -84,7 +86,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         productId: firstProduct.body.id,
         componentId: null,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(201);
@@ -97,7 +98,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         productId: secondProduct.body.id,
         componentId: null,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(201);
@@ -152,7 +152,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         productId: null,
         componentId: firstComponent.body.id,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(201);
@@ -167,7 +166,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         productId: null,
         componentId: secondComponent.body.id,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(201);
@@ -221,7 +219,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         productId: inactiveProduct.body.id,
         componentId: null,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(409)
@@ -259,12 +256,99 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         productId: null,
         componentId: inactiveComponent.body.id,
         specificationId: null,
-        description: null,
         quantity: 1,
       })
       .expect(409)
       .expect((res) => {
         expect(res.body.code).toBe("INACTIVE_ENTITY_ASSIGNMENT");
+      });
+  });
+
+  it("rejects order items without a single valid product-or-component reference", async () => {
+    const admin = await loginAdminAgent();
+    const token = `FT27-ORDER-INVALID-${sequence++}`;
+    const project = await createProjectFixture({ prefix: token, name: `${token}-Project` });
+
+    const productCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: `${token}-PROD-CAT`, isActive: true, version: 1 })
+      .expect(201);
+
+    const componentCategory = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: `${token}-COMP-CAT`, isActive: true, version: 1 })
+      .expect(201);
+
+    const product = await admin
+      .post("/api/admin/master-data/products")
+      .send({
+        name: `${token}-Product`,
+        categoryId: productCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    const component = await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: `${token}-Component`,
+        categoryId: componentCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    const specification = await admin
+      .post(`/api/admin/master-data/components/${component.body.id}/specifications`)
+      .send({ specName: "Leistung", specValue: "9 kW" })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: null,
+        componentId: null,
+        specificationId: null,
+        quantity: 1,
+      })
+      .expect(422)
+      .expect((res) => {
+        expect(res.body.code).toBe("VALIDATION_ERROR");
+      });
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: product.body.id,
+        componentId: component.body.id,
+        specificationId: null,
+        quantity: 1,
+      })
+      .expect(422)
+      .expect((res) => {
+        expect(res.body.code).toBe("VALIDATION_ERROR");
+      });
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: product.body.id,
+        componentId: null,
+        specificationId: specification.body.id,
+        quantity: 1,
+      })
+      .expect(422)
+      .expect((res) => {
+        expect(res.body.code).toBe("VALIDATION_ERROR");
       });
   });
 });

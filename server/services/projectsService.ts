@@ -263,6 +263,23 @@ async function ensureActiveOrderItemReferences(input: {
   }
 }
 
+function assertValidOrderItemRelationState(input: {
+  productId?: number | null;
+  componentId?: number | null;
+  specificationId?: number | null;
+}): void {
+  const hasProduct = input.productId != null;
+  const hasComponent = input.componentId != null;
+
+  if (hasProduct === hasComponent) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+
+  if (input.specificationId != null && !hasComponent) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+}
+
 export async function createProjectOrderItem(
   projectId: number,
   input: InsertProjectOrderItem,
@@ -270,6 +287,7 @@ export async function createProjectOrderItem(
   if (input.projectId !== projectId || input.orderNumber.trim().length === 0) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
+  assertValidOrderItemRelationState(input);
   const project = await projectsRepository.getProject(projectId);
   if (!project?.projectOrder?.orderNumber || project.projectOrder.orderNumber !== input.orderNumber.trim()) {
     throw new ProjectsError(409, "BUSINESS_CONFLICT");
@@ -290,6 +308,16 @@ export async function updateProjectOrderItem(
   if (!Number.isInteger(input.version) || input.version < 1) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
+  const existing = await projectsRepository.listProjectOrderItems(projectId);
+  const currentItem = existing.find((row) => row.id === itemId);
+  if (!currentItem) {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+  assertValidOrderItemRelationState({
+    productId: input.productId === undefined ? currentItem.productId : input.productId,
+    componentId: input.componentId === undefined ? currentItem.componentId : input.componentId,
+    specificationId: input.specificationId === undefined ? currentItem.specificationId : input.specificationId,
+  });
   await ensureActiveOrderItemReferences(input);
   const result = await projectsRepository.updateProjectOrderItemWithVersion(projectId, itemId, input.version, input);
   if (result.kind === "not_found") {

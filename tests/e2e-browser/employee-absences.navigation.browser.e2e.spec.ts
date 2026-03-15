@@ -16,6 +16,7 @@
  * Den globalen FT30-Abwesenheiten-Workflow browserseitig ueber Navigation, Auswahl und Tabellenansicht absichern.
  */
 import { expect, test } from "@playwright/test";
+import { loginAsAdmin } from "../helpers/browserE2e";
 import { resetDatabase } from "../helpers/resetDatabase";
 import { createEmployeeFixture, getRelativeBerlinDate, resetTestDataFactoryState } from "../helpers/testDataFactory";
 
@@ -23,13 +24,6 @@ test.beforeEach(async () => {
   resetTestDataFactoryState();
   await resetDatabase();
 });
-
-async function loginAsAdmin(page: Parameters<typeof test>[0]["page"]) {
-  await page.goto("/");
-  await page.getByLabel("Benutzername oder E-Mail").fill("test-admin");
-  await page.getByLabel("Passwort").fill("test-admin-password");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-}
 
 test("employee absences navigation page supports employee selection and table based CRUD", async ({ page }) => {
   const employeeA = await createEmployeeFixture("FT30-NAV-A");

@@ -71,6 +71,13 @@ function hasAllowedScope(definition: SettingDefinition, scopeType: SettingScopeT
   return (definition.allowedScopes as readonly SettingScopeType[]).includes(scopeType);
 }
 
+function canReadDefinition(definition: SettingDefinition, roleKey: CanonicalRoleKey): boolean {
+  if (definition.key.startsWith("monitoring.")) {
+    return roleKey === "ADMIN";
+  }
+  return true;
+}
+
 function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): string {
   if (scopeType === "USER") {
     return String(userId);
@@ -82,7 +89,7 @@ function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): st
 }
 
 async function assertCanWriteSetting(userId: number, input: SetSettingInput): Promise<void> {
-  if (!(input.scopeType === "GLOBAL" && input.key === "auth_two_factor_enabled")) {
+  if (!(input.scopeType === "GLOBAL" && (input.key === "auth_two_factor_enabled" || input.key.startsWith("monitoring.")))) {
     return;
   }
   const userWithRole = await usersRepository.getUserWithRole(userId);
@@ -103,7 +110,7 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
   const roleAvailable = roleCode !== null;
   const responseRoleCode: DbRoleCode = roleCode ?? "READER";
   const responseRoleKey = mapDbRoleCodeToCanonicalRole(responseRoleCode);
-  const definitions = settingDefinitions;
+  const definitions = settingDefinitions.filter((definition) => canReadDefinition(definition, responseRoleKey));
   const rows = await userSettingsRepository.listSettingCandidates({
     settingKeys: definitions.map((entry) => entry.key),
     userId,

@@ -265,7 +265,12 @@ export async function bulkReplaceAffectedAppointments(
   absenceId: number,
   replacementEmployeeId: number,
   roleKey: CanonicalRoleKey,
-): Promise<{ absenceId: number; updatedAppointmentCount: number; skippedAlreadyAssignedCount: number }> {
+): Promise<{
+  absenceId: number;
+  updatedAppointmentCount: number;
+  skippedAlreadyAssignedCount: number;
+  skipped: Array<{ appointmentId: number; reason: "EMPLOYEE_ABSENCE" | "EMPLOYEE_EXIT_DATE" }>;
+}> {
   const absence = await getExistingAbsenceOrThrow(employeeId, absenceId, roleKey);
   if (!Number.isInteger(replacementEmployeeId) || replacementEmployeeId < 1 || replacementEmployeeId === employeeId) {
     throw new EmployeeAbsencesError(422, "VALIDATION_ERROR");
@@ -284,6 +289,10 @@ export async function bulkReplaceAffectedAppointments(
       replacementEmployeeId,
     });
 
+    let updatedAppointmentCount = 0;
+    let skippedAlreadyAssignedCount = 0;
+    const skipped: Array<{ appointmentId: number; reason: "EMPLOYEE_ABSENCE" | "EMPLOYEE_EXIT_DATE" }> = [];
+
     for (const row of rows) {
       const rowStartDate = row.startDate instanceof Date ? row.startDate.toISOString().slice(0, 10) : String(row.startDate).slice(0, 10);
       const rowEndDate = row.endDate instanceof Date
@@ -296,15 +305,15 @@ export async function bulkReplaceAffectedAppointments(
         rowStartDate,
         rowEndDate,
       );
-      if (preview.unavailableEmployees.length > 0) {
-        throw new EmployeeAbsencesError(422, "VALIDATION_ERROR");
+      const availabilityConflict = preview.unavailableEmployees[0];
+      if (availabilityConflict) {
+        skipped.push({
+          appointmentId: row.appointmentId,
+          reason: availabilityConflict.reason === "exit_date" ? "EMPLOYEE_EXIT_DATE" : "EMPLOYEE_ABSENCE",
+        });
+        continue;
       }
-    }
 
-    let updatedAppointmentCount = 0;
-    let skippedAlreadyAssignedCount = 0;
-
-    for (const row of rows) {
       await employeeAbsencesRepository.removeEmployeeFromAppointmentTx(tx, row.appointmentId, employeeId);
       if (Number(row.replacementAlreadyAssigned ?? 0) > 0) {
         skippedAlreadyAssignedCount += 1;
@@ -319,6 +328,7 @@ export async function bulkReplaceAffectedAppointments(
       absenceId,
       updatedAppointmentCount,
       skippedAlreadyAssignedCount,
+      skipped,
     };
   });
 }

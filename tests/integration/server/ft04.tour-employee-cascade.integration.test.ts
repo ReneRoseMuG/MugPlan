@@ -3,12 +3,12 @@
  *
  * Abgedeckte Regeln:
  * - UC 04/11 liefert fuer zukuenftige Tour-Termine eine selektive Vorschau mit Konfliktkennzeichnung.
- * - UC 04/11 fuehrt nur explizit ausgewaehlte konfliktfreie Termine aus und rollt bei stale Konflikten vollstaendig zurueck.
+ * - UC 04/11 fuehrt konfliktfreie Termine aus und meldet spaet entstandene Konflikte als Skip.
  * - UC 04/12 zeigt nur tatsaechlich belegte zukuenftige Termine an und entfernt den Mitarbeiter selektiv.
  *
  * Fehlerfaelle:
  * - Historische Termine erscheinen in der Vorschau oder werden mutiert.
- * - Zwischen Vorschau und Bestaetigung entstandene Konflikte persistieren Teilzustaende.
+ * - Zwischen Vorschau und Bestaetigung entstandene Konflikte blockieren die gesamte Kaskade statt partiell geskippt zu werden.
  * - Abzugs-Vorschau listet Termine ohne Mitarbeiter weiterhin auf.
  *
  * Ziel:
@@ -113,6 +113,63 @@ describe("FT04 integration: tour employee cascade", () => {
     });
   });
 
+  it("executes add cascade partially and reports overlap plus availability skips", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#4a8458");
+    const project = await createProjectFixture({ prefix: "FT04-CASCADE-PARTIAL", name: "FT04 Partial Projekt" });
+    const candidate = await createEmployeeFixture("FT04-PARTIAL-CANDIDATE");
+
+    const eligibleAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(1),
+      tourId: tour.id,
+    });
+    const overlapAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(2),
+      tourId: tour.id,
+    });
+    const absenceAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(3),
+      tourId: tour.id,
+    });
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(2),
+      employeeIds: [candidate.id],
+    });
+    await createEmployeeAbsenceFixture({
+      employeeId: candidate.id,
+      from: getRelativeBerlinDate(3),
+      until: getRelativeBerlinDate(3),
+    });
+
+    const result = await admin
+      .post(`/api/tours/${tour.id}/employees/cascade-add`)
+      .send({
+        employeeId: candidate.id,
+        employeeVersion: candidate.version,
+        selectedAppointmentIds: [eligibleAppointment!.id, overlapAppointment!.id, absenceAppointment!.id],
+      })
+      .expect(200);
+
+    expect(result.body).toEqual({
+      updatedAppointmentCount: 1,
+      skipped: [
+        { appointmentId: overlapAppointment!.id, reason: "EMPLOYEE_OVERLAP" },
+        { appointmentId: absenceAppointment!.id, reason: "EMPLOYEE_ABSENCE" },
+      ],
+    });
+    expect(await getAppointmentEmployeeIds(eligibleAppointment!.id)).toEqual([candidate.id]);
+    expect(await getAppointmentEmployeeIds(overlapAppointment!.id)).toEqual([]);
+    expect(await getAppointmentEmployeeIds(absenceAppointment!.id)).toEqual([]);
+
+    const employeeResponse = await admin.get(`/api/employees/${candidate.id}`).expect(200);
+    expect(employeeResponse.body.employee.tourId).toBe(tour.id);
+  });
+
   it("executes add cascade selectively and keeps unselected future appointments unchanged", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#338855");
@@ -150,10 +207,10 @@ describe("FT04 integration: tour employee cascade", () => {
     expect(employeeResponse.body.employee.tourId).toBe(tour.id);
   });
 
-  it("rolls add cascade back completely when an overlap appears after the preview", async () => {
+  it("returns a skip when an overlap appears after the preview", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#884422");
-    const project = await createProjectFixture({ prefix: "FT04-CASCADE-ROLLBACK", name: "FT04 Rollback Projekt" });
+    const project = await createProjectFixture({ prefix: "FT04-CASCADE-ROLLBACK", name: "FT04 Skip Projekt" });
     const candidate = await createEmployeeFixture("FT04-ROLLBACK-CANDIDATE");
 
     const targetAppointment = await createAppointmentFixture({
@@ -173,21 +230,22 @@ describe("FT04 integration: tour employee cascade", () => {
       employeeIds: [candidate.id],
     });
 
-    await admin
+    const response = await admin
       .post(`/api/tours/${tour.id}/employees/cascade-add`)
       .send({
         employeeId: candidate.id,
         employeeVersion: candidate.version,
         selectedAppointmentIds: [targetAppointment!.id],
       })
-      .expect(409)
-      .expect((response) => {
-        expect(response.body.code).toBe("EMPLOYEE_OVERLAP_CONFLICT");
-      });
+      .expect(200);
 
+    expect(response.body).toEqual({
+      updatedAppointmentCount: 0,
+      skipped: [{ appointmentId: targetAppointment!.id, reason: "EMPLOYEE_OVERLAP" }],
+    });
     expect(await getAppointmentEmployeeIds(targetAppointment!.id)).toEqual([]);
     const employeeResponse = await admin.get(`/api/employees/${candidate.id}`).expect(200);
-    expect(employeeResponse.body.employee.tourId).toBeNull();
+    expect(employeeResponse.body.employee.tourId).toBe(tour.id);
   });
 
   it("previews and executes remove cascade only for future appointments that currently include the employee", async () => {

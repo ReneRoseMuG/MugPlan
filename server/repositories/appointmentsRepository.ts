@@ -833,3 +833,23 @@ export async function listAppointmentsForList(
     total: Number(totalResult?.total ?? 0),
   };
 }
+
+export async function listAppointmentsForMonitoring(params: {
+  fromDate: Date;
+  toDate: Date;
+}) {
+  return db
+    .select({
+      appointmentId: appointments.id,
+      startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
+      endDate: sql<string | null>`case when ${appointments.endDate} is null then null else date_format(${appointments.endDate}, '%Y-%m-%d') end`,
+      tourName: tours.name,
+      employeeCount: sql<number>`cast(count(${appointmentEmployees.employeeId}) as signed)`,
+    })
+    .from(appointments)
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .leftJoin(appointmentEmployees, eq(appointmentEmployees.appointmentId, appointments.id))
+    .where(and(gte(appointments.startDate, params.fromDate), lte(appointments.startDate, params.toDate)))
+    .groupBy(appointments.id, appointments.startDate, appointments.endDate, tours.name)
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
+}

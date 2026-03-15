@@ -27,7 +27,10 @@ type CascadeSkipReason =
   | "ALREADY_ASSIGNED"
   | "NOT_ASSIGNED"
   | "HISTORICAL_APPOINTMENT"
-  | "APPOINTMENT_NOT_ON_TOUR";
+  | "APPOINTMENT_NOT_ON_TOUR"
+  | "EMPLOYEE_OVERLAP"
+  | "EMPLOYEE_ABSENCE"
+  | "EMPLOYEE_EXIT_DATE";
 
 type CascadePreviewItem = {
   appointmentId: number;
@@ -321,9 +324,11 @@ export async function executeAddEmployeeCascade(
         appointmentEndDate,
       );
       if (availability.unavailableEmployees.length > 0) {
-        throw new TourEmployeesError(409, "AVAILABILITY_CONFLICT", {
-          availabilityConflicts: availability.unavailableEmployees,
+        skipped.push({
+          appointmentId,
+          reason: availability.unavailableEmployees[0]?.reason === "exit_date" ? "EMPLOYEE_EXIT_DATE" : "EMPLOYEE_ABSENCE",
         });
+        continue;
       }
 
       const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
@@ -333,7 +338,8 @@ export async function executeAddEmployeeCascade(
         startTimeHour: parseStartTimeHour(appointment.startTime),
       });
       if (conflictEmployees.length > 0) {
-        throw new TourEmployeesError(409, "EMPLOYEE_OVERLAP_CONFLICT", { conflictEmployees });
+        skipped.push({ appointmentId, reason: "EMPLOYEE_OVERLAP" });
+        continue;
       }
 
       const existingEmployeeIds = appointment.employees.map((entry) => Number(entry.id));

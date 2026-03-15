@@ -39,6 +39,12 @@ type AffectedAppointment = {
   employees: Array<{ id: number; fullName: string }>;
 };
 
+type BulkReplaceResult = {
+  updatedAppointmentCount: number;
+  skippedAlreadyAssignedCount: number;
+  skipped: Array<{ appointmentId: number; reason: "EMPLOYEE_ABSENCE" | "EMPLOYEE_EXIT_DATE" }>;
+};
+
 const defaultFormState = (): FormState => {
   const today = getBerlinTodayDateString();
   return {
@@ -240,7 +246,7 @@ export function EmployeeAbsencesPanel({
         `/api/employees/${employeeId}/absences/${previewAbsenceId}/bulk-replace-appointments`,
         { replacementEmployeeId },
       );
-      return response.json() as Promise<{ updatedAppointmentCount: number; skippedAlreadyAssignedCount: number }>;
+      return response.json() as Promise<BulkReplaceResult>;
     },
     onSuccess: (result) => {
       setBulkConfirmOpen(false);
@@ -251,16 +257,18 @@ export function EmployeeAbsencesPanel({
       const skippedDescription = result.skippedAlreadyAssignedCount > 0
         ? ` ${result.skippedAlreadyAssignedCount} Termine wurden uebersprungen, weil der Ersatz bereits zugewiesen war.`
         : "";
+      const availabilitySkippedDescription = result.skipped.length > 0
+        ? ` ${result.skipped.length} Termine wurden wegen Abwesenheit oder Austritt nicht angepasst.`
+        : "";
       toast({
         title: "Termine bereinigt",
-        description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.${skippedDescription}`,
+        description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.${skippedDescription}${availabilitySkippedDescription}`,
       });
     },
     onError: (error: Error) => {
-      const code = extractApiCode(error);
       toast({
         title: "Bulk-Ersatz fehlgeschlagen",
-        description: code === "VALIDATION_ERROR" ? "Der Ersatzmitarbeiter ist fuer mindestens einen Termin nicht verfuegbar." : error.message,
+        description: error.message,
         variant: "destructive",
       });
     },

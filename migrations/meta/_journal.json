@@ -78,6 +78,13 @@
       "when": 1773482400000,
       "tag": "0010_ft30_employee_exit_date",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1773576000000,
+      "tag": "0011_fix_fachregeln_order_items_and_cascades",
+      "breakpoints": true
     }
   ]
 }

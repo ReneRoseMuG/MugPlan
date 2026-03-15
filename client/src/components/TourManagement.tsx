@@ -44,6 +44,11 @@ type CascadeDialogState = {
   selectedAppointmentIds: number[];
 };
 
+type CascadeExecuteResult = {
+  updatedAppointmentCount: number;
+  skipped: Array<{ appointmentId: number; reason: string }>;
+};
+
 interface TourManagementProps {
   onCancel?: () => void;
   userRole?: string;
@@ -241,12 +246,14 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   });
 
   const executeAddCascadeMutation = useMutation({
-    mutationFn: async (params: { tourId: number; employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] }) =>
-      apiRequest("POST", `/api/tours/${params.tourId}/employees/cascade-add`, {
+    mutationFn: async (params: { tourId: number; employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] }) => {
+      const response = await apiRequest("POST", `/api/tours/${params.tourId}/employees/cascade-add`, {
         employeeId: params.employeeId,
         employeeVersion: params.employeeVersion,
         selectedAppointmentIds: params.selectedAppointmentIds,
-      }),
+      });
+      return response.json() as Promise<CascadeExecuteResult>;
+    },
     onSuccess: () => {
       invalidateEmployees();
       invalidateAppointmentViews();
@@ -255,12 +262,14 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   });
 
   const executeRemoveCascadeMutation = useMutation({
-    mutationFn: async (params: { tourId: number; employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] }) =>
-      apiRequest("POST", `/api/tours/${params.tourId}/employees/cascade-remove`, {
+    mutationFn: async (params: { tourId: number; employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] }) => {
+      const response = await apiRequest("POST", `/api/tours/${params.tourId}/employees/cascade-remove`, {
         employeeId: params.employeeId,
         employeeVersion: params.employeeVersion,
         selectedAppointmentIds: params.selectedAppointmentIds,
-      }),
+      });
+      return response.json() as Promise<CascadeExecuteResult>;
+    },
     onSuccess: () => {
       invalidateEmployees();
       invalidateAppointmentViews();
@@ -307,22 +316,6 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       toast({
         title: "Speichern nicht moeglich",
         description: "Der Mitarbeiter wurde zwischenzeitlich geaendert. Bitte neu laden.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (code === "EMPLOYEE_OVERLAP_CONFLICT") {
-      toast({
-        title: "Kaskade blockiert",
-        description: "Mindestens ein ausgewaehlter Termin hat inzwischen einen Personal-Konflikt.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (code === "AVAILABILITY_CONFLICT") {
-      toast({
-        title: "Kaskade blockiert",
-        description: "Mindestens ein ausgewaehlter Termin ist wegen Abwesenheit oder Austritt nicht mehr zulaessig.",
         variant: "destructive",
       });
       return;
@@ -410,21 +403,29 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const handleConfirmCascade = async () => {
     if (!cascadeDialogState) return;
     try {
+      let result: CascadeExecuteResult;
       if (cascadeDialogState.mode === "add") {
-        await executeAddCascadeMutation.mutateAsync({
+        result = await executeAddCascadeMutation.mutateAsync({
           tourId: cascadeDialogState.tourId,
           employeeId: cascadeDialogState.employeeId,
           employeeVersion: cascadeDialogState.employeeVersion,
           selectedAppointmentIds: cascadeDialogState.selectedAppointmentIds,
         });
       } else {
-        await executeRemoveCascadeMutation.mutateAsync({
+        result = await executeRemoveCascadeMutation.mutateAsync({
           tourId: cascadeDialogState.tourId,
           employeeId: cascadeDialogState.employeeId,
           employeeVersion: cascadeDialogState.employeeVersion,
           selectedAppointmentIds: cascadeDialogState.selectedAppointmentIds,
         });
       }
+      const skippedMessage = result.skipped.length > 0
+        ? ` ${result.skipped.length} Termine wurden wegen Konflikten uebersprungen.`
+        : "";
+      toast({
+        title: cascadeDialogState.mode === "add" ? "Kaskade abgeschlossen" : "Abzug abgeschlossen",
+        description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.${skippedMessage}`,
+      });
       setCascadeDialogState(null);
     } catch (error) {
       handleExecuteCascadeError(error, cascadeDialogState.mode);
@@ -480,7 +481,9 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
             onSelectedAppointmentIdsChange={(selectedAppointmentIds) => {
               setCascadeDialogState((current) => current ? { ...current, selectedAppointmentIds } : current);
             }}
-            onConfirm={handleConfirmCascade}
+            onConfirm={() => {
+              void handleConfirmCascade();
+            }}
             onClose={() => setCascadeDialogState(null)}
           />
         ) : null}

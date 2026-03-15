@@ -8,6 +8,10 @@ type AuthenticatedPayload = {
   userId: number;
   username: string;
   roleCode: "READER" | "DISPATCHER" | "ADMIN";
+  monitoringSummary?: {
+    count: number;
+    triggerNames: string[];
+  };
 };
 
 type LoginPayload =
@@ -70,7 +74,7 @@ export async function login(username: string, password: string): Promise<LoginPa
   return payload;
 }
 
-export async function verifyTwoFactorSetup(code: string): Promise<void> {
+export async function verifyTwoFactorSetup(code: string): Promise<AuthenticatedPayload> {
   const response = await fetch("/api/auth/2fa/setup/verify", {
     method: "POST",
     credentials: "include",
@@ -86,9 +90,10 @@ export async function verifyTwoFactorSetup(code: string): Promise<void> {
 
   const payload = (await response.json()) as AuthenticatedPayload;
   persistRole(payload);
+  return payload;
 }
 
-export async function verifyTwoFactorLogin(code: string): Promise<void> {
+export async function verifyTwoFactorLogin(code: string): Promise<AuthenticatedPayload> {
   const response = await fetch("/api/auth/2fa/verify", {
     method: "POST",
     credentials: "include",
@@ -104,6 +109,7 @@ export async function verifyTwoFactorLogin(code: string): Promise<void> {
 
   const payload = (await response.json()) as AuthenticatedPayload;
   persistRole(payload);
+  return payload;
 }
 
 export async function getQuickLoginTargets(): Promise<QuickLoginTargetsResponse> {
@@ -121,7 +127,7 @@ export async function getQuickLoginTargets(): Promise<QuickLoginTargetsResponse>
   return (await response.json()) as QuickLoginTargetsResponse;
 }
 
-export async function quickLogin(roleCode: QuickLoginRoleCode): Promise<void> {
+export async function quickLogin(roleCode: QuickLoginRoleCode): Promise<AuthenticatedPayload> {
   const response = await fetch("/api/auth/quick-login", {
     method: "POST",
     credentials: "include",
@@ -137,9 +143,10 @@ export async function quickLogin(roleCode: QuickLoginRoleCode): Promise<void> {
 
   const payload = (await response.json()) as AuthenticatedPayload;
   persistRole(payload);
+  return payload;
 }
 
-export async function setupAdmin(username: string, password: string): Promise<void> {
+export async function setupAdmin(username: string, password: string): Promise<AuthenticatedPayload> {
   const response = await fetch("/api/auth/setup-admin", {
     method: "POST",
     credentials: "include",
@@ -154,6 +161,7 @@ export async function setupAdmin(username: string, password: string): Promise<vo
   }
   const payload = (await response.json()) as AuthenticatedPayload;
   persistRole(payload);
+  return payload;
 }
 
 export async function logout(): Promise<void> {

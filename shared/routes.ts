@@ -111,6 +111,9 @@ const tourEmployeeCascadeSkipReasonSchema = z.enum([
   "NOT_ASSIGNED",
   "HISTORICAL_APPOINTMENT",
   "APPOINTMENT_NOT_ON_TOUR",
+  "EMPLOYEE_OVERLAP",
+  "EMPLOYEE_ABSENCE",
+  "EMPLOYEE_EXIT_DATE",
 ]);
 
 const tourEmployeeCascadeAppointmentEmployeeSchema = z.object({
@@ -147,10 +150,15 @@ const tourEmployeeCascadeExecuteResponseSchema = z.object({
 });
 
 const tourEmployeeCascadeConflictResponseSchema = z.object({
-  code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT", "EMPLOYEE_OVERLAP_CONFLICT", "AVAILABILITY_CONFLICT"]),
+  code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]),
   conflictEmployees: z.array(tourEmployeeCascadeAppointmentEmployeeSchema).optional(),
   availabilityConflicts: z.array(excludedEmployeeSchema).optional(),
 }).passthrough();
+
+const employeeAbsenceBulkReplaceSkippedReasonSchema = z.enum([
+  "EMPLOYEE_ABSENCE",
+  "EMPLOYEE_EXIT_DATE",
+]);
 
 const employeeAbsenceAffectedAppointmentSchema = z.object({
   appointmentId: z.number().int().positive(),
@@ -323,6 +331,39 @@ const reportVorlauflisteItemSchema = z.object({
 
 const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
   items: z.array(reportVorlauflisteItemSchema),
+});
+
+const monitoringSummarySchema = z.object({
+  count: z.number().int().min(1),
+  triggerNames: z.array(z.string().min(1)).min(1),
+});
+
+const authenticatedResponseSchema = z.object({
+  status: z.literal("authenticated"),
+  userId: z.number().int().positive(),
+  username: z.string(),
+  roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+  monitoringSummary: monitoringSummarySchema.optional(),
+});
+
+const monitoringItemSchema = z.object({
+  appointmentId: z.number().int().positive(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  tourName: z.string().nullable(),
+  employeeCount: z.number().int().min(0),
+  triggerName: z.string().min(1),
+  problemDescription: z.string().min(1),
+});
+
+const monitoringTriggerConfigSchema = z.object({
+  enabled: z.boolean(),
+  horizonDays: z.number().int().min(1),
+  minimumEmployees: z.number().int().min(1),
+}).strict();
+
+const monitoringConfigResponseSchema = z.object({
+  tr01: monitoringTriggerConfigSchema,
 });
 
 const tourPrintPreviewNoteSchema = z.object({
@@ -533,10 +574,7 @@ export const api = {
         })
         .strict(),
       responses: {
-        201: z.object({
-          status: z.literal("authenticated"),
-          userId: z.number().int().positive(),
-          username: z.string(),
+        201: authenticatedResponseSchema.extend({
           roleCode: z.literal("ADMIN"),
         }),
         409: z.object({ code: z.enum(["SETUP_ALREADY_COMPLETED", "SETUP_REQUIRED"]) }),
@@ -554,12 +592,7 @@ export const api = {
         .strict(),
       responses: {
         200: z.union([
-          z.object({
-            status: z.literal("authenticated"),
-            userId: z.number().int().positive(),
-            username: z.string(),
-            roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
-          }),
+          authenticatedResponseSchema,
           z.object({
             status: z.literal("2fa_setup_required"),
             username: z.string(),
@@ -584,12 +617,7 @@ export const api = {
         code: z.string().min(1).max(20),
       }).strict(),
       responses: {
-        200: z.object({
-          status: z.literal("authenticated"),
-          userId: z.number().int().positive(),
-          username: z.string(),
-          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
-        }),
+        200: authenticatedResponseSchema,
         401: z.object({ code: z.literal("INVALID_TWO_FACTOR_CODE") }),
         409: z.object({ code: z.literal("TWO_FACTOR_CHALLENGE_MISSING") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -602,12 +630,7 @@ export const api = {
         code: z.string().min(1).max(20),
       }).strict(),
       responses: {
-        200: z.object({
-          status: z.literal("authenticated"),
-          userId: z.number().int().positive(),
-          username: z.string(),
-          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
-        }),
+        200: authenticatedResponseSchema,
         401: z.object({ code: z.literal("INVALID_TWO_FACTOR_CODE") }),
         409: z.object({ code: z.literal("TWO_FACTOR_CHALLENGE_MISSING") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -639,12 +662,7 @@ export const api = {
         })
         .strict(),
       responses: {
-        200: z.object({
-          status: z.literal("authenticated"),
-          userId: z.number().int().positive(),
-          username: z.string(),
-          roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
-        }),
+        200: authenticatedResponseSchema,
         404: z.object({ code: z.enum(["QUICK_LOGIN_DISABLED", "USER_NOT_FOUND_FOR_ROLE"]) }),
         409: z.object({ code: z.enum(["SETUP_REQUIRED", "TWO_FACTOR_REQUIRED"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -1673,6 +1691,10 @@ export const api = {
             absenceId: z.number().int().positive(),
             updatedAppointmentCount: z.number().int().min(0),
             skippedAlreadyAssignedCount: z.number().int().min(0),
+            skipped: z.array(z.object({
+              appointmentId: z.number().int().positive(),
+              reason: employeeAbsenceBulkReplaceSkippedReasonSchema,
+            })),
           }),
           403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
@@ -3541,6 +3563,34 @@ export const api = {
       },
     },
   },
+  monitoring: {
+    list: {
+      method: "GET" as const,
+      path: "/api/monitoring",
+      responses: {
+        200: z.array(monitoringItemSchema),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    adminConfigGet: {
+      method: "GET" as const,
+      path: "/api/admin/monitoring/config",
+      responses: {
+        200: monitoringConfigResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    adminConfigSet: {
+      method: "PUT" as const,
+      path: "/api/admin/monitoring/config",
+      input: monitoringConfigResponseSchema,
+      responses: {
+        200: monitoringConfigResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   userSettings: {
     getResolved: {
       method: 'GET' as const,
@@ -3665,3 +3715,5 @@ export type EmployeeAbsenceResponse = z.infer<typeof api.employees.absences.crea
 export type AuthLoginResponse = z.infer<typeof api.auth.login.responses[200]>;
 export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.responses[200]>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
+export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
+export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;

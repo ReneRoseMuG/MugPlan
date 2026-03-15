@@ -346,6 +346,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält nur `is_active = true` bei:
   - Mitarbeiter
   - Kunden
+- erhält Zugriff auf `/api/monitoring`, aber nicht auf die Admin-Konfiguration unter `/api/admin/monitoring/config`
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
 - erhält bei terminbezogenen Mitarbeiterlisten (`/api/employees?appointmentDate=...`) nur am Termindatum verfuegbare aktive Mitarbeiter; Abwesenheiten und `exit_date` werden serverseitig herausgefiltert
@@ -358,6 +359,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält aktive und inaktive Einträge
 - kann Aktiv-Status ändern
 - kann archivierte Einträge einsehen
+- erhält Lese- und Schreibzugriff auf die FT31-Monitoring-Konfiguration sowie Lesezugriff auf `/api/monitoring`
 - erhält den Projektstatus-Katalog nur noch im Admin-Stammdatenbereich
 - erhält bei Mitarbeiter-Abwesenheiten historische und zukünftige FT30-Einträge
 
@@ -366,6 +368,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält ausschließlich lesenden Zugriff
 - keine schreibenden Endpunkte verfügbar
 - kein Zugriff auf FT30-Endpunkte für Mitarbeiter-Abwesenheiten
+- kein Zugriff auf FT31-Monitoring-Endpunkte oder Monitoring-Konfiguration
 
 ### Listenfilter (serverseitig)
 
