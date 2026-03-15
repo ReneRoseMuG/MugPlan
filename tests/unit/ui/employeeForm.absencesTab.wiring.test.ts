@@ -30,6 +30,6 @@ describe("FT30 unit: EmployeeForm absences tab wiring", () => {
   it("shows the save-first hint for new employees and renders the FT30 panel for persisted employees", () => {
     expect(source).toContain("Nach dem Speichern des Mitarbeiters koennen Abwesenheiten erfasst werden.");
     expect(source).toContain("EmployeeAbsencesPanel");
-    expect(source).toContain("{ employeeId }");
+    expect(source).toContain("employeeId, employees: allEmployees");
   });
 });

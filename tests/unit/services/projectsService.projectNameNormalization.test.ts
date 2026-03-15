@@ -22,17 +22,20 @@ const {
   updateProjectWithVersionMock,
   getProjectMock,
   getCustomerMock,
+  hasAppointmentsForProjectMock,
 } = vi.hoisted(() => ({
   createProjectMock: vi.fn(),
   updateProjectWithVersionMock: vi.fn(),
   getProjectMock: vi.fn(),
   getCustomerMock: vi.fn(),
+  hasAppointmentsForProjectMock: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/projectsRepository", () => ({
   createProject: createProjectMock,
   updateProjectWithVersion: updateProjectWithVersionMock,
   getProject: getProjectMock,
+  hasAppointmentsForProject: hasAppointmentsForProjectMock,
   getProjects: vi.fn(),
   getProjectsByCustomer: vi.fn(),
   getProjectWithCustomer: vi.fn(),
@@ -97,6 +100,7 @@ describe("FT02 projects service project name normalization", () => {
   it("keeps name unchanged when only customer changes", async () => {
     getProjectMock.mockResolvedValueOnce({ id: 3, customerId: 11, name: "Sauna XL" });
     getCustomerMock.mockResolvedValueOnce({ id: 12, customerNumber: "5000", isActive: true });
+    hasAppointmentsForProjectMock.mockResolvedValueOnce(false);
     updateProjectWithVersionMock.mockResolvedValueOnce({
       kind: "updated",
       project: { id: 3, name: "Sauna XL" },
