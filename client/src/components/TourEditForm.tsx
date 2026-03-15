@@ -20,10 +20,13 @@ interface TourEditFormProps {
   tour: TourWithMembers | null;
   allEmployees: Employee[];
   onSubmit: (tourId: number | null, employeeIds: number[], color: string) => Promise<void>;
+  onAddMember?: (employeeId: number) => Promise<void>;
+  onRemoveMember?: (employee: Employee) => Promise<void>;
   onDelete?: () => Promise<void>;
   canDelete?: boolean;
   isDeleting?: boolean;
   isSaving: boolean;
+  isMutatingMembers?: boolean;
   isCreate?: boolean;
   defaultName?: string;
   defaultColor?: string;
@@ -35,10 +38,13 @@ export function TourEditForm({
   tour,
   allEmployees,
   onSubmit,
+  onAddMember,
+  onRemoveMember,
   onDelete,
   canDelete = false,
   isDeleting = false,
   isSaving,
+  isMutatingMembers = false,
   isCreate = false,
   defaultName = "Neue Tour",
   defaultColor = "#60a5fa",
@@ -64,17 +70,21 @@ export function TourEditForm({
       allEmployees.filter((employee) => {
         if (!employee.isActive) return false;
         if (assignedElsewhere(employee)) return false;
-        return !selectedMembers.includes(employee.id);
+        if (isCreate) {
+          return !selectedMembers.includes(employee.id);
+        }
+        return !(tour?.members ?? []).some((member) => member.id === employee.id);
       }),
-    [allEmployees, selectedMembers, tour?.id],
+    [allEmployees, isCreate, selectedMembers, tour?.id, tour?.members],
   );
 
   const assignedEmployees = useMemo(
-    () =>
-      selectedMembers
+    () => isCreate
+      ? selectedMembers
         .map((memberId) => allEmployees.find((employee) => employee.id === memberId))
-        .filter((employee): employee is Employee => Boolean(employee)),
-    [allEmployees, selectedMembers],
+        .filter((employee): employee is Employee => Boolean(employee))
+      : (tour?.members ?? []),
+    [allEmployees, isCreate, selectedMembers, tour?.members],
   );
 
   const title = isCreate ? defaultName : (tour?.name ?? "Tour bearbeiten");
@@ -107,7 +117,7 @@ export function TourEditForm({
             disabled={isSaving || isDeleting}
             data-testid="button-delete-tour-form"
           >
-            {isDeleting ? "Löschen..." : "Tour löschen"}
+            {isDeleting ? "Loeschen..." : "Tour loeschen"}
           </Button>
         ) : undefined
       }
@@ -121,7 +131,7 @@ export function TourEditForm({
         <TabsContent value="stammdaten">
           <div className="max-w-xl space-y-4">
             <div className="sub-panel space-y-3">
-              <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+              <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
                 <Route className="w-4 h-4" />
                 Farbe
               </h3>
@@ -134,21 +144,26 @@ export function TourEditForm({
             </div>
 
             <div
-              className="border-l-4 border border-border bg-slate-50 overflow-hidden"
+              className="overflow-hidden border border-border bg-slate-50 border-l-4"
               style={{ borderLeftColor: selectedColor }}
             >
               <MembersSectionHeader
-                className="px-3 py-1.5 border-b border-border bg-slate-50"
+                className="border-b border-border bg-slate-50 px-3 py-1.5"
                 action={(
                   <PlusActionButton
                     onClick={() => setEmployeePickerOpen(true)}
-                    aria-label="Mitarbeiter hinzufügen"
+                    aria-label="Mitarbeiter hinzufuegen"
                     data-testid="button-add-tour-member"
-                    disabled={isSaving}
+                    disabled={isSaving || isMutatingMembers}
                   />
                 )}
               />
-              <div className="space-y-2 p-3 bg-slate-50">
+              <div className="space-y-2 bg-slate-50 p-3">
+                {!isCreate ? (
+                  <div className="text-sm text-slate-500">
+                    Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.
+                  </div>
+                ) : null}
                 {assignedEmployees.map((employee) => (
                   <EmployeeInfoBadge
                     key={employee.id}
@@ -156,17 +171,23 @@ export function TourEditForm({
                     firstName={employee.firstName}
                     lastName={employee.lastName}
                     action="remove"
-                    onRemove={() => setSelectedMembers((prev) => prev.filter((id) => id !== employee.id))}
+                    onRemove={() => {
+                      if (isCreate) {
+                        setSelectedMembers((prev) => prev.filter((id) => id !== employee.id));
+                        return;
+                      }
+                      void onRemoveMember?.(employee);
+                    }}
                     size="sm"
                     fullWidth
                     testId={`badge-tour-member-${employee.id}`}
                   />
                 ))}
-                {assignedEmployees.length === 0 && (
-                  <div className="text-sm text-slate-400 italic">
+                {assignedEmployees.length === 0 ? (
+                  <div className="text-sm italic text-slate-400">
                     Keine Mitarbeiter zugewiesen
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -185,14 +206,18 @@ export function TourEditForm({
       </Tabs>
 
       <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
-        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
+        <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableEmployees}
             teams={[]}
             tours={[]}
-            title="Mitarbeiter auswählen"
+            title="Mitarbeiter auswaehlen"
             onSelectEmployee={(employeeId) => {
-              setSelectedMembers((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]));
+              if (isCreate) {
+                setSelectedMembers((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]));
+              } else {
+                void onAddMember?.(employeeId);
+              }
               setEmployeePickerOpen(false);
             }}
             onClose={() => setEmployeePickerOpen(false)}

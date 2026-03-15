@@ -39,10 +39,10 @@ describe("FT07 TourManagement versioning wiring", () => {
   });
 
   it("maps VERSION_CONFLICT and BUSINESS_CONFLICT to user-facing conflict text", () => {
-    expect(source).toContain("if (code === \"VERSION_CONFLICT\")");
-    expect(source).toContain("Datensatz wurde zwischenzeitlich ge\u00e4ndert");
+    expect(source).toContain("extractApiCode(error) === \"VERSION_CONFLICT\"");
+    expect(source).toContain("Datensatz wurde zwischenzeitlich geaendert");
     expect(source).toContain("if (code === \"BUSINESS_CONFLICT\")");
-    expect(source).toContain("Tour kann nicht gel\u00f6scht werden, solange Termine zugeordnet sind.");
+    expect(source).toContain("Tour kann nicht geloescht werden, solange Termine zugeordnet sind.");
   });
 
   it("wires admin-only delete action into the tour edit dialog", () => {

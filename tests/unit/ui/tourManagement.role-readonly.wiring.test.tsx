@@ -23,8 +23,8 @@ describe("FT04 UI: TourManagement role readonly wiring (UC 04/05)", () => {
   const source = readFileSync(filePath, "utf8");
 
   it("blocks create action for READER/Monteur in UI", () => {
-    expect(source).toContain('const canMutateTours = effectiveUserRole === "ADMIN" || effectiveUserRole === "DISPATCHER"');
-    expect(source).toContain("{canMutateTours ? (");
+    expect(source).toContain('const canMutateTours = effectiveUserRole === "ADMIN" || effectiveUserRole === "DISPONENT"');
+    expect(source).toContain("canMutateTours ? (");
     expect(source).toContain('data-testid="button-new-tour"');
   });
 });

@@ -60,6 +60,10 @@ test("opens the print preview and navigates from summary to weekly pages", async
   await page.getByTestId("button-tour-print-preview-next").click();
   await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 2 von 3");
   await expect(activePageShell.getByTestId("tour-print-week-page-1")).toBeVisible();
+
+  await page.getByTestId("button-tour-print-preview-next").click();
+  await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 3 von 3");
+  await expect(activePageShell.getByTestId("tour-print-week-page-2")).toBeVisible();
   await expect(activePageShell.getByTestId(`tour-print-appointment-card-${appointment!.id}`).first()).toContainText("Print Browser Projekt");
   await expect(activePageShell.getByTestId(`tour-print-day-${getRelativeBerlinDate(1)}`)).toContainText("Nur fuer Druck sichtbar");
 
@@ -70,7 +74,5 @@ test("opens the print preview and navigates from summary to weekly pages", async
   expect(noteStyles.borderColor).not.toBe("rgba(0, 0, 0, 0)");
   expect(noteStyles.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
 
-  await page.getByTestId("button-tour-print-preview-next").click();
-  await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 3 von 3");
   await expect(page.getByTestId("button-tour-print-preview-next")).toBeDisabled();
 });

@@ -62,7 +62,7 @@ test("creates a project via UI after customer selection and keeps validation err
 
   await page.getByTestId("input-project-name").fill("FT02 Browser Projekt");
   await page.getByTestId("button-save-project").click();
-  await expect(page.getByText(/Kunde muss ausgew/)).toBeVisible();
+  await expect(page.getByText("Kunde muss ausgewählt werden", { exact: true })).toBeVisible();
 
   await openCustomerPickerAndSelect(page, customer.customerNumber);
   await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
