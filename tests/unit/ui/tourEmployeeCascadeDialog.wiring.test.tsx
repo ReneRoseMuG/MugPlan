@@ -23,8 +23,8 @@ describe("FT04 UI: TourEmployeeCascadeDialog wiring", () => {
 
   it("uses the sharpened add and remove dialog copy", () => {
     expect(source).toContain('const title = mode === "add" ? "Mitarbeiter zu Tour-Terminen hinzufügen" : "Mitarbeiter von Tour-Terminen abziehen";');
-    expect(source).toContain("Wählen Sie die zukünftigen Termine aus, für die");
-    expect(source).toContain("Wählen Sie die zukünftigen Termine aus, von denen");
+    expect(source).toContain("Wählen Sie die Termine aus, für die");
+    expect(source).toContain("Wählen Sie die Termine aus, von denen");
     expect(source).toContain('"Bestätigen"');
   });
 

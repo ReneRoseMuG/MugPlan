@@ -82,8 +82,8 @@ export function TourEmployeeCascadeDialog({
 }: TourEmployeeCascadeDialogProps) {
   const title = mode === "add" ? "Mitarbeiter zu Tour-Terminen hinzufügen" : "Mitarbeiter von Tour-Terminen abziehen";
   const description = mode === "add"
-    ? `Wählen Sie die zukünftigen Termine aus, für die ${employeeName} geplant werden soll.`
-    : `Wählen Sie die zukünftigen Termine aus, von denen ${employeeName} abgezogen werden soll.`;
+    ? `Wählen Sie die Termine aus, für die ${employeeName} geplant werden soll.`
+    : `Wählen Sie die Termine aus, von denen ${employeeName} abgezogen werden soll.`;
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
