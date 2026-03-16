@@ -44,6 +44,25 @@ export type VorlauflistePagedResult = {
   items: VorlauflisteRow[];
 };
 
+export type ProductVorlaufCategoryTotal = {
+  categoryId: number;
+  categoryName: string;
+  totalQuantity: number;
+};
+
+export type ProductVorlaufSpecialMeasureProject = {
+  projectId: number;
+  orderNumber: string | null;
+  projectDescription: string | null;
+  specialMeasureTag: Tag | null;
+};
+
+export type ProductVorlaufResult = {
+  productCategoryTotals: ProductVorlaufCategoryTotal[];
+  componentCategoryTotals: ProductVorlaufCategoryTotal[];
+  specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
+};
+
 type ReportArticleBuckets = {
   sauna: Set<string>;
   door: Set<string>;
@@ -75,14 +94,7 @@ function joinSorted(values: Set<string>): string | null {
   return Array.from(values).sort((left, right) => left.localeCompare(right, "de")).join(", ");
 }
 
-export async function getVorlauflistePaged(params: {
-  fromDate: string;
-  toDate?: string;
-  productCategoryIds: number[];
-  componentCategoryIds: number[];
-  page: number;
-  pageSize: number;
-}): Promise<VorlauflistePagedResult> {
+function buildAppointmentConditions(params: { fromDate: string; toDate?: string }): SQL<unknown>[] {
   const appointmentConditions: SQL<unknown>[] = [
     isNotNull(appointments.projectId),
     gte(appointments.startDate, new Date(`${params.fromDate}T00:00:00`)),
@@ -91,6 +103,19 @@ export async function getVorlauflistePaged(params: {
   if (params.toDate) {
     appointmentConditions.push(lte(appointments.startDate, new Date(`${params.toDate}T00:00:00`)));
   }
+
+  return appointmentConditions;
+}
+
+export async function getVorlauflistePaged(params: {
+  fromDate: string;
+  toDate?: string;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  page: number;
+  pageSize: number;
+}): Promise<VorlauflistePagedResult> {
+  const appointmentConditions = buildAppointmentConditions(params);
 
   const totalRows = await db
     .select({
@@ -249,5 +274,152 @@ export async function getVorlauflistePaged(params: {
         };
       })
       .filter((entry): entry is VorlauflisteRow => entry !== null),
+  };
+}
+
+export async function getProductVorlauf(params: {
+  fromDate: string;
+  toDate?: string;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  specialMeasureTagId?: number;
+}): Promise<ProductVorlaufResult> {
+  const appointmentConditions = buildAppointmentConditions(params);
+  const projectRows = await db
+    .select({
+      projectId: appointments.projectId,
+    })
+    .from(appointments)
+    .where(and(...appointmentConditions))
+    .groupBy(appointments.projectId);
+
+  const projectIds = projectRows
+    .map((row) => row.projectId)
+    .filter((value): value is number => typeof value === "number");
+
+  if (projectIds.length === 0) {
+    return {
+      productCategoryTotals: [],
+      componentCategoryTotals: [],
+      specialMeasureProjects: [],
+    };
+  }
+
+  const projectDetails = await db
+    .select({
+      project: projects,
+      order: projectOrder,
+    })
+    .from(projects)
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(inArray(projects.id, projectIds));
+
+  const orderItemRows = await db
+    .select({
+      item: projectOrderItems,
+      product: products,
+      productCategory: productCategories,
+      component: components,
+      componentCategory: componentCategories,
+    })
+    .from(projectOrderItems)
+    .leftJoin(products, eq(projectOrderItems.productId, products.id))
+    .leftJoin(productCategories, eq(products.categoryId, productCategories.id))
+    .leftJoin(components, eq(projectOrderItems.componentId, components.id))
+    .leftJoin(componentCategories, eq(components.categoryId, componentCategories.id))
+    .where(inArray(projectOrderItems.projectId, projectIds));
+
+  const selectedProductCategoryIds = new Set(params.productCategoryIds);
+  const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
+  const productTotals = new Map<number, ProductVorlaufCategoryTotal>();
+  const componentTotals = new Map<number, ProductVorlaufCategoryTotal>();
+  const matchedProjectIds = new Set<number>();
+
+  for (const row of orderItemRows) {
+    const quantity = Number(row.item.quantity ?? 0);
+    if (!Number.isInteger(quantity) || quantity <= 0) continue;
+
+    if (
+      row.product
+      && row.productCategory
+      && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
+    ) {
+      const current = productTotals.get(row.productCategory.id) ?? {
+        categoryId: row.productCategory.id,
+        categoryName: row.productCategory.name,
+        totalQuantity: 0,
+      };
+      current.totalQuantity += quantity;
+      productTotals.set(row.productCategory.id, current);
+      matchedProjectIds.add(row.item.projectId);
+    }
+
+    if (
+      row.component
+      && row.componentCategory
+      && (selectedComponentCategoryIds.size === 0 || selectedComponentCategoryIds.has(row.componentCategory.id))
+    ) {
+      const current = componentTotals.get(row.componentCategory.id) ?? {
+        categoryId: row.componentCategory.id,
+        categoryName: row.componentCategory.name,
+        totalQuantity: 0,
+      };
+      current.totalQuantity += quantity;
+      componentTotals.set(row.componentCategory.id, current);
+      matchedProjectIds.add(row.item.projectId);
+    }
+  }
+
+  if (matchedProjectIds.size === 0) {
+    return {
+      productCategoryTotals: [],
+      componentCategoryTotals: [],
+      specialMeasureProjects: [],
+    };
+  }
+
+  const sortedProductCategoryTotals = Array.from(productTotals.values())
+    .sort((left, right) => left.categoryName.localeCompare(right.categoryName, "de") || left.categoryId - right.categoryId);
+  const sortedComponentCategoryTotals = Array.from(componentTotals.values())
+    .sort((left, right) => left.categoryName.localeCompare(right.categoryName, "de") || left.categoryId - right.categoryId);
+
+  const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
+  const tagsByProjectId = await getProjectTagsByProjectIds(Array.from(matchedProjectIds));
+  const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
+
+  for (const projectId of matchedProjectIds) {
+    if (!params.specialMeasureTagId) {
+      continue;
+    }
+
+    const projectTags = tagsByProjectId.get(projectId) ?? [];
+    const specialMeasureTag = projectTags.find((tag) => tag.id === params.specialMeasureTagId) ?? null;
+    if (!specialMeasureTag) {
+      continue;
+    }
+
+    const projectDetail = projectDetailsById.get(projectId);
+    if (!projectDetail) {
+      continue;
+    }
+
+    specialMeasureProjects.push({
+      projectId,
+      orderNumber: projectDetail.order?.orderNumber ?? null,
+      projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
+      specialMeasureTag,
+    });
+  }
+
+  specialMeasureProjects.sort((left, right) => {
+    const orderA = left.orderNumber ?? "";
+    const orderB = right.orderNumber ?? "";
+    return orderA.localeCompare(orderB, "de") || left.projectId - right.projectId;
+  });
+
+  return {
+    productCategoryTotals: sortedProductCategoryTotals,
+    componentCategoryTotals: sortedComponentCategoryTotals,
+    specialMeasureProjects,
   };
 }

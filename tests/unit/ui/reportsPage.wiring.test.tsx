@@ -2,17 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - ReportsPage verdrahtet den Vorlaufliste-HelpKey, den Generate-Button und die beiden Datumsfelder als Date-Picker.
- * - Die neue Report-Konfigurationsflaeche und persistente Checkbox-Gruppen fuer Default-Kategorien sind sichtbar verdrahtet.
- * - Der eigentliche Report erscheint als Overlay mit Zurueck-Button; Paging bleibt im Report und nicht im Startbereich.
+ * - ReportsPage verdrahtet zwei Report-Arten mit gemeinsamer Konfiguration, Generate-Button und Date-Pickern.
+ * - Die Konfiguration nutzt persistente Auswahlgruppen fuer Vorlaufliste und Produkt Vorlauf sowie eine Sondermass-Tag-Auswahl.
+ * - Vorlaufliste erscheint als Overlay mit eigenem Paging; Produkt Vorlauf als Overlay ohne Paging.
  * - Home und Sidebar binden die neue Reports-Hauptansicht nur fuer Admin/Disponent ein.
  *
  * Fehlerfaelle:
  * - Reports ist nicht in Home oder Sidebar verdrahtet.
- * - Die Vorlaufliste laedt ohne expliziten Trigger, ohne Overlay-Zustand oder mit falsch platziertem Paging.
+ * - Eine Report-Art laedt ohne expliziten Trigger oder mit falsch zugeordnetem Overlay/Paging.
  *
  * Ziel:
- * Die UI-Wiring-Regeln fuer den neuen Reports-Einstieg regressionssicher absichern.
+ * Die UI-Wiring-Regeln fuer beide Reports regressionssicher absichern.
  */
 import { readFileSync } from "fs";
 import path from "path";
@@ -32,30 +32,46 @@ describe("FT26 reports page wiring", () => {
     "utf8",
   );
 
-  it("wires the vorlaufliste panel, overlay flow and report-owned paging", () => {
+  it("wires both report types, shared config, special-measure tag selection and report overlays", () => {
     expect(reportsPageSource).toContain("helpKey=\"reports.vorlaufliste\"");
+    expect(reportsPageSource).toContain("type ReportType = \"vorlaufliste\" | \"product-vorlauf\";");
+    expect(reportsPageSource).toContain("button-reports-type-vorlaufliste");
+    expect(reportsPageSource).toContain("button-reports-type-product-vorlauf");
+    expect(reportsPageSource).toContain("reports-type-switch");
     expect(reportsPageSource).toContain("Datum Ende anzeigen");
     expect(reportsPageSource).toContain("Datum Beginn");
     expect(reportsPageSource).toContain("Datum Ende");
     expect(reportsPageSource).toContain('type="date"');
     expect(reportsPageSource).toContain("Report erzeugen");
+    expect(reportsPageSource).toContain("button-reports-generate");
     expect(reportsPageSource).toContain('header: "Tags"');
     expect(reportsPageSource).toContain("const REPORT_PAGE_SIZE = 100;");
     expect(reportsPageSource).toContain('queryKey: ["reports-vorlaufliste", submittedFilters, reportRequestId, page]');
-    expect(reportsPageSource).toContain("enabled: submittedFilters !== null && isReportOverlayOpen");
+    expect(reportsPageSource).toContain('queryKey: ["reports-product-vorlauf", submittedFilters, reportRequestId]');
+    expect(reportsPageSource).toContain('enabled: submittedFilters?.reportType === "vorlaufliste" && isReportOverlayOpen');
+    expect(reportsPageSource).toContain('enabled: submittedFilters?.reportType === "product-vorlauf" && isReportOverlayOpen');
     expect(reportsPageSource).toContain("<ReportConfigSurface");
     expect(reportsPageSource).toContain("reports.vorlaufliste.categorySelection");
-    expect(reportsPageSource).toContain("checkbox-reports-vorlaufliste-product-category-");
-    expect(reportsPageSource).toContain("checkbox-reports-vorlaufliste-component-category-");
-    expect(reportsPageSource).toContain("reports-vorlaufliste-overlay");
-    expect(reportsPageSource).toContain("button-reports-vorlaufliste-back");
+    expect(reportsPageSource).toContain("reports.productVorlauf.selection");
+    expect(reportsPageSource).toContain("checkbox-reports-${reportType}-product-category-${category.id}");
+    expect(reportsPageSource).toContain("checkbox-reports-${reportType}-component-category-${category.id}");
+    expect(reportsPageSource).toContain("select-reports-product-vorlauf-special-measure-tag");
+    expect(reportsPageSource).toContain("Sondermass Kennzeichnung");
+    expect(reportsPageSource).toContain("/api/tags");
+    expect(reportsPageSource).toContain("reports-overlay");
+    expect(reportsPageSource).toContain("reports-product-vorlauf-overlay");
+    expect(reportsPageSource).toContain("button-reports-back");
+    expect(reportsPageSource).toContain("button-reports-product-vorlauf-back");
     expect(reportsPageSource).toContain("setIsReportOverlayOpen(true)");
     expect(reportsPageSource).toContain("setReportRequestId((current) => current + 1)");
     expect(reportsPageSource).toContain("setIsReportOverlayOpen(false)");
-    expect(reportsPageSource).not.toContain("<div className=\"flex items-end\">{tableFooter}</div>");
     expect(reportsPageSource).toContain("stickyHeader");
     expect(reportsPageSource).toContain("<div className=\"border-t border-border px-6 py-4\">");
-    expect(reportsPageSource).toContain("{tableFooter}");
+    expect(reportsPageSource).toContain("<ListPagingFooter");
+    expect(reportsPageSource).toContain("reports-product-vorlauf-products");
+    expect(reportsPageSource).toContain("reports-product-vorlauf-components");
+    expect(reportsPageSource).toContain("reports-product-vorlauf-special-measures");
+    expect(reportsPageSource).not.toContain("reports-product-vorlauf-page-prev");
   });
 
   it("registers reports view in home and sidebar for admin or dispatcher", () => {

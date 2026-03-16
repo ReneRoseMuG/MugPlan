@@ -6,6 +6,11 @@ type VorlauflisteCategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
 };
+type ProductVorlaufSelection = {
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  specialMeasureTagId: number | null;
+};
 
 export type UserSettingKey =
   // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
@@ -26,7 +31,8 @@ export type UserSettingKey =
   | "calendar.weekLanes.expandedLaneId"
   | "calendar.weekAppointmentDisplayMode"
   | "demoData.adminFormState"
-  | "reports.vorlaufliste.categorySelection";
+  | "reports.vorlaufliste.categorySelection"
+  | "reports.productVorlauf.selection";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -47,6 +53,7 @@ type UserSettingValueByKey = {
   "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
   "demoData.adminFormState": string;
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
+  "reports.productVorlauf.selection": ProductVorlaufSelection;
 };
 
 export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
@@ -78,6 +85,24 @@ export function resolveVorlauflisteCategorySelection(value: unknown): Vorlauflis
   return {
     productCategoryIds: Array.from(new Set(productCategoryIds)),
     componentCategoryIds: Array.from(new Set(componentCategoryIds)),
+  };
+}
+
+export function resolveProductVorlaufSelection(value: unknown): ProductVorlaufSelection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { productCategoryIds: [], componentCategoryIds: [], specialMeasureTagId: null };
+  }
+  const candidate = value as Record<string, unknown>;
+  const resolvedCategories = resolveVorlauflisteCategorySelection(candidate);
+  const specialMeasureTagId = typeof candidate.specialMeasureTagId === "number"
+    && Number.isInteger(candidate.specialMeasureTagId)
+    && candidate.specialMeasureTagId > 0
+    ? candidate.specialMeasureTagId
+    : null;
+
+  return {
+    ...resolvedCategories,
+    specialMeasureTagId,
   };
 }
 
@@ -162,6 +187,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "reports.vorlaufliste.categorySelection") {
       return resolveVorlauflisteCategorySelection(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "reports.productVorlauf.selection") {
+      return resolveProductVorlaufSelection(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);

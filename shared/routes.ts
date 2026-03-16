@@ -323,6 +323,25 @@ const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
   items: z.array(reportVorlauflisteItemSchema),
 });
 
+const reportProductVorlaufCategoryTotalSchema = z.object({
+  categoryId: z.number().int().positive(),
+  categoryName: z.string().min(1),
+  totalQuantity: z.number().int().min(0),
+});
+
+const reportProductVorlaufSpecialMeasureProjectSchema = z.object({
+  projectId: z.number().int().positive(),
+  orderNumber: z.string().nullable(),
+  projectDescription: z.string().nullable(),
+  specialMeasureTag: tagSchema.nullable(),
+});
+
+const reportProductVorlaufResponseSchema = z.object({
+  productCategoryTotals: z.array(reportProductVorlaufCategoryTotalSchema),
+  componentCategoryTotals: z.array(reportProductVorlaufCategoryTotalSchema),
+  specialMeasureProjects: z.array(reportProductVorlaufSpecialMeasureProjectSchema),
+});
+
 const authenticatedResponseSchema = z.object({
   status: z.literal("authenticated"),
   userId: z.number().int().positive(),
@@ -3534,6 +3553,30 @@ export const api = {
         }).strict(),
         responses: {
           200: reportVorlauflisteResponseSchema,
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
+    productVorlauf: {
+      list: {
+        method: "GET" as const,
+        path: "/api/reports/product-vorlauf",
+        input: z.object({
+          fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          productCategoryIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          componentCategoryIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          specialMeasureTagId: z.coerce.number().int().positive().optional(),
+        }).strict(),
+        responses: {
+          200: reportProductVorlaufResponseSchema,
           403: z.object({ code: z.literal("FORBIDDEN") }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },

@@ -51,6 +51,11 @@ type VorlauflisteCategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
 };
+type ProductVorlaufSelection = {
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  specialMeasureTagId: number | null;
+};
 
 const templateAllowedKeys = [
   "sauna_model_name",
@@ -158,6 +163,17 @@ function isValidVorlauflisteCategorySelection(value: unknown): value is Vorlaufl
   const parsed = value as Record<string, unknown>;
   return isValidPositiveIntegerArray(parsed.productCategoryIds)
     && isValidPositiveIntegerArray(parsed.componentCategoryIds);
+}
+
+function isValidProductVorlaufSelection(value: unknown): value is ProductVorlaufSelection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const parsed = value as Record<string, unknown>;
+  const specialMeasureTagId = parsed.specialMeasureTagId;
+  const validTagId = specialMeasureTagId === null
+    || (typeof specialMeasureTagId === "number" && Number.isInteger(specialMeasureTagId) && specialMeasureTagId > 0);
+  return isValidPositiveIntegerArray(parsed.productCategoryIds)
+    && isValidPositiveIntegerArray(parsed.componentCategoryIds)
+    && validTagId;
 }
 
 export const userSettingsRegistry = {
@@ -363,6 +379,19 @@ export const userSettingsRegistry = {
     },
     allowedScopes: ["USER"],
     validate: isValidVorlauflisteCategorySelection,
+  },
+  reportsProductVorlaufSelection: {
+    key: "reports.productVorlauf.selection",
+    label: "Produkt Vorlauf Konfiguration",
+    description: "Speichert die benutzerspezifische Kategorie- und Sondermass-Auswahl fuer den Produkt-Vorlauf-Report.",
+    type: "json",
+    defaultValue: {
+      productCategoryIds: [],
+      componentCategoryIds: [],
+      specialMeasureTagId: null,
+    },
+    allowedScopes: ["USER"],
+    validate: isValidProductVorlaufSelection,
   },
   helptextsViewMode: {
     key: "helptexts.viewMode",

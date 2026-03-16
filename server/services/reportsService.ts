@@ -37,3 +37,22 @@ export async function listVorlaufliste(
 
   return reportsRepository.getVorlauflistePaged(params);
 }
+
+export async function listProductVorlauf(
+  params: {
+    fromDate: string;
+    toDate?: string;
+    productCategoryIds: number[];
+    componentCategoryIds: number[];
+    specialMeasureTagId?: number;
+  },
+  roleKey: CanonicalRoleKey,
+) {
+  assertReportReadRole(roleKey);
+
+  if (params.toDate && params.toDate < params.fromDate) {
+    throw new ReportsError(422, "VALIDATION_ERROR");
+  }
+
+  return reportsRepository.getProductVorlauf(params);
+}
