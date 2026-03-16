@@ -44,22 +44,30 @@ export type VorlauflistePagedResult = {
   items: VorlauflisteRow[];
 };
 
-export type ProductVorlaufCategoryTotal = {
+export type ProductVorlaufItemTotal = {
+  itemName: string;
+  totalQuantity: number;
+};
+
+export type ProductVorlaufCategoryGroup = {
   categoryId: number;
   categoryName: string;
-  totalQuantity: number;
+  items: ProductVorlaufItemTotal[];
 };
 
 export type ProductVorlaufSpecialMeasureProject = {
   projectId: number;
   orderNumber: string | null;
+  customerNumber: string | null;
+  customerFullName: string | null;
+  actualDate: string | null;
   projectDescription: string | null;
   specialMeasureTag: Tag | null;
 };
 
 export type ProductVorlaufResult = {
-  productCategoryTotals: ProductVorlaufCategoryTotal[];
-  componentCategoryTotals: ProductVorlaufCategoryTotal[];
+  productCategoryGroups: ProductVorlaufCategoryGroup[];
+  componentCategoryGroups: ProductVorlaufCategoryGroup[];
   specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
 };
 
@@ -92,6 +100,36 @@ function normalizeDateOnly(value: unknown): string | null {
 function joinSorted(values: Set<string>): string | null {
   if (values.size === 0) return null;
   return Array.from(values).sort((left, right) => left.localeCompare(right, "de")).join(", ");
+}
+
+function upsertGroupedItem(
+  groups: Map<number, ProductVorlaufCategoryGroup>,
+  params: { categoryId: number; categoryName: string; itemName: string; quantity: number },
+) {
+  const group = groups.get(params.categoryId) ?? {
+    categoryId: params.categoryId,
+    categoryName: params.categoryName,
+    items: [],
+  };
+  const existingItem = group.items.find((entry) => entry.itemName === params.itemName);
+  if (existingItem) {
+    existingItem.totalQuantity += params.quantity;
+  } else {
+    group.items.push({
+      itemName: params.itemName,
+      totalQuantity: params.quantity,
+    });
+  }
+  groups.set(params.categoryId, group);
+}
+
+function sortGroupedItems(groups: Map<number, ProductVorlaufCategoryGroup>): ProductVorlaufCategoryGroup[] {
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      items: [...group.items].sort((left, right) => left.itemName.localeCompare(right.itemName, "de")),
+    }))
+    .sort((left, right) => left.categoryName.localeCompare(right.categoryName, "de") || left.categoryId - right.categoryId);
 }
 
 function buildAppointmentConditions(params: { fromDate: string; toDate?: string }): SQL<unknown>[] {
@@ -285,34 +323,37 @@ export async function getProductVorlauf(params: {
   specialMeasureTagId?: number;
 }): Promise<ProductVorlaufResult> {
   const appointmentConditions = buildAppointmentConditions(params);
-  const projectRows = await db
-    .select({
-      projectId: appointments.projectId,
-    })
-    .from(appointments)
-    .where(and(...appointmentConditions))
-    .groupBy(appointments.projectId);
+    const projectRows = await db
+      .select({
+        projectId: appointments.projectId,
+        actualDate: sql<string>`min(${appointments.startDate})`,
+      })
+      .from(appointments)
+      .where(and(...appointmentConditions))
+      .groupBy(appointments.projectId);
 
   const projectIds = projectRows
     .map((row) => row.projectId)
     .filter((value): value is number => typeof value === "number");
 
-  if (projectIds.length === 0) {
-    return {
-      productCategoryTotals: [],
-      componentCategoryTotals: [],
-      specialMeasureProjects: [],
-    };
-  }
+    if (projectIds.length === 0) {
+      return {
+      productCategoryGroups: [],
+      componentCategoryGroups: [],
+        specialMeasureProjects: [],
+      };
+    }
 
-  const projectDetails = await db
-    .select({
-      project: projects,
-      order: projectOrder,
-    })
-    .from(projects)
-    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
-    .where(inArray(projects.id, projectIds));
+    const projectDetails = await db
+      .select({
+        project: projects,
+        customer: customers,
+        order: projectOrder,
+      })
+      .from(projects)
+      .leftJoin(customers, eq(projects.customerId, customers.id))
+      .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+      .where(inArray(projects.id, projectIds));
 
   const orderItemRows = await db
     .select({
@@ -331,61 +372,64 @@ export async function getProductVorlauf(params: {
 
   const selectedProductCategoryIds = new Set(params.productCategoryIds);
   const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
-  const productTotals = new Map<number, ProductVorlaufCategoryTotal>();
-  const componentTotals = new Map<number, ProductVorlaufCategoryTotal>();
+  const productGroups = new Map<number, ProductVorlaufCategoryGroup>();
+  const componentGroups = new Map<number, ProductVorlaufCategoryGroup>();
   const matchedProjectIds = new Set<number>();
 
   for (const row of orderItemRows) {
     const quantity = Number(row.item.quantity ?? 0);
     if (!Number.isInteger(quantity) || quantity <= 0) continue;
 
-    if (
-      row.product
-      && row.productCategory
-      && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
-    ) {
-      const current = productTotals.get(row.productCategory.id) ?? {
-        categoryId: row.productCategory.id,
-        categoryName: row.productCategory.name,
-        totalQuantity: 0,
-      };
-      current.totalQuantity += quantity;
-      productTotals.set(row.productCategory.id, current);
-      matchedProjectIds.add(row.item.projectId);
+      if (
+        row.product
+        && row.productCategory
+        && row.product.name.trim().length > 0
+        && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
+      ) {
+        upsertGroupedItem(productGroups, {
+          categoryId: row.productCategory.id,
+          categoryName: row.productCategory.name,
+          itemName: row.product.name.trim(),
+          quantity,
+        });
+        matchedProjectIds.add(row.item.projectId);
+      }
+
+      if (
+        row.component
+        && row.componentCategory
+        && row.component.name.trim().length > 0
+        && (selectedComponentCategoryIds.size === 0 || selectedComponentCategoryIds.has(row.componentCategory.id))
+      ) {
+        upsertGroupedItem(componentGroups, {
+          categoryId: row.componentCategory.id,
+          categoryName: row.componentCategory.name,
+          itemName: row.component.name.trim(),
+          quantity,
+        });
+        matchedProjectIds.add(row.item.projectId);
+      }
     }
 
-    if (
-      row.component
-      && row.componentCategory
-      && (selectedComponentCategoryIds.size === 0 || selectedComponentCategoryIds.has(row.componentCategory.id))
-    ) {
-      const current = componentTotals.get(row.componentCategory.id) ?? {
-        categoryId: row.componentCategory.id,
-        categoryName: row.componentCategory.name,
-        totalQuantity: 0,
+    if (matchedProjectIds.size === 0) {
+      return {
+      productCategoryGroups: [],
+      componentCategoryGroups: [],
+        specialMeasureProjects: [],
       };
-      current.totalQuantity += quantity;
-      componentTotals.set(row.componentCategory.id, current);
-      matchedProjectIds.add(row.item.projectId);
     }
-  }
 
-  if (matchedProjectIds.size === 0) {
-    return {
-      productCategoryTotals: [],
-      componentCategoryTotals: [],
-      specialMeasureProjects: [],
-    };
-  }
+  const sortedProductCategoryGroups = sortGroupedItems(productGroups);
+  const sortedComponentCategoryGroups = sortGroupedItems(componentGroups);
 
-  const sortedProductCategoryTotals = Array.from(productTotals.values())
-    .sort((left, right) => left.categoryName.localeCompare(right.categoryName, "de") || left.categoryId - right.categoryId);
-  const sortedComponentCategoryTotals = Array.from(componentTotals.values())
-    .sort((left, right) => left.categoryName.localeCompare(right.categoryName, "de") || left.categoryId - right.categoryId);
-
-  const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
-  const tagsByProjectId = await getProjectTagsByProjectIds(Array.from(matchedProjectIds));
-  const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
+    const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
+    const appointmentDateByProjectId = new Map(
+      projectRows
+        .filter((row): row is { projectId: number; actualDate: string } => typeof row.projectId === "number")
+        .map((row) => [row.projectId, normalizeDateOnly(row.actualDate)] as const),
+    );
+    const tagsByProjectId = await getProjectTagsByProjectIds(Array.from(matchedProjectIds));
+    const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
 
   for (const projectId of matchedProjectIds) {
     if (!params.specialMeasureTagId) {
@@ -403,12 +447,15 @@ export async function getProductVorlauf(params: {
       continue;
     }
 
-    specialMeasureProjects.push({
-      projectId,
-      orderNumber: projectDetail.order?.orderNumber ?? null,
-      projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
-      specialMeasureTag,
-    });
+      specialMeasureProjects.push({
+        projectId,
+        orderNumber: projectDetail.order?.orderNumber ?? null,
+        customerNumber: projectDetail.customer?.customerNumber ?? null,
+        customerFullName: projectDetail.customer?.fullName ?? null,
+        actualDate: appointmentDateByProjectId.get(projectId) ?? null,
+        projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
+        specialMeasureTag,
+      });
   }
 
   specialMeasureProjects.sort((left, right) => {
@@ -417,9 +464,9 @@ export async function getProductVorlauf(params: {
     return orderA.localeCompare(orderB, "de") || left.projectId - right.projectId;
   });
 
-  return {
-    productCategoryTotals: sortedProductCategoryTotals,
-    componentCategoryTotals: sortedComponentCategoryTotals,
-    specialMeasureProjects,
-  };
-}
+    return {
+    productCategoryGroups: sortedProductCategoryGroups,
+    componentCategoryGroups: sortedComponentCategoryGroups,
+      specialMeasureProjects,
+    };
+  }

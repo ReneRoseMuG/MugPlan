@@ -323,22 +323,30 @@ const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
   items: z.array(reportVorlauflisteItemSchema),
 });
 
-const reportProductVorlaufCategoryTotalSchema = z.object({
+const reportProductVorlaufItemTotalSchema = z.object({
+  itemName: z.string().min(1),
+  totalQuantity: z.number().int().min(0),
+});
+
+const reportProductVorlaufCategoryGroupSchema = z.object({
   categoryId: z.number().int().positive(),
   categoryName: z.string().min(1),
-  totalQuantity: z.number().int().min(0),
+  items: z.array(reportProductVorlaufItemTotalSchema),
 });
 
 const reportProductVorlaufSpecialMeasureProjectSchema = z.object({
   projectId: z.number().int().positive(),
   orderNumber: z.string().nullable(),
+  customerNumber: z.string().nullable(),
+  customerFullName: z.string().nullable(),
+  actualDate: z.string().nullable(),
   projectDescription: z.string().nullable(),
   specialMeasureTag: tagSchema.nullable(),
 });
 
 const reportProductVorlaufResponseSchema = z.object({
-  productCategoryTotals: z.array(reportProductVorlaufCategoryTotalSchema),
-  componentCategoryTotals: z.array(reportProductVorlaufCategoryTotalSchema),
+  productCategoryGroups: z.array(reportProductVorlaufCategoryGroupSchema),
+  componentCategoryGroups: z.array(reportProductVorlaufCategoryGroupSchema),
   specialMeasureProjects: z.array(reportProductVorlaufSpecialMeasureProjectSchema),
 });
 

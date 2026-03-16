@@ -48,22 +48,30 @@ type VorlauflisteResponse = {
   items: VorlauflisteItem[];
 };
 
-type ProductVorlaufCategoryTotal = {
+type ProductVorlaufItemTotal = {
+  itemName: string;
+  totalQuantity: number;
+};
+
+type ProductVorlaufCategoryGroup = {
   categoryId: number;
   categoryName: string;
-  totalQuantity: number;
+  items: ProductVorlaufItemTotal[];
 };
 
 type ProductVorlaufSpecialMeasureProject = {
   projectId: number;
   orderNumber: string | null;
+  customerNumber: string | null;
+  customerFullName: string | null;
+  actualDate: string | null;
   projectDescription: string | null;
   specialMeasureTag: Tag | null;
 };
 
 type ProductVorlaufResponse = {
-  productCategoryTotals: ProductVorlaufCategoryTotal[];
-  componentCategoryTotals: ProductVorlaufCategoryTotal[];
+  productCategoryGroups: ProductVorlaufCategoryGroup[];
+  componentCategoryGroups: ProductVorlaufCategoryGroup[];
   specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
 };
 
@@ -125,15 +133,41 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function renderGroupedCategoryList(groups: ProductVorlaufCategoryGroup[], emptyText: string, testIdPrefix: string) {
+  if (groups.length === 0) {
+    return <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>;
+  }
+
+  return (
+    <div className="mt-3 space-y-4">
+      {groups.map((group) => (
+        <div key={group.categoryId} className="rounded-md border border-border/50 p-3" data-testid={`${testIdPrefix}-category-${group.categoryId}`}>
+          <h5 className="text-sm font-semibold text-foreground">{group.categoryName}</h5>
+          <div className="mt-3 space-y-2">
+            {group.items.map((item) => (
+              <div key={`${group.categoryId}-${item.itemName}`} className="flex items-center justify-between gap-4 rounded-md border border-border/40 px-3 py-2 text-sm">
+                <span>{item.itemName}</span>
+                <span className="font-medium">{item.totalQuantity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface ReportsPageProps {
   onCancel?: () => void;
 }
 
 export function ReportsPage({ onCancel }: ReportsPageProps) {
-  const [reportType, setReportType] = useState<ReportType>("vorlaufliste");
-  const [fromDate, setFromDate] = useState(getBerlinTodayDateString());
-  const [toDate, setToDate] = useState("");
-  const [showToDate, setShowToDate] = useState(false);
+  const [vorlauflisteFromDate, setVorlauflisteFromDate] = useState(getBerlinTodayDateString());
+  const [vorlauflisteToDate, setVorlauflisteToDate] = useState("");
+  const [showVorlauflisteToDate, setShowVorlauflisteToDate] = useState(false);
+  const [productVorlaufFromDate, setProductVorlaufFromDate] = useState(getBerlinTodayDateString());
+  const [productVorlaufToDate, setProductVorlaufToDate] = useState("");
+  const [showProductVorlaufToDate, setShowProductVorlaufToDate] = useState(false);
   const [page, setPage] = useState(1);
   const [submittedFilters, setSubmittedFilters] = useState<SubmittedFilters | null>(null);
   const [isReportOverlayOpen, setIsReportOverlayOpen] = useState(false);
@@ -165,30 +199,44 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     [componentCategories],
   );
 
-  const [selectedProductCategoryIds, setSelectedProductCategoryIds] = useState<number[]>([]);
-  const [selectedComponentCategoryIds, setSelectedComponentCategoryIds] = useState<number[]>([]);
+  const [selectedVorlauflisteProductCategoryIds, setSelectedVorlauflisteProductCategoryIds] = useState<number[]>([]);
+  const [selectedVorlauflisteComponentCategoryIds, setSelectedVorlauflisteComponentCategoryIds] = useState<number[]>([]);
+  const [selectedProductVorlaufProductCategoryIds, setSelectedProductVorlaufProductCategoryIds] = useState<number[]>([]);
+  const [selectedProductVorlaufComponentCategoryIds, setSelectedProductVorlaufComponentCategoryIds] = useState<number[]>([]);
   const [selectedSpecialMeasureTagId, setSelectedSpecialMeasureTagId] = useState<number | null>(null);
 
   useEffect(() => {
     const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
     const validComponentIds = new Set(defaultComponentCategories.map((category) => category.id));
-    const selection = reportType === "vorlaufliste" ? vorlauflisteSelection : productVorlaufSelection;
-    const resolvedProductIds = normalizeIds((selection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
-    const resolvedComponentIds = normalizeIds((selection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
-    const fallbackProductIds = defaultProductCategories.map((category) => category.id);
-    const fallbackComponentIds = defaultComponentCategories.map((category) => category.id);
+    const resolvedProductIds = normalizeIds((vorlauflisteSelection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
+    const resolvedComponentIds = normalizeIds((vorlauflisteSelection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
 
-    setSelectedProductCategoryIds(resolvedProductIds.length > 0 ? resolvedProductIds : fallbackProductIds);
-    setSelectedComponentCategoryIds(resolvedComponentIds.length > 0 ? resolvedComponentIds : fallbackComponentIds);
+    setSelectedVorlauflisteProductCategoryIds(
+      resolvedProductIds.length > 0 ? resolvedProductIds : defaultProductCategories.map((category) => category.id),
+    );
+    setSelectedVorlauflisteComponentCategoryIds(
+      resolvedComponentIds.length > 0 ? resolvedComponentIds : defaultComponentCategories.map((category) => category.id),
+    );
+  }, [defaultComponentCategories, defaultProductCategories, vorlauflisteSelection]);
 
-    if (reportType === "product-vorlauf") {
-      const availableTagIds = new Set(tags.map((tag) => tag.id));
-      const persistedTagId = selection?.specialMeasureTagId ?? null;
-      setSelectedSpecialMeasureTagId(persistedTagId && availableTagIds.has(persistedTagId) ? persistedTagId : null);
-    }
-  }, [defaultComponentCategories, defaultProductCategories, productVorlaufSelection, reportType, tags, vorlauflisteSelection]);
+  useEffect(() => {
+    const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
+    const validComponentIds = new Set(defaultComponentCategories.map((category) => category.id));
+    const availableTagIds = new Set(tags.map((tag) => tag.id));
+    const resolvedProductIds = normalizeIds((productVorlaufSelection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
+    const resolvedComponentIds = normalizeIds((productVorlaufSelection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
+    const persistedTagId = productVorlaufSelection?.specialMeasureTagId ?? null;
 
-  const persistSelection = async (next: CategorySelection | ProductVorlaufSelection) => {
+    setSelectedProductVorlaufProductCategoryIds(
+      resolvedProductIds.length > 0 ? resolvedProductIds : defaultProductCategories.map((category) => category.id),
+    );
+    setSelectedProductVorlaufComponentCategoryIds(
+      resolvedComponentIds.length > 0 ? resolvedComponentIds : defaultComponentCategories.map((category) => category.id),
+    );
+    setSelectedSpecialMeasureTagId(persistedTagId && availableTagIds.has(persistedTagId) ? persistedTagId : null);
+  }, [defaultComponentCategories, defaultProductCategories, productVorlaufSelection, tags]);
+
+  const persistSelection = async (reportType: ReportType, next: CategorySelection | ProductVorlaufSelection) => {
     const payload = {
       key: reportType === "vorlaufliste" ? VORLAUFLISTE_SETTING_KEY : PRODUCT_VORLAUF_SETTING_KEY,
       scopeType: "USER" as const,
@@ -253,22 +301,28 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     { id: "projectDescription", header: "Projekt Beschreibung", accessor: (row) => row.projectDescription ?? "", minWidth: 280, cell: ({ row }) => <span>{resolveValue(row.projectDescription)}</span> },
   ], []);
 
-  const canGenerateReport = fromDate.trim().length > 0;
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
   const isVorlauflisteOverlay = isReportOverlayOpen && submittedFilters?.reportType === "vorlaufliste";
   const isProductVorlauflayout = isReportOverlayOpen && submittedFilters?.reportType === "product-vorlauf";
 
-  const handleGenerateReport = () => {
-    if (!canGenerateReport) return;
+  const handleGenerateReport = (reportType: ReportType) => {
+    const isVorlaufliste = reportType === "vorlaufliste";
+    const fromDate = isVorlaufliste ? vorlauflisteFromDate : productVorlaufFromDate;
+    const toDate = isVorlaufliste ? vorlauflisteToDate : productVorlaufToDate;
+    const showToDate = isVorlaufliste ? showVorlauflisteToDate : showProductVorlaufToDate;
+    const productCategoryIds = isVorlaufliste ? selectedVorlauflisteProductCategoryIds : selectedProductVorlaufProductCategoryIds;
+    const componentCategoryIds = isVorlaufliste ? selectedVorlauflisteComponentCategoryIds : selectedProductVorlaufComponentCategoryIds;
+
+    if (fromDate.trim().length === 0) return;
     setPage(1);
     setSubmittedFilters({
       reportType,
       fromDate,
       toDate: showToDate && toDate.trim().length > 0 ? toDate : undefined,
-      productCategoryIds: selectedProductCategoryIds,
-      componentCategoryIds: selectedComponentCategoryIds,
+      productCategoryIds,
+      componentCategoryIds,
       specialMeasureTagId: reportType === "product-vorlauf" ? selectedSpecialMeasureTagId ?? undefined : undefined,
     });
     setReportRequestId((current) => current + 1);
@@ -276,11 +330,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   };
 
   const closeOverlay = () => setIsReportOverlayOpen(false);
-
-  const reportDescription = reportType === "vorlaufliste"
-    ? "Datumsbereich und Default-Kategorien fuer die Vorlaufliste festlegen."
-    : "Datumsbereich, Kategorien und Sondermass-Kennzeichnung fuer den Produkt-Vorlauf festlegen.";
-
   return (
     <div className="h-full w-full">
       <ListLayout
@@ -294,103 +343,72 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         contentSlot={(
           <div className="relative h-full overflow-hidden" data-testid="reports-panel">
             <div className="h-full overflow-auto p-6">
+              <div className="space-y-6">
               <ReportConfigSurface
-                title="Report Konfiguration"
-                description={reportDescription}
+                title="Vorlaufliste"
+                description="Datumsbereich und Default-Kategorien fuer die Vorlaufliste festlegen."
                 actions={(
-                  <Button type="button" onClick={handleGenerateReport} disabled={!canGenerateReport} data-testid="button-reports-generate">
+                  <Button type="button" onClick={() => handleGenerateReport("vorlaufliste")} disabled={vorlauflisteFromDate.trim().length === 0} data-testid="button-reports-vorlaufliste-generate">
                     Report erzeugen
                   </Button>
                 )}
               >
-                <div className="flex flex-wrap items-center gap-3" data-testid="reports-type-switch">
-                  <Button type="button" variant={reportType === "vorlaufliste" ? "default" : "outline"} onClick={() => setReportType("vorlaufliste")} data-testid="button-reports-type-vorlaufliste">Vorlaufliste</Button>
-                  <Button type="button" variant={reportType === "product-vorlauf" ? "default" : "outline"} onClick={() => setReportType("product-vorlauf")} data-testid="button-reports-type-product-vorlauf">Produkt Vorlauf</Button>
-                </div>
-
                 <div className="flex flex-wrap items-end gap-4">
                   <div className="flex w-[150px] flex-none flex-col gap-1">
-                    <Label htmlFor="reports-from-date">Datum Beginn</Label>
-                    <Input id="reports-from-date" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} data-testid="reports-from-date" />
+                    <Label htmlFor="reports-vorlaufliste-from-date">Datum Beginn</Label>
+                    <Input id="reports-vorlaufliste-from-date" type="date" value={vorlauflisteFromDate} onChange={(event) => setVorlauflisteFromDate(event.target.value)} data-testid="reports-vorlaufliste-from-date" />
                   </div>
-                  {showToDate ? (
+                  {showVorlauflisteToDate ? (
                     <div className="flex w-[150px] flex-none flex-col gap-1">
-                      <Label htmlFor="reports-to-date">Datum Ende</Label>
-                      <Input id="reports-to-date" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} data-testid="reports-to-date" />
+                      <Label htmlFor="reports-vorlaufliste-to-date">Datum Ende</Label>
+                      <Input id="reports-vorlaufliste-to-date" type="date" value={vorlauflisteToDate} onChange={(event) => setVorlauflisteToDate(event.target.value)} data-testid="reports-vorlaufliste-to-date" />
                     </div>
                   ) : (
                     <div className="flex items-end">
-                      <Button type="button" variant="outline" onClick={() => setShowToDate(true)} data-testid="button-reports-show-to-date">Datum Ende anzeigen</Button>
+                      <Button type="button" variant="outline" onClick={() => setShowVorlauflisteToDate(true)} data-testid="button-reports-vorlaufliste-show-to-date">Datum Ende anzeigen</Button>
                     </div>
                   )}
-                  {reportType === "product-vorlauf" ? (
-                    <div className="flex min-w-[260px] flex-1 flex-col gap-1">
-                      <Label htmlFor="reports-product-vorlauf-special-measure-tag">Sondermass Kennzeichnung</Label>
-                      <select
-                        id="reports-product-vorlauf-special-measure-tag"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={selectedSpecialMeasureTagId ?? ""}
-                        onChange={(event) => {
-                          const nextValue = event.target.value ? Number(event.target.value) : null;
-                          setSelectedSpecialMeasureTagId(nextValue);
-                          void persistSelection({
-                            productCategoryIds: selectedProductCategoryIds,
-                            componentCategoryIds: selectedComponentCategoryIds,
-                            specialMeasureTagId: nextValue,
-                          });
-                        }}
-                        data-testid="select-reports-product-vorlauf-special-measure-tag"
-                      >
-                        <option value="">Kein Tag ausgewaehlt</option>
-                        {tags.map((tag) => (
-                          <option key={tag.id} value={tag.id}>{tag.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : null}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                  <div className="rounded-md border border-border/60 bg-background/70 p-4" data-testid={`reports-${reportType}-product-category-group`}>
+                  <div className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-vorlaufliste-product-category-group">
                     <h4 className="text-sm font-semibold">Standard Produktkategorien</h4>
                     <div className="mt-3 space-y-2">
                       {defaultProductCategories.map((category) => (
                         <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
                           <Checkbox
-                            checked={selectedProductCategoryIds.includes(category.id)}
+                            checked={selectedVorlauflisteProductCategoryIds.includes(category.id)}
                             onCheckedChange={(checked) => {
-                              const nextIds = checked ? normalizeIds([...selectedProductCategoryIds, category.id]) : selectedProductCategoryIds.filter((id) => id !== category.id);
-                              setSelectedProductCategoryIds(nextIds);
-                              void persistSelection({
+                              const nextIds = checked ? normalizeIds([...selectedVorlauflisteProductCategoryIds, category.id]) : selectedVorlauflisteProductCategoryIds.filter((id) => id !== category.id);
+                              setSelectedVorlauflisteProductCategoryIds(nextIds);
+                              void persistSelection("vorlaufliste", {
                                 productCategoryIds: nextIds,
-                                componentCategoryIds: selectedComponentCategoryIds,
-                                specialMeasureTagId: reportType === "product-vorlauf" ? selectedSpecialMeasureTagId : undefined,
+                                componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
                               });
                             }}
-                            data-testid={`checkbox-reports-${reportType}-product-category-${category.id}`}
+                            data-testid={`checkbox-reports-vorlaufliste-product-category-${category.id}`}
                           />
                           <span>{category.name}</span>
                         </label>
                       ))}
                     </div>
                   </div>
-                  <div className="rounded-md border border-border/60 bg-background/70 p-4" data-testid={`reports-${reportType}-component-category-group`}>
+                  <div className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-vorlaufliste-component-category-group">
                     <h4 className="text-sm font-semibold">Standard Komponentenkategorien</h4>
                     <div className="mt-3 space-y-2">
                       {defaultComponentCategories.map((category) => (
                         <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
                           <Checkbox
-                            checked={selectedComponentCategoryIds.includes(category.id)}
+                            checked={selectedVorlauflisteComponentCategoryIds.includes(category.id)}
                             onCheckedChange={(checked) => {
-                              const nextIds = checked ? normalizeIds([...selectedComponentCategoryIds, category.id]) : selectedComponentCategoryIds.filter((id) => id !== category.id);
-                              setSelectedComponentCategoryIds(nextIds);
-                              void persistSelection({
-                                productCategoryIds: selectedProductCategoryIds,
+                              const nextIds = checked ? normalizeIds([...selectedVorlauflisteComponentCategoryIds, category.id]) : selectedVorlauflisteComponentCategoryIds.filter((id) => id !== category.id);
+                              setSelectedVorlauflisteComponentCategoryIds(nextIds);
+                              void persistSelection("vorlaufliste", {
+                                productCategoryIds: selectedVorlauflisteProductCategoryIds,
                                 componentCategoryIds: nextIds,
-                                specialMeasureTagId: reportType === "product-vorlauf" ? selectedSpecialMeasureTagId : undefined,
                               });
                             }}
-                            data-testid={`checkbox-reports-${reportType}-component-category-${category.id}`}
+                            data-testid={`checkbox-reports-vorlaufliste-component-category-${category.id}`}
                           />
                           <span>{category.name}</span>
                         </label>
@@ -399,6 +417,105 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   </div>
                 </div>
               </ReportConfigSurface>
+              <ReportConfigSurface
+                title="Produkt Vorlauf"
+                description="Datumsbereich, Kategorien und Sondermass-Kennzeichnung fuer den Produkt-Vorlauf festlegen."
+                actions={(
+                  <Button type="button" onClick={() => handleGenerateReport("product-vorlauf")} disabled={productVorlaufFromDate.trim().length === 0} data-testid="button-reports-product-vorlauf-generate">
+                    Report erzeugen
+                  </Button>
+                )}
+              >
+                <div className="flex flex-wrap items-end gap-4">
+                  <div className="flex w-[150px] flex-none flex-col gap-1">
+                    <Label htmlFor="reports-product-vorlauf-from-date">Datum Beginn</Label>
+                    <Input id="reports-product-vorlauf-from-date" type="date" value={productVorlaufFromDate} onChange={(event) => setProductVorlaufFromDate(event.target.value)} data-testid="reports-product-vorlauf-from-date" />
+                  </div>
+                  {showProductVorlaufToDate ? (
+                    <div className="flex w-[150px] flex-none flex-col gap-1">
+                      <Label htmlFor="reports-product-vorlauf-to-date">Datum Ende</Label>
+                      <Input id="reports-product-vorlauf-to-date" type="date" value={productVorlaufToDate} onChange={(event) => setProductVorlaufToDate(event.target.value)} data-testid="reports-product-vorlauf-to-date" />
+                    </div>
+                  ) : (
+                    <div className="flex items-end">
+                      <Button type="button" variant="outline" onClick={() => setShowProductVorlaufToDate(true)} data-testid="button-reports-product-vorlauf-show-to-date">Datum Ende anzeigen</Button>
+                    </div>
+                  )}
+                  <div className="flex min-w-[260px] flex-1 flex-col gap-1">
+                    <Label htmlFor="reports-product-vorlauf-special-measure-tag">Sondermass Kennzeichnung</Label>
+                    <select
+                      id="reports-product-vorlauf-special-measure-tag"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={selectedSpecialMeasureTagId ?? ""}
+                      onChange={(event) => {
+                        const nextValue = event.target.value ? Number(event.target.value) : null;
+                        setSelectedSpecialMeasureTagId(nextValue);
+                        void persistSelection("product-vorlauf", {
+                          productCategoryIds: selectedProductVorlaufProductCategoryIds,
+                          componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
+                          specialMeasureTagId: nextValue,
+                        });
+                      }}
+                      data-testid="select-reports-product-vorlauf-special-measure-tag"
+                    >
+                      <option value="">Kein Tag ausgewaehlt</option>
+                      {tags.map((tag) => (
+                        <option key={tag.id} value={tag.id}>{tag.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                  <div className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-product-category-group">
+                    <h4 className="text-sm font-semibold">Standard Produktkategorien</h4>
+                    <div className="mt-3 space-y-2">
+                      {defaultProductCategories.map((category) => (
+                        <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
+                          <Checkbox
+                            checked={selectedProductVorlaufProductCategoryIds.includes(category.id)}
+                            onCheckedChange={(checked) => {
+                              const nextIds = checked ? normalizeIds([...selectedProductVorlaufProductCategoryIds, category.id]) : selectedProductVorlaufProductCategoryIds.filter((id) => id !== category.id);
+                              setSelectedProductVorlaufProductCategoryIds(nextIds);
+                              void persistSelection("product-vorlauf", {
+                                productCategoryIds: nextIds,
+                                componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
+                                specialMeasureTagId: selectedSpecialMeasureTagId,
+                              });
+                            }}
+                            data-testid={`checkbox-reports-product-vorlauf-product-category-${category.id}`}
+                          />
+                          <span>{category.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-component-category-group">
+                    <h4 className="text-sm font-semibold">Standard Komponentenkategorien</h4>
+                    <div className="mt-3 space-y-2">
+                      {defaultComponentCategories.map((category) => (
+                        <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
+                          <Checkbox
+                            checked={selectedProductVorlaufComponentCategoryIds.includes(category.id)}
+                            onCheckedChange={(checked) => {
+                              const nextIds = checked ? normalizeIds([...selectedProductVorlaufComponentCategoryIds, category.id]) : selectedProductVorlaufComponentCategoryIds.filter((id) => id !== category.id);
+                              setSelectedProductVorlaufComponentCategoryIds(nextIds);
+                              void persistSelection("product-vorlauf", {
+                                productCategoryIds: selectedProductVorlaufProductCategoryIds,
+                                componentCategoryIds: nextIds,
+                                specialMeasureTagId: selectedSpecialMeasureTagId,
+                              });
+                            }}
+                            data-testid={`checkbox-reports-product-vorlauf-component-category-${category.id}`}
+                          />
+                          <span>{category.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </ReportConfigSurface>
+              </div>
             </div>
 
             <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isVorlauflisteOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-overlay">
@@ -457,22 +574,18 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     <div className="space-y-6">
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-products">
                         <h4 className="text-sm font-semibold">Produktkategorien</h4>
-                        {productVorlaufData?.productCategoryTotals.length ? (
-                          <div className="mt-3 space-y-2">
-                            {productVorlaufData.productCategoryTotals.map((entry) => <div key={entry.categoryId} className="flex items-center justify-between gap-4 rounded-md border border-border/50 px-3 py-2 text-sm"><span>{entry.categoryName}</span><span className="font-medium">{entry.totalQuantity}</span></div>)}
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-sm text-muted-foreground">Keine passenden Produktkategorien gefunden.</p>
+                        {renderGroupedCategoryList(
+                          productVorlaufData?.productCategoryGroups ?? [],
+                          "Keine passenden Produkte gefunden.",
+                          "reports-product-vorlauf-products",
                         )}
                       </section>
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-components">
                         <h4 className="text-sm font-semibold">Komponentenkategorien</h4>
-                        {productVorlaufData?.componentCategoryTotals.length ? (
-                          <div className="mt-3 space-y-2">
-                            {productVorlaufData.componentCategoryTotals.map((entry) => <div key={entry.categoryId} className="flex items-center justify-between gap-4 rounded-md border border-border/50 px-3 py-2 text-sm"><span>{entry.categoryName}</span><span className="font-medium">{entry.totalQuantity}</span></div>)}
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-sm text-muted-foreground">Keine passenden Komponentenkategorien gefunden.</p>
+                        {renderGroupedCategoryList(
+                          productVorlaufData?.componentCategoryGroups ?? [],
+                          "Keine passenden Komponenten gefunden.",
+                          "reports-product-vorlauf-components",
                         )}
                       </section>
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-special-measures">
@@ -481,8 +594,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           <div className="mt-3 space-y-3">
                             {productVorlaufData.specialMeasureProjects.map((entry) => (
                               <div key={entry.projectId} className="rounded-md border border-border/50 px-4 py-3" data-testid={`reports-product-vorlauf-special-measure-project-${entry.projectId}`}>
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                  <span className="text-sm font-semibold">{resolveValue(entry.orderNumber)}</span>
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="space-y-1">
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                                      <span className="font-semibold">{resolveValue(entry.orderNumber)}</span>
+                                      <span>{resolveValue(entry.customerFullName)}</span>
+                                      <span>{resolveValue(entry.customerNumber)}</span>
+                                      <span>{formatDate(entry.actualDate)}</span>
+                                    </div>
+                                  </div>
                                   {entry.specialMeasureTag ? <EntityTagFooterRow tags={[entry.specialMeasureTag]} testId={`reports-product-vorlauf-special-measure-tag-${entry.projectId}`} /> : null}
                                 </div>
                                 <p className="mt-2 text-sm text-muted-foreground">{resolveValue(entry.projectDescription)}</p>

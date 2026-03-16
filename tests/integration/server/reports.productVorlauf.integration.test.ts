@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Produkt Vorlauf summiert die Mengen pro ausgewaehlter Produkt- und Komponentenkategorie unter Beachtung der bestehenden Ein-Position-pro-Kategorie-Regel je Projekt.
+ * - Produkt Vorlauf gruppiert konkrete Produkte und Komponenten je ausgewaehlter Kategorie und summiert deren Mengen.
  * - Sondermasse listen nur Projekte im Zeitraum mit passendem Sondermass-Tag und passender Report-Position.
  * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
  *
@@ -117,17 +117,14 @@ async function createProductVorlaufProjectFixture(params: {
 }
 
 describe("FT26 integration: report product vorlauf", () => {
-  it("sums selected product and component categories by quantity", async () => {
+  it("groups concrete products and components by category and sums their quantities", async () => {
     const admin = await loginAdminAgent(app);
     const specialProject = await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-A",
       appointmentDates: ["2099-09-10"],
       descriptionMd: "<p>Sondermass Alpha</p>",
       tagNames: ["Sondermass"],
-      productItems: [
-        { categoryName: "Fass Saunen", name: "Sauna A", quantity: 2 },
-        { categoryName: "Fass Saunen", name: "Sauna B", quantity: 1 },
-      ],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna A", quantity: 2 }],
       componentItems: [
         { categoryName: "Fenster", name: "Fenster A", quantity: 4 },
         { categoryName: "Ofen", name: "Ofen A", quantity: 1 },
@@ -136,7 +133,7 @@ describe("FT26 integration: report product vorlauf", () => {
     await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-B",
       appointmentDates: ["2099-09-11"],
-      productItems: [{ categoryName: "Fass Saunen", name: "Sauna C", quantity: 3 }],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna B", quantity: 3 }],
       componentItems: [{ categoryName: "Fenster", name: "Fenster B", quantity: 2 }],
     });
 
@@ -150,22 +147,40 @@ describe("FT26 integration: report product vorlauf", () => {
       .get(`/api/reports/product-vorlauf?fromDate=2099-09-01&toDate=2099-09-30&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&specialMeasureTagId=${specialTagId}`)
       .expect(200);
 
-    expect(response.body.productCategoryTotals).toEqual([
-      expect.objectContaining({ categoryName: "Fass Saunen", totalQuantity: 4 }),
+    expect(response.body.productCategoryGroups).toEqual([
+      {
+        categoryId: saunaCategoryId,
+        categoryName: "Fass Saunen",
+        items: [
+          { itemName: "Sauna A", totalQuantity: 2 },
+          { itemName: "Sauna B", totalQuantity: 3 },
+        ],
+      },
     ]);
-    expect(response.body.componentCategoryTotals).toEqual([
-      expect.objectContaining({ categoryName: "Fenster", totalQuantity: 6 }),
+    expect(response.body.componentCategoryGroups).toEqual([
+      {
+        categoryId: windowCategoryId,
+        categoryName: "Fenster",
+        items: [
+          { itemName: "Fenster A", totalQuantity: 4 },
+          { itemName: "Fenster B", totalQuantity: 2 },
+        ],
+      },
     ]);
     expect(response.body.specialMeasureProjects).toEqual([
       expect.objectContaining({
         projectId: specialProject.project.id,
+        orderNumber: expect.stringContaining("ORD-FT26-PV-A-PROJ"),
+        customerFullName: expect.any(String),
+        customerNumber: expect.stringContaining("FT26-PV-A-CUST"),
+        actualDate: "2099-09-10",
         projectDescription: "Sondermass Alpha",
         specialMeasureTag: expect.objectContaining({ id: specialTagId }),
       }),
     ]);
   });
 
-  it("ignores non-selected categories in the totals", async () => {
+  it("ignores non-selected categories in the grouped totals", async () => {
     const admin = await loginAdminAgent(app);
     await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-FILTER",
@@ -187,11 +202,19 @@ describe("FT26 integration: report product vorlauf", () => {
       .get(`/api/reports/product-vorlauf?fromDate=2099-10-01&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
       .expect(200);
 
-    expect(response.body.productCategoryTotals).toEqual([
-      expect.objectContaining({ categoryName: "Fass Saunen", totalQuantity: 5 }),
+    expect(response.body.productCategoryGroups).toEqual([
+      {
+        categoryId: saunaCategoryId,
+        categoryName: "Fass Saunen",
+        items: [{ itemName: "Sauna Filter", totalQuantity: 5 }],
+      },
     ]);
-    expect(response.body.componentCategoryTotals).toEqual([
-      expect.objectContaining({ categoryName: "Fenster", totalQuantity: 2 }),
+    expect(response.body.componentCategoryGroups).toEqual([
+      {
+        categoryId: windowCategoryId,
+        categoryName: "Fenster",
+        items: [{ itemName: "Fenster Filter", totalQuantity: 2 }],
+      },
     ]);
   });
 
@@ -221,6 +244,10 @@ describe("FT26 integration: report product vorlauf", () => {
     expect(response.body.specialMeasureProjects).toEqual([
       expect.objectContaining({
         projectId: taggedWithMatch.project.id,
+        orderNumber: expect.stringContaining("ORD-FT26-PV-TAG-MATCH-PROJ"),
+        customerFullName: expect.any(String),
+        customerNumber: expect.stringContaining("FT26-PV-TAG-MATCH-CUST"),
+        actualDate: "2099-11-02",
         projectDescription: "Mit Treffer",
       }),
     ]);

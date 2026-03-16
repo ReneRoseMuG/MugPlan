@@ -2,9 +2,9 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - ReportsPage verdrahtet zwei Report-Arten mit gemeinsamer Konfiguration, Generate-Button und Date-Pickern.
- * - Die Konfiguration nutzt persistente Auswahlgruppen fuer Vorlaufliste und Produkt Vorlauf sowie eine Sondermass-Tag-Auswahl.
- * - Vorlaufliste erscheint als Overlay mit eigenem Paging; Produkt Vorlauf als Overlay ohne Paging.
+ * - ReportsPage verdrahtet zwei getrennte Startbereiche mit jeweils eigenem Generate-Button und eigenen Date-Pickern.
+ * - Jeder Startbereich nutzt seine eigene persistente Konfiguration; Produkt Vorlauf zusaetzlich eine Sondermass-Tag-Auswahl.
+ * - Vorlaufliste erscheint als Overlay mit eigenem Paging; Produkt Vorlauf als Overlay mit nach Kategorien gruppierten Produkt- und Komponentenlisten ohne Paging.
  * - Home und Sidebar binden die neue Reports-Hauptansicht nur fuer Admin/Disponent ein.
  *
  * Fehlerfaelle:
@@ -32,29 +32,41 @@ describe("FT26 reports page wiring", () => {
     "utf8",
   );
 
-  it("wires both report types, shared config, special-measure tag selection and report overlays", () => {
+  it("wires separate start areas, report-specific settings and report overlays", () => {
     expect(reportsPageSource).toContain("helpKey=\"reports.vorlaufliste\"");
-    expect(reportsPageSource).toContain("type ReportType = \"vorlaufliste\" | \"product-vorlauf\";");
-    expect(reportsPageSource).toContain("button-reports-type-vorlaufliste");
-    expect(reportsPageSource).toContain("button-reports-type-product-vorlauf");
-    expect(reportsPageSource).toContain("reports-type-switch");
+    expect(reportsPageSource).toContain('title="Vorlaufliste"');
+    expect(reportsPageSource).toContain('title="Produkt Vorlauf"');
     expect(reportsPageSource).toContain("Datum Ende anzeigen");
     expect(reportsPageSource).toContain("Datum Beginn");
     expect(reportsPageSource).toContain("Datum Ende");
     expect(reportsPageSource).toContain('type="date"');
     expect(reportsPageSource).toContain("Report erzeugen");
-    expect(reportsPageSource).toContain("button-reports-generate");
+    expect(reportsPageSource).toContain("button-reports-vorlaufliste-generate");
+    expect(reportsPageSource).toContain("button-reports-product-vorlauf-generate");
+    expect(reportsPageSource).toContain("reports-vorlaufliste-from-date");
+    expect(reportsPageSource).toContain("reports-vorlaufliste-to-date");
+    expect(reportsPageSource).toContain("reports-product-vorlauf-from-date");
+    expect(reportsPageSource).toContain("reports-product-vorlauf-to-date");
+    expect(reportsPageSource).toContain("button-reports-vorlaufliste-show-to-date");
+    expect(reportsPageSource).toContain("button-reports-product-vorlauf-show-to-date");
     expect(reportsPageSource).toContain('header: "Tags"');
     expect(reportsPageSource).toContain("const REPORT_PAGE_SIZE = 100;");
     expect(reportsPageSource).toContain('queryKey: ["reports-vorlaufliste", submittedFilters, reportRequestId, page]');
     expect(reportsPageSource).toContain('queryKey: ["reports-product-vorlauf", submittedFilters, reportRequestId]');
+    expect(reportsPageSource).toContain("productCategoryGroups");
+    expect(reportsPageSource).toContain("componentCategoryGroups");
+    expect(reportsPageSource).toContain("renderGroupedCategoryList(");
     expect(reportsPageSource).toContain('enabled: submittedFilters?.reportType === "vorlaufliste" && isReportOverlayOpen');
     expect(reportsPageSource).toContain('enabled: submittedFilters?.reportType === "product-vorlauf" && isReportOverlayOpen');
     expect(reportsPageSource).toContain("<ReportConfigSurface");
     expect(reportsPageSource).toContain("reports.vorlaufliste.categorySelection");
     expect(reportsPageSource).toContain("reports.productVorlauf.selection");
-    expect(reportsPageSource).toContain("checkbox-reports-${reportType}-product-category-${category.id}");
-    expect(reportsPageSource).toContain("checkbox-reports-${reportType}-component-category-${category.id}");
+    expect(reportsPageSource).toContain("checkbox-reports-vorlaufliste-product-category-");
+    expect(reportsPageSource).toContain("checkbox-reports-vorlaufliste-component-category-");
+    expect(reportsPageSource).toContain("checkbox-reports-product-vorlauf-product-category-");
+    expect(reportsPageSource).toContain("checkbox-reports-product-vorlauf-component-category-");
+    expect(reportsPageSource).toContain('handleGenerateReport("vorlaufliste")');
+    expect(reportsPageSource).toContain('handleGenerateReport("product-vorlauf")');
     expect(reportsPageSource).toContain("select-reports-product-vorlauf-special-measure-tag");
     expect(reportsPageSource).toContain("Sondermass Kennzeichnung");
     expect(reportsPageSource).toContain("/api/tags");
@@ -71,6 +83,8 @@ describe("FT26 reports page wiring", () => {
     expect(reportsPageSource).toContain("reports-product-vorlauf-products");
     expect(reportsPageSource).toContain("reports-product-vorlauf-components");
     expect(reportsPageSource).toContain("reports-product-vorlauf-special-measures");
+    expect(reportsPageSource).toContain("Keine passenden Produkte gefunden.");
+    expect(reportsPageSource).toContain("Keine passenden Komponenten gefunden.");
     expect(reportsPageSource).not.toContain("reports-product-vorlauf-page-prev");
   });
 
