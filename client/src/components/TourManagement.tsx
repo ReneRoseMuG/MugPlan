@@ -12,6 +12,7 @@ import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { useToast } from "@/hooks/use-toast";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
@@ -258,6 +259,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       invalidateEmployees();
       invalidateAppointmentViews();
       void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+      void refreshMonitoringWithNotification(toast);
     },
   });
 
@@ -274,6 +276,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       invalidateEmployees();
       invalidateAppointmentViews();
       void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+      void refreshMonitoringWithNotification(toast);
     },
   });
 

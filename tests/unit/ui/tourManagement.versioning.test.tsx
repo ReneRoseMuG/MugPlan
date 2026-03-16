@@ -9,6 +9,7 @@
  * - Tour-DELETE sendet version.
  * - Batch-Assign sendet items[{ employeeId, version }].
  * - Dialog-Delete ist nur fuer ADMIN sichtbar und nutzt den Dialog-Delete-Flow.
+ * - Appointment-wirksame Kaskaden triggern anschliessend den zentralen Monitoring-Refresh.
  *
  * Fehlerfaelle:
  * - Fehlende Tour-/Employee-Version wird als VALIDATION_ERROR blockiert.
@@ -49,5 +50,9 @@ describe("FT07 TourManagement versioning wiring", () => {
     expect(source).toContain("const isAdmin = effectiveUserRole === \"ADMIN\";");
     expect(source).toContain("onDelete={handleDeleteFromDialog}");
     expect(source).toContain("canDelete={isAdmin}");
+  });
+
+  it("refreshes monitoring after appointment-wirksame cascade executions", () => {
+    expect(source).toContain("void refreshMonitoringWithNotification(toast);");
   });
 });

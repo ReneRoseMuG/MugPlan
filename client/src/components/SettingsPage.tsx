@@ -89,7 +89,7 @@ export function SettingsPage() {
     if (value === "small" || value === "medium" || value === "large") {
       return value;
     }
-    return "medium" as PreviewSize;
+    return "large" as PreviewSize;
   }, [previewSetting?.resolvedValue]);
 
   const resolvedHelpTextPreviewValue = useMemo(() => {
@@ -97,7 +97,7 @@ export function SettingsPage() {
     if (value === "small" || value === "medium" || value === "large") {
       return value;
     }
-    return "medium" as HelpTextPreviewSize;
+    return "large" as HelpTextPreviewSize;
   }, [helpTextPreviewSetting?.resolvedValue]);
 
   const resolvedToastDesktopPosition = useMemo(() => {

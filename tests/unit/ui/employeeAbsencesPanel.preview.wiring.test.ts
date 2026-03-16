@@ -7,6 +7,7 @@
  * - EmployeeAbsencesPanel nutzt die neuen Preview- und Bulk-Ersatz-Endpunkte.
  * - Die Vorschau bietet Termin-oeffnen, Ersatzmitarbeiter-Auswahl und explizite Bestaetigung.
  * - Eine fehlgeschlagene Folgepruefung nach Save/Update wird sichtbar als offener Problemzustand markiert.
+ * - Erfolgreicher Bulk-Ersatz triggert den zentralen Monitoring-Refresh.
  *
  * Fehlerfaelle:
  * - Nach Save/Update fehlt der Vorschaupfad fuer betroffene Termine.
@@ -41,5 +42,9 @@ describe("FT30 unit: EmployeeAbsencesPanel preview wiring", () => {
     expect(source).toContain("previewFollowUpError");
     expect(source).toContain('data-testid="alert-employee-absence-preview-followup-required"');
     expect(source).toContain("Folgepruefung offen");
+  });
+
+  it("refreshes monitoring after a successful bulk replacement", () => {
+    expect(source).toContain("void refreshMonitoringWithNotification(toast);");
   });
 });

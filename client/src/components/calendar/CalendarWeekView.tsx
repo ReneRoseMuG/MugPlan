@@ -13,6 +13,7 @@ import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
+import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -550,6 +551,7 @@ export function CalendarWeekView({
     }
 
     await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+    await refreshMonitoringWithNotification(toast);
     console.info(`${logPrefix} drop success`, { appointmentId });
     setPendingAvailabilityDrop(null);
     setAvailabilityConfirmOpen(false);
@@ -651,6 +653,7 @@ export function CalendarWeekView({
       }
 
       await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await refreshMonitoringWithNotification(toast);
       console.info(`${logPrefix} drop success`, { appointmentId });
       return true;
     };
@@ -883,12 +886,16 @@ export function CalendarWeekView({
                       const projectStatusAreaHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? null;
                       const tileRowCount = laneRenderData.tileRowCount;
                       const needsDayCellRow = laneRenderData.needsDayCellRow;
-                      const laneGridTemplateRows = [
-                        ...Array.from({ length: tileRowCount }, () => `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`),
-                        ...(needsDayCellRow ? [`minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`] : []),
-                      ].join(" ");
                       const totalLaneRowCount = tileRowCount + (needsDayCellRow ? 1 : 0);
+                      const laneGridRowCount = Math.max(1, totalLaneRowCount);
                       const hasLaneContent = totalLaneRowCount > 0;
+                      const laneGridTemplateRows =
+                        hasLaneContent
+                          ? [
+                              ...Array.from({ length: tileRowCount }, () => `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`),
+                              ...(needsDayCellRow ? [`minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`] : []),
+                            ].join(" ")
+                          : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`;
 
                       return (
                       <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10">
@@ -971,28 +978,27 @@ export function CalendarWeekView({
                           }`}
                         >
                           <div
-                            className={`relative grid divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden ${
-                              hasLaneContent ? "min-h-[240px]" : ""
-                            }`}
+                            className="relative grid divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden"
                             style={{
                               gridTemplateColumns: dayGridTemplate,
-                              ...(hasLaneContent ? { gridTemplateRows: laneGridTemplateRows } : {}),
+                              minHeight: `${MIN_WEEK_CARD_HEIGHT_PX}px`,
+                              gridTemplateRows: laneGridTemplateRows,
                             }}
                           >
-                            {hasLaneContent ? days.map((_, dayIdx) => {
+                            {days.map((_, dayIdx) => {
                               const isWeekend = dayIdx >= 5;
                               return (
                                 <div
                                   key={`week-lane-column-background-${tourLane.laneKey}-${dayIdx}`}
-                                    className={isWeekend ? "bg-slate-200/45" : "bg-white/80"}
+                                  className={isWeekend ? "bg-slate-200/45" : "bg-white/80"}
                                   style={{
                                     gridColumn: dayIdx + 1,
-                                    gridRow: `1 / span ${totalLaneRowCount}`,
+                                    gridRow: `1 / span ${laneGridRowCount}`,
                                   }}
                                   aria-hidden
                                 />
                               );
-                            }) : null}
+                            })}
                             {hasLaneContent && draggedAppointmentId !== null ? (
                               <div
                                 className="absolute inset-0 grid z-20"

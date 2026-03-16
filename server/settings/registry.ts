@@ -146,7 +146,7 @@ export const userSettingsRegistry = {
     description: "Steuert die Groesse der Dateivorschau im Attachment-Badge.",
     type: "enum",
     options: attachmentPreviewSizeOptions,
-    defaultValue: "medium",
+    defaultValue: "large",
     allowedScopes: ["GLOBAL", "USER"],
     validate: (value: unknown): value is AttachmentPreviewSize =>
       typeof value === "string" && attachmentPreviewSizeOptions.includes(value as AttachmentPreviewSize),
@@ -157,7 +157,7 @@ export const userSettingsRegistry = {
     description: "Steuert die Groesse von Hilfetext-Previews (Help-Icon und Hilfetext-Tabelle).",
     type: "enum",
     options: helpTextPreviewSizeOptions,
-    defaultValue: "medium",
+    defaultValue: "large",
     allowedScopes: ["USER"],
     validate: (value: unknown): value is HelpTextPreviewSize =>
       typeof value === "string" && helpTextPreviewSizeOptions.includes(value as HelpTextPreviewSize),

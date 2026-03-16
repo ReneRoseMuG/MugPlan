@@ -71,7 +71,7 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
       if (value === "small" || value === "medium" || value === "large") {
         return value as UserSettingValueByKey[K];
       }
-      return "medium" as UserSettingValueByKey[K];
+      return "large" as UserSettingValueByKey[K];
     }
     if (key === "calendarWeekendColumnPercent") {
       const value = setting?.resolvedValue;
@@ -92,7 +92,7 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
       if (value === "small" || value === "medium" || value === "large") {
         return value as UserSettingValueByKey[K];
       }
-      return "medium" as UserSettingValueByKey[K];
+      return "large" as UserSettingValueByKey[K];
     }
     if (key === "hoverPreviewOpenDelayMs") {
       const value = setting?.resolvedValue;

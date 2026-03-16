@@ -18,6 +18,7 @@ import { de } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
+import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -251,6 +252,7 @@ export function CalendarMonthView({
     await queryClient.invalidateQueries({
       queryKey: ["calendarAppointments"],
     });
+    await refreshMonitoringWithNotification(toast);
     console.info(`${logPrefix} drop success`, { appointmentId });
     setPendingAvailabilityDrop(null);
     setAvailabilityConfirmOpen(false);
@@ -355,6 +357,7 @@ export function CalendarMonthView({
       await queryClient.invalidateQueries({
         queryKey: ["calendarAppointments"],
       });
+      await refreshMonitoringWithNotification(toast);
       console.info(`${logPrefix} drop success`, { appointmentId });
     } catch (err) {
       console.error(`${logPrefix} drop error`, err);

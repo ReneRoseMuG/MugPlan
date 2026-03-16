@@ -39,6 +39,7 @@ import {
 } from "@/components/DocumentExtractionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import {
   createEmptyProjectProductSelections,
@@ -1184,6 +1185,7 @@ export function AppointmentForm({
     onSuccess: async (_deletedAppointmentId, variables) => {
       const projectIdForInvalidation = variables.projectId;
       await invalidateRelatedAppointmentQueries(projectIdForInvalidation);
+      await refreshMonitoringWithNotification(toast);
       if (appointmentId) {
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
       }
@@ -1371,6 +1373,7 @@ export function AppointmentForm({
         });
       }
       await invalidateRelatedAppointmentQueries(payload.projectId);
+      await refreshMonitoringWithNotification(toast);
       if (isEditing && appointmentId) {
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
       }

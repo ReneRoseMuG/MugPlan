@@ -8,10 +8,6 @@ type AuthenticatedPayload = {
   userId: number;
   username: string;
   roleCode: "READER" | "DISPATCHER" | "ADMIN";
-  monitoringSummary?: {
-    count: number;
-    triggerNames: string[];
-  };
 };
 
 type LoginPayload =

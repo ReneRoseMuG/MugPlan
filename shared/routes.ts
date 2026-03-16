@@ -333,17 +333,11 @@ const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
   items: z.array(reportVorlauflisteItemSchema),
 });
 
-const monitoringSummarySchema = z.object({
-  count: z.number().int().min(1),
-  triggerNames: z.array(z.string().min(1)).min(1),
-});
-
 const authenticatedResponseSchema = z.object({
   status: z.literal("authenticated"),
   userId: z.number().int().positive(),
   username: z.string(),
   roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
-  monitoringSummary: monitoringSummarySchema.optional(),
 });
 
 const monitoringItemSchema = z.object({

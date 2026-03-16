@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarRange, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Employee, EmployeeAbsence } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -254,6 +255,7 @@ export function EmployeeAbsencesPanel({
       setPreviewAppointments([]);
       setPreviewAbsenceId(null);
       setReplacementEmployeeId(null);
+      void refreshMonitoringWithNotification(toast);
       const skippedDescription = result.skippedAlreadyAssignedCount > 0
         ? ` ${result.skippedAlreadyAssignedCount} Termine wurden uebersprungen, weil der Ersatz bereits zugewiesen war.`
         : "";

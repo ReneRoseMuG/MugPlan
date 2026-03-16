@@ -9,6 +9,7 @@
  * - AppointmentForm invalidiert appointment-bezogene Query-Familien per Predicate.
  * - AppointmentForm invalidiert URL-basierte current-appointments-Queries.
  * - Tour-Management-Terminzaehler wird ueber den Query-Key invalidiert.
+ * - AppointmentForm triggert danach den zentralen Monitoring-Refresh mit Hinweislogik.
  *
  * Fehlerfaelle:
  * - Terminliste zeigt neue Termine erst nach manuellem Toggle von "Alle Termine".
@@ -51,5 +52,9 @@ describe("FT01/FT04 appointment form appointment cache invalidation wiring", () 
     expect(source).toContain("const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {");
     expect(source).toContain("await invalidateTagProjectionQueries();");
     expect(source).toContain("await invalidateRelatedAppointmentQueries(payload.projectId);");
+  });
+
+  it("refreshes monitoring after save and delete via the shared helper", () => {
+    expect(source).toContain("await refreshMonitoringWithNotification(toast);");
   });
 });

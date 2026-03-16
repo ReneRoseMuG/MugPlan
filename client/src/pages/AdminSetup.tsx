@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { setupAdmin } from "@/lib/auth";
 
 type AdminSetupProps = {
-  onCompleted: (monitoringSummary?: { count: number; triggerNames: string[] }) => void;
+  onCompleted: () => void;
   onSwitchToLogin: () => void;
 };
 
@@ -28,8 +28,8 @@ export default function AdminSetup({ onCompleted, onSwitchToLogin }: AdminSetupP
 
     setIsSubmitting(true);
     try {
-      const payload = await setupAdmin(normalizedUsername, password);
-      onCompleted(payload.monitoringSummary);
+      await setupAdmin(normalizedUsername, password);
+      onCompleted();
     } catch (submitError) {
       const code = submitError instanceof Error ? submitError.message : "SETUP_FAILED";
       if (code === "SETUP_ALREADY_COMPLETED") {

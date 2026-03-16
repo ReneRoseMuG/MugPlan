@@ -4,11 +4,11 @@
  * Abgedeckte Regeln:
  * - Home und Sidebar binden FT31 als eigene Hauptansicht fuer ADMIN/DISPONENT ein.
  * - Der Sidebar-Counter nutzt denselben Monitoring-Query-Pfad wie die Seite.
- * - Login/App reichen die optionale Monitoring-Summary bis in Home fuer den Einmal-Hinweis weiter.
+ * - Monitoring-Refresh und Hinweislogik laufen ueber den zentralen Frontend-Helper statt ueber den Auth-Flow.
  *
  * Fehlerfaelle:
  * - Monitoring erscheint nicht in Home oder Sidebar.
- * - Counter oder Login-Hinweis bauen parallele Pfade ausserhalb des Monitoring-Endpunkts.
+ * - Counter oder Monitoring-Hinweis bauen parallele Pfade ausserhalb des Monitoring-Endpunkts.
  *
  * Ziel:
  * Die zentrale FT31-Frontend-Verdrahtung regressionssicher absichern.
@@ -41,11 +41,10 @@ describe("FT31 unit: monitoring navigation wiring", () => {
     expect(pageSource).toContain("api.monitoring.adminConfigSet.path");
   });
 
-  it("passes login monitoring summary through app into home toast handling", () => {
-    expect(loginSource).toContain("onAuthenticated(result.monitoringSummary)");
-    expect(loginSource).toContain("onAuthenticated(payload.monitoringSummary)");
-    expect(appSource).toContain("setInitialMonitoringSummary(monitoringSummary ?? null);");
-    expect(homeSource).toContain("initialMonitoringSummary");
-    expect(homeSource).toContain("problematische Termine im Monitoring");
+  it("removes the login summary path and uses the shared helper for monitoring notifications", () => {
+    expect(loginSource).not.toContain("monitoringSummary");
+    expect(appSource).not.toContain("initialMonitoringSummary");
+    expect(homeSource).not.toContain("problematische Termine im Monitoring");
+    expect(readFileSync(path.resolve(process.cwd(), "client/src/lib/monitoring.ts"), "utf8")).toContain("refreshMonitoringWithNotification");
   });
 });

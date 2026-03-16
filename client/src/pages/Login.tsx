@@ -13,7 +13,7 @@ import {
 } from "@/lib/auth";
 
 type LoginProps = {
-  onAuthenticated: (monitoringSummary?: { count: number; triggerNames: string[] }) => void;
+  onAuthenticated: () => void;
 };
 
 type RoleCode = "READER" | "DISPATCHER" | "ADMIN";
@@ -115,8 +115,8 @@ export default function Login({ onAuthenticated }: LoginProps) {
     setQuickSubmittingRole(roleCode);
 
     try {
-      const payload = await quickLogin(roleCode);
-      onAuthenticated(payload.monitoringSummary);
+      await quickLogin(roleCode);
+      onAuthenticated();
     } catch (submitError) {
       const code = submitError instanceof Error ? submitError.message : "QUICK_LOGIN_FAILED";
       if (code === "USER_NOT_FOUND_FOR_ROLE") {
@@ -149,7 +149,7 @@ export default function Login({ onAuthenticated }: LoginProps) {
     try {
       const result = await login(normalizedUsername, password);
       if (result.status === "authenticated") {
-        onAuthenticated(result.monitoringSummary);
+        onAuthenticated();
         return;
       }
       setTwoFactorCode("");
@@ -194,11 +194,11 @@ export default function Login({ onAuthenticated }: LoginProps) {
     setIsSubmitting(true);
     try {
       if (step.kind === "setup") {
-        const payload = await verifyTwoFactorSetup(twoFactorCode);
-        onAuthenticated(payload.monitoringSummary);
+        await verifyTwoFactorSetup(twoFactorCode);
+        onAuthenticated();
       } else if (step.kind === "verify") {
-        const payload = await verifyTwoFactorLogin(twoFactorCode);
-        onAuthenticated(payload.monitoringSummary);
+        await verifyTwoFactorLogin(twoFactorCode);
+        onAuthenticated();
       } else {
         throw new Error("INVALID_STEP");
       }

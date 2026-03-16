@@ -27,7 +27,6 @@ import { addMonths, subMonths } from "date-fns";
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 
 export type ViewType =
   | "month"
@@ -72,14 +71,9 @@ type ReturnContext = {
 
 type HomeProps = {
   onLogout: () => void;
-  initialMonitoringSummary?: {
-    count: number;
-    triggerNames: string[];
-  };
-  onInitialMonitoringSummaryConsumed: () => void;
 };
 
-export default function Home({ onLogout, initialMonitoringSummary, onInitialMonitoringSummaryConsumed }: HomeProps) {
+export default function Home({ onLogout }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("week");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
@@ -114,7 +108,6 @@ export default function Home({ onLogout, initialMonitoringSummary, onInitialMoni
   const canAccessMonitoring = canAccessReports;
   const backupEnabled = useSetting("backup_enabled");
   const backupDisabled = backupEnabled === false;
-  const { toast } = useToast();
   const {
     data: monitoringItems,
     isLoading: isMonitoringLoading,
@@ -132,15 +125,6 @@ export default function Home({ onLogout, initialMonitoringSummary, onInitialMoni
       return (await response.json()) as MonitoringListResponse;
     },
   });
-
-  useEffect(() => {
-    if (!initialMonitoringSummary) return;
-    toast({
-      title: `${initialMonitoringSummary.count} problematische Termine im Monitoring`,
-      description: initialMonitoringSummary.triggerNames.join(", "),
-    });
-    onInitialMonitoringSummaryConsumed();
-  }, [initialMonitoringSummary, onInitialMonitoringSummaryConsumed, toast]);
 
   useEffect(() => {
     if (view !== "monitoring" || !canAccessMonitoring) return;

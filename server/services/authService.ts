@@ -2,9 +2,7 @@ import * as usersRepository from "../repositories/usersRepository";
 import { getBootstrapState } from "../bootstrap/getBootstrapState";
 import { hashPassword, verifyPassword } from "../security/passwordHash";
 import type { DbRoleCode } from "../settings/registry";
-import { logError } from "../lib/logger";
 import * as userSettingsService from "./userSettingsService";
-import * as monitoringService from "./monitoringService";
 import type { AuthLoginPayload, AuthPreSessionState, AuthenticatedPayload } from "./authTypes";
 import {
   buildTwoFactorSetup,
@@ -99,20 +97,6 @@ function toAuthenticatedPayload(input: { userId: number; username: string; roleC
   };
 }
 
-async function attachMonitoringSummary(payload: AuthenticatedPayload): Promise<AuthenticatedPayload> {
-  try {
-    const monitoringSummary = await monitoringService.getMonitoringSummaryForRole(payload.roleCode);
-    return monitoringSummary ? { ...payload, monitoringSummary } : payload;
-  } catch (error) {
-    logError("monitoring_summary_failed", {
-      userId: payload.userId,
-      roleCode: payload.roleCode,
-      error,
-    });
-    return payload;
-  }
-}
-
 export async function getSetupStatus() {
   const bootstrapState = await getBootstrapState();
   return {
@@ -147,11 +131,11 @@ export async function setupAdmin(input: { username: string; password: string }):
     throw error;
   }
 
-  return attachMonitoringSummary(toAuthenticatedPayload({
+  return toAuthenticatedPayload({
     userId: created.id,
     username: created.username,
     roleCode: created.roleCode,
-  }));
+  });
 }
 
 export async function login(input: { username: string; password: string }): Promise<LoginResult> {
@@ -185,11 +169,11 @@ export async function login(input: { username: string; password: string }): Prom
   const twoFactorEnabled = await isGlobalTwoFactorEnabled();
   if (!twoFactorEnabled) {
     return {
-      payload: await attachMonitoringSummary(toAuthenticatedPayload({
+      payload: toAuthenticatedPayload({
         userId: user.userId,
         username: user.username,
         roleCode: user.roleCode,
-      })),
+      }),
     };
   }
 
@@ -249,7 +233,7 @@ export async function verifyTwoFactorSetup(input: {
     encryptTwoFactorSecret(preAuth.pendingSecret),
   );
 
-  return attachMonitoringSummary(toAuthenticatedPayload(preAuth));
+  return toAuthenticatedPayload(preAuth);
 }
 
 export async function verifyTwoFactorLogin(input: {
@@ -267,11 +251,11 @@ export async function verifyTwoFactorLogin(input: {
     throw new AuthError("Invalid two-factor code", 401, "INVALID_TWO_FACTOR_CODE");
   }
 
-  return attachMonitoringSummary(toAuthenticatedPayload({
+  return toAuthenticatedPayload({
     userId: user.userId,
     username: user.username,
     roleCode: user.roleCode,
-  }));
+  });
 }
 
 export async function listQuickLoginTargets(): Promise<QuickLoginTargetsResponse> {
@@ -323,11 +307,11 @@ export async function quickLoginByRole(input: { roleCode: RoleCode }): Promise<A
     throw new AuthError("No active user for role", 404, "USER_NOT_FOUND_FOR_ROLE");
   }
 
-  return attachMonitoringSummary(toAuthenticatedPayload({
+  return toAuthenticatedPayload({
     userId: user.userId,
     username: user.username,
     roleCode: user.roleCode,
-  }));
+  });
 }
 
 export function isAuthError(error: unknown): error is AuthError {

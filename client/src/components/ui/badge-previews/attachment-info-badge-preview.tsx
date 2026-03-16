@@ -52,7 +52,7 @@ export function parseAttachmentPreviewSize(value: unknown): AttachmentPreviewSiz
   if (value === "small" || value === "medium" || value === "large") {
     return value;
   }
-  return "medium";
+  return "large";
 }
 
 export function resolveAttachmentPreviewDimensions(size: AttachmentPreviewSize): AttachmentPreviewDimensions {

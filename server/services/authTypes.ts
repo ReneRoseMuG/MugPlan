@@ -5,10 +5,6 @@ export type AuthenticatedPayload = {
   userId: number;
   username: string;
   roleCode: DbRoleCode;
-  monitoringSummary?: {
-    count: number;
-    triggerNames: string[];
-  };
 };
 
 export type TwoFactorSetupRequiredPayload = {

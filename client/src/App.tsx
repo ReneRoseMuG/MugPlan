@@ -13,13 +13,11 @@ import { SettingsProvider } from "@/providers/SettingsProvider";
 
 type RouterProps = {
   onLogout: () => void;
-  initialMonitoringSummary?: { count: number; triggerNames: string[] } | null;
-  onInitialMonitoringSummaryConsumed: () => void;
 };
 
 type AuthStage = "loading" | "setup" | "login" | "authed";
 
-function Router({ onLogout, initialMonitoringSummary, onInitialMonitoringSummaryConsumed }: RouterProps) {
+function Router({ onLogout }: RouterProps) {
   return (
     <Switch>
       <Route
@@ -28,8 +26,6 @@ function Router({ onLogout, initialMonitoringSummary, onInitialMonitoringSummary
         {() => (
           <Home
             onLogout={onLogout}
-            initialMonitoringSummary={initialMonitoringSummary ?? undefined}
-            onInitialMonitoringSummaryConsumed={onInitialMonitoringSummaryConsumed}
           />
         )}
       </Route>
@@ -39,8 +35,6 @@ function Router({ onLogout, initialMonitoringSummary, onInitialMonitoringSummary
         {() => (
           <Home
             onLogout={onLogout}
-            initialMonitoringSummary={initialMonitoringSummary ?? undefined}
-            onInitialMonitoringSummaryConsumed={onInitialMonitoringSummaryConsumed}
           />
         )}
       </Route>
@@ -51,10 +45,6 @@ function Router({ onLogout, initialMonitoringSummary, onInitialMonitoringSummary
 
 function App() {
   const [stage, setStage] = useState<AuthStage>("loading");
-  const [initialMonitoringSummary, setInitialMonitoringSummary] = useState<{
-    count: number;
-    triggerNames: string[];
-  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,10 +70,7 @@ function App() {
   if (stage === "setup") {
     return (
       <AdminSetup
-        onCompleted={(monitoringSummary) => {
-          setInitialMonitoringSummary(monitoringSummary ?? null);
-          setStage("authed");
-        }}
+        onCompleted={() => setStage("authed")}
         onSwitchToLogin={() => setStage("login")}
       />
     );
@@ -92,10 +79,7 @@ function App() {
   if (stage === "login") {
     return (
       <Login
-        onAuthenticated={(monitoringSummary) => {
-          setInitialMonitoringSummary(monitoringSummary ?? null);
-          setStage("authed");
-        }}
+        onAuthenticated={() => setStage("authed")}
       />
     );
   }
@@ -108,11 +92,8 @@ function App() {
           <Router
             onLogout={() => {
               void logout();
-              setInitialMonitoringSummary(null);
               setStage("login");
             }}
-            initialMonitoringSummary={initialMonitoringSummary}
-            onInitialMonitoringSummaryConsumed={() => setInitialMonitoringSummary(null)}
           />
         </SettingsProvider>
       </TooltipProvider>

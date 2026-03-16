@@ -4,19 +4,17 @@
  * Abgedeckte Regeln:
  * - FT31 liefert Disponent/Admin frische Monitoring-Treffer nur fuer zukuenftige Termine im Horizont.
  * - FT31-Admin-Konfiguration ist exklusiv fuer Admin les- und schreibbar.
- * - Finale Authentifizierung traegt das Monitoring-Summary additiv auch nach 2FA-Verifizierung.
+ * - Monitoring wird live aus Terminmutationen berechnet, nicht aus dem Auth-Flow.
  *
  * Fehlerfaelle:
  * - Reader kann Monitoring lesen oder konfigurieren.
  * - Vergangene bzw. ausserhalb des Horizonts liegende Termine erscheinen in der Trefferliste.
- * - Monitoring-Summary fehlt nach finaler 2FA-Authentifizierung trotz Treffer.
+ * - Terminmutationen spiegeln sich nicht im anschliessenden Monitoring wider.
  *
  * Ziel:
- * FT31 end-to-end ueber Auth-, API- und Persistenzpfad absichern.
+ * FT31 end-to-end ueber API-, Persistenz- und Mutationspfad absichern.
  */
 
-import request from "supertest";
-import { generate } from "otplib";
 import { eq } from "drizzle-orm";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
@@ -63,25 +61,6 @@ async function createRoleAgent(roleCode: "ADMIN" | "DISPATCHER" | "READER") {
   const credentials = await createRoleCredentials(roleCode);
   const agent = await loginAgent(app, credentials);
   return { agent, ...credentials };
-}
-
-async function getGlobalSettingVersion(agent: Awaited<ReturnType<typeof createRoleAgent>>["agent"], key: string) {
-  const resolved = await agent.get("/api/user-settings/resolved").expect(200);
-  const setting = (resolved.body as Array<{ key: string; globalVersion?: number }>).find((entry) => entry.key === key);
-  if (!setting) {
-    throw new Error(`Setting missing: ${key}`);
-  }
-  return setting.globalVersion ?? 1;
-}
-
-async function setGlobalTwoFactor(agent: Awaited<ReturnType<typeof createRoleAgent>>["agent"], enabled: boolean) {
-  const version = await getGlobalSettingVersion(agent, "auth_two_factor_enabled");
-  await agent.patch("/api/user-settings").send({
-    key: "auth_two_factor_enabled",
-    scopeType: "GLOBAL",
-    version,
-    value: enabled,
-  }).expect(200);
 }
 
 async function configureMonitoring(agent: Awaited<ReturnType<typeof createRoleAgent>>["agent"], payload: {
@@ -209,9 +188,8 @@ describe("FT31 integration: monitoring", () => {
     expect((dispatcherResolved.body as Array<{ key: string }>).some((entry) => entry.key.startsWith("monitoring."))).toBe(false);
   });
 
-  it("includes monitoringSummary on final 2FA authentication when findings exist", async () => {
+  it("recomputes monitoring live after a relevant appointment update", async () => {
     const admin = await createRoleAgent("ADMIN");
-    const dispatcherCredentials = await createRoleCredentials("DISPATCHER");
     const customer = await createCustomerFixture("FT31-2FA-CUST");
 
     await configureMonitoring(admin.agent, {
@@ -219,30 +197,35 @@ describe("FT31 integration: monitoring", () => {
       horizonDays: 2,
       minimumEmployees: 1,
     });
-    await createAppointmentFixture({
+    const appointment = await createAppointmentFixture({
       customerId: customer.id,
-      startDate: getRelativeBerlinDate(1),
+      startDate: getRelativeBerlinDate(5),
       employeeIds: [],
     });
-    await setGlobalTwoFactor(admin.agent, true);
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toEqual([]);
+    });
 
-    const setupAgent = request.agent(app);
-    const loginResponse = await setupAgent.post("/api/auth/login").send(dispatcherCredentials).expect(200);
-    expect(loginResponse.body.status).toBe("2fa_setup_required");
+    const detailResponse = await admin.agent.get(`/api/appointments/${appointment.id}`).expect(200);
 
-    const setupCode = await generate({ secret: loginResponse.body.manualEntryKey });
-    const verifyResponse = await setupAgent.post("/api/auth/2fa/setup/verify").send({
-      code: setupCode,
+    await admin.agent.patch(`/api/appointments/${appointment.id}`).send({
+      version: detailResponse.body.version,
+      projectId: detailResponse.body.projectId,
+      customerId: detailResponse.body.customerId,
+      tourId: detailResponse.body.tourId,
+      startDate: getRelativeBerlinDate(1),
+      endDate: detailResponse.body.endDate,
+      startTime: detailResponse.body.startTime,
+      employeeIds: [],
     }).expect(200);
 
-    expect(verifyResponse.body).toMatchObject({
-      status: "authenticated",
-      username: dispatcherCredentials.username,
-      roleCode: "DISPATCHER",
-      monitoringSummary: {
-        count: 1,
-        triggerNames: ["TR-01 Ressourcenunterschreitung"],
-      },
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toHaveLength(1);
+      expect(body[0]).toMatchObject({
+        appointmentId: appointment.id,
+        startDate: getRelativeBerlinDate(1),
+        triggerName: "TR-01 Ressourcenunterschreitung",
+      });
     });
   });
 });

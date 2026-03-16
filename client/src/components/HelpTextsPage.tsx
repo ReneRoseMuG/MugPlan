@@ -34,7 +34,7 @@ function parseHelpTextPreviewSize(value: unknown): HelpTextPreviewSize {
   if (value === "small" || value === "medium" || value === "large") {
     return value;
   }
-  return "medium";
+  return "large";
 }
 
 function hasHelpTextContent(helpText: HelpText): boolean {
