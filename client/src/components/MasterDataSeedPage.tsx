@@ -97,7 +97,7 @@ export function MasterDataSeedPage() {
   const panelDefinitions = [
     { key: "employees", title: "Mitarbeiter", description: "Verwaltet employees.csv mit Vorname, Nachname und IsActive.", status: employeesStatusQuery.data, applyMutation: employeesApplyMutation, exportMutation: employeesExportMutation },
     { key: "help-texts", title: "Hilfetexte", description: "Verwaltet helptexts.yaml im bestehenden Hilfetext-Import/Export-Format.", status: helpTextsStatusQuery.data, applyMutation: helpTextsApplyMutation, exportMutation: helpTextsExportMutation },
-    { key: "product-management", title: "Produktverwaltung", description: "Verwaltet products.csv und components.csv und stellt Standardkategorien sicher.", status: productManagementStatusQuery.data, applyMutation: productManagementApplyMutation, exportMutation: productManagementExportMutation },
+    { key: "product-management", title: "Produktverwaltung", description: "Verwaltet product-categories.csv, component-categories.csv, products.csv und components.csv fuer Kategorien, Produkte und Komponenten.", status: productManagementStatusQuery.data, applyMutation: productManagementApplyMutation, exportMutation: productManagementExportMutation },
     { key: "note-templates", title: "Notiz Vorlagen", description: "Verwaltet notetemplates.csv mit Inhalt, Farbe, Drucken, Sortierung und Status.", status: noteTemplatesStatusQuery.data, applyMutation: noteTemplatesApplyMutation, exportMutation: noteTemplatesExportMutation },
     { key: "tags", title: "Tags", description: "Verwaltet tags.csv mit Name und Farbe fuer den Tag-Stammdatenbestand.", status: tagsStatusQuery.data, applyMutation: tagsApplyMutation, exportMutation: tagsExportMutation },
   ] as const;

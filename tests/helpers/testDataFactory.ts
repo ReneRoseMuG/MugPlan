@@ -75,7 +75,7 @@ export async function createTagFixture(prefix = "TAG") {
     version: 1,
   });
   const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
-  return { id: insertedId };
+  return { id: insertedId, name: token };
 }
 
 export async function ensureComponentCategoryFixture(name: string) {

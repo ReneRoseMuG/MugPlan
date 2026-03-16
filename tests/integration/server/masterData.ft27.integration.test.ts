@@ -9,8 +9,8 @@
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
  * - Komponenten-Loeschkonflikte liefern Referenzdetails fuer Produktzuordnungen und Projektauftragspositionen.
- * - Default-/Schutzkategorien (Fass Saunen plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
- * - Der Produktverwaltungs-Seed ist dateibasiert, idempotent und reaktiviert vorhandene inaktive Seed-Kategorien.
+ * - Default-Kategorien aus der Datei- und CRUD-Verwaltung sind nicht loeschbar.
+ * - Die dateibasierte Produktverwaltung importiert Kategorien, Produkte und Komponenten idempotent und reaktiviert vorhandene inaktive Kategorien.
  * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
  *
  * Fehlerfaelle:
@@ -79,6 +79,36 @@ async function createAndLoginReaderAgent(admin: SuperAgentTest): Promise<SuperAg
   return reader;
 }
 
+async function ensureDefaultComponentCategoryFixture(name: string) {
+  const category = await ensureComponentCategoryFixture(name);
+
+  await db
+    .update(componentCategories)
+    .set({
+      isDefault: true,
+      version: category.version + 1,
+    })
+    .where(eq(componentCategories.id, category.id));
+
+  const [refreshed] = await db
+    .select({
+      id: componentCategories.id,
+      name: componentCategories.name,
+      version: componentCategories.version,
+      isActive: componentCategories.isActive,
+      isDefault: componentCategories.isDefault,
+    })
+    .from(componentCategories)
+    .where(eq(componentCategories.id, category.id))
+    .limit(1);
+
+  if (!refreshed) {
+    throw new Error(`Component category fixture ${name} could not be refreshed as default.`);
+  }
+
+  return refreshed;
+}
+
 describe("FT27 integration: master data admin API", () => {
   const protectedComponentCategoryNames = [
     "Dachvarianten",
@@ -104,18 +134,20 @@ describe("FT27 integration: master data admin API", () => {
 
     const created = await admin
       .post("/api/admin/master-data/product-categories")
-      .send({ name: "PK-FT27-A", isActive: true, version: 1 })
+      .send({ name: "PK-FT27-A", isDefault: false, isActive: true, version: 1 })
       .expect(201);
 
     expect(created.body.name).toBe("PK-FT27-A");
+    expect(created.body.isDefault).toBe(false);
     expect(created.body.version).toBe(1);
 
     const updated = await admin
       .put(`/api/admin/master-data/product-categories/${created.body.id}`)
-      .send({ name: "PK-FT27-A-EDIT", version: created.body.version })
+      .send({ name: "PK-FT27-A-EDIT", isDefault: false, version: created.body.version })
       .expect(200);
 
     expect(updated.body.name).toBe("PK-FT27-A-EDIT");
+    expect(updated.body.isDefault).toBe(false);
     expect(updated.body.version).toBe(created.body.version + 1);
 
     await admin
@@ -176,6 +208,7 @@ describe("FT27 integration: master data admin API", () => {
 
   it("blocks deleting default product category with BUSINESS_CONFLICT", async () => {
     const admin = await loginAdminAgent();
+    await writeSeedFile("product-categories.csv", "Name;IsDefault;IsActive\nFass Saunen;true;true\n");
 
     await admin
       .post("/api/admin/master-data/seed/product-management/apply")
@@ -213,7 +246,7 @@ describe("FT27 integration: master data admin API", () => {
     "blocks deleting protected component category %s with BUSINESS_CONFLICT",
     async (categoryName) => {
       const admin = await loginAdminAgent();
-      const protectedCategory = await ensureComponentCategoryFixture(categoryName);
+      const protectedCategory = await ensureDefaultComponentCategoryFixture(categoryName);
 
       await admin
         .delete(`/api/admin/master-data/component-categories/${protectedCategory.id}`)
@@ -399,8 +432,10 @@ describe("FT27 integration: master data admin API", () => {
       });
   });
 
-  it("runs the product management seed idempotently and returns log lines", async () => {
+  it("runs the product management file import idempotently and returns log lines", async () => {
     const admin = await loginAdminAgent();
+    await writeSeedFile("product-categories.csv", "Name;IsDefault;IsActive\nFass Saunen;true;true\n");
+    await writeSeedFile("component-categories.csv", "Name;IsDefault;IsActive\nÖfen;true;true\n");
     await writeSeedFile("products.csv", "Name;Beschreibung;Kategorie\nFT27 Seed Produkt;Beschreibung A;Fass Saunen\n");
     await writeSeedFile("components.csv", "Name;Beschreibung;Kategorie\nFT27 Seed Komponente;Beschreibung B;Öfen\n");
 
@@ -421,7 +456,7 @@ describe("FT27 integration: master data admin API", () => {
     expect(secondRun.body.logLines).toContain("Komponente aktualisiert: FT27 Seed Komponente");
   });
 
-  it("reactivates inactive seed categories through the product management seed", async () => {
+  it("reactivates inactive categories through the product management file import", async () => {
     const admin = await loginAdminAgent();
     const productCategory = await ensureProductCategoryFixture("Fass Saunen");
     const componentCategory = await ensureComponentCategoryFixture("Dachvarianten");
@@ -435,13 +470,16 @@ describe("FT27 integration: master data admin API", () => {
       .set({ isActive: false, version: componentCategory.version + 1 })
       .where(eq(componentCategories.id, componentCategory.id));
 
+    await writeSeedFile("product-categories.csv", "Name;IsDefault;IsActive\nFass Saunen;true;true\n");
+    await writeSeedFile("component-categories.csv", "Name;IsDefault;IsActive\nDachvarianten;true;true\n");
+
     const response = await admin
       .post("/api/admin/master-data/seed/product-management/apply")
       .send({})
       .expect(200);
 
-    expect(response.body.logLines).toContain("Produktkategorie reaktiviert: Fass Saunen");
-    expect(response.body.logLines).toContain("Komponentenkategorie reaktiviert: Dachvarianten");
+    expect(response.body.logLines).toContain("Produktkategorie aktualisiert: Fass Saunen");
+    expect(response.body.logLines).toContain("Komponentenkategorie aktualisiert: Dachvarianten");
 
     const [refreshedProductCategory] = await db
       .select({
@@ -475,15 +513,16 @@ describe("FT27 integration: master data admin API", () => {
       });
   });
 
-  it("returns product management seed status with extra component file metadata", async () => {
+  it("returns product management file status with category and item file metadata", async () => {
     const admin = await loginAdminAgent();
 
     await admin
       .get("/api/admin/master-data/seed/product-management")
       .expect(200)
       .expect((res) => {
-        expect(res.body.sourceFile).toBe("products.csv");
+        expect(res.body.sourceFile).toBe("product-categories.csv");
         expect(Array.isArray(res.body.extraFiles)).toBe(true);
+        expect(res.body.extraFiles).toHaveLength(3);
       });
   });
 

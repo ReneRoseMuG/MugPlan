@@ -2,7 +2,6 @@ import { asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
-  employeeAbsences,
   employeeAttachments,
   employees,
   type Employee,
@@ -24,24 +23,9 @@ export async function getEmployees(scope: "active" | "inactive" = "active"): Pro
 
 export async function getEmployeesAvailableOnDate(
   scope: "active" | "inactive",
-  appointmentDate: string,
+  _appointmentDate: string,
 ): Promise<Employee[]> {
-  const targetIsActive = scope === "active";
-  return db
-    .select()
-    .from(employees)
-    .where(sql`
-      ${employees.isActive} = ${targetIsActive}
-      and (${employees.exitDate} is null or ${employees.exitDate} > ${appointmentDate})
-      and not exists (
-        select 1
-        from ${employeeAbsences}
-        where ${employeeAbsences.employeeId} = ${employees.id}
-          and ${employeeAbsences.from} <= ${appointmentDate}
-          and ${employeeAbsences.until} >= ${appointmentDate}
-      )
-    `)
-    .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
+  return getEmployees(scope);
 }
 
 export async function getAllEmployees(): Promise<Employee[]> {

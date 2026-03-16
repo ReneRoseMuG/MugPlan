@@ -22,6 +22,8 @@ export async function listVorlaufliste(
   params: {
     fromDate: string;
     toDate?: string;
+    productCategoryIds: number[];
+    componentCategoryIds: number[];
     page: number;
     pageSize: number;
   },

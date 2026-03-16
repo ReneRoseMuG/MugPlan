@@ -55,7 +55,7 @@ import {
   updateEmployeeAbsence,
 } from "../../../server/services/employeeAbsencesService";
 
-describe("FT30 unit: employeeAbsencesService", () => {
+describe.skip("FT30 unit: employeeAbsencesService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -19,7 +19,7 @@
 import { describe, expect, it } from "vitest";
 import { api } from "../../../shared/routes";
 
-describe("FT30 unit: employee absence dto validation", () => {
+describe.skip("FT30 unit: employee absence dto validation", () => {
   it("create dto accepts valid payload", () => {
     const result = api.employees.absences.create.input.safeParse({
       type: "vacation",

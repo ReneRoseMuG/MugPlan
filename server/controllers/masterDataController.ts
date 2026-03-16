@@ -7,6 +7,8 @@ import { parseMultipartFile } from "../lib/multipart";
 import { getEmployeesSeedStatus, applyEmployeesSeed, exportEmployeesSeed } from "../services/seedEmployeesService";
 import { getHelpTextsSeedStatus, applyHelpTextsSeed, exportHelpTextsSeed } from "../services/seedHelpTextsService";
 import {
+  getProductCategorySeedStatus,
+  getComponentCategorySeedStatus,
   getProductSeedStatus,
   getComponentSeedStatus,
   applyProductManagementSeed,
@@ -213,8 +215,12 @@ export async function exportHelpTextsSeedController(req: Request, res: Response,
 
 export async function getProductManagementSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
   await handleSeedExecution(req, res, next, () => undefined, async () => ({
-    ...(await getProductSeedStatus()),
-    extraFiles: [await getComponentSeedStatus()],
+    ...(await getProductCategorySeedStatus()),
+    extraFiles: [
+      await getComponentCategorySeedStatus(),
+      await getProductSeedStatus(),
+      await getComponentSeedStatus(),
+    ],
   }));
 }
 

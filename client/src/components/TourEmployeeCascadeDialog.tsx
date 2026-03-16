@@ -16,7 +16,7 @@ type PreviewItem = {
   tourName: string | null;
   currentEmployees: Array<{ id: number; fullName: string }>;
   eligible: boolean;
-  conflictReason: "EMPLOYEE_OVERLAP" | "EMPLOYEE_ABSENCE" | "EMPLOYEE_EXIT_DATE" | "ALREADY_ASSIGNED" | null;
+  conflictReason: "EMPLOYEE_OVERLAP" | "ALREADY_ASSIGNED" | null;
 };
 
 interface TourEmployeeCascadeDialogProps {
@@ -35,10 +35,6 @@ function conflictReasonLabel(reason: PreviewItem["conflictReason"]): string {
   switch (reason) {
     case "EMPLOYEE_OVERLAP":
       return "Ueberschneidung mit bestehendem Termin";
-    case "EMPLOYEE_ABSENCE":
-      return "Mitarbeiter ist abwesend";
-    case "EMPLOYEE_EXIT_DATE":
-      return "Austrittsdatum erreicht";
     case "ALREADY_ASSIGNED":
       return "Mitarbeiter ist bereits eingetragen";
     default:

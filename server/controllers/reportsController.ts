@@ -16,6 +16,8 @@ export async function listVorlaufliste(req: Request, res: Response, next: NextFu
     const report = await reportsService.listVorlaufliste({
       fromDate: input.fromDate,
       toDate: input.toDate,
+      productCategoryIds: input.productCategoryIds,
+      componentCategoryIds: input.componentCategoryIds,
       page: input.page,
       pageSize: input.pageSize,
     }, roleKey);

@@ -2,6 +2,10 @@ import { useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
 
 type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+type VorlauflisteCategorySelection = {
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+};
 
 export type UserSettingKey =
   // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
@@ -21,7 +25,8 @@ export type UserSettingKey =
   | "calendar.weekLanes.isCollapsed"
   | "calendar.weekLanes.expandedLaneId"
   | "calendar.weekAppointmentDisplayMode"
-  | "demoData.adminFormState";
+  | "demoData.adminFormState"
+  | "reports.vorlaufliste.categorySelection";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -41,6 +46,7 @@ type UserSettingValueByKey = {
   "calendar.weekLanes.expandedLaneId": string;
   "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
   "demoData.adminFormState": string;
+  "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
 };
 
 export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
@@ -55,6 +61,24 @@ export function resolveToastDesktopPosition(value: unknown): ToastDesktopPositio
     return value;
   }
   return "bottom-right";
+}
+
+export function resolveVorlauflisteCategorySelection(value: unknown): VorlauflisteCategorySelection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { productCategoryIds: [], componentCategoryIds: [] };
+  }
+  const candidate = value as Record<string, unknown>;
+  const parseIds = (input: unknown) => Array.isArray(input)
+    ? input.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+    : [];
+
+  const productCategoryIds = parseIds(candidate.productCategoryIds);
+  const componentCategoryIds = parseIds(candidate.componentCategoryIds);
+
+  return {
+    productCategoryIds: Array.from(new Set(productCategoryIds)),
+    componentCategoryIds: Array.from(new Set(componentCategoryIds)),
+  };
 }
 
 export function useSettings() {
@@ -135,6 +159,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.weekAppointmentDisplayMode") {
       return resolveWeekAppointmentDisplayMode(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "reports.vorlaufliste.categorySelection") {
+      return resolveVorlauflisteCategorySelection(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);

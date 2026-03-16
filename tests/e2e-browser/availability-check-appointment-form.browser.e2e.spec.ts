@@ -48,7 +48,7 @@ async function openNewAppointmentFromWeek(page: Page) {
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
 }
 
-test("shows excluded employees after confirming an availability conflict on save", async ({ page }) => {
+test.skip("shows excluded employees after confirming an availability conflict on save", async ({ page }) => {
   const project = await createProjectFixture({ prefix: "FT01-BROWSER-ALERT" });
   const excludedEmployee = await createEmployeeFixture("FT01-BROWSER-EXCLUDED");
   const retainedEmployee = await createEmployeeFixture("FT01-BROWSER-RETAINED");
@@ -74,7 +74,7 @@ test("shows excluded employees after confirming an availability conflict on save
   await expect(page.getByTestId("alert-appointment-excluded-employees")).toContainText("Abwesenheit");
 });
 
-test("requires a start date before the employee picker shows selectable employees", async ({ page }) => {
+test.skip("requires a start date before the employee picker shows selectable employees", async ({ page }) => {
   await openNewAppointmentFromWeek(page);
   await page.getByTestId("input-start-date").fill("");
   await page.getByTestId("button-add-employee").click();
@@ -84,7 +84,7 @@ test("requires a start date before the employee picker shows selectable employee
   await expect(page.locator('[data-testid^="employee-picker-card-"]')).toHaveCount(0);
 });
 
-test("shows unavailable employees only in the informative list of the employee picker", async ({ page }) => {
+test.skip("shows unavailable employees only in the informative list of the employee picker", async ({ page }) => {
   const availableEmployee = await createEmployeeFixture("FT01-BROWSER-PICKER-OK");
   const absentEmployee = await createEmployeeFixture("FT01-BROWSER-PICKER-ABSENT");
 

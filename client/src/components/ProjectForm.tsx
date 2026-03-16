@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ComponentDropdown } from "@/components/ui/component-dropdown";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
@@ -39,21 +39,26 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { DEFAULT_PROJECT_TYPE, resolveProjectEditForm } from "@/lib/project-edit-form";
 import {
+  buildDynamicProjectCategorySlots,
   buildPersistedProjectDescription,
   buildProjectArticleLines,
   cloneProjectProductSelections,
   createEmptyProjectProductSelections,
+  createEmptyDynamicProjectProductSelections,
   extractEditorDescriptionHtml,
   getProjectProductField,
   isProductSelectionField,
+  mapProjectOrderItemsToDynamicSelections,
   mapProjectOrderItemsToSelections,
   PROJECT_PRODUCT_FIELDS,
   resolveSelectionsFromExtraction,
+  type DynamicProjectCategorySlot,
+  type DynamicProjectProductSelections,
   type ProjectProductFieldKey,
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, Component, ComponentCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
+import type { Project, Customer, Note, Component, ComponentCategory, ProductCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -110,7 +115,9 @@ export function ProjectForm({
   const [plannedWeek, setPlannedWeek] = useState("");
   const [descriptionMd, setDescriptionMd] = useState("");
   const [productSelections, setProductSelections] = useState<ProjectProductSelections>(createEmptyProjectProductSelections);
+  const [dynamicProductSelections, setDynamicProductSelections] = useState<DynamicProjectProductSelections>({});
   const [componentDialogField, setComponentDialogField] = useState<ProjectProductFieldKey | null>(null);
+  const [dynamicDialogSlotId, setDynamicDialogSlotId] = useState<string | null>(null);
   const [extractedArticleListHtml, setExtractedArticleListHtml] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -134,6 +141,7 @@ export function ProjectForm({
     plannedWeek: string;
     descriptionMd: string;
     productSelections: ProjectProductSelections;
+    dynamicProductSelections: DynamicProjectProductSelections;
     extractedArticleListHtml: string;
     customerId: number | null;
   }) =>
@@ -145,6 +153,14 @@ export function ProjectForm({
       plannedWeek: input.plannedWeek.trim(),
       descriptionMd: input.descriptionMd,
       articleLines: buildProjectArticleLines(input.productSelections),
+      dynamicSelections: Object.entries(input.dynamicProductSelections)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([slotId, selection]) => ({
+          slotId,
+          productId: selection.productId,
+          componentId: selection.componentId,
+          componentName: selection.componentName.trim(),
+        })),
       extractedArticleListHtml: input.extractedArticleListHtml.trim(),
       customerId: input.customerId,
     });
@@ -178,10 +194,16 @@ export function ProjectForm({
   });
 
   const masterDataScope = isAdmin ? "all" : "active";
+  const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${masterDataScope}`;
   const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
   const componentsUrl = `/api/admin/master-data/components?active=${masterDataScope}`;
   const projectOrderItemsUrl = projectId ? `/api/projects/${projectId}/order-items` : null;
+
+  const { data: productCategories = [] } = useQuery<ProductCategory[]>({
+    queryKey: [productCategoriesUrl],
+    enabled: true,
+  });
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: [productsUrl],
@@ -202,6 +224,22 @@ export function ProjectForm({
     queryKey: projectOrderItemsUrl ? [projectOrderItemsUrl] : ["project-order-items-disabled"],
     enabled: Boolean(projectOrderItemsUrl),
   });
+  const dynamicCategorySlots = useMemo<DynamicProjectCategorySlot[]>(
+    () => buildDynamicProjectCategorySlots({ productCategories, componentCategories }),
+    [componentCategories, productCategories],
+  );
+
+  useEffect(() => {
+    setDynamicProductSelections((current) => {
+      const next = createEmptyDynamicProjectProductSelections(dynamicCategorySlots);
+      for (const slot of dynamicCategorySlots) {
+        if (current[slot.slotId]) {
+          next[slot.slotId] = { ...current[slot.slotId] };
+        }
+      }
+      return next;
+    });
+  }, [dynamicCategorySlots]);
 
 
   // Initialize form when project data loads
@@ -226,6 +264,7 @@ export function ProjectForm({
           plannedWeek: projectData.project.projectOrder?.plannedWeek ?? "",
           descriptionMd: extractEditorDescriptionHtml(projectData.project.descriptionMd),
           productSelections: createEmptyProjectProductSelections(),
+          dynamicProductSelections: createEmptyDynamicProjectProductSelections(dynamicCategorySlots),
           extractedArticleListHtml: "",
           customerId: projectData.project.customerId,
         }),
@@ -233,6 +272,7 @@ export function ProjectForm({
     } else if (!isEditing) {
       setProjectType(DEFAULT_PROJECT_TYPE);
       setProductSelections(createEmptyProjectProductSelections());
+      setDynamicProductSelections(createEmptyDynamicProjectProductSelections(dynamicCategorySlots));
       setExtractedArticleListHtml("");
       setInitialFormSnapshot(
         buildFormSnapshot({
@@ -243,17 +283,21 @@ export function ProjectForm({
           plannedWeek: "",
           descriptionMd: "",
           productSelections: createEmptyProjectProductSelections(),
+          dynamicProductSelections: createEmptyDynamicProjectProductSelections(dynamicCategorySlots),
           extractedArticleListHtml: "",
           customerId: null,
         }),
       );
     }
-  }, [projectData, isEditing]);
+  }, [dynamicCategorySlots, isEditing, projectData]);
 
   useEffect(() => {
     if (!isEditing || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
     setProductSelections(mapProjectOrderItemsToSelections(projectOrderItems, products, components, componentCategories));
-  }, [componentCategories, components, isEditing, products, projectOrderItems]);
+    setDynamicProductSelections(
+      mapProjectOrderItemsToDynamicSelections(projectOrderItems, products, components, dynamicCategorySlots),
+    );
+  }, [componentCategories, components, dynamicCategorySlots, isEditing, products, projectOrderItems]);
 
   useEffect(() => {
     if (!isEditing && initialDocumentExtractionFile) {
@@ -266,11 +310,13 @@ export function ProjectForm({
     const nextSelections = initialDraft.productSelections
       ? cloneProjectProductSelections(initialDraft.productSelections)
       : createEmptyProjectProductSelections();
+    const nextDynamicSelections = createEmptyDynamicProjectProductSelections(dynamicCategorySlots);
     setName(initialDraft.name ?? "");
     setOrderNumber(initialDraft.orderNumber ?? "");
     setAmount(initialDraft.amount ?? "");
     setCustomerId(initialDraft.customerId ?? null);
     setProductSelections(nextSelections);
+    setDynamicProductSelections(nextDynamicSelections);
     setExtractedArticleListHtml(initialDraft.extractedArticleListHtml ?? "");
     setInitialFormSnapshot(
       buildFormSnapshot({
@@ -281,12 +327,13 @@ export function ProjectForm({
         plannedWeek: "",
         descriptionMd: "",
         productSelections: nextSelections,
+        dynamicProductSelections: nextDynamicSelections,
         extractedArticleListHtml: initialDraft.extractedArticleListHtml ?? "",
         customerId: initialDraft.customerId ?? null,
       }),
     );
     setDidApplyInitialDraft(true);
-  }, [didApplyInitialDraft, initialDraft, isEditing]);
+  }, [didApplyInitialDraft, dynamicCategorySlots, initialDraft, isEditing]);
 
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
@@ -299,6 +346,9 @@ export function ProjectForm({
     selectedComponentDialogField && selectedComponentDialogField.source === "component"
       ? selectedComponentDialogField.categoryName
       : null;
+  const selectedDynamicDialogSlot = dynamicDialogSlotId
+    ? dynamicCategorySlots.find((slot) => slot.slotId === dynamicDialogSlotId) ?? null
+    : null;
   useEffect(() => {
     if (!isEditing || !projectData || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
     setInitialFormSnapshot(
@@ -310,11 +360,12 @@ export function ProjectForm({
         plannedWeek: projectData.project.projectOrder?.plannedWeek ?? "",
         descriptionMd: extractEditorDescriptionHtml(projectData.project.descriptionMd),
         productSelections: mapProjectOrderItemsToSelections(projectOrderItems, products, components, componentCategories),
+        dynamicProductSelections: mapProjectOrderItemsToDynamicSelections(projectOrderItems, products, components, dynamicCategorySlots),
         extractedArticleListHtml: "",
         customerId: projectData.project.customerId,
       }),
     );
-  }, [componentCategories, components, isEditing, products, projectData, projectOrderItems]);
+  }, [componentCategories, components, dynamicCategorySlots, isEditing, products, projectData, projectOrderItems]);
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
     customerNumber: customer.customerNumber.trim(),
@@ -555,6 +606,42 @@ export function ProjectForm({
     await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
   };
 
+  const upsertExistingDynamicSelection = async (slot: DynamicProjectCategorySlot, selectedValue: string) => {
+    if (!projectId || !projectData?.project.orderNumber) return;
+    const numericSelectedId = Number(selectedValue);
+    if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
+
+    const product = slot.source === "product"
+      ? products.find((entry) => entry.id === numericSelectedId && entry.categoryId === slot.categoryId) ?? null
+      : null;
+    const component = slot.source === "component"
+      ? components.find((entry) => entry.id === numericSelectedId && entry.categoryId === slot.categoryId) ?? null
+      : null;
+    if (slot.source === "product" && !product) return;
+    if (slot.source === "component" && !component) return;
+
+    const response = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
+      projectId,
+      orderNumber: projectData.project.orderNumber,
+      productId: product?.id ?? null,
+      componentId: component?.id ?? null,
+      specificationId: null,
+      quantity: 1,
+    });
+    const savedItem = await response.json() as ProjectOrderItem;
+    setDynamicProductSelections((current) => ({
+      ...current,
+      [slot.slotId]: {
+        productId: product?.id ?? null,
+        componentId: component?.id ?? null,
+        componentName: product?.name ?? component?.name ?? "",
+        itemId: savedItem.id,
+        version: savedItem.version,
+      },
+    }));
+    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+  };
+
   const handleFieldSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
     if (!selectedValue) return;
     const field = getProjectProductField(fieldKey);
@@ -595,6 +682,47 @@ export function ProjectForm({
     }));
   };
 
+  const handleDynamicFieldSelection = async (slotId: string, selectedValue: string) => {
+    const slot = dynamicCategorySlots.find((entry) => entry.slotId === slotId);
+    if (!slot || !selectedValue) return;
+    const numericSelectedId = Number(selectedValue);
+    if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
+
+    const product = slot.source === "product"
+      ? products.find((entry) => entry.id === numericSelectedId && entry.categoryId === slot.categoryId) ?? null
+      : null;
+    const component = slot.source === "component"
+      ? components.find((entry) => entry.id === numericSelectedId && entry.categoryId === slot.categoryId) ?? null
+      : null;
+    if (slot.source === "product" && !product) return;
+    if (slot.source === "component" && !component) return;
+
+    if (isEditing && projectId) {
+      try {
+        await upsertExistingDynamicSelection(slot, selectedValue);
+        toast({ title: `${slot.label} uebernommen` });
+      } catch (error) {
+        toast({
+          title: `${slot.label} konnte nicht uebernommen werden`,
+          description: error instanceof Error ? error.message : "Unbekannter Fehler",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    setDynamicProductSelections((current) => ({
+      ...current,
+      [slot.slotId]: {
+        productId: product?.id ?? null,
+        componentId: component?.id ?? null,
+        componentName: product?.name ?? component?.name ?? "",
+        itemId: null,
+        version: null,
+      },
+    }));
+  };
+
   const persistBufferedOrderItems = async (createdProjectId: number, createdOrderNumber: string) => {
     for (const field of PROJECT_PRODUCT_FIELDS) {
       const selection = productSelections[field.key];
@@ -605,6 +733,20 @@ export function ProjectForm({
         orderNumber: createdOrderNumber,
         productId: field.source === "product" ? selection.productId : null,
         componentId: field.source === "component" ? selection.componentId : null,
+        specificationId: null,
+        quantity: 1,
+      });
+    }
+    for (const slot of dynamicCategorySlots) {
+      const selection = dynamicProductSelections[slot.slotId];
+      if (!selection) continue;
+      if (slot.source === "product" && selection.productId == null) continue;
+      if (slot.source === "component" && selection.componentId == null) continue;
+      await apiRequest("POST", `/api/projects/${createdProjectId}/order-items`, {
+        projectId: createdProjectId,
+        orderNumber: createdOrderNumber,
+        productId: slot.source === "product" ? selection.productId : null,
+        componentId: slot.source === "component" ? selection.componentId : null,
         specificationId: null,
         quantity: 1,
       });
@@ -620,6 +762,7 @@ export function ProjectForm({
     plannedWeek,
     descriptionMd,
     productSelections,
+    dynamicProductSelections,
     extractedArticleListHtml,
     customerId,
   }) !== initialFormSnapshot;
@@ -939,6 +1082,7 @@ export function ProjectForm({
       plannedWeek,
       descriptionMd,
       productSelections,
+      dynamicProductSelections,
       extractedArticleListHtml,
       customerId,
     }));
@@ -1053,7 +1197,8 @@ export function ProjectForm({
       const mergedCustomer = await tryPatchExistingCustomerFromExtraction(resolvedCustomer, payload.customer);
       setCustomerId(mergedCustomer.id);
 
-      const hasExistingValues = name.trim().length > 0 || articleLines.length > 0 || extractedArticleListHtml.trim().length > 0;
+      const hasDynamicValues = Object.values(dynamicProductSelections).some((selection) => selection.componentName.trim().length > 0);
+      const hasExistingValues = name.trim().length > 0 || articleLines.length > 0 || hasDynamicValues || extractedArticleListHtml.trim().length > 0;
       if (hasExistingValues) {
         const confirmed = window.confirm("Titel oder Beschreibung sind bereits befüllt. Inhalte überschreiben?");
         if (!confirmed) return;
@@ -1199,7 +1344,10 @@ export function ProjectForm({
                     >
                       <ProjectProductFields
                         productSelections={productSelections}
+                        dynamicSlots={dynamicCategorySlots}
+                        dynamicSelections={dynamicProductSelections}
                         onOpenComponentDialog={setComponentDialogField}
+                        onOpenDynamicDialog={setDynamicDialogSlotId}
                       />
                     </div>
                   </TabsContent>
@@ -1329,6 +1477,27 @@ export function ProjectForm({
         />
       ) : null}
 
+      {selectedDynamicDialogSlot?.source === "product" ? (
+        <ProductSelectionDropdown
+          products={products.filter((product) => product.categoryId === selectedDynamicDialogSlot.categoryId)}
+          selectedProductId={String(dynamicProductSelections[selectedDynamicDialogSlot.slotId]?.productId ?? "")}
+          onSelect={(productId) => {
+            void handleDynamicFieldSelection(selectedDynamicDialogSlot.slotId, productId);
+          }}
+          label={selectedDynamicDialogSlot.label}
+          placeholder={`${selectedDynamicDialogSlot.label} auswaehlen`}
+          testId={`select-project-product-${selectedDynamicDialogSlot.slotId}`}
+          dialogMode
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setDynamicDialogSlotId(null);
+            }
+          }}
+          title={`${selectedDynamicDialogSlot.label} auswaehlen`}
+        />
+      ) : null}
+
       {selectedComponentDialogCategory && componentDialogField && !isProductSelectionField(componentDialogField) ? (
         <ComponentDropdown
           components={components}
@@ -1345,6 +1514,28 @@ export function ProjectForm({
               setComponentDialogField(null);
             }
           }}
+        />
+      ) : null}
+
+      {selectedDynamicDialogSlot?.source === "component" ? (
+        <ComponentDropdown
+          components={components}
+          categories={componentCategories}
+          targetCategory={selectedDynamicDialogSlot.categoryName}
+          targetCategoryId={selectedDynamicDialogSlot.categoryId}
+          selectedComponentId={String(dynamicProductSelections[selectedDynamicDialogSlot.slotId]?.componentId ?? "")}
+          onSelect={(componentId) => {
+            void handleDynamicFieldSelection(selectedDynamicDialogSlot.slotId, componentId);
+          }}
+          dialogMode
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setDynamicDialogSlotId(null);
+            }
+          }}
+          title={`${selectedDynamicDialogSlot.label} auswaehlen`}
+          testId={`select-component-${selectedDynamicDialogSlot.slotId}`}
         />
       ) : null}
 

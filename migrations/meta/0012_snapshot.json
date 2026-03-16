@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "640f7b73-73b0-45d6-97fe-d1f951635224",
+  "prevId": "5df1de39-c555-471e-91aa-d4fc8d1fd922",
+  "note": "Manual snapshot placeholder for 0012_default_category_flags. Authoritative migration logic lives in migrations/0012_default_category_flags.sql."
+}

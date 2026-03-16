@@ -25,7 +25,7 @@ test.beforeEach(async () => {
   await resetDatabase();
 });
 
-test("employee absences navigation page supports employee selection and table based CRUD", async ({ page }) => {
+test.skip("employee absences navigation page supports employee selection and table based CRUD", async ({ page }) => {
   const employeeA = await createEmployeeFixture("FT30-NAV-A");
   await createEmployeeFixture("FT30-NAV-B");
   const createFrom = getRelativeBerlinDate(3);

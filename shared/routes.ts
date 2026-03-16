@@ -93,16 +93,8 @@ const appointmentTagGroupsSchema = z.object({
   projectTags: z.array(tagSchema),
 });
 
-const excludedEmployeeSchema = z.object({
-  id: z.number().int().positive(),
-  fullName: z.string(),
-  reason: z.enum(["absence", "exit_date"]),
-});
-
 const tourEmployeeCascadeConflictReasonSchema = z.enum([
   "EMPLOYEE_OVERLAP",
-  "EMPLOYEE_ABSENCE",
-  "EMPLOYEE_EXIT_DATE",
   "ALREADY_ASSIGNED",
 ]);
 
@@ -112,8 +104,6 @@ const tourEmployeeCascadeSkipReasonSchema = z.enum([
   "HISTORICAL_APPOINTMENT",
   "APPOINTMENT_NOT_ON_TOUR",
   "EMPLOYEE_OVERLAP",
-  "EMPLOYEE_ABSENCE",
-  "EMPLOYEE_EXIT_DATE",
 ]);
 
 const tourEmployeeCascadeAppointmentEmployeeSchema = z.object({
@@ -152,7 +142,6 @@ const tourEmployeeCascadeExecuteResponseSchema = z.object({
 const tourEmployeeCascadeConflictResponseSchema = z.object({
   code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]),
   conflictEmployees: z.array(tourEmployeeCascadeAppointmentEmployeeSchema).optional(),
-  availabilityConflicts: z.array(excludedEmployeeSchema).optional(),
 }).passthrough();
 
 const employeeAbsenceBulkReplaceSkippedReasonSchema = z.enum([
@@ -313,6 +302,7 @@ const projectBoardListResponseSchema = pagedListMetaSchema.extend({
 
 const reportVorlauflisteItemSchema = z.object({
   projectId: z.number().int().positive(),
+  tags: z.array(tagSchema),
   amount: z.string().nullable(),
   customerFullName: z.string().nullable(),
   postalCode: z.string().nullable(),
@@ -854,7 +844,6 @@ export const api = {
         endDate: z.string().nullable().optional(),
         startTime: z.string().nullable().optional(),
         employeeIds: z.array(z.number()).optional(),
-        confirmAvailabilityAdjustments: z.boolean().optional(),
       }),
       responses: {
         201: z.object({
@@ -870,21 +859,18 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
-          excludedEmployees: z.array(excludedEmployeeSchema),
         }),
         409: z.object({
           code: z.enum([
             "EMPLOYEE_OVERLAP_CONFLICT",
             "INACTIVE_ENTITY_ASSIGNMENT",
             "PAST_APPOINTMENT_READONLY",
-            "AVAILABILITY_CONFIRMATION_REQUIRED",
           ]),
           message: z.string().optional(),
           conflictEmployees: z.array(z.object({
             id: z.number().int().positive(),
             fullName: z.string(),
           })).optional(),
-          availabilityConflicts: z.array(excludedEmployeeSchema).optional(),
         }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
@@ -901,7 +887,6 @@ export const api = {
         endDate: z.string().nullable().optional(),
         startTime: z.string().nullable().optional(),
         employeeIds: z.array(z.number()).optional(),
-        confirmAvailabilityAdjustments: z.boolean().optional(),
       }),
       responses: {
         200: z.object({
@@ -917,7 +902,6 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
-          excludedEmployees: z.array(excludedEmployeeSchema),
         }),
         403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
@@ -927,14 +911,12 @@ export const api = {
             "EMPLOYEE_OVERLAP_CONFLICT",
             "INACTIVE_ENTITY_ASSIGNMENT",
             "PAST_APPOINTMENT_READONLY",
-            "AVAILABILITY_CONFIRMATION_REQUIRED",
           ]),
           message: z.string().optional(),
           conflictEmployees: z.array(z.object({
             id: z.number().int().positive(),
             fullName: z.string(),
           })).optional(),
-          availabilityConflicts: z.array(excludedEmployeeSchema).optional(),
         }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
@@ -1503,16 +1485,9 @@ export const api = {
       input: z.object({
         scope: z.enum(["active", "inactive"]).default("active"),
         appointmentDate: z.string().optional(),
-        includeUnavailable: z.enum(["true", "false"]).optional(),
       }).strict(),
       responses: {
-        200: z.union([
-          z.array(z.custom<typeof employees.$inferSelect>()),
-          z.object({
-            availableEmployees: z.array(z.custom<typeof employees.$inferSelect>()),
-            unavailableEmployees: z.array(excludedEmployeeSchema),
-          }),
-        ]),
+        200: z.array(z.custom<typeof employees.$inferSelect>()),
       },
     },
     get: {
@@ -3546,6 +3521,14 @@ export const api = {
         input: z.object({
           fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
           toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          productCategoryIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          componentCategoryIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
           page: z.coerce.number().int().min(1).default(1),
           pageSize: z.coerce.number().int().min(1).max(100).default(100),
         }).strict(),
@@ -3595,7 +3578,7 @@ export const api = {
             key: z.string(),
             label: z.string(),
             description: z.string(),
-            type: z.enum(["enum", "string", "number", "boolean"]),
+            type: z.enum(["enum", "string", "number", "boolean", "json"]),
             constraints: z.record(z.unknown()),
             allowedScopes: z.array(z.enum(["GLOBAL", "ROLE", "USER"])),
             defaultValue: z.unknown(),

@@ -11,12 +11,15 @@ import {
   projectOrder,
   projectOrderItems,
   projects,
+  type Tag,
 } from "@shared/schema";
 import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
 import { resolveReportComponentSlot, stripReportHtmlToText } from "../lib/reportVorlaufliste";
+import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
 export type VorlauflisteRow = {
   projectId: number;
+  tags: Tag[];
   amount: string | null;
   customerFullName: string | null;
   postalCode: string | null;
@@ -75,6 +78,8 @@ function joinSorted(values: Set<string>): string | null {
 export async function getVorlauflistePaged(params: {
   fromDate: string;
   toDate?: string;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
   page: number;
   pageSize: number;
 }): Promise<VorlauflistePagedResult> {
@@ -159,19 +164,32 @@ export async function getVorlauflistePaged(params: {
     .where(inArray(projectOrderItems.projectId, projectIds));
 
   const projectById = new Map(projectRows.map((row) => [row.project.id, row] as const));
+  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   const bucketsByProjectId = new Map<number, ReportArticleBuckets>();
+  const selectedProductCategoryIds = new Set(params.productCategoryIds);
+  const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
 
   for (const row of orderItemRows) {
     const projectId = row.item.projectId;
     const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
 
-    if (row.product && row.productCategory && isReportSaunaProductCategoryName(row.productCategory.name)) {
+    if (
+      row.product
+      && row.productCategory
+      && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
+      && isReportSaunaProductCategoryName(row.productCategory.name)
+    ) {
       buckets.sauna.add(row.product.name.trim());
       bucketsByProjectId.set(projectId, buckets);
       continue;
     }
 
     if (!row.component || !row.componentCategory) {
+      bucketsByProjectId.set(projectId, buckets);
+      continue;
+    }
+
+    if (selectedComponentCategoryIds.size > 0 && !selectedComponentCategoryIds.has(row.componentCategory.id)) {
       bucketsByProjectId.set(projectId, buckets);
       continue;
     }
@@ -209,9 +227,11 @@ export async function getVorlauflistePaged(params: {
         const actualDate = actualDateByProjectId.get(projectId);
         if (!row || !actualDate) return null;
         const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+        const projectTags = tagsByProjectId.get(projectId) ?? [];
 
         return {
           projectId,
+          tags: projectTags,
           amount: row.order?.amount ?? null,
           customerFullName: row.customer.fullName ?? null,
           postalCode: row.customer.postalCode ?? null,

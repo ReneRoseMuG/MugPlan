@@ -85,6 +85,13 @@
       "when": 1773576000000,
       "tag": "0011_fix_fachregeln_order_items_and_cascades",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1773655200000,
+      "tag": "0012_default_category_flags",
+      "breakpoints": true
     }
   ]
 }

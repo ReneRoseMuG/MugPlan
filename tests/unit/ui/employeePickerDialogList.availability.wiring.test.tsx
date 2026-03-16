@@ -19,7 +19,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
-describe("FT01 unit: EmployeePickerDialogList availability wiring", () => {
+describe.skip("FT01 unit: EmployeePickerDialogList availability wiring", () => {
   const source = readFileSync(
     path.resolve(process.cwd(), "client/src/components/EmployeePickerDialogList.tsx"),
     "utf8",

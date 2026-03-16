@@ -31,7 +31,7 @@ type CascadePreviewItem = {
   tourName: string | null;
   currentEmployees: Array<{ id: number; fullName: string }>;
   eligible: boolean;
-  conflictReason: "EMPLOYEE_OVERLAP" | "EMPLOYEE_ABSENCE" | "EMPLOYEE_EXIT_DATE" | "ALREADY_ASSIGNED" | null;
+  conflictReason: "EMPLOYEE_OVERLAP" | "ALREADY_ASSIGNED" | null;
 };
 
 type CascadeDialogState = {

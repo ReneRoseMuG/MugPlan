@@ -20,12 +20,14 @@ import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
 import {
+  attachProjectTagFixture,
   createAppointmentFixture,
   createComponentFixture,
   createCustomerFixtureWithOverrides,
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
+  createTagFixture,
 } from "../../helpers/testDataFactory";
 import * as projectsService from "../../../server/services/projectsService";
 
@@ -73,6 +75,7 @@ async function createReportProjectFixture(params: {
     control: string;
     roof: string;
   }>;
+  tagNames?: string[];
 }) {
   const customer = await createCustomerFixtureWithOverrides({
     prefix: `${params.prefix}-CUST`,
@@ -113,6 +116,13 @@ async function createReportProjectFixture(params: {
     });
   }
 
+  const createdTags: string[] = [];
+  for (const tagName of params.tagNames ?? []) {
+    const tag = await createTagFixture(`${params.prefix}-${tagName}`);
+    await attachProjectTagFixture(project.id, tag.id);
+    createdTags.push(tag.name);
+  }
+
   if (params.articleValues?.sauna) {
     const product = await createProductFixture({
       categoryName: "Fass Saunen",
@@ -147,7 +157,7 @@ async function createReportProjectFixture(params: {
     });
   }
 
-  return { customer, project: updatedProject };
+  return { customer, project: updatedProject, createdTags };
 }
 
 describe("FT26 integration: report vorlaufliste", () => {
@@ -163,6 +173,7 @@ describe("FT26 integration: report vorlaufliste", () => {
       customerLastName: "Mustermann",
       postalCode: "12345",
       city: "Berlin",
+      tagNames: ["Tag B", "Tag A"],
       articleValues: {
         sauna: "Fasssauna Nord",
         door: "Ganzglas",
@@ -198,6 +209,9 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(response.body.items).toHaveLength(2);
     expect(response.body.items[0]).toEqual(expect.objectContaining({
       projectId: reportProject.project.id,
+      tags: expect.arrayContaining(
+        reportProject.createdTags.map((name) => expect.objectContaining({ name })),
+      ),
       customerFullName: "Mustermann, Max",
       postalCode: "12345",
       city: "Berlin",
@@ -232,6 +246,38 @@ describe("FT26 integration: report vorlaufliste", () => {
       expect.objectContaining({
         projectId: project.project.id,
         actualDate: "2099-06-15",
+      }),
+    ]);
+  });
+
+  it("filters report article columns by selected product and component category ids", async () => {
+    const admin = await loginAdminAgent(app);
+    const filteredProject = await createReportProjectFixture({
+      prefix: "FT26-FILTER",
+      appointmentDates: ["2099-06-20"],
+      articleValues: {
+        sauna: "Fasssauna Filter",
+        oven: "Ofen Filter",
+      },
+    });
+    const unrelatedProduct = await createProductFixture({
+      categoryName: "FT26 Fremdkategorie",
+      name: "Nicht fuer Sauna-Spalte",
+    });
+    const ovenComponent = await createComponentFixture({
+      categoryName: "Ofen",
+      name: "Ofen Filter 2",
+    });
+
+    const response = await admin
+      .get(`/api/reports/vorlaufliste?fromDate=2099-06-01&page=1&pageSize=100&productCategoryIds=${unrelatedProduct.categoryId}&componentCategoryIds=${ovenComponent.categoryId}`)
+      .expect(200);
+
+    expect(response.body.items).toEqual([
+      expect.objectContaining({
+        projectId: filteredProject.project.id,
+        sauna: null,
+        oven: "Ofen Filter",
       }),
     ]);
   });

@@ -100,6 +100,7 @@ export async function updateProductCategoryWithVersion(
     update product_categories
     set
       name = if(${input.name === undefined}, name, ${input.name ?? null}),
+      is_default = if(${input.isDefault === undefined}, is_default, ${input.isDefault ?? null}),
       is_active = if(${input.isActive === undefined}, is_active, ${input.isActive ?? null}),
       updated_at = now(),
       version = version + 1
@@ -163,6 +164,7 @@ export async function updateComponentCategoryWithVersion(
     update component_categories
     set
       name = if(${input.name === undefined}, name, ${input.name ?? null}),
+      is_default = if(${input.isDefault === undefined}, is_default, ${input.isDefault ?? null}),
       is_active = if(${input.isActive === undefined}, is_active, ${input.isActive ?? null}),
       updated_at = now(),
       version = version + 1

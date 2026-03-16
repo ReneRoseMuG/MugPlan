@@ -7,6 +7,9 @@ interface ProductSelectionDropdownProps {
   products: Product[];
   selectedProductId: string;
   onSelect: (productId: string) => void;
+  label?: string;
+  placeholder?: string;
+  testId?: string;
   dialogMode?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -18,11 +21,17 @@ function ProductSelectionDropdownPanel({
   selectedProductId,
   onSelect,
   onApply,
+  label,
+  placeholder,
+  testId,
 }: {
   products: Product[];
   selectedProductId: string;
   onSelect: (productId: string) => void;
   onApply: () => void;
+  label?: string;
+  placeholder?: string;
+  testId?: string;
 }) {
   const [draftSelection, setDraftSelection] = useState(selectedProductId);
 
@@ -44,10 +53,10 @@ function ProductSelectionDropdownPanel({
 
   return (
     <CollectionDropDown
-      label="Saunamodell"
+      label={label ?? "Saunamodell"}
       value={draftSelection}
       options={options}
-      placeholder="Saunamodell auswählen"
+      placeholder={placeholder ?? "Saunamodell auswaehlen"}
       onSelect={setDraftSelection}
       showAdopt
       onAdopt={() => {
@@ -55,7 +64,7 @@ function ProductSelectionDropdownPanel({
         onApply();
       }}
       adoptDisabled={!draftSelection}
-      testId="select-project-product-saunamodel"
+      testId={testId ?? "select-project-product-saunamodel"}
     />
   );
 }
@@ -64,6 +73,9 @@ export function ProductSelectionDropdown({
   products,
   selectedProductId,
   onSelect,
+  label,
+  placeholder,
+  testId,
   dialogMode = false,
   open = true,
   onOpenChange,
@@ -74,6 +86,9 @@ export function ProductSelectionDropdown({
       products={products}
       selectedProductId={selectedProductId}
       onSelect={onSelect}
+      label={label}
+      placeholder={placeholder}
+      testId={testId}
       onApply={() => {
         if (dialogMode) {
           onOpenChange?.(false);
@@ -90,7 +105,7 @@ export function ProductSelectionDropdown({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title ?? "Saunamodell auswählen"}</DialogTitle>
+          <DialogTitle>{title ?? `${label ?? "Saunamodell"} auswaehlen`}</DialogTitle>
         </DialogHeader>
         {panel}
       </DialogContent>

@@ -15,7 +15,7 @@ function getRoleKeyFromRequest(req: Request) {
 
 export async function listEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { scope, appointmentDate, includeUnavailable } = api.employees.list.input.parse(req.query);
+    const { scope, appointmentDate } = api.employees.list.input.parse(req.query);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
       res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
@@ -23,11 +23,6 @@ export async function listEmployees(req: Request, res: Response, next: NextFunct
     }
     if (appointmentDate && !/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
       res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (appointmentDate && includeUnavailable === "true") {
-      const availability = await employeesService.listEmployeesAvailabilityForAppointmentDate(roleKey, appointmentDate, scope);
-      res.json(availability);
       return;
     }
 

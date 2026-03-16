@@ -367,6 +367,7 @@ export type UpdateProject = z.infer<typeof updateProjectSchema>;
 export const productCategories = mysqlTable("product_categories", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull().unique(),
+  isDefault: boolean("is_default").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -381,6 +382,7 @@ export const insertProductCategorySchema = createInsertSchema(productCategories)
 
 export const updateProductCategorySchema = z.object({
   name: z.string().optional(),
+  isDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),
   version: z.number().int().optional(),
 }).partial();
@@ -393,6 +395,7 @@ export type UpdateProductCategory = z.infer<typeof updateProductCategorySchema>;
 export const componentCategories = mysqlTable("component_categories", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull().unique(),
+  isDefault: boolean("is_default").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -407,6 +410,7 @@ export const insertComponentCategorySchema = createInsertSchema(componentCategor
 
 export const updateComponentCategorySchema = z.object({
   name: z.string().optional(),
+  isDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),
   version: z.number().int().optional(),
 }).partial();

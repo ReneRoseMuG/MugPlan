@@ -109,7 +109,6 @@ export async function executeAddTourEmployeeCascade(req: Request, res: Response,
       res.status(err.status).json({
         code: err.code,
         ...(err.conflictEmployees ? { conflictEmployees: err.conflictEmployees } : {}),
-        ...(err.availabilityConflicts ? { availabilityConflicts: err.availabilityConflicts } : {}),
       });
       return;
     }
@@ -159,7 +158,6 @@ export async function executeRemoveTourEmployeeCascade(req: Request, res: Respon
       res.status(err.status).json({
         code: err.code,
         ...(err.conflictEmployees ? { conflictEmployees: err.conflictEmployees } : {}),
-        ...(err.availabilityConflicts ? { availabilityConflicts: err.availabilityConflicts } : {}),
       });
       return;
     }

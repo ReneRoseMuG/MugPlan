@@ -1,0 +1,488 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - list
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - heading [level=1]: MuG Plan
+          - navigation:
+            - generic:
+              - generic: Terminplanung
+              - generic:
+                - button:
+                  - img
+                  - generic: Wochenuebersicht
+                - button:
+                  - img
+                  - generic: Monatsuebersicht
+                - button:
+                  - img
+                  - generic: Termine
+            - generic:
+              - generic: Projektplanung
+              - generic:
+                - button:
+                  - img
+                  - generic: Projekte
+                - button:
+                  - img
+                  - generic: Kunden
+            - generic:
+              - generic: Reports
+              - generic:
+                - button:
+                  - img
+                  - generic: Reports
+                - button:
+                  - img
+                  - generic: Monitoring
+                  - generic: "0"
+            - generic:
+              - generic: Mitarbeiter Verwaltung
+              - generic:
+                - button:
+                  - img
+                  - generic: Mitarbeiter
+                - button:
+                  - img
+                  - generic: Teams
+                - button:
+                  - img
+                  - generic: Touren
+            - generic:
+              - generic: Administration
+              - generic:
+                - button:
+                  - img
+                  - generic: Stammdaten
+                - button:
+                  - img
+                  - generic: Hilfetexte
+                - button:
+                  - img
+                  - generic: Benutzerverwaltung
+                - button:
+                  - img
+                  - generic: Einstellungen
+                - button:
+                  - img
+                  - generic: Demo-Daten
+            - generic:
+              - button:
+                - img
+                - generic: Logout
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - button: <
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: KW 12
+                      - generic: 16. März - 22. März 2026
+                    - button: Touren zuklappen
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Montag
+                                - generic: "16"
+                            - generic:
+                              - generic:
+                                - generic: Dienstag
+                                - generic: "17"
+                                - generic:
+                                  - generic: "1"
+                            - generic:
+                              - generic:
+                                - generic: Mittwoch
+                                - generic: "18"
+                                - generic:
+                                  - generic: "1"
+                            - generic:
+                              - generic:
+                                - generic: Donnerstag
+                                - generic: "19"
+                            - generic:
+                              - generic:
+                                - generic: Freitag
+                                - generic: "20"
+                            - generic:
+                              - generic:
+                                - generic: Samstag
+                                - generic: "21"
+                            - generic:
+                              - generic:
+                                - generic: Sonntag
+                                - generic: "22"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Tour 1
+                                - generic:
+                                  - button [ref=e1] [cursor=pointer]: +
+                                  - generic:
+                                    - generic: 1 Termin
+                                    - button [ref=e2] [cursor=pointer]: +
+                                  - generic:
+                                    - generic: 1 Termin
+                                    - button [ref=e3] [cursor=pointer]: +
+                                  - button [ref=e4] [cursor=pointer]: +
+                                  - button [ref=e5] [cursor=pointer]: +
+                                  - button [ref=e6] [cursor=pointer]: +
+                                  - button [ref=e7] [cursor=pointer]: +
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                          - generic: 17.03.26
+                                          - generic: Tag 1
+                                        - generic:
+                                          - generic: "K: FT31-BROWSER-CUST-0001"
+                                      - generic:
+                                        - generic:
+                                          - generic: 18.03.26
+                                          - generic: Tag 2
+                                        - generic:
+                                          - generic: "PLZ: -"
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic: FT31-BROWSER-CUST-0001, Fixture
+                                            - generic: "-"
+                                            - generic: "-"
+                                          - generic:
+                                            - generic: ORD-FT31-BROWSER-0002 - Print Browser Projekt
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - img
+                                                  - text: Keine Mitarbeiter
+                                                - generic: "0"
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - img
+                                                  - text: Notizen
+                                                - generic: "1"
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Ohne Tour
+                                - generic:
+                                  - button [ref=e8] [cursor=pointer]: +
+                                  - button [ref=e9] [cursor=pointer]: +
+                                  - button [ref=e10] [cursor=pointer]: +
+                                  - button [ref=e11] [cursor=pointer]: +
+                                  - button [ref=e12] [cursor=pointer]: +
+                                  - button [ref=e13] [cursor=pointer]: +
+                                  - button [ref=e14] [cursor=pointer]: +
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Montag
+                                - generic: "23"
+                            - generic:
+                              - generic:
+                                - generic: Dienstag
+                                - generic: "24"
+                            - generic:
+                              - generic:
+                                - generic: Mittwoch
+                                - generic: "25"
+                            - generic:
+                              - generic:
+                                - generic: Donnerstag
+                                - generic: "26"
+                            - generic:
+                              - generic:
+                                - generic: Freitag
+                                - generic: "27"
+                            - generic:
+                              - generic:
+                                - generic: Samstag
+                                - generic: "28"
+                            - generic:
+                              - generic:
+                                - generic: Sonntag
+                                - generic: "29"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Tour 1
+                                - generic:
+                                  - button [ref=e15] [cursor=pointer]: +
+                                  - button [ref=e16] [cursor=pointer]: +
+                                  - button [ref=e17] [cursor=pointer]: +
+                                  - button [ref=e18] [cursor=pointer]: +
+                                  - button [ref=e19] [cursor=pointer]: +
+                                  - button [ref=e20] [cursor=pointer]: +
+                                  - button [ref=e21] [cursor=pointer]: +
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Ohne Tour
+                                - generic:
+                                  - button [ref=e22] [cursor=pointer]: +
+                                  - button [ref=e23] [cursor=pointer]: +
+                                  - button [ref=e24] [cursor=pointer]: +
+                                  - button [ref=e25] [cursor=pointer]: +
+                                  - button [ref=e26] [cursor=pointer]: +
+                                  - button [ref=e27] [cursor=pointer]: +
+                                  - button [ref=e28] [cursor=pointer]: +
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Montag
+                                - generic: "30"
+                            - generic:
+                              - generic:
+                                - generic: Dienstag
+                                - generic: "31"
+                            - generic:
+                              - generic:
+                                - generic: Mittwoch
+                                - generic: "1"
+                            - generic:
+                              - generic:
+                                - generic: Donnerstag
+                                - generic: "2"
+                            - generic:
+                              - generic:
+                                - generic: Freitag
+                                - generic: "3"
+                            - generic:
+                              - generic:
+                                - generic: Samstag
+                                - generic: "4"
+                            - generic:
+                              - generic:
+                                - generic: Sonntag
+                                - generic: "5"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Tour 1
+                                - generic:
+                                  - button [ref=e29] [cursor=pointer]: +
+                                  - button [ref=e30] [cursor=pointer]: +
+                                  - button [ref=e31] [cursor=pointer]: +
+                                  - button [ref=e32] [cursor=pointer]: +
+                                  - button [ref=e33] [cursor=pointer]: +
+                                  - button [ref=e34] [cursor=pointer]: +
+                                  - button [ref=e35] [cursor=pointer]: +
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Ohne Tour
+                                - generic:
+                                  - button [ref=e36] [cursor=pointer]: +
+                                  - button [ref=e37] [cursor=pointer]: +
+                                  - button [ref=e38] [cursor=pointer]: +
+                                  - button [ref=e39] [cursor=pointer]: +
+                                  - button [ref=e40] [cursor=pointer]: +
+                                  - button [ref=e41] [cursor=pointer]: +
+                                  - button [ref=e42] [cursor=pointer]: +
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Montag
+                                - generic: "6"
+                            - generic:
+                              - generic:
+                                - generic: Dienstag
+                                - generic: "7"
+                            - generic:
+                              - generic:
+                                - generic: Mittwoch
+                                - generic: "8"
+                            - generic:
+                              - generic:
+                                - generic: Donnerstag
+                                - generic: "9"
+                            - generic:
+                              - generic:
+                                - generic: Freitag
+                                - generic: "10"
+                            - generic:
+                              - generic:
+                                - generic: Samstag
+                                - generic: "11"
+                            - generic:
+                              - generic:
+                                - generic: Sonntag
+                                - generic: "12"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Tour 1
+                                - generic:
+                                  - button [ref=e43] [cursor=pointer]: +
+                                  - button [ref=e44] [cursor=pointer]: +
+                                  - button [ref=e45] [cursor=pointer]: +
+                                  - button [ref=e46] [cursor=pointer]: +
+                                  - button [ref=e47] [cursor=pointer]: +
+                                  - button [ref=e48] [cursor=pointer]: +
+                                  - button [ref=e49] [cursor=pointer]: +
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Ohne Tour
+                                - generic:
+                                  - button [ref=e50] [cursor=pointer]: +
+                                  - button [ref=e51] [cursor=pointer]: +
+                                  - button [ref=e52] [cursor=pointer]: +
+                                  - button [ref=e53] [cursor=pointer]: +
+                                  - button [ref=e54] [cursor=pointer]: +
+                                  - button [ref=e55] [cursor=pointer]: +
+                                  - button [ref=e56] [cursor=pointer]: +
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Montag
+                                - generic: "13"
+                            - generic:
+                              - generic:
+                                - generic: Dienstag
+                                - generic: "14"
+                            - generic:
+                              - generic:
+                                - generic: Mittwoch
+                                - generic: "15"
+                            - generic:
+                              - generic:
+                                - generic: Donnerstag
+                                - generic: "16"
+                            - generic:
+                              - generic:
+                                - generic: Freitag
+                                - generic: "17"
+                            - generic:
+                              - generic:
+                                - generic: Samstag
+                                - generic: "18"
+                            - generic:
+                              - generic:
+                                - generic: Sonntag
+                                - generic: "19"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Tour 1
+                                - generic:
+                                  - button [ref=e57] [cursor=pointer]: +
+                                  - button [ref=e58] [cursor=pointer]: +
+                                  - button [ref=e59] [cursor=pointer]: +
+                                  - button [ref=e60] [cursor=pointer]: +
+                                  - button [ref=e61] [cursor=pointer]: +
+                                  - button [ref=e62] [cursor=pointer]: +
+                                  - button [ref=e63] [cursor=pointer]: +
+                            - generic:
+                              - generic:
+                                - button [expanded]:
+                                  - generic:
+                                    - generic: Ohne Tour
+                                - generic:
+                                  - button [ref=e64] [cursor=pointer]: +
+                                  - button [ref=e65] [cursor=pointer]: +
+                                  - button [ref=e66] [cursor=pointer]: +
+                                  - button [ref=e67] [cursor=pointer]: +
+                                  - button [ref=e68] [cursor=pointer]: +
+                                  - button [ref=e69] [cursor=pointer]: +
+                                  - button [ref=e70] [cursor=pointer]: +
+              - button: ">"
+            - generic:
+              - generic:
+                - generic: Kalenderfilter
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Mitarbeiter
+                        - combobox:
+                          - generic: Alle Mitarbeiter
+                          - img
+                      - generic:
+                        - generic: Darstellungsmodus
+                        - combobox:
+                          - generic: Standard
+                          - img
+                    - generic:
+                      - generic: Wochenplanung drucken
+                      - generic:
+                        - combobox:
+                          - generic: Tour 1
+                          - img
+                        - generic:
+                          - generic: Wochen
+                          - spinbutton: "2"
+                        - button: Druckvorschau
+  - dialog "Druckvorschau Tour-Zeitleiste" [active] [ref=e72]:
+    - generic [ref=e73]:
+      - generic [ref=e74]:
+        - heading "Druckvorschau Tour-Zeitleiste" [level=2] [ref=e75]
+        - paragraph [ref=e76]: Vorschau ohne echten Druck. Die Seiten werden einzeln geblaettert; der finale Druckablauf folgt spaeter.
+      - generic [ref=e77]:
+        - generic [ref=e78]: Seite 3 von 3
+        - generic [ref=e79]: Tour Tour 1 - Woche 2 - KW 13
+      - generic [ref=e80]:
+        - button "Vorherige Seite" [ref=e81] [cursor=pointer]:
+          - img [ref=e82]
+        - generic [ref=e85]:
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - paragraph [ref=e88]: Wochenansicht
+              - heading "Tour Tour 1 - Woche 2 - KW 13" [level=3] [ref=e89]
+            - paragraph [ref=e90]: 23.03.2026 / 29.03.2026
+          - generic [ref=e91]:
+            - generic [ref=e93]: Mo. 23.03.
+            - generic [ref=e96]: Di. 24.03.
+            - generic [ref=e99]: Mi. 25.03.
+            - generic [ref=e102]: Do. 26.03.
+            - generic [ref=e105]: Fr. 27.03.
+            - generic [ref=e108]: Sa. 28.03.
+            - generic [ref=e111]: So. 29.03.
+        - button "Naechste Seite" [disabled] [ref=e113]:
+          - img [ref=e114]
+    - button "Close" [ref=e116] [cursor=pointer]:
+      - img [ref=e117]
+      - generic [ref=e120]: Close
+```

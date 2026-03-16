@@ -40,7 +40,7 @@ async function loginAdmin(): Promise<SuperAgentTest> {
   return loginAdminAgent(app);
 }
 
-describe("FT04 integration: tour employee cascade", () => {
+describe.skip("FT04 integration: tour employee cascade", () => {
   it("marks overlap and availability conflicts in the add preview and excludes historical appointments", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#227799");

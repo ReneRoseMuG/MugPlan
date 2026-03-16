@@ -31,7 +31,7 @@ type ResolvedSettingRow = {
   key: string;
   label: string;
   description: string;
-  type: "enum" | "string" | "number" | "boolean";
+  type: "enum" | "string" | "number" | "boolean" | "json";
   constraints: Record<string, unknown>;
   allowedScopes: SettingScopeType[];
   defaultValue: unknown;

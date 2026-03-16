@@ -50,9 +50,6 @@ export async function createAppointment(req: Request, res: Response, next: NextF
       if (err.conflictEmployees) {
         payload.conflictEmployees = err.conflictEmployees;
       }
-      if (err.availabilityConflicts) {
-        payload.availabilityConflicts = err.availabilityConflicts;
-      }
       res.status(err.status).json(payload);
       return;
     }
@@ -86,9 +83,6 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
       const payload: Record<string, unknown> = { code: err.code, message: err.message };
       if (err.conflictEmployees) {
         payload.conflictEmployees = err.conflictEmployees;
-      }
-      if (err.availabilityConflicts) {
-        payload.availabilityConflicts = err.availabilityConflicts;
       }
       res.status(err.status).json(payload);
       return;

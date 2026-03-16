@@ -33,6 +33,7 @@ type EmployeeRow = {
 type ProductCategoryRow = {
   id: number;
   name: string;
+  isDefault: boolean;
   isActive: boolean;
   version: number;
 };
@@ -148,27 +149,29 @@ vi.mock("../../../server/services/helpTextsYamlService", () => ({
 
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
   getProductCategoryByName: vi.fn(async (name: string) => state.productCategories.find((entry) => entry.name === name)),
-  createProductCategory: vi.fn(async ({ name, isActive, version }: { name: string; isActive: boolean; version: number }) => {
-    const row: ProductCategoryRow = { id: state.ids.productCategory++, name, isActive, version };
+  createProductCategory: vi.fn(async ({ name, isDefault, isActive, version }: { name: string; isDefault: boolean; isActive: boolean; version: number }) => {
+    const row: ProductCategoryRow = { id: state.ids.productCategory++, name, isDefault, isActive, version };
     state.productCategories.push(row);
     return row;
   }),
-  updateProductCategoryWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { isActive?: boolean }) => {
+  updateProductCategoryWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { isDefault?: boolean; isActive?: boolean }) => {
     const row = state.productCategories.find((entry) => entry.id === id && entry.version === expectedVersion);
     if (!row) return { kind: "version_conflict" };
+    row.isDefault = input.isDefault ?? row.isDefault;
     row.isActive = input.isActive ?? row.isActive;
     row.version += 1;
     return { kind: "updated", row: { ...row } };
   }),
   getComponentCategoryByName: vi.fn(async (name: string) => state.componentCategories.find((entry) => entry.name === name)),
-  createComponentCategory: vi.fn(async ({ name, isActive, version }: { name: string; isActive: boolean; version: number }) => {
-    const row: ComponentCategoryRow = { id: state.ids.componentCategory++, name, isActive, version };
+  createComponentCategory: vi.fn(async ({ name, isDefault, isActive, version }: { name: string; isDefault: boolean; isActive: boolean; version: number }) => {
+    const row: ComponentCategoryRow = { id: state.ids.componentCategory++, name, isDefault, isActive, version };
     state.componentCategories.push(row);
     return row;
   }),
-  updateComponentCategoryWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { isActive?: boolean }) => {
+  updateComponentCategoryWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { isDefault?: boolean; isActive?: boolean }) => {
     const row = state.componentCategories.find((entry) => entry.id === id && entry.version === expectedVersion);
     if (!row) return { kind: "version_conflict" };
+    row.isDefault = input.isDefault ?? row.isDefault;
     row.isActive = input.isActive ?? row.isActive;
     row.version += 1;
     return { kind: "updated", row: { ...row } };
@@ -413,8 +416,8 @@ describe("FT27 unit: master data seed services", () => {
   });
 
   it("exports and applies product management data with category upserts", async () => {
-    state.productCategories = [{ id: 1, name: "Bestehend", isActive: true, version: 1 }];
-    state.componentCategories = [{ id: 1, name: "Vorhanden", isActive: true, version: 1 }];
+    state.productCategories = [{ id: 1, name: "Bestehend", isDefault: false, isActive: true, version: 1 }];
+    state.componentCategories = [{ id: 1, name: "Vorhanden", isDefault: false, isActive: true, version: 1 }];
     state.products = [{ id: 1, name: "Produkt A", shortCode: "PA", description: "Alt", categoryId: 1, isActive: true, version: 1 }];
     state.components = [{ id: 1, name: "Komponente A", shortCode: "KA", description: "Alt", categoryId: 1, isActive: true, version: 1 }];
     state.ids.productCategory = 2;
@@ -425,18 +428,30 @@ describe("FT27 unit: master data seed services", () => {
     const { exportProductManagementSeed, applyProductManagementSeed } = await import("../../../server/services/seedProductManagementService");
 
     await exportProductManagementSeed();
+    await expect(readSeedFile(tempRoot, "product-categories.csv")).resolves.toContain("Bestehend;false;true");
+    await expect(readSeedFile(tempRoot, "component-categories.csv")).resolves.toContain("Vorhanden;false;true");
     await expect(readSeedFile(tempRoot, "products.csv")).resolves.toContain("Produkt A;PA;Alt;Bestehend");
     await expect(readSeedFile(tempRoot, "components.csv")).resolves.toContain("Komponente A;KA;Alt;Vorhanden");
 
     await writeSeedFile(
       tempRoot,
+      "product-categories.csv",
+      "Name;IsDefault;IsActive\nNeue Kategorie;true;true\nBestehend;false;true\nInaktive Kategorie;false;false\n",
+    );
+    await writeSeedFile(
+      tempRoot,
+      "component-categories.csv",
+      "Name;IsDefault;IsActive\nNeue Komponentenkategorie;true;true\nVorhanden;false;true\nInaktive Komponentenkategorie;false;false\n",
+    );
+    await writeSeedFile(
+      tempRoot,
       "products.csv",
-      "Name;ShortCode;Beschreibung;Kategorie\nProdukt A;PX;Neu;Neue Kategorie\nProdukt B;PB;Beschreibung B;\n;LX;Leer;Ignoriert\n",
+      "Name;ShortCode;Beschreibung;Kategorie\nProdukt A;PX;Neu;Neue Kategorie\nProdukt B;PB;Beschreibung B;Neue Kategorie\n;LX;Leer;Ignoriert\n",
     );
     await writeSeedFile(
       tempRoot,
       "components.csv",
-      "Name;ShortCode;Beschreibung;Kategorie\nKomponente A;KX;Neu;Neue Komponentenkategorie\nKomponente B;KB;Beschreibung B;\n",
+      "Name;ShortCode;Beschreibung;Kategorie\nKomponente A;KX;Neu;Neue Komponentenkategorie\nKomponente B;KB;Beschreibung B;Neue Komponentenkategorie\n",
     );
 
     const firstRun = await applyProductManagementSeed();
@@ -451,12 +466,13 @@ describe("FT27 unit: master data seed services", () => {
     expect(state.products.find((entry) => entry.name === "Produkt A")?.shortCode).toBe("PX");
     expect(state.components.find((entry) => entry.name === "Komponente B")?.shortCode).toBe("KB");
     expect(secondRun.logLines).toContain("Produkt aktualisiert: Produkt B");
-    expect(state.productCategories.some((entry) => entry.name === "Fass Saunen")).toBe(true);
+    expect(state.productCategories.some((entry) => entry.name === "Neue Kategorie" && entry.isDefault)).toBe(true);
+    expect(state.componentCategories.some((entry) => entry.name === "Neue Komponentenkategorie" && entry.isDefault)).toBe(true);
   });
 
   it("defaults product and component seed rows to active when the Is Active header is missing", async () => {
-    state.productCategories = [{ id: 1, name: "Fass Saunen", isActive: true, version: 1 }];
-    state.componentCategories = [{ id: 1, name: "Dachvarianten", isActive: true, version: 1 }];
+    state.productCategories = [{ id: 1, name: "Kategorie A", isDefault: true, isActive: true, version: 1 }];
+    state.componentCategories = [{ id: 1, name: "Kategorie B", isDefault: true, isActive: true, version: 1 }];
     state.products = [{ id: 1, name: "Produkt A", shortCode: null, description: "Alt", categoryId: 1, isActive: false, version: 1 }];
     state.components = [{ id: 1, name: "Komponente A", shortCode: null, description: "Alt", categoryId: 1, isActive: false, version: 1 }];
     state.ids.product = 2;
@@ -464,13 +480,23 @@ describe("FT27 unit: master data seed services", () => {
 
     await writeSeedFile(
       tempRoot,
+      "product-categories.csv",
+      "Name;IsDefault;IsActive\nKategorie A;true;true\n",
+    );
+    await writeSeedFile(
+      tempRoot,
+      "component-categories.csv",
+      "Name;IsDefault;IsActive\nKategorie B;true;true\n",
+    );
+    await writeSeedFile(
+      tempRoot,
       "products.csv",
-      "Name;Beschreibung;Kategorie\nProdukt A;Neu;Fass Saunen\nProdukt B;Beschreibung B;Fass Saunen\n",
+      "Name;Beschreibung;Kategorie\nProdukt A;Neu;Kategorie A\nProdukt B;Beschreibung B;Kategorie A\n",
     );
     await writeSeedFile(
       tempRoot,
       "components.csv",
-      "Name;Beschreibung;Kategorie\nKomponente A;Neu;Dachvarianten\nKomponente B;Beschreibung B;Dachvarianten\n",
+      "Name;Beschreibung;Kategorie\nKomponente A;Neu;Kategorie B\nKomponente B;Beschreibung B;Kategorie B\n",
     );
 
     const { applyProductManagementSeed } = await import("../../../server/services/seedProductManagementService");
@@ -487,19 +513,33 @@ describe("FT27 unit: master data seed services", () => {
 
     await expect(applyProductManagementSeed()).resolves.toEqual(
       expect.objectContaining({
-        sourceFile: "products.csv",
+        sourceFile: "product-categories.csv",
         exists: false,
         logLines: expect.arrayContaining([
+          "Quelldatei fehlt: product-categories.csv",
+          "Quelldatei fehlt: component-categories.csv",
           "Quelldatei fehlt: products.csv",
           "Quelldatei fehlt: components.csv",
         ]),
       }),
     );
 
+    await writeSeedFile(tempRoot, "product-categories.csv", "Name;IsDefault;IsActive\nKategorie A;true;true\n");
+    await writeSeedFile(tempRoot, "component-categories.csv", "Name;IsDefault;IsActive\nKategorie B;true;true\n");
     await writeSeedFile(tempRoot, "products.csv", "Name;Beschreibung;Kategorie\n\"offen;kaputt;Kategorie\n");
     await writeSeedFile(tempRoot, "components.csv", "Name;Beschreibung;Kategorie\nKomponente;Okay;Kategorie\n");
 
     await expect(applyProductManagementSeed()).rejects.toThrow("INVALID_CSV_FORMAT");
+  });
+
+  it("rejects product rows that reference unknown categories", async () => {
+    await writeSeedFile(tempRoot, "product-categories.csv", "Name;IsDefault;IsActive\nKategorie A;true;true\n");
+    await writeSeedFile(tempRoot, "component-categories.csv", "Name;IsDefault;IsActive\nKategorie B;true;true\n");
+    await writeSeedFile(tempRoot, "products.csv", "Name;Beschreibung;Kategorie\nProdukt A;Neu;Unbekannt\n");
+
+    const { applyProductManagementSeed } = await import("../../../server/services/seedProductManagementService");
+
+    await expect(applyProductManagementSeed()).rejects.toThrow("Produkt Produkt A verweist auf unbekannte Kategorie: Unbekannt");
   });
 
   it("exports and applies note templates with duplicate updates and sort fallback", async () => {

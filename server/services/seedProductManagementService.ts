@@ -2,19 +2,10 @@ import * as masterDataRepository from "../repositories/masterDataRepository";
 import { getSeedFileStatus, readSeedFileUtf8, writeSeedFileUtf8, type SeedFileStatus } from "./seedFileStoreService";
 import { hasCsvHeader, parseBooleanFlag, parseCsvWithHeaders, stringifyCsv } from "./seedCsvService";
 
+const PRODUCT_CATEGORIES_FILE_NAME = "product-categories.csv";
+const COMPONENT_CATEGORIES_FILE_NAME = "component-categories.csv";
 const PRODUCTS_FILE_NAME = "products.csv";
 const COMPONENTS_FILE_NAME = "components.csv";
-const DEFAULT_PRODUCT_CATEGORY_NAME = "Fass Saunen";
-const DEFAULT_COMPONENT_CATEGORY_NAMES = [
-  "Dachvarianten",
-  "Fenster",
-  "Inneneinrichtung",
-  "Öfen",
-  "Rückwände",
-  "Steuerungen",
-  "Türen",
-  "Vorderwände",
-] as const;
 
 export type SeedExecutionResult = {
   sourceFile: string;
@@ -22,39 +13,106 @@ export type SeedExecutionResult = {
   logLines: string[];
 };
 
-async function ensureProductCategory(name: string, logLines: string[]): Promise<number> {
-  const existing = await masterDataRepository.getProductCategoryByName(name);
-  if (!existing) {
-    const created = await masterDataRepository.createProductCategory({ name, isActive: true, version: 1 });
-    logLines.push(`Produktkategorie angelegt: ${name}`);
-    return created.id;
-  }
-  if (!existing.isActive) {
-    await masterDataRepository.updateProductCategoryWithVersion(existing.id, existing.version, { isActive: true });
-    logLines.push(`Produktkategorie reaktiviert: ${name}`);
-  }
-  return existing.id;
+type CategoryKind = "Produktkategorie" | "Komponentenkategorie";
+
+type CategoryRow = {
+  id: number;
+  name: string;
+  isDefault: boolean;
+  isActive: boolean;
+  version: number;
+};
+
+function createDuplicateKeyError(kind: CategoryKind, name: string) {
+  throw new Error(`${kind} doppelt in Datei: ${name}`);
 }
 
-async function ensureComponentCategory(name: string, logLines: string[]): Promise<number> {
-  const existing = await masterDataRepository.getComponentCategoryByName(name);
-  if (!existing) {
-    const created = await masterDataRepository.createComponentCategory({ name, isActive: true, version: 1 });
-    logLines.push(`Komponentenkategorie angelegt: ${name}`);
-    return created.id;
-  }
-  if (!existing.isActive) {
-    await masterDataRepository.updateComponentCategoryWithVersion(existing.id, existing.version, { isActive: true });
-    logLines.push(`Komponentenkategorie reaktiviert: ${name}`);
-  }
-  return existing.id;
+function createMissingCategoryError(kind: "Produkt" | "Komponente", entryName: string, categoryName: string) {
+  throw new Error(`${kind} ${entryName} verweist auf unbekannte Kategorie: ${categoryName}`);
 }
 
-async function ensureDefaultCategories(logLines: string[]) {
-  await ensureProductCategory(DEFAULT_PRODUCT_CATEGORY_NAME, logLines);
-  for (const categoryName of DEFAULT_COMPONENT_CATEGORY_NAMES) {
-    await ensureComponentCategory(categoryName, logLines);
+async function syncCategories(
+  fileName: string,
+  kind: CategoryKind,
+  listExisting: () => Promise<CategoryRow[]>,
+  getByName: (name: string) => Promise<CategoryRow | undefined>,
+  createCategory: (input: { name: string; isDefault: boolean; isActive: boolean; version: number }) => Promise<CategoryRow>,
+  updateCategory: (id: number, expectedVersion: number, input: { isDefault?: boolean; isActive?: boolean }) => Promise<unknown>,
+  logLines: string[],
+) {
+  const parsed = parseCsvWithHeaders(await readSeedFileUtf8(fileName));
+  const hasIsDefaultHeader = hasCsvHeader(parsed.headers, "IsDefault");
+  const hasIsActiveHeader = hasCsvHeader(parsed.headers, "IsActive");
+  const rows = parsed.rows;
+  const seenNames = new Set<string>();
+  const importedNames = new Set<string>();
+
+  for (const row of rows) {
+    const name = (row.Name ?? "").trim();
+    if (!name) {
+      logLines.push(`${kind} uebersprungen: Name fehlt`);
+      continue;
+    }
+    if (seenNames.has(name)) {
+      createDuplicateKeyError(kind, name);
+    }
+    seenNames.add(name);
+
+    const existing = await getByName(name);
+    const isDefault = hasIsDefaultHeader
+      ? parseBooleanFlag(row.IsDefault ?? "", existing?.isDefault ?? false)
+      : existing?.isDefault ?? false;
+    const isActive = hasIsActiveHeader
+      ? parseBooleanFlag(row.IsActive ?? "", existing?.isActive ?? true)
+      : existing?.isActive ?? true;
+
+    if (!existing) {
+      await createCategory({
+        name,
+        isDefault,
+        isActive,
+        version: 1,
+      });
+      logLines.push(`${kind} angelegt: ${name}`);
+    } else if (existing.isDefault !== isDefault || existing.isActive !== isActive) {
+      await updateCategory(existing.id, existing.version, {
+        isDefault,
+        isActive,
+      });
+      logLines.push(`${kind} aktualisiert: ${name}`);
+    } else {
+      logLines.push(`${kind} bereits vorhanden: ${name}`);
+    }
+
+    importedNames.add(name);
   }
+
+  const existingCategories = await listExisting();
+  for (const category of existingCategories) {
+    if (importedNames.has(category.name) || !category.isActive) {
+      continue;
+    }
+    await updateCategory(category.id, category.version, { isActive: false });
+    logLines.push(`${kind} deaktiviert: ${category.name}`);
+  }
+}
+
+async function resolveProductCategoryIdsByName() {
+  const categories = await masterDataRepository.listProductCategories("all");
+  return new Map(categories.map((category) => [category.name, category.id]));
+}
+
+async function resolveComponentCategoryIdsByName() {
+  const categories = await masterDataRepository.listComponentCategories("all");
+  return new Map(categories.map((category) => [category.name, category.id]));
+}
+
+export async function getProductCategorySeedStatus(): Promise<SeedFileStatus> {
+  return getSeedFileStatus(PRODUCT_CATEGORIES_FILE_NAME);
+}
+
+export async function getComponentCategorySeedStatus(): Promise<SeedFileStatus> {
+  return getSeedFileStatus(COMPONENT_CATEGORIES_FILE_NAME);
 }
 
 export async function getProductSeedStatus(): Promise<SeedFileStatus> {
@@ -66,18 +124,60 @@ export async function getComponentSeedStatus(): Promise<SeedFileStatus> {
 }
 
 export async function exportProductManagementSeed(): Promise<SeedExecutionResult> {
+  const productCategories = await masterDataRepository.listProductCategories("all");
+  const componentCategories = await masterDataRepository.listComponentCategories("all");
   const products = await masterDataRepository.listProducts("all");
   const components = await masterDataRepository.listComponents("all");
   const logLines: string[] = [];
 
+  if (productCategories.length > 0) {
+    await writeSeedFileUtf8(
+      PRODUCT_CATEGORIES_FILE_NAME,
+      stringifyCsv(
+        ["Name", "IsDefault", "IsActive"],
+        productCategories.map((category) => [
+          category.name,
+          category.isDefault ? "true" : "false",
+          category.isActive ? "true" : "false",
+        ]),
+      ),
+    );
+    logLines.push(`Export geschrieben: ${PRODUCT_CATEGORIES_FILE_NAME}`);
+    logLines.push(`Produktkategorien exportiert: ${productCategories.length}`);
+  } else {
+    logLines.push(`Kein Export geschrieben: ${PRODUCT_CATEGORIES_FILE_NAME} (keine Produktkategorien vorhanden)`);
+  }
+
+  if (componentCategories.length > 0) {
+    await writeSeedFileUtf8(
+      COMPONENT_CATEGORIES_FILE_NAME,
+      stringifyCsv(
+        ["Name", "IsDefault", "IsActive"],
+        componentCategories.map((category) => [
+          category.name,
+          category.isDefault ? "true" : "false",
+          category.isActive ? "true" : "false",
+        ]),
+      ),
+    );
+    logLines.push(`Export geschrieben: ${COMPONENT_CATEGORIES_FILE_NAME}`);
+    logLines.push(`Komponentenkategorien exportiert: ${componentCategories.length}`);
+  } else {
+    logLines.push(`Kein Export geschrieben: ${COMPONENT_CATEGORIES_FILE_NAME} (keine Komponentenkategorien vorhanden)`);
+  }
+
   if (products.length > 0) {
-    const productCategories = await masterDataRepository.listProductCategories("all");
     const productCategoryNameById = new Map(productCategories.map((category) => [category.id, category.name]));
     await writeSeedFileUtf8(
       PRODUCTS_FILE_NAME,
       stringifyCsv(
         ["Name", "ShortCode", "Beschreibung", "Kategorie"],
-        products.map((product) => [product.name, product.shortCode ?? "", product.description ?? "", productCategoryNameById.get(product.categoryId) ?? ""]),
+        products.map((product) => [
+          product.name,
+          product.shortCode ?? "",
+          product.description ?? "",
+          productCategoryNameById.get(product.categoryId) ?? "",
+        ]),
       ),
     );
     logLines.push(`Export geschrieben: ${PRODUCTS_FILE_NAME}`);
@@ -87,13 +187,17 @@ export async function exportProductManagementSeed(): Promise<SeedExecutionResult
   }
 
   if (components.length > 0) {
-    const componentCategories = await masterDataRepository.listComponentCategories("all");
     const componentCategoryNameById = new Map(componentCategories.map((category) => [category.id, category.name]));
     await writeSeedFileUtf8(
       COMPONENTS_FILE_NAME,
       stringifyCsv(
         ["Name", "ShortCode", "Beschreibung", "Kategorie"],
-        components.map((component) => [component.name, component.shortCode ?? "", component.description ?? "", componentCategoryNameById.get(component.categoryId) ?? ""]),
+        components.map((component) => [
+          component.name,
+          component.shortCode ?? "",
+          component.description ?? "",
+          componentCategoryNameById.get(component.categoryId) ?? "",
+        ]),
       ),
     );
     logLines.push(`Export geschrieben: ${COMPONENTS_FILE_NAME}`);
@@ -103,32 +207,68 @@ export async function exportProductManagementSeed(): Promise<SeedExecutionResult
   }
 
   return {
-    sourceFile: PRODUCTS_FILE_NAME,
-    exists: products.length > 0 || components.length > 0,
+    sourceFile: PRODUCT_CATEGORIES_FILE_NAME,
+    exists: productCategories.length > 0 || componentCategories.length > 0 || products.length > 0 || components.length > 0,
     logLines,
   };
 }
 
 export async function applyProductManagementSeed(): Promise<SeedExecutionResult> {
-  const productsStatus = await getSeedFileStatus(PRODUCTS_FILE_NAME);
+  const productCategoriesStatus = await getProductCategorySeedStatus();
+  const componentCategoriesStatus = await getComponentCategorySeedStatus();
+  const productsStatus = await getProductSeedStatus();
   const componentsStatus = await getComponentSeedStatus();
   const logLines: string[] = [];
 
-  await ensureDefaultCategories(logLines);
+  if (productCategoriesStatus.exists) {
+    await syncCategories(
+      PRODUCT_CATEGORIES_FILE_NAME,
+      "Produktkategorie",
+      () => masterDataRepository.listProductCategories("all"),
+      masterDataRepository.getProductCategoryByName,
+      (input) => masterDataRepository.createProductCategory(input),
+      (id, expectedVersion, input) => masterDataRepository.updateProductCategoryWithVersion(id, expectedVersion, input),
+      logLines,
+    );
+  } else {
+    logLines.push(`Quelldatei fehlt: ${PRODUCT_CATEGORIES_FILE_NAME}`);
+  }
+
+  if (componentCategoriesStatus.exists) {
+    await syncCategories(
+      COMPONENT_CATEGORIES_FILE_NAME,
+      "Komponentenkategorie",
+      () => masterDataRepository.listComponentCategories("all"),
+      masterDataRepository.getComponentCategoryByName,
+      (input) => masterDataRepository.createComponentCategory(input),
+      (id, expectedVersion, input) => masterDataRepository.updateComponentCategoryWithVersion(id, expectedVersion, input),
+      logLines,
+    );
+  } else {
+    logLines.push(`Quelldatei fehlt: ${COMPONENT_CATEGORIES_FILE_NAME}`);
+  }
 
   if (productsStatus.exists) {
+    const productCategoryIdsByName = await resolveProductCategoryIdsByName();
     const parsedProducts = parseCsvWithHeaders(await readSeedFileUtf8(PRODUCTS_FILE_NAME));
     const hasProductIsActiveHeader = hasCsvHeader(parsedProducts.headers, "Is Active");
     const hasProductShortCodeHeader = hasCsvHeader(parsedProducts.headers, "ShortCode");
-    const productRows = parsedProducts.rows;
-    for (const row of productRows) {
+    const existingProducts = await masterDataRepository.listProducts("all");
+    for (const row of parsedProducts.rows) {
       const name = (row.Name ?? "").trim();
       if (!name) {
         logLines.push("Produkt uebersprungen: Name fehlt");
         continue;
       }
-      const categoryId = await ensureProductCategory((row.Kategorie ?? "").trim() || DEFAULT_PRODUCT_CATEGORY_NAME, logLines);
-      const existing = (await masterDataRepository.listProducts("all")).find((product) => product.name === name);
+      const categoryName = (row.Kategorie ?? "").trim();
+      if (!categoryName) {
+        throw createMissingCategoryError("Produkt", name, "<leer>");
+      }
+      const categoryId = productCategoryIdsByName.get(categoryName);
+      if (!categoryId) {
+        throw createMissingCategoryError("Produkt", name, categoryName);
+      }
+      const existing = existingProducts.find((product) => product.name === name);
       const isActive = hasProductIsActiveHeader
         ? parseBooleanFlag(row["Is Active"] ?? "", existing?.isActive ?? true)
         : true;
@@ -157,18 +297,26 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
   }
 
   if (componentsStatus.exists) {
+    const componentCategoryIdsByName = await resolveComponentCategoryIdsByName();
     const parsedComponents = parseCsvWithHeaders(await readSeedFileUtf8(COMPONENTS_FILE_NAME));
     const hasComponentIsActiveHeader = hasCsvHeader(parsedComponents.headers, "Is Active");
     const hasComponentShortCodeHeader = hasCsvHeader(parsedComponents.headers, "ShortCode");
-    const componentRows = parsedComponents.rows;
-    for (const row of componentRows) {
+    const existingComponents = await masterDataRepository.listComponents("all");
+    for (const row of parsedComponents.rows) {
       const name = (row.Name ?? "").trim();
       if (!name) {
         logLines.push("Komponente uebersprungen: Name fehlt");
         continue;
       }
-      const categoryId = await ensureComponentCategory((row.Kategorie ?? "").trim() || DEFAULT_COMPONENT_CATEGORY_NAMES[0], logLines);
-      const existing = (await masterDataRepository.listComponents("all")).find((component) => component.name === name);
+      const categoryName = (row.Kategorie ?? "").trim();
+      if (!categoryName) {
+        throw createMissingCategoryError("Komponente", name, "<leer>");
+      }
+      const categoryId = componentCategoryIdsByName.get(categoryName);
+      if (!categoryId) {
+        throw createMissingCategoryError("Komponente", name, categoryName);
+      }
+      const existing = existingComponents.find((component) => component.name === name);
       const isActive = hasComponentIsActiveHeader
         ? parseBooleanFlag(row["Is Active"] ?? "", existing?.isActive ?? true)
         : true;
@@ -197,8 +345,8 @@ export async function applyProductManagementSeed(): Promise<SeedExecutionResult>
   }
 
   return {
-    sourceFile: PRODUCTS_FILE_NAME,
-    exists: productsStatus.exists || componentsStatus.exists,
+    sourceFile: PRODUCT_CATEGORIES_FILE_NAME,
+    exists: productCategoriesStatus.exists || componentCategoriesStatus.exists || productsStatus.exists || componentsStatus.exists,
     logLines,
   };
 }

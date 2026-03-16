@@ -6,7 +6,8 @@
  * Abgedeckte Regeln:
  * - Alle Seed-Services lesen und schreiben Dateien in einem externen Temp-Ordner ausserhalb des Projekts.
  * - Tag-Seeds laufen ueber denselben externen Temp-Pfad und bleiben bei Wiederholung duplikatsicher.
- * - Importe erzeugen fehlende Objekte, aktualisieren Duplikate per Upsert und loeschen keine nicht gelisteten Daten.
+ * - Kategorie-, Produkt- und Komponenten-Dateien werden getrennt verwaltet; Kategorien sind die autoritative Quelle fuer ihren Status.
+ * - Importe erzeugen fehlende Objekte, aktualisieren Duplikate per Upsert und deaktivieren nicht gelistete Kategorien statt sie still zu behalten.
  * - Fehlende Dateien werden pro Domaene sauber gemeldet.
  * - Formatfehler schlagen kontrolliert fehl.
  *
@@ -136,7 +137,7 @@ describe("FT27 integration: seed file services", () => {
     expect(rows.find((entry) => entry.helpKey === "seed.beta")?.title).toBe("Beta");
   });
 
-  it("exports and reapplies product management files with category creation and duplicate-safe upserts", async () => {
+  it("exports and reapplies product management files with dedicated category csvs", async () => {
     const existingProductCategory = await ensureProductCategoryFixture("Export Kategorie");
     const existingComponentCategory = await ensureComponentCategoryFixture("Export Komponenten");
     await masterDataRepository.createProduct({
@@ -157,9 +158,19 @@ describe("FT27 integration: seed file services", () => {
     });
 
     await exportProductManagementSeed();
+    await expect(readSeedFile("product-categories.csv")).resolves.toContain("Export Kategorie;false;true");
+    await expect(readSeedFile("component-categories.csv")).resolves.toContain("Export Komponenten;false;true");
     await expect(readSeedFile("products.csv")).resolves.toContain("Export Produkt;EXP-P;Alt;Export Kategorie");
     await expect(readSeedFile("components.csv")).resolves.toContain("Export Komponente;EXP-K;Alt;Export Komponenten");
 
+    await writeSeedFile(
+      "product-categories.csv",
+      "Name;IsDefault;IsActive\nExport Kategorie;false;true\nNeue Produktkategorie;true;true\nSeed Kategorie;false;true\n",
+    );
+    await writeSeedFile(
+      "component-categories.csv",
+      "Name;IsDefault;IsActive\nExport Komponenten;false;true\nNeue Komponenten Kategorie;true;true\nSeed Komponenten;false;true\n",
+    );
     await writeSeedFile(
       "products.csv",
       "Name;ShortCode;Beschreibung;Kategorie\nExport Produkt;EP2;Neu;Neue Produktkategorie\nSeed Produkt;SP1;Beschreibung;Seed Kategorie\n",
@@ -184,42 +195,54 @@ describe("FT27 integration: seed file services", () => {
     expect(products.find((entry) => entry.name === "Seed Produkt")?.shortCode).toBe("SP1");
     expect(components.find((entry) => entry.name === "Seed Komponente")?.shortCode).toBe("SK1");
     expect(productCategories.some((entry) => entry.name === "Seed Kategorie")).toBe(true);
+    expect(productCategories.some((entry) => entry.name === "Neue Produktkategorie" && entry.isDefault)).toBe(true);
     expect(componentCategories.some((entry) => entry.name === "Seed Komponenten")).toBe(true);
+    expect(componentCategories.some((entry) => entry.name === "Neue Komponenten Kategorie" && entry.isDefault)).toBe(true);
   });
 
   it("reports missing product files and rejects malformed csv content", async () => {
     const missing = await applyProductManagementSeed();
     expect(missing.logLines).toEqual(
       expect.arrayContaining([
+        "Quelldatei fehlt: product-categories.csv",
+        "Quelldatei fehlt: component-categories.csv",
         "Quelldatei fehlt: products.csv",
         "Quelldatei fehlt: components.csv",
       ]),
     );
 
+    await writeSeedFile("product-categories.csv", "Name;IsDefault;IsActive\nKategorie A;true;true\n");
+    await writeSeedFile("component-categories.csv", "Name;IsDefault;IsActive\nKategorie B;true;true\n");
     await writeSeedFile("products.csv", "Name;Beschreibung;Kategorie\n\"kaputt;wert;Kategorie\n");
     await writeSeedFile("components.csv", "Name;Beschreibung;Kategorie\nKomponente;Okay;Kategorie\n");
 
     await expect(applyProductManagementSeed()).rejects.toThrow("INVALID_CSV_FORMAT");
   });
 
-  it("does not write product management seed files when no products or components exist", async () => {
+  it("exports category files even when no products or components exist", async () => {
+    await ensureProductCategoryFixture("Leere Produktkategorie");
     const result = await exportProductManagementSeed();
 
     expect(result).toEqual({
-      sourceFile: "products.csv",
-      exists: false,
+      sourceFile: "product-categories.csv",
+      exists: true,
       logLines: [
+        "Export geschrieben: product-categories.csv",
+        "Produktkategorien exportiert: 1",
+        "Kein Export geschrieben: component-categories.csv (keine Komponentenkategorien vorhanden)",
         "Kein Export geschrieben: products.csv (keine Produkte vorhanden)",
         "Kein Export geschrieben: components.csv (keine Komponenten vorhanden)",
       ],
     });
+    await expect(readSeedFile("product-categories.csv")).resolves.toContain("Leere Produktkategorie;false;true");
+    await expectSeedFileMissing("component-categories.csv");
     await expectSeedFileMissing("products.csv");
     await expectSeedFileMissing("components.csv");
   });
 
   it("defaults product and component seed rows to active when the Is Active header is missing", async () => {
-    const productCategory = await ensureProductCategoryFixture("Fass Saunen");
-    const componentCategory = await ensureComponentCategoryFixture("Dachvarianten");
+    const productCategory = await ensureProductCategoryFixture("Kategorie A");
+    const componentCategory = await ensureComponentCategoryFixture("Kategorie B");
     const inactiveProduct = await masterDataRepository.createProduct({
       name: "Inaktives Produkt",
       description: "Alt",
@@ -235,13 +258,15 @@ describe("FT27 integration: seed file services", () => {
       version: 1,
     });
 
+    await writeSeedFile("product-categories.csv", "Name;IsDefault;IsActive\nKategorie A;true;true\n");
+    await writeSeedFile("component-categories.csv", "Name;IsDefault;IsActive\nKategorie B;true;true\n");
     await writeSeedFile(
       "products.csv",
-      "Name;Beschreibung;Kategorie\nInaktives Produkt;Neu;Fass Saunen\nNeues Produkt;Beschreibung;Fass Saunen\n",
+      "Name;Beschreibung;Kategorie\nInaktives Produkt;Neu;Kategorie A\nNeues Produkt;Beschreibung;Kategorie A\n",
     );
     await writeSeedFile(
       "components.csv",
-      "Name;Beschreibung;Kategorie\nInaktive Komponente;Neu;Dachvarianten\nNeue Komponente;Beschreibung;Dachvarianten\n",
+      "Name;Beschreibung;Kategorie\nInaktive Komponente;Neu;Kategorie B\nNeue Komponente;Beschreibung;Kategorie B\n",
     );
 
     await applyProductManagementSeed();
@@ -253,6 +278,15 @@ describe("FT27 integration: seed file services", () => {
     expect(products.find((entry) => entry.name === "Neues Produkt")?.isActive).toBe(true);
     expect(components.find((entry) => entry.id === inactiveComponent.id)?.isActive).toBe(true);
     expect(components.find((entry) => entry.name === "Neue Komponente")?.isActive).toBe(true);
+  });
+
+  it("rejects product management imports when product or component rows reference unknown categories", async () => {
+    await writeSeedFile("product-categories.csv", "Name;IsDefault;IsActive\nBekannte Produktkategorie;true;true\n");
+    await writeSeedFile("component-categories.csv", "Name;IsDefault;IsActive\nBekannte Komponentenkategorie;true;true\n");
+    await writeSeedFile("products.csv", "Name;Beschreibung;Kategorie\nProdukt A;Alt;Unbekannte Produktkategorie\n");
+    await writeSeedFile("components.csv", "Name;Beschreibung;Kategorie\nKomponente A;Alt;Bekannte Komponentenkategorie\n");
+
+    await expect(applyProductManagementSeed()).rejects.toThrow("Produkt Produkt A verweist auf unbekannte Kategorie: Unbekannte Produktkategorie");
   });
 
   it("exports and reapplies note templates from the external seed directory", async () => {

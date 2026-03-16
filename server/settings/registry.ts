@@ -3,7 +3,7 @@ export type CanonicalRoleKey = "LESER" | "DISPONENT" | "ADMIN";
 export type SettingScopeType = "GLOBAL" | "ROLE" | "USER";
 export type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
 
-type BaseSettingDefinition<TType extends "enum" | "string" | "number" | "boolean", TValue> = {
+type BaseSettingDefinition<TType extends "enum" | "string" | "number" | "boolean" | "json", TValue> = {
   key: string;
   label: string;
   description: string;
@@ -28,12 +28,14 @@ export type NumberSettingDefinition = BaseSettingDefinition<"number", number> & 
 };
 
 export type BooleanSettingDefinition = BaseSettingDefinition<"boolean", boolean>;
+export type JsonSettingDefinition<TValue> = BaseSettingDefinition<"json", TValue>;
 
 export type SettingDefinition =
   | EnumSettingDefinition<string>
   | StringSettingDefinition
   | NumberSettingDefinition
-  | BooleanSettingDefinition;
+  | BooleanSettingDefinition
+  | JsonSettingDefinition<unknown>;
 
 const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
@@ -45,6 +47,10 @@ const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
 const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
 type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
+type VorlauflisteCategorySelection = {
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+};
 
 const templateAllowedKeys = [
   "sauna_model_name",
@@ -137,6 +143,21 @@ function isValidDemoDataAdminFormState(value: unknown): value is string {
   } catch {
     return false;
   }
+}
+
+function isValidPositiveIntegerArray(value: unknown): value is number[] {
+  if (!Array.isArray(value)) return false;
+  if (!value.every((entry) => typeof entry === "number" && Number.isInteger(entry) && entry > 0)) {
+    return false;
+  }
+  return new Set(value).size === value.length;
+}
+
+function isValidVorlauflisteCategorySelection(value: unknown): value is VorlauflisteCategorySelection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const parsed = value as Record<string, unknown>;
+  return isValidPositiveIntegerArray(parsed.productCategoryIds)
+    && isValidPositiveIntegerArray(parsed.componentCategoryIds);
 }
 
 export const userSettingsRegistry = {
@@ -330,6 +351,18 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: (value: unknown): value is WeekAppointmentDisplayMode =>
       typeof value === "string" && weekAppointmentDisplayModeOptions.includes(value as WeekAppointmentDisplayMode),
+  },
+  reportsVorlauflisteCategorySelection: {
+    key: "reports.vorlaufliste.categorySelection",
+    label: "Vorlaufliste Kategorien",
+    description: "Speichert die benutzerspezifische Kategorieauswahl fuer die Vorlaufliste.",
+    type: "json",
+    defaultValue: {
+      productCategoryIds: [],
+      componentCategoryIds: [],
+    },
+    allowedScopes: ["USER"],
+    validate: isValidVorlauflisteCategorySelection,
   },
   helptextsViewMode: {
     key: "helptexts.viewMode",

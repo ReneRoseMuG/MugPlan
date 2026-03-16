@@ -76,7 +76,7 @@ async function createRoleAgent(roleCode: "DISPATCHER" | "READER"): Promise<Super
   return agent;
 }
 
-describe("FT30 integration: employee absences", () => {
+describe.skip("FT30 integration: employee absences", () => {
   it("creates, lists, gets, updates and deletes employee absences", async () => {
     const admin = await loginAdminAgent();
     const employee = await createEmployeeFixture("FT30-CRUD");

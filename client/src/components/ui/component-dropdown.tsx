@@ -8,28 +8,34 @@ interface ComponentDropdownProps {
   components: Component[];
   categories: ComponentCategory[];
   targetCategory: string;
+  targetCategoryId?: number;
   selectedComponentId: string;
   onSelect: (componentId: string) => void;
   dialogMode?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   title?: string;
+  testId?: string;
 }
 
 function ComponentDropdownPanel({
   components,
   categories,
   targetCategory,
+  targetCategoryId,
   selectedComponentId,
   onSelect,
   onApply,
+  testId,
 }: {
   components: Component[];
   categories: ComponentCategory[];
   targetCategory: string;
+  targetCategoryId?: number;
   selectedComponentId: string;
   onSelect: (componentId: string) => void;
   onApply: () => void;
+  testId?: string;
 }) {
   const [draftSelection, setDraftSelection] = useState(selectedComponentId);
 
@@ -38,7 +44,13 @@ function ComponentDropdownPanel({
   }, [selectedComponentId]);
 
   const fieldKey = getProjectProductFieldByCategoryName(targetCategory);
-  const category = fieldKey ? findProjectProductCategory(categories, fieldKey) : null;
+  const category = useMemo(() => {
+    if (targetCategoryId != null) {
+      return categories.find((entry) => entry.id === targetCategoryId) ?? null;
+    }
+    return fieldKey ? findProjectProductCategory(categories, fieldKey) : null;
+  }, [categories, fieldKey, targetCategoryId]);
+
   const options = useMemo(() => {
     if (!category) return [];
     return components
@@ -55,7 +67,7 @@ function ComponentDropdownPanel({
       label={targetCategory}
       value={draftSelection}
       options={options}
-      placeholder={`${targetCategory} auswählen`}
+      placeholder={`${targetCategory} auswaehlen`}
       onSelect={setDraftSelection}
       showAdopt
       onAdopt={() => {
@@ -63,7 +75,7 @@ function ComponentDropdownPanel({
         onApply();
       }}
       adoptDisabled={!draftSelection}
-      testId={`select-component-${fieldKey ?? "unknown"}`}
+      testId={testId ?? `select-component-${fieldKey ?? targetCategoryId ?? "unknown"}`}
     />
   );
 }
@@ -72,20 +84,24 @@ export function ComponentDropdown({
   components,
   categories,
   targetCategory,
+  targetCategoryId,
   selectedComponentId,
   onSelect,
   dialogMode = false,
   open = true,
   onOpenChange,
   title,
+  testId,
 }: ComponentDropdownProps) {
   const panel = (
     <ComponentDropdownPanel
       components={components}
       categories={categories}
       targetCategory={targetCategory}
+      targetCategoryId={targetCategoryId}
       selectedComponentId={selectedComponentId}
       onSelect={onSelect}
+      testId={testId}
       onApply={() => {
         if (dialogMode) {
           onOpenChange?.(false);
@@ -102,7 +118,7 @@ export function ComponentDropdown({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title ?? `${targetCategory} auswählen`}</DialogTitle>
+          <DialogTitle>{title ?? `${targetCategory} auswaehlen`}</DialogTitle>
         </DialogHeader>
         {panel}
       </DialogContent>

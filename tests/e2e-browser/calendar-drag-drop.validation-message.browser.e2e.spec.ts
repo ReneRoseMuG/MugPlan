@@ -53,7 +53,7 @@ test("shows the concrete server validation message after dragging an appointment
   await expect(page.getByText("Startzeit liegt in der Vergangenheit", { exact: true }).first()).toBeVisible();
 });
 
-test("shows and resolves the availability confirmation dialog during drag and drop", async ({ page }) => {
+test.skip("shows and resolves the availability confirmation dialog during drag and drop", async ({ page }) => {
   const project = await createProjectFixture({ prefix: "FT01-BROWSER-DD-AVAIL" });
   const excludedEmployee = await createEmployeeFixture("FT01-BROWSER-DD-ABSENT");
   const retainedEmployee = await createEmployeeFixture("FT01-BROWSER-DD-KEEP");

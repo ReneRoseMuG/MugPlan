@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Phone, Route, Users } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
-import { EmployeeAbsencesPanel } from "@/components/EmployeeAbsencesPanel";
 import { EmployeeAttachmentsPanel } from "@/components/EmployeeAttachmentsPanel";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
@@ -255,7 +254,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       <Tabs defaultValue="stammdaten" className="flex h-full min-h-0 flex-col space-y-4">
         <TabsList>
           <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
-          <TabsTrigger value="abwesenheiten" data-testid="tab-employee-abwesenheiten">Abwesenheiten</TabsTrigger>
           <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
         </TabsList>
 
@@ -381,16 +379,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               </div>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="abwesenheiten">
-          {employeeId ? (
-            <EmployeeAbsencesPanel employeeId={employeeId} employees={allEmployees} />
-          ) : (
-            <p className="py-4 text-sm text-slate-400">
-              Nach dem Speichern des Mitarbeiters koennen Abwesenheiten erfasst werden.
-            </p>
-          )}
         </TabsContent>
 
         <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">

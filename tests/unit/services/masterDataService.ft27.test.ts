@@ -8,9 +8,8 @@
  * - Nur ADMIN darf FT27-Stammdatenoperationen ausfuehren.
  * - Duplicate-/FK-Fehler werden als BUSINESS_CONFLICT gemappt.
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
- * - Default-/Schutzkategorien (Fass Saunen plus definierte Standard-Komponentenkategorien) sind nicht loeschbar.
+ * - Default-Kategorien sind unabhaengig vom Namen nicht loeschbar.
  * - Komponenten-Loeschkonflikte liefern differenzierte Referenzdetails fuer Produkte und Projektauftragspositionen.
- * - Der Produktverwaltungs-Seed arbeitet idempotent mit create/reactivate/skip-Logging.
  * - Component-Product m:n-Operationen folgen derselben Fehlersemantik.
  * - Ohne Filter wird serverseitig auf active normalisiert.
  *
@@ -88,7 +87,6 @@ import {
   listProductCategories,
   MasterDataError,
   replaceComponentProducts,
-  runProductManagementSeed,
   updateProduct,
 } from "../../../server/services/masterDataService";
 
@@ -171,7 +169,7 @@ describe("FT27 unit: masterDataService", () => {
   });
 
   it("blocks deleting default product category as BUSINESS_CONFLICT", async () => {
-    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 1, name: "Fass Saunen" });
+    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 1, name: "Fass Saunen", isDefault: true });
 
     await expect(deleteProductCategory(1, 3, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
       status: 409,
@@ -190,7 +188,7 @@ describe("FT27 unit: masterDataService", () => {
   it.each(protectedComponentCategoryNames)(
     "blocks deleting protected component category %s as BUSINESS_CONFLICT",
     async (categoryName) => {
-      repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: categoryName });
+      repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: categoryName, isDefault: true });
 
       await expect(deleteComponentCategory(1, 7, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
         status: 409,
@@ -403,47 +401,4 @@ describe("FT27 unit: masterDataService", () => {
     expect(result.summary.invalidRows).toBe(0);
   });
 
-  it("creates missing seed categories and logs the actions", async () => {
-    repositoryMocks.getProductCategoryByName.mockResolvedValueOnce(undefined);
-    repositoryMocks.createProductCategory.mockResolvedValueOnce({ id: 10, name: "Fass Saunen", isActive: true, version: 1 });
-    for (let index = 0; index < protectedComponentCategoryNames.length; index += 1) {
-      repositoryMocks.getComponentCategoryByName.mockResolvedValueOnce(undefined);
-      repositoryMocks.createComponentCategory.mockResolvedValueOnce({
-        id: 100 + index,
-        name: protectedComponentCategoryNames[index],
-        isActive: true,
-        version: 1,
-      });
-    }
-
-    const result = await runProductManagementSeed("ADMIN");
-
-    expect(result.logLines).toContain("Produktkategorie angelegt: Fass Saunen");
-    expect(result.logLines).toContain("Komponentenkategorie angelegt: Dachvarianten");
-    expect(repositoryMocks.createProductCategory).toHaveBeenCalledWith({ name: "Fass Saunen", isActive: true, version: 1 });
-    expect(repositoryMocks.createComponentCategory).toHaveBeenCalledTimes(protectedComponentCategoryNames.length);
-  });
-
-  it("reactivates inactive seed categories and logs the actions", async () => {
-    repositoryMocks.getProductCategoryByName.mockResolvedValueOnce({ id: 7, name: "Fass Saunen", isActive: false, version: 4 });
-    repositoryMocks.updateProductCategoryWithVersion.mockResolvedValueOnce({ kind: "updated", row: { id: 7 } });
-    repositoryMocks.getComponentCategoryByName
-      .mockResolvedValueOnce({ id: 11, name: "Dachvarianten", isActive: false, version: 2 })
-      .mockResolvedValueOnce({ id: 12, name: "Fenster", isActive: true, version: 1 })
-      .mockResolvedValueOnce({ id: 13, name: "Inneneinrichtung", isActive: true, version: 1 })
-      .mockResolvedValueOnce({ id: 14, name: "Öfen", isActive: true, version: 1 })
-      .mockResolvedValueOnce({ id: 15, name: "Rückwände", isActive: true, version: 1 })
-      .mockResolvedValueOnce({ id: 16, name: "Steuerungen", isActive: true, version: 1 })
-      .mockResolvedValueOnce({ id: 17, name: "Türen", isActive: true, version: 1 })
-      .mockResolvedValueOnce({ id: 18, name: "Vorderwände", isActive: true, version: 1 });
-    repositoryMocks.updateComponentCategoryWithVersion.mockResolvedValueOnce({ kind: "updated", row: { id: 11 } });
-
-    const result = await runProductManagementSeed("ADMIN");
-
-    expect(result.logLines).toContain("Produktkategorie reaktiviert: Fass Saunen");
-    expect(result.logLines).toContain("Komponentenkategorie reaktiviert: Dachvarianten");
-    expect(result.logLines).toContain("Komponentenkategorie bereits vorhanden: Fenster");
-    expect(repositoryMocks.updateProductCategoryWithVersion).toHaveBeenCalledWith(7, 4, { isActive: true });
-    expect(repositoryMocks.updateComponentCategoryWithVersion).toHaveBeenCalledWith(11, 2, { isActive: true });
-  });
 });

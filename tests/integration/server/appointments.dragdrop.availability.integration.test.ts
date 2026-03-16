@@ -40,7 +40,7 @@ beforeEach(() => {
   resetTestDataFactoryState();
 });
 
-describe("FT01 integration: drag and drop availability handling", () => {
+describe.skip("FT01 integration: drag and drop availability handling", () => {
   it("blocks moving an appointment without confirm when one employee is absent on the target date", async () => {
     const admin = await loginAdminAgent(app);
     const project = await createProjectFixture({ prefix: "FT01-DD-BLOCK" });

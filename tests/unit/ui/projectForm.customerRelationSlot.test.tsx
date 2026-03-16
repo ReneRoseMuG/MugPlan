@@ -48,16 +48,24 @@ vi.mock("@/lib/project-edit-form", () => ({
 }));
 
 vi.mock("@/lib/project-product-form", () => ({
+  buildDynamicProjectCategorySlots: vi.fn(() => []),
   buildPersistedProjectDescription: vi.fn(() => ""),
   buildProjectArticleLines: vi.fn(() => []),
   cloneProjectProductSelections: vi.fn((input: unknown) => input ?? {}),
+  createEmptyDynamicProjectProductSelections: vi.fn(() => ({})),
   createEmptyProjectProductSelections: () => ({}),
   extractEditorDescriptionHtml: vi.fn(() => ""),
   getProjectProductField: vi.fn(() => ({ source: "component", categoryName: "Default" })),
   isProductSelectionField: vi.fn(() => true),
+  mapProjectOrderItemsToDynamicSelections: vi.fn(() => ({})),
   mapProjectOrderItemsToSelections: vi.fn(() => ({})),
   PROJECT_PRODUCT_FIELDS: [],
   resolveSelectionsFromExtraction: vi.fn(() => ({})),
+}));
+
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: vi.fn(() => ({ productCategoryIds: [], componentCategoryIds: [] })),
+  useSettings: vi.fn(() => ({ setSetting: vi.fn() })),
 }));
 
 vi.mock("@/components/ui/entity-form-layout", () => ({

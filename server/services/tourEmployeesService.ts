@@ -4,23 +4,16 @@ import * as employeesRepository from "../repositories/employeesRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import { db } from "../db";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
-import {
-  previewEmployeeAvailabilityForDateRange,
-  type ExcludedEmployee,
-} from "./employeeAvailabilityService";
 
 type CascadeConflictCode =
   | "VERSION_CONFLICT"
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
   | "BUSINESS_CONFLICT"
-  | "EMPLOYEE_OVERLAP_CONFLICT"
-  | "AVAILABILITY_CONFLICT";
+  | "EMPLOYEE_OVERLAP_CONFLICT";
 
 type CascadeConflictReason =
   | "EMPLOYEE_OVERLAP"
-  | "EMPLOYEE_ABSENCE"
-  | "EMPLOYEE_EXIT_DATE"
   | "ALREADY_ASSIGNED";
 
 type CascadeSkipReason =
@@ -28,9 +21,7 @@ type CascadeSkipReason =
   | "NOT_ASSIGNED"
   | "HISTORICAL_APPOINTMENT"
   | "APPOINTMENT_NOT_ON_TOUR"
-  | "EMPLOYEE_OVERLAP"
-  | "EMPLOYEE_ABSENCE"
-  | "EMPLOYEE_EXIT_DATE";
+  | "EMPLOYEE_OVERLAP";
 
 type CascadePreviewItem = {
   appointmentId: number;
@@ -60,21 +51,18 @@ export class TourEmployeesError extends Error {
   status: number;
   code: CascadeConflictCode;
   conflictEmployees?: Array<{ id: number; fullName: string }>;
-  availabilityConflicts?: ExcludedEmployee[];
 
   constructor(
     status: number,
     code: CascadeConflictCode,
     options?: {
       conflictEmployees?: Array<{ id: number; fullName: string }>;
-      availabilityConflicts?: ExcludedEmployee[];
     },
   ) {
     super(code);
     this.status = status;
     this.code = code;
     this.conflictEmployees = options?.conflictEmployees;
-    this.availabilityConflicts = options?.availabilityConflicts;
   }
 }
 
@@ -162,11 +150,6 @@ async function resolveAddPreviewConflictReason(
 
   if (currentEmployees.some((entry) => entry.id === employeeId)) {
     return "ALREADY_ASSIGNED";
-  }
-
-  const availability = await previewEmployeeAvailabilityForDateRange([employeeId], startDate, endDate);
-  if (availability.unavailableEmployees.length > 0) {
-    return availability.unavailableEmployees[0]?.reason === "exit_date" ? "EMPLOYEE_EXIT_DATE" : "EMPLOYEE_ABSENCE";
   }
 
   const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
@@ -315,19 +298,6 @@ export async function executeAddEmployeeCascade(
       const appointmentEndDate = appointment.endDate ? formatDateOnly(appointment.endDate) : null;
       if (appointmentStartDate < todayBerlin) {
         skipped.push({ appointmentId, reason: "HISTORICAL_APPOINTMENT" });
-        continue;
-      }
-
-      const availability = await previewEmployeeAvailabilityForDateRange(
-        [params.employeeId],
-        appointmentStartDate,
-        appointmentEndDate,
-      );
-      if (availability.unavailableEmployees.length > 0) {
-        skipped.push({
-          appointmentId,
-          reason: availability.unavailableEmployees[0]?.reason === "exit_date" ? "EMPLOYEE_EXIT_DATE" : "EMPLOYEE_ABSENCE",
-        });
         continue;
       }
 

@@ -7,7 +7,7 @@ import {
   normalizeProjectArticleValue,
   type ProjectArticleFieldKey,
 } from "@shared/projectArticleList";
-import type { Component, ComponentCategory, Product, ProjectOrderItem } from "@shared/schema";
+import type { Component, ComponentCategory, Product, ProductCategory, ProjectOrderItem } from "@shared/schema";
 
 export const PROJECT_PRODUCT_FIELDS = PROJECT_ARTICLE_FIELDS;
 
@@ -22,6 +22,14 @@ export type ProjectProductSelection = {
 };
 
 export type ProjectProductSelections = Record<ProjectProductFieldKey, ProjectProductSelection>;
+export type DynamicProjectProductSelections = Record<string, ProjectProductSelection>;
+export type DynamicProjectCategorySlot = {
+  slotId: string;
+  categoryId: number;
+  categoryName: string;
+  label: string;
+  source: "product" | "component";
+};
 
 type ExtractionCategoryInput = {
   category: string;
@@ -69,6 +77,12 @@ export function createEmptyProjectProductSelections(): ProjectProductSelections 
   };
 }
 
+export function createEmptyDynamicProjectProductSelections(
+  slots: DynamicProjectCategorySlot[],
+): DynamicProjectProductSelections {
+  return Object.fromEntries(slots.map((slot) => [slot.slotId, createEmptySelection()]));
+}
+
 export function cloneProjectProductSelections(
   selections: ProjectProductSelections,
 ): ProjectProductSelections {
@@ -85,12 +99,62 @@ export function cloneProjectProductSelections(
   };
 }
 
+export function cloneDynamicProjectProductSelections(
+  selections: DynamicProjectProductSelections,
+): DynamicProjectProductSelections {
+  return Object.fromEntries(Object.entries(selections).map(([key, value]) => [key, { ...value }]));
+}
+
 export function getProjectProductField(key: ProjectProductFieldKey) {
   return getProjectArticleField(key);
 }
 
 export function getProjectProductFieldByCategoryName(categoryName: string): ProjectProductFieldKey | null {
   return getProjectArticleFieldByCategoryName(categoryName);
+}
+
+export function getLegacyProductFieldByCategoryName(categoryName: string): ProjectProductFieldKey | null {
+  const normalized = normalizeProjectArticleValue(categoryName);
+  if (normalized === normalizeProjectArticleValue("Fass Saunen")) {
+    return "saunaModel";
+  }
+  return null;
+}
+
+export function buildDynamicProjectCategorySlots(input: {
+  productCategories: ProductCategory[];
+  componentCategories: ComponentCategory[];
+}): DynamicProjectCategorySlot[] {
+  const knownComponentOrder: ProjectProductFieldKey[] = ["oven", "control", "roof", "window", "door", "frontWall", "rearWallWindow", "interior"];
+  const knownComponentCategoryIds = new Set<number>(
+    input.componentCategories
+      .filter((category) => knownComponentOrder.some((fieldKey) => findProjectProductCategory([category], fieldKey) !== null))
+      .map((category) => category.id),
+  );
+
+  const dynamicProductSlots = input.productCategories
+    .filter((category) => category.isDefault && getLegacyProductFieldByCategoryName(category.name) === null)
+    .sort((left, right) => left.name.localeCompare(right.name, "de"))
+    .map((category) => ({
+      slotId: `product-category-${category.id}`,
+      categoryId: category.id,
+      categoryName: category.name,
+      label: category.name,
+      source: "product" as const,
+    }));
+
+  const dynamicComponentSlots = input.componentCategories
+    .filter((category) => category.isDefault && !knownComponentCategoryIds.has(category.id))
+    .sort((left, right) => left.name.localeCompare(right.name, "de"))
+    .map((category) => ({
+      slotId: `component-category-${category.id}`,
+      categoryId: category.id,
+      categoryName: category.name,
+      label: category.name,
+      source: "component" as const,
+    }));
+
+  return [...dynamicProductSlots, ...dynamicComponentSlots];
 }
 
 export function buildProjectArticleLines(selections: ProjectProductSelections): string[] {
@@ -169,6 +233,56 @@ export function mapProjectOrderItemsToSelections(
       itemId: item.id,
       version: item.version,
     };
+  }
+
+  return result;
+}
+
+export function mapProjectOrderItemsToDynamicSelections(
+  orderItems: ProjectOrderItem[],
+  products: Product[],
+  components: Component[],
+  slots: DynamicProjectCategorySlot[],
+): DynamicProjectProductSelections {
+  const result = createEmptyDynamicProjectProductSelections(slots);
+  const productById = new Map(products.map((product) => [product.id, product] as const));
+  const componentById = new Map(components.map((component) => [component.id, component] as const));
+  const slotByProductCategoryId = new Map(
+    slots.filter((slot) => slot.source === "product").map((slot) => [slot.categoryId, slot] as const),
+  );
+  const slotByComponentCategoryId = new Map(
+    slots.filter((slot) => slot.source === "component").map((slot) => [slot.categoryId, slot] as const),
+  );
+
+  for (const item of orderItems) {
+    if (item.productId != null) {
+      const product = productById.get(item.productId);
+      if (!product) continue;
+      const slot = slotByProductCategoryId.get(product.categoryId);
+      if (!slot) continue;
+      result[slot.slotId] = {
+        productId: product.id,
+        componentId: null,
+        componentName: product.name,
+        itemId: item.id,
+        version: item.version,
+      };
+      continue;
+    }
+
+    if (item.componentId == null) continue;
+    const component = componentById.get(item.componentId);
+    if (!component) continue;
+    const slot = slotByComponentCategoryId.get(component.categoryId);
+    if (!slot) continue;
+    result[slot.slotId] = {
+      productId: null,
+      componentId: component.id,
+      componentName: component.name,
+      itemId: item.id,
+      version: item.version,
+    };
+    continue;
   }
 
   return result;

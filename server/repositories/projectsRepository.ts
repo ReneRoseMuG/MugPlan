@@ -5,6 +5,7 @@ import {
   componentCategories,
   components,
   customers,
+  productCategories,
   projectOrder,
   projectOrderItems,
   projectAttachments,
@@ -822,11 +823,25 @@ async function deleteConflictingCategoryItemsTx(
 async function deleteConflictingProductItemsTx(
   tx: any,
   projectId: number,
+  productId: number,
   excludeItemId?: number,
 ): Promise<void> {
+  const [targetProduct] = await tx
+    .select({
+      productId: products.id,
+      categoryId: products.categoryId,
+    })
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1);
+
+  if (!targetProduct) {
+    return;
+  }
+
   const conditions = [
     eq(projectOrderItems.projectId, projectId),
-    sql`${projectOrderItems.productId} is not null`,
+    eq(productCategories.id, targetProduct.categoryId),
   ];
   if (excludeItemId != null) {
     conditions.push(sql`${projectOrderItems.id} <> ${excludeItemId}`);
@@ -835,6 +850,8 @@ async function deleteConflictingProductItemsTx(
   const conflictingRows = await tx
     .select({ id: projectOrderItems.id })
     .from(projectOrderItems)
+    .innerJoin(products, eq(projectOrderItems.productId, products.id))
+    .innerJoin(productCategories, eq(products.categoryId, productCategories.id))
     .where(and(...conditions));
 
   const conflictingIds = conflictingRows.map((row: { id: number }) => row.id);
@@ -848,7 +865,7 @@ async function deleteConflictingProductItemsTx(
 export async function createProjectOrderItem(input: InsertProjectOrderItem): Promise<ProjectOrderItem> {
   return db.transaction(async (tx) => {
     if (input.productId != null) {
-      await deleteConflictingProductItemsTx(tx, input.projectId);
+      await deleteConflictingProductItemsTx(tx, input.projectId, input.productId);
     }
     if (input.componentId != null) {
       await deleteConflictingCategoryItemsTx(tx, input.projectId, input.componentId);
@@ -883,7 +900,7 @@ export async function updateProjectOrderItemWithVersion(
 
     const nextProductId = input.productId === undefined ? existing.productId : input.productId;
     if (nextProductId != null) {
-      await deleteConflictingProductItemsTx(tx, projectId, itemId);
+      await deleteConflictingProductItemsTx(tx, projectId, nextProductId, itemId);
     }
 
     const nextComponentId = input.componentId === undefined ? existing.componentId : input.componentId;
