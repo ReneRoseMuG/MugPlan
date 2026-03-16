@@ -159,7 +159,7 @@ test("creates, counts and edits an appointment note with cardColor and print fla
   await verifyNoteEditDialog(page, note);
 });
 
-test.skip("shows cumulative customer, project and appointment notes in the week preview", async ({ page }) => {
+test("shows cumulative customer, project and appointment notes in the week preview", async ({ page }) => {
   const fixture = await createLinkedFixture("FT13-CUMULATIVE");
 
   await loginAsAdmin(page);
@@ -167,19 +167,30 @@ test.skip("shows cumulative customer, project and appointment notes in the week 
   await page.getByTestId("nav-projekte").click();
   await page.getByTestId(`project-card-${fixture.project.id}`).dblclick();
   await createNoteViaDialog(page, { title: "Projekt Kumulation", body: "Projekt", cardColor: "#22c55e" });
-  await page.getByTestId("button-close-project").click();
+  await expect(
+    page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: "Projekt Kumulation" }).first(),
+  ).toBeVisible();
+  await page.getByTestId("button-save-project").click();
+  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
 
   await page.getByTestId("nav-kunden").click();
   await page.getByTestId(`customer-card-${fixture.customer.id}`).dblclick();
   await createNoteViaDialog(page, { title: "Kunde Kumulation", body: "Kunde", cardColor: "#f97316" });
-  await page.getByTestId("button-close-customer").click();
+  await expect(
+    page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: "Kunde Kumulation" }).first(),
+  ).toBeVisible();
+  await page.getByTestId("button-save-customer").click();
+  await expect(page.getByTestId("button-save-customer")).toHaveCount(0);
 
   await page.goto("/");
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${fixture.appointment.id}`);
   await expect(appointmentPanel).toBeVisible();
   await appointmentPanel.dblclick();
   await createNoteViaDialog(page, { title: "Termin Kumulation", body: "Termin", cardColor: "#38bdf8" });
-  await page.getByTestId("button-close-appointment").click();
+  await expect(
+    page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: "Termin Kumulation" }).first(),
+  ).toBeVisible();
+  await saveAppointmentAndClose(page, fixture.appointment.id);
 
   const counter = page.getByTestId(`week-appointment-panel-${fixture.appointment.id}`).getByTestId("week-appointment-notes-hover-trigger");
   await expect(counter).toContainText("3");
