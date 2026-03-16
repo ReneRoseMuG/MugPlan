@@ -69,6 +69,28 @@ function formatProjectLabel(item: PreviewItem): string | null {
   return null;
 }
 
+function buildAppointmentRangeLabel(items: PreviewItem[]): string | null {
+  if (items.length === 0) return null;
+
+  let fromDate = items[0]?.startDate ?? null;
+  let toDate = items[0]?.endDate ?? items[0]?.startDate ?? null;
+
+  for (const item of items) {
+    const itemFromDate = item.startDate;
+    const itemToDate = item.endDate ?? item.startDate;
+
+    if (fromDate === null || itemFromDate < fromDate) {
+      fromDate = itemFromDate;
+    }
+    if (toDate === null || itemToDate > toDate) {
+      toDate = itemToDate;
+    }
+  }
+
+  if (!fromDate || !toDate) return null;
+  return `Termine (${items.length}) - Termine im Zeitraum von ${formatShortDate(fromDate)} bis ${formatShortDate(toDate)}`;
+}
+
 export function TourEmployeeCascadeDialog({
   open,
   mode,
@@ -85,12 +107,19 @@ export function TourEmployeeCascadeDialog({
     ? `Wählen Sie die Termine aus, für die ${employeeName} geplant werden soll.`
     : `Wählen Sie die Termine aus, von denen ${employeeName} abgezogen werden soll.`;
 
+  const appointmentRangeLabel = buildAppointmentRangeLabel(previewItems);
+
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent className="max-w-3xl" data-testid="dialog-tour-employee-cascade">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
+          {appointmentRangeLabel ? (
+            <p className="text-sm text-slate-500" data-testid="text-tour-employee-cascade-range">
+              {appointmentRangeLabel}
+            </p>
+          ) : null}
         </DialogHeader>
 
         <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
