@@ -3,11 +3,12 @@
  *
  * Abgedeckte Regeln:
  * - Der FT04-Kaskadendialog verwendet die fachlich geschärften Titel und Untertitel für Hinzufügen und Abziehen.
- * - Die Preview-Zeilen zeigen Datum im Format dd.mm.yy sowie Kundennummer und Kundenname.
+ * - Die Preview-Zeilen zeigen Datum im Format dd.mm.yy sowie Auftragsnummer und Projektname in einer Zeile.
+ * - Kundenkontext erscheint nur, wenn ein Kunde verfuegbar ist.
  *
  * Fehlerfälle:
  * - Der Dialog bleibt bei generischer Kaskaden-Sprache oder ASCII-Ersatztexten.
- * - Die Preview bleibt ohne Kundenkontext oder mit ISO-Datum uneindeutig.
+ * - Die Preview zeigt weiterhin missverstaendliche Mitarbeiterinfos oder verliert die Projektzeile.
  *
  * Ziel:
  * Die sichtbare FT04-Dialogverdrahtung für die selektive Tour-Mitarbeiter-Kaskade regressionssicher absichern.
@@ -27,11 +28,13 @@ describe("FT04 UI: TourEmployeeCascadeDialog wiring", () => {
     expect(source).toContain('"Bestätigen"');
   });
 
-  it("formats preview rows with short dates and customer context", () => {
+  it("formats preview rows with short dates, project line and optional customer context", () => {
     expect(source).toContain("function formatShortDate(dateValue: string): string");
     expect(source).toContain("return `${day}.${month}.${year.slice(-2)}`;");
     expect(source).toContain("function formatCustomerLabel(item: PreviewItem): string");
-    expect(source).toContain("? `K: ${item.customerNumber} - ${customerName}`");
-    expect(source).toContain(": `K: ${item.customerNumber}`;");
+    expect(source).toContain("if (!item.customerNumber) return null;");
+    expect(source).toContain("function formatProjectLabel(item: PreviewItem): string | null");
+    expect(source).toContain("if (orderNumber && projectName) return `${orderNumber} - ${projectName}`;");
+    expect(source).not.toContain("Mitarbeiter:");
   });
 });

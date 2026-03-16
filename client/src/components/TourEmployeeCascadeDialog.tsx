@@ -14,8 +14,10 @@ type PreviewItem = {
   startDate: string;
   endDate: string | null;
   tourName: string | null;
-  customerNumber: string;
+  customerNumber: string | null;
   customerName: string | null;
+  projectName: string | null;
+  orderNumber: string | null;
   currentEmployees: Array<{ id: number; fullName: string }>;
   eligible: boolean;
   conflictReason: "EMPLOYEE_OVERLAP" | "ALREADY_ASSIGNED" | null;
@@ -50,11 +52,21 @@ function formatShortDate(dateValue: string): string {
   return `${day}.${month}.${year.slice(-2)}`;
 }
 
-function formatCustomerLabel(item: PreviewItem): string {
+function formatCustomerLabel(item: PreviewItem): string | null {
+  if (!item.customerNumber) return null;
   const customerName = item.customerName?.trim();
   return customerName && customerName.length > 0
     ? `K: ${item.customerNumber} - ${customerName}`
     : `K: ${item.customerNumber}`;
+}
+
+function formatProjectLabel(item: PreviewItem): string | null {
+  const orderNumber = item.orderNumber?.trim();
+  const projectName = item.projectName?.trim();
+  if (orderNumber && projectName) return `${orderNumber} - ${projectName}`;
+  if (orderNumber) return orderNumber;
+  if (projectName) return projectName;
+  return null;
 }
 
 export function TourEmployeeCascadeDialog({
@@ -91,6 +103,8 @@ export function TourEmployeeCascadeDialog({
               {previewItems.map((item) => {
                 const checked = selectedAppointmentIds.includes(item.appointmentId);
                 const conflictText = conflictReasonLabel(item.conflictReason);
+                const customerLabel = formatCustomerLabel(item);
+                const projectLabel = formatProjectLabel(item);
                 return (
                   <label
                     key={item.appointmentId}
@@ -118,14 +132,8 @@ export function TourEmployeeCascadeDialog({
                         {item.endDate ? <span className="text-sm text-slate-500">bis {formatShortDate(item.endDate)}</span> : null}
                         {item.tourName ? <span className="text-sm text-slate-500">{item.tourName}</span> : null}
                       </div>
-                      <div className="text-sm text-slate-600">
-                        {formatCustomerLabel(item)}
-                      </div>
-                      <div className="text-sm text-slate-600">
-                        Mitarbeiter: {item.currentEmployees.length === 0
-                          ? "keine"
-                          : item.currentEmployees.map((employee) => employee.fullName).join(", ")}
-                      </div>
+                      {projectLabel ? <div className="text-sm text-slate-600">{projectLabel}</div> : null}
+                      {customerLabel ? <div className="text-sm text-slate-600">{customerLabel}</div> : null}
                       {!item.eligible && conflictText ? (
                         <div className="text-sm text-red-600" data-testid={`tour-employee-cascade-conflict-${item.appointmentId}`}>
                           {conflictText}

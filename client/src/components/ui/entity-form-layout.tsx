@@ -8,6 +8,7 @@ interface EntityFormLayoutProps {
   title: string;
   icon: ReactNode;
   children: ReactNode;
+  headerStartAction?: ReactNode;
   onClose?: () => void;
   onCancel?: () => void;
   onSave?: () => void;
@@ -25,6 +26,7 @@ export function EntityFormLayout({
   title,
   icon,
   children,
+  headerStartAction,
   onClose,
   onCancel,
   onSave,
@@ -62,10 +64,13 @@ export function EntityFormLayout({
       <Card className="mx-auto flex h-full min-h-0 max-w-6xl flex-1 flex-col">
         <CardHeader className="border-b border-border">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-primary flex items-center gap-3">
-              {icon}
-              {title}
-            </h2>
+            <div className="flex min-w-0 items-center gap-3">
+              {headerStartAction}
+              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                {icon}
+                {title}
+              </h2>
+            </div>
             {onClose && (
               <Button 
                 size="lg" 

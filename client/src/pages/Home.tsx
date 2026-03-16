@@ -67,6 +67,23 @@ type ReturnContext = {
   tourId?: number | null;
 };
 
+type AppointmentContextState = {
+  initialDate?: string;
+  initialTourId?: number | null;
+  projectId?: number;
+  appointmentId?: number;
+  returnView?: ViewType;
+  returnContext?: ReturnContext;
+  readOnlyFields?: Array<"project" | "customer">;
+  weekScrollLeft?: number | null;
+};
+
+type AppointmentOverlayOrigin = "appointmentsList" | "employeeAppointments" | "tourAppointments";
+
+type AppointmentOverlayState = AppointmentContextState & {
+  origin: AppointmentOverlayOrigin;
+};
+
 type HomeProps = {
   onLogout: () => void;
 };
@@ -99,6 +116,7 @@ export default function Home({ onLogout }: HomeProps) {
     readOnlyFields?: Array<"project" | "customer">;
     weekScrollLeft?: number | null;
   } | null>(null);
+  const [appointmentOverlayContext, setAppointmentOverlayContext] = useState<AppointmentOverlayState | null>(null);
   const [pendingWeekScrollRestore, setPendingWeekScrollRestore] = useState<number | null>(null);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
@@ -191,6 +209,7 @@ export default function Home({ onLogout }: HomeProps) {
 
   const handleViewChange = (newView: ViewType) => {
     console.info("[navigation] view change", { from: view, to: newView });
+    setAppointmentOverlayContext(null);
     if (newView !== "employees") {
       setSelectedEmployeeId(null);
     }
@@ -244,14 +263,14 @@ export default function Home({ onLogout }: HomeProps) {
               userRole={userRole}
               initialTourId={selectedTourId}
               onOpenAppointment={(appointmentId, context) => {
-                setAppointmentContext({
+                setAppointmentOverlayContext({
+                  origin: "tourAppointments",
                   appointmentId,
                   returnContext: {
                     targetView: "tours",
                     tourId: context.type === "tour" && typeof context.tourId === "number" ? context.tourId : null,
                   },
                 });
-                setView("appointment");
               }}
             />
           ) : view === "teams" ? (
@@ -260,14 +279,14 @@ export default function Home({ onLogout }: HomeProps) {
             <EmployeesPage
               initialEmployeeId={selectedEmployeeId}
               onOpenAppointment={(appointmentId, context) => {
-                setAppointmentContext({
+                setAppointmentOverlayContext({
+                  origin: "employeeAppointments",
                   appointmentId,
                   returnContext: {
                     targetView: "employees",
                     employeeId: context.type === "employee" ? context.employeeId : selectedEmployeeId,
                   },
                 });
-                setView("appointment");
               }}
             />
           ) : view === "project" ? (
@@ -308,11 +327,11 @@ export default function Home({ onLogout }: HomeProps) {
               helpKey="appointments.list.mainNavigation"
               context={{ type: "standalone" }}
               onOpenAppointment={(appointmentId) => {
-                setAppointmentContext({
+                setAppointmentOverlayContext({
+                  origin: "appointmentsList",
                   appointmentId,
                   returnContext: { targetView: "appointmentsList" },
                 });
-                setView("appointment");
               }}
             />
           ) : view === "projectList" ? (
@@ -471,6 +490,30 @@ export default function Home({ onLogout }: HomeProps) {
             </div>
           ) : null}
         </div>
+        {appointmentOverlayContext ? (
+          <div
+            className="absolute inset-0 z-20 bg-slate-100 p-8"
+            data-testid="appointment-form-overlay"
+          >
+            <AppointmentForm
+              appointmentId={appointmentOverlayContext.appointmentId}
+              initialDate={appointmentOverlayContext.initialDate}
+              initialTourId={appointmentOverlayContext.initialTourId}
+              projectId={appointmentOverlayContext.projectId}
+              readOnlyFields={appointmentOverlayContext.readOnlyFields}
+              showBackButton
+              onBack={() => {
+                setAppointmentOverlayContext(null);
+              }}
+              onCancel={() => {
+                setAppointmentOverlayContext(null);
+              }}
+              onSaved={() => {
+                setAppointmentOverlayContext(null);
+              }}
+            />
+          </div>
+        ) : null}
       </main>
     </div>
   );

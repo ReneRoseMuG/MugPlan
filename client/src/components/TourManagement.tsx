@@ -30,8 +30,10 @@ type CascadePreviewItem = {
   startDate: string;
   endDate: string | null;
   tourName: string | null;
-  customerNumber: string;
+  customerNumber: string | null;
   customerName: string | null;
+  projectName: string | null;
+  orderNumber: string | null;
   currentEmployees: Array<{ id: number; fullName: string }>;
   eligible: boolean;
   conflictReason: "EMPLOYEE_OVERLAP" | "ALREADY_ASSIGNED" | null;

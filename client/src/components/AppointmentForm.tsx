@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Product, Project, Tag, Team, Tour } from "@shared/schema";
@@ -56,11 +56,13 @@ import type { Component, ComponentCategory, Note } from "@shared/schema";
 interface AppointmentFormProps {
   onCancel?: () => void;
   onSaved?: () => void;
+  onBack?: () => void;
   initialDate?: string;
   initialTourId?: number | null;
   projectId?: number;
   appointmentId?: number;
   readOnlyFields?: Array<"project" | "customer">;
+  showBackButton?: boolean;
 }
 
 interface AppointmentDetail {
@@ -232,11 +234,13 @@ const fetchJson = async <T,>(url: string) => {
 export function AppointmentForm({
   onCancel,
   onSaved,
+  onBack,
   initialDate,
   initialTourId,
   projectId,
   appointmentId,
   readOnlyFields,
+  showBackButton = false,
 }: AppointmentFormProps) {
   const { toast } = useToast();
   const projectsQueryKey = ["/api/projects?filter=all&scope=all"] as const;
@@ -565,6 +569,7 @@ export function AppointmentForm({
   const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
   const isProjectReadOnly = isLocked || readOnlyFields?.includes("project") === true;
   const isCustomerReadOnly = isLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
+  const closeAction = onBack ?? onCancel;
   const isFormDirty = initialFormSnapshot !== null && buildFormSnapshot({
     projectId: selectedProjectId,
     customerId: selectedCustomerId,
@@ -581,7 +586,7 @@ export function AppointmentForm({
       setCloseConfirmOpen(true);
       return;
     }
-    onCancel?.();
+    closeAction?.();
   };
 
   const addEmployees = (ids: number[]) => {
@@ -1357,6 +1362,17 @@ export function AppointmentForm({
     <EntityFormLayout
       title={isEditing ? "Termin bearbeiten" : "Neuer Termin"}
       icon={<Calendar className="w-6 h-6" />}
+      headerStartAction={showBackButton ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleRequestClose}
+          data-testid="button-back-appointment"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Zurueck
+        </Button>
+      ) : undefined}
       onClose={handleRequestClose}
       onCancel={handleRequestClose}
       onSubmit={!isLocked ? submitAppointment : undefined}
@@ -1789,7 +1805,7 @@ export function AppointmentForm({
             <AlertDialogAction
               onClick={() => {
                 setCloseConfirmOpen(false);
-                onCancel?.();
+                closeAction?.();
               }}
             >
               Verwerfen und schließen
