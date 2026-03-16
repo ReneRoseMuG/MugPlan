@@ -16,6 +16,7 @@ vite.config.ts.*
 server.log
 *.log
 *.zip
+.tmp-unit-*.json
 plans/
 reports/
 shared/uploads
