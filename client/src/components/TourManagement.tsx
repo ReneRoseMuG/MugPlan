@@ -13,6 +13,7 @@ import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-prov
 import { defaultEntityColor } from "@/lib/colors";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { useToast } from "@/hooks/use-toast";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
@@ -29,6 +30,8 @@ type CascadePreviewItem = {
   startDate: string;
   endDate: string | null;
   tourName: string | null;
+  customerNumber: string;
+  customerName: string | null;
   currentEmployees: Array<{ id: number; fullName: string }>;
   eligible: boolean;
   conflictReason: "EMPLOYEE_OVERLAP" | "ALREADY_ASSIGNED" | null;
@@ -155,6 +158,13 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     });
   };
 
+  const refreshCascadeDependentViews = async () => {
+    invalidateEmployees();
+    invalidateAppointmentViews();
+    await invalidateTagProjectionQueries();
+    await queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+  };
+
   const createMutation = useMutation({
     mutationFn: async ({ color }: { color: string }) => apiRequest("POST", "/api/tours", { color }),
     onSuccess: async (response) => {
@@ -255,10 +265,8 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       });
       return response.json() as Promise<CascadeExecuteResult>;
     },
-    onSuccess: () => {
-      invalidateEmployees();
-      invalidateAppointmentViews();
-      void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+    onSuccess: async () => {
+      await refreshCascadeDependentViews();
       void refreshMonitoringWithNotification(toast);
     },
   });
@@ -272,10 +280,8 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       });
       return response.json() as Promise<CascadeExecuteResult>;
     },
-    onSuccess: () => {
-      invalidateEmployees();
-      invalidateAppointmentViews();
-      void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+    onSuccess: async () => {
+      await refreshCascadeDependentViews();
       void refreshMonitoringWithNotification(toast);
     },
   });

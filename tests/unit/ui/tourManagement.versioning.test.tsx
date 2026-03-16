@@ -55,4 +55,11 @@ describe("FT07 TourManagement versioning wiring", () => {
   it("refreshes monitoring after appointment-wirksame cascade executions", () => {
     expect(source).toContain("void refreshMonitoringWithNotification(toast);");
   });
+
+  it("invalidates server-state driven appointment projections after cascade success", () => {
+    expect(source).toContain('import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";');
+    expect(source).toContain("const refreshCascadeDependentViews = async () => {");
+    expect(source).toContain("await invalidateTagProjectionQueries();");
+    expect(source).toContain("await queryClient.invalidateQueries({ queryKey: [\"/api/tours\"] });");
+  });
 });

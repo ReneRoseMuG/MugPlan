@@ -14,6 +14,8 @@ type PreviewItem = {
   startDate: string;
   endDate: string | null;
   tourName: string | null;
+  customerNumber: string;
+  customerName: string | null;
   currentEmployees: Array<{ id: number; fullName: string }>;
   eligible: boolean;
   conflictReason: "EMPLOYEE_OVERLAP" | "ALREADY_ASSIGNED" | null;
@@ -42,6 +44,19 @@ function conflictReasonLabel(reason: PreviewItem["conflictReason"]): string {
   }
 }
 
+function formatShortDate(dateValue: string): string {
+  const [year, month, day] = dateValue.split("-");
+  if (!year || !month || !day) return dateValue;
+  return `${day}.${month}.${year.slice(-2)}`;
+}
+
+function formatCustomerLabel(item: PreviewItem): string {
+  const customerName = item.customerName?.trim();
+  return customerName && customerName.length > 0
+    ? `K: ${item.customerNumber} - ${customerName}`
+    : `K: ${item.customerNumber}`;
+}
+
 export function TourEmployeeCascadeDialog({
   open,
   mode,
@@ -53,10 +68,10 @@ export function TourEmployeeCascadeDialog({
   onConfirm,
   onClose,
 }: TourEmployeeCascadeDialogProps) {
-  const title = mode === "add" ? "Mitarbeiter zur Tour kaskadieren" : "Mitarbeiter von Tour abziehen";
+  const title = mode === "add" ? "Mitarbeiter zu Tour-Terminen hinzufügen" : "Mitarbeiter von Tour-Terminen abziehen";
   const description = mode === "add"
-    ? `Waehlen Sie die zukuenftigen Termine aus, auf die ${employeeName} ausgerollt werden soll.`
-    : `Waehlen Sie die zukuenftigen Termine aus, aus denen ${employeeName} entfernt werden soll.`;
+    ? `Wählen Sie die zukünftigen Termine aus, für die ${employeeName} geplant werden soll.`
+    : `Wählen Sie die zukünftigen Termine aus, von denen ${employeeName} abgezogen werden soll.`;
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
@@ -69,7 +84,7 @@ export function TourEmployeeCascadeDialog({
         <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
           {previewItems.length === 0 ? (
             <div className="p-4 text-sm text-slate-500">
-              Keine zukuenftigen Termine betroffen.
+              Keine zukünftigen Termine betroffen.
             </div>
           ) : (
             <div className="divide-y">
@@ -99,9 +114,12 @@ export function TourEmployeeCascadeDialog({
                     />
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{item.startDate}</span>
-                        {item.endDate ? <span className="text-sm text-slate-500">bis {item.endDate}</span> : null}
+                        <span className="font-medium">{formatShortDate(item.startDate)}</span>
+                        {item.endDate ? <span className="text-sm text-slate-500">bis {formatShortDate(item.endDate)}</span> : null}
                         {item.tourName ? <span className="text-sm text-slate-500">{item.tourName}</span> : null}
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        {formatCustomerLabel(item)}
                       </div>
                       <div className="text-sm text-slate-600">
                         Mitarbeiter: {item.currentEmployees.length === 0
@@ -126,7 +144,7 @@ export function TourEmployeeCascadeDialog({
             Abbrechen
           </Button>
           <Button onClick={onConfirm} disabled={isSubmitting} data-testid="button-tour-employee-cascade-confirm">
-            {isSubmitting ? "Speichern..." : "Bestaetigen"}
+            {isSubmitting ? "Speichern..." : "Bestätigen"}
           </Button>
         </DialogFooter>
       </DialogContent>

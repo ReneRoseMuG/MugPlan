@@ -28,6 +28,8 @@ type CascadePreviewItem = {
   startDate: string;
   endDate: string | null;
   tourName: string | null;
+  customerNumber: string;
+  customerName: string | null;
   currentEmployees: Array<{ id: number; fullName: string }>;
   eligible: boolean;
   conflictReason: CascadeConflictReason | null;
@@ -227,6 +229,8 @@ export async function previewAddEmployeeCascade(tourId: number, employeeId: numb
         startDate: formatDateOnly(row.appointment.startDate),
         endDate: row.appointment.endDate ? formatDateOnly(row.appointment.endDate) : null,
         tourName: row.tour?.name ?? null,
+        customerNumber: row.customer.customerNumber,
+        customerName: row.customer.fullName ?? null,
         currentEmployees,
         eligible: conflictReason === null,
         conflictReason,
@@ -254,6 +258,8 @@ export async function previewRemoveEmployeeCascade(tourId: number, employeeId: n
       startDate: formatDateOnly(row.appointment.startDate),
       endDate: row.appointment.endDate ? formatDateOnly(row.appointment.endDate) : null,
       tourName: row.tour?.name ?? null,
+      customerNumber: row.customer.customerNumber,
+      customerName: row.customer.fullName ?? null,
       currentEmployees: employeesByAppointmentId.get(Number(row.appointment.id)) ?? [],
       eligible: true,
       conflictReason: null,

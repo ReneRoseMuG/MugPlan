@@ -116,6 +116,8 @@ const tourEmployeeCascadePreviewItemSchema = z.object({
   startDate: z.string(),
   endDate: z.string().nullable(),
   tourName: z.string().nullable(),
+  customerNumber: z.string(),
+  customerName: z.string().nullable(),
   currentEmployees: z.array(tourEmployeeCascadeAppointmentEmployeeSchema),
   eligible: z.boolean(),
   conflictReason: tourEmployeeCascadeConflictReasonSchema.nullable(),

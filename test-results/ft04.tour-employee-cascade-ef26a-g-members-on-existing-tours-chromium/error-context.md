@@ -1,0 +1,181 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - list
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - heading [level=1]: MuG Plan
+          - navigation:
+            - generic:
+              - generic: Terminplanung
+              - generic:
+                - button:
+                  - img
+                  - generic: Wochenuebersicht
+                - button:
+                  - img
+                  - generic: Monatsuebersicht
+                - button:
+                  - img
+                  - generic: Termine
+            - generic:
+              - generic: Projektplanung
+              - generic:
+                - button:
+                  - img
+                  - generic: Projekte
+                - button:
+                  - img
+                  - generic: Kunden
+            - generic:
+              - generic: Reports
+              - generic:
+                - button:
+                  - img
+                  - generic: Reports
+                - button:
+                  - img
+                  - generic: Monitoring
+                  - generic: "0"
+            - generic:
+              - generic: Mitarbeiter Verwaltung
+              - generic:
+                - button:
+                  - img
+                  - generic: Mitarbeiter
+                - button:
+                  - img
+                  - generic: Teams
+                - button:
+                  - img
+                  - generic: Touren
+            - generic:
+              - generic: Administration
+              - generic:
+                - button:
+                  - img
+                  - generic: Stammdaten
+                - button:
+                  - img
+                  - generic: Hilfetexte
+                - button:
+                  - img
+                  - generic: Benutzerverwaltung
+                - button:
+                  - img
+                  - generic: Einstellungen
+                - button:
+                  - img
+                  - generic: Demo-Daten
+            - generic:
+              - button:
+                - img
+                - generic: Logout
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]:
+                    - img
+                    - text: Tour 2
+                  - button:
+                    - img
+              - generic:
+                - generic:
+                  - generic:
+                    - tablist:
+                      - tab [selected]: Stammdaten
+                      - tab: Termine
+                    - tabpanel:
+                      - generic:
+                        - generic:
+                          - heading [level=3]:
+                            - img
+                            - text: Farbe
+                          - button:
+                            - generic:
+                              - generic: Farbe waehlen
+                              - textbox: "#4477aa"
+                            - textbox: "#4477aa"
+                        - generic:
+                          - generic:
+                            - generic: Mitarbeiter
+                            - generic:
+                              - button:
+                                - img
+                          - generic:
+                            - generic: Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.
+                            - generic: Keine Mitarbeiter zugewiesen
+                    - tabpanel
+                - generic:
+                  - button: Abbrechen
+                  - button: Tour loeschen
+                  - button: Speichern
+  - dialog:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+              - text: Mitarbeiter auswaehlen
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: FT04-BROWSER-CANDIDATE-0002, Fixture
+      - generic:
+        - generic:
+          - generic: Mitarbeiterfilter
+          - generic:
+            - generic:
+              - generic:
+                - generic: Name
+              - generic:
+                - textbox
+    - button:
+      - img
+      - generic: Close
+  - dialog "Mitarbeiter zu Tour-Terminen hinzufügen" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Mitarbeiter zu Tour-Terminen hinzufügen" [level=2] [ref=e5]
+      - paragraph [ref=e6]: Wählen Sie die zukünftigen Termine aus, für die FT04-BROWSER-CANDIDATE-0002, Fixture geplant werden soll.
+    - generic [ref=e8]:
+      - generic [ref=e9] [cursor=pointer]:
+        - 'checkbox "17.03.26 Tour 2 K: FT04-BROWSER-CUST-0003 - FT04-BROWSER-CUST-0003, Fixture Mitarbeiter: keine" [checked] [active] [ref=e10]':
+          - generic:
+            - img
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - generic [ref=e13]: 17.03.26
+            - generic [ref=e14]: Tour 2
+          - generic [ref=e15]: "K: FT04-BROWSER-CUST-0003 - FT04-BROWSER-CUST-0003, Fixture"
+          - generic [ref=e16]: "Mitarbeiter: keine"
+      - generic [ref=e17] [cursor=pointer]:
+        - 'checkbox "18.03.26 Tour 2 K: FT04-BROWSER-CUST-0003 - FT04-BROWSER-CUST-0003, Fixture Mitarbeiter: keine" [checked] [ref=e18]':
+          - generic:
+            - img
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - generic [ref=e21]: 18.03.26
+            - generic [ref=e22]: Tour 2
+          - generic [ref=e23]: "K: FT04-BROWSER-CUST-0003 - FT04-BROWSER-CUST-0003, Fixture"
+          - generic [ref=e24]: "Mitarbeiter: keine"
+    - generic [ref=e25]:
+      - button "Abbrechen" [ref=e26] [cursor=pointer]
+      - button "Bestätigen" [ref=e27] [cursor=pointer]
+    - button "Close" [ref=e28] [cursor=pointer]:
+      - img [ref=e29]
+      - generic [ref=e32]: Close
+```

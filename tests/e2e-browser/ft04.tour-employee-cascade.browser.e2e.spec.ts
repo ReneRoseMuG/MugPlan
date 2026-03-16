@@ -74,6 +74,9 @@ test("uses the cascade dialog for adding and removing members on existing tours"
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Mitarbeiter zu Tour-Terminen hinzufügen");
+  await expect(dialog).toContainText(project.customerNumber);
+  await expect(dialog).toContainText("FT04 Browser Projekt");
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${firstAppointment!.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${secondAppointment!.id}`)).toBeVisible();
   await dialog.getByTestId(`tour-employee-cascade-checkbox-${secondAppointment!.id}`).click();
@@ -91,8 +94,18 @@ test("uses the cascade dialog for adding and removing members on existing tours"
     return (payload.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b);
   }).toEqual([]);
 
+  await page.getByTestId("button-close-tour").click();
+  await page.getByTestId("nav-mitarbeiter").click();
+  const employeeCard = page.getByTestId(`employee-card-${candidate.id}`);
+  await expect(employeeCard.getByTestId(`badge-employee-tour-${candidate.id}`)).toContainText(tour.name);
+  await expect(employeeCard.getByTestId(`text-employee-current-appointments-${candidate.id}`)).toContainText("1");
+
+  await page.getByTestId("nav-touren").click();
+  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+
   await page.getByTestId(`badge-tour-member-${candidate.id}-remove`).click();
   await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Mitarbeiter von Tour-Terminen abziehen");
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${firstAppointment!.id}`)).toBeVisible();
   await expect(dialog.getByTestId("button-tour-employee-cascade-confirm")).toBeVisible();
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
@@ -102,4 +115,9 @@ test("uses the cascade dialog for adding and removing members on existing tours"
     const payload = await response.json();
     return payload.employee.tourId;
   }).toBeNull();
+
+  await page.getByTestId("button-close-tour").click();
+  await page.getByTestId("nav-mitarbeiter").click();
+  await expect(page.getByTestId(`badge-employee-tour-${candidate.id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`text-employee-current-appointments-${candidate.id}`)).toContainText("0");
 });
