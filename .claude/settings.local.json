@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/r.rose/repos/Plan/**)",
+      "Read(//c/Users/r.rose/repos/Plan/shared/**)",
+      "Bash(ls c:/Users/r.rose/repos/Plan/releases/work/vitest*)",
+      "Bash(node -e \"require\\(''''./server/config/runtimeEnv''''\\)\")"
+    ]
+  }
+}

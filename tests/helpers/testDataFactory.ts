@@ -386,6 +386,8 @@ export async function createRawAppointmentFixture(params: {
   projectId: number;
   startDate: string;
   title: string;
+  tourId?: number | null;
+  employeeIds?: number[];
 }) {
   const [project] = await db
     .select({
@@ -403,7 +405,7 @@ export async function createRawAppointmentFixture(params: {
     {
       projectId: params.projectId,
       customerId: project.customerId,
-      tourId: null,
+      tourId: params.tourId ?? null,
       title: params.title,
       description: null,
       startDate: new Date(`${params.startDate}T00:00:00`),
@@ -411,7 +413,7 @@ export async function createRawAppointmentFixture(params: {
       endDate: null,
       endTime: null,
     },
-    [],
+    params.employeeIds ?? [],
   );
   return Number(created.id);
 }
