@@ -650,7 +650,7 @@ export async function listAppointmentsByTourForDateRange(tourId: number, fromDat
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(
       and(
-        eq(appointments.tourId, tourId),
+        tourId === 0 ? isNull(appointments.tourId) : eq(appointments.tourId, tourId),
         lte(appointments.startDate, toDate),
         or(isNull(appointments.endDate), gte(appointments.endDate, fromDate)),
       ),

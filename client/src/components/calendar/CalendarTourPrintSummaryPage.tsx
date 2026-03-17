@@ -17,9 +17,11 @@ export function CalendarTourPrintSummaryPage({ page }: CalendarTourPrintSummaryP
         headline={page.tourName}
         subline={`Zeitraum: ${formatTourPrintDateShort2y(page.fromDate)} \u2013 ${formatTourPrintDateShort2y(page.toDate)}`}
       />
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <CalendarTourPrintMembersList members={page.members} />
-      </div>
+      {page.members.length > 0 && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <CalendarTourPrintMembersList members={page.members} />
+        </div>
+      )}
     </PrintPageShell>
   );
 }

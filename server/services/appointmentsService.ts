@@ -680,7 +680,10 @@ export async function listTourAppointments(
 }
 
 export async function getTourPrintPreview(params: { tourId: number; fromDate: string; weekCount: number }) {
-  const tour = await toursRepository.getTour(params.tourId);
+  const tour =
+    params.tourId === 0
+      ? { id: 0 as number, name: "Ohne Tour", color: null as string | null }
+      : await toursRepository.getTour(params.tourId);
   if (!tour) return null;
 
   const normalizedWeekCount = Math.max(1, Math.min(params.weekCount, 12));
@@ -690,7 +693,9 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
   const finalToDate = endOfWeek(lastWeekStart, { weekStartsOn: 1 });
 
   const [members, rows] = await Promise.all([
-    employeesRepository.getEmployeesByTour(params.tourId),
+    params.tourId === 0
+      ? Promise.resolve([] as { id: number; fullName: string }[])
+      : employeesRepository.getEmployeesByTour(params.tourId),
     appointmentsRepository.listAppointmentsByTourForDateRange(params.tourId, firstWeekStart, finalToDate),
   ]);
 

@@ -166,4 +166,74 @@ describe("FT31 integration: tour print preview", () => {
       .get("/api/tours/999999/print-preview?fromDate=2099-06-17&weekCount=1")
       .expect(404);
   });
+
+  it("returns appointments without tour assignment when tourId is 0", async () => {
+    const admin = await loginAdminAgent();
+    const seq = nextSeq();
+
+    const customer = await customersService.createCustomer({
+      customerNumber: `TPP-OT-${Date.now()}-${seq}`,
+      firstName: "Ohne",
+      lastName: `Tour-${seq}`,
+      fullName: `Tour-${seq}, Ohne`,
+      company: null,
+      email: null,
+      phone: "12345",
+      addressLine1: "Testgasse 1",
+      addressLine2: null,
+      postalCode: "10115",
+      city: "Berlin",
+      version: 1,
+    });
+
+    const project = await projectsService.createProject({
+      name: `OhTour Projekt ${seq}`,
+      customerId: customer.id,
+      orderNumber: `OT-${seq}`,
+      descriptionMd: null,
+      version: 1,
+    });
+
+    // Termin ohne Tour-Zuordnung
+    const appointmentWithoutTour = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-07-14",
+      endDate: "2099-07-14",
+      tourId: null,
+      employeeIds: [],
+    });
+
+    // Termin mit echter Tour – darf nicht erscheinen
+    const tourWithId = await admin.post("/api/tours").send({ color: "#ff0000" }).expect(201);
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-07-14",
+      endDate: "2099-07-14",
+      tourId: tourWithId.body.id,
+      employeeIds: [],
+    });
+
+    const requestedFromDate = "2099-07-14";
+    const expectedWeekStart = startOfWeek(new Date(`${requestedFromDate}T00:00:00`), { weekStartsOn: 1 });
+    const expectedWeekEnd = endOfWeek(expectedWeekStart, { weekStartsOn: 1 });
+
+    await admin
+      .get(`/api/tours/0/print-preview?fromDate=${requestedFromDate}&weekCount=1`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual(
+          expect.objectContaining({
+            fromDate: format(expectedWeekStart, "yyyy-MM-dd"),
+            toDate: format(expectedWeekEnd, "yyyy-MM-dd"),
+            tour: { id: 0, name: "Ohne Tour", color: null },
+          }),
+        );
+        expect(res.body.members).toEqual([]);
+        expect(res.body.weeks).toHaveLength(1);
+
+        const ids = res.body.appointments.map((a: { id: number }) => a.id);
+        expect(ids).toContain(appointmentWithoutTour!.id);
+        expect(ids).not.toContain(tourWithId.body.id);
+      });
+  });
 });

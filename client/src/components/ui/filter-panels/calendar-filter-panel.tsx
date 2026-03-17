@@ -100,6 +100,7 @@ export function CalendarFilterPanel({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Tour</SelectItem>
+                  <SelectItem value="0">Ohne Tour</SelectItem>
                   {tours.map((tour) => (
                     <SelectItem key={tour.id} value={String(tour.id)}>
                       {tour.name}
@@ -188,6 +189,7 @@ export function CalendarFilterPanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Tour</SelectItem>
+              <SelectItem value="0">Ohne Tour</SelectItem>
               {tours.map((tour) => (
                 <SelectItem key={tour.id} value={String(tour.id)}>
                   {tour.name}
