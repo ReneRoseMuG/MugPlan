@@ -28,6 +28,7 @@ interface TerminInfoBadgeProps {
   actionDisabled?: boolean;
   onDoubleClick?: () => void;
   compact?: boolean;
+  readOnly?: boolean;
 }
 
 const formatDateLabel = (value: string, compact: boolean) => {
@@ -72,6 +73,7 @@ export function TerminInfoBadge({
   actionDisabled = false,
   onDoubleClick,
   compact = false,
+  readOnly = false,
 }: TerminInfoBadgeProps) {
   const dateLabel = formatDateLabel(startDate, compact);
   const isMultiDay = Boolean(endDate && endDate !== startDate);
@@ -132,7 +134,7 @@ export function TerminInfoBadge({
       testId={testId}
       size={size}
       fullWidth={fullWidth}
-      onDoubleClick={onDoubleClick}
+      onDoubleClick={readOnly ? undefined : onDoubleClick}
       preview={previewAppointment
         ? createAppointmentWeeklyPanelPreview(previewAppointment, { sizeProfile: "sidebarTable" })
         : undefined}

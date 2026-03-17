@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { api, type MonitoringConfigResponse, type MonitoringListResponse } from "@shared/routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ListLayout } from "@/components/ui/list-layout";
@@ -15,13 +15,30 @@ type MonitoringPageProps = {
   isAdmin: boolean;
   initialItems?: MonitoringListResponse;
   isInitialLoading?: boolean;
+  onOpenAppointment?: (appointmentId: number) => void;
 };
 
-export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false }: MonitoringPageProps) {
+type MonitoringConfigDraft = {
+  allAppointments: boolean;
+  horizonDays: string;
+  minimumEmployees: string;
+};
+
+type MonitoringConfigSaveOptions = {
+  showSuccessToast: boolean;
+};
+
+function toDraftConfig(config: MonitoringConfigResponse["tr01"] | MonitoringConfigDraft): MonitoringConfigDraft {
+  return {
+    allAppointments: config.allAppointments,
+    horizonDays: String(config.horizonDays),
+    minimumEmployees: String(config.minimumEmployees),
+  };
+}
+
+export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
   const { toast } = useToast();
-  const [enabled, setEnabled] = useState(false);
-  const [horizonDays, setHorizonDays] = useState("14");
-  const [minimumEmployees, setMinimumEmployees] = useState("1");
+  const [draftConfig, setDraftConfig] = useState<MonitoringConfigDraft | null>(null);
 
   const monitoringQuery = useQuery<MonitoringListResponse>({
     queryKey: [api.monitoring.list.path],
@@ -51,22 +68,29 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     },
   });
 
-  useEffect(() => {
-    if (!configQuery.data) return;
-    setEnabled(configQuery.data.tr01.enabled);
-    setHorizonDays(String(configQuery.data.tr01.horizonDays));
-    setMinimumEmployees(String(configQuery.data.tr01.minimumEmployees));
-  }, [configQuery.data]);
+  const resolvedConfig = draftConfig ?? (configQuery.data
+    ? toDraftConfig(configQuery.data.tr01)
+    : {
+        allAppointments: false,
+        horizonDays: "14",
+        minimumEmployees: "1",
+      });
+  const allAppointments = resolvedConfig.allAppointments;
+  const horizonDays = resolvedConfig.horizonDays;
+  const minimumEmployees = resolvedConfig.minimumEmployees;
 
   const saveConfigMutation = useMutation({
-    mutationFn: async (payload: MonitoringConfigResponse) => {
+    mutationFn: async ({ payload }: { payload: MonitoringConfigResponse; options: MonitoringConfigSaveOptions }) => {
       const response = await apiRequest("PUT", api.monitoring.adminConfigSet.path, payload);
       return (await response.json()) as MonitoringConfigResponse;
     },
-    onSuccess: async (config) => {
+    onSuccess: async (config, variables) => {
       queryClient.setQueryData([api.monitoring.adminConfigGet.path], config);
+      setDraftConfig(null);
       await queryClient.invalidateQueries({ queryKey: [api.monitoring.list.path] });
-      toast({ title: "Monitoring-Konfiguration gespeichert" });
+      if (variables.options.showSuccessToast) {
+        toast({ title: "Monitoring-Konfiguration gespeichert" });
+      }
     },
     onError: (error) => {
       toast({
@@ -130,40 +154,102 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     }
 
     await saveConfigMutation.mutateAsync({
-      tr01: {
-        enabled,
-        horizonDays: parsedHorizonDays,
-        minimumEmployees: parsedMinimumEmployees,
+      payload: {
+        tr01: {
+          allAppointments,
+          horizonDays: parsedHorizonDays,
+          minimumEmployees: parsedMinimumEmployees,
+        },
+      },
+      options: {
+        showSuccessToast: true,
       },
     });
+  };
+
+  const handleToggleAllAppointments = async (checked: boolean) => {
+    const parsedHorizonDays = Number(horizonDays);
+    const parsedMinimumEmployees = Number(minimumEmployees);
+
+    if (!Number.isInteger(parsedHorizonDays) || parsedHorizonDays < 1) {
+      toast({ title: "Vorlaufhorizont muss mindestens 1 Tag sein", variant: "destructive" });
+      return;
+    }
+    if (!Number.isInteger(parsedMinimumEmployees) || parsedMinimumEmployees < 1) {
+      toast({ title: "Mindestzahl Mitarbeiter muss mindestens 1 sein", variant: "destructive" });
+      return;
+    }
+
+    const nextDraft = {
+      allAppointments: checked,
+      horizonDays,
+      minimumEmployees,
+    };
+    setDraftConfig(nextDraft);
+
+    try {
+      await saveConfigMutation.mutateAsync({
+        payload: {
+          tr01: {
+            allAppointments: checked,
+            horizonDays: parsedHorizonDays,
+            minimumEmployees: parsedMinimumEmployees,
+          },
+        },
+        options: {
+          showSuccessToast: false,
+        },
+      });
+    } catch {
+      setDraftConfig((current) => current ?? nextDraft);
+    }
   };
 
   const content = (
     <div className="flex h-full min-h-0 flex-col gap-4 p-6">
       {isAdmin ? (
         <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="monitoring-config-panel">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[180px_180px_180px_auto]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[180px_180px_auto]">
             <div className="flex items-center gap-3">
-              <Switch checked={enabled} onCheckedChange={setEnabled} data-testid="switch-monitoring-enabled" />
-              <span className="text-sm text-slate-700">{enabled ? "TR-01 aktiv" : "TR-01 deaktiviert"}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-slate-700">Vorlaufhorizont</span>
-              <Input
-                type="number"
-                min={1}
-                value={horizonDays}
-                onChange={(event) => setHorizonDays(event.target.value)}
-                data-testid="input-monitoring-horizon-days"
+              <Switch
+                checked={allAppointments}
+                onCheckedChange={(checked) => {
+                  void handleToggleAllAppointments(checked);
+                }}
+                disabled={(configQuery.isLoading && !configQuery.data) || saveConfigMutation.isPending}
+                data-testid="switch-monitoring-all-appointments"
               />
+              <span className="text-sm text-slate-700">alle Termine</span>
             </div>
+            {!allAppointments ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-slate-700">Vorlaufhorizont</span>
+                <Input
+                  type="number"
+                  min={1}
+                  value={horizonDays}
+                  onChange={(event) => {
+                    setDraftConfig((current) => ({
+                      ...toDraftConfig(current ?? configQuery.data?.tr01 ?? resolvedConfig),
+                      horizonDays: event.target.value,
+                    }));
+                  }}
+                  data-testid="input-monitoring-horizon-days"
+                />
+              </div>
+            ) : null}
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-slate-700">Mindestzahl Mitarbeiter</span>
               <Input
                 type="number"
                 min={1}
                 value={minimumEmployees}
-                onChange={(event) => setMinimumEmployees(event.target.value)}
+                onChange={(event) => {
+                  setDraftConfig((current) => ({
+                    ...toDraftConfig(current ?? configQuery.data?.tr01 ?? resolvedConfig),
+                    minimumEmployees: event.target.value,
+                  }));
+                }}
                 data-testid="input-monitoring-minimum-employees"
               />
             </div>
@@ -185,6 +271,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
           columns={columns}
           rows={monitoringQuery.data ?? []}
           rowKey={(row) => `${row.appointmentId}-${row.triggerName}`}
+          onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
           testId="table-monitoring"
           stickyHeader
           emptyState={(
@@ -203,16 +290,6 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       title="Monitoring"
       icon={<AlertTriangle className="h-5 w-5" />}
       isLoading={isInitialLoading && !initialItems}
-      headerActions={(
-        <Button
-          variant="outline"
-          onClick={() => void monitoringQuery.refetch()}
-          data-testid="button-monitoring-refresh"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Aktualisieren
-        </Button>
-      )}
       contentSlot={content}
     />
   );

@@ -2,9 +2,9 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TR-01 meldet nur zukuenftige Termine innerhalb des konfigurierten Horizonts.
+ * - TR-01 meldet zukuenftige Termine innerhalb des konfigurierten Horizonts oder optional alle zukuenftigen Termine.
  * - Unterbesetzte Termine liefern Triggername und Problemtext stabil.
- * - Ohne aktive Trigger oder ohne Lese-Rolle bleibt das Ergebnis leer bzw. gesperrt.
+ * - Ohne Lese-Rolle bleibt das Ergebnis gesperrt.
  *
  * Fehlerfaelle:
  * - Vergangene oder ausserhalb des Horizonts liegende Termine tauchen im Monitoring auf.
@@ -37,7 +37,7 @@ describe("FT31 unit: monitoringService", () => {
     vi.setSystemTime(new Date("2098-12-31T12:00:00.000Z"));
     vi.clearAllMocks();
     hoisted.getGlobalSettingValueMock.mockImplementation(async (key: string) => {
-      if (key === "monitoring.tr01.enabled") return true;
+      if (key === "monitoring.tr01.allAppointments") return false;
       if (key === "monitoring.tr01.horizonDays") return 7;
       if (key === "monitoring.tr01.minimumEmployees") return 2;
       return undefined;
@@ -97,18 +97,40 @@ describe("FT31 unit: monitoringService", () => {
     ]);
   });
 
-  it("returns an empty list when TR-01 is disabled", async () => {
+  it("loads all future appointments when all-appointments is enabled", async () => {
     hoisted.getGlobalSettingValueMock.mockImplementation(async (key: string) => {
-      if (key === "monitoring.tr01.enabled") return false;
+      if (key === "monitoring.tr01.allAppointments") return true;
       if (key === "monitoring.tr01.horizonDays") return 7;
       if (key === "monitoring.tr01.minimumEmployees") return 2;
       return undefined;
     });
+    hoisted.listAppointmentsForMonitoringMock.mockResolvedValue([
+      {
+        appointmentId: 50,
+        startDate: "2099-02-15",
+        endDate: null,
+        tourName: null,
+        employeeCount: 0,
+      },
+    ]);
 
     const result = await listMonitoringItems("ADMIN");
 
-    expect(result).toEqual([]);
-    expect(hoisted.listAppointmentsForMonitoringMock).not.toHaveBeenCalled();
+    expect(hoisted.listAppointmentsForMonitoringMock).toHaveBeenCalledWith({
+      fromDate: new Date(2098, 11, 31),
+      toDate: undefined,
+    });
+    expect(result).toEqual([
+      {
+        appointmentId: 50,
+        startDate: "2099-02-15",
+        endDate: null,
+        tourName: null,
+        employeeCount: 0,
+        triggerName: "TR-01 Ressourcenunterschreitung",
+        problemDescription: "Nur 0 Mitarbeiter zugewiesen; mindestens 2 erforderlich.",
+      },
+    ]);
   });
 
   it("rejects readers", async () => {

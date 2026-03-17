@@ -228,10 +228,10 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL"],
     validate: (value: unknown): value is boolean => typeof value === "boolean",
   },
-  monitoringTr01Enabled: {
-    key: "monitoring.tr01.enabled",
-    label: "Monitoring TR-01 aktiv",
-    description: "Aktiviert den Monitoring-Trigger fuer Ressourcenunterschreitung.",
+  monitoringTr01AllAppointments: {
+    key: "monitoring.tr01.allAppointments",
+    label: "Monitoring TR-01 alle Termine",
+    description: "Prueft bei TR-01 alle zukuenftigen Termine statt nur den Vorlaufhorizont.",
     type: "boolean",
     defaultValue: false,
     allowedScopes: ["GLOBAL"],

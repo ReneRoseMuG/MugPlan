@@ -4,7 +4,7 @@ import * as userSettingsService from "./userSettingsService";
 
 export type MonitoringConfig = {
   tr01: {
-    enabled: boolean;
+    allAppointments: boolean;
     horizonDays: number;
     minimumEmployees: number;
   };
@@ -85,15 +85,15 @@ function assertAdmin(roleKey: CanonicalRoleKey): void {
 }
 
 async function readMonitoringConfig(): Promise<MonitoringConfig> {
-  const [enabledValue, horizonDaysValue, minimumEmployeesValue] = await Promise.all([
-    userSettingsService.getGlobalSettingValue("monitoring.tr01.enabled"),
+  const [allAppointmentsValue, horizonDaysValue, minimumEmployeesValue] = await Promise.all([
+    userSettingsService.getGlobalSettingValue("monitoring.tr01.allAppointments"),
     userSettingsService.getGlobalSettingValue("monitoring.tr01.horizonDays"),
     userSettingsService.getGlobalSettingValue("monitoring.tr01.minimumEmployees"),
   ]);
 
   return {
     tr01: {
-      enabled: enabledValue === true,
+      allAppointments: allAppointmentsValue === true,
       horizonDays: typeof horizonDaysValue === "number" ? horizonDaysValue : 14,
       minimumEmployees: typeof minimumEmployeesValue === "number" ? minimumEmployeesValue : 1,
     },
@@ -108,41 +108,34 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
   assertMonitoringReadRole(roleKey);
 
   const config = await readMonitoringConfig();
-  const activeTriggers = config.tr01.enabled ? [config.tr01] : [];
-  if (activeTriggers.length === 0) {
-    return [];
-  }
-
   const todayBerlin = getBerlinTodayDateString();
-  const maxHorizonDays = Math.max(...activeTriggers.map((trigger) => trigger.horizonDays));
-  const horizonEndDate = addDaysToDateOnly(todayBerlin, maxHorizonDays);
+  const tr01HorizonEnd = addDaysToDateOnly(todayBerlin, config.tr01.horizonDays);
   const rows = await appointmentsRepository.listAppointmentsForMonitoring({
     fromDate: parseDateOnly(todayBerlin),
-    toDate: parseDateOnly(horizonEndDate),
+    toDate: config.tr01.allAppointments ? undefined : parseDateOnly(tr01HorizonEnd),
   });
 
   const items: MonitoringItem[] = [];
-
-  if (config.tr01.enabled) {
-    const tr01HorizonEnd = addDaysToDateOnly(todayBerlin, config.tr01.horizonDays);
-    for (const row of rows) {
-      if (row.startDate < todayBerlin || row.startDate > tr01HorizonEnd) {
-        continue;
-      }
-      if (row.employeeCount >= config.tr01.minimumEmployees) {
-        continue;
-      }
-
-      items.push({
-        appointmentId: row.appointmentId,
-        startDate: row.startDate,
-        endDate: row.endDate,
-        tourName: row.tourName,
-        employeeCount: row.employeeCount,
-        triggerName: "TR-01 Ressourcenunterschreitung",
-        problemDescription: buildProblemDescription(row.employeeCount, config.tr01.minimumEmployees),
-      });
+  for (const row of rows) {
+    if (row.startDate < todayBerlin) {
+      continue;
     }
+    if (!config.tr01.allAppointments && row.startDate > tr01HorizonEnd) {
+      continue;
+    }
+    if (row.employeeCount >= config.tr01.minimumEmployees) {
+      continue;
+    }
+
+    items.push({
+      appointmentId: row.appointmentId,
+      startDate: row.startDate,
+      endDate: row.endDate,
+      tourName: row.tourName,
+      employeeCount: row.employeeCount,
+      triggerName: "TR-01 Ressourcenunterschreitung",
+      problemDescription: buildProblemDescription(row.employeeCount, config.tr01.minimumEmployees),
+    });
   }
 
   return items;
@@ -185,10 +178,10 @@ export async function setMonitoringConfigForAdmin(
   const versionByKey = new Map(resolvedSettings.map((setting) => [setting.key, setting.globalVersion ?? 1] as const));
 
   await userSettingsService.setSettingForUser(userId, {
-    key: "monitoring.tr01.enabled",
+    key: "monitoring.tr01.allAppointments",
     scopeType: "GLOBAL",
-    version: versionByKey.get("monitoring.tr01.enabled") ?? 1,
-    value: config.tr01.enabled,
+    version: versionByKey.get("monitoring.tr01.allAppointments") ?? 1,
+    value: config.tr01.allAppointments,
   });
   await userSettingsService.setSettingForUser(userId, {
     key: "monitoring.tr01.horizonDays",

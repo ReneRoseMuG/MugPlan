@@ -836,8 +836,12 @@ export async function listAppointmentsForList(
 
 export async function listAppointmentsForMonitoring(params: {
   fromDate: Date;
-  toDate: Date;
+  toDate?: Date;
 }) {
+  const whereClause = params.toDate
+    ? and(gte(appointments.startDate, params.fromDate), lte(appointments.startDate, params.toDate))
+    : gte(appointments.startDate, params.fromDate);
+
   return db
     .select({
       appointmentId: appointments.id,
@@ -849,7 +853,7 @@ export async function listAppointmentsForMonitoring(params: {
     .from(appointments)
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .leftJoin(appointmentEmployees, eq(appointmentEmployees.appointmentId, appointments.id))
-    .where(and(gte(appointments.startDate, params.fromDate), lte(appointments.startDate, params.toDate)))
+    .where(whereClause)
     .groupBy(appointments.id, appointments.startDate, appointments.endDate, tours.name)
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }

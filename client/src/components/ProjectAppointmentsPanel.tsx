@@ -103,6 +103,7 @@ export function ProjectAppointmentsPanel({
       isLoading={isLoading}
       todayBerlin={todayBerlin}
       addAction={addAction}
+      readOnly
     />
   );
 }

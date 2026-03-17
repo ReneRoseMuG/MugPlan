@@ -60,6 +60,7 @@ export function CustomerAppointmentsPanel({ customerId, className }: CustomerApp
       items={items}
       isLoading={isLoading}
       todayBerlin={todayBerlin}
+      readOnly
     />
   );
 }

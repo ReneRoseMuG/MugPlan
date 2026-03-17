@@ -78,7 +78,7 @@ type AppointmentContextState = {
   weekScrollLeft?: number | null;
 };
 
-type AppointmentOverlayOrigin = "appointmentsList" | "employeeAppointments" | "tourAppointments";
+type AppointmentOverlayOrigin = "appointmentsList" | "employeeAppointments" | "tourAppointments" | "monitoring";
 
 type AppointmentOverlayState = AppointmentContextState & {
   origin: AppointmentOverlayOrigin;
@@ -381,6 +381,13 @@ export default function Home({ onLogout }: HomeProps) {
               isAdmin={isAdmin}
               initialItems={monitoringItems}
               isInitialLoading={isMonitoringLoading}
+              onOpenAppointment={(appointmentId) => {
+                setAppointmentOverlayContext({
+                  origin: "monitoring",
+                  appointmentId,
+                  returnContext: { targetView: "monitoring" },
+                });
+              }}
             />
           ) : isContextualCalendarView ? (
             <CalendarWorkspace

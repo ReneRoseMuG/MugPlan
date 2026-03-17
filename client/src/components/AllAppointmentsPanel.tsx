@@ -38,6 +38,7 @@ interface AllAppointmentsPanelProps {
   addAction?: AllAppointmentsPanelAction;
   emptyStateLabel?: string;
   className?: string;
+  readOnly?: boolean;
 }
 
 export function AllAppointmentsPanel({
@@ -51,6 +52,7 @@ export function AllAppointmentsPanel({
   addAction,
   emptyStateLabel,
   className,
+  readOnly = false,
 }: AllAppointmentsPanelProps) {
   const currentAndUpcomingItems = items.filter((appointment) => appointment.startDate >= todayBerlin);
   const historicalItems = items.filter((appointment) => appointment.startDate < todayBerlin);
@@ -90,6 +92,7 @@ export function AllAppointmentsPanel({
                   testId={appointment.testId}
                   fullWidth
                   compact={compact}
+                  readOnly={readOnly}
                 />
               ))}
             </div>
@@ -117,6 +120,7 @@ export function AllAppointmentsPanel({
                       testId={appointment.testId}
                       fullWidth
                       compact={compact}
+                      readOnly={readOnly}
                     />
                   ))}
                 </div>

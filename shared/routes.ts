@@ -372,7 +372,7 @@ const monitoringItemSchema = z.object({
 });
 
 const monitoringTriggerConfigSchema = z.object({
-  enabled: z.boolean(),
+  allAppointments: z.boolean(),
   horizonDays: z.number().int().min(1),
   minimumEmployees: z.number().int().min(1),
 }).strict();

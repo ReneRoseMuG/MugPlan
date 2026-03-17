@@ -64,7 +64,7 @@ async function createRoleAgent(roleCode: "ADMIN" | "DISPATCHER" | "READER") {
 }
 
 async function configureMonitoring(agent: Awaited<ReturnType<typeof createRoleAgent>>["agent"], payload: {
-  enabled: boolean;
+  allAppointments: boolean;
   horizonDays: number;
   minimumEmployees: number;
 }) {
@@ -84,7 +84,7 @@ describe("FT31 integration: monitoring", () => {
     const employeeB = await createEmployeeFixture("FT31-EMP");
 
     await configureMonitoring(admin.agent, {
-      enabled: true,
+      allAppointments: false,
       horizonDays: 3,
       minimumEmployees: 2,
     });
@@ -139,7 +139,7 @@ describe("FT31 integration: monitoring", () => {
     const admin = await createRoleAgent("ADMIN");
     const dispatcher = await createRoleAgent("DISPATCHER");
     await configureMonitoring(admin.agent, {
-      enabled: false,
+      allAppointments: false,
       horizonDays: 14,
       minimumEmployees: 1,
     });
@@ -147,7 +147,7 @@ describe("FT31 integration: monitoring", () => {
     const getResponse = await admin.agent.get("/api/admin/monitoring/config").expect(200);
     expect(getResponse.body).toEqual({
       tr01: {
-        enabled: false,
+        allAppointments: false,
         horizonDays: 14,
         minimumEmployees: 1,
       },
@@ -155,13 +155,13 @@ describe("FT31 integration: monitoring", () => {
 
     await admin.agent.put("/api/admin/monitoring/config").send({
       tr01: {
-        enabled: true,
+        allAppointments: true,
         horizonDays: 5,
         minimumEmployees: 3,
       },
     }).expect(200).expect(({ body }) => {
       expect(body.tr01).toEqual({
-        enabled: true,
+        allAppointments: true,
         horizonDays: 5,
         minimumEmployees: 3,
       });
@@ -169,7 +169,7 @@ describe("FT31 integration: monitoring", () => {
 
     await admin.agent.put("/api/admin/monitoring/config").send({
       tr01: {
-        enabled: true,
+        allAppointments: true,
         horizonDays: 0,
         minimumEmployees: 0,
       },
@@ -178,7 +178,7 @@ describe("FT31 integration: monitoring", () => {
     await dispatcher.agent.get("/api/admin/monitoring/config").expect(403);
     await dispatcher.agent.put("/api/admin/monitoring/config").send({
       tr01: {
-        enabled: true,
+        allAppointments: false,
         horizonDays: 3,
         minimumEmployees: 2,
       },
@@ -193,7 +193,7 @@ describe("FT31 integration: monitoring", () => {
     const customer = await createCustomerFixture("FT31-2FA-CUST");
 
     await configureMonitoring(admin.agent, {
-      enabled: true,
+      allAppointments: false,
       horizonDays: 2,
       minimumEmployees: 1,
     });
@@ -224,6 +224,31 @@ describe("FT31 integration: monitoring", () => {
       expect(body[0]).toMatchObject({
         appointmentId: appointment.id,
         startDate: getRelativeBerlinDate(1),
+        triggerName: "TR-01 Ressourcenunterschreitung",
+      });
+    });
+  });
+
+  it("ignores the configured horizon when all appointments is enabled", async () => {
+    const admin = await createRoleAgent("ADMIN");
+    const customer = await createCustomerFixture("FT31-ALL-CUST");
+
+    await configureMonitoring(admin.agent, {
+      allAppointments: true,
+      horizonDays: 1,
+      minimumEmployees: 1,
+    });
+    const farFutureAppointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(40),
+      employeeIds: [],
+    });
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toHaveLength(1);
+      expect(body[0]).toMatchObject({
+        appointmentId: farFutureAppointment.id,
+        startDate: getRelativeBerlinDate(40),
         triggerName: "TR-01 Ressourcenunterschreitung",
       });
     });

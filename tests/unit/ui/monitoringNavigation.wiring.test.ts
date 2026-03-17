@@ -38,6 +38,7 @@ describe("FT31 unit: monitoring navigation wiring", () => {
     expect(homeSource).toContain("monitoringCount={canAccessMonitoring ? monitoringItems?.length ?? 0 : undefined}");
     expect(pageSource).toContain("queryKey: [api.monitoring.list.path]");
     expect(pageSource).toContain('testId="table-monitoring"');
+    expect(pageSource).toContain("onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}");
     expect(pageSource).toContain("api.monitoring.adminConfigSet.path");
   });
 

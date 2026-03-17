@@ -19,7 +19,7 @@ export type UserSettingKey =
   | "toastDesktopPosition"
   | "backup_enabled"
   | "auth_two_factor_enabled"
-  | "monitoring.tr01.enabled"
+  | "monitoring.tr01.allAppointments"
   | "monitoring.tr01.horizonDays"
   | "monitoring.tr01.minimumEmployees"
   | "calendarWeekendColumnPercent"
@@ -40,7 +40,7 @@ type UserSettingValueByKey = {
   toastDesktopPosition: ToastDesktopPosition;
   backup_enabled: boolean;
   auth_two_factor_enabled: boolean;
-  "monitoring.tr01.enabled": boolean;
+  "monitoring.tr01.allAppointments": boolean;
   "monitoring.tr01.horizonDays": number;
   "monitoring.tr01.minimumEmployees": number;
   calendarWeekendColumnPercent: number;
@@ -162,7 +162,7 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     if (key === "auth_two_factor_enabled") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
     }
-    if (key === "monitoring.tr01.enabled") {
+    if (key === "monitoring.tr01.allAppointments") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
     }
     if (key === "monitoring.tr01.horizonDays") {

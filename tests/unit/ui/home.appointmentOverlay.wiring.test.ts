@@ -23,16 +23,18 @@ describe("FT01/FT04 UI: home appointment overlay wiring", () => {
   const source = readFileSync(path.resolve(process.cwd(), "client/src/pages/Home.tsx"), "utf8");
 
   it("defines a dedicated overlay state with origin-aware typing", () => {
-    expect(source).toContain("type AppointmentOverlayOrigin = \"appointmentsList\" | \"employeeAppointments\" | \"tourAppointments\";");
+    expect(source).toContain("type AppointmentOverlayOrigin = \"appointmentsList\" | \"employeeAppointments\" | \"tourAppointments\" | \"monitoring\";");
     expect(source).toContain("type AppointmentOverlayState = AppointmentContextState & {");
     expect(source).toContain("const [appointmentOverlayContext, setAppointmentOverlayContext] = useState<AppointmentOverlayState | null>(null);");
   });
 
-  it("opens the overlay from standalone, employee and tour appointment lists", () => {
+  it("opens the overlay from standalone, employee, tour and monitoring appointment lists", () => {
     expect(source).toContain("origin: \"appointmentsList\"");
     expect(source).toContain("origin: \"employeeAppointments\"");
     expect(source).toContain("origin: \"tourAppointments\"");
+    expect(source).toContain("origin: \"monitoring\"");
     expect(source).toMatch(/view === "appointmentsList"[\s\S]*setAppointmentOverlayContext\(/);
+    expect(source).toMatch(/view === "monitoring"[\s\S]*setAppointmentOverlayContext\(/);
   });
 
   it("renders the appointment form as fullscreen overlay with back button and close handlers", () => {
