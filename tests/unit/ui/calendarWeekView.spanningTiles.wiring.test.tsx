@@ -63,7 +63,7 @@ describe("FT03 UI: CalendarWeekView spanning tile wiring", () => {
   it("keeps day cells for single-day appointments and renders a full-column background layer", () => {
     expect(source).toContain("key={`week-lane-column-background-${tourLane.laneKey}-${dayIdx}`}");
     expect(source).toContain('className={isWeekend ? "bg-slate-200/45" : "bg-white/80"}');
-    expect(source).toContain("gridRow: `1 / span ${totalLaneRowCount}`");
+    expect(source).toContain("gridRow: `1 / span ${laneGridRowCount}`");
     expect(source).toContain("laneRenderData.singleDayGridItems.map(({ appointmentId, gridColumn, gridRow }) => {");
     expect(source).toContain("key={`week-single-grid-item-${appointment.id}`}");
     expect(source).toContain("style={{ gridColumn, gridRow, padding: \"0.5rem\", zIndex: 10 }}");

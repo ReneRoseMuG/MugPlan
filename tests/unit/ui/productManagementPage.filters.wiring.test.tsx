@@ -34,7 +34,7 @@ describe("FT27 UI: product management component architecture wiring", () => {
     expect(source).toContain("components={components}");
     expect(source).toContain("async function createStandaloneComponent");
     expect(source).toContain("async function updateComponentData");
-    expect(source).toContain("async function deleteSelectedComponent");
+    expect(source).toContain("const deleteSelectedComponentWithConflictDetails = async");
     expect(source).toContain("function resolveComponentDeleteError");
     expect(source).toContain("deleteSelectedComponentWithConflictDetails");
     expect(source).toContain("assignedProductCount");

@@ -6,8 +6,8 @@
  *
  * Abgedeckte Regeln:
  * - Gueltige Enum-Werte werden unveraendert uebernommen.
- * - Fehlende Werte fallen auf medium zurueck.
- * - Ungueltige Werte fallen auf medium zurueck.
+ * - Fehlende Werte fallen auf large zurueck.
+ * - Ungueltige Werte fallen auf large zurueck.
  *
  * Fehlerfaelle:
  * - Nicht-Enum-Werte duerfen keine ungueltige Preview-Groesse erzeugen.
@@ -47,21 +47,21 @@ describe("FT16 useSettings helpTextPreviewSize", () => {
     expect(readResolvedValue()).toBe("large");
   });
 
-  it("falls back to medium for missing values", () => {
+  it("falls back to large for missing values", () => {
     useSettingsContextMock.mockReturnValue({
       settingsByKey: new Map(),
     });
 
-    expect(readResolvedValue()).toBe("medium");
+    expect(readResolvedValue()).toBe("large");
   });
 
-  it("falls back to medium for invalid values", () => {
+  it("falls back to large for invalid values", () => {
     useSettingsContextMock.mockReturnValue({
       settingsByKey: new Map([
         ["helpTextPreviewSize", { resolvedValue: "x-large" }],
       ]),
     });
 
-    expect(readResolvedValue()).toBe("medium");
+    expect(readResolvedValue()).toBe("large");
   });
 });
