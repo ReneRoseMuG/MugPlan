@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -20,9 +20,10 @@ interface TeamWithMembers extends Team {
 
 interface TeamManagementProps {
   onCancel?: () => void;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
-export function TeamManagement({ onCancel }: TeamManagementProps) {
+export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProps) {
   const { toast } = useToast();
   const [editingTeam, setEditingTeam] = useState<TeamWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -175,6 +176,10 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     setEditingTeam(target);
     setIsCreating(false);
   };
+
+  useEffect(() => {
+    onEditingChange?.(!!editingTeam || isCreating);
+  }, [editingTeam, isCreating, onEditingChange]);
 
   const handleDelete = (team: TeamWithMembers) => {
     if (window.confirm(`Wollen Sie das Team ${team.name} wirklich löschen?`)) {

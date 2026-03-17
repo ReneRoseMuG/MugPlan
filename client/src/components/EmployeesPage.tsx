@@ -45,6 +45,7 @@ interface EmployeesPageProps {
   onCancel?: () => void;
   onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
   initialEmployeeId?: number | null;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 type ViewMode = "board" | "table";
@@ -95,7 +96,7 @@ function extractApiCode(error: unknown): string | null {
   return match?.[1] ?? null;
 }
 
-export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmployeeId = null }: EmployeesPageProps) {
+export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmployeeId = null, onEditingChange }: EmployeesPageProps) {
   const handleClose = onClose || onCancel;
   const { toast } = useToast();
   const { settingsByKey, setSetting } = useSettings();
@@ -123,6 +124,10 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
     setSelectedEmployeeId(initialEmployeeId);
     setIsCreating(false);
   }, [initialEmployeeId]);
+
+  useEffect(() => {
+    onEditingChange?.(isCreating || selectedEmployeeId !== null);
+  }, [isCreating, selectedEmployeeId, onEditingChange]);
 
   useEffect(() => {
     setViewMode(resolvedViewMode);

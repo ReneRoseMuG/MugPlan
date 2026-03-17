@@ -60,6 +60,7 @@ interface TourManagementProps {
   userRole?: string;
   onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
   initialTourId?: number | null;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 function buildCascadeDialogState(params: Omit<CascadeDialogState, "selectedAppointmentIds" | "open">): CascadeDialogState {
@@ -72,7 +73,7 @@ function buildCascadeDialogState(params: Omit<CascadeDialogState, "selectedAppoi
   };
 }
 
-export function TourManagement({ onCancel, userRole, onOpenAppointment, initialTourId = null }: TourManagementProps) {
+export function TourManagement({ onCancel, userRole, onOpenAppointment, initialTourId = null, onEditingChange }: TourManagementProps) {
   const { toast } = useToast();
   const [editingTour, setEditingTour] = useState<TourWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -455,6 +456,10 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     if (!initialTour) return;
     setEditingTour(initialTour);
   }, [initialTourId, isCreating, editingTour, toursWithMembers]);
+
+  useEffect(() => {
+    onEditingChange?.(!!editingTour || isCreating);
+  }, [editingTour, isCreating, onEditingChange]);
 
   const isMutatingMembers = previewAddCascadeMutation.isPending
     || previewRemoveCascadeMutation.isPending
