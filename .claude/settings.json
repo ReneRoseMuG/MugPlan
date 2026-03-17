@@ -4,7 +4,9 @@
       "Bash(npm run:*)",
       "Bash(npx tsc:*)",
       "Bash(xargs grep:*)",
-      "Bash(ls -la /c/Users/r.rose/repos/Plan/releases/work/client/src/components/ui/*-dialog.tsx)"
+      "Bash(ls -la /c/Users/r.rose/repos/Plan/releases/work/client/src/components/ui/*-dialog.tsx)",
+      "Bash(find c:/Users/r.rose/repos/Plan/releases/work/client/src -type f \\\\\\(-name *ombobox* -o -name *elect* -o -name *ropdown* \\\\\\))",
+      "Bash(find \"c:/Users/r.rose/repos/Plan/releases/work/client/src\" -type f -name \"*.tsx\" -exec grep -l \"<select\\\\|CollectionDropDown\\\\|ComponentDropdown\\\\|ProductSelectionDropdown\" {})"
     ]
   }
 }
