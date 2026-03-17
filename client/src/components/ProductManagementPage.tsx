@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AllComponentList, type ComponentEditorInput } from "@/components/ui/all-component-list";
-import { ProductData, type ProductDataDraft } from "@/components/ui/product-data";
+import { ProductDetails, type ProductDetailsDraft } from "@/components/ui/product-details";
 import { ProductDropDown } from "@/components/ui/product-drop-down";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -70,18 +70,16 @@ function resolveCategoryImportError(code: string | null, entityLabel: "Produkte"
   return { title: `${entityLabel}import fehlgeschlagen`, description: code ? `Servercode: ${code}` : "Die genaue Ursache konnte nicht aufgeloest werden." };
 }
 
-function toProductDraft(product: Product | null): ProductDataDraft {
+function toProductDraft(product: Product | null): ProductDetailsDraft {
   return product ? {
     name: product.name,
     shortCode: product.shortCode ?? "",
     description: product.description ?? "",
-    categoryId: String(product.categoryId),
     isActive: product.isActive,
   } : {
     name: "",
     shortCode: "",
     description: "",
-    categoryId: "",
     isActive: true,
   };
 }
@@ -111,13 +109,12 @@ async function invalidateMasterDataQueries(activeScope: ActiveScope): Promise<vo
 export function ProductManagementPage() {
   const { toast } = useToast();
   const activeScope: ActiveScope = "all";
-  const [productCategoryFilterId, setProductCategoryFilterId] = useState("");
   const [newProductCategoryName, setNewProductCategoryName] = useState("");
   const [newComponentCategoryName, setNewComponentCategoryName] = useState("");
   const [editProductCategory, setEditProductCategory] = useState<ProductCategory | null>(null);
   const [editComponentCategory, setEditComponentCategory] = useState<ComponentCategory | null>(null);
   const [selectedProductId, setSelectedProductId] = useState("");
-  const [productDraft, setProductDraft] = useState<ProductDataDraft>(toProductDraft(null));
+  const [productDraft, setProductDraft] = useState<ProductDetailsDraft>(toProductDraft(null));
   const [pendingProductCategoryImportId, setPendingProductCategoryImportId] = useState<number | null>(null);
   const [pendingComponentCategoryImportId, setPendingComponentCategoryImportId] = useState<number | null>(null);
   const productCategoryImportInputRef = useRef<HTMLInputElement | null>(null);
@@ -138,9 +135,7 @@ export function ProductManagementPage() {
   const componentCategories = componentCategoriesQuery.data ?? [];
   const products = productsQuery.data ?? [];
   const components = componentsQuery.data ?? [];
-  const filteredProducts = (!productCategoryFilterId ? products : products.filter((row) => row.categoryId === Number(productCategoryFilterId)))
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  const filteredProducts = products.slice().sort((a, b) => a.name.localeCompare(b.name, "de"));
   const selectedProduct = products.find((row) => String(row.id) === selectedProductId) ?? null;
   const isLoading = productCategoriesQuery.isLoading || componentCategoriesQuery.isLoading || productsQuery.isLoading || componentsQuery.isLoading;
 
@@ -263,17 +258,17 @@ export function ProductManagementPage() {
     toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? duplicateTitle : defaultTitle, variant: "destructive" });
   };
 
-  async function createProductFromDropDown(input: { name: string; categoryId: number }): Promise<Product> {
+  async function createProductFromDropDown(input: { name: string; shortCode: string | null; description: string | null; categoryId: number }): Promise<Product> {
     try {
-      return await createProductMutation.mutateAsync(input);
+      return await createProductMutation.mutateAsync({ name: input.name, categoryId: input.categoryId });
     } catch (error) {
       throw new Error(extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produktname existiert bereits." : "Produkt konnte nicht angelegt werden.");
     }
   }
   async function updateSelectedProduct(): Promise<void> {
-    if (!selectedProduct || !productDraft.name.trim() || !productDraft.categoryId) return;
+    if (!selectedProduct || !productDraft.name.trim()) return;
     try {
-      await updateProductMutation.mutateAsync({ id: selectedProduct.id, version: selectedProduct.version, name: productDraft.name.trim(), shortCode: productDraft.shortCode.trim() || null, categoryId: Number(productDraft.categoryId), description: productDraft.description.trim() || null, isActive: productDraft.isActive });
+      await updateProductMutation.mutateAsync({ id: selectedProduct.id, version: selectedProduct.version, name: productDraft.name.trim(), shortCode: productDraft.shortCode.trim() || null, categoryId: selectedProduct.categoryId, description: productDraft.description.trim() || null, isActive: productDraft.isActive });
       toast({ title: "Produkt aktualisiert" });
     } catch (error) {
       toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produktname existiert bereits" : "Produkt konnte nicht aktualisiert werden", variant: "destructive" });
@@ -350,7 +345,7 @@ export function ProductManagementPage() {
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id} className={editRow?.id === row.id ? "bg-slate-50" : undefined} onClick={() => { setEditRow(editRow?.id === row.id ? null : { ...row }); if (title === "Produktkategorien") setProductCategoryFilterId(editRow?.id === row.id ? "" : String(row.id)); }}>
+              <TableRow key={row.id} className={editRow?.id === row.id ? "bg-slate-50" : undefined} onClick={() => { setEditRow(editRow?.id === row.id ? null : { ...row }); }}>
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.isDefault ? "Ja" : "Nein"}</TableCell>
                 <TableCell className="space-x-2 whitespace-nowrap text-right">
@@ -381,7 +376,12 @@ export function ProductManagementPage() {
           <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_405px]">
             <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3" data-testid="master-data-products">
               <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} isAdmin={isAdmin} />
-              <ProductData draft={productDraft} categories={productCategories} disabled={!selectedProduct} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
+              {selectedProduct ? (
+                <section className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <h5 className="mb-3 font-semibold text-slate-900">Produkt Stammdaten</h5>
+                  <ProductDetails draft={productDraft} disabled={false} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
+                </section>
+              ) : null}
             </section>
             {renderCategorySection("Produktkategorien", productCategories, editProductCategory, setEditProductCategory, editProductCategory ? editProductCategory.name : newProductCategoryName, editProductCategory ? (value) => setEditProductCategory({ ...editProductCategory, name: value }) : setNewProductCategoryName, () => {
               if (editProductCategory) {

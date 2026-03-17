@@ -1,22 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Product, ProductCategory } from "@shared/schema";
-import { Button } from "@/components/ui/button";
-import { CollectionDropDown } from "@/components/ui/collection-drop-down";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
+import { ProductCreateDialog } from "@/components/ui/product-create-dialog";
 
-interface ProductDropDownProps {
+interface ProductListProps {
   products: Product[];
   categories: ProductCategory[];
   selectedProductId: string;
   onSelectProduct: (productId: string) => void;
-  onCreateProduct: (input: { name: string; categoryId: number }) => Promise<Product>;
+  onCreateProduct: (input: { name: string; shortCode: string | null; description: string | null; categoryId: number }) => Promise<Product>;
   onDeleteProduct?: () => void;
   isAdmin: boolean;
 }
 
-export function ProductDropDown({
+export function ProductList({
   products,
   categories,
   selectedProductId,
@@ -24,101 +21,84 @@ export function ProductDropDown({
   onCreateProduct,
   onDeleteProduct,
   isAdmin,
-}: ProductDropDownProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+}: ProductListProps) {
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const options = products.map((product) => ({
-    value: String(product.id),
-    label: product.name,
-  }));
+  const selectedProduct = useMemo(
+    () => products.find((p) => String(p.id) === selectedProductId) ?? null,
+    [products, selectedProductId],
+  );
 
-  const resetDialog = () => {
-    setName("");
-    setCategoryId("");
-    setError(null);
-    setSubmitting(false);
+  const filteredProducts = useMemo(() => {
+    const base = selectedCategoryId
+      ? products.filter((p) => String(p.categoryId) === selectedCategoryId)
+      : products;
+    return base.slice().sort((a, b) => a.name.localeCompare(b.name, "de"));
+  }, [products, selectedCategoryId]);
+
+  const productOptions = filteredProducts.map((p) => ({ value: String(p.id), label: p.name }));
+  const categoryOptions = categories.map((c) => ({ value: String(c.id), label: c.name }));
+
+  const handleProductSelect = (id: string) => {
+    onSelectProduct(id);
+    if (id) {
+      const product = products.find((p) => String(p.id) === id);
+      if (product) setSelectedCategoryId(String(product.categoryId));
+    }
   };
 
-  const submit = async () => {
-    if (!name.trim() || !categoryId) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const product = await onCreateProduct({
-        name: name.trim(),
-        categoryId: Number(categoryId),
-      });
-      onSelectProduct(String(product.id));
-      setDialogOpen(false);
-      resetDialog();
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Produkt konnte nicht angelegt werden.");
-      setSubmitting(false);
+  const handleCategorySelect = (id: string) => {
+    setSelectedCategoryId(id);
+    if (selectedProduct && String(selectedProduct.categoryId) !== id) {
+      onSelectProduct("");
     }
+  };
+
+  const handleCreate = async (input: Parameters<ProductListProps["onCreateProduct"]>[0]) => {
+    const created = await onCreateProduct(input);
+    onSelectProduct(String(created.id));
+    setSelectedCategoryId(String(created.categoryId));
+    return created;
   };
 
   return (
     <>
       <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="product-drop-down-panel">
-        <CollectionDropDown
-          label="Produktliste"
-          value={selectedProductId}
-          options={options}
-          placeholder="Produkt auswählen"
-          onSelect={onSelectProduct}
+        <EntitySelectionRow
+          itemLabel="Produktliste"
+          itemValue={selectedProductId}
+          itemOptions={productOptions}
+          itemPlaceholder="Produkt auswählen"
+          categoryLabel="Produktkategorie"
+          categoryValue={selectedCategoryId}
+          categoryOptions={categoryOptions}
+          categoryPlaceholder="Alle Kategorien"
+          onItemSelect={handleProductSelect}
+          onCategorySelect={handleCategorySelect}
           showRemove={isAdmin}
           showAdd={isAdmin}
           onRemove={onDeleteProduct}
-          onAdd={() => {
-            resetDialog();
-            setDialogOpen(true);
-          }}
+          onAdd={() => setCreateDialogOpen(true)}
           removeDisabled={!selectedProductId}
-          testId="select-product-record"
+          addDisabled={!selectedCategoryId}
+          itemTestId="select-product-record"
+          categoryTestId="select-product-category-filter"
         />
       </section>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        setDialogOpen(open);
-        if (!open) resetDialog();
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Neues Produkt</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="product-dropdown-name">Produktname</Label>
-              <Input id="product-dropdown-name" value={name} onChange={(event) => setName(event.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-dropdown-category">Produkt Kategorie</Label>
-              <select
-                id="product-dropdown-category"
-                value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value)}
-                className="h-10 w-full rounded border border-slate-300 bg-white px-2 text-sm"
-              >
-                <option value="">Kategorie wählen</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </select>
-            </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-            <Button onClick={() => void submit()} disabled={submitting || !name.trim() || !categoryId}>
-              {submitting ? "Speichere..." : "Übernehmen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {createDialogOpen && selectedCategoryId ? (
+        <ProductCreateDialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          categoryId={Number(selectedCategoryId)}
+          categoryName={categories.find((c) => String(c.id) === selectedCategoryId)?.name}
+          onConfirm={handleCreate}
+        />
+      ) : null}
     </>
   );
 }
+
+// Backward-compat alias used by ProductManagementPage
+export { ProductList as ProductDropDown };

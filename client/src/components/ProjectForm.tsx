@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ComponentDropdown } from "@/components/ui/component-dropdown";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
-import { ProductSelectionDropdown } from "@/components/ui/product-selection-dropdown";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
-import { ProjectOrderForm, ProjectProductFields } from "@/components/ProjectOrderForm";
+import { ProjectOrderForm, ProjectProductFields, type ArticleCreateInput } from "@/components/ProjectOrderForm";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -116,8 +114,6 @@ export function ProjectForm({
   const [descriptionMd, setDescriptionMd] = useState("");
   const [productSelections, setProductSelections] = useState<ProjectProductSelections>(createEmptyProjectProductSelections);
   const [dynamicProductSelections, setDynamicProductSelections] = useState<DynamicProjectProductSelections>({});
-  const [componentDialogField, setComponentDialogField] = useState<ProjectProductFieldKey | null>(null);
-  const [dynamicDialogSlotId, setDynamicDialogSlotId] = useState<string | null>(null);
   const [extractedArticleListHtml, setExtractedArticleListHtml] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -341,14 +337,6 @@ export function ProjectForm({
   const projectVersion = projectData?.project.version;
   const resolvedProjectEditForm = resolveProjectEditForm(projectType);
   const articleLines = buildProjectArticleLines(productSelections);
-  const selectedComponentDialogField = componentDialogField ? getProjectProductField(componentDialogField) : null;
-  const selectedComponentDialogCategory =
-    selectedComponentDialogField && selectedComponentDialogField.source === "component"
-      ? selectedComponentDialogField.categoryName
-      : null;
-  const selectedDynamicDialogSlot = dynamicDialogSlotId
-    ? dynamicCategorySlots.find((slot) => slot.slotId === dynamicDialogSlotId) ?? null
-    : null;
   useEffect(() => {
     if (!isEditing || !projectData || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
     setInitialFormSnapshot(
@@ -752,6 +740,78 @@ export function ProjectForm({
       });
     }
     await queryClient.invalidateQueries({ queryKey: [`/api/projects/${createdProjectId}/order-items`] });
+  };
+
+  const handleCreateForField = async (fieldKey: ProjectProductFieldKey, input: ArticleCreateInput): Promise<void> => {
+    const isProduct = isProductSelectionField(fieldKey);
+    const apiUrl = isProduct
+      ? "/api/admin/master-data/products"
+      : "/api/admin/master-data/components";
+    const payload = { name: input.name, shortCode: input.shortCode, categoryId: input.categoryId, description: input.description, isActive: true, version: 1 };
+    const response = await apiRequest("POST", apiUrl, payload);
+    const created = await response.json() as Product | Component;
+    await queryClient.invalidateQueries({ queryKey: [isProduct ? productsUrl : componentsUrl] });
+    const productId = isProduct ? (created as Product).id : null;
+    const componentId = isProduct ? null : (created as Component).id;
+    const itemName = created.name;
+    if (isEditing && projectId && projectData?.project.orderNumber) {
+      const savedItemResponse = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
+        projectId,
+        orderNumber: projectData.project.orderNumber,
+        productId,
+        componentId,
+        specificationId: null,
+        quantity: 1,
+      });
+      const savedItem = await savedItemResponse.json() as ProjectOrderItem;
+      setProductSelections((current) => ({
+        ...current,
+        [fieldKey]: { productId, componentId, componentName: itemName, itemId: savedItem.id, version: savedItem.version },
+      }));
+      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+    } else {
+      setProductSelections((current) => ({
+        ...current,
+        [fieldKey]: { productId, componentId, componentName: itemName, itemId: null, version: null },
+      }));
+    }
+  };
+
+  const handleCreateForSlot = async (slotId: string, input: ArticleCreateInput): Promise<void> => {
+    const slot = dynamicCategorySlots.find((s) => s.slotId === slotId);
+    if (!slot) return;
+    const isProduct = slot.source === "product";
+    const apiUrl = isProduct
+      ? "/api/admin/master-data/products"
+      : "/api/admin/master-data/components";
+    const payload = { name: input.name, shortCode: input.shortCode, categoryId: input.categoryId, description: input.description, isActive: true, version: 1 };
+    const response = await apiRequest("POST", apiUrl, payload);
+    const created = await response.json() as Product | Component;
+    await queryClient.invalidateQueries({ queryKey: [isProduct ? productsUrl : componentsUrl] });
+    const productId = isProduct ? (created as Product).id : null;
+    const componentId = isProduct ? null : (created as Component).id;
+    const itemName = created.name;
+    if (isEditing && projectId && projectData?.project.orderNumber) {
+      const savedItemResponse = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
+        projectId,
+        orderNumber: projectData.project.orderNumber,
+        productId,
+        componentId,
+        specificationId: null,
+        quantity: 1,
+      });
+      const savedItem = await savedItemResponse.json() as ProjectOrderItem;
+      setDynamicProductSelections((current) => ({
+        ...current,
+        [slotId]: { productId, componentId, componentName: itemName, itemId: savedItem.id, version: savedItem.version },
+      }));
+      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+    } else {
+      setDynamicProductSelections((current) => ({
+        ...current,
+        [slotId]: { productId, componentId, componentName: itemName, itemId: null, version: null },
+      }));
+    }
   };
 
   const isFormDirty = buildFormSnapshot({
@@ -1346,8 +1406,15 @@ export function ProjectForm({
                         productSelections={productSelections}
                         dynamicSlots={dynamicCategorySlots}
                         dynamicSelections={dynamicProductSelections}
-                        onOpenComponentDialog={setComponentDialogField}
-                        onOpenDynamicDialog={setDynamicDialogSlotId}
+                        products={products}
+                        components={components}
+                        componentCategories={componentCategories}
+                        productCategories={productCategories}
+                        isAdmin={isAdmin}
+                        onSelectField={(fieldKey, selectedValue) => void handleFieldSelection(fieldKey, selectedValue)}
+                        onSelectDynamic={(slotId, selectedValue) => void handleDynamicFieldSelection(slotId, selectedValue)}
+                        onCreateForField={(fieldKey, input) => handleCreateForField(fieldKey, input)}
+                        onCreateForSlot={(slotId, input) => handleCreateForSlot(slotId, input)}
                       />
                     </div>
                   </TabsContent>
@@ -1459,85 +1526,6 @@ export function ProjectForm({
         dataApplyLabel="Daten übernehmen"
         onApplyData={applyExtractedData}
       />
-
-      {componentDialogField && isProductSelectionField(componentDialogField) ? (
-        <ProductSelectionDropdown
-          products={products}
-          selectedProductId={String(productSelections[componentDialogField].productId ?? "")}
-          onSelect={(productId) => {
-            void handleFieldSelection(componentDialogField, productId);
-          }}
-          dialogMode
-          open
-          onOpenChange={(open) => {
-            if (!open) {
-              setComponentDialogField(null);
-            }
-          }}
-        />
-      ) : null}
-
-      {selectedDynamicDialogSlot?.source === "product" ? (
-        <ProductSelectionDropdown
-          products={products.filter((product) => product.categoryId === selectedDynamicDialogSlot.categoryId)}
-          selectedProductId={String(dynamicProductSelections[selectedDynamicDialogSlot.slotId]?.productId ?? "")}
-          onSelect={(productId) => {
-            void handleDynamicFieldSelection(selectedDynamicDialogSlot.slotId, productId);
-          }}
-          label={selectedDynamicDialogSlot.label}
-          placeholder={`${selectedDynamicDialogSlot.label} auswaehlen`}
-          testId={`select-project-product-${selectedDynamicDialogSlot.slotId}`}
-          dialogMode
-          open
-          onOpenChange={(open) => {
-            if (!open) {
-              setDynamicDialogSlotId(null);
-            }
-          }}
-          title={`${selectedDynamicDialogSlot.label} auswaehlen`}
-        />
-      ) : null}
-
-      {selectedComponentDialogCategory && componentDialogField && !isProductSelectionField(componentDialogField) ? (
-        <ComponentDropdown
-          components={components}
-          categories={componentCategories}
-          targetCategory={selectedComponentDialogCategory}
-          selectedComponentId={String(productSelections[componentDialogField].componentId ?? "")}
-          onSelect={(componentId) => {
-            void handleFieldSelection(componentDialogField, componentId);
-          }}
-          dialogMode
-          open
-          onOpenChange={(open) => {
-            if (!open) {
-              setComponentDialogField(null);
-            }
-          }}
-        />
-      ) : null}
-
-      {selectedDynamicDialogSlot?.source === "component" ? (
-        <ComponentDropdown
-          components={components}
-          categories={componentCategories}
-          targetCategory={selectedDynamicDialogSlot.categoryName}
-          targetCategoryId={selectedDynamicDialogSlot.categoryId}
-          selectedComponentId={String(dynamicProductSelections[selectedDynamicDialogSlot.slotId]?.componentId ?? "")}
-          onSelect={(componentId) => {
-            void handleDynamicFieldSelection(selectedDynamicDialogSlot.slotId, componentId);
-          }}
-          dialogMode
-          open
-          onOpenChange={(open) => {
-            if (!open) {
-              setDynamicDialogSlotId(null);
-            }
-          }}
-          title={`${selectedDynamicDialogSlot.label} auswaehlen`}
-          testId={`select-component-${selectedDynamicDialogSlot.slotId}`}
-        />
-      ) : null}
 
       {/* Customer Selection Dialog */}
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>

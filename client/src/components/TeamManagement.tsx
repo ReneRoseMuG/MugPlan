@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
-import { TeamEditDialog } from "@/components/ui/team-edit-dialog";
+import { TeamEditForm } from "@/components/TeamEditForm";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
@@ -20,12 +20,15 @@ interface TeamWithMembers extends Team {
 
 interface TeamManagementProps {
   onCancel?: () => void;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
-export function TeamManagement({ onCancel }: TeamManagementProps) {
+export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProps) {
   const { toast } = useToast();
   const [editingTeam, setEditingTeam] = useState<TeamWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const effectiveUserRole = (window.localStorage.getItem("userRole") ?? "").toUpperCase();
+  const isAdmin = effectiveUserRole === "ADMIN";
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery<Team[]>({
     queryKey: ["/api/teams"],
@@ -176,11 +179,47 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
     setIsCreating(false);
   };
 
+  useEffect(() => {
+    onEditingChange?.(!!editingTeam || isCreating);
+  }, [editingTeam, isCreating, onEditingChange]);
+
   const handleDelete = (team: TeamWithMembers) => {
     if (window.confirm(`Wollen Sie das Team ${team.name} wirklich löschen?`)) {
       deleteMutation.mutate({ id: team.id, version: team.version });
     }
   };
+
+  const handleDeleteFromForm = () => {
+    if (!editingTeam) return;
+    const currentTeam = teamsWithMembers.find((entry) => entry.id === editingTeam.id) ?? editingTeam;
+    if (!window.confirm(`Wollen Sie das Team ${currentTeam.name} wirklich löschen?`)) return;
+    deleteMutation.mutate(
+      { id: currentTeam.id, version: currentTeam.version },
+      { onSuccess: handleCloseDialog },
+    );
+  };
+
+  const activeTeam = editingTeam
+    ? (teamsWithMembers.find((team) => team.id === editingTeam.id) ?? editingTeam)
+    : null;
+
+  if (activeTeam || isCreating) {
+    return (
+      <TeamEditForm
+        team={activeTeam}
+        allEmployees={employees}
+        onSubmit={handleSubmitTeam}
+        onDelete={handleDeleteFromForm}
+        canDelete={isAdmin}
+        isDeleting={deleteMutation.isPending}
+        isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
+        isCreate={isCreating}
+        defaultName={getNextTeamName()}
+        defaultColor={defaultEntityColor}
+        onCancel={handleCloseDialog}
+      />
+    );
+  }
 
   return (
     <>
@@ -258,18 +297,6 @@ export function TeamManagement({ onCancel }: TeamManagementProps) {
           )}
         />
       </BadgeInteractionProvider>
-
-      <TeamEditDialog
-        open={!!editingTeam || isCreating}
-        onOpenChange={(open) => !open && handleCloseDialog()}
-        team={editingTeam ? (teamsWithMembers.find((team) => team.id === editingTeam.id) || editingTeam) : null}
-        allEmployees={employees}
-        onSubmit={handleSubmitTeam}
-        isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
-        isCreate={isCreating}
-        defaultName={getNextTeamName()}
-        defaultColor={defaultEntityColor}
-      />
     </>
   );
 }

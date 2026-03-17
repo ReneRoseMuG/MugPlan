@@ -118,6 +118,9 @@ export default function Home({ onLogout }: HomeProps) {
   } | null>(null);
   const [appointmentOverlayContext, setAppointmentOverlayContext] = useState<AppointmentOverlayState | null>(null);
   const [pendingWeekScrollRestore, setPendingWeekScrollRestore] = useState<number | null>(null);
+  const [employeeFormVisible, setEmployeeFormVisible] = useState(false);
+  const [tourFormVisible, setTourFormVisible] = useState(false);
+  const [teamFormVisible, setTeamFormVisible] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canAccessReports = isAdmin || userRole === "DISPATCHER";
@@ -212,9 +215,14 @@ export default function Home({ onLogout }: HomeProps) {
     setAppointmentOverlayContext(null);
     if (newView !== "employees") {
       setSelectedEmployeeId(null);
+      setEmployeeFormVisible(false);
     }
     if (newView !== "tours") {
       setSelectedTourId(null);
+      setTourFormVisible(false);
+    }
+    if (newView !== "teams") {
+      setTeamFormVisible(false);
     }
     if (newView !== "calendarContextual") {
       setCalendarContext(null);
@@ -224,10 +232,16 @@ export default function Home({ onLogout }: HomeProps) {
 
   const isGlobalCalendarView = view === "month" || view === "week" || view === "year";
   const isContextualCalendarView = view === "calendarContextual" && calendarContext !== null;
+  const isSidebarHidden =
+    view === "customer" ||
+    view === "project" ||
+    (view === "employees" && employeeFormVisible) ||
+    (view === "tours" && tourFormVisible) ||
+    (view === "teams" && teamFormVisible);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
-      {isContextualCalendarView ? null : (
+      {isContextualCalendarView || isSidebarHidden ? null : (
         <aside className="h-full flex-shrink-0 z-10 relative">
           <Sidebar
             onViewChange={handleViewChange}
@@ -262,6 +276,7 @@ export default function Home({ onLogout }: HomeProps) {
             <TourManagement
               userRole={userRole}
               initialTourId={selectedTourId}
+              onEditingChange={setTourFormVisible}
               onOpenAppointment={(appointmentId, context) => {
                 setAppointmentOverlayContext({
                   origin: "tourAppointments",
@@ -274,10 +289,11 @@ export default function Home({ onLogout }: HomeProps) {
               }}
             />
           ) : view === "teams" ? (
-            <TeamManagement />
+            <TeamManagement onEditingChange={setTeamFormVisible} />
           ) : view === "employees" ? (
             <EmployeesPage
               initialEmployeeId={selectedEmployeeId}
+              onEditingChange={setEmployeeFormVisible}
               onOpenAppointment={(appointmentId, context) => {
                 setAppointmentOverlayContext({
                   origin: "employeeAppointments",

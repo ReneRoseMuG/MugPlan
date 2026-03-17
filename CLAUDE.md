@@ -63,4 +63,32 @@ Die `.env`-Dateien liegen nicht im Repo, sondern in:
 ../../shared/.env.test   (relativ zu releases/work)
 ../../shared/.env.dev
 ../../shared/.env.prod
-```
+
+## Planning
+
+### Branch Setup
+Before creating any plan, ask the user:
+"Should I create a local feature/refactor branch with upstream tracking for this task?"
+If yes, ask for the branch name and create it automatically including upstream tracking.
+If no, proceed without creating a branch.
+
+### Plan Format
+Write plans in clear, readable prose — no code snippets, no diffs, no code blocks.
+Present the plan directly in the chat, do not save it to a file.
+Structure every plan with these four sections:
+
+**What I'm planning**
+A narrative description of the overall approach and reasoning. Explain why this
+approach was chosen, not just what will be done.
+
+**Functions & components involved**
+For each relevant function or component: one to two sentences describing its
+current role and why it is affected by this change.
+
+**Changes to existing functions**
+For each modification: describe in plain language what changes, why it changes,
+and what stays the same. No code, no diffs — only prose.
+
+**Expected result in the app**
+Describe the observable outcome from the user's perspective: what will behave
+differently, what will look different, and which edge cases are now handled.

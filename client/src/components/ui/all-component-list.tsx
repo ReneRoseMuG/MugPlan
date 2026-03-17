@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Component, ComponentCategory } from "@shared/schema";
-import { Button } from "@/components/ui/button";
-import { CollectionDropDown } from "@/components/ui/collection-drop-down";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ComponentCreateDialog, type ComponentCreateInput } from "@/components/ui/component-create-dialog";
+import { ComponentDetails, type ComponentDetailsDraft } from "@/components/ui/component-details";
+import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
 
 export type ComponentEditorInput = {
   name: string;
@@ -23,23 +21,10 @@ interface AllComponentListProps {
   onDeleteComponent: (component: Component) => Promise<void>;
 }
 
-type ComponentDraft = {
-  name: string;
-  shortCode: string;
-  description: string;
-  isActive: boolean;
-};
-
-function toDraft(component: Component | null): ComponentDraft {
+function toDraft(component: Component | null): ComponentDetailsDraft {
   if (!component) {
-    return {
-      name: "",
-      shortCode: "",
-      description: "",
-      isActive: true,
-    };
+    return { name: "", shortCode: "", description: "", isActive: true };
   }
-
   return {
     name: component.name,
     shortCode: component.shortCode ?? "",
@@ -58,9 +43,10 @@ export function AllComponentList({
 }: AllComponentListProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [selectedComponentId, setSelectedComponentId] = useState("");
-  const [draft, setDraft] = useState<ComponentDraft>(toDraft(null));
+  const [draft, setDraft] = useState<ComponentDetailsDraft>(toDraft(null));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!selectedCategoryId && categories.length > 0) {
@@ -73,12 +59,12 @@ export function AllComponentList({
     const categoryId = Number(selectedCategoryId);
     if (!Number.isFinite(categoryId) || categoryId <= 0) return components;
     return components
-      .filter((component) => component.categoryId === categoryId)
+      .filter((c) => c.categoryId === categoryId)
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
   }, [components, selectedCategoryId]);
 
   const selectedComponent = useMemo(
-    () => components.find((component) => String(component.id) === selectedComponentId) ?? null,
+    () => components.find((c) => String(c.id) === selectedComponentId) ?? null,
     [components, selectedComponentId],
   );
 
@@ -87,84 +73,61 @@ export function AllComponentList({
       setSelectedCategoryId(String(selectedComponent.categoryId));
       setDraft(toDraft(selectedComponent));
       setError(null);
-      return;
     }
-
-    setDraft((current) => ({
-      ...current,
-      isActive: current.name || current.shortCode || current.description ? current.isActive : true,
-    }));
   }, [selectedComponent]);
 
   useEffect(() => {
     if (!selectedComponentId) return;
-    if (filteredComponents.some((component) => String(component.id) === selectedComponentId)) return;
+    if (filteredComponents.some((c) => String(c.id) === selectedComponentId)) return;
     setSelectedComponentId("");
     setDraft(toDraft(null));
     setError(null);
   }, [filteredComponents, selectedComponentId]);
 
-  const componentOptions = filteredComponents.map((component) => ({
-    value: String(component.id),
-    label: component.name,
+  const componentOptions = filteredComponents.map((c) => ({
+    value: String(c.id),
+    label: c.name,
   }));
-
-  const categoryOptions = categories.map((category) => ({
-    value: String(category.id),
-    label: category.name,
+  const categoryOptions = categories.map((c) => ({
+    value: String(c.id),
+    label: c.name,
   }));
-
-  const beginCreateMode = () => {
-    setSelectedComponentId("");
-    setDraft(toDraft(null));
-    setError(null);
-  };
 
   const handleComponentSelect = (value: string) => {
     setSelectedComponentId(value);
-    const component = components.find((entry) => String(entry.id) === value);
-    if (!component) return;
-    setSelectedCategoryId(String(component.categoryId));
-    setDraft(toDraft(component));
-    setError(null);
+    const component = components.find((c) => String(c.id) === value);
+    if (component) {
+      setSelectedCategoryId(String(component.categoryId));
+      setDraft(toDraft(component));
+      setError(null);
+    }
   };
 
   const handleCategorySelect = (value: string) => {
     setSelectedCategoryId(value);
-    const categoryId = Number(value);
-    const selected = components.find((component) => String(component.id) === selectedComponentId);
-    if (selected && selected.categoryId === categoryId) {
-      return;
+    const selected = components.find((c) => String(c.id) === selectedComponentId);
+    if (selected && String(selected.categoryId) !== value) {
+      setSelectedComponentId("");
+      setDraft(toDraft(null));
+      setError(null);
     }
-    setSelectedComponentId("");
-    setDraft(toDraft(null));
-    setError(null);
   };
 
-  const handleSubmit = async () => {
-    if (!selectedCategoryId || !draft.name.trim()) return;
+  const handleUpdate = async () => {
+    if (!selectedComponent || !draft.name.trim()) return;
     setSubmitting(true);
     setError(null);
     const payload: ComponentEditorInput = {
       name: draft.name.trim(),
       shortCode: draft.shortCode,
-      categoryId: Number(selectedCategoryId),
+      categoryId: selectedComponent.categoryId,
       description: draft.description.trim() || null,
       isActive: draft.isActive,
     };
-
     try {
-      if (selectedComponent) {
-        const updated = await onUpdateComponent(selectedComponent, payload);
-        setSelectedComponentId(String(updated.id));
-        setSelectedCategoryId(String(updated.categoryId));
-        setDraft(toDraft(updated));
-      } else {
-        const created = await onCreateComponent(payload);
-        setSelectedComponentId(String(created.id));
-        setSelectedCategoryId(String(created.categoryId));
-        setDraft(toDraft(created));
-      }
+      const updated = await onUpdateComponent(selectedComponent, payload);
+      setSelectedComponentId(String(updated.id));
+      setDraft(toDraft(updated));
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Komponente konnte nicht gespeichert werden.");
     } finally {
@@ -179,7 +142,8 @@ export function AllComponentList({
     setError(null);
     try {
       await onDeleteComponent(selectedComponent);
-      beginCreateMode();
+      setSelectedComponentId("");
+      setDraft(toDraft(null));
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Komponente konnte nicht gelöscht werden.");
     } finally {
@@ -187,107 +151,73 @@ export function AllComponentList({
     }
   };
 
+  const handleCreateConfirm = async (input: ComponentCreateInput): Promise<Component> => {
+    const payload: ComponentEditorInput = {
+      name: input.name,
+      shortCode: input.shortCode ?? "",
+      categoryId: input.categoryId,
+      description: input.description,
+      isActive: true,
+    };
+    const created = await onCreateComponent(payload);
+    setSelectedComponentId(String(created.id));
+    setSelectedCategoryId(String(created.categoryId));
+    setDraft(toDraft(created));
+    return created;
+  };
+
   return (
     <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="all-component-list">
       <h5 className="font-semibold text-slate-900">Komponenten</h5>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <CollectionDropDown
-          label="Komponente"
-          value={selectedComponentId}
-          options={componentOptions}
-          placeholder="Komponente auswählen"
-          onSelect={handleComponentSelect}
+      <div className="mt-3">
+        <EntitySelectionRow
+          itemLabel="Komponente"
+          itemValue={selectedComponentId}
+          itemOptions={componentOptions}
+          itemPlaceholder="Komponente auswählen"
+          categoryLabel="Komponentenkategorie"
+          categoryValue={selectedCategoryId}
+          categoryOptions={categoryOptions}
+          categoryPlaceholder="Kategorie auswählen"
+          onItemSelect={handleComponentSelect}
+          onCategorySelect={handleCategorySelect}
           showRemove={isAdmin}
           showAdd={isAdmin}
           onRemove={() => void handleDelete()}
-          onAdd={beginCreateMode}
+          onAdd={() => setCreateDialogOpen(true)}
           removeDisabled={!selectedComponent || submitting}
-          addDisabled={!selectedCategoryId || submitting}
+          addDisabled={submitting}
           selectDisabled={submitting}
-          testId="select-component-record"
-        />
-
-        <CollectionDropDown
-          label="Komponentenkategorie"
-          value={selectedCategoryId}
-          options={categoryOptions}
-          placeholder="Kategorie auswählen"
-          onSelect={handleCategorySelect}
-          selectDisabled={submitting}
-          testId="select-component-category-record"
+          itemTestId="select-component-record"
+          categoryTestId="select-component-category-record"
         />
       </div>
 
-      <div className="mt-4 rounded-md border border-slate-200 bg-white p-4">
-        <h6 className="font-semibold text-slate-900">Komponenten Stammdaten</h6>
-        <div className="mt-3 grid grid-cols-1 gap-3">
-          {isAdmin ? (
-            <div className="space-y-2">
-              <Label htmlFor="component-data-active">Status</Label>
-              <label className="flex h-10 items-center gap-2 rounded border border-slate-300 bg-white px-3 text-sm text-slate-700">
-                <input
-                  id="component-data-active"
-                  type="checkbox"
-                  checked={draft.isActive}
-                  disabled={submitting}
-                  onChange={(event) => setDraft({ ...draft, isActive: event.target.checked })}
-                />
-                <span>Is Active</span>
-              </label>
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_160px]">
-            <div className="space-y-2">
-              <Label htmlFor="component-data-name">Name</Label>
-              <Input
-                id="component-data-name"
-                value={draft.name}
-                disabled={submitting}
-                onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                placeholder="Name eingeben"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="component-data-short-code">ShortCode</Label>
-              <Input
-                id="component-data-short-code"
-                value={draft.shortCode}
-                disabled={submitting}
-                onChange={(event) => setDraft({ ...draft, shortCode: event.target.value })}
-                placeholder="Kurzcode"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="component-data-description">Beschreibung</Label>
-            <Textarea
-              id="component-data-description"
-              value={draft.description}
-              disabled={submitting}
-              onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-              rows={2}
-              className="min-h-0"
-              placeholder="Beschreibung eingeben"
-            />
-          </div>
-
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() => void handleSubmit()}
-              disabled={submitting || !isAdmin || !selectedCategoryId || !draft.name.trim()}
-              data-testid={selectedComponent ? "button-update-component-record" : "button-create-component-record"}
-            >
-              {selectedComponent ? "Aktualisieren" : "Anlegen"}
-            </Button>
-          </div>
+      {selectedComponent ? (
+        <div className="mt-4 rounded-md border border-slate-200 bg-white p-4">
+          <h6 className="mb-3 font-semibold text-slate-900">Komponenten Stammdaten</h6>
+          <ComponentDetails
+            draft={draft}
+            disabled={submitting}
+            isAdmin={isAdmin}
+            error={error}
+            onDraftChange={setDraft}
+            onSubmit={isAdmin ? () => void handleUpdate() : undefined}
+            submitLabel="Aktualisieren"
+          />
         </div>
-      </div>
+      ) : null}
+
+      {createDialogOpen && selectedCategoryId ? (
+        <ComponentCreateDialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          categoryId={Number(selectedCategoryId)}
+          categoryName={categories.find((c) => String(c.id) === selectedCategoryId)?.name}
+          onConfirm={handleCreateConfirm}
+        />
+      ) : null}
     </section>
   );
 }
