@@ -321,7 +321,7 @@ export function ProductManagementPage() {
     inputTestId: string,
     buttonTestId: string,
   ) => (
-    <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-slate-50 p-4" data-testid={testId}>
+    <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-slate-50 p-3" data-testid={testId}>
       <h4 className="font-bold text-slate-900">{title}</h4>
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <Input value={draftValue} onChange={(event) => setDraftValue(event.target.value)} placeholder={editRow ? `${title.slice(0, -1)} bearbeiten` : `Neue ${title.slice(0, -1)}`} data-testid={inputTestId} />
@@ -345,7 +345,7 @@ export function ProductManagementPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Default</TableHead>
-              <TableHead className="w-[330px] text-right">Aktionen</TableHead>
+              <TableHead className="w-[200px] text-right">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -354,8 +354,8 @@ export function ProductManagementPage() {
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.isDefault ? "Ja" : "Nein"}</TableCell>
                 <TableCell className="space-x-2 whitespace-nowrap text-right">
-                  <Button size="sm" variant="outline">{editRow?.id === row.id ? "Ausgewaehlt" : "Bearbeiten"}</Button>
-                  <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onImport(row); }} data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}>Daten importieren</Button>
+                  <Button size="sm" variant="outline">{editRow?.id === row.id ? "Aktiv" : "Bearb."}</Button>
+                  <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onImport(row); }} data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}>Import</Button>
                   <Button size="sm" variant="destructive" onClick={(event) => { event.stopPropagation(); onDelete(row); }}>-</Button>
                 </TableCell>
               </TableRow>
@@ -377,37 +377,37 @@ export function ProductManagementPage() {
           <input ref={productCategoryImportInputRef} type="file" accept=".csv,text/csv" className="hidden" data-testid="input-product-category-import-file" onChange={(event) => { const file = event.target.files?.[0]; if (file && pendingProductCategoryImportId) productCategoryImportMutation.mutate({ categoryId: pendingProductCategoryImportId, file }); }} />
           <input ref={componentCategoryImportInputRef} type="file" accept=".csv,text/csv" className="hidden" data-testid="input-component-category-import-file" onChange={(event) => { const file = event.target.files?.[0]; if (file && pendingComponentCategoryImportId) componentCategoryImportMutation.mutate({ categoryId: pendingComponentCategoryImportId, file }); }} />
 
-          <div className="order-2 min-h-0 basis-1/3 overflow-hidden">
-            <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
-              {renderCategorySection("Produktkategorien", productCategories, editProductCategory, setEditProductCategory, editProductCategory ? editProductCategory.name : newProductCategoryName, editProductCategory ? (value) => setEditProductCategory({ ...editProductCategory, name: value }) : setNewProductCategoryName, () => {
-                if (editProductCategory) {
-                  if (!editProductCategory.name.trim()) return;
-                  categoryMutations.updateProduct.mutate({ id: editProductCategory.id, version: editProductCategory.version, name: editProductCategory.name.trim(), isDefault: Boolean(editProductCategory.isDefault) }, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht aktualisiert werden") });
-                  return;
-                }
-                if (!newProductCategoryName.trim()) return;
-                categoryMutations.createProduct.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht angelegt werden") });
-              }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie wird noch verwendet", "Produktkategorie konnte nicht geloescht werden") }); }, (row) => { setPendingProductCategoryImportId(row.id); productCategoryImportInputRef.current?.click(); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
-              {renderCategorySection("Komponentenkategorien", componentCategories, editComponentCategory, setEditComponentCategory, editComponentCategory ? editComponentCategory.name : newComponentCategoryName, editComponentCategory ? (value) => setEditComponentCategory({ ...editComponentCategory, name: value }) : setNewComponentCategoryName, () => {
-                if (editComponentCategory) {
-                  if (!editComponentCategory.name.trim()) return;
-                  categoryMutations.updateComponent.mutate({ id: editComponentCategory.id, version: editComponentCategory.version, name: editComponentCategory.name.trim(), isDefault: Boolean(editComponentCategory.isDefault) }, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie existiert bereits", "Komponentenkategorie konnte nicht aktualisiert werden") });
-                  return;
-                }
-                if (!newComponentCategoryName.trim()) return;
-                categoryMutations.createComponent.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie existiert bereits", "Komponentenkategorie konnte nicht angelegt werden") });
-              }, (row) => { if (!window.confirm(`Komponentenkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteComponent.mutate({ id: row.id, version: row.version }, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie wird noch verwendet", "Komponentenkategorie konnte nicht geloescht werden") }); }, (row) => { setPendingComponentCategoryImportId(row.id); componentCategoryImportInputRef.current?.click(); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
-            </div>
+          {/* Produkte */}
+          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+            <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3" data-testid="master-data-products">
+              <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} isAdmin={isAdmin} />
+              <ProductData draft={productDraft} categories={productCategories} disabled={!selectedProduct} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
+            </section>
+            {renderCategorySection("Produktkategorien", productCategories, editProductCategory, setEditProductCategory, editProductCategory ? editProductCategory.name : newProductCategoryName, editProductCategory ? (value) => setEditProductCategory({ ...editProductCategory, name: value }) : setNewProductCategoryName, () => {
+              if (editProductCategory) {
+                if (!editProductCategory.name.trim()) return;
+                categoryMutations.updateProduct.mutate({ id: editProductCategory.id, version: editProductCategory.version, name: editProductCategory.name.trim(), isDefault: Boolean(editProductCategory.isDefault) }, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht aktualisiert werden") });
+                return;
+              }
+              if (!newProductCategoryName.trim()) return;
+              categoryMutations.createProduct.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht angelegt werden") });
+            }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie wird noch verwendet", "Produktkategorie konnte nicht geloescht werden") }); }, (row) => { setPendingProductCategoryImportId(row.id); productCategoryImportInputRef.current?.click(); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
           </div>
 
-          <div className="order-1 min-h-0 basis-2/3 overflow-hidden">
-            <section className="flex h-full min-h-0 flex-col rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="master-data-products">
-              <div className="flex min-h-0 flex-1 flex-col gap-4">
-                <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} isAdmin={isAdmin} />
-                <ProductData draft={productDraft} categories={productCategories} disabled={!selectedProduct} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
-                <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} />
-              </div>
+          {/* Komponenten */}
+          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+            <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} />
             </section>
+            {renderCategorySection("Komponentenkategorien", componentCategories, editComponentCategory, setEditComponentCategory, editComponentCategory ? editComponentCategory.name : newComponentCategoryName, editComponentCategory ? (value) => setEditComponentCategory({ ...editComponentCategory, name: value }) : setNewComponentCategoryName, () => {
+              if (editComponentCategory) {
+                if (!editComponentCategory.name.trim()) return;
+                categoryMutations.updateComponent.mutate({ id: editComponentCategory.id, version: editComponentCategory.version, name: editComponentCategory.name.trim(), isDefault: Boolean(editComponentCategory.isDefault) }, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie existiert bereits", "Komponentenkategorie konnte nicht aktualisiert werden") });
+                return;
+              }
+              if (!newComponentCategoryName.trim()) return;
+              categoryMutations.createComponent.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie existiert bereits", "Komponentenkategorie konnte nicht angelegt werden") });
+            }, (row) => { if (!window.confirm(`Komponentenkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteComponent.mutate({ id: row.id, version: row.version }, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie wird noch verwendet", "Komponentenkategorie konnte nicht geloescht werden") }); }, (row) => { setPendingComponentCategoryImportId(row.id); componentCategoryImportInputRef.current?.click(); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
           </div>
         </div>
       )}

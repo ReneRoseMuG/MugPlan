@@ -91,7 +91,8 @@ export function ProductData({
             value={draft.description}
             disabled={disabled}
             onChange={(event) => onDraftChange({ ...draft, description: event.target.value })}
-            className="min-h-[120px]"
+            rows={2}
+            className="min-h-0"
           />
         </div>
         <div className="flex justify-end">

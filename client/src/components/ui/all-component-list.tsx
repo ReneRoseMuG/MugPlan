@@ -268,7 +268,8 @@ export function AllComponentList({
               value={draft.description}
               disabled={submitting}
               onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-              className="min-h-[120px]"
+              rows={2}
+              className="min-h-0"
               placeholder="Beschreibung eingeben"
             />
           </div>
