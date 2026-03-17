@@ -2324,6 +2324,36 @@ export const api = {
           },
         },
       },
+      users: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/users",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/users/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/users/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
     },
   },
   // Tour employees (for Tour/Team management)

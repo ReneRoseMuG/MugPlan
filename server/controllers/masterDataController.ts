@@ -16,6 +16,7 @@ import {
 } from "../services/seedProductManagementService";
 import { getNoteTemplatesSeedStatus, applyNoteTemplatesSeed, exportNoteTemplatesSeed } from "../services/seedNoteTemplatesService";
 import { getTagsSeedStatus, applyTagsSeed, exportTagsSeed } from "../services/seedTagsService";
+import { getUsersSeedStatus, applyUsersSeed, exportUsersSeed } from "../services/seedUsersService";
 
 function parseId(value: string | string[]): number {
   if (Array.isArray(value)) {
@@ -254,6 +255,18 @@ export async function applyTagsSeedController(req: Request, res: Response, next:
 
 export async function exportTagsSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
   await handleSeedExecution(req, res, next, () => api.masterData.seed.tags.export.input.parse(req.body ?? {}), exportTagsSeed);
+}
+
+export async function getUsersSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => undefined, getUsersSeedStatus);
+}
+
+export async function applyUsersSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.users.apply.input.parse(req.body ?? {}), applyUsersSeed);
+}
+
+export async function exportUsersSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.users.export.input.parse(req.body ?? {}), exportUsersSeed);
 }
 
 export async function listComponentCategories(req: Request, res: Response, next: NextFunction): Promise<void> {

@@ -48,6 +48,10 @@ describe("FT27 unit: master data seed wiring", () => {
     expect(source).toContain('title: "Hilfetexte"');
     expect(source).toContain('title: "Notiz Vorlagen"');
     expect(source).toContain('title: "Tags"');
+    expect(source).toContain('"/api/admin/master-data/seed/users"');
+    expect(source).toContain('"/api/admin/master-data/seed/users/apply"');
+    expect(source).toContain('"/api/admin/master-data/seed/users/export"');
+    expect(source).toContain('title: "Users"');
   });
 
   it("renders seed panel with status, buttons and textarea", () => {

@@ -367,6 +367,36 @@ function toDuplicateError(error: unknown): UsersRepositoryError | null {
   return new UsersRepositoryError("DUPLICATE_USERNAME", "Duplicate entry");
 }
 
+export type UserSeedExportRow = {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roleCode: DbRoleCode | null;
+};
+
+export async function listUsersForSeedExport(): Promise<UserSeedExportRow[]> {
+  const rows = await db
+    .select({
+      username: users.username,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      roleCode: roles.code,
+    })
+    .from(users)
+    .leftJoin(roles, eq(users.roleId, roles.id))
+    .orderBy(users.username);
+
+  return rows.map((row) => ({
+    username: row.username,
+    email: row.email,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    roleCode: row.roleCode ? assertDbRoleCode(row.roleCode.toUpperCase()) : null,
+  }));
+}
+
 export async function createUser(params: {
   username: string;
   email: string;
