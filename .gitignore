@@ -23,3 +23,5 @@ shared/uploads
 shared/backups
 .codex
 .codex/.tasks
+.claude
+.claude/tasks

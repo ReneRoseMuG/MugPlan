@@ -46,3 +46,21 @@ Das Journal zeigt letzten Stand und nächste Schritte.
 - Bei Unklarheiten: abbrechen und Blocker dokumentieren
 - Keine stillen Seiteneffekte
 - Jede Mutation nachvollziehbar und testbar
+
+---
+
+## 5. Test-Ausführung
+
+Integration-Tests **müssen** mit `--reporter=verbose` ausgeführt werden,
+sonst tritt ein Vitest-Runner-Fehler auf (bekannter Bug im stillen Modus):
+
+```bash
+npm run test:integration -- <testname> --reporter=verbose
+```
+
+Die `.env`-Dateien liegen nicht im Repo, sondern in:
+```
+../../shared/.env.test   (relativ zu releases/work)
+../../shared/.env.dev
+../../shared/.env.prod
+```

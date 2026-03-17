@@ -1,9 +1,9 @@
 import React from "react";
 
-import { CalendarTourPrintPreviewPageShell } from "./CalendarTourPrintPreviewPageShell";
-import { CalendarTourPrintDayColumn } from "./CalendarTourPrintDayColumn";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
-import type { TourPrintPreviewPage } from "@/lib/tour-print-preview";
+import { formatTourPrintDateShort, type TourPrintPreviewPage } from "@/lib/tour-print-preview";
+import { PrintWeekPage } from "@/components/print/PrintWeekPage";
+import { CalendarTourPrintAppointmentCard } from "./CalendarTourPrintAppointmentCard";
 
 type CalendarTourPrintWeekPageProps = {
   page: Extract<TourPrintPreviewPage, { kind: "week" }>;
@@ -14,23 +14,26 @@ export function CalendarTourPrintWeekPage({ page, weekendColumnPercent }: Calend
   const dayGridTemplate = buildDayGridTemplate(getDayWeights(normalizeWeekendColumnPercent(weekendColumnPercent)));
 
   return (
-    <CalendarTourPrintPreviewPageShell
-      orientation="landscape"
+    <PrintWeekPage
+      header={
+        <header className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Wochenansicht</p>
+            <h3 className="mt-1 text-2xl font-semibold text-slate-900">{page.title}</h3>
+          </div>
+          <p className="text-sm font-medium text-slate-700">{page.rangeLabel}</p>
+        </header>
+      }
+      days={page.days.map((day) => ({
+        dateKey: day.dateKey,
+        label: formatTourPrintDateShort(day.dateKey),
+        children: day.appointments.map((appt) => (
+          <CalendarTourPrintAppointmentCard key={`${day.dateKey}-${appt.id}`} appointment={appt} />
+        )),
+      }))}
+      gridTemplate={dayGridTemplate}
       testId={`tour-print-week-page-${page.weekIndex + 1}`}
-    >
-      <header className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Wochenansicht</p>
-          <h3 className="mt-1 text-2xl font-semibold text-slate-900">{page.title}</h3>
-        </div>
-        <p className="text-sm font-medium text-slate-700">{page.rangeLabel}</p>
-      </header>
-
-      <div className="grid gap-3" style={{ gridTemplateColumns: dayGridTemplate }} data-testid={`tour-print-week-grid-${page.weekIndex + 1}`}>
-        {page.days.map((day) => (
-          <CalendarTourPrintDayColumn key={day.dateKey} dateKey={day.dateKey} appointments={day.appointments} />
-        ))}
-      </div>
-    </CalendarTourPrintPreviewPageShell>
+      gridTestId={`tour-print-week-grid-${page.weekIndex + 1}`}
+    />
   );
 }
