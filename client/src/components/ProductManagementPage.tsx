@@ -378,7 +378,7 @@ export function ProductManagementPage() {
           <input ref={componentCategoryImportInputRef} type="file" accept=".csv,text/csv" className="hidden" data-testid="input-component-category-import-file" onChange={(event) => { const file = event.target.files?.[0]; if (file && pendingComponentCategoryImportId) componentCategoryImportMutation.mutate({ categoryId: pendingComponentCategoryImportId, file }); }} />
 
           {/* Produkte */}
-          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_352px]">
             <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3" data-testid="master-data-products">
               <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} isAdmin={isAdmin} />
               <ProductData draft={productDraft} categories={productCategories} disabled={!selectedProduct} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
@@ -395,7 +395,7 @@ export function ProductManagementPage() {
           </div>
 
           {/* Komponenten */}
-          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_352px]">
             <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
               <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} />
             </section>
