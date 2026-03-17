@@ -1,13 +1,12 @@
 ﻿import { useMemo } from "react";
-import { Boxes, DatabaseZap, FileText, ListChecks, Package, Tags } from "lucide-react";
+import { Boxes, DatabaseZap, FileText, Package, Tags } from "lucide-react";
 import { EntityFormWithTabsLayout } from "@/components/ui/entity-form-with-tabs-layout";
 import { ProductManagementPage } from "@/components/ProductManagementPage";
 import { TagManagementPage } from "@/components/TagManagementPage";
-import { ProjectStatusPage } from "@/components/ProjectStatusPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { MasterDataSeedPage } from "@/components/MasterDataSeedPage";
 
-export type MasterDataTabId = "products" | "tags" | "project-status" | "note-templates" | "seed";
+export type MasterDataTabId = "products" | "tags" | "note-templates" | "seed";
 
 interface MasterDataPageProps {
   initialTabId?: MasterDataTabId;
@@ -27,12 +26,6 @@ export function MasterDataPage({ initialTabId = "products" }: MasterDataPageProp
         label: "Tags",
         icon: <Tags className="h-4 w-4" />,
         content: <TagManagementPage />,
-      },
-      {
-        id: "project-status",
-        label: "Projekt Status",
-        icon: <ListChecks className="h-4 w-4" />,
-        content: <ProjectStatusPage />,
       },
       {
         id: "note-templates",

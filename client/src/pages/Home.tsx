@@ -342,7 +342,7 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === "noteTemplates" && isAdmin ? (
             <MasterDataPage initialTabId="note-templates" />
           ) : view === "projectStatus" && isAdmin ? (
-            <MasterDataPage initialTabId="project-status" />
+            <MasterDataPage />
           ) : view === "helpTexts" && isAdmin ? (
             <HelpTextsPage
               onCreateHelpText={() => {
