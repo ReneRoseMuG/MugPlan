@@ -47,7 +47,7 @@ export function SeedPanel({
           disabled={isActionDisabled}
           data-testid={`button-run-${testId}`}
         >
-          {isRunning ? "Daten werden erzeugt..." : "Daten erzeugen"}
+          {isRunning ? "Import laeuft..." : "Import"}
         </Button>
         <Button
           type="button"

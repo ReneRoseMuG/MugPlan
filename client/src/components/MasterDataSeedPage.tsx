@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SeedPanel } from "@/components/ui/seed-panel";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,6 +42,14 @@ const SEED_STATUS_QUERY_KEYS = [
   "/api/admin/master-data/seed/tags",
 ];
 
+const GLOBAL_SEED_SEQUENCE = [
+  { name: "Tags", applyUrl: "/api/admin/master-data/seed/tags/apply", exportUrl: "/api/admin/master-data/seed/tags/export" },
+  { name: "Mitarbeiter", applyUrl: "/api/admin/master-data/seed/employees/apply", exportUrl: "/api/admin/master-data/seed/employees/export" },
+  { name: "Hilfetexte", applyUrl: "/api/admin/master-data/seed/help-texts/apply", exportUrl: "/api/admin/master-data/seed/help-texts/export" },
+  { name: "Notiz Vorlagen", applyUrl: "/api/admin/master-data/seed/note-templates/apply", exportUrl: "/api/admin/master-data/seed/note-templates/export" },
+  { name: "Produktverwaltung", applyUrl: "/api/admin/master-data/seed/product-management/apply", exportUrl: "/api/admin/master-data/seed/product-management/export" },
+] as const;
+
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: "include" });
   if (!response.ok) {
@@ -58,6 +68,10 @@ async function invalidateSeedQueries() {
 export function MasterDataSeedPage() {
   const { toast } = useToast();
   const [logLinesByPanel, setLogLinesByPanel] = useState<Record<string, string[]>>({});
+  const [globalIsRunning, setGlobalIsRunning] = useState(false);
+  const [globalIsExporting, setGlobalIsExporting] = useState(false);
+  const [globalLogLines, setGlobalLogLines] = useState<string[]>([]);
+
   const employeesStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/employees"], queryFn: () => fetchJson("/api/admin/master-data/seed/employees") });
   const helpTextsStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/help-texts"], queryFn: () => fetchJson("/api/admin/master-data/seed/help-texts") });
   const productManagementStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/product-management"], queryFn: () => fetchJson("/api/admin/master-data/seed/product-management") });
@@ -94,6 +108,50 @@ export function MasterDataSeedPage() {
   const tagsApplyMutation = useSeedMutation("tags", "Tags", "/api/admin/master-data/seed/tags/apply", "importiert");
   const tagsExportMutation = useSeedMutation("tags", "Tags", "/api/admin/master-data/seed/tags/export", "exportiert");
 
+  async function runGlobalImport() {
+    setGlobalIsRunning(true);
+    setGlobalLogLines([]);
+    const log: string[] = [];
+    for (const step of GLOBAL_SEED_SEQUENCE) {
+      log.push(`[START] Import: ${step.name}`);
+      setGlobalLogLines([...log]);
+      try {
+        await apiRequest("POST", step.applyUrl, {});
+        log.push(`[OK]    Import: ${step.name}`);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Unbekannter Fehler";
+        log.push(`[FEHLER] Import: ${step.name} \u2013 ${msg}`);
+      }
+      setGlobalLogLines([...log]);
+    }
+    log.push("[FERTIG] Globaler Import abgeschlossen.");
+    setGlobalLogLines([...log]);
+    await invalidateSeedQueries();
+    setGlobalIsRunning(false);
+  }
+
+  async function runGlobalExport() {
+    setGlobalIsExporting(true);
+    setGlobalLogLines([]);
+    const log: string[] = [];
+    for (const step of GLOBAL_SEED_SEQUENCE) {
+      log.push(`[START] Export: ${step.name}`);
+      setGlobalLogLines([...log]);
+      try {
+        await apiRequest("POST", step.exportUrl, {});
+        log.push(`[OK]    Export: ${step.name}`);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Unbekannter Fehler";
+        log.push(`[FEHLER] Export: ${step.name} \u2013 ${msg}`);
+      }
+      setGlobalLogLines([...log]);
+    }
+    log.push("[FERTIG] Globaler Export abgeschlossen.");
+    setGlobalLogLines([...log]);
+    await invalidateSeedQueries();
+    setGlobalIsExporting(false);
+  }
+
   const panelDefinitions = [
     { key: "employees", title: "Mitarbeiter", description: "Verwaltet employees.csv mit Vorname, Nachname und IsActive.", status: employeesStatusQuery.data, applyMutation: employeesApplyMutation, exportMutation: employeesExportMutation },
     { key: "help-texts", title: "Hilfetexte", description: "Verwaltet helptexts.yaml im bestehenden Hilfetext-Import/Export-Format.", status: helpTextsStatusQuery.data, applyMutation: helpTextsApplyMutation, exportMutation: helpTextsExportMutation },
@@ -102,35 +160,69 @@ export function MasterDataSeedPage() {
     { key: "tags", title: "Tags", description: "Verwaltet tags.csv mit Name und Farbe fuer den Tag-Stammdatenbestand.", status: tagsStatusQuery.data, applyMutation: tagsApplyMutation, exportMutation: tagsExportMutation },
   ] as const;
 
+  const globalBusy = globalIsRunning || globalIsExporting;
+
   return (
-    <div className="grid gap-4 lg:grid-cols-2" data-testid="master-data-seed-page">
-      {panelDefinitions.map((panel) => {
-        const status = panel.status;
-        const extraFiles = status?.extraFiles ?? [];
-        const logLines = [
-          ...(extraFiles.map((file) => `Zusatzdatei ${file.sourceFile}: ${file.exists ? "vorhanden" : "fehlt"}`)),
-          ...(logLinesByPanel[panel.key] ?? []),
-        ];
-        return (
-          <SeedPanel
-            key={panel.key}
-            title={panel.title}
-            description={panel.description}
-            sourceFile={status?.sourceFile ?? "-"}
-            sourceExists={status?.exists ?? false}
-            onRun={async () => {
-              await panel.applyMutation.mutateAsync();
-            }}
-            onExport={async () => {
-              await panel.exportMutation.mutateAsync();
-            }}
-            isRunning={panel.applyMutation.isPending}
-            isExporting={panel.exportMutation.isPending}
-            logLines={logLines}
-            testId={`master-data-seed-${panel.key}`}
-          />
-        );
-      })}
+    <div className="flex flex-col gap-6" data-testid="master-data-seed-page">
+      <section className="sub-panel flex flex-col gap-4" data-testid="master-data-seed-global">
+        <h3 className="text-sm font-bold tracking-wider text-primary">Globaler Seed</h3>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={() => void runGlobalImport()}
+            disabled={globalBusy}
+            data-testid="button-global-import"
+          >
+            {globalIsRunning ? "Import laeuft..." : "Alle importieren"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void runGlobalExport()}
+            disabled={globalBusy}
+            data-testid="button-global-export"
+          >
+            {globalIsExporting ? "Export laeuft..." : "Alle exportieren"}
+          </Button>
+        </div>
+        <Textarea
+          readOnly
+          value={globalLogLines.join("\n")}
+          className="max-h-[200px] resize-none bg-white font-mono text-xs"
+          data-testid="textarea-global-seed"
+        />
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {panelDefinitions.map((panel) => {
+          const status = panel.status;
+          const extraFiles = status?.extraFiles ?? [];
+          const logLines = [
+            ...(extraFiles.map((file) => `Zusatzdatei ${file.sourceFile}: ${file.exists ? "vorhanden" : "fehlt"}`)),
+            ...(logLinesByPanel[panel.key] ?? []),
+          ];
+          return (
+            <SeedPanel
+              key={panel.key}
+              title={panel.title}
+              description={panel.description}
+              sourceFile={status?.sourceFile ?? "-"}
+              sourceExists={status?.exists ?? false}
+              onRun={async () => {
+                await panel.applyMutation.mutateAsync();
+              }}
+              onExport={async () => {
+                await panel.exportMutation.mutateAsync();
+              }}
+              isRunning={panel.applyMutation.isPending}
+              isExporting={panel.exportMutation.isPending}
+              disabled={globalBusy}
+              logLines={logLines}
+              testId={`master-data-seed-${panel.key}`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

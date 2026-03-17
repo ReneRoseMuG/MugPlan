@@ -56,12 +56,27 @@ describe("FT27 unit: master data seed wiring", () => {
 
     expect(source).toContain("<Textarea");
     expect(source).toContain("readOnly");
-    expect(source).toContain("Daten erzeugen");
+    expect(source).toContain("Import");
     expect(source).toContain("Export");
     expect(source).toContain("Quelldatei");
     expect(source).toContain("button-run-");
     expect(source).toContain("button-export-");
     expect(source).toContain("status-");
     expect(source).toContain("textarea-");
+  });
+
+  it("wires the global seed section with import and export actions", () => {
+    const seedPagePath = path.resolve(process.cwd(), "client/src/components/MasterDataSeedPage.tsx");
+    const source = readFileSync(seedPagePath, "utf8");
+
+    expect(source).toContain('data-testid="master-data-seed-global"');
+    expect(source).toContain('data-testid="button-global-import"');
+    expect(source).toContain('data-testid="button-global-export"');
+    expect(source).toContain('data-testid="textarea-global-seed"');
+    expect(source).toContain('"Alle importieren"');
+    expect(source).toContain('"Alle exportieren"');
+    expect(source).toContain("GLOBAL_SEED_SEQUENCE");
+    expect(source).toContain("[FERTIG] Globaler Import abgeschlossen.");
+    expect(source).toContain("[FERTIG] Globaler Export abgeschlossen.");
   });
 });
