@@ -36,6 +36,8 @@ vi.mock("@/components/ui/dialog", () => ({
 vi.mock("lucide-react", () => ({
   ChevronLeft: () => <span>prev-icon</span>,
   ChevronRight: () => <span>next-icon</span>,
+  Calendar: () => <span>cal-icon</span>,
+  Clock: () => <span>clock-icon</span>,
 }));
 
 import { CalendarTourPrintPreviewDialog } from "../../../client/src/components/calendar/CalendarTourPrintPreviewDialog";

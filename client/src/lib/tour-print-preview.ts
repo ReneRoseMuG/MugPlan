@@ -17,7 +17,10 @@ export type TourPrintPreviewPage =
       pageIndex: number;
       pageNumber: number;
       title: string;
-      orientation: "portrait";
+      orientation: "landscape";
+      tourName: string;
+      fromDate: string;
+      toDate: string;
       rangeLabel: string;
       headline: string;
       members: TourPrintPreviewResponse["members"];
@@ -47,6 +50,21 @@ export function formatTourPrintDate(value: string): string {
 
 export function formatTourPrintDateShort(value: string): string {
   return format(parseISO(value), "EE dd.MM.", { locale: de });
+}
+
+export function formatTourPrintDateShort2y(value: string): string {
+  return format(parseISO(value), "dd.MM.yy", { locale: de });
+}
+
+export function formatTourPrintDayColumnLabel(dateKey: string): string {
+  return format(parseISO(dateKey), "EE, dd.MM.yy", { locale: de });
+}
+
+export function isAppointmentContinuationDay(
+  appointment: TourPrintPreviewAppointment,
+  dateKey: string
+): boolean {
+  return appointment.startDate < dateKey;
 }
 
 export function stripHtmlToText(value: string | null | undefined): string {
@@ -139,7 +157,10 @@ export function buildTourPrintPages(data: TourPrintPreviewResponse): TourPrintPr
     pageIndex: 0,
     pageNumber: 1,
     title: `Seite 1 - ${data.tour.name}`,
-    orientation: "portrait",
+    orientation: "landscape",
+    tourName: data.tour.name,
+    fromDate: data.fromDate,
+    toDate: data.toDate,
     rangeLabel,
     headline: buildTourPrintHeadline(data),
     members: data.members,

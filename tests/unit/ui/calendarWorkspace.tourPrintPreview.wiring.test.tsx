@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Der Wochenkalender rendert die Drucksteuerung inline im Kalenderfilter.
  * - Footer-Bereich bleibt zweispaltig; die Druck-UI sitzt vollstaendig rechts.
- * - Tour-Auswahl, Wochenzahl und Druckvorschau bleiben als kompakter Block zusammen.
+ * - Tour-Auswahl, Wochenzahl und Drucken bleiben als kompakter Block zusammen.
  *
  * Fehlerfaelle:
  * - Die Wochenansicht faellt auf einen separaten Druckpfad zurueck.
@@ -111,9 +111,9 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
     expect(html).toContain("Wochenplanung drucken");
     expect(html).toContain("select-tour-print-preview");
     expect(html).toContain("input-tour-print-week-count");
-    expect(html).toContain("Druckvorschau");
+    expect(html).toContain("Drucken");
     expect(html.indexOf("select-tour-print-preview")).toBeLessThan(html.indexOf("input-tour-print-week-count"));
-    expect(html.indexOf("input-tour-print-week-count")).toBeLessThan(html.indexOf("Druckvorschau"));
+    expect(html.indexOf("input-tour-print-week-count")).toBeLessThan(html.indexOf("Drucken"));
   });
 
   it("keeps the print controls wired through the shared calendar filter panel", () => {

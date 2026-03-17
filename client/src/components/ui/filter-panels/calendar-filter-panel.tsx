@@ -127,7 +127,7 @@ export function CalendarFilterPanel({
                 disabled={selectedPrintTourId === null}
                 data-testid="button-open-tour-print-preview"
               >
-                Druckvorschau
+                Drucken
               </Button>
             </div>
           </div>
@@ -218,7 +218,7 @@ export function CalendarFilterPanel({
           disabled={selectedPrintTourId === null}
           data-testid="button-open-tour-print-preview"
         >
-          Druckvorschau
+          Drucken
         </Button>
       ) : null}
     </FilterPanel>

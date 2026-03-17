@@ -1,9 +1,8 @@
 import React from "react";
 
-import type { TourPrintPreviewPage } from "@/lib/tour-print-preview";
+import { formatTourPrintDateShort2y, type TourPrintPreviewPage } from "@/lib/tour-print-preview";
 import { CalendarTourPrintMembersList } from "./CalendarTourPrintMembersList";
-import { CalendarTourPrintSummaryTable } from "./CalendarTourPrintSummaryTable";
-import { PrintSummaryPage } from "@/components/print/PrintSummaryPage";
+import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintPageHeader } from "@/components/print/PrintPageHeader";
 
 type CalendarTourPrintSummaryPageProps = {
@@ -12,19 +11,15 @@ type CalendarTourPrintSummaryPageProps = {
 
 export function CalendarTourPrintSummaryPage({ page }: CalendarTourPrintSummaryPageProps) {
   return (
-    <PrintSummaryPage
-      testId="tour-print-summary-page"
-      header={
-        <PrintPageHeader
-          eyebrow="Tourenplanung"
-          headline={page.headline}
-          subline={page.rangeLabel}
-        />
-      }
-      sections={[
-        <CalendarTourPrintMembersList key="members" members={page.members} />,
-        <CalendarTourPrintSummaryTable key="table" rows={page.rows} />,
-      ]}
-    />
+    <PrintPageShell orientation="landscape" testId="tour-print-summary-page">
+      <PrintPageHeader
+        eyebrow="Tourenplanung"
+        headline={`Tour ${page.tourName}`}
+        subline={`Zeitraum: ${formatTourPrintDateShort2y(page.fromDate)} \u2013 ${formatTourPrintDateShort2y(page.toDate)}`}
+      />
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <CalendarTourPrintMembersList members={page.members} />
+      </div>
+    </PrintPageShell>
   );
 }

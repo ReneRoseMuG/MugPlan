@@ -2,13 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Druck-Komponenten rendern Seite 1 als Portrait mit Headline, Mitarbeiterliste und harmonisierter Terminliste.
- * - Wochenseiten rendern sieben Tagesspalten mit gestapelten Terminkarten, Projektname und druckbaren Notizen.
+ * - Die Startseite rendert im Querformat mit Tour-Headline, Zeitraum-Subline und Mitarbeiterliste.
+ * - Wochenseiten rendern sieben Tagesspalten mit Terminkacheln nach Typ (Uhrzeit, Tagestermin, Mehrtagestermin).
+ * - Mehrtagestermin-Folgetage werden als Sperrkacheln mit Tag-Nummer gerendert.
  * - Notizfarben werden im Druckpfad dezent ueber Rand und Hintergrundtoenung uebernommen.
  *
  * Fehlerfaelle:
  * - Die Druckseiten fallen auf monolithisches Dialog-Markup ohne wiederverwendbare Bereichskomponenten zurueck.
- * - Wochenseiten zeigen verbotene Zusatzdaten statt der geforderten Druckinhalte.
+ * - Terminkacheln zeigen Saunamodell oder falsche Felder statt Kundenname und Wohnort.
+ * - Folgetage eines Mehrtagestermins erscheinen als normale Terminkachel statt als Sperrkachel.
  *
  * Ziel:
  * Die druckspezifischen Presentational Components in Isolation regressionssicher absichern.
@@ -93,7 +95,7 @@ const fixture: TourPrintPreviewResponse = {
 };
 
 describe("FT31 UI: calendar tour print preview components", () => {
-  it("renders the summary page with headline, member section and zebra summary table", () => {
+  it("renders the summary page in landscape with tour headline, date subline and member section", () => {
     const summaryPage = buildTourPrintPages(fixture)[0];
     if (summaryPage.kind !== "summary") {
       throw new Error("expected summary page fixture");
@@ -102,15 +104,16 @@ describe("FT31 UI: calendar tour print preview components", () => {
     const html = renderToStaticMarkup(React.createElement(CalendarTourPrintSummaryPage, { page: summaryPage }));
 
     expect(html).toContain("tour-print-summary-page");
-    expect(html).toContain("Tourenplanung fuer Tour Alpha - Zeitraum 15.06.2099 / 28.06.2099");
+    expect(html).toContain("tour-print-page--landscape");
+    expect(html).toContain("Tour Alpha");
+    expect(html).toContain("Zeitraum:");
     expect(html).toContain("Geplante Mitarbeiter");
     expect(html).toContain("Muster, Mia");
     expect(html).toContain("Beispiel, Theo");
-    expect(html).toContain("Dauer in Tagen");
-    expect(html).toContain("bg-slate-50/80");
+    expect(html).not.toContain("Dauer in Tagen");
   });
 
-  it("renders the week page with day columns, appointment cards and note blocks", () => {
+  it("renders the week page with day columns, appointment cards and continuation cards", () => {
     const weekPage = buildTourPrintPages(fixture)[1];
     if (weekPage.kind !== "week") {
       throw new Error("expected week page fixture");
@@ -126,11 +129,19 @@ describe("FT31 UI: calendar tour print preview components", () => {
     expect(html).toContain("tour-print-week-page-1");
     expect(html).toContain("tour-print-week-grid-1");
     expect(html).toContain("tour-print-day-column-2099-06-16");
+    // Termin 101: Starttag (mit Uhrzeit) – AppointmentCard
     expect(html).toContain("tour-print-appointment-card-101");
+    expect(html).toContain("08:00");
     expect(html).toContain("Projekt Alpha");
+    expect(html).toContain("Alpha GmbH");
+    expect(html).toContain("Berlin");
     expect(html).toContain("Termininfo fuer den Druck");
+    // Termin 101: Folgetag – ContinuationCard
+    expect(html).toContain("tour-print-continuation-card-101-2099-06-17");
+    expect(html).toContain("Tag 2");
+    // Kein Saunamodell mehr
+    expect(html).not.toContain("Saunamodell");
     expect(html).not.toContain("Projektstatus");
-    expect(html).not.toContain("Tag");
   });
 
   it("renders note colors as subtle border and tint styling", () => {

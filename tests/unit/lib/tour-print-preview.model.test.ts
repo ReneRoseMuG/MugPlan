@@ -104,7 +104,7 @@ describe("FT31 UI model: tour print preview page builder", () => {
     expect(pages[1].days.find((day) => day.dateKey === "2099-06-24")?.appointments.map((item) => item.id)).toContain(102);
   });
 
-  it("builds a flat page list with portrait summary followed by landscape weeks", () => {
+  it("builds a flat page list with landscape summary followed by landscape weeks", () => {
     const pages = buildTourPrintPages(fixture);
 
     expect(pages).toHaveLength(3);
@@ -112,7 +112,7 @@ describe("FT31 UI model: tour print preview page builder", () => {
       expect.objectContaining({
         kind: "summary",
         pageNumber: 1,
-        orientation: "portrait",
+        orientation: "landscape",
       }),
     );
     expect(pages[1]).toEqual(
