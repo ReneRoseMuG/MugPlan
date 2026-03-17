@@ -116,7 +116,7 @@ export function buildTourPrintHeadline(data: TourPrintPreviewResponse): string {
 }
 
 export function buildTourPrintWeekTitle(data: TourPrintPreviewResponse, weekStart: string, weekIndex: number): string {
-  return `Tour ${data.tour.name} - Woche ${weekIndex + 1} - KW ${format(parseISO(weekStart), "II", { locale: de })}`;
+  return `${data.tour.name} - Woche ${weekIndex + 1} - KW ${format(parseISO(weekStart), "II", { locale: de })}`;
 }
 
 export function getAppointmentPrimaryLocation(appointment: TourPrintPreviewAppointment): string {

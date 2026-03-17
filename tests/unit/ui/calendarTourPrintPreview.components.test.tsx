@@ -105,7 +105,7 @@ describe("FT31 UI: calendar tour print preview components", () => {
 
     expect(html).toContain("tour-print-summary-page");
     expect(html).toContain("tour-print-page--landscape");
-    expect(html).toContain("Tour Alpha");
+    expect(html).toContain("Alpha");
     expect(html).toContain("Zeitraum:");
     expect(html).toContain("Geplante Mitarbeiter");
     expect(html).toContain("Muster, Mia");

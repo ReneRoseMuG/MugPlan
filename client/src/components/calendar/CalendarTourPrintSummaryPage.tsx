@@ -14,7 +14,7 @@ export function CalendarTourPrintSummaryPage({ page }: CalendarTourPrintSummaryP
     <PrintPageShell orientation="landscape" testId="tour-print-summary-page">
       <PrintPageHeader
         eyebrow="Tourenplanung"
-        headline={`Tour ${page.tourName}`}
+        headline={page.tourName}
         subline={`Zeitraum: ${formatTourPrintDateShort2y(page.fromDate)} \u2013 ${formatTourPrintDateShort2y(page.toDate)}`}
       />
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">

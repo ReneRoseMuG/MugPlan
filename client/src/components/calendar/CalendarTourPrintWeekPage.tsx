@@ -19,7 +19,12 @@ type CalendarTourPrintWeekPageProps = {
 };
 
 export function CalendarTourPrintWeekPage({ page, weekendColumnPercent }: CalendarTourPrintWeekPageProps) {
-  const dayGridTemplate = buildDayGridTemplate(getDayWeights(normalizeWeekendColumnPercent(weekendColumnPercent)));
+  const baseWeights = getDayWeights(normalizeWeekendColumnPercent(weekendColumnPercent));
+  const adjustedWeights = baseWeights.map((weight, idx) => {
+    if (idx < 5) return weight;
+    return page.days[idx]?.appointments.length > 0 ? 1 : weight;
+  });
+  const dayGridTemplate = buildDayGridTemplate(adjustedWeights);
   const calendarWeek = format(parseISO(page.days[0].dateKey), "II", { locale: de });
   const weekStart = page.days[0].dateKey;
   const weekEnd = page.days[6].dateKey;
@@ -37,9 +42,12 @@ export function CalendarTourPrintWeekPage({ page, weekendColumnPercent }: Calend
           </p>
         </header>
       }
-      days={page.days.map((day) => ({
+      days={page.days.map((day, dayIdx) => ({
         dateKey: day.dateKey,
-        label: formatTourPrintDayColumnLabel(day.dateKey),
+        label:
+          dayIdx >= 5 && day.appointments.length === 0
+            ? format(parseISO(day.dateKey), "EE", { locale: de })
+            : formatTourPrintDayColumnLabel(day.dateKey),
         children: day.appointments.map((appt) =>
           isAppointmentContinuationDay(appt, day.dateKey) ? (
             <CalendarTourPrintContinuationCard

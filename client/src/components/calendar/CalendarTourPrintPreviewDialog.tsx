@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   buildTourPrintPages,
   normalizeTourPrintWeekCount,
@@ -88,9 +88,6 @@ export function CalendarTourPrintPreviewDialog({
         <div className="flex h-full flex-col">
           <DialogHeader className="border-b border-border px-6 py-4 print:hidden">
             <DialogTitle>Druckvorschau Tour-Zeitleiste</DialogTitle>
-            <DialogDescription>
-              Vorschau ohne echten Druck. Die Seiten werden einzeln geblaettert; der finale Druckablauf folgt spaeter.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 text-sm print:hidden">
@@ -172,7 +169,7 @@ export function CalendarTourPrintPreviewDialog({
                   <ChevronLeft className="h-5 w-5" />
                 </button>
 
-                <div className="flex min-h-full items-center justify-center" data-testid="tour-print-preview-active-page-shell">
+                <div className="flex min-h-full items-start justify-center" data-testid="tour-print-preview-active-page-shell">
                   {activePage?.kind === "summary" ? (
                     <CalendarTourPrintSummaryPage page={activePage} />
                   ) : activePage?.kind === "week" ? (
