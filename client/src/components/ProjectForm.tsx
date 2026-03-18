@@ -58,6 +58,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { Project, Customer, Note, Component, ComponentCategory, ProductCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
 
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) throw new Error((await res.text()) || `Request failed for ${url}`);
+  return res.json() as Promise<T>;
+}
+
 interface ProjectFormProps {
   projectId?: number;
   onCancel?: () => void;
@@ -198,22 +204,26 @@ export function ProjectForm({
 
   const { data: productCategories = [] } = useQuery<ProductCategory[]>({
     queryKey: [productCategoriesUrl],
-    enabled: true,
+    queryFn: () => fetchJson<ProductCategory[]>(productCategoriesUrl),
+    staleTime: 0,
   });
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: [productsUrl],
-    enabled: true,
+    queryFn: () => fetchJson<Product[]>(productsUrl),
+    staleTime: 0,
   });
 
   const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
     queryKey: [componentCategoriesUrl],
-    enabled: true,
+    queryFn: () => fetchJson<ComponentCategory[]>(componentCategoriesUrl),
+    staleTime: 0,
   });
 
   const { data: components = [] } = useQuery<Component[]>({
     queryKey: [componentsUrl],
-    enabled: true,
+    queryFn: () => fetchJson<Component[]>(componentsUrl),
+    staleTime: 0,
   });
 
   const { data: projectOrderItems = [] } = useQuery<ProjectOrderItem[]>({

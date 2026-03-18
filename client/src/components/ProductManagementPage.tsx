@@ -162,7 +162,8 @@ export function ProductManagementPage() {
   });
   const updateProductMutation = useMutation({
     mutationFn: async (input: { id: number; version: number; name: string; shortCode: string | null; categoryId: number; description: string | null; isActive: boolean }) => {
-      const response = await apiRequest("PUT", `/api/admin/master-data/products/${input.id}`, input);
+      const { id, ...body } = input;
+      const response = await apiRequest("PUT", `/api/admin/master-data/products/${id}`, body);
       return response.json() as Promise<Product>;
     },
     onSuccess: async () => { await invalidateMasterDataQueries(activeScope); },

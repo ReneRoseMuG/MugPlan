@@ -335,6 +335,19 @@ export function AppointmentForm({
     queryFn: () => fetchJson<AppointmentFormProject[]>("/api/projects?filter=all&scope=all"),
   });
 
+  // Fallback: project might not be in the list (e.g. newly created without appointments,
+  // which scope=all now excludes). Fetch it directly by ID in that case.
+  const selectedProjectInList = projects.find((p) => p.id === selectedProjectId) ?? null;
+  const { data: selectedProjectById = null } = useQuery<AppointmentFormProject | null>({
+    queryKey: [`/api/projects/${selectedProjectId}`],
+    enabled: selectedProjectId !== null && selectedProjectInList === null,
+    queryFn: async () => {
+      const data = await fetchJson<{ project: Project }>(`/api/projects/${selectedProjectId}`);
+      return data.project as AppointmentFormProject;
+    },
+    staleTime: 60_000,
+  });
+
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
     queryFn: () => fetchJson<Customer[]>("/api/customers"),
@@ -342,14 +355,17 @@ export function AppointmentForm({
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: [productsUrl],
     queryFn: () => fetchJson<Product[]>(productsUrl),
+    staleTime: 0,
   });
   const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
     queryKey: [componentCategoriesUrl],
     queryFn: () => fetchJson<ComponentCategory[]>(componentCategoriesUrl),
+    staleTime: 0,
   });
   const { data: components = [] } = useQuery<Component[]>({
     queryKey: [componentsUrl],
     queryFn: () => fetchJson<Component[]>(componentsUrl),
+    staleTime: 0,
   });
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
@@ -503,8 +519,8 @@ export function AppointmentForm({
   }, [isEndDateEnabled, startDate]);
 
   const selectedProject = useMemo(
-    () => projects.find((project) => project.id === selectedProjectId) ?? null,
-    [projects, selectedProjectId],
+    () => projects.find((project) => project.id === selectedProjectId) ?? selectedProjectById ?? null,
+    [projects, selectedProjectId, selectedProjectById],
   );
 
   const resolvedCustomerId = selectedProject?.customerId ?? selectedCustomerId;
