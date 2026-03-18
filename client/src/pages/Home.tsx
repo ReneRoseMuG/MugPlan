@@ -234,7 +234,6 @@ export default function Home({ onLogout }: HomeProps) {
   const isContextualCalendarView = view === "calendarContextual" && calendarContext !== null;
   const isSidebarHidden =
     view === "customer" ||
-    view === "project" ||
     (view === "employees" && employeeFormVisible) ||
     (view === "tours" && tourFormVisible) ||
     (view === "teams" && teamFormVisible);
@@ -304,39 +303,6 @@ export default function Home({ onLogout }: HomeProps) {
                   },
                 });
               }}
-            />
-          ) : view === "project" ? (
-            <ProjectForm
-              projectId={selectedProjectId || undefined}
-              onCancel={() => { setSelectedProjectId(null); setView(projectReturnView); }}
-              onSaved={() => { setSelectedProjectId(null); setView(projectReturnView); }}
-              onOpenAppointment={(context) => {
-                setAppointmentContext({
-                  projectId: context.projectId,
-                  appointmentId: context.appointmentId,
-                  returnContext: { targetView: "project", projectId: context.projectId ?? selectedProjectId },
-                });
-                setView("appointment");
-              }}
-              onOpenCalendarWorkspace={(context) => {
-                setCalendarContext({
-                  projectId: context.projectId,
-                  activeView: "week",
-                  currentDate,
-                  returnContext: { targetView: "project", projectId: context.projectId },
-                });
-                setView("calendarContextual");
-              }}
-            />
-          ) : view === "appointment" ? (
-            <AppointmentForm
-              appointmentId={appointmentContext?.appointmentId}
-              initialDate={appointmentContext?.initialDate}
-              initialTourId={appointmentContext?.initialTourId}
-              projectId={appointmentContext?.projectId}
-              readOnlyFields={appointmentContext?.readOnlyFields}
-              onCancel={returnFromAppointment}
-              onSaved={returnFromAppointment}
             />
           ) : view === "appointmentsList" ? (
             <AppointmentsListPage
@@ -538,6 +504,45 @@ export default function Home({ onLogout }: HomeProps) {
           </div>
         ) : null}
       </main>
+      {view === "appointment" && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <AppointmentForm
+            appointmentId={appointmentContext?.appointmentId}
+            initialDate={appointmentContext?.initialDate}
+            initialTourId={appointmentContext?.initialTourId}
+            projectId={appointmentContext?.projectId}
+            readOnlyFields={appointmentContext?.readOnlyFields}
+            onCancel={returnFromAppointment}
+            onSaved={returnFromAppointment}
+          />
+        </div>
+      )}
+      {view === "project" && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <ProjectForm
+            projectId={selectedProjectId || undefined}
+            onCancel={() => { setSelectedProjectId(null); setView(projectReturnView); }}
+            onSaved={() => { setSelectedProjectId(null); setView(projectReturnView); }}
+            onOpenAppointment={(context) => {
+              setAppointmentContext({
+                projectId: context.projectId,
+                appointmentId: context.appointmentId,
+                returnContext: { targetView: "project", projectId: context.projectId ?? selectedProjectId },
+              });
+              setView("appointment");
+            }}
+            onOpenCalendarWorkspace={(context) => {
+              setCalendarContext({
+                projectId: context.projectId,
+                activeView: "week",
+                currentDate,
+                returnContext: { targetView: "project", projectId: context.projectId },
+              });
+              setView("calendarContextual");
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

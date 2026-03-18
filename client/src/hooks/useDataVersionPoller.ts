@@ -28,6 +28,13 @@ export function useDataVersionPoller() {
     setIsStale(false);
   }, []);
 
+  const refreshBaseline = useCallback(async () => {
+    const current = await fetchDataVersion();
+    if (current) {
+      baselineRef.current = current;
+    }
+  }, []);
+
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -61,5 +68,5 @@ export function useDataVersionPoller() {
     };
   }, []);
 
-  return { isStale, markAsSeen };
+  return { isStale, markAsSeen, refreshBaseline };
 }

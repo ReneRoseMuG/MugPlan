@@ -1,5 +1,15 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+let onMutationSuccess: (() => void) | null = null;
+
+export function registerMutationSuccessCallback(cb: () => void) {
+  onMutationSuccess = cb;
+}
+
+export function notifyMutationSuccess() {
+  onMutationSuccess?.();
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -20,6 +30,9 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
+  if (method !== "GET") {
+    notifyMutationSuccess();
+  }
   return res;
 }
 
