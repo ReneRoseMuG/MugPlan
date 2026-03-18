@@ -10,12 +10,27 @@ import AdminSetup from "@/pages/AdminSetup";
 import { getSetupStatus, logout } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { SettingsProvider } from "@/providers/SettingsProvider";
+import { useDataVersionPoller } from "@/hooks/useDataVersionPoller";
+import { StaleDataBanner } from "@/components/StaleDataBanner";
 
 type RouterProps = {
   onLogout: () => void;
 };
 
 type AuthStage = "loading" | "setup" | "login" | "authed";
+
+function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
+  const { isStale, markAsSeen } = useDataVersionPoller();
+
+  return (
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
+      {isStale && <StaleDataBanner onRefresh={markAsSeen} />}
+      <div className="flex-1 min-h-0">
+        <Router onLogout={onLogout} />
+      </div>
+    </div>
+  );
+}
 
 function Router({ onLogout }: RouterProps) {
   return (
@@ -89,7 +104,7 @@ function App() {
       <TooltipProvider>
         <SettingsProvider>
           <Toaster />
-          <Router
+          <AuthenticatedApp
             onLogout={() => {
               void logout();
               setStage("login");
