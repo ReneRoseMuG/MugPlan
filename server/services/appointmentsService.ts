@@ -1074,6 +1074,20 @@ export async function removeAppointmentTag(
   return;
 }
 
+export async function removeEmployeeFromAppointment(
+  appointmentId: number,
+  employeeId: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ found: boolean }> {
+  requireDispatcherOrAdmin(roleKey);
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return { found: false };
+  await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    await appointmentsRepository.deleteAppointmentEmployeeTx(tx, appointmentId, employeeId);
+  });
+  return { found: true };
+}
+
 export function isAppointmentError(err: unknown): err is AppointmentError {
   return err instanceof AppointmentError;
 }

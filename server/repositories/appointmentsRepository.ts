@@ -372,6 +372,17 @@ export async function createAppointmentTx(tx: DbTx, data: InsertAppointment): Pr
   return Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId);
 }
 
+export async function deleteAppointmentEmployeeTx(
+  tx: DbTx,
+  appointmentId: number,
+  employeeId: number,
+): Promise<number> {
+  const result = await tx
+    .delete(appointmentEmployees)
+    .where(and(eq(appointmentEmployees.appointmentId, appointmentId), eq(appointmentEmployees.employeeId, employeeId)));
+  return getAffectedRows(result);
+}
+
 export async function replaceAppointmentEmployeesTx(
   tx: DbTx,
   appointmentId: number,

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -8,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 type PreviewItem = {
   appointmentId: number;
@@ -109,6 +111,19 @@ export function TourEmployeeCascadeDialog({
 
   const appointmentRangeLabel = buildAppointmentRangeLabel(previewItems);
 
+  const [filterDateFrom, setFilterDateFrom] = useState<string | undefined>(undefined);
+  const [filterDateTo, setFilterDateTo] = useState<string | undefined>(undefined);
+
+  const filteredItems = useMemo(() => {
+    return previewItems.filter((item) => {
+      if (filterDateFrom && item.startDate < filterDateFrom) return false;
+      if (filterDateTo && item.startDate > filterDateTo) return false;
+      return true;
+    });
+  }, [previewItems, filterDateFrom, filterDateTo]);
+
+  const isFilterActive = filterDateFrom !== undefined || filterDateTo !== undefined;
+
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent className="max-w-3xl" data-testid="dialog-tour-employee-cascade">
@@ -122,14 +137,47 @@ export function TourEmployeeCascadeDialog({
           ) : null}
         </DialogHeader>
 
+        <div className="flex items-center gap-4" data-testid="filter-tour-cascade-date-range">
+          <label className="flex items-center gap-2 text-sm">
+            Datum von
+            <Input
+              type="date"
+              value={filterDateFrom ?? ""}
+              onChange={(e) => setFilterDateFrom(e.target.value || undefined)}
+              data-testid="input-tour-cascade-date-from"
+              className="w-36"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            Datum bis
+            <Input
+              type="date"
+              value={filterDateTo ?? ""}
+              onChange={(e) => setFilterDateTo(e.target.value || undefined)}
+              data-testid="input-tour-cascade-date-to"
+              className="w-36"
+            />
+          </label>
+          {isFilterActive ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilterDateFrom(undefined); setFilterDateTo(undefined); }}
+              data-testid="button-tour-cascade-date-filter-reset"
+            >
+              Zurücksetzen
+            </Button>
+          ) : null}
+        </div>
+
         <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
-          {previewItems.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <div className="p-4 text-sm text-slate-500">
               Keine zukünftigen Termine betroffen.
             </div>
           ) : (
             <div className="divide-y">
-              {previewItems.map((item) => {
+              {filteredItems.map((item) => {
                 const checked = selectedAppointmentIds.includes(item.appointmentId);
                 const conflictText = conflictReasonLabel(item.conflictReason);
                 const customerLabel = formatCustomerLabel(item);
