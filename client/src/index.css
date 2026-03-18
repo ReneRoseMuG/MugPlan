@@ -1,8 +1,8 @@
 :root {
   /* Colors extracted from the screenshot */
-  --color-cream: 38 41% 95%; /* #F8F4ED - Cremeweiß */
-  --color-beige: 41 40% 85%; /* #E8DEC9 - Beige/Sand */
-  --color-blue-dark: 213 49% 60%; /* #6A94C9 - Mittelblau */
+  --color-cream: 30 8% 97%;            /* #F7F7F6 — Page-Hintergrund */
+  --color-beige: 30 15% 88%;           /* #EFEDE9 — Muted, Shell-Header, Tab-Leiste */
+  --color-blue-dark: 38 91% 43%;       /* #D97706 — Amber 600, Akzentfarbe */
   --color-blue-light: 210 65% 85%; /* #C1D9F0 - Hellblau */
 
   /* Semantic mapping based on user instructions */
@@ -34,8 +34,18 @@
   --card: 0 0% 100%;
   --card-foreground: var(--color-blue-dark);
 
-  /* SubPanel - dezente Hintergrundfarbe für Unterbereiche in Formularen */
-  --sub-panel-background: 210 30% 96%; /* Sehr helles Blaugrau */
+  /* SubPanel und Input */
+  --sub-panel-background: 30 18% 92%;  /* #F0EDE8 — Sub-Panel-Hintergrund in Formularen */
+  --input-background: 30 20% 98%;      /* #FAFAF9 — Eingabefelder, heller als Panels */
+
+  /* Amber-Tokens: Rahmen, Tabelle, Badges, Text */
+  --color-border: 30 15% 80%;          /* #D9D4CC — Rahmen und Trennlinien */
+  --color-zebra: 30 12% 95%;           /* #F3F1EE — ungerade Tabellenzeilen */
+  --color-badge-bg: 48 100% 97%;       /* #FFFBEB — Badge-Hintergrund */
+  --color-badge-border: 48 96% 89%;    /* #FDE68A — Badge-Rahmen */
+  --color-badge-text: 21 96% 31%;      /* #92400E — Badge-Text */
+  --color-text-primary: 20 6% 10%;     /* #1C1917 — Fließtext */
+  --color-text-secondary: 25 6% 33%;   /* #57534E — Labels, Platzhalter */
 
   --font-body: 'Plus Jakarta Sans', sans-serif;
   
