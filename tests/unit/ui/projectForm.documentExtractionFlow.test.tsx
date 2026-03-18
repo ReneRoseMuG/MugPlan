@@ -70,7 +70,7 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).not.toContain("<FileText className=\"w-4 h-4\" />");
     expect(projectOrderFormSource).toContain("const leftColumnFields: ProjectProductFieldKey[] = [\"saunaModel\", \"oven\", \"control\", \"roof\", \"door\"]");
     expect(projectOrderFormSource).toContain("const rightColumnFields: ProjectProductFieldKey[] = [\"window\", \"frontWall\", \"rearWallWindow\", \"interior\"]");
-    expect(projectOrderFormSource).toContain("auswählen");
+    expect(projectOrderFormSource).toContain("nicht ausgewählt");
     expect(projectOrderFormSource).not.toContain(">Artikelliste</h3>");
   });
 
