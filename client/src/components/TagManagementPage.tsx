@@ -30,6 +30,8 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 async function invalidateTagQueries(): Promise<void> {
   await queryClient.invalidateQueries({ queryKey: ["/api/admin/master-data/tags"] });
+  await queryClient.invalidateQueries({ queryKey: ["/api/tags"] });
+  await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
 }
 
 export function TagManagementPage() {
