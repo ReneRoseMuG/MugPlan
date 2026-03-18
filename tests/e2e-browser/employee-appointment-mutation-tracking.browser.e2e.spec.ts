@@ -97,11 +97,11 @@ test("Test 1: Entfernen über Kaskaden-Dialog mit Date-Range-Filter-Verifikation
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("abziehen");
 
-  // Date-Range-Filter: Datum von auf apptRemoveDialog.startDate setzen
+  // Date-Range-Filter: Datum von auf das Datum von apptRemoveDialog setzen
   const filterDateFrom = dialog.getByTestId("input-tour-cascade-date-from");
   const filterDateTo = dialog.getByTestId("input-tour-cascade-date-to");
-  await filterDateFrom.fill(apptRemoveDialog!.startDate);
-  await filterDateTo.fill(apptRemoveDialog!.startDate);
+  await filterDateFrom.fill(getRelativeBerlinDate(1));
+  await filterDateTo.fill(getRelativeBerlinDate(1));
 
   // Nur apptRemoveDialog sichtbar, apptMinusButton und apptAddDialog ausgeblendet
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${apptRemoveDialog!.id}`)).toBeVisible();

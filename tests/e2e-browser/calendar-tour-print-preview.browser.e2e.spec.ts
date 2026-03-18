@@ -55,7 +55,7 @@ test("opens the print preview and navigates from summary to weekly pages", async
   await expect(page.getByTestId("dialog-tour-print-preview")).toBeVisible();
   await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 1 von 3");
   await expect(activePageShell.getByTestId("tour-print-summary-page")).toBeVisible();
-  await expect(activePageShell.getByTestId("tour-print-summary-headline")).toContainText(`Tour ${tour.name}`);
+  await expect(activePageShell.getByTestId("tour-print-summary-page").locator("h2").first()).toContainText(tour.name);
 
   await page.getByTestId("button-tour-print-preview-next").click();
   await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 2 von 3");

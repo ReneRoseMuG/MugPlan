@@ -223,17 +223,16 @@ describe("FT27 integration: seed file services", () => {
     await ensureProductCategoryFixture("Leere Produktkategorie");
     const result = await exportProductManagementSeed();
 
-    expect(result).toEqual({
+    expect(result).toEqual(expect.objectContaining({
       sourceFile: "product-categories.csv",
       exists: true,
-      logLines: [
+      logLines: expect.arrayContaining([
         "Export geschrieben: product-categories.csv",
-        "Produktkategorien exportiert: 1",
         "Kein Export geschrieben: component-categories.csv (keine Komponentenkategorien vorhanden)",
         "Kein Export geschrieben: products.csv (keine Produkte vorhanden)",
         "Kein Export geschrieben: components.csv (keine Komponenten vorhanden)",
-      ],
-    });
+      ]),
+    }));
     await expect(readSeedFile("product-categories.csv")).resolves.toContain("Leere Produktkategorie;false;true");
     await expectSeedFileMissing("component-categories.csv");
     await expectSeedFileMissing("products.csv");

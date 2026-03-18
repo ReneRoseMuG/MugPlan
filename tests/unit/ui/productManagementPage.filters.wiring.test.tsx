@@ -25,10 +25,10 @@ describe("FT27 UI: product management component architecture wiring", () => {
     const allComponentListSource = readFileSync(path.resolve(process.cwd(), "client/src/components/ui/all-component-list.tsx"), "utf8");
 
     expect(source).toContain("import { AllComponentList, type ComponentEditorInput }");
-    expect(source).toContain("import { ProductData");
+    expect(source).toContain("import { ProductDetails, type ProductDetailsDraft }");
     expect(source).toContain("import { ProductDropDown }");
     expect(source).toContain("<ProductDropDown");
-    expect(source).toContain("<ProductData");
+    expect(source).toContain("<ProductDetails");
     expect(source).toContain("<AllComponentList");
     expect(source).toContain("onDeleteProduct={() => void deleteSelectedProduct()}");
     expect(source).toContain("components={components}");
@@ -47,7 +47,7 @@ describe("FT27 UI: product management component architecture wiring", () => {
     expect(allComponentListSource).toContain("select-component-record");
     expect(allComponentListSource).toContain("select-component-category-record");
     expect(allComponentListSource).toContain("Komponenten Stammdaten");
-    expect(allComponentListSource).toContain("component-data-short-code");
+    expect(allComponentListSource).toContain("shortCode: input.shortCode");
   });
 
   it("keeps category panels and removes the old inline component management table", () => {

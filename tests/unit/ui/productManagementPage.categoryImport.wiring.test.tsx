@@ -25,7 +25,7 @@ describe("FT27 UI: category import wiring in product management", () => {
   it("wires hidden file inputs and per-row import buttons for both category lists", () => {
     expect(source).toContain('data-testid="input-product-category-import-file"');
     expect(source).toContain('data-testid="input-component-category-import-file"');
-    expect(source).toContain("Daten importieren");
+    expect(source).toContain(">Import</Button>");
     expect(source).toContain('title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"');
     expect(source).toContain('data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}');
   });

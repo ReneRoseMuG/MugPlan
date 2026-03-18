@@ -74,7 +74,7 @@ test("uses the cascade dialog for adding and removing members on existing tours"
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter zu Tour-Terminen hinzufÃ¼gen");
+  await expect(dialog).toContainText("Mitarbeiter zu Tour-Terminen hinzufügen");
   await expect(dialog.getByTestId("text-tour-employee-cascade-range")).toContainText("Termine (2) - Termine im Zeitraum von");
   await expect(dialog).not.toContainText("Mitarbeiter:");
   await expect(dialog).toContainText("FT04 Browser Projekt");
