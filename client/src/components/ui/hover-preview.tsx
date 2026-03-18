@@ -23,6 +23,7 @@ type HoverPreviewProps = {
   align?: "start" | "center" | "end";
   sideOffset?: number;
   maxWidth?: number;
+  minWidth?: number;
   maxHeight?: number | null;
   cursorOffsetX?: number;
   cursorOffsetY?: number;
@@ -82,6 +83,7 @@ export function HoverPreview({
   align = "start",
   sideOffset = 8,
   maxWidth = 360,
+  minWidth,
   maxHeight = 260,
   cursorOffsetX = 14,
   cursorOffsetY = 18,
@@ -197,7 +199,7 @@ export function HoverPreview({
           side={side}
           align={align}
           sideOffset={sideOffset}
-          style={resolvedMaxHeight == null ? { maxWidth } : { maxWidth, maxHeight: resolvedMaxHeight }}
+          style={resolvedMaxHeight == null ? { maxWidth, minWidth } : { maxWidth, minWidth, maxHeight: resolvedMaxHeight }}
           className={cn(className)}
           onMouseEnter={handlePreviewMouseEnter}
           onMouseLeave={handlePreviewMouseLeave}

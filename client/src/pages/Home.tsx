@@ -309,11 +309,11 @@ export default function Home({ onLogout }: HomeProps) {
               helpKey="appointments.list.mainNavigation"
               context={{ type: "standalone" }}
               onOpenAppointment={(appointmentId) => {
-                setAppointmentOverlayContext({
-                  origin: "appointmentsList",
+                setAppointmentContext({
                   appointmentId,
                   returnContext: { targetView: "appointmentsList" },
                 });
+                setView("appointment");
               }}
             />
           ) : view === "projectList" ? (

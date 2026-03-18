@@ -138,7 +138,7 @@ export function AttachmentInfoBadgePreview({
   }, [isTxt, openUrl]);
 
   return (
-    <div className="space-y-3" style={{ minWidth: dimensions.popoverMaxWidth }}>
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
           {isImage ? (
@@ -217,6 +217,7 @@ export function createAttachmentInfoBadgePreview(
     options: {
       ...attachmentInfoBadgePreviewBaseOptions,
       maxWidth: dimensions.popoverMaxWidth,
+      minWidth: dimensions.popoverMaxWidth,
       maxHeight: dimensions.popoverMaxHeight,
     },
   };

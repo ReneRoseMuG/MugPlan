@@ -9,6 +9,7 @@ export type InfoBadgePreviewOptions = {
   side: "top" | "right" | "bottom" | "left";
   align: "start" | "center" | "end";
   maxWidth: number;
+  minWidth?: number;
   maxHeight: number | null;
   scrollY: "auto" | "visible";
 };
@@ -132,6 +133,7 @@ export function InfoBadge({
       align={previewOptions.align}
       sideOffset={8}
       maxWidth={previewOptions.maxWidth}
+      minWidth={previewOptions.minWidth}
       maxHeight={previewOptions.maxHeight}
       className={previewClassName}
       contentClassName="space-y-2"
