@@ -194,6 +194,20 @@ export function ProductManagementPage() {
     mutationFn: async (input: { id: number; version: number }) => apiRequest("DELETE", `/api/admin/master-data/components/${input.id}`, { version: input.version }),
     onSuccess: async () => { await invalidateMasterDataQueries(activeScope); },
   });
+  const deleteAllProductsInCategoryMutation = useMutation({
+    mutationFn: async (categoryId: number) => {
+      const response = await apiRequest("DELETE", `/api/admin/master-data/product-categories/${categoryId}/products`, {});
+      return response.json() as Promise<{ deletedCount: number; skippedCount: number }>;
+    },
+    onSuccess: async () => { await invalidateMasterDataQueries(activeScope); },
+  });
+  const deleteAllComponentsInCategoryMutation = useMutation({
+    mutationFn: async (categoryId: number) => {
+      const response = await apiRequest("DELETE", `/api/admin/master-data/component-categories/${categoryId}/components`, {});
+      return response.json() as Promise<{ deletedCount: number; skippedCount: number }>;
+    },
+    onSuccess: async () => { await invalidateMasterDataQueries(activeScope); },
+  });
   const deleteSelectedComponentWithConflictDetails = async (component: Component): Promise<void> => {
     try {
       await deleteComponentMutation.mutateAsync({ id: component.id, version: component.version });
@@ -282,6 +296,36 @@ export function ProductManagementPage() {
       toast({ title: "Produkt geloescht" });
     } catch (error) {
       toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produkt wird noch verwendet" : "Produkt konnte nicht geloescht werden", variant: "destructive" });
+    }
+  }
+  async function deleteAllProductsInCategory(categoryId: string): Promise<void> {
+    const category = productCategories.find((c) => String(c.id) === categoryId);
+    const count = products.filter((p) => String(p.categoryId) === categoryId).length;
+    if (!window.confirm(`Alle Produkte der Kategorie "${category?.name ?? categoryId}" löschen? ${count} Einträge betroffen.`)) return;
+    try {
+      const result = await deleteAllProductsInCategoryMutation.mutateAsync(Number(categoryId));
+      if (result.skippedCount > 0) {
+        toast({ title: `${result.deletedCount} Produkte gelöscht, ${result.skippedCount} noch in Verwendung` });
+      } else {
+        toast({ title: `${result.deletedCount} Produkte gelöscht` });
+      }
+    } catch (error) {
+      toast({ title: "Produkte konnten nicht gelöscht werden", variant: "destructive" });
+    }
+  }
+  async function deleteAllComponentsInCategory(categoryId: string): Promise<void> {
+    const category = componentCategories.find((c) => String(c.id) === categoryId);
+    const count = components.filter((c) => String(c.categoryId) === categoryId).length;
+    if (!window.confirm(`Alle Komponenten der Kategorie "${category?.name ?? categoryId}" löschen? ${count} Einträge betroffen.`)) return;
+    try {
+      const result = await deleteAllComponentsInCategoryMutation.mutateAsync(Number(categoryId));
+      if (result.skippedCount > 0) {
+        toast({ title: `${result.deletedCount} Komponenten gelöscht, ${result.skippedCount} noch in Verwendung` });
+      } else {
+        toast({ title: `${result.deletedCount} Komponenten gelöscht` });
+      }
+    } catch (error) {
+      toast({ title: "Komponenten konnten nicht gelöscht werden", variant: "destructive" });
     }
   }
   async function createStandaloneComponent(input: ComponentEditorInput): Promise<Component> {
@@ -376,7 +420,7 @@ export function ProductManagementPage() {
           {/* Produkte */}
           <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_405px]">
             <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3" data-testid="master-data-products">
-              <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} isAdmin={isAdmin} />
+              <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} onDeleteAllInCategory={(categoryId) => void deleteAllProductsInCategory(categoryId)} isAdmin={isAdmin} />
               {selectedProduct ? (
                 <section className="rounded-md border border-slate-200 bg-slate-50 p-4">
                   <h5 className="mb-3 font-semibold text-slate-900">Produkt Stammdaten</h5>
@@ -398,7 +442,7 @@ export function ProductManagementPage() {
           {/* Komponenten */}
           <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_405px]">
             <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
-              <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} />
+              <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} onDeleteAllComponentsInCategory={(categoryId) => void deleteAllComponentsInCategory(categoryId)} />
             </section>
             {renderCategorySection("Komponentenkategorien", componentCategories, editComponentCategory, setEditComponentCategory, editComponentCategory ? editComponentCategory.name : newComponentCategoryName, editComponentCategory ? (value) => setEditComponentCategory({ ...editComponentCategory, name: value }) : setNewComponentCategoryName, () => {
               if (editComponentCategory) {

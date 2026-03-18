@@ -7,7 +7,7 @@
 
   /* Semantic mapping based on user instructions */
   --background: var(--color-cream);
-  --foreground: var(--color-blue-dark); /* labels/überschriften */
+  --foreground: var(--color-text-primary);
   
   --primary: var(--color-blue-dark);
   --primary-foreground: var(--color-cream);
@@ -16,7 +16,7 @@
   --secondary-foreground: var(--color-blue-dark);
   
   --muted: var(--color-beige);
-  --muted-foreground: var(--color-blue-dark);
+  --muted-foreground: var(--color-text-secondary);
   
   --accent: var(--color-blue-light);
   --accent-foreground: var(--color-blue-dark);
@@ -29,10 +29,10 @@
   --ring: var(--color-blue-dark);
   
   --popover: 0 0% 100%;
-  --popover-foreground: var(--color-blue-dark);
+  --popover-foreground: var(--color-text-primary);
   
   --card: 0 0% 100%;
-  --card-foreground: var(--color-blue-dark);
+  --card-foreground: var(--color-text-primary);
 
   /* SubPanel und Input */
   --sub-panel-background: 30 18% 92%;  /* #F0EDE8 — Sub-Panel-Hintergrund in Formularen */
@@ -60,15 +60,11 @@
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary;
     font-family: var(--font-body);
-    /* Das hellere blau für allgemeinen Text */
-    color: hsl(var(--color-blue-dark) / 0.9);
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-body);
-    /* Dunkles Blau für Überschriften */
     @apply font-black tracking-tight;
-    color: hsl(var(--color-blue-dark));
   }
   
   button {

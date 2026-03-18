@@ -166,4 +166,33 @@ describe("FT02 integration: projects scope and mengenlogik", () => {
       expect(noAppointmentsIds.has(id)).toBe(false);
     }
   });
+
+  it("scope=all: liefert Projekte mit Terminen (past+future), schliesst Projekte ohne Termine aus", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("FT02-ALL");
+
+    const projectFuture = await createProject(customer.id, "All Future");
+    const projectPast = await createProject(customer.id, "All Past");
+    const projectNone = await createProject(customer.id, "All None");
+
+    await appointmentsService.createAppointment({
+      projectId: projectFuture.id,
+      startDate: relativeBerlinDate(1),
+      employeeIds: [],
+    });
+
+    await insertAppointmentRaw({
+      projectId: projectPast.id,
+      customerId: projectPast.customerId,
+      startDate: relativeBerlinDate(-1),
+      title: "All Past",
+    });
+
+    const all = await admin.get("/api/projects?filter=all&scope=all").expect(200);
+    const allIds = new Set((all.body as Array<{ id: number }>).map((row) => row.id));
+
+    expect(allIds.has(projectFuture.id)).toBe(true);
+    expect(allIds.has(projectPast.id)).toBe(true);
+    expect(allIds.has(projectNone.id)).toBe(false);
+  });
 });

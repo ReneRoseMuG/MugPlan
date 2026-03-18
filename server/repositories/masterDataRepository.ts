@@ -258,6 +258,10 @@ export async function updateProductWithVersion(
   return { kind: "updated", row };
 }
 
+export async function listProductsByCategoryId(categoryId: number): Promise<Product[]> {
+  return db.select().from(products).where(eq(products.categoryId, categoryId)).orderBy(asc(products.name), asc(products.id));
+}
+
 export async function deleteProductWithVersion(id: number, expectedVersion: number): Promise<VersionedDeleteResult> {
   const result = await db.execute(sql`
     delete from products
@@ -290,6 +294,10 @@ export async function createComponent(input: InsertComponent): Promise<Component
 export async function getComponentById(id: number): Promise<Component | undefined> {
   const [row] = await db.select().from(components).where(eq(components.id, id));
   return row;
+}
+
+export async function listComponentsByCategoryId(categoryId: number): Promise<Component[]> {
+  return db.select().from(components).where(eq(components.categoryId, categoryId)).orderBy(asc(components.name), asc(components.id));
 }
 
 export async function getComponentDeleteRelationCounts(componentId: number): Promise<{

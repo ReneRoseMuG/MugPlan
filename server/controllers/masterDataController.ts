@@ -536,6 +536,46 @@ export async function deleteComponent(req: Request, res: Response, next: NextFun
   }
 }
 
+export async function deleteProductsByCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const categoryId = parseId(req.params.id);
+    const roleKey = ensureRoleKey(req);
+    if (!Number.isFinite(categoryId) || categoryId <= 0) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const result = await masterDataService.deleteProductsByCategory(categoryId, roleKey);
+    res.json(result);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
+export async function deleteComponentsByCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const categoryId = parseId(req.params.id);
+    const roleKey = ensureRoleKey(req);
+    if (!Number.isFinite(categoryId) || categoryId <= 0) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const result = await masterDataService.deleteComponentsByCategory(categoryId, roleKey);
+    res.json(result);
+  } catch (error) {
+    if (handleServiceError(error, res)) return;
+    next(error);
+  }
+}
+
 export async function listComponentSpecifications(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const componentId = parseId(req.params.id);

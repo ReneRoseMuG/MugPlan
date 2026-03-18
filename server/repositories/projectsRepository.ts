@@ -49,7 +49,11 @@ function getBerlinTodayDate(): Date {
 
 function buildScopeCondition(scope: ProjectScope) {
   if (scope === "all") {
-    return undefined;
+    return sql`exists (
+      select 1
+      from ${appointments}
+      where ${appointments.projectId} = ${projects.id}
+    )`;
   }
 
   if (scope === "noAppointments") {

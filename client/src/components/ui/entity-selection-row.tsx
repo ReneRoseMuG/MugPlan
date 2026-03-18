@@ -18,10 +18,13 @@ interface EntitySelectionRowProps {
   onCategorySelect: (value: string) => void;
   showAdd?: boolean;
   showRemove?: boolean;
+  showDeleteAll?: boolean;
   onAdd?: () => void;
   onRemove?: () => void;
+  onDeleteAll?: () => void;
   addDisabled?: boolean;
   removeDisabled?: boolean;
+  deleteAllDisabled?: boolean;
   selectDisabled?: boolean;
   itemTestId?: string;
   categoryTestId?: string;
@@ -40,10 +43,13 @@ export function EntitySelectionRow({
   onCategorySelect,
   showAdd = false,
   showRemove = false,
+  showDeleteAll = false,
   onAdd,
   onRemove,
+  onDeleteAll,
   addDisabled = false,
   removeDisabled = false,
+  deleteAllDisabled = false,
   selectDisabled = false,
   itemTestId,
   categoryTestId,
@@ -58,10 +64,13 @@ export function EntitySelectionRow({
         onSelect={onItemSelect}
         showRemove={showRemove}
         showAdd={showAdd}
+        showDeleteAll={showDeleteAll}
         onRemove={onRemove}
         onAdd={onAdd}
+        onDeleteAll={onDeleteAll}
         removeDisabled={removeDisabled}
         addDisabled={addDisabled}
+        deleteAllDisabled={deleteAllDisabled}
         selectDisabled={selectDisabled}
         testId={itemTestId}
       />

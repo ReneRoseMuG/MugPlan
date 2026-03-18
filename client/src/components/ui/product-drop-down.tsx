@@ -10,6 +10,7 @@ interface ProductListProps {
   onSelectProduct: (productId: string) => void;
   onCreateProduct: (input: { name: string; shortCode: string | null; description: string | null; categoryId: number }) => Promise<Product>;
   onDeleteProduct?: () => void;
+  onDeleteAllInCategory?: (categoryId: string) => void;
   isAdmin: boolean;
 }
 
@@ -20,6 +21,7 @@ export function ProductList({
   onSelectProduct,
   onCreateProduct,
   onDeleteProduct,
+  onDeleteAllInCategory,
   isAdmin,
 }: ProductListProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -78,10 +80,13 @@ export function ProductList({
           onCategorySelect={handleCategorySelect}
           showRemove={isAdmin}
           showAdd={isAdmin}
+          showDeleteAll={isAdmin}
           onRemove={onDeleteProduct}
           onAdd={() => setCreateDialogOpen(true)}
+          onDeleteAll={selectedCategoryId ? () => onDeleteAllInCategory?.(selectedCategoryId) : undefined}
           removeDisabled={!selectedProductId}
           addDisabled={!selectedCategoryId}
+          deleteAllDisabled={!selectedCategoryId}
           itemTestId="select-product-record"
           categoryTestId="select-product-category-filter"
         />

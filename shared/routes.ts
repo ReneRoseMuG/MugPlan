@@ -1873,6 +1873,17 @@ export const api = {
           422: z.object({ code: z.enum(["INVALID_CSV_FORMAT", "INVALID_CSV_CONTENT", "VALIDATION_ERROR"]) }),
         },
       },
+      deleteProducts: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/product-categories/:id/products",
+        input: z.object({}).strict(),
+        responses: {
+          200: z.object({ deletedCount: z.number(), skippedCount: z.number() }),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
     },
     componentCategories: {
       list: {
@@ -1935,6 +1946,17 @@ export const api = {
           404: z.object({ code: z.literal("NOT_FOUND") }),
           413: z.object({ code: z.literal("PAYLOAD_TOO_LARGE") }),
           422: z.object({ code: z.enum(["INVALID_CSV_FORMAT", "INVALID_CSV_CONTENT", "VALIDATION_ERROR"]) }),
+        },
+      },
+      deleteComponents: {
+        method: "DELETE" as const,
+        path: "/api/admin/master-data/component-categories/:id/components",
+        input: z.object({}).strict(),
+        responses: {
+          200: z.object({ deletedCount: z.number(), skippedCount: z.number() }),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          404: z.object({ code: z.literal("NOT_FOUND") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },
     },

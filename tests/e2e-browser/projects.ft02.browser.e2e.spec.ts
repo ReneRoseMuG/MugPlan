@@ -71,7 +71,7 @@ test("creates a project via UI after customer selection and keeps validation err
   await page.getByTestId("button-save-project").click();
 
   await expect(page.getByTestId("button-new-project")).toBeVisible();
-  await page.getByLabel("Alle Projekte").click();
+  await page.getByLabel("Ohne Termine").click();
   await expect(page.getByTestId("list-projects")).toContainText("FT02 Browser Projekt");
 });
 
@@ -109,6 +109,10 @@ test("creates and deletes a project note in the edit form", async ({ page }) => 
   const project = await createProjectFixture({
     prefix: "FT02-BROWSER-NOTES",
     name: "FT02 Browser Notes Project",
+  });
+  await createAppointmentFixture({
+    projectId: project.id,
+    startDate: getRelativeBerlinDate(1),
   });
 
   await openProjectById(page, project.id);
@@ -163,7 +167,7 @@ test("deletes projects without appointments and keeps projects with appointments
   }).toBe(200);
 
   await openProjects(page);
-  await page.getByLabel("Alle Projekte").click();
+  await page.getByLabel("Ohne Termine").click();
   await page.getByTestId(`project-card-${deletableProject.id}`).dblclick();
   await page.getByTestId("button-delete-project").click();
   await page.getByTestId("button-confirm-delete-project").click();

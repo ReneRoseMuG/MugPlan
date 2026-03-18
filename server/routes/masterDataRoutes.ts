@@ -9,6 +9,7 @@ router.post(api.masterData.productCategories.create.path, masterDataController.c
 router.put(api.masterData.productCategories.update.path, masterDataController.updateProductCategory);
 router.delete(api.masterData.productCategories.delete.path, masterDataController.deleteProductCategory);
 router.post(api.masterData.productCategories.importCsv.path, masterDataController.importProductCategoryCsv);
+router.delete(api.masterData.productCategories.deleteProducts.path, masterDataController.deleteProductsByCategory);
 router.get(api.masterData.seed.employees.status.path, masterDataController.getEmployeesSeedStatusController);
 router.post(api.masterData.seed.employees.apply.path, masterDataController.applyEmployeesSeedController);
 router.post(api.masterData.seed.employees.export.path, masterDataController.exportEmployeesSeedController);
@@ -42,6 +43,7 @@ router.post(api.masterData.componentCategories.create.path, masterDataController
 router.put(api.masterData.componentCategories.update.path, masterDataController.updateComponentCategory);
 router.delete(api.masterData.componentCategories.delete.path, masterDataController.deleteComponentCategory);
 router.post(api.masterData.componentCategories.importCsv.path, masterDataController.importComponentCategoryCsv);
+router.delete(api.masterData.componentCategories.deleteComponents.path, masterDataController.deleteComponentsByCategory);
 
 router.get(api.masterData.products.list.path, masterDataController.listProducts);
 router.post(api.masterData.products.create.path, masterDataController.createProduct);

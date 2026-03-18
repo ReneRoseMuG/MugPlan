@@ -14,12 +14,15 @@ interface CollectionDropDownProps {
   showRemove?: boolean;
   showAdd?: boolean;
   showAdopt?: boolean;
+  showDeleteAll?: boolean;
   onRemove?: () => void;
   onAdd?: () => void;
   onAdopt?: () => void;
+  onDeleteAll?: () => void;
   removeDisabled?: boolean;
   addDisabled?: boolean;
   adoptDisabled?: boolean;
+  deleteAllDisabled?: boolean;
   selectDisabled?: boolean;
   testId?: string;
 }
@@ -33,12 +36,15 @@ export function CollectionDropDown({
   showRemove = false,
   showAdd = false,
   showAdopt = false,
+  showDeleteAll = false,
   onRemove,
   onAdd,
   onAdopt,
+  onDeleteAll,
   removeDisabled = false,
   addDisabled = false,
   adoptDisabled = false,
+  deleteAllDisabled = false,
   selectDisabled = false,
   testId,
 }: CollectionDropDownProps) {
@@ -46,6 +52,11 @@ export function CollectionDropDown({
     <div className="space-y-2">
       <div className="text-sm font-medium text-slate-900">{label}</div>
       <div className="flex min-w-0 items-center gap-2">
+        {showDeleteAll ? (
+          <Button type="button" variant="outline" onClick={onDeleteAll} disabled={deleteAllDisabled} className="shrink-0">
+            ×
+          </Button>
+        ) : null}
         {showRemove ? (
           <Button type="button" variant="outline" onClick={onRemove} disabled={removeDisabled} className="shrink-0">
             -

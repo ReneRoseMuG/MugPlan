@@ -745,6 +745,65 @@ export async function deleteComponent(
   }
 }
 
+export async function deleteProductsByCategory(
+  categoryId: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ deletedCount: number; skippedCount: number }> {
+  requireAdmin(roleKey);
+  const items = await masterDataRepository.listProductsByCategoryId(categoryId);
+  let deletedCount = 0;
+  let skippedCount = 0;
+  for (const item of items) {
+    try {
+      const result = await masterDataRepository.deleteProductWithVersion(item.id, item.version);
+      if (result.kind === "deleted") {
+        deletedCount++;
+      } else {
+        skippedCount++;
+      }
+    } catch (error) {
+      if (isRowReferencedError(error)) {
+        skippedCount++;
+      } else {
+        throw error;
+      }
+    }
+  }
+  return { deletedCount, skippedCount };
+}
+
+export async function deleteComponentsByCategory(
+  categoryId: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ deletedCount: number; skippedCount: number }> {
+  requireAdmin(roleKey);
+  const items = await masterDataRepository.listComponentsByCategoryId(categoryId);
+  let deletedCount = 0;
+  let skippedCount = 0;
+  for (const item of items) {
+    const relationCounts = await masterDataRepository.getComponentDeleteRelationCounts(item.id);
+    if (hasComponentDeleteConflictDetails(relationCounts)) {
+      skippedCount++;
+      continue;
+    }
+    try {
+      const result = await masterDataRepository.deleteComponentWithVersion(item.id, item.version);
+      if (result.kind === "deleted") {
+        deletedCount++;
+      } else {
+        skippedCount++;
+      }
+    } catch (error) {
+      if (isRowReferencedError(error)) {
+        skippedCount++;
+      } else {
+        throw error;
+      }
+    }
+  }
+  return { deletedCount, skippedCount };
+}
+
 export async function listComponentSpecifications(componentId: number, roleKey: CanonicalRoleKey): Promise<ComponentSpecification[]> {
   requireAdmin(roleKey);
   return masterDataRepository.listComponentSpecifications(componentId);

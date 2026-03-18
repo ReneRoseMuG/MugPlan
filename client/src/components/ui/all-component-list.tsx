@@ -19,6 +19,7 @@ interface AllComponentListProps {
   onCreateComponent: (input: ComponentEditorInput) => Promise<Component>;
   onUpdateComponent: (component: Component, input: ComponentEditorInput) => Promise<Component>;
   onDeleteComponent: (component: Component) => Promise<void>;
+  onDeleteAllComponentsInCategory?: (categoryId: string) => void;
 }
 
 function toDraft(component: Component | null): ComponentDetailsDraft {
@@ -40,6 +41,7 @@ export function AllComponentList({
   onCreateComponent,
   onUpdateComponent,
   onDeleteComponent,
+  onDeleteAllComponentsInCategory,
 }: AllComponentListProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [selectedComponentId, setSelectedComponentId] = useState("");
@@ -184,10 +186,13 @@ export function AllComponentList({
           onCategorySelect={handleCategorySelect}
           showRemove={isAdmin}
           showAdd={isAdmin}
+          showDeleteAll={isAdmin}
           onRemove={() => void handleDelete()}
           onAdd={() => setCreateDialogOpen(true)}
+          onDeleteAll={selectedCategoryId ? () => onDeleteAllComponentsInCategory?.(selectedCategoryId) : undefined}
           removeDisabled={!selectedComponent || submitting}
           addDisabled={submitting}
+          deleteAllDisabled={!selectedCategoryId || submitting}
           selectDisabled={submitting}
           itemTestId="select-component-record"
           categoryTestId="select-component-category-record"
