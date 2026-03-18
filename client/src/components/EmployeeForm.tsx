@@ -192,6 +192,22 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     },
   });
 
+  const removeFromAppointmentMutation = useMutation({
+    mutationFn: async (appointmentId: number) => {
+      return apiRequest("DELETE", `/api/appointments/${appointmentId}/employees/${employeeId}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["appointments-list"] });
+      if (employeeId) {
+        void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+      }
+      toast({ title: "Mitarbeiter wurde vom Termin entfernt" });
+    },
+    onError: () => {
+      toast({ title: "Entfernen fehlgeschlagen", variant: "destructive" });
+    },
+  });
+
   const handleSubmit = async () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
       throw new Error("validation");
@@ -388,6 +404,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               helpKey="appointments.list.employeeForm"
               context={{ type: "employee", employeeId }}
               onOpenAppointment={onOpenAppointment}
+              onRemoveEmployee={(appointmentId) => removeFromAppointmentMutation.mutate(appointmentId)}
               className="min-h-0 flex-1"
             />
           ) : (

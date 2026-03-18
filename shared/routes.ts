@@ -1024,6 +1024,17 @@ export const api = {
       },
     },
   },
+  appointmentEmployees: {
+    remove: {
+      method: "DELETE" as const,
+      path: "/api/appointments/:id/employees/:employeeId",
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   appointmentNotes: {
     list: {
       method: 'GET' as const,

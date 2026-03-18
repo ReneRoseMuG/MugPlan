@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { ListLayout } from "@/components/ui/list-layout";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
@@ -55,6 +56,7 @@ interface AppointmentsListPageProps {
   enforceFromToday?: boolean;
   emptyStateOverride?: ReactNode;
   className?: string;
+  onRemoveEmployee?: (appointmentId: number) => void;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -125,6 +127,7 @@ export function AppointmentsListPage({
   enforceFromToday = false,
   emptyStateOverride,
   className,
+  onRemoveEmployee,
 }: AppointmentsListPageProps) {
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
@@ -311,8 +314,28 @@ export function AppointmentsListPage({
       });
     }
 
+    if (onRemoveEmployee) {
+      columns.push({
+        id: "removeEmployee",
+        header: "",
+        accessor: () => "",
+        minWidth: 48,
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            data-testid={`button-remove-employee-from-appointment-${row.id}`}
+            onClick={(e) => { e.stopPropagation(); onRemoveEmployee(row.id); }}
+            title="Mitarbeiter von Termin entfernen"
+          >
+            –
+          </Button>
+        ),
+      });
+    }
+
     return columns;
-  }, [resolvedHideTourColumn, sortDirection, sortKey]);
+  }, [resolvedHideTourColumn, sortDirection, sortKey, onRemoveEmployee]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
     const patchWithDate = (!showAllAppointments && resolvedEnforceFromToday)
