@@ -13,6 +13,7 @@ vite.config.ts.*
 .env.prod
 
 # local artifacts
+test-results/
 server.log
 *.log
 *.zip
