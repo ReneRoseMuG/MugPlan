@@ -149,6 +149,8 @@ test("Test 1: Entfernen über Kaskaden-Dialog mit Date-Range-Filter-Verifikation
   await expect(table.getByTestId(`button-remove-employee-from-appointment-${apptMinusButton!.id}`)).toBeVisible();
 
   // D) Globale Terminliste: apptRemoveDialog noch vorhanden (Termin existiert, nur Mitarbeiter abgezogen)
+  // Mitarbeiterformular schließen — Sidebar ist im Bearbeitungsmodus ausgeblendet
+  await page.getByTestId("button-close-employee").click();
   await page.getByTestId("nav-termine").click();
   const termineListe = page.getByTestId("table-appointments-list");
   await expect(termineListe).toBeVisible();
@@ -169,10 +171,11 @@ test("Test 2: Hinzufügen über Kaskaden-Dialog mit Date-Range-Filter-Verifikati
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("hinzuf");
 
-  // Date-Range-Filter: Datum bis auf apptAddDialog.startDate setzen
-  // → apptMinusButton (späteres Datum) soll ausgeblendet werden
+  // Date-Range-Filter: Datum bis auf Tag 2 setzen → apptMinusButton (Tag 3) soll ausgeblendet werden
+  // Hinweis: apptAddDialog (Tag 2) und apptMinusButton (Tag 3) sind nach Test 1 bereits belegt (disabled),
+  // apptRemoveDialog (Tag 1) ist die einzige selektierbare Zeile.
   const filterDateTo = dialog.getByTestId("input-tour-cascade-date-to");
-  await filterDateTo.fill(apptAddDialog!.startDate);
+  await filterDateTo.fill(getRelativeBerlinDate(2));
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${apptAddDialog!.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${apptMinusButton!.id}`)).toHaveCount(0);
 
@@ -180,35 +183,24 @@ test("Test 2: Hinzufügen über Kaskaden-Dialog mit Date-Range-Filter-Verifikati
   await dialog.getByTestId("button-tour-cascade-date-filter-reset").click();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${apptMinusButton!.id}`)).toBeVisible();
 
-  // Nur apptAddDialog selektieren (alle anderen abwählen)
-  for (const apptId of [apptRemoveDialog!.id, apptMinusButton!.id]) {
-    const checkbox = dialog.getByTestId(`tour-employee-cascade-checkbox-${apptId}`);
-    if (await checkbox.isChecked()) {
-      await checkbox.click();
-    }
-  }
-  const apptAddCheckbox = dialog.getByTestId(`tour-employee-cascade-checkbox-${apptAddDialog!.id}`);
-  if (!(await apptAddCheckbox.isChecked())) {
-    await apptAddCheckbox.click();
-  }
-
+  // apptRemoveDialog ist nach Test 1 die einzige Zeile ohne targetEmployee → vorselektiert, kein Klick nötig
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(dialog).toHaveCount(0);
 
-  // A) targetEmployee ist jetzt in apptAddDialog
+  // A) targetEmployee ist jetzt in apptRemoveDialog
   await expect.poll(async () => {
-    const response = await page.request.get(`/api/appointments/${apptAddDialog!.id}`);
+    const response = await page.request.get(`/api/appointments/${apptRemoveDialog!.id}`);
     const payload = await response.json();
     return (payload.employees as Array<{ id: number }>).map((e) => e.id);
   }).toContain(targetEmployee.id);
 
-  // B) Mitarbeiterformular: apptAddDialog erscheint in Liste
+  // B) Mitarbeiterformular: apptRemoveDialog erscheint in Liste
   await page.getByTestId("button-close-tour").click();
   await page.getByTestId("nav-mitarbeiter").click();
   await page.getByTestId(`employee-card-${targetEmployee.id}`).dblclick();
   await page.getByTestId("tab-employee-termine").click();
   const table = page.getByTestId("table-appointments-list");
-  await expect(table.getByTestId(`button-remove-employee-from-appointment-${apptAddDialog!.id}`)).toBeVisible();
+  await expect(table.getByTestId(`button-remove-employee-from-appointment-${apptRemoveDialog!.id}`)).toBeVisible();
 });
 
 test("Test 3: Entfernen über –-Button im Mitarbeiterformular", async ({ page }) => {
@@ -230,7 +222,7 @@ test("Test 3: Entfernen über –-Button im Mitarbeiterformular", async ({ page 
   await removeButton.click();
 
   // Toast erscheint
-  await expect(page.getByText("Mitarbeiter wurde vom Termin entfernt")).toBeVisible();
+  await expect(page.getByText("Mitarbeiter wurde vom Termin entfernt", { exact: true })).toBeVisible();
 
   // A) apptMinusButton verschwindet aus Liste (Query-Invalidierung)
   await expect(table.getByTestId(`button-remove-employee-from-appointment-${apptMinusButton!.id}`)).toHaveCount(0);
@@ -250,6 +242,8 @@ test("Test 3: Entfernen über –-Button im Mitarbeiterformular", async ({ page 
   }).toContain(sideEmployee.id);
 
   // D) Globale Terminliste: apptMinusButton noch vorhanden (Termin existiert weiterhin)
+  // Mitarbeiterformular schließen — Sidebar ist im Bearbeitungsmodus ausgeblendet
+  await page.getByTestId("button-close-employee").click();
   await page.getByTestId("nav-termine").click();
   const termineListe = page.getByTestId("table-appointments-list");
   await expect(termineListe).toBeVisible();
