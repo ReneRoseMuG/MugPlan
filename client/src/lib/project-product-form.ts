@@ -36,7 +36,7 @@ type ExtractionCategoryInput = {
   items: Array<{ description: string }>;
 };
 
-function createEmptySelection(): ProjectProductSelection {
+export function createEmptySelection(): ProjectProductSelection {
   return {
     productId: null,
     componentId: null,

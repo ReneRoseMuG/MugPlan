@@ -206,13 +206,12 @@ export function ProjectProductFields({
             id={`project-product-${field.key}`}
             value={currentValue}
             onChange={(e) => {
-              if (!e.target.value) return;
               onSelectField(field.key, e.target.value);
             }}
             className="h-10 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
             data-testid={`select-project-product-${field.key}`}
           >
-            <option value="">{productSelections[field.key].componentName || `${field.label} auswählen`}</option>
+            <option value="">— nicht ausgewählt —</option>
             {items.map((item) => (
               <option key={item.value} value={item.value}>{item.label}</option>
             ))}
@@ -255,13 +254,12 @@ export function ProjectProductFields({
             id={`project-product-${slot.slotId}`}
             value={currentValue}
             onChange={(e) => {
-              if (!e.target.value) return;
               onSelectDynamic(slot.slotId, e.target.value);
             }}
             className="h-10 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
             data-testid={`select-project-product-${slot.slotId}`}
           >
-            <option value="">{sel?.componentName || `${slot.label} auswählen`}</option>
+            <option value="">— nicht ausgewählt —</option>
             {items.map((item) => (
               <option key={item.value} value={item.value}>{item.label}</option>
             ))}

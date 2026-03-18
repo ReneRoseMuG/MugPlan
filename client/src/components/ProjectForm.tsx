@@ -43,6 +43,7 @@ import {
   cloneProjectProductSelections,
   createEmptyProjectProductSelections,
   createEmptyDynamicProjectProductSelections,
+  createEmptySelection,
   extractEditorDescriptionHtml,
   getProjectProductField,
   isProductSelectionField,
@@ -641,7 +642,26 @@ export function ProjectForm({
   };
 
   const handleFieldSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
-    if (!selectedValue) return;
+    if (!selectedValue) {
+      const existing = productSelections[fieldKey];
+      if (isEditing && projectId && existing.itemId != null && existing.version != null) {
+        try {
+          await apiRequest("DELETE", `/api/projects/${projectId}/order-items/${existing.itemId}`, { version: existing.version });
+          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+          toast({ title: `${getProjectProductField(fieldKey).label} entfernt` });
+        } catch (error) {
+          toast({
+            title: "Auswahl konnte nicht entfernt werden",
+            description: error instanceof Error ? error.message : "Unbekannter Fehler",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      setProductSelections((current) => ({ ...current, [fieldKey]: createEmptySelection() }));
+      return;
+    }
+
     const field = getProjectProductField(fieldKey);
     const numericSelectedId = Number(selectedValue);
     if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
@@ -682,7 +702,28 @@ export function ProjectForm({
 
   const handleDynamicFieldSelection = async (slotId: string, selectedValue: string) => {
     const slot = dynamicCategorySlots.find((entry) => entry.slotId === slotId);
-    if (!slot || !selectedValue) return;
+    if (!slot) return;
+
+    if (!selectedValue) {
+      const existing = dynamicProductSelections[slotId];
+      if (isEditing && projectId && existing?.itemId != null && existing.version != null) {
+        try {
+          await apiRequest("DELETE", `/api/projects/${projectId}/order-items/${existing.itemId}`, { version: existing.version });
+          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+          toast({ title: `${slot.label} entfernt` });
+        } catch (error) {
+          toast({
+            title: `${slot.label} konnte nicht entfernt werden`,
+            description: error instanceof Error ? error.message : "Unbekannter Fehler",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      setDynamicProductSelections((current) => ({ ...current, [slotId]: createEmptySelection() }));
+      return;
+    }
+
     const numericSelectedId = Number(selectedValue);
     if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
 
