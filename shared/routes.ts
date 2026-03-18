@@ -2335,6 +2335,36 @@ export const api = {
           },
         },
       },
+      tours: {
+        status: {
+          method: "GET" as const,
+          path: "/api/admin/master-data/seed/tours",
+          responses: {
+            200: masterDataSeedFileStatusSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+          },
+        },
+        apply: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/tours/apply",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+        export: {
+          method: "POST" as const,
+          path: "/api/admin/master-data/seed/tours/export",
+          input: z.object({}).strict(),
+          responses: {
+            200: masterDataSeedExecutionSchema,
+            403: z.object({ code: z.literal("FORBIDDEN") }),
+            422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+          },
+        },
+      },
       users: {
         status: {
           method: "GET" as const,

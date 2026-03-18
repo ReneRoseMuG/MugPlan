@@ -29,6 +29,10 @@ router.get(api.masterData.seed.tags.status.path, masterDataController.getTagsSee
 router.post(api.masterData.seed.tags.apply.path, masterDataController.applyTagsSeedController);
 router.post(api.masterData.seed.tags.export.path, masterDataController.exportTagsSeedController);
 
+router.get(api.masterData.seed.tours.status.path, masterDataController.getToursSeedStatusController);
+router.post(api.masterData.seed.tours.apply.path, masterDataController.applyToursSeedController);
+router.post(api.masterData.seed.tours.export.path, masterDataController.exportToursSeedController);
+
 router.get(api.masterData.seed.users.status.path, masterDataController.getUsersSeedStatusController);
 router.post(api.masterData.seed.users.apply.path, masterDataController.applyUsersSeedController);
 router.post(api.masterData.seed.users.export.path, masterDataController.exportUsersSeedController);

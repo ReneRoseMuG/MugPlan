@@ -32,6 +32,7 @@ const MASTER_DATA_QUERY_KEYS = [
   "/api/help-texts",
   "/api/employees?scope=inactive",
   "/api/employees?scope=active",
+  "/api/tours",
 ];
 
 const SEED_STATUS_QUERY_KEYS = [
@@ -40,11 +41,13 @@ const SEED_STATUS_QUERY_KEYS = [
   "/api/admin/master-data/seed/product-management",
   "/api/admin/master-data/seed/note-templates",
   "/api/admin/master-data/seed/tags",
+  "/api/admin/master-data/seed/tours",
   "/api/admin/master-data/seed/users",
 ];
 
 const GLOBAL_SEED_SEQUENCE = [
   { name: "Tags", applyUrl: "/api/admin/master-data/seed/tags/apply", exportUrl: "/api/admin/master-data/seed/tags/export" },
+  { name: "Touren", applyUrl: "/api/admin/master-data/seed/tours/apply", exportUrl: "/api/admin/master-data/seed/tours/export" },
   { name: "Mitarbeiter", applyUrl: "/api/admin/master-data/seed/employees/apply", exportUrl: "/api/admin/master-data/seed/employees/export" },
   { name: "Hilfetexte", applyUrl: "/api/admin/master-data/seed/help-texts/apply", exportUrl: "/api/admin/master-data/seed/help-texts/export" },
   { name: "Notiz Vorlagen", applyUrl: "/api/admin/master-data/seed/note-templates/apply", exportUrl: "/api/admin/master-data/seed/note-templates/export" },
@@ -79,6 +82,7 @@ export function MasterDataSeedPage() {
   const productManagementStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/product-management"], queryFn: () => fetchJson("/api/admin/master-data/seed/product-management") });
   const noteTemplatesStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/note-templates"], queryFn: () => fetchJson("/api/admin/master-data/seed/note-templates") });
   const tagsStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/tags"], queryFn: () => fetchJson("/api/admin/master-data/seed/tags") });
+  const toursStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/tours"], queryFn: () => fetchJson("/api/admin/master-data/seed/tours") });
   const usersStatusQuery = useQuery<SeedStatusResponse>({ queryKey: ["/api/admin/master-data/seed/users"], queryFn: () => fetchJson("/api/admin/master-data/seed/users") });
 
   function useSeedMutation(panelKey: string, title: string, url: string, successTitle: string) {
@@ -110,6 +114,8 @@ export function MasterDataSeedPage() {
   const noteTemplatesExportMutation = useSeedMutation("note-templates", "Notiz Vorlagen", "/api/admin/master-data/seed/note-templates/export", "exportiert");
   const tagsApplyMutation = useSeedMutation("tags", "Tags", "/api/admin/master-data/seed/tags/apply", "importiert");
   const tagsExportMutation = useSeedMutation("tags", "Tags", "/api/admin/master-data/seed/tags/export", "exportiert");
+  const toursApplyMutation = useSeedMutation("tours", "Touren", "/api/admin/master-data/seed/tours/apply", "importiert");
+  const toursExportMutation = useSeedMutation("tours", "Touren", "/api/admin/master-data/seed/tours/export", "exportiert");
   const usersApplyMutation = useSeedMutation("users", "Users", "/api/admin/master-data/seed/users/apply", "importiert");
   const usersExportMutation = useSeedMutation("users", "Users", "/api/admin/master-data/seed/users/export", "exportiert");
 
@@ -163,6 +169,7 @@ export function MasterDataSeedPage() {
     { key: "product-management", title: "Produktverwaltung", description: "Verwaltet product-categories.csv, component-categories.csv, products.csv und components.csv fuer Kategorien, Produkte und Komponenten.", status: productManagementStatusQuery.data, applyMutation: productManagementApplyMutation, exportMutation: productManagementExportMutation },
     { key: "note-templates", title: "Notiz Vorlagen", description: "Verwaltet notetemplates.csv mit Inhalt, Farbe, Drucken, Sortierung und Status.", status: noteTemplatesStatusQuery.data, applyMutation: noteTemplatesApplyMutation, exportMutation: noteTemplatesExportMutation },
     { key: "tags", title: "Tags", description: "Verwaltet tags.csv mit Name und Farbe fuer den Tag-Stammdatenbestand.", status: tagsStatusQuery.data, applyMutation: tagsApplyMutation, exportMutation: tagsExportMutation },
+    { key: "tours", title: "Touren", description: "Verwaltet tours.csv mit Name und Farbe fuer den Touren-Stammdatenbestand.", status: toursStatusQuery.data, applyMutation: toursApplyMutation, exportMutation: toursExportMutation },
     { key: "users", title: "Users", description: "Verwaltet users.csv mit Username, E-Mail, Vor-/Nachname, Rolle und Passwort. Passwort wird beim Export leer gelassen.", status: usersStatusQuery.data, applyMutation: usersApplyMutation, exportMutation: usersExportMutation },
   ] as const;
 

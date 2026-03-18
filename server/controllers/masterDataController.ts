@@ -16,6 +16,7 @@ import {
 } from "../services/seedProductManagementService";
 import { getNoteTemplatesSeedStatus, applyNoteTemplatesSeed, exportNoteTemplatesSeed } from "../services/seedNoteTemplatesService";
 import { getTagsSeedStatus, applyTagsSeed, exportTagsSeed } from "../services/seedTagsService";
+import { getToursSeedStatus, applyToursSeed, exportToursSeed } from "../services/seedToursService";
 import { getUsersSeedStatus, applyUsersSeed, exportUsersSeed } from "../services/seedUsersService";
 
 function parseId(value: string | string[]): number {
@@ -255,6 +256,18 @@ export async function applyTagsSeedController(req: Request, res: Response, next:
 
 export async function exportTagsSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
   await handleSeedExecution(req, res, next, () => api.masterData.seed.tags.export.input.parse(req.body ?? {}), exportTagsSeed);
+}
+
+export async function getToursSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => undefined, getToursSeedStatus);
+}
+
+export async function applyToursSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.tours.apply.input.parse(req.body ?? {}), applyToursSeed);
+}
+
+export async function exportToursSeedController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await handleSeedExecution(req, res, next, () => api.masterData.seed.tours.export.input.parse(req.body ?? {}), exportToursSeed);
 }
 
 export async function getUsersSeedStatusController(req: Request, res: Response, next: NextFunction): Promise<void> {
