@@ -4,6 +4,9 @@ import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 export function CalendarWeekAppointmentPanelCustomer({
   fullName,
   customerNumber,
+  phone,
+  email,
+  company,
   addressLine1,
   addressLine2,
   postalCode,
@@ -12,6 +15,9 @@ export function CalendarWeekAppointmentPanelCustomer({
 }: {
   fullName: string;
   customerNumber: string;
+  phone?: string | null;
+  email?: string | null;
+  company?: string | null;
   addressLine1?: string | null;
   addressLine2?: string | null;
   postalCode: string | null;
@@ -25,9 +31,9 @@ export function CalendarWeekAppointmentPanelCustomer({
     firstName: null,
     lastName: null,
     customerNumber,
-    company: null,
-    phone: null,
-    email: null,
+    company: company ?? null,
+    phone: phone ?? null,
+    email: email ?? null,
     addressLine1: addressLine1 ?? null,
     postalCode,
     city,

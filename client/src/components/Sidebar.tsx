@@ -1,4 +1,5 @@
-import { CalendarDays, Calendar, LogOut } from "lucide-react";
+import { CalendarDays, Calendar, LogOut, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ViewType } from "@/pages/Home";
 import { domainIcons } from "@/lib/domain-icons";
 
@@ -82,6 +83,7 @@ export function Sidebar({
   backupDisabled = false,
   monitoringCount,
 }: SidebarProps) {
+  const queryClient = useQueryClient();
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
   const canAccessReports = isAdmin || userRole?.toUpperCase() === "DISPATCHER";
   const CustomersIcon = domainIcons.customers;
@@ -101,10 +103,18 @@ export function Sidebar({
       }`}
       data-testid="sidebar"
     >
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight text-primary" data-testid="text-app-title">
           MuG Plan
         </h1>
+        <button
+          onClick={() => void queryClient.invalidateQueries()}
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 hover:bg-white hover:text-slate-600"
+          title="Daten neu laden"
+        >
+          <RefreshCw className="h-3 w-3" />
+          Neu Laden
+        </button>
       </div>
 
       <nav className="flex flex-1 flex-col">

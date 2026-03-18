@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 import { StickyNote } from "lucide-react";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import type { Note } from "@shared/schema";
@@ -61,21 +59,31 @@ function resolveEndpoint(type: NotesSourceType, id: number): string {
 }
 
 function htmlToExcerpt(value: string, maxLength = 140): string {
-  const plainText = value
-    .replace(/<[^>]+>/g, " ")
+  const withLineBreaks = value
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/div>/gi, "\n");
+
+  const plainText = withLineBreaks
+    .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/gi, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+/g, " ")
     .trim();
 
   if (plainText.length <= maxLength) return plainText;
   return `${plainText.slice(0, maxLength - 1).trimEnd()}...`;
 }
 
-function formatNoteDate(value: Date | string | null): string {
-  if (!value) return "-";
-  const parsed = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(parsed.getTime())) return "-";
-  return format(parsed, "dd.MM.yyyy", { locale: de });
+function resolveTextColor(hex: string | null | undefined): string {
+  if (!hex) return "#1e293b";
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return "#1e293b";
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? "#1e293b" : "#ffffff";
 }
 
 function NotesSection({
@@ -107,16 +115,14 @@ function NotesSection({
           <article
             key={note.id}
             className="rounded-md border border-slate-200 px-2 py-1.5"
-            style={{ backgroundColor: note.cardColor ?? "#ffffff" }}
+            style={{ backgroundColor: note.cardColor ?? "#ffffff", color: resolveTextColor(note.cardColor) }}
           >
-            <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-800">
-              <span>{note.title}</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${note.print ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>
-                {note.print ? "D" : "N"}
-              </span>
+            <div className="text-[11px] font-semibold">
+              {note.title}
             </div>
-            <div className="text-[11px] leading-snug text-slate-600">{htmlToExcerpt(note.body ?? "") || "-"}</div>
-            <div className="mt-1 text-[10px] text-slate-400">{formatNoteDate(note.updatedAt)}</div>
+            <div className="text-[11px] leading-snug whitespace-pre-line">
+              {htmlToExcerpt(note.body ?? "") || "-"}
+            </div>
           </article>
         ))}
       </div>

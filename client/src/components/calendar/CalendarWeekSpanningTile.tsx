@@ -99,6 +99,9 @@ export function CalendarWeekSpanningTile({
       <CalendarWeekAppointmentPanelCustomer
         fullName={appointment.customer.fullName ?? ""}
         customerNumber={appointment.customer.customerNumber}
+        phone={appointment.customer.phone}
+        email={appointment.customer.email}
+        company={appointment.customer.company}
         addressLine1={appointment.customer.addressLine1}
         addressLine2={appointment.customer.addressLine2}
         postalCode={appointment.customer.postalCode}

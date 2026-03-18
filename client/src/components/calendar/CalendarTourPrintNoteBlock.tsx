@@ -19,7 +19,6 @@ export function CalendarTourPrintNoteBlock({
   noteIndex,
 }: CalendarTourPrintNoteBlockProps) {
   const text = stripHtmlToText(note.body);
-  if (!text) return null;
 
   return (
     <article
@@ -31,7 +30,7 @@ export function CalendarTourPrintNoteBlock({
       data-testid={`tour-print-note-${appointmentId}-${noteIndex}`}
     >
       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">{note.title}</p>
-      <p className="mt-1 text-[11px] leading-4 text-slate-700">{text}</p>
+      {text ? <p className="mt-1 text-[11px] leading-4 text-slate-700">{text}</p> : null}
     </article>
   );
 }

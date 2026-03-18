@@ -310,7 +310,7 @@ export function ProductManagementPage() {
       } else {
         toast({ title: `${result.deletedCount} Produkte gelöscht` });
       }
-    } catch (error) {
+    } catch {
       toast({ title: "Produkte konnten nicht gelöscht werden", variant: "destructive" });
     }
   }
@@ -325,7 +325,7 @@ export function ProductManagementPage() {
       } else {
         toast({ title: `${result.deletedCount} Komponenten gelöscht` });
       }
-    } catch (error) {
+    } catch {
       toast({ title: "Komponenten konnten nicht gelöscht werden", variant: "destructive" });
     }
   }

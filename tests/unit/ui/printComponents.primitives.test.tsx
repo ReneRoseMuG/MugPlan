@@ -39,18 +39,13 @@ describe("generische Print-Primitives", () => {
     expect(html).not.toContain("tour-print-page--portrait");
   });
 
-  it("PrintDayColumn rendert label im Spaltenkopf und gibt children durch", () => {
+  it("PrintDayColumn rendert label im Spaltenkopf", () => {
     const html = renderToStaticMarkup(
-      React.createElement(
-        PrintDayColumn,
-        { label: "Mo, 01.01.", dateKey: "2099-01-01" },
-        React.createElement("span", null, "kind-inhalt"),
-      ),
+      React.createElement(PrintDayColumn, { label: "Mo, 01.01.", dateKey: "2099-01-01" }),
     );
 
     expect(html).toContain(`data-testid="tour-print-day-column-2099-01-01"`);
     expect(html).toContain("Mo, 01.01.");
-    expect(html).toContain("kind-inhalt");
   });
 
   it("PrintAppointmentSlot rendert header, body und footer wenn übergeben", () => {

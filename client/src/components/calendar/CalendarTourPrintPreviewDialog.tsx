@@ -33,6 +33,7 @@ export function CalendarTourPrintPreviewDialog({
   const { data, isLoading, isError } = useQuery<TourPrintPreviewResponse>({
     queryKey: ["tourPrintPreview", tourId, fromDate, normalizedWeekCount],
     enabled: open && typeof tourId === "number",
+    staleTime: 0,
     queryFn: async () => {
       const params = new URLSearchParams({
         fromDate,

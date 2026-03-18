@@ -431,7 +431,7 @@ export async function getProductVorlauf(params: {
     const tagsByProjectId = await getProjectTagsByProjectIds(Array.from(matchedProjectIds));
     const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
 
-  for (const projectId of matchedProjectIds) {
+  for (const projectId of Array.from(matchedProjectIds)) {
     if (!params.specialMeasureTagId) {
       continue;
     }

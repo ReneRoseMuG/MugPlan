@@ -1,6 +1,6 @@
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 function normalizeWhitespace(value: string): string {
   return value
@@ -18,7 +18,9 @@ type TextContentLike = {
 };
 
 function resolveStandardFontDataUrl(): string {
-  const standardFontsDir = path.resolve(process.cwd(), "node_modules", "pdfjs-dist", "standard_fonts");
+  // Pfad relativ zur Quelldatei — unabhängig von process.cwd()
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const standardFontsDir = path.resolve(currentDir, "../../node_modules/pdfjs-dist/standard_fonts");
   const standardFontsUrl = pathToFileURL(standardFontsDir).href;
   return standardFontsUrl.endsWith("/") ? standardFontsUrl : `${standardFontsUrl}/`;
 }

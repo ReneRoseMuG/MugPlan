@@ -23,7 +23,7 @@ export function CalendarTourPrintContinuationCard({
       }
       body={
         <div
-          className="mt-2 min-h-[60px] rounded"
+          className="mt-2 h-full rounded"
           style={{
             background:
               "repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f8fafc 4px, #f8fafc 12px)",

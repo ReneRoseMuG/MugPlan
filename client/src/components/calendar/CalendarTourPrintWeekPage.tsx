@@ -1,4 +1,5 @@
 import React from "react";
+import type { ReactNode } from "react";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -29,6 +30,31 @@ export function CalendarTourPrintWeekPage({ page, weekendColumnPercent }: Calend
   const weekStart = page.days[0].dateKey;
   const weekEnd = page.days[6].dateKey;
 
+  const dayLabels = page.days.map((day, dayIdx) => ({
+    dateKey: day.dateKey,
+    label:
+      dayIdx >= 5 && day.appointments.length === 0
+        ? format(parseISO(day.dateKey), "EE", { locale: de })
+        : formatTourPrintDayColumnLabel(day.dateKey),
+  }));
+
+  const rowCount = Math.max(0, ...page.days.map((d) => d.appointments.length));
+  const appointmentRows: ReactNode[][] = Array.from({ length: rowCount }, (_, rowIdx) =>
+    page.days.map((day) => {
+      const appt = day.appointments[rowIdx];
+      if (!appt) return null;
+      return isAppointmentContinuationDay(appt, day.dateKey) ? (
+        <CalendarTourPrintContinuationCard
+          key={`cont-${day.dateKey}-${appt.id}`}
+          appointment={appt}
+          dateKey={day.dateKey}
+        />
+      ) : (
+        <CalendarTourPrintAppointmentCard key={`${day.dateKey}-${appt.id}`} appointment={appt} />
+      );
+    }),
+  );
+
   return (
     <PrintWeekPage
       header={
@@ -42,24 +68,8 @@ export function CalendarTourPrintWeekPage({ page, weekendColumnPercent }: Calend
           </p>
         </header>
       }
-      days={page.days.map((day, dayIdx) => ({
-        dateKey: day.dateKey,
-        label:
-          dayIdx >= 5 && day.appointments.length === 0
-            ? format(parseISO(day.dateKey), "EE", { locale: de })
-            : formatTourPrintDayColumnLabel(day.dateKey),
-        children: day.appointments.map((appt) =>
-          isAppointmentContinuationDay(appt, day.dateKey) ? (
-            <CalendarTourPrintContinuationCard
-              key={`cont-${day.dateKey}-${appt.id}`}
-              appointment={appt}
-              dateKey={day.dateKey}
-            />
-          ) : (
-            <CalendarTourPrintAppointmentCard key={`${day.dateKey}-${appt.id}`} appointment={appt} />
-          ),
-        ),
-      }))}
+      days={dayLabels}
+      appointmentRows={appointmentRows}
       gridTemplate={dayGridTemplate}
       testId={`tour-print-week-page-${page.weekIndex + 1}`}
       gridTestId={`tour-print-week-grid-${page.weekIndex + 1}`}

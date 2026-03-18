@@ -29,6 +29,9 @@ export type CalendarAppointment = {
     id: number;
     customerNumber: string;
     fullName: string | null;
+    phone?: string | null;
+    email?: string | null;
+    company?: string | null;
     addressLine1?: string | null;
     addressLine2?: string | null;
     postalCode: string | null;
