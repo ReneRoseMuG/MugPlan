@@ -3736,6 +3736,11 @@ export const api = {
       },
     },
   },
+  dataVersion: {
+    get: {
+      path: "/api/data-version",
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
