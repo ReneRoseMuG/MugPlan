@@ -19,7 +19,7 @@
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
-import { appointmentTags, tags } from "../../../shared/schema";
+import { appointmentEmployees, appointmentTags, tags } from "../../../shared/schema";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
@@ -29,6 +29,7 @@ import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness"
 import {
   createAppointmentFixture,
   createCustomerFixture,
+  createEmployeeFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 
@@ -114,10 +115,12 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       await db.delete(tags).where(eq(tags.id, existingCancellationTag.id));
     }
     const customer = await createCustomerFixture("FT28-CANCEL");
+    const employeeA = await createEmployeeFixture("FT28-CANCEL-EMP");
+    const employeeB = await createEmployeeFixture("FT28-CANCEL-EMP");
     const appointment = await createAppointmentFixture({
       customerId: customer.id,
       startDate: getRelativeBerlinDate(2),
-      employeeIds: [],
+      employeeIds: [employeeA.id, employeeB.id],
     });
 
     await admin.post(`/api/appointments/${appointment.id}/cancel`).expect(204);
@@ -125,11 +128,17 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
 
     const detailResponse = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
     expect(detailResponse.body.isCancelled).toBe(true);
+    expect(detailResponse.body.employees).toEqual([]);
     expect(
       (detailResponse.body.appointmentTags as Array<{ name: string }>).some(
         (tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
       ),
-    ).toBe(false);
+    ).toBe(true);
+    const employeeRelationsAfterCancel = await db
+      .select({ employeeId: appointmentEmployees.employeeId })
+      .from(appointmentEmployees)
+      .where(eq(appointmentEmployees.appointmentId, appointment.id));
+    expect(employeeRelationsAfterCancel).toEqual([]);
 
     const [reservedTag] = await db
       .select({
@@ -188,5 +197,44 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       .expect(({ body }) => {
         expect(body.code).toBe("CANCELLED_APPOINTMENT_READONLY");
       });
+  });
+
+  it("repairs pre-existing cancelled appointments by clearing lingering employee assignments", async () => {
+    const admin = await loginAdminAgent(app);
+    await admin.get("/api/admin/master-data/tags").expect(200);
+    const customer = await createCustomerFixture("FT28-CANCEL-REPAIR");
+    const employee = await createEmployeeFixture("FT28-CANCEL-REPAIR-EMP");
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(2),
+      employeeIds: [employee.id],
+    });
+
+    const [reservedTag] = await db
+      .select({ id: tags.id })
+      .from(tags)
+      .where(eq(tags.name, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME))
+      .limit(1);
+    if (!reservedTag) {
+      throw new Error("Expected reserved cancellation tag to exist.");
+    }
+
+    await db.insert(appointmentTags).values({
+      appointmentId: appointment.id,
+      tagId: reservedTag.id,
+      version: 1,
+    });
+
+    await admin.post(`/api/appointments/${appointment.id}/cancel`).expect(204);
+
+    const detailResponse = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+    expect(detailResponse.body.isCancelled).toBe(true);
+    expect(detailResponse.body.employees).toEqual([]);
+
+    const employeeRelationsAfterRepair = await db
+      .select({ employeeId: appointmentEmployees.employeeId })
+      .from(appointmentEmployees)
+      .where(eq(appointmentEmployees.appointmentId, appointment.id));
+    expect(employeeRelationsAfterRepair).toEqual([]);
   });
 });

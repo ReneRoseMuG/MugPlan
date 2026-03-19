@@ -24,6 +24,10 @@ describe("FT28 weekly appointment panel tag wiring", () => {
     path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekAppointmentPanel.tsx"),
     "utf8",
   );
+  const spanningTileSource = readFileSync(
+    path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekSpanningTile.tsx"),
+    "utf8",
+  );
 
   it("merges all three tag sources through the shared dedupe helper", () => {
     expect(source).toContain("mergeUniqueTags(");
@@ -35,5 +39,9 @@ describe("FT28 weekly appointment panel tag wiring", () => {
   it("renders the shared footer tag row", () => {
     expect(source).toContain("<EntityTagFooterRow");
     expect(source).toContain("tags={mergedTags}");
+    expect(source).not.toContain("Storniert");
+    expect(spanningTileSource).toContain("<EntityTagFooterRow");
+    expect(spanningTileSource).toContain("tags={mergedTags}");
+    expect(spanningTileSource).not.toContain("Storniert");
   });
 });

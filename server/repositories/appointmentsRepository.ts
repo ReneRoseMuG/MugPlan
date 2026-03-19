@@ -493,6 +493,18 @@ export async function replaceAppointmentEmployeesTx(
   );
 }
 
+export async function addAppointmentTagTx(
+  tx: DbTx,
+  appointmentId: number,
+  tagId: number,
+): Promise<void> {
+  await tx.execute(sql`
+    insert into appointment_tags (appointment_id, tag_id, version)
+    values (${appointmentId}, ${tagId}, 1)
+    on duplicate key update version = version
+  `);
+}
+
 function getAffectedRows(result: unknown): number {
   const raw = result as any;
   return Number(raw?.[0]?.affectedRows ?? raw?.affectedRows ?? 0);

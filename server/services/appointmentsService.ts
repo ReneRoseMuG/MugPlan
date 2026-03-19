@@ -15,7 +15,6 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import {
   filterVisibleAppointmentTagRelations,
-  filterVisibleAppointmentTags,
   hasAppointmentCancellationTag,
   isAppointmentCancellationTag,
 } from "../lib/appointmentCancellation";
@@ -141,7 +140,7 @@ function resolveVisibleAppointmentTags(tags: Awaited<ReturnType<typeof appointme
   const appointmentTags = tags ?? [];
   return {
     isCancelled: hasAppointmentCancellationTag(appointmentTags),
-    visibleTags: filterVisibleAppointmentTags(appointmentTags),
+    visibleTags: appointmentTags,
   };
 }
 
@@ -1170,19 +1169,21 @@ export async function cancelAppointment(appointmentId: number, roleKey: Canonica
   requireDispatcherOrAdmin(roleKey);
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
-  if (isStartDateLocked(appointment.startDate)) {
-    throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
-  }
 
   const cancellationTag = await tagRelationsService.ensureAppointmentCancellationTag();
+  const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return { found: false } as const;
+    if (isStartDateLocked(existing.startDate)) {
+      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
+    }
 
-  const relations = await tagRelationsService.listTagRelations("appointment", appointmentId);
-  if (relations.some((relation) => isAppointmentCancellationTag(relation.tag))) {
-    return { found: true };
-  }
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);
+    await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, cancellationTag.id);
+    return { found: true } as const;
+  });
 
-  await tagRelationsService.addTagRelation("appointment", appointmentId, cancellationTag.id);
-  return { found: true };
+  return result;
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {

@@ -69,7 +69,6 @@ export function CalendarWeekAppointmentPanel({
   const resolvedTourColor = appointment.tourName?.trim()
     ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)
     : CALENDAR_UNASSIGNED_TOUR_COLOR;
-  const isCancelled = appointment.isCancelled;
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
@@ -125,13 +124,6 @@ export function CalendarWeekAppointmentPanel({
               </div>
             )}
           </div>
-          {isCancelled ? (
-            <div className="px-2">
-              <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                Storniert
-              </span>
-            </div>
-          ) : null}
           {!isCompact ? (
             <>
               <div className="min-h-0 space-y-1.5 overflow-hidden">
