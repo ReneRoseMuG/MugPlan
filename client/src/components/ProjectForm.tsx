@@ -80,7 +80,7 @@ interface ProjectFormProps {
     extractedArticleListHtml?: string;
     productSelections?: ProjectProductSelections;
   } | null;
-  onProjectCreated?: (projectId: number) => void;
+  onProjectCreated?: (projectId: number, result?: { attachmentLinked: boolean }) => void;
 }
 
 
@@ -1138,6 +1138,7 @@ export function ProjectForm({
     }
 
     let createdProjectId: number | null = null;
+    let extractionAttachmentLinked = false;
     const normalizedPlannedDateText = plannedDateText.trim() || null;
     const normalizedPlannedWeek = plannedWeek.trim() || null;
     const persistedDescriptionMd = buildPersistedProjectDescription(productSelections, descriptionMd);
@@ -1244,6 +1245,7 @@ export function ProjectForm({
           const uploadPayload = await uploadResponse.json().catch(() => null);
           throw new Error(uploadPayload?.message ?? "Dokumentverknuepfung fehlgeschlagen");
         }
+        extractionAttachmentLinked = true;
         await queryClient.invalidateQueries({ queryKey: ["/api/projects", createdProjectId, "attachments"] });
         toast({ title: "Projekt angelegt und Dokument verknuepft" });
       } catch (error) {
@@ -1261,7 +1263,7 @@ export function ProjectForm({
       onSaved();
     }
     if (createdProjectId) {
-      onProjectCreated?.(createdProjectId);
+      onProjectCreated?.(createdProjectId, { attachmentLinked: extractionAttachmentLinked });
     }
   };
 

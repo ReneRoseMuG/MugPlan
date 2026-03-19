@@ -33,13 +33,18 @@ describe("FT21/FT24 unit: appointment extraction attachment linking", () => {
   it("passes the extraction file into the project form and keeps duplicate-check upload on save", () => {
     expect(appointmentSource).toContain("documentFile: documentExtractionFile,");
     expect(appointmentSource).toContain("initialDocumentExtractionFile={pendingProjectDraft.documentFile}");
+    expect(appointmentSource).toContain("onProjectCreated={(createdProjectId, result) => {");
+    expect(appointmentSource).toContain("removeDraftAppointmentAttachmentForFile(pendingProjectDraft.documentFile);");
 
     expect(projectSource).toContain("if (createdProjectId && documentExtractionFile)");
+    expect(projectSource).toContain("let extractionAttachmentLinked = false;");
     expect(projectSource).toContain("/api/attachments/duplicates/check-original-name");
     expect(projectSource).toContain("body: JSON.stringify({ originalName: documentExtractionFile.name })");
     expect(projectSource).toContain("window.confirm(");
     expect(projectSource).toContain("uploadData.append(\"file\", documentExtractionFile);");
     expect(projectSource).toContain("fetch(`/api/projects/${createdProjectId}/attachments`");
+    expect(projectSource).toContain("extractionAttachmentLinked = true;");
+    expect(projectSource).toContain("onProjectCreated?.(createdProjectId, { attachmentLinked: extractionAttachmentLinked });");
     expect(projectSource).toContain("invalidateQueries({ queryKey: [\"/api/projects\", createdProjectId, \"attachments\"] })");
   });
 });

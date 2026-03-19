@@ -291,6 +291,11 @@ export function AppointmentForm({
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
 
+  const matchesAttachmentFileSignature = (attachment: PendingAppointmentAttachmentItem, file: File) =>
+    attachment.originalName === file.name &&
+    attachment.file.size === file.size &&
+    attachment.file.lastModified === file.lastModified;
+
   const buildFormSnapshot = (input: {
     projectId: number | null;
     customerId: number | null;
@@ -721,11 +726,7 @@ export function AppointmentForm({
 
   const addDraftAppointmentAttachment = (file: File) => {
     setDraftAppointmentAttachments((current) => {
-      const duplicate = current.some((attachment) =>
-        attachment.originalName === file.name &&
-        attachment.file.size === file.size &&
-        attachment.file.lastModified === file.lastModified,
-      );
+      const duplicate = current.some((attachment) => matchesAttachmentFileSignature(attachment, file));
       if (duplicate) {
         return current;
       }
@@ -739,6 +740,12 @@ export function AppointmentForm({
         },
       ];
     });
+  };
+
+  const removeDraftAppointmentAttachmentForFile = (file: File) => {
+    setDraftAppointmentAttachments((current) =>
+      current.filter((attachment) => !matchesAttachmentFileSignature(attachment, file)),
+    );
   };
 
   const addDraftAppointmentNote = ({
@@ -1896,14 +1903,17 @@ export function AppointmentForm({
                 productSelections: pendingProjectDraft.productSelections,
               }}
               initialDocumentExtractionFile={pendingProjectDraft.documentFile}
-              onProjectCreated={(createdProjectId) => {
-                setSelectedProjectId(createdProjectId);
-                setSelectedCustomerId(null);
-              }}
               onSaved={() => {
                 setPendingProjectDraft(null);
                 setDocumentExtractionFile(null);
                 toast({ title: "Projekt übernommen", description: "Neues Projekt wurde erzeugt und dem Termin zugeordnet." });
+              }}
+              onProjectCreated={(createdProjectId, result) => {
+                setSelectedProjectId(createdProjectId);
+                setSelectedCustomerId(null);
+                if (result?.attachmentLinked && pendingProjectDraft?.documentFile) {
+                  removeDraftAppointmentAttachmentForFile(pendingProjectDraft.documentFile);
+                }
               }}
               onCancel={() => {
                 setPendingProjectDraft(null);

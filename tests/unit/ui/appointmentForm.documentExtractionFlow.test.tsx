@@ -56,8 +56,10 @@ describe("FT20 appointment form document extraction flow wiring", () => {
     expect(source).toContain("amount: extraction.amount ?? null");
     expect(source).toContain("tryPatchExistingCustomerFromExtraction");
     expect(source).toContain("<ProjectForm");
-    expect(source).toContain("onProjectCreated={(createdProjectId) => {");
+    expect(source).toContain("onProjectCreated={(createdProjectId, result) => {");
     expect(source).toContain("setSelectedProjectId(createdProjectId);");
+    expect(source).toContain("if (result?.attachmentLinked && pendingProjectDraft?.documentFile) {");
+    expect(source).toContain("removeDraftAppointmentAttachmentForFile(pendingProjectDraft.documentFile);");
     expect(source).toContain("if (resolution.resolution === \"single\")");
     expect(source).toContain("return resolution.customer;");
     expect(source).not.toContain("Kundennummer existiert bereits. Vorhandenen Kunden übernehmen?");

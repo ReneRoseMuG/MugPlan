@@ -68,4 +68,11 @@ describe("FT01 UI: appointment form create sidebar drafts wiring", () => {
     expect(source).toContain("addDraftAppointmentAttachment(file);");
     expect(source).toContain("setDocumentExtractionOpen(true);");
   });
+
+  it("removes the extraction draft attachment only after a linked project handoff", () => {
+    expect(source).toContain("const matchesAttachmentFileSignature = (attachment: PendingAppointmentAttachmentItem, file: File) =>");
+    expect(source).toContain("const removeDraftAppointmentAttachmentForFile = (file: File) => {");
+    expect(source).toContain("current.filter((attachment) => !matchesAttachmentFileSignature(attachment, file))");
+    expect(source).toContain("if (result?.attachmentLinked && pendingProjectDraft?.documentFile) {");
+  });
 });

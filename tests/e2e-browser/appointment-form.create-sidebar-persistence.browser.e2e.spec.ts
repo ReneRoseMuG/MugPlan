@@ -7,6 +7,8 @@
  * - Ein neuer Termin aus dem Tour-Kontext zeigt die rechte Sidebar, die selektierte Tour und vorbefuellte Tour-Mitarbeiter.
  * - Tags, Notizen und Terminanhaenge lassen sich im Neuer-Termin-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Terminanhang dem erzeugten Termin korrekt zugeordnet.
+ * - Eine aus der Dokumentextraktion uebernommene Datei wandert nach erfolgreicher Projektanlage in die Projektdokumente und nicht zusaetzlich in Terminanhaenge.
+ * - Beim Abbrechen des aus der Dokumentextraktion geoeffneten Projektformulars bleibt die Datei als Termin-Draft sichtbar.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
  *
  * Fehlerfaelle:
@@ -63,6 +65,53 @@ async function createNoteViaDialog(page: Page, input: { title: string; body: str
   await dialog.getByTestId("input-note-title").fill(input.title);
   await dialog.getByTestId("richtext-editor").fill(input.body);
   await dialog.getByTestId("button-save-note").click();
+}
+
+async function mockAppointmentDocumentExtraction(page: Page, customerNumber: string, options?: {
+  saunaModel?: string;
+  orderNumber?: string;
+  amount?: string;
+}) {
+  await page.route("**/api/document-extraction/extract?scope=appointment_form", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        customer: {
+          customerNumber,
+          firstName: "Doc",
+          lastName: "Extract",
+          company: null,
+          email: null,
+          phone: null,
+          addressLine1: "Testweg 1",
+          addressLine2: null,
+          postalCode: "12345",
+          city: "Berlin",
+        },
+        orderNumber: options?.orderNumber ?? `AO-${customerNumber}`,
+        amount: options?.amount ?? "14700.00",
+        saunaModel: options?.saunaModel ?? `Doc Projekt ${customerNumber}`,
+        articleItems: [],
+        categorizedItems: [],
+        articleListHtml: "<p>Extrahierte Artikelliste</p>",
+        fieldReport: {
+          recognized: [],
+          missing: [],
+        },
+        warnings: [],
+      }),
+    });
+  });
+}
+
+async function uploadExtractionPdf(page: Page, fileName: string) {
+  const fileInput = page.locator('[data-testid="dropzone-document-extraction"] input[type="file"]');
+  await fileInput.setInputFiles({
+    name: fileName,
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF", "utf8"),
+  });
 }
 
 test("shows sidebar and prefilled tour employees for a new appointment opened from a tour lane", async ({ page }) => {
@@ -162,4 +211,91 @@ test("persists tag, note and appointment attachment from the new appointment for
     page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: note.title }).first(),
   ).toBeVisible();
   await expect(page.getByTestId("appointment-form-sidebar").getByText(attachmentName)).toBeVisible();
+});
+
+test("shows an extracted document only as project attachment after successful project save", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-EXTRACT-SAVE");
+  const extractionFileName = "ft24-extract-project-only.pdf";
+
+  await mockAppointmentDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Projekt Save",
+    orderNumber: "AO-FT24-SAVE",
+  });
+
+  await openNewAppointmentFromWeek(page);
+  await uploadExtractionPdf(page, extractionFileName);
+
+  await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+
+  await page.getByTestId("button-save-project").click();
+  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(
+    page.getByTestId("appointment-form-sidebar").getByText(extractionFileName, { exact: true }),
+  ).toHaveCount(1);
+
+  await page.getByTestId("button-save-appointment").click();
+  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
+  if (await confirmSaveButton.isVisible().catch(() => false)) {
+    await confirmSaveButton.click();
+  }
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);
+    if (!response.ok()) return 0;
+    const body = await response.json();
+    return Array.isArray(body) ? body.length : 0;
+  }).toBe(1);
+
+  const appointmentsResponse = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);
+  const appointments = await appointmentsResponse.json();
+  const createdAppointmentId = Number(appointments[0]?.id);
+  expect(createdAppointmentId).toBeGreaterThan(0);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${createdAppointmentId}/attachment-context`);
+    if (!response.ok()) {
+      return { project: [], appointment: [] };
+    }
+    const body = await response.json();
+    return {
+      project: Array.isArray(body?.projectAttachments)
+        ? body.projectAttachments.map((item: { originalName: string }) => item.originalName)
+        : [],
+      appointment: Array.isArray(body?.appointmentAttachments)
+        ? body.appointmentAttachments.map((item: { originalName: string }) => item.originalName)
+        : [],
+    };
+  }).toEqual({
+    project: expect.arrayContaining([extractionFileName]),
+    appointment: [],
+  });
+});
+
+test("keeps the extracted document as appointment draft when the project form is canceled", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-EXTRACT-CANCEL");
+  const extractionFileName = "ft24-extract-cancel-keeps-draft.pdf";
+
+  await mockAppointmentDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Projekt Cancel",
+    orderNumber: "AO-FT24-CANCEL",
+  });
+
+  await openNewAppointmentFromWeek(page);
+  await uploadExtractionPdf(page, extractionFileName);
+
+  await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+
+  await page.getByTestId("button-cancel-project").click();
+  const discardProjectButton = page.getByRole("button", { name: "Verwerfen und schließen" });
+  if (await discardProjectButton.isVisible().catch(() => false)) {
+    await discardProjectButton.click();
+  }
+  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId("appointment-form-sidebar").getByText(extractionFileName)).toBeVisible();
 });
