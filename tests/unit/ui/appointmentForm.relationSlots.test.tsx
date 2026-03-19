@@ -255,6 +255,7 @@ describe("FT01 appointment form relation slots", () => {
     expect(projectSlot.state).toBe("active");
     expect(projectSlot.addActionTestId).toBe("button-select-project");
     expect(customerSlot.state).toBe("readonly");
+    expect(customerSlot.emptyText).toBe("Kein Kunde ausgewählt");
     expect(projectDetailCardCalls[0]).toMatchObject({
       testId: "badge-project",
       project: expect.objectContaining({
@@ -279,6 +280,7 @@ describe("FT01 appointment form relation slots", () => {
     expect(projectSlot.state).toBe("empty");
     expect(typeof projectSlot.onAdd).toBe("function");
     expect(customerSlot.state).toBe("empty");
+    expect(customerSlot.emptyText).toBe("Kein Kunde ausgewählt");
     expect(typeof customerSlot.onAdd).toBe("function");
     expect(projectDetailCardCalls).toHaveLength(0);
     expect(customerDetailCardCalls).toHaveLength(0);

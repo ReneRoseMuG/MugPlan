@@ -10,7 +10,8 @@
  * - Delete-Flow nutzt vor dem DELETE eine frische Terminversion und sendet diese verpflichtend.
  * - Bei VERSION_CONFLICT wird genau ein Retry mit frisch geladener Version ausgefuehrt.
  * - AppointmentEmployeeSlot rendert einen Header-Action-Button (+) fuer die Auswahl.
- * - Team-Badges und zugewiesene Mitarbeiter liegen im selben hervorgehobenen Panel.
+ * - Team-, Tour- und Mitarbeiter-Badges liegen im selben hervorgehobenen Panel.
+ * - Das Formular verdrahtet die Tour-Auswahl in das Mitarbeiterpanel und rendert die gesetzte Tour separat vollbreit.
  * - Der bisherige grosse Button "Mitarbeiter auswaehlen" unterhalb der Liste wird nicht mehr gerendert.
  *
  * Fehlerfaelle:
@@ -75,8 +76,13 @@ describe("FT01 appointment form save and employees panel wiring", () => {
   it("renders employee picker as header action button with plus icon inside AppointmentEmployeeSlot", () => {
     expect(source).toContain('import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";');
     expect(source).toContain("<AppointmentEmployeeSlot");
-    expect(source).toContain('className="col-span-2"');
-    expect(employeeSlotSource).toContain("Zugewiesene Mitarbeiter");
+    expect(source).toContain("tours={tours}");
+    expect(source).toContain("tourMembersById={tourMembersById}");
+    expect(source).toContain("selectedTour={selectedTour}");
+    expect(source).toContain("onTourChange={handleTourChange}");
+    expect(employeeSlotSource).toContain("data-testid=\"section-tour-picker\"");
+    expect(employeeSlotSource).toContain(">Tour</Label>");
+    expect(employeeSlotSource).toContain(">Zugewiesen</Label>");
     expect(employeeSlotSource).toContain("className=\"flex items-center justify-between\"");
     expect(employeeSlotSource).toContain("<PlusActionButton");
     expect(employeeSlotSource).toContain("data-testid=\"button-add-employee\"");
@@ -85,5 +91,12 @@ describe("FT01 appointment form save and employees panel wiring", () => {
 
   it("removes legacy large employee selection button block", () => {
     expect(source).not.toContain("Mitarbeiter hinzufügen");
+  });
+
+  it("renders the selected tour badge outside the employee slot and removes the legacy tour panel", () => {
+    expect(source).toContain("{selectedTour ? (");
+    expect(source).toContain("fullWidth");
+    expect(source).toContain("testId=\"badge-tour\"");
+    expect(source).not.toContain("Keine Tour ausgewählt");
   });
 });

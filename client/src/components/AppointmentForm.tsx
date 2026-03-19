@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Calendar, Clock, FolderKanban, Route, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, FolderKanban, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Product, Project, Tag, Team, Tour } from "@shared/schema";
@@ -1421,186 +1421,174 @@ export function AppointmentForm({
         </Alert>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
-        <RelationSlot
-          title="Projekt"
-          icon={<FolderKanban className="w-4 h-4" />}
-          state={isProjectReadOnly ? "readonly" : selectedProject ? "active" : "empty"}
-          onAdd={isProjectReadOnly ? undefined : () => setProjectPickerOpen(true)}
-          onRemove={isProjectReadOnly ? undefined : () => setSelectedProjectId(null)}
-          addLabel="Projekt auswählen"
-          emptyText="Kein Projekt ausgewählt"
-          testId="slot-project-relation"
-          addActionTestId="button-select-project"
-          className="col-span-2 min-h-[18rem] h-full"
+      <div className={`grid gap-6 ${isEditing && appointmentId ? "lg:grid-cols-3 lg:items-start" : ""}`}>
+        <div
+          className={`space-y-6 ${isEditing && appointmentId ? "lg:col-span-2" : ""}`.trim()}
+          data-testid="appointment-form-main-column"
         >
-          {selectedProject ? (
-            <ProjectDetailCard
-              project={selectedProject}
-              testId="badge-project"
-            />
-          ) : null}
-        </RelationSlot>
-
-        <div className="sub-panel space-y-3 h-full">
-          <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Zeitpunkt und Dauer
-          </h3>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Startdatum</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-                disabled={isLocked}
-                data-testid="input-start-date"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">Enddatum</Label>
-              {isEndDateEnabled ? (
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  min={startDate}
-                  onChange={(event) => setEndDate(event.target.value)}
-                  disabled={isLocked}
-                  data-testid="input-end-date"
-                />
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start text-muted-foreground"
-                  onClick={() => setIsEndDateEnabled(true)}
-                  disabled={isLocked}
-                  data-testid="button-enable-end-date"
-                >
-                  Enddatum hinzufügen
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startTime">Startzeit (optional)</Label>
-              {startTimeEnabled ? (
-                <Input
-                  id="startTime"
-                  type="time"
-                  step={60}
-                  value={startTimeValue}
-                  onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
-                  placeholder="HH:mm"
-                  disabled={isLocked}
-                  data-testid="input-start-time"
-                />
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start text-muted-foreground"
-                  onClick={() => setStartTimeEnabled(true)}
-                  disabled={isLocked}
-                  data-testid="button-enable-start-time"
-                >
-                  Startzeit hinzufügen
-                </Button>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endTime">Endzeit</Label>
-              <Input
-                id="endTime"
-                type="time"
-                disabled
-                value=""
-                placeholder="--:--"
-                data-testid="input-end-time"
-              />
-            </div>
-          </div>
-        </div>
-
-        <RelationSlot
-          title="Kunde"
-          icon={<Users className="w-4 h-4" />}
-          state={isCustomerReadOnly ? "readonly" : selectedCustomer ? "active" : "empty"}
-          onAdd={isCustomerReadOnly ? undefined : () => setCustomerPickerOpen(true)}
-          onRemove={isCustomerReadOnly ? undefined : () => setSelectedCustomerId(null)}
-          addLabel="Kunde auswählen"
-          emptyText={selectedProjectId ? "Kunde wird über das Projekt bestimmt" : "Kein Kunde ausgewählt"}
-          testId="slot-customer-relation"
-          className="col-span-2 h-full"
-        >
-          {selectedCustomer ? (
-            <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" variant="relationCompact" />
-          ) : null}
-        </RelationSlot>
-
-        {appointmentId ? <div className="h-full"><AppointmentAttachmentsPanel appointmentId={appointmentId} /></div> : <div />}
-
-        <AppointmentEmployeeSlot
-          teams={teams}
-          assignedEmployees={assignedEmployees}
-          teamMembersById={teamMembersById}
-          isLocked={isLocked}
-          onAssignTeam={handleAssignTeam}
-          onAddEmployee={() => setEmployeePickerOpen(true)}
-          onRemoveEmployee={removeEmployee}
-          className="col-span-2"
-        />
-
-        <div className="min-w-0 space-y-6 h-full">
-          <div className="sub-panel space-y-3 h-full">
+          <div className="sub-panel space-y-3">
             <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
-              <Route className="w-4 h-4" />
-              Tour
+              <Clock className="w-4 h-4" />
+              Zeitpunkt und Dauer
             </h3>
 
-            {selectedTour ? (
-              <TourInfoBadge
-                id={selectedTour.id}
-                name={selectedTour.name}
-                color={selectedTour.color}
-                members={tourMembersById.get(selectedTour.id) ?? []}
-                action={isLocked ? "none" : "remove"}
-                onRemove={() => handleTourChange(null)}
-                fullWidth
-                testId="badge-tour"
-              />
-            ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-muted-foreground">
-                Keine Tour ausgewählt
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Startdatum</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(event) => setStartDate(event.target.value)}
+                  disabled={isLocked}
+                  data-testid="input-start-date"
+                />
               </div>
-            )}
-
-            {!selectedTour && (
-              <div className="flex flex-wrap gap-2">
-                {tours.map((tour) => (
-                  <TourInfoBadge
-                    key={tour.id}
-                    id={tour.id}
-                    name={tour.name}
-                    color={tour.color}
-                    members={tourMembersById.get(tour.id) ?? []}
-                    action={isLocked ? "none" : "add"}
-                    onAdd={() => handleTourChange(tour.id)}
-                    size="sm"
-                    testId={`badge-tour-select-${tour.id}`}
+              <div className="space-y-2">
+                <Label htmlFor="endDate">Enddatum</Label>
+                {isEndDateEnabled ? (
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    min={startDate}
+                    onChange={(event) => setEndDate(event.target.value)}
+                    disabled={isLocked}
+                    data-testid="input-end-date"
                   />
-                ))}
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-muted-foreground"
+                    onClick={() => setIsEndDateEnabled(true)}
+                    disabled={isLocked}
+                    data-testid="button-enable-end-date"
+                  >
+                    Enddatum hinzufügen
+                  </Button>
+                )}
               </div>
-            )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Startzeit (optional)</Label>
+                {startTimeEnabled ? (
+                  <Input
+                    id="startTime"
+                    type="time"
+                    step={60}
+                    value={startTimeValue}
+                    onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
+                    placeholder="HH:mm"
+                    disabled={isLocked}
+                    data-testid="input-start-time"
+                  />
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-muted-foreground"
+                    onClick={() => setStartTimeEnabled(true)}
+                    disabled={isLocked}
+                    data-testid="button-enable-start-time"
+                  >
+                    Startzeit hinzufügen
+                  </Button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endTime">Endzeit</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  disabled
+                  value=""
+                  placeholder="--:--"
+                  data-testid="input-end-time"
+                />
+              </div>
+            </div>
           </div>
 
-          {isEditing && appointmentId ? (
+          <RelationSlot
+            title="Projekt"
+            icon={<FolderKanban className="w-4 h-4" />}
+            state={isProjectReadOnly ? "readonly" : selectedProject ? "active" : "empty"}
+            onAdd={isProjectReadOnly ? undefined : () => setProjectPickerOpen(true)}
+            onRemove={isProjectReadOnly ? undefined : () => setSelectedProjectId(null)}
+            addLabel="Projekt auswählen"
+            emptyText="Kein Projekt ausgewählt"
+            testId="slot-project-relation"
+            addActionTestId="button-select-project"
+            className="min-h-[18rem]"
+          >
+            {selectedProject ? (
+              <ProjectDetailCard
+                project={selectedProject}
+                testId="badge-project"
+              />
+            ) : null}
+          </RelationSlot>
+
+          <RelationSlot
+            title="Kunde"
+            icon={<Users className="w-4 h-4" />}
+            state={isCustomerReadOnly ? "readonly" : selectedCustomer ? "active" : "empty"}
+            onAdd={isCustomerReadOnly ? undefined : () => setCustomerPickerOpen(true)}
+            onRemove={isCustomerReadOnly ? undefined : () => setSelectedCustomerId(null)}
+            addLabel="Kunde auswählen"
+            emptyText="Kein Kunde ausgewählt"
+            testId="slot-customer-relation"
+          >
+            {selectedCustomer ? (
+              <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" variant="relationCompact" />
+            ) : null}
+          </RelationSlot>
+
+          {selectedTour ? (
+            <TourInfoBadge
+              id={selectedTour.id}
+              name={selectedTour.name}
+              color={selectedTour.color}
+              members={tourMembersById.get(selectedTour.id) ?? []}
+              action={isLocked ? "none" : "remove"}
+              onRemove={() => handleTourChange(null)}
+              fullWidth
+              testId="badge-tour"
+            />
+          ) : null}
+
+          <AppointmentEmployeeSlot
+            teams={teams}
+            assignedEmployees={assignedEmployees}
+            teamMembersById={teamMembersById}
+            isLocked={isLocked}
+            onAssignTeam={handleAssignTeam}
+            onAddEmployee={() => setEmployeePickerOpen(true)}
+            onRemoveEmployee={removeEmployee}
+            tours={tours}
+            tourMembersById={tourMembersById}
+            selectedTour={selectedTour}
+            onTourChange={handleTourChange}
+          />
+
+          {selectedProjectId === null ? (
+            <DocumentExtractionDropzone
+              onFileSelected={(file) => {
+                void runDocumentExtraction(file);
+              }}
+              disabled={isLocked}
+              isProcessing={documentExtractionLoading}
+            />
+          ) : null}
+        </div>
+
+        {isEditing && appointmentId ? (
+          <div className="min-w-0 space-y-6" data-testid="appointment-form-sidebar">
+            <AppointmentAttachmentsPanel appointmentId={appointmentId} />
+
             <TagPickerPanel
               assignedTags={appointmentTagRelations}
               availableTags={availableTags}
@@ -1613,23 +1601,7 @@ export function AppointmentForm({
               onAdd={(tagId) => addAppointmentTagMutation.mutate(tagId)}
               onRemove={(item) => removeAppointmentTagMutation.mutate(item)}
             />
-          ) : null}
-        </div>
 
-        {selectedProjectId === null ? (
-          <div className="col-span-2">
-            <DocumentExtractionDropzone
-              onFileSelected={(file) => {
-                void runDocumentExtraction(file);
-              }}
-              disabled={isLocked}
-              isProcessing={documentExtractionLoading}
-            />
-          </div>
-        ) : null}
-
-        {isEditing && appointmentId ? (
-          <div className="col-span-2">
             <NotesSection
               notes={appointmentNotes}
               isLoading={appointmentNotesLoading}
