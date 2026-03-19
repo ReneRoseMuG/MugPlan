@@ -14,6 +14,7 @@
  * - WaWi-Adresszeilen (Identitaet, Strasse, PLZ/Ort; Anrede optional) werden deterministisch geparst.
  * - Identitaet wird je nach Muster als Person, Firma oder Person+Firma aufgeloest.
  * - Personenzeilen mit Unicode-Namen und OCR-Sonderzeichen werden robust erkannt.
+ * - Slash-getrennte Nachnamenzeilen ohne Vorname koennen als Nachname uebernommen werden.
  * - Fehlende oder mehrfache Kundennummer fuehren zu Fehlern.
  *
  * Fehlerfaelle:
@@ -475,6 +476,34 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("H\u00F6lderlinstra\u00DFe 6");
     expect(parsed.postalCode).toBe("68542");
     expect(parsed.city).toBe("Heddesheim");
+  });
+
+  it("parses slash-separated surname line without forcing a first name", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Scholz / Fischer",
+      "Kiesstrasse 44",
+      "12209 Berlin",
+      "Deutschland",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "A0118104A",
+      "163127",
+      "01734963936",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+    expect(parsed.firstName).toBeNull();
+    expect(parsed.lastName).toBe("Scholz / Fischer");
+    expect(parsed.company).toBeNull();
+    expect(parsed.orderNumber).toBe("A0118104A");
+    expect(parsed.customerNumber).toBe("163127");
+    expect(parsed.mobile).toBe("01734963936");
+    expect(parsed.addressLine1).toBe("Kiesstrasse 44");
+    expect(parsed.postalCode).toBe("12209");
+    expect(parsed.city).toBe("Berlin");
   });
 
   it("throws deterministic address-pattern error when street line is missing", () => {

@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   isManagedReportExclusionTagName,
   isProtectedSystemTagName,
@@ -36,6 +37,7 @@ import {
 describe("appointment cancellation helpers", () => {
   it("detects the reserved cancellation tag name case-insensitively", () => {
     expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME).toBe("Storniert");
+    expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR).toBe("#ef4444");
     expect(isReservedAppointmentCancellationTagName("Storniert")).toBe(true);
     expect(isReservedAppointmentCancellationTagName(" storniert ")).toBe(true);
     expect(isReservedAppointmentCancellationTagName("STORNIERT")).toBe(true);

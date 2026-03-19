@@ -24,7 +24,6 @@ const repositoryMocks = vi.hoisted(() => ({
   listTags: vi.fn(),
   createTag: vi.fn(),
   getTagById: vi.fn(),
-  getTagByNormalizedName: vi.fn(),
   ensureTagDefinition: vi.fn(),
   updateTagWithVersion: vi.fn(),
   deleteTagWithVersion: vi.fn(),
@@ -35,7 +34,6 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   listTags: repositoryMocks.listTags,
   createTag: repositoryMocks.createTag,
   getTagById: repositoryMocks.getTagById,
-  getTagByNormalizedName: repositoryMocks.getTagByNormalizedName,
   ensureTagDefinition: repositoryMocks.ensureTagDefinition,
   updateTagWithVersion: repositoryMocks.updateTagWithVersion,
   deleteTagWithVersion: repositoryMocks.deleteTagWithVersion,
@@ -63,23 +61,34 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.listTags).not.toHaveBeenCalled();
   });
 
-  it("ensures the managed report exclusion tag before listing tags", async () => {
-    repositoryMocks.getTagByNormalizedName.mockResolvedValueOnce(null);
+  it("ensures both protected system tags before listing tags", async () => {
     repositoryMocks.listTags.mockResolvedValueOnce([]);
 
     await listTags("ADMIN");
 
     expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
+      name: "Storniert",
+      color: "#ef4444",
+      isDefault: true,
+    });
+    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
       name: "Reklamation",
       color: "#f97316",
       isDefault: true,
     });
-    expect(repositoryMocks.getTagByNormalizedName).toHaveBeenCalledWith("Storniert");
     expect(repositoryMocks.listTags).toHaveBeenCalledOnce();
   });
 
   it("creates tags with isDefault=false", async () => {
-    repositoryMocks.getTagByNormalizedName.mockResolvedValueOnce(null);
+    repositoryMocks.ensureTagDefinition.mockResolvedValueOnce({
+      id: 98,
+      name: "Storniert",
+      color: "#ef4444",
+      isDefault: true,
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     repositoryMocks.ensureTagDefinition.mockResolvedValueOnce({
       id: 99,
       name: "Reklamation",
@@ -108,7 +117,15 @@ describe("FT28 unit: masterDataService tags", () => {
   });
 
   it("maps duplicate create to BUSINESS_CONFLICT", async () => {
-    repositoryMocks.getTagByNormalizedName.mockResolvedValueOnce(null);
+    repositoryMocks.ensureTagDefinition.mockResolvedValueOnce({
+      id: 98,
+      name: "Storniert",
+      color: "#ef4444",
+      isDefault: true,
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     repositoryMocks.ensureTagDefinition.mockResolvedValueOnce({
       id: 99,
       name: "Reklamation",
@@ -239,18 +256,15 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.deleteTagWithVersion).not.toHaveBeenCalled();
   });
 
-  it("normalizes an existing cancellation tag to isDefault before listing tags", async () => {
-    repositoryMocks.getTagByNormalizedName.mockResolvedValueOnce({
-      id: 14,
-      name: "Storniert",
-      color: "#ef4444",
-      isDefault: false,
-      version: 3,
-    });
+  it("ensures the reserved cancellation tag with managed color and isDefault", async () => {
     repositoryMocks.listTags.mockResolvedValueOnce([]);
 
     await listTags("ADMIN");
 
-    expect(repositoryMocks.updateTagWithVersion).toHaveBeenCalledWith(14, 3, { isDefault: true });
+    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
+      name: "Storniert",
+      color: "#ef4444",
+      isDefault: true,
+    });
   });
 });

@@ -17,6 +17,7 @@
   UpdateProductCategory,
 } from "@shared/schema";
 import {
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
@@ -135,17 +136,13 @@ function isProtectedSystemTag(tag: Pick<Tag, "name" | "isDefault"> | null | unde
 
 async function ensureProtectedTagDefaults(): Promise<void> {
   await masterDataRepository.ensureTagDefinition({
-    name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
-    color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+    name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+    color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
     isDefault: true,
   });
-
-  const cancellationTag = await masterDataRepository.getTagByNormalizedName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
-  if (!cancellationTag || cancellationTag.isDefault) {
-    return;
-  }
-
-  await masterDataRepository.updateTagWithVersion(cancellationTag.id, cancellationTag.version, {
+  await masterDataRepository.ensureTagDefinition({
+    name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
+    color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
     isDefault: true,
   });
 }

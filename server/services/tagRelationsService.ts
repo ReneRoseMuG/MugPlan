@@ -1,4 +1,6 @@
 import {
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
 } from "@shared/appointmentCancellation";
@@ -10,12 +12,27 @@ import { filterVisibleAppointmentTags } from "../lib/appointmentCancellation";
 export type TagRelationDomain = "customer" | "project" | "appointment";
 export type TagRelationItem = tagRelationsRepository.TagRelationItem;
 
-export async function listTagCatalog(): Promise<Tag[]> {
-  await masterDataRepository.ensureTagDefinition({
+export async function ensureAppointmentCancellationTag(): Promise<Tag> {
+  return masterDataRepository.ensureTagDefinition({
+    name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+    color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+    isDefault: true,
+  });
+}
+
+export async function ensureManagedReportExclusionTag(): Promise<Tag> {
+  return masterDataRepository.ensureTagDefinition({
     name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
     color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
     isDefault: true,
   });
+}
+
+export async function listTagCatalog(): Promise<Tag[]> {
+  await Promise.all([
+    ensureAppointmentCancellationTag(),
+    ensureManagedReportExclusionTag(),
+  ]);
   const tags = await tagRelationsRepository.listTagCatalog();
   return filterVisibleAppointmentTags(tags);
 }

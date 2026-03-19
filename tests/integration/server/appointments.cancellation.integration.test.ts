@@ -22,13 +22,13 @@ import { db } from "../../../server/db";
 import { appointmentTags, tags } from "../../../shared/schema";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
   createCustomerFixture,
-  createExactTagFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 
@@ -38,33 +38,9 @@ beforeAll(async () => {
   app = await createApiTestApp();
 });
 
-async function ensureReservedCancellationTag() {
-  const [existing] = await db
-    .select({
-      id: tags.id,
-      name: tags.name,
-      version: tags.version,
-    })
-    .from(tags)
-    .where(eq(tags.name, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME))
-    .limit(1);
-
-  if (existing) {
-    return existing;
-  }
-
-  const created = await createExactTagFixture(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
-  return {
-    id: created.id,
-    name: created.name,
-    version: 1,
-  };
-}
-
 describe("FT01/FT28 integration: appointment cancellation workflow", () => {
-  it("hides the reserved cancellation tag, auto-creates Reklamation in /api/tags, and keeps both protected in admin master data", async () => {
+  it("hides the reserved cancellation tag, auto-creates both system tags in the catalog paths, and keeps them protected in admin master data", async () => {
     const admin = await loginAdminAgent(app);
-    const reservedTag = await ensureReservedCancellationTag();
 
     await admin.get("/api/tags").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
@@ -78,9 +54,9 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     });
 
     let managedReportTag: { id: number; name: string; version: number; isDefault: boolean } | undefined;
-    let normalizedCancellationTag: { id: number; name: string; version: number; isDefault: boolean } | undefined;
+    let normalizedCancellationTag: { id: number; name: string; version: number; isDefault: boolean; color: string } | undefined;
     await admin.get("/api/admin/master-data/tags").expect(200).expect(({ body }) => {
-      normalizedCancellationTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean }>).find(
+      normalizedCancellationTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean; color: string }>).find(
         (tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
       );
       managedReportTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean }>).find(
@@ -88,21 +64,22 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       );
     });
     expect(normalizedCancellationTag).toBeDefined();
+    expect(normalizedCancellationTag?.color).toBe(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR);
     expect(normalizedCancellationTag?.isDefault).toBe(true);
     expect(managedReportTag).toBeDefined();
     expect(managedReportTag?.isDefault).toBe(true);
 
     await admin
-      .put(`/api/admin/master-data/tags/${reservedTag.id}`)
-      .send({ name: "Storno-Tag-Edit", version: reservedTag.version })
+      .put(`/api/admin/master-data/tags/${normalizedCancellationTag!.id}`)
+      .send({ name: "Storno-Tag-Edit", version: normalizedCancellationTag!.version })
       .expect(409)
       .expect(({ body }) => {
         expect(body.code).toBe("BUSINESS_CONFLICT");
       });
 
     await admin
-      .delete(`/api/admin/master-data/tags/${reservedTag.id}`)
-      .send({ version: reservedTag.version })
+      .delete(`/api/admin/master-data/tags/${normalizedCancellationTag!.id}`)
+      .send({ version: normalizedCancellationTag!.version })
       .expect(409)
       .expect(({ body }) => {
         expect(body.code).toBe("BUSINESS_CONFLICT");
@@ -127,7 +104,15 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
 
   it("cancels an appointment idempotently and blocks generic removal or update afterwards", async () => {
     const admin = await loginAdminAgent(app);
-    const reservedTag = await ensureReservedCancellationTag();
+    const [existingCancellationTag] = await db
+      .select({ id: tags.id })
+      .from(tags)
+      .where(eq(tags.name, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME))
+      .limit(1);
+    if (existingCancellationTag) {
+      await db.delete(appointmentTags).where(eq(appointmentTags.tagId, existingCancellationTag.id));
+      await db.delete(tags).where(eq(tags.id, existingCancellationTag.id));
+    }
     const customer = await createCustomerFixture("FT28-CANCEL");
     const appointment = await createAppointmentFixture({
       customerId: customer.id,
@@ -145,6 +130,23 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
         (tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
       ),
     ).toBe(false);
+
+    const [reservedTag] = await db
+      .select({
+        id: tags.id,
+        color: tags.color,
+        isDefault: tags.isDefault,
+      })
+      .from(tags)
+      .where(eq(tags.name, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME))
+      .limit(1);
+    expect(reservedTag).toMatchObject({
+      color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+      isDefault: true,
+    });
+    if (!reservedTag) {
+      throw new Error("Expected reserved cancellation tag to be auto-created.");
+    }
 
     const [relation] = await db
       .select({

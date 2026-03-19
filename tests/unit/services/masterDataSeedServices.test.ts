@@ -21,6 +21,12 @@ import fs from "fs/promises";
 import os from "os";
 import path from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+} from "../../../shared/appointmentCancellation";
 
 type EmployeeRow = {
   id: number;
@@ -211,15 +217,29 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   listProductCategories: vi.fn(async () => [...state.productCategories]),
   listComponentCategories: vi.fn(async () => [...state.componentCategories]),
   listTags: vi.fn(async () => [...state.tags].sort((a, b) => a.name.localeCompare(b.name))),
-  createTag: vi.fn(async ({ name, color }: { name: string; color: string }) => {
-    const row: TagRow = { id: state.ids.tag++, name, color, isDefault: false, version: 1 };
+  createTag: vi.fn(async ({ name, color, isDefault }: { name: string; color: string; isDefault?: boolean }) => {
+    const row: TagRow = { id: state.ids.tag++, name, color, isDefault: isDefault ?? false, version: 1 };
     state.tags.push(row);
     return row;
   }),
-  updateTagWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { color?: string }) => {
+  ensureTagDefinition: vi.fn(async ({ name, color, isDefault }: { name: string; color: string; isDefault?: boolean }) => {
+    const normalizedName = name.trim().toLocaleLowerCase("de");
+    const existing = state.tags.find((entry) => entry.name.trim().toLocaleLowerCase("de") === normalizedName);
+    if (!existing) {
+      const row: TagRow = { id: state.ids.tag++, name, color, isDefault: isDefault ?? false, version: 1 };
+      state.tags.push(row);
+      return row;
+    }
+    existing.color = color ?? existing.color;
+    existing.isDefault = isDefault ?? existing.isDefault;
+    existing.version += 1;
+    return { ...existing };
+  }),
+  updateTagWithVersion: vi.fn(async (id: number, expectedVersion: number, input: { color?: string; isDefault?: boolean }) => {
     const row = state.tags.find((entry) => entry.id === id && entry.version === expectedVersion);
     if (!row) return { kind: "version_conflict" };
     row.color = input.color ?? row.color;
+    row.isDefault = input.isDefault ?? row.isDefault;
     row.version += 1;
     return { kind: "updated", row: { ...row } };
   }),
@@ -616,11 +636,13 @@ describe("FT27 unit: master data seed services", () => {
 
     await exportTagsSeed();
     await expect(readSeedFile(tempRoot, "tags.csv")).resolves.toContain("Bestehend;#111111");
+    await expect(readSeedFile(tempRoot, "tags.csv")).resolves.not.toContain(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
+    await expect(readSeedFile(tempRoot, "tags.csv")).resolves.not.toContain(MANAGED_REPORT_EXCLUSION_TAG_NAME);
 
     await writeSeedFile(
       tempRoot,
       "tags.csv",
-      "Name;Farbe\nBestehend;#222222\nNeu;\n;#333333\n",
+      `Name;Farbe\nBestehend;#222222\nNeu;\n${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME};#000000\n${MANAGED_REPORT_EXCLUSION_TAG_NAME};#000000\n;#333333\n`,
     );
 
     const firstRun = await applyTagsSeed();
@@ -629,12 +651,24 @@ describe("FT27 unit: master data seed services", () => {
     expect(firstRun.logLines).toEqual([
       "Tag aktualisiert: Bestehend",
       "Tag angelegt: Neu",
+      `System-Tag uebersprungen: ${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME}`,
+      `System-Tag uebersprungen: ${MANAGED_REPORT_EXCLUSION_TAG_NAME}`,
       "Tag uebersprungen: Name fehlt",
     ]);
     expect(secondRun.logLines).toContain("Tag aktualisiert: Neu");
-    expect(state.tags).toHaveLength(2);
+    expect(secondRun.logLines).toContain(`System-Tag uebersprungen: ${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME}`);
+    expect(secondRun.logLines).toContain(`System-Tag uebersprungen: ${MANAGED_REPORT_EXCLUSION_TAG_NAME}`);
+    expect(state.tags).toHaveLength(4);
     expect(state.tags.find((entry) => entry.name === "Bestehend")?.color).toBe("#222222");
     expect(state.tags.find((entry) => entry.name === "Neu")?.color).toBe("#2563eb");
+    expect(state.tags.find((entry) => entry.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toMatchObject({
+      color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+      isDefault: true,
+    });
+    expect(state.tags.find((entry) => entry.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toMatchObject({
+      color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+      isDefault: true,
+    });
   });
 
   it("reports missing tag seed files", async () => {

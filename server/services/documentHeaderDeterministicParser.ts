@@ -255,7 +255,30 @@ function normalizeNameToken(token: string): string {
     .replace(/^[\u0300-\u036f]+|[\u0300-\u036f]+$/g, "");
 }
 
-function parsePersonLine(value: string | null): { firstName: string; lastName: string } | null {
+function isValidNameToken(token: string): boolean {
+  return /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'`´-]*$/.test(token);
+}
+
+function parseSlashSeparatedSurnameLine(value: string): string | null {
+  if (!value.includes("/")) return null;
+
+  const segments = value
+    .split(/\s*\/\s*/)
+    .map((segment) =>
+      segment
+        .split(/\s+/)
+        .map((token) => normalizeNameToken(token))
+        .filter((token) => token.length > 0),
+    )
+    .filter((segment) => segment.length > 0);
+
+  if (segments.length < 2) return null;
+  if (!segments.every((segment) => segment.every((token) => isValidNameToken(token)))) return null;
+
+  return segments.map((segment) => segment.join(" ")).join(" / ");
+}
+
+function parsePersonLine(value: string | null): { firstName: string | null; lastName: string } | null {
   const normalized = normalizeIdentityLine(value);
   if (!normalized) return null;
   if (looksLikeCompany(normalized)) return null;
@@ -267,13 +290,22 @@ function parsePersonLine(value: string | null): { firstName: string; lastName: s
     .split(/\s+/)
     .map((token) => normalizeNameToken(token))
     .filter((token) => token.length > 0);
-  if (tokens.length < 2) return null;
-  if (!tokens.every((token) => /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'`´-]*$/.test(token))) return null;
+  if (tokens.length >= 2 && tokens.every((token) => isValidNameToken(token))) {
+    return {
+      firstName: tokens[0],
+      lastName: tokens.slice(1).join(" "),
+    };
+  }
 
-  return {
-    firstName: tokens[0],
-    lastName: tokens.slice(1).join(" "),
-  };
+  const slashSeparatedSurname = parseSlashSeparatedSurnameLine(withoutSalutation);
+  if (slashSeparatedSurname) {
+    return {
+      firstName: null,
+      lastName: slashSeparatedSurname,
+    };
+  }
+
+  return null;
 }
 
 function looksLikeCompany(value: string | null): boolean {

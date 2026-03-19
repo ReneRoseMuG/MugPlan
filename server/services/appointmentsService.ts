@@ -1,7 +1,6 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import type { InsertAppointment } from "@shared/schema";
 import { addWeeks, differenceInCalendarDays, endOfWeek, startOfWeek } from "date-fns";
-import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import {
   getProjectArticleField,
@@ -1175,10 +1174,7 @@ export async function cancelAppointment(appointmentId: number, roleKey: Canonica
     throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
   }
 
-  const cancellationTag = await tagRelationsService.getTagByName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
-  if (!cancellationTag) {
-    throw new AppointmentError("Der reservierte Storno-Tag ist nicht konfiguriert", 409, "CANCELLATION_TAG_NOT_CONFIGURED");
-  }
+  const cancellationTag = await tagRelationsService.ensureAppointmentCancellationTag();
 
   const relations = await tagRelationsService.listTagRelations("appointment", appointmentId);
   if (relations.some((relation) => isAppointmentCancellationTag(relation.tag))) {

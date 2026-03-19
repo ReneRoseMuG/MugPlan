@@ -1,3 +1,10 @@
+import {
+  MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+  isProtectedSystemTagName,
+} from "@shared/appointmentCancellation";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 import { getSeedFileStatus, readSeedFileUtf8, writeSeedFileUtf8, type SeedFileStatus } from "./seedFileStoreService";
 import { parseCsvWithHeaders, stringifyCsv } from "./seedCsvService";
@@ -12,8 +19,22 @@ export async function getTagsSeedStatus(): Promise<SeedFileStatus> {
   return getSeedFileStatus(FILE_NAME);
 }
 
+async function ensureManagedSystemTags(): Promise<void> {
+  await masterDataRepository.ensureTagDefinition({
+    name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+    color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+    isDefault: true,
+  });
+  await masterDataRepository.ensureTagDefinition({
+    name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
+    color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+    isDefault: true,
+  });
+}
+
 export async function exportTagsSeed(): Promise<SeedExecutionResult> {
-  const tags = await masterDataRepository.listTags();
+  await ensureManagedSystemTags();
+  const tags = (await masterDataRepository.listTags()).filter((tag) => !tag.isDefault);
   if (tags.length === 0) {
     return {
       sourceFile: FILE_NAME,
@@ -51,6 +72,10 @@ export async function applyTagsSeed(): Promise<SeedExecutionResult> {
       logLines.push("Tag uebersprungen: Name fehlt");
       continue;
     }
+    if (isProtectedSystemTagName(name)) {
+      logLines.push(`System-Tag uebersprungen: ${name}`);
+      continue;
+    }
 
     const existing = tagsByName.get(name.toLocaleLowerCase("de"));
     if (!existing) {
@@ -67,5 +92,6 @@ export async function applyTagsSeed(): Promise<SeedExecutionResult> {
     logLines.push(`Tag aktualisiert: ${name}`);
   }
 
+  await ensureManagedSystemTags();
   return { sourceFile: FILE_NAME, exists: true, logLines };
 }
