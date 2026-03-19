@@ -1,5 +1,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
+  appointmentAttachments,
+  appointments,
   customerAttachments,
   customers,
   employeeAttachments,
@@ -11,7 +13,7 @@ import {
 import { db } from "../db";
 
 export type AttachmentDuplicateHitRow = {
-  domain: "customer" | "project" | "employee";
+  domain: "customer" | "project" | "employee" | "appointment";
   attachmentId: number;
   ownerId: number;
   ownerLabel: string;
@@ -25,7 +27,7 @@ export async function findDuplicateAttachmentsByOriginalName(
   const normalized = originalName.trim();
   if (normalized.length === 0) return [];
 
-  const [customerRows, projectRows, employeeRows] = await Promise.all([
+  const [customerRows, projectRows, employeeRows, appointmentRows] = await Promise.all([
     db
       .select({
         attachmentId: customerAttachments.id,
@@ -62,12 +64,25 @@ export async function findDuplicateAttachmentsByOriginalName(
       .innerJoin(employees, eq(employeeAttachments.employeeId, employees.id))
       .where(eq(employeeAttachments.originalName, normalized))
       .orderBy(desc(employeeAttachments.createdAt)),
+    db
+      .select({
+        attachmentId: appointmentAttachments.id,
+        ownerId: appointments.id,
+        ownerLabel: sql<string>`coalesce(${appointments.title}, concat('Termin #', ${appointments.id}))`,
+        originalName: appointmentAttachments.originalName,
+        createdAt: appointmentAttachments.createdAt,
+      })
+      .from(appointmentAttachments)
+      .innerJoin(appointments, eq(appointmentAttachments.appointmentId, appointments.id))
+      .where(eq(appointmentAttachments.originalName, normalized))
+      .orderBy(desc(appointmentAttachments.createdAt)),
   ]);
 
   return [
     ...customerRows.map((row) => ({ ...row, domain: "customer" as const })),
     ...projectRows.map((row) => ({ ...row, domain: "project" as const })),
     ...employeeRows.map((row) => ({ ...row, domain: "employee" as const })),
+    ...appointmentRows.map((row) => ({ ...row, domain: "appointment" as const })),
   ];
 }
 

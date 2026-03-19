@@ -50,6 +50,7 @@ const baseAppointment: CalendarAppointment = {
   customerNotesCount: 0,
   projectNotesCount: 0,
   appointmentNotesCount: 0,
+  appointmentAttachmentsCount: 0,
   displayMode: "standard",
   employees: [],
   isLocked: false,

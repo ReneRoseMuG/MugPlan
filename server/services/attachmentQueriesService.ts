@@ -9,6 +9,7 @@ export async function checkAttachmentDuplicatesByOriginalName(originalName: stri
     customer: hits.filter((hit) => hit.domain === "customer").length,
     project: hits.filter((hit) => hit.domain === "project").length,
     employee: hits.filter((hit) => hit.domain === "employee").length,
+    appointment: hits.filter((hit) => hit.domain === "appointment").length,
   };
 
   return {
@@ -43,6 +44,7 @@ export async function getAppointmentAttachmentContext(appointmentId: number): Pr
   };
   projectAttachments: Awaited<ReturnType<typeof projectsRepository.getProjectAttachments>>;
   customerAttachments: Awaited<ReturnType<typeof customersRepository.getCustomerAttachments>>;
+  appointmentAttachments: Awaited<ReturnType<typeof appointmentsRepository.getAppointmentAttachments>>;
 } | null> {
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
@@ -50,9 +52,10 @@ export async function getAppointmentAttachmentContext(appointmentId: number): Pr
   const customer = await customersRepository.getCustomer(appointment.customerId);
   if (!customer) return null;
 
-  const [projectAttachments, customerAttachments] = await Promise.all([
+  const [projectAttachments, customerAttachments, appointmentAttachments] = await Promise.all([
     appointment.projectId ? projectsRepository.getProjectAttachments(appointment.projectId) : [],
     customersRepository.getCustomerAttachments(customer.id),
+    appointmentsRepository.getAppointmentAttachments(appointmentId),
   ]);
 
   const project = appointment.projectId
@@ -75,5 +78,6 @@ export async function getAppointmentAttachmentContext(appointmentId: number): Pr
     },
     projectAttachments,
     customerAttachments,
+    appointmentAttachments,
   };
 }

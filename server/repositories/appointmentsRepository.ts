@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  appointmentAttachments,
   appointmentNotes,
   appointmentEmployees,
   appointments,
@@ -19,7 +20,9 @@ import {
   projects,
   products,
   tours,
+  type AppointmentAttachment,
   type Appointment,
+  type InsertAppointmentAttachment,
   type InsertAppointment,
   type Tag,
   type Note,
@@ -163,6 +166,22 @@ export async function getAppointmentNoteCountsByAppointmentIds(appointmentIds: n
   return new Map(rows.map((row) => [row.appointmentId, Number(row.count)] as const));
 }
 
+export async function getAppointmentAttachmentCountsByAppointmentIds(appointmentIds: number[]): Promise<Map<number, number>> {
+  const uniqueAppointmentIds = Array.from(new Set(appointmentIds));
+  if (uniqueAppointmentIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      appointmentId: appointmentAttachments.appointmentId,
+      count: sql<number>`count(*)`,
+    })
+    .from(appointmentAttachments)
+    .where(inArray(appointmentAttachments.appointmentId, uniqueAppointmentIds))
+    .groupBy(appointmentAttachments.appointmentId);
+
+  return new Map(rows.map((row) => [row.appointmentId, Number(row.count)] as const));
+}
+
 export async function getCustomerTagsByCustomerIds(customerIds: number[]): Promise<Map<number, Tag[]>> {
   return getCustomerTagsByCustomerIdsMap(customerIds);
 }
@@ -241,6 +260,32 @@ export async function getAppointmentPrintNotesByAppointmentIds(appointmentIds: n
 export async function getAppointment(id: number): Promise<Appointment | null> {
   const [appointment] = await db.select().from(appointments).where(eq(appointments.id, id));
   return appointment || null;
+}
+
+export async function getAppointmentAttachments(appointmentId: number): Promise<AppointmentAttachment[]> {
+  return db
+    .select()
+    .from(appointmentAttachments)
+    .where(eq(appointmentAttachments.appointmentId, appointmentId))
+    .orderBy(desc(appointmentAttachments.createdAt));
+}
+
+export async function getAppointmentAttachmentById(id: number): Promise<AppointmentAttachment | null> {
+  const [attachment] = await db
+    .select()
+    .from(appointmentAttachments)
+    .where(eq(appointmentAttachments.id, id));
+  return attachment ?? null;
+}
+
+export async function createAppointmentAttachment(data: InsertAppointmentAttachment): Promise<AppointmentAttachment> {
+  const result = await db.insert(appointmentAttachments).values(data);
+  const insertId = (result as any)[0].insertId;
+  const [attachment] = await db
+    .select()
+    .from(appointmentAttachments)
+    .where(eq(appointmentAttachments.id, insertId));
+  return attachment;
 }
 
 export async function getAppointmentTx(tx: DbTx, id: number): Promise<Appointment | null> {

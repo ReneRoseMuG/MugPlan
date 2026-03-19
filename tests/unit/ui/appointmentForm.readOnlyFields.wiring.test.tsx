@@ -159,6 +159,10 @@ import { AppointmentForm } from "../../../client/src/components/AppointmentForm"
 function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolean } {
   const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
 
+  if (typeof key === "string" && key.startsWith("/api/projects/")) {
+    return { data: null, isLoading: false };
+  }
+
   if (key === "/api/projects?filter=all&scope=all") {
     return {
       data: [

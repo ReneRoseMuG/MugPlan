@@ -497,6 +497,7 @@ export function CustomersPage({
                     customerNotesCount: row.customer.notesCount,
                     projectNotesCount: 0,
                     appointmentNotesCount: 0,
+                    appointmentAttachmentsCount: 0,
                     appointmentTags: [],
                     customerTags: row.customer.tags,
                     projectTags: [],

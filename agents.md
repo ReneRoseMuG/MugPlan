@@ -1,79 +1,122 @@
 # AGENTS.md – MuGPlan
 
-Dieses Dokument definiert verbindliche Leitplanken für Codex als ausführenden Coding Agent im MuGPlan-Projekt.
-
-Codex ist ein **ausführendes Werkzeug**. Er trifft keine eigenständigen Architektur-, Produkt- oder Scope-Entscheidungen. Denken, Einordnen und Entscheiden liegen außerhalb seines Verantwortungsbereichs. Bei Unklarheiten, Widersprüchen oder nicht eindeutig umsetzbaren Anforderungen bricht Codex die Umsetzung kontrolliert ab und dokumentiert den Blocker – statt still Entscheidungen zu treffen.
+Codex ist ein **ausführendes Werkzeug**. Er trifft keine eigenständigen Architektur-, Produkt- oder Scope-Entscheidungen. Bei Unklarheiten, Widersprüchen oder nicht eindeutig umsetzbaren Anforderungen bricht Codex die Umsetzung kontrolliert ab und dokumentiert den Blocker.
 
 ---
 
-## 1. Pflichtlektüre vor jedem Auftrag
+## 1. Dokumentenstrategie — Kontext sparsam nutzen
 
-Codex arbeitet mit **gestufter Pflichtlektüre**. Ziel ist minimale Kontextnutzung bei unveränderter Sicherheits- und Architekturtreue.
+**Niemals** `docs/architecture.md` oder `docs/implementation.md` automatisch vollständig laden.
 
-### 1.1 Basislektüre vor jeder Planung und jeder Änderung
+Stattdessen:
+1. `architecture-index.md` lesen (Wurzelverzeichnis, ~20 Zeilen)
+2. `implementation-index.md` lesen (Wurzelverzeichnis, ~30 Zeilen)
+3. Nur die Abschnitte laden, die der Index als relevant ausweist
 
-Vor jeder Planung liest Codex die für nahezu alle Aufgaben relevanten Kernabschnitte und bestätigt danach explizit: „gelesen und verstanden".
+**Schnellcheck vor jedem Task:**
 
-Ausnahme:
+| Situation | Dokument nötig? |
+|---|---|
+| Reine Frage, kein Code | Nein |
+| Git-Operation ohne Codeänderung | Nein |
+| Isolierter Fix in einer Datei | Nur `implementation.md` Abschnitt 10 (Checkliste) |
+| Neuer Endpunkt / Schichtenänderung | `architecture.md` Abschnitt 3, `implementation.md` Abschnitt 3 |
+| Termin- / Mitarbeiter-Mutation | `architecture.md` Abschnitt 7, `implementation.md` Abschnitt 5.1 |
+| Auth / Rollen / Sicherheit | Alle einschlägigen Auth- und Sicherheitsabschnitte |
+| Neues Feature über mehrere Schichten | Vollständige Lektüre beider Dokumente |
+| Unklare Zuordnung | Index lesen, dann gezielt erweitern — nicht raten |
 
-- Aufgaben, die ausschließlich aus Fragen bestehen und keine Umsetzung, Planung, Codeänderung, Teständerung oder sonstige operative Ausführung verlangen, sind von dieser Basislektüre ausgenommen.
-- Aufgaben, die ausschließlich Git-Kommandos oder Git-Workflow-Schritte ohne Code-, Test-, Architektur-, Konfigurations- oder Dokumentationsänderung betreffen, sind ebenfalls von dieser Basislektüre ausgenommen.
-
-Verbindliche Basislektüre:
-
-- `docs/architecture.md`: `3. Architekturprinzipien`, `7. Fachliche Invarianten`, `10. Erweiterungspunkte`, `11. Bekannte Risiken / Architekturhinweise`
-- `docs/implementation.md`: `2. Runtime- und Env-Regeln`, `3. Contract-First und Schichten`, `7. Sicherheitsgates für destruktive Operationen`, `10. Implementierungsregeln`, `11. Bekannte technische Hinweise`, Abschnitt `Schutzregel`
-
-Ohne diese Basislektüre darf Codex keine Entscheidungen treffen, keinen Code ändern und keine Tests anlegen oder erweitern.
-
-### 1.2 Zusatzlektüre nur bei betroffenen Bereichen
-
-Zusätzliche Abschnitte werden nur gelesen, wenn die Aufgabe den Bereich tatsächlich berührt:
-
-- API-, Backend-, Datenmodell- oder Kalender-Aggregationsänderung: zusätzlich passende Abschnitte in `docs/architecture.md` und `docs/implementation.md`
-- Auth-, Session-, Rollen-, Sicherheits-, Deployment- oder DB-Thema: zusätzlich alle einschlägigen Runtime-, Auth-, Sicherheits- und Betriebsabschnitte
-- Frontend-Server-State-, Settings- oder Listenlogik: zusätzlich die passenden Frontend-Abschnitte
-- Tests, Test-Setup, Testdaten oder Audit-Kommandos: zusätzlich die vollständigen Test- und Qualitätsabschnitte
-- Unklare Zuordnung oder erkennbare Querwirkung über mehrere Schichten: vollständige Lektüre der betroffenen Dokumente, bei Bedarf beider Dokumente komplett
-
-### 1.3 Leseprotokoll statt Volllektüre-Pflicht
-
-Codex dokumentiert zu Beginn kurz:
-
-- welche Basisabschnitte gelesen wurden
-- welche Zusatzabschnitte gelesen wurden
-- warum keine weitere Lektüre nötig ist oder warum vollständig gelesen wurde
-
-Wenn Codex nicht sicher eingrenzen kann, welche Abschnitte relevant sind, darf er nicht raten. In diesem Fall erweitert er die Lektüre kontrolliert, bis die Zuordnung belastbar ist.
+Codex dokumentiert kurz, welche Abschnitte gelesen wurden und warum keine weitere Lektüre nötig ist.
 
 ---
 
 ## 2. Analyse vor der Umsetzung (Pflicht)
 
-Bevor Änderungen vorgenommen werden, verschafft sich Codex einen Überblick über den relevanten Codebereich:
+Bevor Änderungen vorgenommen werden:
 
 - Bestehende Strukturen, Dateien und Muster auffinden
 - Passende Einstiegspunkte identifizieren
 - Parallele oder redundante Implementierungen vermeiden
 - Prüfen ob vorhandene Strukturen nutzbar sind, bevor neue angelegt werden
-- Prüfen, ob die für die Aufgabe gelesenen Dokumentabschnitte ausreichen oder ob Zusatzlektüre erforderlich ist
-
-Codex liest Dokumentation und Code **aufgabenbezogen**, nicht pauschal vollständig. Er erweitert den Lesekontext nur dann, wenn der Auftrag oder der gefundene Code dies erforderlich macht.
 
 Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angelegt, wenn der Auftrag dies explizit verlangt oder bestehende Strukturen nachweislich ungeeignet sind. Dieser Nachweis muss dokumentiert werden.
 
 ---
 
-## 3. Planungspflicht
+## 3. Planung
 
-Nachdem Codex die Basislektüre, erforderliche Zusatzlektüre und den Aufgabentext gelesen hat, beginnt er mit der Planung:
+### 3.1 Branch-Frage (vor dem Plan)
 
-- Die Planung ist klein geschnitten und nennt klar, welche Dateien voraussichtlich betroffen sind
+Bevor Codex einen Plan erstellt, fragt er nach einem lokalen Branch von `work`, sofern der Nutzer nicht bereits ein Kurzkommando verwendet hat, das dieses Verhalten eindeutig festlegt:
+
+> „Soll für diesen Auftrag ein lokaler Branch von `work` abgezweigt werden?"
+
+- Bei **ja**: Branch-Namen erfragen, Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`).
+- Bei **nein**: direkt mit der Planung fortfahren.
+
+Git-Aktionen dabei ausschließlich **seriell** ausführen (siehe Abschnitt 4.1).
+
+### 3.2 Planformat
+
+Pläne werden als klarer, lesbarer Fließtext im Chat präsentiert — kein Code, keine Diffs, keine Codeblöcke, keine Datei.
+
+Jeder Plan enthält diese vier Abschnitte:
+
+**Was ich plane**
+Narrativer Überblick über Ansatz und Begründung — warum dieser Weg, nicht nur was getan wird.
+
+**Betroffene Funktionen und Komponenten**
+Je Funktion oder Komponente ein bis zwei Sätze: aktuelle Rolle und warum sie von der Änderung betroffen ist.
+
+**Änderungen an bestehenden Funktionen**
+Für jede Änderung: was sich ändert, warum, und was gleich bleibt. Nur Prosa.
+
+**Erwartetes Ergebnis in der App**
+Beobachtbares Ergebnis aus Nutzersicht: was sich verhält oder aussieht wie, welche Randfälle abgedeckt sind.
+
+### 3.3 Planinhalt
+
+- Plan ist klein geschnitten und nennt klar, welche Dateien voraussichtlich betroffen sind
 - Jeder Planschritt hinterlässt einen stabilen, lauffähigen Zustand
 - Risiken werden explizit benannt
 - Abweichungen vom Plan während der Umsetzung werden kurz und nachvollziehbar begründet
 
-Änderungen sind nur zulässig, wenn sie im Auftrag oder im bestätigten Plan stehen. Kein eigenständiges Handeln außerhalb des Plans.
+Änderungen sind nur zulässig, wenn sie im Auftrag oder im bestätigten Plan stehen.
+
+### 3.4 Kurzkommandos
+
+Zur Reduktion von Dialog- und Kontextverbrauch darf der Nutzer kurze Kommandos verwenden. Codex übersetzt diese Kommandos in die zugehörigen Handlungen. Fehlt ein Kommando, gilt das normale Verhalten aus den übrigen Abschnitten.
+
+### Zulässige Kurzkommandos
+
+`branch <name>`
+Codex legt vor der weiteren Arbeit einen lokalen Branch von `work` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <name>`. Alle Git-Schritte werden seriell ausgeführt.
+
+`plan`
+Codex führt die Analyse gemäß Abschnitt 2 aus und erstellt danach direkt den Plan im Format aus Abschnitt 3.2 und 3.3, ohne die Branch-Frage erneut zu stellen.
+
+`audit`
+Codex führt den vollen Audit gemäß Abschnitt 12 aus und berichtet die Ergebnisse vollständig nach den dort definierten Regeln.
+
+`test`
+Codex führt den vollen Testlauf gemäß Abschnitt 12 als reinen Report-Auftrag aus und beachtet dabei zusätzlich alle Regeln aus Abschnitt 11. Während dieses Auftrags nimmt Codex keine Code-, Test-, Konfigurations- oder Dokumentationsänderungen vor.
+
+`log <kurztitel>`
+Codex erstellt das Auftragslog gemäß Abschnitt 14.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md`.
+
+`docs-sync`
+Codex prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-index.md` und `implementation-index.md` auf Aktualität im Kontext des erledigten Auftrags und aktualisiert sie bei Bedarf gezielt.
+
+`cleanup`
+Codex führt den Abschluss des aktuellen Arbeitsbranches ausschließlich seriell aus:
+1. Codex stellt sicher, dass der aktuelle Branch nicht `work` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
+2. Codex wechselt auf `work`.
+3. Codex stellt sicher, dass `work` keine uncommitteten Änderungen enthält und vollständig mit `origin/work` synchronisiert ist.
+4. Codex merged den Arbeitsbranch in `work`.
+5. Codex prüft das Ergebnis auf `work`.
+6. Codex pusht `work`.
+7. Codex löscht danach nur den lokalen Arbeitsbranch. Der Remote-Branch wird nicht gelöscht.
+8. Bei uncommitteten Änderungen, fehlendem Push, Divergenzen, Merge-Konflikten oder anderen Blockern bricht Codex kontrolliert ab und dokumentiert den Grund.
 
 ---
 
@@ -91,25 +134,17 @@ Erkannter Verbesserungs- oder Refactoring-Bedarf wird dokumentiert, aber nicht u
 
 ### 4.1 Git-Kommandos nur seriell
 
-Git-Aktionen werden in diesem Projekt ausschließlich **seriell** ausgeführt.
-
-- Kein paralleles Ausführen von `git add`, `git commit`, `git status`, `git diff`, `git push` oder ähnlichen Git-Kommandos
-- Keine Tool-Parallelisierung rund um Git-Schritte
-- Vor dem nächsten Git-Schritt ist immer das Ergebnis des vorherigen Git-Kommandos abzuwarten
-
-Wenn mehrere Git-Schritte nötig sind, führt Codex sie nacheinander aus und prüft nach jedem Schritt den Zustand erneut.
+Git-Aktionen werden ausschließlich **seriell** ausgeführt. Kein paralleles Ausführen von `git add`, `git commit`, `git status`, `git diff`, `git push` oder ähnlichen Kommandos. Vor dem nächsten Git-Schritt ist immer das Ergebnis des vorherigen abzuwarten.
 
 ---
 
 ## 5. Architektur- und Konfigurationsgrenzen
 
-Codex hält die bestehende Architektur ein, insbesondere:
-
 - Trennung im Backend nach Route → Controller → Service → Repository
-- Contract-First-Regel über den zentralen Contract-Index – keine API-Änderungen „frei Hand"
-- Fachliche Regeln werden serverseitig als Wahrheit implementiert, nie nur im Frontend
-- React Query im Frontend als Server-State-Quelle mit sauberer Invalidierung, keine lokalen „Korrekturzustände"
-- Kalenderrelevante, in allen Views benötigte Daten bevorzugt in der serverseitigen Kalender-Aggregation ergänzen, nicht per zusätzlicher UI-Requests
+- Contract-First-Regel über den zentralen Contract-Index — keine API-Änderungen „frei Hand"
+- Fachliche Regeln werden serverseitig implementiert, nie nur im Frontend
+- React Query im Frontend als Server-State-Quelle mit sauberer Invalidierung
+- Kalenderrelevante Daten bevorzugt in der serverseitigen Kalender-Aggregation ergänzen
 
 Ohne explizite Anweisung im Auftrag darf Codex nicht:
 
@@ -124,19 +159,17 @@ Wenn eine Aufgabe ohne solche Änderungen nicht sauber lösbar ist, wird dies al
 
 ## 6. UI-Grenzen
 
-UI-Elemente darf Codex nur ändern oder ergänzen, wenn dies **explizit im Auftrag** enthalten ist. Ohne explizite Anweisung gilt:
+UI-Elemente darf Codex nur ändern oder ergänzen, wenn dies **explizit im Auftrag** enthalten ist:
 
 - Keine UI-Komponenten verändern oder neu entwerfen
 - Kein CSS anpassen oder neu anlegen
-- UI-Arbeit folgt dem vorhandenen Code und den existierenden Komponenten – keine Parallelstrukturen
+- UI-Arbeit folgt dem vorhandenen Code und den existierenden Komponenten
 
 ---
 
 ## 7. Fachliche Invarianten
 
-Codex respektiert die fachlichen Regeln des Systems:
-
-- Ein Termin ist fachlich nur gueltig, wenn ihm entweder ein Projekt oder direkt ein Kunde zugeordnet ist
+- Ein Termin ist fachlich nur gültig, wenn ihm entweder ein Projekt oder direkt ein Kunde zugeordnet ist
 - Blockierende Überschneidungsregel für Mitarbeiterzuweisungen ist einzuhalten
 - Keine Umgehung von Rollen- und Lock-Regeln
 
@@ -154,9 +187,7 @@ Codex respektiert die fachlichen Regeln des Systems:
 
 - Alle Quelltexte und Doku-Dateien werden in UTF-8 gespeichert
 - Keine UTF-16-Dateien in `client/`, `server/`, `shared/`, `tests/`, `docs/`, `script/`
-- Git-Zeilenenden bleiben durch `.gitattributes` konsistent (`lf`, PowerShell `crlf`)
-- Bei falsch dargestellten Umlauten oder Sonderzeichen: `npm run check` ausführen, gemeldete Datei/Zeile in UTF-8 korrigieren, erneut `npm run check`, dann Commit
-- `npm run check` führt den Encoding-Check vor dem Typecheck aus und bricht bei Mojibake-Mustern oder UTF-16-BOM-Dateien ab
+- Bei falsch dargestellten Umlauten oder Sonderzeichen: `npm run check` ausführen, gemeldete Datei in UTF-8 korrigieren, erneut `npm run check`, dann Commit
 
 ---
 
@@ -170,94 +201,29 @@ Codex respektiert die fachlichen Regeln des Systems:
 | `test` | `../../shared/.env.test` |
 | `production` | `../../shared/.env.prod` (via `npm start`) |
 
-Kein Env-Datei-Fallback erlaubt (auch nicht im Testmodus). App- und Testprozesse werden immer aus `root/releases/<instanz>` gestartet. Fehlt die erwartete Env-Datei im development/test-Modus → fail fast.
+Kein Env-Datei-Fallback erlaubt. Fehlt die erwartete Env-Datei → fail fast.
 
 ### Startup-Befehle
 
-- Lokal/Server (`root/releases/version01`):
-  - `npm run dev` → `cross-env NODE_ENV=development tsx server/index.ts`
-  - `npm test` → `cross-env NODE_ENV=test MUGPLAN_MODE=test vitest`
-  - `npm start` → `cross-env NODE_ENV=production node --env-file=../../shared/.env.prod dist/index.cjs`
+- `npm run dev` → `cross-env NODE_ENV=development tsx server/index.ts`
+- `npm test` → `cross-env NODE_ENV=test MUGPLAN_MODE=test vitest`
+- `npm start` → `cross-env NODE_ENV=production node --env-file=../../shared/.env.prod dist/index.cjs`
 
 ### DB Safety Model (Pflicht)
 
-Pflichtfelder in der jeweiligen Env-Datei:
-
-- `DB_ALLOWED_DATABASES_DEV|TEST|PROD`
-- `DB_ALLOWED_HOSTS_DEV|TEST|PROD`
-
-CSV-Werte werden normalisiert (trim, leere Einträge entfernen, Hosts lowercase). Leere Pflichtlisten werden abgewiesen.
-
-Sicherheitsregeln:
+Pflichtfelder in der jeweiligen Env-Datei: `DB_ALLOWED_DATABASES_DEV|TEST|PROD` und `DB_ALLOWED_HOSTS_DEV|TEST|PROD`.
 
 - Globaler Startup-Guard in `server/db.ts` validiert das URL-Ziel vor `createPool()`
-- URL-DB-Name muss zur Allowlist passen
-- URL-Host muss zur Allowlist passen
+- URL-DB-Name und URL-Host müssen zur Allowlist passen
 - Destruktive Operationen müssen zusätzlich `SELECT DATABASE()` validieren
-- Konkrete DB-Namen variieren je Umgebung/Mandant – die Allowlists sind die einzige Wahrheitsquelle
 
-### Reverse-Proxy Session-Einstellungen
+### Migrationsstrategie (verbindlich)
 
-- `TRUST_PROXY` steuert `app.set("trust proxy", ...)`
-- `SESSION_COOKIE_SECURE` steuert den `secure`-Modus des `express-session` Cookies
-- Empfohlene Produktionsbaseline: `TRUST_PROXY=1`, `SESSION_COOKIE_SECURE=auto`
-- Reverse Proxy muss `X-Forwarded-Proto=https` weiterleiten, sonst werden keine Secure-Session-Cookies ausgestellt
-
-### Verbindliche Migrationsstrategie
-
-Diese Regeln sind fuer alle kuenftigen Schemaaenderungen verbindlich. Ziel ist ein einheitlicher, versionierter Migrationspfad fuer lokale Akteure und Remote-Umgebungen.
-
-#### Drei strikt getrennte Ebenen
-
-- **Schema im Code**: `shared/schema.ts` beschreibt den beabsichtigten Datenmodell-Stand im Repository.
-- **Migrationsdateien im Repository**: `migrations/*.sql` sowie `migrations/meta/*` bilden die versionierte, nachvollziehbare Historie der Schemaaenderungen.
-- **Tatsaechlich angewendeter Stand je Datenbank**: Massgeblich ist die pro Datenbank eingetragene Migration-History, insbesondere `__drizzle_migrations`. Die Datenbank ist nur auf dem Stand der Migrationen, die dort wirklich ausgefuehrt wurden.
-
-#### Wann eine Migration Pflicht ist
-
-- Jede strukturelle Aenderung am DB-Schema ist erst vollstaendig, wenn dazu eine neue versionierte Migrationsdatei im Repository existiert.
-- Dazu zaehlen insbesondere: neue Tabellen, neue Spalten, entfernte Spalten, geaenderte Spaltentypen, Nullability-Aenderungen, Defaults, Constraints, Foreign Keys, Checks und Indizes.
-- Eine Aenderung nur in `shared/schema.ts` ohne neue Migration ist unzulaessig und gilt als unvollstaendig.
-- Reine Datenkorrektur- oder Einmal-Skripte ersetzen keine Schema-Migration.
-
-#### Kanonischer Migrationspfad
-
-- Fuer neue Schemaaenderungen ist ausschliesslich `migrations/` der kanonische Standardpfad.
-- Neue Migrationen muessen eindeutig sortierbar und versioniert sein; der bestehende Drizzle-Mechanismus mit numerischem Praefix ist beizubehalten.
-- `migrations/meta/*` gehoert zur Migrationshistorie und ist nicht optional.
-- Vorhandene Dateien unter `script/sql/*.sql` gelten als Bestand oder manueller Sonderfall, nicht als regulaerer Zukunftspfad fuer neue Schemaaenderungen.
-
-#### Commit-Regeln bei Schemaaenderungen
-
-- Zusammen committed werden muessen mindestens:
-- die Aenderung in `shared/schema.ts`
-- die neue Datei unter `migrations/*.sql`
-- die zugehoerigen Aenderungen unter `migrations/meta/*`
-- alle fachlich notwendigen Code-, Test- und Dokumentationsanpassungen, die von dieser Schemaaenderung abhaengen
-- Unzulaessig sind Commits mit Schemaaenderung ohne Migration oder Migration ohne den dazugehoerigen Schemakontext.
-- Bereits versionierte und in Benutzung befindliche Migrationsdateien duerfen nicht still umgeschrieben, ersetzt oder inhaltlich uminterpretiert werden. Korrekturen erfolgen ueber neue Folge-Migrationen.
-
-#### Lokaler Ablauf fuer Entwickler und Agenten
-
-- Bei einer Schemaaenderung ist zuerst `shared/schema.ts` anzupassen und danach unmittelbar eine neue Migration unter `migrations/` zu erzeugen.
-- Lokale Entwicklungsdatenbanken muessen ueber denselben versionierten Migrationspfad aktualisiert werden wie alle anderen Umgebungen.
-- Direkte manuelle Schemaaenderungen per SQL-Client sind nicht Teil des Standardprozesses.
-- `npm run db:push` beziehungsweise `drizzle-kit push` ist fuer regulaere Teamarbeit, gemeinsame Entwicklung und nachverfolgbare Schemaentwicklung nicht zulaessig.
-- Reset-Skripte wie `script/sql/reset_safe_dev_test.sql` und `script/sql/reset_absolute_state.sql` sind Bootstrap-/Reset-Werkzeuge, aber keine autoritative Migrationshistorie.
-
-#### Ablauf fuer Remote-Deployments
-
-- Remote-Umgebungen verwenden denselben Migrationspfad wie lokale Akteure: die im Repository versionierten Dateien unter `migrations/`.
-- Vor Inbetriebnahme einer neuen Version sind die ausstehenden Repository-Migrationen auf die Ziel-Datenbank anzuwenden.
-- Ein Deployment ist nicht vollstaendig, wenn zugehoeriger Code ausgerollt wurde, die benoetigten Migrationen auf der Ziel-Datenbank aber noch fehlen.
-- Ein stiller Direktabgleich des Schemas ohne versionierte Migration-History ist nicht zulaessig.
-
-#### Zu vermeidende Abkuerzungen und Sonderwege
-
-- Kein unprotokollierter Direktabgleich zwischen `shared/schema.ts` und Datenbank.
-- Kein manuelles "Nachziehen" von Spalten, Indizes oder Constraints ausserhalb einer versionierten Migration als Standardweg.
-- Keine neuen regulaeren Schemaaenderungen in `script/sql/*.sql`.
-- Kein Vertrauen darauf, dass Startskripte Migrationen automatisch ausfuehren, solange ein solcher Mechanismus nicht explizit als Projektstandard eingefuehrt und dokumentiert wurde.
+- Jede strukturelle Änderung am DB-Schema erfordert eine neue versionierte Migrationsdatei unter `migrations/`
+- Eine Änderung nur in `shared/schema.ts` ohne neue Migration ist unzulässig
+- `drizzle-kit push` ist für reguläre Teamarbeit nicht zulässig
+- Commits bei Schemaänderungen müssen immer `shared/schema.ts`, neue Migrationsdatei und `migrations/meta/*` gemeinsam enthalten
+- Bereits versionierte Migrationsdateien dürfen nicht umgeschrieben werden — Korrekturen über neue Folge-Migrationen
 
 ---
 
@@ -265,111 +231,66 @@ Diese Regeln sind fuer alle kuenftigen Schemaaenderungen verbindlich. Ziel ist e
 
 ### Must-Pass Safety Gate (vor jeder Testausführung)
 
-Die folgenden Regeln müssen erfolgreich geprüft sein, **bevor irgendein Test ausgeführt wird**:
-
 1. `.env.test` ist vorhanden und erfolgreich geladen
 2. Testmodus ist aktiv: `NODE_ENV=test` und `MUGPLAN_MODE=test`
-3. Erlaubte DB-Ziele stammen ausschließlich aus Test-Env: `MYSQL_DATABASE_URL`, `DB_ALLOWED_DATABASES_TEST`, `DB_ALLOWED_HOSTS_TEST`
-4. DB-Connections und destruktive Aktionen laufen ausschließlich über zentrale Guard-APIs:
-   - `assertTestMode()`
-   - `assertSafeWriteTargetForTestMode()`
-   - `assertSafeDestructiveOperationTarget()`
-   - `assertSqlDatabaseIdentity()`
+3. Erlaubte DB-Ziele stammen ausschließlich aus Test-Env
+4. DB-Connections laufen ausschließlich über zentrale Guard-APIs: `assertTestMode()`, `assertSafeWriteTargetForTestMode()`, `assertSafeDestructiveOperationTarget()`, `assertSqlDatabaseIdentity()`
 
 Ohne bestandenes Safety Gate gilt jeder Testlauf als ungültig.
 
-### Zentrale Architekturregel für DB-Zugriffe im Testmodus
+### Testebenen
 
-`server/db.ts` darf nur dann einen Client/Pool zurückgeben, wenn `assertTestMode()` und `assertSafeWriteTargetForTestMode()` erfolgreich waren. Damit laufen alle Write-Pfade in Tests zwingend durch dieselbe Sicherheitsschranke.
+**Unit** — isolierte Logik, Mocks/Stubs/Fakes, keine echte DB-Verbindung, zentrale Fixtures aus `tests/helpers/testDataFactory.ts`.
 
-### Testebenen (strikt getrennt)
+**Integration** — reale DB nur gegen Testziel, Setup/Teardown über `tests/setup.env.ts`, Factory-Einstieg zwingend über `tests/helpers/testDataFactory.ts`. Integration-Tests **müssen** mit `--reporter=verbose` ausgeführt werden.
 
-**Unit** – Isolierte Logik (Validation, Mapping, Service-Regeln, UI-Wiring)
-- Erlaubt: reine Funktionen/Module, Mocks/Stubs/Fakes
-- Nicht erlaubt: echte DB-Verbindung, destruktive DB-Operationen, Infrastruktur-Seiteneffekte
-- Setup/Teardown: nur lokale Testdaten pro Testdatei, keine globale DB-Initialisierung
-- Datenquelle: zentrale Unit-Fixtures/Builder – keine ad-hoc lokalen Datenmodelle
-- Determinismus: keine unkontrollierten Zufallswerte; Zeit nur gemockt wenn Logik zeitabhängig ist
+**E2E** — vollständige Workflows, isolierte Daten, Suite-weite Resets nur guardiert.
 
-**Integration** – Reale Interaktion von API/Service/Repository/DB
-- Erlaubt: echte DB (nur Testziel), echte Route/Service-Pfade
-- Nicht erlaubt: DB-Connect am zentralen Guard vorbei, destruktives SQL ohne vorgelagerten Guard-Check
-- Setup/Teardown: verbindlich über `tests/setup.env.ts` mit guardiertem DB-Reset; Reset nur über guardierte Helfer
-- Datenquelle: zwingend über zentralen Fixture/Factory-Einstiegspunkt `tests/helpers/testDataFactory.ts`
-- Determinismus: fixed clock für zeitkritische Fälle, deterministische Fixture-IDs
+### Timeout-Regel
 
-**E2E** – Vollständige Workflows über Systemgrenzen
-- Erlaubt: API + ggf. Client/Browser, reale Infrastruktur nur gegen Testziel
-- Nicht erlaubt: implizite Nutzung von Dev-/Prod-Daten, ungeregelte Seeds/Resets
-- Setup/Teardown: eigenes E2E-Setup mit isolierten Daten, Suite-weite Resets nur guardiert
-- Datenquelle: zentraler E2E-Fixture/Seed-Einstiegspunkt
-- Determinismus: fixierte Referenzzeit, reproduzierbare Testdatenkennungen
+Für `npm run test:integration` und `npm run test:e2e` ist standardmäßig ein langer Command-Timeout zu verwenden. `npm run test:e2e:browser` bleibt davon unberührt.
 
-### Timeout-Regel für lange Testläufe
+### Verbotene Testmuster
 
-- Für `npm run test:integration` ist per Tooling standardmäßig ein langer Command-Timeout zu verwenden.
-- Für `npm run test:e2e` ist per Tooling ebenfalls standardmäßig ein langer Command-Timeout zu verwenden.
-- Kurze Default-Timeouts sind unzulässig, wenn sie erfahrungsgemäß zu abgebrochenen Läufen und kostenpflichtigen Wiederholungen führen.
-- Diese Regel gilt nur für die nicht-Browser-Testläufe; `npm run test:e2e:browser` bleibt davon unberührt, solange der Auftrag nichts anderes verlangt.
-
-### Testdaten-Bauanleitung
-
-1. Zentralen Factory/Fixture-Einstiegspunkt aufrufen: `tests/helpers/testDataFactory.ts`
-2. Nur notwendige Overrides setzen
-3. Keine parallelen Eigenstrukturen aufbauen
-
-Verbotene Muster:
 - Direkter Insert/Update-Sprawl in Testdateien ohne zentralen Einstieg
 - Demo-/Bestandsdaten als implizite Voraussetzung
-- `readFileSync` oder gleichwertige Direktzugriffe auf produktive Quelldateien in Tests
-- Schreibzugriffe in Tests ausserhalb von `os.tmpdir()`
-- Assertions auf mehrere alternative HTTP-Statuscodes fuer denselben fachlichen Fehler
 - Eigene Express-/HTTP-App-Aufbauten in Integrationstests statt `createApiTestApp()`
-- Abweichende HTTP-Status-/Fehlercode-Semantik fuer denselben fachlichen Fehler in verschiedenen Testdateien
+- Assertions auf mehrere alternative HTTP-Statuscodes für denselben fachlichen Fehler
+- Schreibzugriffe in Tests außerhalb von `os.tmpdir()`
 
 ### Test-Runs dürfen nicht in eigenständigen Fixes münden
 
-Schlägt ein Test fehl, dokumentiert Codex den Fehler und wartet auf Anweisung. Codex behebt Testfehler nicht eigenmächtig.
+Schlägt ein Test fehl, dokumentiert Codex den Fehler und nimmt keine eigenständigen Fixes vor.
+
+Wurde jedoch ein **voller Testlauf** oder das Kurzkommando `test` explizit angefordert, führt Codex alle in Abschnitt 12 definierten Test-Kommandos **vollständig und seriell** zu Ende, auch wenn einzelne Teilkommandos fehlschlagen. Die Fehlschläge werden gesammelt und anschließend strukturiert berichtet.
+
+Ein explizit angeforderter Testlauf ist immer ein **reiner Report-Auftrag**. Während eines solchen Testlaufs nimmt Codex keinerlei Änderungen an Produktivcode, Tests, Konfiguration, Skripten oder Dokumentation vor. Auch triviale oder offensichtliche Test-Fixes sind in diesem Modus unzulässig. Änderungen sind erst nach einem separaten Folgeauftrag zur Behebung erlaubt.
 
 ---
 
-### Verbindliche Begriffe: „voller Testlauf" und „voller Audit"
+## 12. Begriffe: „voller Testlauf" und „voller Audit"
 
-Wenn der Nutzer „voller Testlauf" verlangt, meint dies **alle** im Repository etablierten Testbereiche. Codex darf diesen Begriff nicht still auf ein einzelnes Standardkommando reduzieren.
-
-Für dieses Repository umfasst ein **voller Testlauf** mindestens:
+### Voller Testlauf umfasst mindestens
 
 - `npm run test:unit`
 - `npm run test:integration`
 - `npm run test:e2e`
 - `npm run test:e2e:browser`
 
-Wenn der Nutzer „voller Audit" verlangt, meint dies **alle** im Repository etablierten Prüf- und Qualitätskommandos. Codex darf diesen Begriff nicht still auf `npm run check` oder ein anderes Teilkommando reduzieren.
-
-Für dieses Repository umfasst ein **voller Audit** mindestens:
+### Voller Audit umfasst mindestens
 
 - `npm run check`
 - `npm run lint`
 - `npm run audit`
 - `npm run secrets`
 
-Wenn der Nutzer „voller Testlauf und voller Audit" verlangt, sind alle oben genannten Kommandos vollständig auszuführen – auch dann, wenn der konkrete Auftrag nur einen kleinen Bugfix, eine kleine Änderung oder einen einzelnen neuen Test betrifft.
+Nach Ausführung muss Codex explizit berichten: welche Kommandos ausgeführt wurden, welches Ergebnis jedes hatte, welche Teile nicht ausgeführt wurden und warum. „Alles grün" ist nur zulässig, wenn alle verpflichtenden Kommandos erfolgreich abgeschlossen wurden.
 
-Nach Ausführung muss Codex immer explizit berichten:
+---
 
-- welche Kommandos ausgeführt wurden
-- welches Ergebnis jedes Kommando hatte
-- welche Teile nicht ausgeführt wurden und warum
-
-Aussagen wie „alles grün", „vollständig erfolgreich" oder gleichwertige Zusammenfassungen sind nur zulässig, wenn wirklich alle verpflichtenden Kommandos des angeforderten Umfangs erfolgreich ausgeführt wurden.
-
-Kann ein verpflichtender Teil wegen Setup-, Infrastruktur-, Berechtigungs-, Umgebungs- oder Laufzeitproblemen nicht ausgeführt werden, darf Codex das Ergebnis nicht als „voll" bezeichnen und muss den fehlenden Teil als Blocker dokumentieren.
-
-## 12. Test-Dokumentationspflicht
+## 13. Test-Dokumentationspflicht
 
 ### Pflicht-Kommentar in jeder Testdatei
-
-Am Anfang jeder Testdatei muss ein erklärender Blockkommentar stehen:
 
 ```
 /**
@@ -377,70 +298,67 @@ Am Anfang jeder Testdatei muss ein erklärender Blockkommentar stehen:
  *
  * Abgedeckte Regeln:
  * - <Regel 1>
- * - <Regel 2>
  *
  * Fehlerfälle:
  * - <Fehlerfall 1>
- * - <Fehlerfall 2>
  *
  * Ziel:
  * <Kurzbeschreibung der Absicherung>
  */
 ```
 
-Der Kommentar beschreibt die fachliche Intention – keine technischen Details wiederholen.
-
-### Pflege von docs/TEST_MATRIX.md (automatisch, ohne Rückfrage)
+### Pflege von docs/TEST_MATRIX.md
 
 Bei jeder Erstellung oder Erweiterung von Tests pflegt Codex `docs/TEST_MATRIX.md` eigenständig und verpflichtend:
-
-- Neuer Test: neuen Tabelleneintrag anlegen
 
 ```
 | Test-Datei | Feature | Bereich | Zweck | Status |
 |------------|---------|---------|-------|--------|
-| [appointment.versioning.test.ts](../tests/...) | FT14 | Unit | Optimistic Locking & Konfliktlogik | ✓ |
+| [datei.test.ts](../tests/...) | FT14 | Unit | Kurzbeschreibung | ✓ |
 ```
-
-- Bestehender Test erweitert: bestehenden Eintrag fachlich aktualisieren
-- Spalte `Test-Datei` als klickbarer Markdown-Link auf die konkrete Testdatei
-- Beschreibungen in `Zweck` kurz und fachlich verständlich – kein technisches Detailprotokoll
 
 Fehlt die Aktualisierung der Test-Matrix, gilt die Teständerung als unvollständig.
 
-Unzulässig:
-- Testdateien ohne Kopfkommentar
-- „misc", „new", „tmp" Testdateien
-
 ---
 
-## 13. Abschluss
+## 14. Abschluss-Workflow
 
-### Abschlussprüfung (Pflicht)
+Nach Fertigstellung eines Auftrags stellt Codex die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antwort:
 
-Codex prüft sein Ergebnis explizit gegen:
+### 14.1 Audit und Testlauf
+
+> „Soll ich einen vollen Audit und einen vollen Testlauf ausführen?"
+
+- Bei **ja**: Alle Kommandos aus Abschnitt 12 vollständig ausführen.
+- Ein fehlgeschlagenes Test-Kommando unterbricht den vollen Testlauf nicht. Codex führt alle weiteren verpflichtenden Test-Kommandos seriell aus und berichtet die Fehlschläge gesammelt im Abschlussbericht.
+- Der volle Testlauf ist auch hier ein reiner Report-Auftrag. Währenddessen werden keine Fixes und keine sonstigen Änderungen vorgenommen.
+- Test-Report danach sortiert ausgeben nach:
+  1. **Kritikalität** (rot/fehlgeschlagen zuerst, dann gelb/Warnungen, dann grün)
+  2. **Problemstellung** (gleiche Fehlerursachen gruppiert)
+- Jeder fehlgeschlagene Test wird mit Datei, Testname, Fehlertyp und einer Einschätzung der Auswirkung aufgeführt.
+- Bei **nein**: kein Testlauf.
+
+### 14.2 Log schreiben
+
+> „Soll ich ein Log für diesen Auftrag schreiben?"
+
+- Bei **ja**: neue Markdown-Datei unter `logs/<yyyy-mm-dd>_<kurztitel>.md` mit Zweck, Scope, technischen Entscheidungen, betroffenen Dateien, Hinweisen zum Testen und bekannten Einschränkungen.
+- Bei **nein**: keine Dokumentationsdatei.
+
+### 14.3 Architekturdokumentation aktualisieren
+
+> „Soll ich `docs/architecture.md`, `docs/implementation.md`, `architecture-index.md` und `implementation-index.md` auf Aktualität prüfen und bei Bedarf aktualisieren?"
+
+- Bei **ja**: Codex prüft alle vier Dateien auf veraltete oder fehlende Einträge im Kontext des abgeschlossenen Auftrags und aktualisiert sie gezielt — keine vollständigen Neuschriften.
+- Bei **nein**: keine Dokumentationsänderung.
+
+### 14.4 Abschlussprüfung (immer, ohne Rückfrage)
+
+Codex prüft das Ergebnis explizit gegen:
 
 - Den Aufgabentext (Ziel, Nicht-Ziele, Akzeptanzkriterien)
-- Die Architektur- und Engineering-Vorgaben aus den gelesenen Dokumenten (Schichtmodell, Contract-First, React Query-Invalidierung, kalenderseitige Aggregation, fachliche Invarianten)
+- Die gelesenen Architektur- und Implementierungsvorgaben
 
-Codex nennt dabei konkret, welche Stellen geprüft wurden, und ob es bekannte Abweichungen gibt. Bei Abweichungen werden konkrete Korrekturen vorgeschlagen.
+Codex nennt konkret, welche Stellen geprüft wurden und ob es bekannte Abweichungen gibt. Bei Abweichungen werden konkrete Korrekturen vorgeschlagen.
 
-### Abschlusskriterien
-
-Eine Aufgabe gilt als abgeschlossen, wenn:
-
-- Das fachliche Ziel gemäß Auftrag umgesetzt ist
-- Alle Verbote und Grenzen eingehalten wurden
-- Die geforderte Dokumentation vollständig vorliegt
-- Keine stillen Nebenwirkungen eingeführt wurden
-
-Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie ebenfalls als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.
-
-### Dokumentation (Pflichtfrage)
-
-Codex fragt am Ende ausdrücklich: „Soll ich das Resultat dokumentieren?"
-
-- Bei „ja": neue Markdown-Datei unter `logs/<yyyy-mm-dd>_<kurztitel>.md` mit Zweck, Scope, technischen Entscheidungen, betroffenen Dateien, Hinweisen zum Testen und bekannten Einschränkungen
-- Bei „nein": keine Dokumentationsdatei
-
-Der Orchestrator legt pro Aufgabe fest, ob und in welchem Umfang Dokumentation zu erstellen ist. Codex trifft keine eigene Entscheidung über zusätzliche oder reduzierte Dokumentation.
+Eine Aufgabe gilt als abgeschlossen, wenn das fachliche Ziel umgesetzt, alle Verbote eingehalten und die geforderte Dokumentation vollständig vorliegt. Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.

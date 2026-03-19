@@ -12,6 +12,7 @@ import {
   projectAttachments,
   customerAttachments,
   employeeAttachments,
+  appointmentAttachments,
   insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
   insertEmployeeAbsenceSchema, updateEmployeeAbsenceSchema, employeeAbsences,
@@ -441,7 +442,7 @@ const tourPrintPreviewResponseSchema = z.object({
 });
 
 const attachmentDuplicateHitSchema = z.object({
-  domain: z.enum(["customer", "project", "employee"]),
+  domain: z.enum(["customer", "project", "employee", "appointment"]),
   attachmentId: z.number().int().positive(),
   ownerId: z.number().int().positive(),
   ownerLabel: z.string(),
@@ -469,6 +470,7 @@ const appointmentAttachmentContextSchema = z.object({
   }),
   projectAttachments: z.array(z.custom<typeof projectAttachments.$inferSelect>()),
   customerAttachments: z.array(z.custom<typeof customerAttachments.$inferSelect>()),
+  appointmentAttachments: z.array(z.custom<typeof appointmentAttachments.$inferSelect>()),
 });
 
 const bulkImportCustomerAnalyzeItemSchema = z.object({
@@ -1114,6 +1116,7 @@ export const api = {
             customerNotesCount: z.number().int().min(0),
             projectNotesCount: z.number().int().min(0),
             appointmentNotesCount: z.number().int().min(0),
+            appointmentAttachmentsCount: z.number().int().min(0),
             appointmentTags: z.array(tagSchema),
             customerTags: z.array(tagSchema),
             projectTags: z.array(tagSchema),
@@ -3070,6 +3073,42 @@ export const api = {
       },
     },
   },
+  appointmentAttachments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/appointments/:appointmentId/attachments',
+      responses: {
+        200: z.array(z.custom<typeof appointmentAttachments.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/appointments/:appointmentId/attachments',
+      responses: {
+        201: z.custom<typeof appointmentAttachments.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: errorSchemas.validation,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        413: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/appointments/:appointmentId/attachments/:id',
+      responses: {
+        405: errorSchemas.validation,
+      },
+    },
+    download: {
+      method: 'GET' as const,
+      path: '/api/appointment-attachments/:id/download',
+      responses: {
+        200: z.any(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   employeeAttachments: {
     list: {
       method: 'GET' as const,
@@ -3175,6 +3214,7 @@ export const api = {
             customer: z.number().int().min(0),
             project: z.number().int().min(0),
             employee: z.number().int().min(0),
+            appointment: z.number().int().min(0),
           }),
           hits: z.array(attachmentDuplicateHitSchema),
         }),

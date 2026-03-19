@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "4661da18-d7ef-4f82-a539-421f1559495d",
+  "prevId": "640f7b73-73b0-45d6-97fe-d1f951635224",
+  "note": "Manual snapshot placeholder for 0013_appointment_attachments. Authoritative migration logic lives in migrations/0013_appointment_attachments.sql."
+}

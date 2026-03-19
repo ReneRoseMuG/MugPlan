@@ -5,6 +5,7 @@ import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { mergeUniqueTags } from "@/lib/tag-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
+import { CalendarWeekAppointmentAttachmentsHover } from "./CalendarWeekAppointmentAttachmentsHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
@@ -127,6 +128,10 @@ export function CalendarWeekSpanningTile({
         customerNotesCount={appointment.customerNotesCount ?? 0}
         projectNotesCount={appointment.projectNotesCount ?? 0}
         appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+      />
+      <CalendarWeekAppointmentAttachmentsHover
+        appointmentId={appointment.id}
+        appointmentAttachmentsCount={appointment.appointmentAttachmentsCount ?? 0}
       />
       <EntityTagFooterRow tags={mergedTags} testId={`week-spanning-tile-tags-${appointment.id}`} />
     </div>

@@ -4,6 +4,7 @@ import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { mergeUniqueTags } from "@/lib/tag-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
+import { CalendarWeekAppointmentAttachmentsHover } from "./CalendarWeekAppointmentAttachmentsHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
 import { CalendarWeekAppointmentPanelHeader } from "./CalendarWeekAppointmentPanelHeader";
@@ -156,6 +157,10 @@ export function CalendarWeekAppointmentPanel({
                       customerNotesCount={appointment.customerNotesCount ?? 0}
                       projectNotesCount={appointment.projectNotesCount ?? 0}
                       appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+                    />
+                    <CalendarWeekAppointmentAttachmentsHover
+                      appointmentId={appointment.id}
+                      appointmentAttachmentsCount={appointment.appointmentAttachmentsCount ?? 0}
                     />
                   </>
                 ) : (
