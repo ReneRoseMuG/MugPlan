@@ -504,6 +504,10 @@ export function AppointmentForm({
       if (!appointmentId) return;
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await queryClient.invalidateQueries({ queryKey: projectsQueryKey });
+      if (selectedProjectId) {
+        await queryClient.invalidateQueries({ queryKey: [`/api/projects/${selectedProjectId}`] });
+      }
       await invalidateRelatedAppointmentQueries(selectedProjectId);
       await refreshMonitoringWithNotification(toast);
       toast({ title: "Termin storniert" });

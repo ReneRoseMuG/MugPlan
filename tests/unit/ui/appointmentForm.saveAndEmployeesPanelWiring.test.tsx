@@ -79,6 +79,8 @@ describe("FT01 appointment form save and employees panel wiring", () => {
     expect(source).toContain("const cancelAppointmentMutation = useMutation({");
     expect(source).toContain("/api/appointments/${targetAppointmentId}/cancel");
     expect(source).toContain("CANCELLATION_TAG_NOT_CONFIGURED");
+    expect(source).toContain("await queryClient.invalidateQueries({ queryKey: projectsQueryKey });");
+    expect(source).toContain("await queryClient.invalidateQueries({ queryKey: [`/api/projects/${selectedProjectId}`] });");
     expect(source).toContain("button-cancel-appointment");
     expect(source).toContain("Termin stornieren?");
     expect(source).toContain("Termin storniert");
