@@ -336,8 +336,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     { id: "roof", header: "Dach", accessor: (row) => row.roof ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.roof)}</span> },
     { id: "plannedDateText", header: "vorgeplanter Termin", accessor: (row) => row.plannedDateText ?? "", minWidth: 170, cell: ({ row }) => <span>{resolveValue(row.plannedDateText)}</span> },
     { id: "plannedWeek", header: "KW Vorgeplant", accessor: (row) => row.plannedWeek ?? "", minWidth: 150, cell: ({ row }) => <span>{resolveValue(row.plannedWeek)}</span> },
-    { id: "actualDate", header: "tatsaechlicher Termin", accessor: (row) => row.actualDate, minWidth: 170, cell: ({ row }) => <span>{formatDate(row.actualDate)}</span> },
-    { id: "projectDescription", header: "Projekt Beschreibung", accessor: (row) => row.projectDescription ?? "", minWidth: 280, cell: ({ row }) => <span>{resolveValue(row.projectDescription)}</span> },
+    { id: "actualDate", header: "tatsächlicher Termin", accessor: (row) => row.actualDate, minWidth: 170, cell: ({ row }) => <span>{formatDate(row.actualDate)}</span> },
+    { id: "projectDescription", header: "Anmerkungen", accessor: (row) => row.projectDescription ?? "", minWidth: 280, cell: ({ row }) => <span>{resolveValue(row.projectDescription)}</span> },
   ], []);
 
   const totalPages = vorlauflisteData?.totalPages ?? 0;
@@ -385,7 +385,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               <div className="space-y-6">
               <ReportConfigSurface
                 title="Vorlaufliste"
-                description="Datumsbereich und Default-Kategorien fuer die Vorlaufliste festlegen."
+                description="Datumsbereich und Default-Kategorien für die Vorlaufliste festlegen."
                 actions={(
                   <Button type="button" onClick={() => handleGenerateReport("vorlaufliste")} disabled={vorlauflisteFromDate.trim().length === 0} data-testid="button-reports-vorlaufliste-generate">
                     Report erzeugen
@@ -561,10 +561,9 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               <div className="flex h-full flex-col">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
                   <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-foreground">Vorlaufliste Report</h3>
-                    <p className="text-sm text-muted-foreground">Die Trefferliste nutzt den zuletzt erzeugten Report mit eigenem Paging.</p>
+                    <h3 className="text-base font-semibold text-foreground">Vorlaufliste</h3>
                   </div>
-                  <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-back">Zurueck</Button>
+                  <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-back">Zurück</Button>
                 </div>
                 <div className="min-h-0 flex-1">
                   {isVorlauflisteLoading ? (
@@ -577,13 +576,13 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                       rowClassName={resolveVorlauflisteRowClassName}
                       testId="table-reports-vorlaufliste"
                       stickyHeader
-                      emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Fuer den gewaehlten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}
+                      emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Für den gewählten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}
                     />
                   )}
                 </div>
                 <div className="border-t border-border px-6 py-4">
                   <ListPagingFooter
-                    summaryText={`${vorlauflisteData?.total ?? 0} Eintraege`}
+                    summaryText={`${vorlauflisteData?.total ?? 0} Einträge`}
                     page={page}
                     totalPages={totalPages}
                     canGoPrev={canGoPrev}
