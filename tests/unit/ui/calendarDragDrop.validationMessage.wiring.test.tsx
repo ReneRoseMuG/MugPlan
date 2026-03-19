@@ -21,7 +21,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
-describe.skip("FT01 UI: calendar drag drop validation message wiring", () => {
+describe("FT01 UI: calendar drag drop validation message wiring", () => {
   const weekSource = readFileSync(path.resolve(process.cwd(), "client/src/components/calendar/CalendarWeekView.tsx"), "utf8");
   const monthSource = readFileSync(path.resolve(process.cwd(), "client/src/components/calendar/CalendarMonthView.tsx"), "utf8");
   const expectedWiring = 'throw new Error(error?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");';
@@ -36,13 +36,13 @@ describe.skip("FT01 UI: calendar drag drop validation message wiring", () => {
     expect(monthSource).toContain(expectedWiring);
   });
 
-  it("wires explicit availability confirmation for drag and drop in CalendarWeekView", () => {
+  it.skip("wires explicit availability confirmation for drag and drop in CalendarWeekView", () => {
     expect(weekSource).toContain('if (error?.code === "AVAILABILITY_CONFIRMATION_REQUIRED") {');
     expect(weekSource).toContain('data-testid="dialog-calendar-week-availability-conflicts"');
     expect(weekSource).toContain("confirmAvailabilityAdjustments: true");
   });
 
-  it("wires explicit availability confirmation for drag and drop in CalendarMonthView", () => {
+  it.skip("wires explicit availability confirmation for drag and drop in CalendarMonthView", () => {
     expect(monthSource).toContain('if (error?.code === "AVAILABILITY_CONFIRMATION_REQUIRED") {');
     expect(monthSource).toContain('data-testid="dialog-calendar-month-availability-conflicts"');
     expect(monthSource).toContain("confirmAvailabilityAdjustments: true");

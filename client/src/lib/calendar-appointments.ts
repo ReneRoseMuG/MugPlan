@@ -40,6 +40,7 @@ export type CalendarAppointment = {
   customerNotesCount: number;
   projectNotesCount: number;
   appointmentNotesCount: number;
+  appointmentAttachmentsCount: number;
   appointmentTags: Tag[];
   customerTags: Tag[];
   projectTags: Tag[];
@@ -106,12 +107,16 @@ export function useCalendarAppointments({
         const appointmentNotesCount = Number.isFinite(rawAppointment.appointmentNotesCount)
           ? Math.max(0, rawAppointment.appointmentNotesCount)
           : 0;
+        const appointmentAttachmentsCount = Number.isFinite(rawAppointment.appointmentAttachmentsCount)
+          ? Math.max(0, rawAppointment.appointmentAttachmentsCount)
+          : 0;
 
         return {
           ...rawAppointment,
           customerNotesCount,
           projectNotesCount,
           appointmentNotesCount,
+          appointmentAttachmentsCount,
           appointmentTags: Array.isArray(rawAppointment.appointmentTags) ? rawAppointment.appointmentTags : [],
           customerTags: Array.isArray(rawAppointment.customerTags) ? rawAppointment.customerTags : [],
           projectTags: Array.isArray(rawAppointment.projectTags) ? rawAppointment.projectTags : [],

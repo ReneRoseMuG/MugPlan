@@ -182,7 +182,7 @@ test("shows cumulative customer, project and appointment notes in the week previ
   await page.getByTestId("button-save-customer").click();
   await expect(page.getByTestId("button-save-customer")).toHaveCount(0);
 
-  await page.goto("/");
+  await page.getByTestId("nav-wochenuebersicht").click();
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${fixture.appointment.id}`);
   await expect(appointmentPanel).toBeVisible();
   await appointmentPanel.dblclick();

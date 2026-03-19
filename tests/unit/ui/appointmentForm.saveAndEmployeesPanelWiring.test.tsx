@@ -25,7 +25,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 
-describe.skip("FT01 appointment form save and employees panel wiring", () => {
+describe("FT01 appointment form save and employees panel wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentForm.tsx");
   const source = readFileSync(filePath, "utf8");
   const employeeSlotSource = readFileSync(
@@ -46,7 +46,7 @@ describe.skip("FT01 appointment form save and employees panel wiring", () => {
 
   it("sends version in PATCH payload", () => {
     expect(source).toContain("const payload = isEditing");
-    expect(source).toContain("? { ...basePayload, version, confirmAvailabilityAdjustments }");
+    expect(source).toContain("? { ...basePayload, version }");
   });
 
   it("loads appointment detail always fresh in edit mode", () => {

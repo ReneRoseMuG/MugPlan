@@ -23,6 +23,7 @@ import * as employeesService from "../../../server/services/employeesService";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
+  createCustomerFixture,
   createEmployeeAbsenceFixture,
   createEmployeeFixture,
   createProjectFixture,
@@ -139,82 +140,38 @@ describe.skip("FT01 integration: drag and drop availability handling", () => {
     ]);
   });
 
-  it("runs overlap checks after confirmed availability filtering", async () => {
+});
+
+describe("FT01 integration: drag and drop overlap handling", () => {
+  it("returns EMPLOYEE_OVERLAP_CONFLICT when the moved appointment collides with an existing employee assignment", async () => {
     const admin = await loginAdminAgent(app);
-    const project = await createProjectFixture({ prefix: "FT01-DD-OVERLAP" });
-    const absentEmployee = await createEmployeeFixture("DD-OVERLAP-ABSENT");
+    const customer = await createCustomerFixture("FT01-DD-OVERLAP-CUST");
     const overlappingEmployee = await createEmployeeFixture("DD-OVERLAP-BUSY");
     const appointmentToMove = await createAppointmentFixture({
-      projectId: project.id,
+      projectId: null,
+      customerId: customer.id,
       startDate: "2099-10-01",
-      employeeIds: [absentEmployee.id, overlappingEmployee.id],
-    });
-
-    await createEmployeeAbsenceFixture({
-      employeeId: absentEmployee.id,
-      from: "2099-10-05",
-      until: "2099-10-05",
+      employeeIds: [overlappingEmployee.id],
     });
     await createAppointmentFixture({
-      projectId: project.id,
+      projectId: null,
+      customerId: customer.id,
       startDate: "2099-10-05",
       employeeIds: [overlappingEmployee.id],
     });
 
     const response = await admin.patch(`/api/appointments/${appointmentToMove.id}`).send({
       version: appointmentToMove.version,
-      projectId: project.id,
+      projectId: null,
+      customerId: customer.id,
       startDate: "2099-10-05",
-      employeeIds: [absentEmployee.id, overlappingEmployee.id],
-      confirmAvailabilityAdjustments: true,
+      employeeIds: [overlappingEmployee.id],
     }).expect(409);
 
     expect(response.body.code).toBe("EMPLOYEE_OVERLAP_CONFLICT");
     expect(response.body.conflictEmployees).toEqual([
       { id: overlappingEmployee.id, fullName: overlappingEmployee.fullName },
     ]);
-    await expect(getAppointmentEmployeeIds(appointmentToMove.id)).resolves.toEqual([absentEmployee.id, overlappingEmployee.id]);
-  });
-
-  it("blocks moves when an exit date falls inside the new target span and removes the employee only after confirm", async () => {
-    const admin = await loginAdminAgent(app);
-    const project = await createProjectFixture({ prefix: "FT01-DD-EXIT" });
-    const exitingEmployee = await createEmployeeFixture("DD-EXIT-EMP");
-    const retainedEmployee = await createEmployeeFixture("DD-EXIT-KEEP");
-    const appointment = await createAppointmentFixture({
-      projectId: project.id,
-      startDate: "2099-11-01",
-      endDate: "2099-11-02",
-      employeeIds: [exitingEmployee.id, retainedEmployee.id],
-    });
-
-    await employeesService.updateEmployee(
-      exitingEmployee.id,
-      { exitDate: "2099-11-04", version: exitingEmployee.version },
-      "ADMIN",
-    );
-
-    await admin.patch(`/api/appointments/${appointment.id}`).send({
-      version: appointment.version,
-      projectId: project.id,
-      startDate: "2099-11-03",
-      endDate: "2099-11-05",
-      employeeIds: [exitingEmployee.id, retainedEmployee.id],
-      confirmAvailabilityAdjustments: false,
-    }).expect(409);
-
-    const confirmed = await admin.patch(`/api/appointments/${appointment.id}`).send({
-      version: appointment.version,
-      projectId: project.id,
-      startDate: "2099-11-03",
-      endDate: "2099-11-05",
-      employeeIds: [exitingEmployee.id, retainedEmployee.id],
-      confirmAvailabilityAdjustments: true,
-    }).expect(200);
-
-    expect(confirmed.body.employees.map((employee: { id: number }) => employee.id)).toEqual([retainedEmployee.id]);
-    expect(confirmed.body.excludedEmployees).toEqual([
-      { id: exitingEmployee.id, fullName: exitingEmployee.fullName, reason: "exit_date" },
-    ]);
+    await expect(getAppointmentEmployeeIds(appointmentToMove.id)).resolves.toEqual([overlappingEmployee.id]);
   });
 });

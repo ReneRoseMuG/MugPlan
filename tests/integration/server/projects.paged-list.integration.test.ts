@@ -140,6 +140,14 @@ describe("FT30 integration: paged projects list", () => {
       orderNumber: projectWithItems.orderNumber ?? "",
       componentId: ovenComponent.id,
     });
+    await createAppointmentFixture({
+      projectId: projectWithItems.id,
+      startDate: "2099-12-21",
+    });
+    await createAppointmentFixture({
+      projectId: projectWithoutItems.id,
+      startDate: "2099-12-22",
+    });
 
     const response = await agent
       .get("/api/projects?filter=all&scope=all")

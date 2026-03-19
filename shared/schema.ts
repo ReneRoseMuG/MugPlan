@@ -911,6 +911,27 @@ export const insertEmployeeAttachmentSchema = createInsertSchema(employeeAttachm
 export type EmployeeAttachment = typeof employeeAttachments.$inferSelect;
 export type InsertEmployeeAttachment = z.infer<typeof insertEmployeeAttachmentSchema>;
 
+// Appointment Attachment - Terminanhaenge (FT 24)
+export const appointmentAttachments = mysqlTable("appointment_attachment", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  appointmentId: bigint("appointment_id", { mode: "number" }).notNull().references(() => appointments.id, { onDelete: "cascade" }),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  originalName: varchar("original_name", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 255 }).notNull(),
+  fileSize: int("file_size").notNull(),
+  storagePath: varchar("storage_path", { length: 500 }).notNull(),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAppointmentAttachmentSchema = createInsertSchema(appointmentAttachments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AppointmentAttachment = typeof appointmentAttachments.$inferSelect;
+export type InsertAppointmentAttachment = z.infer<typeof insertAppointmentAttachmentSchema>;
+
 // Appointment <-> Employee Relation (FT 01)
 export const appointmentEmployees = mysqlTable("appointment_employee", {
   appointmentId: bigint("appointment_id", { mode: "number" })

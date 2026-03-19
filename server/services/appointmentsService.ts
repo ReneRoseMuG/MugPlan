@@ -816,6 +816,7 @@ export async function listCalendarAppointments({
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds);
   const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
   const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
@@ -850,6 +851,7 @@ export async function listCalendarAppointments({
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+      appointmentAttachmentsCount: appointmentAttachmentCounts.get(row.appointment.id) ?? 0,
       appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],

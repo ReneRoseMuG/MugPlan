@@ -48,7 +48,7 @@ import {
   previewRemoveEmployeeCascade,
 } from "../../../server/services/tourEmployeesService";
 
-describe.skip("FT04 unit: tourEmployeesService preview flows", () => {
+describe("FT04 unit: tourEmployeesService preview flows", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     hoisted.getTourMock.mockResolvedValue({ id: 4, name: "Tour 4", color: "#225588" });
@@ -91,7 +91,7 @@ describe.skip("FT04 unit: tourEmployeesService preview flows", () => {
     hoisted.withAppointmentTransactionMock.mockImplementation(async (handler: (tx: object) => Promise<unknown>) => handler({}));
   });
 
-  it("maps eligible, already assigned and availability-blocked appointments for add preview", async () => {
+  it("maps eligible, already assigned and overlap-blocked appointments for add preview", async () => {
     hoisted.getAppointmentEmployeesByAppointmentIdsMock.mockResolvedValue([
       {
         appointmentId: 102,
@@ -102,13 +102,9 @@ describe.skip("FT04 unit: tourEmployeesService preview flows", () => {
         employee: { id: 12, fullName: "Grace Hopper" },
       },
     ]);
-    hoisted.previewEmployeeAvailabilityForDateRangeMock
-      .mockResolvedValueOnce({ availableEmployeeIds: [9], unavailableEmployees: [] })
-      .mockResolvedValueOnce({
-        availableEmployeeIds: [],
-        unavailableEmployees: [{ id: 9, fullName: "Ada Lovelace", reason: "absence" }],
-      });
-    hoisted.getConflictingEmployeesTxMock.mockResolvedValue([]);
+    hoisted.getConflictingEmployeesTxMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 9, fullName: "Ada Lovelace" }]);
 
     const preview = await previewAddEmployeeCascade(4, 9);
 
@@ -118,6 +114,10 @@ describe.skip("FT04 unit: tourEmployeesService preview flows", () => {
         startDate: "2099-07-01",
         endDate: null,
         tourName: "Tour 4",
+        customerNumber: null,
+        customerName: null,
+        projectName: null,
+        orderNumber: null,
         currentEmployees: [],
         eligible: true,
         conflictReason: null,
@@ -127,6 +127,10 @@ describe.skip("FT04 unit: tourEmployeesService preview flows", () => {
         startDate: "2099-07-02",
         endDate: null,
         tourName: "Tour 4",
+        customerNumber: null,
+        customerName: null,
+        projectName: null,
+        orderNumber: null,
         currentEmployees: [{ id: 9, fullName: "Ada Lovelace" }],
         eligible: false,
         conflictReason: "ALREADY_ASSIGNED",
@@ -136,9 +140,13 @@ describe.skip("FT04 unit: tourEmployeesService preview flows", () => {
         startDate: "2099-07-03",
         endDate: null,
         tourName: "Tour 4",
+        customerNumber: null,
+        customerName: null,
+        projectName: null,
+        orderNumber: null,
         currentEmployees: [{ id: 12, fullName: "Grace Hopper" }],
         eligible: false,
-        conflictReason: "EMPLOYEE_ABSENCE",
+        conflictReason: "EMPLOYEE_OVERLAP",
       },
     ]);
   });
@@ -170,6 +178,10 @@ describe.skip("FT04 unit: tourEmployeesService preview flows", () => {
         startDate: "2099-07-01",
         endDate: null,
         tourName: "Tour 4",
+        customerNumber: null,
+        customerName: null,
+        projectName: null,
+        orderNumber: null,
         currentEmployees: [{ id: 9, fullName: "Ada Lovelace" }],
         eligible: true,
         conflictReason: null,
