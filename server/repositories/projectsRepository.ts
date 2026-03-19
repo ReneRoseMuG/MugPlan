@@ -35,6 +35,7 @@ import { listProjectArticleRowsByProjectIds } from "./appointmentsRepository";
 import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
 export type ProjectWithTags = Project & { tags: Tag[] };
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
   year: "numeric",
@@ -677,6 +678,21 @@ export async function updateProjectWithVersion(
     const [order] = await tx.select().from(projectOrder).where(eq(projectOrder.projectId, id));
     return { kind: "updated" as const, project: mergeProjectWithOrder(project, order ?? null) };
   });
+}
+
+export async function setProjectOrderAmountTx(
+  tx: DbTx,
+  projectId: number,
+  amount: string,
+): Promise<void> {
+  await tx.execute(sql`
+    update project_order
+    set
+      amount = ${amount},
+      updated_at = now(),
+      version = version + 1
+    where project_id = ${projectId}
+  `);
 }
 
 export async function hasAppointmentsForProject(projectId: number): Promise<boolean> {

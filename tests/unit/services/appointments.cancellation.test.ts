@@ -3,12 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - Termin-Storno entfernt serverseitig alle Mitarbeiterzuweisungen.
+ * - Termin-Storno setzt den Projektbetrag bei projektgebundenen Terminen auf 0.00.
  * - Termin-Storno setzt den reservierten Storno-Tag innerhalb derselben Mutationskette.
  * - Bereits stornierte Termine werden idempotent in den Endzustand ueberfuehrt.
  * - Historische Termine bleiben auch im Storno-Pfad gesperrt.
  *
  * Fehlerfaelle:
  * - Stornierte Termine behalten zugewiesene Mitarbeiter.
+ * - Projektgebundene Stornos lassen den bisherigen Projektbetrag stehen.
  * - Ein zweiter Storno-Aufruf laesst Altbestand mit Tag plus Mitarbeitern unveraendert.
  * - Historische Termine koennen trotz Sperre storniert werden.
  *
@@ -25,15 +27,21 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   addAppointmentTagTx: vi.fn(),
 }));
 
+vi.mock("../../../server/repositories/projectsRepository", () => ({
+  setProjectOrderAmountTx: vi.fn(),
+}));
+
 vi.mock("../../../server/services/tagRelationsService", () => ({
   ensureAppointmentCancellationTag: vi.fn(),
 }));
 
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import * as projectsRepository from "../../../server/repositories/projectsRepository";
 import * as tagRelationsService from "../../../server/services/tagRelationsService";
 import { cancelAppointment, isAppointmentError } from "../../../server/services/appointmentsService";
 
 const appointmentsRepoMock = vi.mocked(appointmentsRepository);
+const projectsRepoMock = vi.mocked(projectsRepository);
 const tagRelationsServiceMock = vi.mocked(tagRelationsService);
 
 describe("FT01/FT28 unit: appointment cancellation service", () => {
@@ -59,10 +67,12 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
   it("clears employees and adds the reserved cancellation tag for active appointments", async () => {
     appointmentsRepoMock.getAppointment.mockResolvedValue({
       id: 401,
+      projectId: 901,
       startDate: new Date("2099-03-21T00:00:00.000Z"),
     } as any);
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 401,
+      projectId: 901,
       startDate: new Date("2099-03-21T00:00:00.000Z"),
     } as any);
 
@@ -70,22 +80,26 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
 
     expect(result).toEqual({ found: true });
     expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).toHaveBeenCalledWith(expect.anything(), 401, []);
+    expect(projectsRepoMock.setProjectOrderAmountTx).toHaveBeenCalledWith(expect.anything(), 901, "0.00");
     expect(appointmentsRepoMock.addAppointmentTagTx).toHaveBeenCalledWith(expect.anything(), 401, 77);
   });
 
-  it("repairs already-cancelled appointments by still clearing lingering employees", async () => {
+  it("repairs already-cancelled direct appointments without touching project amounts", async () => {
     appointmentsRepoMock.getAppointment.mockResolvedValue({
       id: 402,
+      projectId: null,
       startDate: new Date("2099-03-22T00:00:00.000Z"),
     } as any);
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 402,
+      projectId: null,
       startDate: new Date("2099-03-22T00:00:00.000Z"),
     } as any);
 
     await cancelAppointment(402, "ADMIN");
 
     expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).toHaveBeenCalledWith(expect.anything(), 402, []);
+    expect(projectsRepoMock.setProjectOrderAmountTx).not.toHaveBeenCalled();
     expect(appointmentsRepoMock.addAppointmentTagTx).toHaveBeenCalledWith(expect.anything(), 402, 77);
   });
 
@@ -109,6 +123,7 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
     expect(isAppointmentError(error)).toBe(true);
     expect(error).toMatchObject({ status: 409, code: "PAST_APPOINTMENT_READONLY" });
     expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).not.toHaveBeenCalled();
+    expect(projectsRepoMock.setProjectOrderAmountTx).not.toHaveBeenCalled();
     expect(appointmentsRepoMock.addAppointmentTagTx).not.toHaveBeenCalled();
   });
 });

@@ -5,12 +5,13 @@
  * - Der reservierte Termin-Storno-Tag bleibt im Public-Tagkatalog verborgen.
  * - Der systemverwaltete Vorlauflisten-Tag "Reklamation" wird im Public-Tagkatalog automatisch angelegt und bleibt sichtbar.
  * - Die Admin-Tagverwaltung normalisiert geschuetzte System-Tags auf isDefault=true und blockiert Update/Delete.
- * - Der Einweg-Storno setzt den reservierten Tag idempotent und macht den Termin readonly.
+ * - Der Einweg-Storno setzt den reservierten Tag idempotent, zieht Mitarbeiter ab und setzt den Projektbetrag auf 0.
  * - Das Entfernen des reservierten Tags ueber den generischen Termin-Tag-Pfad ist blockiert.
  *
  * Fehlerfaelle:
  * - "Storniert" erscheint in normalen Tag-Listen.
  * - Der reservierte Tag kann in den Stammdaten umbenannt oder geloescht werden.
+ * - Projektgebundene Stornos behalten den bisherigen Projektbetrag.
  * - Ein stornierter Termin bleibt ueber normale Mutationspfade veraenderbar.
  *
  * Ziel:
@@ -19,17 +20,19 @@
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
-import { appointmentEmployees, appointmentTags, tags } from "../../../shared/schema";
+import { appointmentEmployees, appointmentTags, projectOrder, tags } from "../../../shared/schema";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
+import * as projectsService from "../../../server/services/projectsService";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
   createCustomerFixture,
   createEmployeeFixture,
+  createProjectFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 
@@ -114,11 +117,18 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       await db.delete(appointmentTags).where(eq(appointmentTags.tagId, existingCancellationTag.id));
       await db.delete(tags).where(eq(tags.id, existingCancellationTag.id));
     }
-    const customer = await createCustomerFixture("FT28-CANCEL");
+    const project = await createProjectFixture({ prefix: "FT28-CANCEL" });
+    await projectsService.updateProject(project.id, {
+      version: project.version,
+      amount: "1234.50",
+      projectOrder: {
+        amount: "1234.50",
+      },
+    });
     const employeeA = await createEmployeeFixture("FT28-CANCEL-EMP");
     const employeeB = await createEmployeeFixture("FT28-CANCEL-EMP");
     const appointment = await createAppointmentFixture({
-      customerId: customer.id,
+      projectId: project.id,
       startDate: getRelativeBerlinDate(2),
       employeeIds: [employeeA.id, employeeB.id],
     });
@@ -139,6 +149,12 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       .from(appointmentEmployees)
       .where(eq(appointmentEmployees.appointmentId, appointment.id));
     expect(employeeRelationsAfterCancel).toEqual([]);
+    const [projectOrderAfterCancel] = await db
+      .select({ amount: projectOrder.amount })
+      .from(projectOrder)
+      .where(eq(projectOrder.projectId, project.id))
+      .limit(1);
+    expect(projectOrderAfterCancel?.amount).toBe("0.00");
 
     const [reservedTag] = await db
       .select({

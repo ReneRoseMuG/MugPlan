@@ -10,6 +10,7 @@ import {
 } from "@shared/projectArticleList";
 import * as customersRepository from "../repositories/customersRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
+import * as projectsRepository from "../repositories/projectsRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
@@ -1179,6 +1180,9 @@ export async function cancelAppointment(appointmentId: number, roleKey: Canonica
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);
+    if (existing.projectId != null) {
+      await projectsRepository.setProjectOrderAmountTx(tx, existing.projectId, "0.00");
+    }
     await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, cancellationTag.id);
     return { found: true } as const;
   });
