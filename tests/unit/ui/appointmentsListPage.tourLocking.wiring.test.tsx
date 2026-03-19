@@ -88,7 +88,8 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).toContain("header: renderSortHeader(\"Auftrag Nr.\", \"orderNumber\")");
     expect(source).toContain("id: \"project\"");
     expect(source).toContain("accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName)");
-    expect(source).toContain("cell: ({ row }) => <span className=\"font-medium\">{resolveAppointmentProjectDisplayName(row.projectName)}</span>");
+    expect(source).toContain("row.isCancelled ? (");
+    expect(source).toContain("Storniert");
   });
 
   it("wires show-all switch to toggle dateFrom against Berlin-today", () => {
@@ -126,5 +127,13 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(source).not.toContain("footerSlot={isEmbeddedListContext ? undefined : tableFooter}");
     expect(source).not.toContain("footerSlot={isEmbeddedListContext ? tableFooter : undefined}");
     expect(source).toContain("contentClassName=\"flex min-h-0 flex-col\"");
+  });
+
+  it("marks cancelled appointments visually and blocks remove-employee action for them", () => {
+    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
+    const source = readFileSync(filePath, "utf8");
+
+    expect(source).toContain("disabled={row.isCancelled}");
+    expect(source).toContain("rowClassName={(row) => row.isCancelled ? \"bg-amber-50/70 text-muted-foreground\" : undefined}");
   });
 });

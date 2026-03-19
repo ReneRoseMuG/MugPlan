@@ -89,6 +89,7 @@ export function CalendarWeekSpanningTile({
   const resolvedStartTime = appointment.startTime?.trim().slice(0, 5) || null;
   const resolvedCustomerNumber = appointment.customer.customerNumber.trim() || "-";
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
+  const isCancelled = appointment.isCancelled;
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
@@ -139,6 +140,13 @@ export function CalendarWeekSpanningTile({
 
   const bodyContent = (
     <div className="flex h-full min-h-0 flex-col bg-white/90 pb-1.5">
+      {isCancelled ? (
+        <div className="px-2 pt-1.5">
+          <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+            Storniert
+          </span>
+        </div>
+      ) : null}
       <div className="min-h-0 space-y-1.5 overflow-hidden">
         {mainContentPanels}
       </div>

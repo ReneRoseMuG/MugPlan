@@ -561,6 +561,17 @@ export function CalendarWeekView({
       return;
     }
 
+    if (appointment.isCancelled) {
+      console.info(`${logPrefix} drop blocked: cancelled appointment`, { appointmentId });
+      toast({
+        title: "Termin ist storniert",
+        description: "Stornierte Termine koennen nicht verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     if (appointment.isLocked && !isAdmin) {
       console.info(`${logPrefix} drop blocked`, { appointmentId });
       toast({
@@ -902,7 +913,7 @@ export function CalendarWeekView({
                                   ),
                                 ) + 1;
                               const isHighlighted = hoveredAppointmentId === appointment.id;
-                              const isSegmentLocked = appointment.isLocked && !isAdmin;
+                              const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
 
@@ -944,7 +955,7 @@ export function CalendarWeekView({
                               if (!appointment) return null;
 
                               const isHighlighted = hoveredAppointmentId === appointment.id;
-                              const isSegmentLocked = appointment.isLocked && !isAdmin;
+                              const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
 
@@ -996,7 +1007,7 @@ export function CalendarWeekView({
                                     if (!appointment) return null;
 
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
-                                    const isSegmentLocked = appointment.isLocked && !isAdmin;
+                                    const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isSegmentLocked && !isHistoricalSource;
 

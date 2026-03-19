@@ -13,6 +13,7 @@ router.get(api.calendarAppointments.list.path, appointmentsController.listCalend
 router.post(api.appointments.create.path, appointmentsController.createAppointment);
 router.patch(api.appointments.update.path, appointmentsController.updateAppointment);
 router.patch(api.appointments.setDisplayMode.path, appointmentsController.setAppointmentDisplayMode);
+router.post(api.appointments.cancel.path, appointmentsController.cancelAppointment);
 router.delete(api.appointments.delete.path, appointmentsController.deleteAppointment);
 router.delete(api.appointmentEmployees.remove.path, appointmentsController.removeEmployeeFromAppointment);
 router.get(api.appointmentTags.list.path, appointmentsController.listAppointmentTags);

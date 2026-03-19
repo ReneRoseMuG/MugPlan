@@ -18,11 +18,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoisted = vi.hoisted(() => ({
   listAppointmentsForMonitoringMock: vi.fn(),
+  getAppointmentTagsByAppointmentIdsMock: vi.fn(),
   getGlobalSettingValueMock: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   listAppointmentsForMonitoring: hoisted.listAppointmentsForMonitoringMock,
+  getAppointmentTagsByAppointmentIds: hoisted.getAppointmentTagsByAppointmentIdsMock,
 }));
 
 vi.mock("../../../server/services/userSettingsService", () => ({
@@ -36,6 +38,7 @@ describe("FT31 unit: monitoringService", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2098-12-31T12:00:00.000Z"));
     vi.clearAllMocks();
+    hoisted.getAppointmentTagsByAppointmentIdsMock.mockResolvedValue(new Map());
     hoisted.getGlobalSettingValueMock.mockImplementation(async (key: string) => {
       if (key === "monitoring.tr01.allAppointments") return false;
       if (key === "monitoring.tr01.horizonDays") return 7;

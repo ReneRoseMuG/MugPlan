@@ -70,8 +70,26 @@ describe("FT01 appointment form save and employees panel wiring", () => {
     expect(source).toContain("if (parsed?.code === \"VALIDATION_ERROR\")");
     expect(source).toContain("body: JSON.stringify({ version })");
     expect(source).toContain("if (err.code === \"PAST_APPOINTMENT_READONLY\" || err.status === 403)");
+    expect(source).toContain("if (err.code === \"CANCELLED_APPOINTMENT_READONLY\")");
     expect(source).toContain("if (err.code === \"VERSION_CONFLICT\")");
     expect(source).toContain("if (err.code === \"VALIDATION_ERROR\")");
+  });
+
+  it("wires a dedicated one-way cancellation action with its own API endpoint", () => {
+    expect(source).toContain("const cancelAppointmentMutation = useMutation({");
+    expect(source).toContain("/api/appointments/${targetAppointmentId}/cancel");
+    expect(source).toContain("CANCELLATION_TAG_NOT_CONFIGURED");
+    expect(source).toContain("button-cancel-appointment");
+    expect(source).toContain("Termin stornieren?");
+    expect(source).toContain("Termin storniert");
+  });
+
+  it("treats cancelled appointments as readonly across submit and footer actions", () => {
+    expect(source).toContain("const isMutationLocked = isLocked || isCancelled;");
+    expect(source).toContain("onSubmit={!isMutationLocked ? submitAppointment : undefined}");
+    expect(source).toContain("disabled={isMutationLocked || cancelAppointmentMutation.isPending}");
+    expect(source).toContain("disabled={isMutationLocked || deleteAppointmentMutation.isPending}");
+    expect(source).toContain("Stornierte Termine koennen nicht mehr bearbeitet werden.");
   });
 
   it("renders employee picker as header action button with plus icon inside AppointmentEmployeeSlot", () => {

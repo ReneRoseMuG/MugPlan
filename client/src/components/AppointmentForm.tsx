@@ -82,6 +82,7 @@ interface AppointmentDetail {
   endDate: string | null;
   endTime: string | null;
   employees: Employee[];
+  isCancelled: boolean;
 }
 
 type AppointmentFormProject = Project & {
@@ -276,6 +277,7 @@ export function AppointmentForm({
     employeeIds: number[];
   } | null>(null);
   const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -473,6 +475,64 @@ export function AppointmentForm({
       toast({ title: "Tag konnte nicht entfernt werden", description: error.message, variant: "destructive" });
     },
   });
+  const cancelAppointmentMutation = useMutation({
+    mutationFn: async ({ appointmentId: targetAppointmentId }: { appointmentId: number; projectId: number | null }) => {
+      const response = await fetch(`/api/appointments/${targetAppointmentId}/cancel`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        return targetAppointmentId;
+      }
+
+      const rawBody = await response.text();
+      const parsed = parseErrorPayload(rawBody);
+      if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
+        throw buildApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
+      }
+      if (parsed?.code === "CANCELLATION_TAG_NOT_CONFIGURED") {
+        throw buildApiError(
+          "Der reservierte Storno-Tag ist nicht konfiguriert.",
+          response.status,
+          "CANCELLATION_TAG_NOT_CONFIGURED",
+        );
+      }
+
+      throw buildApiError(parsed?.message ?? (response.statusText || "Stornieren fehlgeschlagen"), response.status, parsed?.code);
+    },
+    onSuccess: async () => {
+      if (!appointmentId) return;
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await invalidateRelatedAppointmentQueries(selectedProjectId);
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Termin storniert" });
+    },
+    onError: (error) => {
+      const err = error as AppointmentApiError;
+      if (err.code === "PAST_APPOINTMENT_READONLY") {
+        toast({
+          title: "Stornieren nicht moeglich",
+          description: "Termin ist gesperrt.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "CANCELLATION_TAG_NOT_CONFIGURED") {
+        toast({
+          title: "Stornieren nicht moeglich",
+          description: "Der reservierte Storno-Tag ist in den Stammdaten nicht vorhanden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Stornieren nicht moeglich",
+        description: err.message || "Termin konnte nicht storniert werden.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const isLoading =
     projectsLoading || customersLoading || toursLoading || teamsLoading || employeesLoading || appointmentLoading;
@@ -622,8 +682,10 @@ export function AppointmentForm({
 
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
-  const isProjectReadOnly = isLocked || readOnlyFields?.includes("project") === true;
-  const isCustomerReadOnly = isLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
+  const isCancelled = appointmentDetail?.isCancelled === true;
+  const isMutationLocked = isLocked || isCancelled;
+  const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
+  const isCustomerReadOnly = isMutationLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
   const closeAction = onBack ?? onCancel;
   const isFormDirty = initialFormSnapshot !== null && buildFormSnapshot({
     projectId: selectedProjectId,
@@ -1224,7 +1286,12 @@ export function AppointmentForm({
   };
 
   const submitAppointment = async () => {
-    if (isLocked) {
+    if (isMutationLocked) {
+      if (isCancelled) {
+        toast({ title: "Termin ist storniert", description: "Stornierte Termine koennen nicht mehr bearbeitet werden.", variant: "destructive" });
+        console.info(`${logPrefix} save blocked: cancelled appointment`);
+        return;
+      }
       toast({ title: "Termin ist gesperrt", description: "Nur Admins dürfen vergangene Termine ändern.", variant: "destructive" });
       console.info(`${logPrefix} save blocked: locked appointment`);
       return;
@@ -1288,6 +1355,9 @@ export function AppointmentForm({
         if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
           throw buildApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
         }
+        if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
+          throw buildApiError("Stornierte Termine koennen nicht geloescht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
+        }
         if (parsed?.code === "VERSION_CONFLICT") {
           throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
         }
@@ -1339,6 +1409,14 @@ export function AppointmentForm({
         toast({
           title: "Löschen nicht möglich",
           description: "Termin ist gesperrt.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "CANCELLED_APPOINTMENT_READONLY") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Stornierte Termine koennen nicht geloescht werden.",
           variant: "destructive",
         });
         return;
@@ -1505,6 +1583,14 @@ export function AppointmentForm({
           });
           return;
         }
+        if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
+          toast({
+            title: "Speichern nicht moeglich",
+            description: "Stornierte Termine koennen nicht mehr bearbeitet werden.",
+            variant: "destructive",
+          });
+          return;
+        }
         if (parsed?.code === "VERSION_CONFLICT") {
           console.info(`${logPrefix} submit blocked: VERSION_CONFLICT`, { status: response.status });
           toast({
@@ -1613,25 +1699,46 @@ export function AppointmentForm({
       ) : undefined}
       onClose={handleRequestClose}
       onCancel={handleRequestClose}
-      onSubmit={!isLocked ? submitAppointment : undefined}
+      onSubmit={!isMutationLocked ? submitAppointment : undefined}
       isSaving={isSaving}
       saveLabel={isEditing ? "Speichern" : "Termin erstellen"}
       closeOnSubmitSuccess={false}
       testIdPrefix="appointment"
       footerActions={
         isEditing && appointmentId ? (
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setDeleteConfirmOpen(true)}
-            disabled={isLocked || deleteAppointmentMutation.isPending}
-            data-testid="button-delete-appointment"
-          >
-            Termin loeschen
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {!isCancelled ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCancelConfirmOpen(true)}
+                disabled={isMutationLocked || cancelAppointmentMutation.isPending}
+                data-testid="button-cancel-appointment"
+              >
+                {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={isMutationLocked || deleteAppointmentMutation.isPending}
+              data-testid="button-delete-appointment"
+            >
+              Termin loeschen
+            </Button>
+          </div>
         ) : undefined
       }
     >
+      {isCancelled && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Termin storniert</AlertTitle>
+          <AlertDescription>
+            Dieser Termin wurde als Storno markiert und kann nicht mehr bearbeitet, verschoben oder geloescht werden.
+          </AlertDescription>
+        </Alert>
+      )}
       {isLocked && (
         <Alert variant="destructive" className="mb-6">
           <AlertTitle>Termin gesperrt</AlertTitle>
@@ -1657,7 +1764,7 @@ export function AppointmentForm({
                   type="date"
                   value={startDate}
                   onChange={(event) => setStartDate(event.target.value)}
-                  disabled={isLocked}
+                  disabled={isMutationLocked}
                   data-testid="input-start-date"
                 />
               </div>
@@ -1670,7 +1777,7 @@ export function AppointmentForm({
                     value={endDate}
                     min={startDate}
                     onChange={(event) => setEndDate(event.target.value)}
-                    disabled={isLocked}
+                    disabled={isMutationLocked}
                     data-testid="input-end-date"
                   />
                 ) : (
@@ -1679,7 +1786,7 @@ export function AppointmentForm({
                     size="sm"
                     className="w-full justify-start text-muted-foreground"
                     onClick={() => setIsEndDateEnabled(true)}
-                    disabled={isLocked}
+                    disabled={isMutationLocked}
                     data-testid="button-enable-end-date"
                   >
                     Enddatum hinzufügen
@@ -1699,7 +1806,7 @@ export function AppointmentForm({
                     value={startTimeValue}
                     onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
                     placeholder="HH:mm"
-                    disabled={isLocked}
+                    disabled={isMutationLocked}
                     data-testid="input-start-time"
                   />
                 ) : (
@@ -1708,7 +1815,7 @@ export function AppointmentForm({
                     size="sm"
                     className="w-full justify-start text-muted-foreground"
                     onClick={() => setStartTimeEnabled(true)}
-                    disabled={isLocked}
+                    disabled={isMutationLocked}
                     data-testid="button-enable-start-time"
                   >
                     Startzeit hinzufügen
@@ -1769,7 +1876,7 @@ export function AppointmentForm({
               name={selectedTour.name}
               color={selectedTour.color}
               members={tourMembersById.get(selectedTour.id) ?? []}
-              action={isLocked ? "none" : "remove"}
+              action={isMutationLocked ? "none" : "remove"}
               onRemove={() => handleTourChange(null)}
               fullWidth
               testId="badge-tour"
@@ -1780,7 +1887,7 @@ export function AppointmentForm({
             teams={teams}
             assignedEmployees={assignedEmployees}
             teamMembersById={teamMembersById}
-            isLocked={isLocked}
+            isLocked={isMutationLocked}
             onAssignTeam={handleAssignTeam}
             onAddEmployee={() => setEmployeePickerOpen(true)}
             onRemoveEmployee={removeEmployee}
@@ -1795,7 +1902,7 @@ export function AppointmentForm({
               onFileSelected={(file) => {
                 void runDocumentExtraction(file);
               }}
-              disabled={isLocked}
+              disabled={isMutationLocked}
               isProcessing={documentExtractionLoading}
             />
           ) : null}
@@ -1815,7 +1922,7 @@ export function AppointmentForm({
             availableTags={availableTags}
             isLoading={isEditing ? appointmentTagsLoading : false}
             loadErrorMessage={isEditing && appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
-            canEdit={canManageAppointmentTags && !isLocked}
+            canEdit={canManageAppointmentTags && !isMutationLocked}
             title="Tags"
             addDialogTitle="Tag zu Termin hinzufügen"
             testIdPrefix="appointment-tag-picker"
@@ -2006,6 +2113,29 @@ export function AppointmentForm({
               }}
             >
               Trotzdem speichern
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termin stornieren?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Der Termin wird dauerhaft als storniert markiert. Eine Reaktivierung ist ueber die Anwendung nicht vorgesehen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={cancelAppointmentMutation.isPending || !appointmentId}
+              onClick={() => {
+                if (!appointmentId) return;
+                cancelAppointmentMutation.mutate({ appointmentId, projectId: selectedProjectId });
+              }}
+            >
+              {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

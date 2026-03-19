@@ -53,6 +53,11 @@ function toInsertId(result: unknown): number {
   return Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
 }
 
+function isDuplicateKeyError(error: unknown): boolean {
+  const mysqlError = error as { code?: string; errno?: number } | null;
+  return mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062;
+}
+
 async function classifyVersionedMutation(tableName: string, id: number, affectedRows: number): Promise<"ok" | "not_found" | "version_conflict"> {
   if (affectedRows > 0) return "ok";
   const [exists] = await db.execute(sql`select id from ${sql.raw(tableName)} where id = ${id} limit 1`);
@@ -428,11 +433,11 @@ export async function listTags(): Promise<Tag[]> {
     .orderBy(asc(tags.name), asc(tags.id));
 }
 
-export async function createTag(input: { name: string; color: string }): Promise<Tag> {
+export async function createTag(input: { name: string; color: string; isDefault?: boolean }): Promise<Tag> {
   const result = await db.insert(tags).values({
     name: input.name,
     color: input.color,
-    isDefault: false,
+    isDefault: input.isDefault ?? false,
     version: 1,
   });
   const id = toInsertId(result);
@@ -440,16 +445,105 @@ export async function createTag(input: { name: string; color: string }): Promise
   return row;
 }
 
+export async function getTagById(id: number): Promise<Tag | null> {
+  const [row] = await db.select().from(tags).where(eq(tags.id, id)).limit(1);
+  return row ?? null;
+}
+
+export async function getTagByNormalizedName(name: string): Promise<Tag | null> {
+  const normalizedName = name.trim();
+  if (normalizedName.length === 0) return null;
+
+  const [row] = await db
+    .select()
+    .from(tags)
+    .where(sql`lower(trim(${tags.name})) = lower(trim(${normalizedName}))`)
+    .limit(1);
+
+  return row ?? null;
+}
+
+export async function ensureTagDefinition(input: { name: string; color?: string; isDefault?: boolean }): Promise<Tag> {
+  const normalizedName = input.name.trim();
+  if (normalizedName.length === 0) {
+    throw new Error("Tag name is required");
+  }
+
+  const existing = await getTagByNormalizedName(normalizedName);
+  if (!existing) {
+    if (!input.color) {
+      throw new Error(`Tag color is required for creation: ${normalizedName}`);
+    }
+    try {
+      return await createTag({
+        name: normalizedName,
+        color: input.color,
+        isDefault: input.isDefault,
+      });
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) {
+        throw error;
+      }
+      const duplicate = await getTagByNormalizedName(normalizedName);
+      if (!duplicate) {
+        throw error;
+      }
+      const colorMatches = input.color === undefined
+        || duplicate.color.toLocaleLowerCase("de") === input.color.toLocaleLowerCase("de");
+      const isDefaultMatches = input.isDefault === undefined || duplicate.isDefault === input.isDefault;
+      if (duplicate.name === normalizedName && colorMatches && isDefaultMatches) {
+        return duplicate;
+      }
+      const updatedDuplicate = await updateTagWithVersion(duplicate.id, duplicate.version, {
+        name: normalizedName,
+        ...(input.color !== undefined ? { color: input.color } : {}),
+        ...(input.isDefault !== undefined ? { isDefault: input.isDefault } : {}),
+      });
+      if (updatedDuplicate.kind === "updated") {
+        return updatedDuplicate.row;
+      }
+      const refreshedDuplicate = await getTagByNormalizedName(normalizedName);
+      if (!refreshedDuplicate) {
+        throw error;
+      }
+      return refreshedDuplicate;
+    }
+  }
+
+  const colorMatches = input.color === undefined
+    || existing.color.toLocaleLowerCase("de") === input.color.toLocaleLowerCase("de");
+  const isDefaultMatches = input.isDefault === undefined || existing.isDefault === input.isDefault;
+  if (existing.name === normalizedName && colorMatches && isDefaultMatches) {
+    return existing;
+  }
+
+  const updated = await updateTagWithVersion(existing.id, existing.version, {
+    name: normalizedName,
+    ...(input.color !== undefined ? { color: input.color } : {}),
+    ...(input.isDefault !== undefined ? { isDefault: input.isDefault } : {}),
+  });
+  if (updated.kind === "updated") {
+    return updated.row;
+  }
+
+  const refreshed = await getTagByNormalizedName(normalizedName);
+  if (!refreshed) {
+    throw new Error(`Tag could not be ensured: ${normalizedName}`);
+  }
+  return refreshed;
+}
+
 export async function updateTagWithVersion(
   id: number,
   expectedVersion: number,
-  input: { name?: string; color?: string },
+  input: { name?: string; color?: string; isDefault?: boolean },
 ): Promise<VersionedUpdateResult<Tag>> {
   const result = await db.execute(sql`
     update tags
     set
       name = if(${input.name === undefined}, name, ${input.name ?? null}),
       color = if(${input.color === undefined}, color, ${input.color ?? null}),
+      is_default = if(${input.isDefault === undefined}, is_default, ${input.isDefault ?? null}),
       updated_at = now(),
       version = version + 1
     where id = ${id}

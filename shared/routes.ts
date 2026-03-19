@@ -226,6 +226,7 @@ const entityAppointmentItemSchema = z.object({
   projectTags: z.array(tagSchema),
   displayMode: z.enum(appointmentDisplayModes),
   isLocked: z.boolean(),
+  isCancelled: z.boolean(),
 });
 
 const projectOrderResponseSchema = z.object({
@@ -326,6 +327,8 @@ const projectBoardListResponseSchema = pagedListMetaSchema.extend({
   items: z.array(projectBoardListItemSchema),
 });
 
+const appointmentCancellationReportStateSchema = z.enum(["default", "contains_cancelled", "cancelled_only"]);
+
 const reportVorlauflisteItemSchema = z.object({
   projectId: z.number().int().positive(),
   tags: z.array(tagSchema),
@@ -343,6 +346,7 @@ const reportVorlauflisteItemSchema = z.object({
   plannedWeek: z.string().nullable(),
   actualDate: z.string(),
   projectDescription: z.string().nullable(),
+  reportState: appointmentCancellationReportStateSchema,
 });
 
 const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
@@ -855,10 +859,11 @@ export const api = {
           appointmentNotesCount: z.number().int().min(0),
           appointmentTags: z.array(tagSchema),
           customerTags: z.array(tagSchema),
-          projectTags: z.array(tagSchema),
-          displayMode: z.enum(appointmentDisplayModes),
-          isLocked: z.boolean(),
-          allDay: z.boolean(),
+              projectTags: z.array(tagSchema),
+              displayMode: z.enum(appointmentDisplayModes),
+              isLocked: z.boolean(),
+              isCancelled: z.boolean(),
+              allDay: z.boolean(),
               singleEmployee: z.boolean(),
             }),
           ),
@@ -884,6 +889,7 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
+          isCancelled: z.boolean(),
         }).extend(appointmentTagGroupsSchema.shape),
         404: errorSchemas.notFound,
       },
@@ -966,6 +972,7 @@ export const api = {
             "EMPLOYEE_OVERLAP_CONFLICT",
             "INACTIVE_ENTITY_ASSIGNMENT",
             "PAST_APPOINTMENT_READONLY",
+            "CANCELLED_APPOINTMENT_READONLY",
           ]),
           message: z.string().optional(),
           conflictEmployees: z.array(z.object({
@@ -986,7 +993,7 @@ export const api = {
         204: z.void(),
         403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY"]) }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLED_APPOINTMENT_READONLY"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -1005,8 +1012,18 @@ export const api = {
         }),
         403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY"]) }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLED_APPOINTMENT_READONLY"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    cancel: {
+      method: "POST" as const,
+      path: "/api/appointments/:id/cancel",
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["PAST_APPOINTMENT_READONLY", "CANCELLATION_TAG_NOT_CONFIGURED"]) }),
       },
     },
   },
@@ -1029,7 +1046,7 @@ export const api = {
         201: tagRelationItemSchema,
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
+        409: z.object({ code: z.enum(["PAST_APPOINTMENT_READONLY", "CANCELLATION_TAG_PROTECTED", "CANCELLED_APPOINTMENT_READONLY"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -1043,7 +1060,7 @@ export const api = {
         204: z.void(),
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY"]) }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLATION_TAG_PROTECTED", "CANCELLED_APPOINTMENT_READONLY"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -1153,6 +1170,7 @@ export const api = {
               }),
             ),
             isLocked: z.boolean(),
+            isCancelled: z.boolean(),
           }),
         ),
       },

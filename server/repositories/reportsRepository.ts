@@ -1,4 +1,5 @@
 import { and, asc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
+import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
 
 import { db } from "../db";
 import {
@@ -15,7 +16,11 @@ import {
 } from "@shared/schema";
 import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
 import { resolveReportComponentSlot, stripReportHtmlToText } from "../lib/reportVorlaufliste";
-import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
+import {
+  hasAppointmentCancellationTag,
+  hasManagedReportExclusionTag,
+} from "../lib/appointmentCancellation";
+import { getAppointmentTagsByAppointmentIds, getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
 export type VorlauflisteRow = {
   projectId: number;
@@ -34,6 +39,7 @@ export type VorlauflisteRow = {
   plannedWeek: string | null;
   actualDate: string;
   projectDescription: string | null;
+  reportState: AppointmentCancellationReportState;
 };
 
 export type VorlauflistePagedResult = {
@@ -154,15 +160,104 @@ export async function getVorlauflistePaged(params: {
   pageSize: number;
 }): Promise<VorlauflistePagedResult> {
   const appointmentConditions = buildAppointmentConditions(params);
-
-  const totalRows = await db
+  const projectAppointmentRows = await db
     .select({
-      count: sql<number>`count(distinct ${appointments.projectId})`,
+      appointmentId: appointments.id,
+      projectId: appointments.projectId,
+      startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
     })
     .from(appointments)
-    .where(and(...appointmentConditions));
+    .where(and(...appointmentConditions))
+    .orderBy(asc(appointments.startDate), asc(appointments.id));
 
-  const total = Number(totalRows[0]?.count ?? 0);
+  const normalizedAppointmentRows = projectAppointmentRows.filter((row): row is {
+    appointmentId: number;
+    projectId: number;
+    startDate: string;
+  } => typeof row.projectId === "number");
+
+  if (normalizedAppointmentRows.length === 0) {
+    return {
+      page: params.page,
+      pageSize: params.pageSize,
+      total: 0,
+      totalPages: 0,
+      items: [],
+    };
+  }
+
+  const appointmentTagsByAppointmentId = await getAppointmentTagsByAppointmentIds(
+    normalizedAppointmentRows.map((row) => row.appointmentId),
+  );
+  const reportEligibleAppointmentRows = normalizedAppointmentRows.filter(
+    (row) => !hasManagedReportExclusionTag(appointmentTagsByAppointmentId.get(row.appointmentId) ?? []),
+  );
+  if (reportEligibleAppointmentRows.length === 0) {
+    return {
+      page: params.page,
+      pageSize: params.pageSize,
+      total: 0,
+      totalPages: 0,
+      items: [],
+    };
+  }
+
+  const tagsByProjectId = await getProjectTagsByProjectIds(
+    Array.from(new Set(reportEligibleAppointmentRows.map((row) => row.projectId))),
+  );
+  const appointmentMetaByProjectId = new Map<number, {
+    sortDate: string;
+    actualDate: string;
+    reportState: AppointmentCancellationReportState;
+  }>();
+  const appointmentAccumulatorByProjectId = new Map<number, {
+    firstActiveDate: string | null;
+    firstCancelledDate: string | null;
+    hasActive: boolean;
+    hasCancelled: boolean;
+  }>();
+
+  for (const row of reportEligibleAppointmentRows) {
+    const projectTags = tagsByProjectId.get(row.projectId) ?? [];
+    if (hasManagedReportExclusionTag(projectTags)) {
+      continue;
+    }
+
+    const current = appointmentAccumulatorByProjectId.get(row.projectId) ?? {
+      firstActiveDate: null,
+      firstCancelledDate: null,
+      hasActive: false,
+      hasCancelled: false,
+    };
+    const isCancelled = hasAppointmentCancellationTag(appointmentTagsByAppointmentId.get(row.appointmentId) ?? []);
+
+    if (isCancelled) {
+      current.hasCancelled = true;
+      current.firstCancelledDate ??= row.startDate;
+    } else {
+      current.hasActive = true;
+      current.firstActiveDate ??= row.startDate;
+    }
+
+    appointmentAccumulatorByProjectId.set(row.projectId, current);
+
+    const actualDate = current.firstActiveDate ?? current.firstCancelledDate;
+    if (!actualDate) continue;
+
+    appointmentMetaByProjectId.set(row.projectId, {
+      sortDate: actualDate,
+      actualDate,
+      reportState: current.hasCancelled
+        ? (current.hasActive ? "contains_cancelled" : "cancelled_only")
+        : "default",
+    });
+  }
+
+  const sortedProjectIds = Array.from(appointmentMetaByProjectId.entries())
+    .sort((left, right) => left[1].sortDate.localeCompare(right[1].sortDate, "de") || left[0] - right[0])
+    .map(([projectId]) => projectId);
+
+  const total = sortedProjectIds.length;
   if (total === 0) {
     return {
       page: params.page,
@@ -174,22 +269,7 @@ export async function getVorlauflistePaged(params: {
   }
 
   const offset = (params.page - 1) * params.pageSize;
-  const pagedProjectRows = await db
-    .select({
-      projectId: appointments.projectId,
-      actualDate: sql<string>`min(${appointments.startDate})`,
-    })
-    .from(appointments)
-    .where(and(...appointmentConditions))
-    .groupBy(appointments.projectId)
-    .orderBy(sql`min(${appointments.startDate}) asc`, asc(appointments.projectId))
-    .limit(params.pageSize)
-    .offset(offset);
-
-  const projectIds = pagedProjectRows
-    .map((row) => row.projectId)
-    .filter((value): value is number => typeof value === "number");
-
+  const projectIds = sortedProjectIds.slice(offset, offset + params.pageSize);
   if (projectIds.length === 0) {
     return {
       page: params.page,
@@ -227,7 +307,6 @@ export async function getVorlauflistePaged(params: {
     .where(inArray(projectOrderItems.projectId, projectIds));
 
   const projectById = new Map(projectRows.map((row) => [row.project.id, row] as const));
-  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   const bucketsByProjectId = new Map<number, ReportArticleBuckets>();
   const selectedProductCategoryIds = new Set(params.productCategoryIds);
   const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
@@ -268,17 +347,6 @@ export async function getVorlauflistePaged(params: {
     bucketsByProjectId.set(projectId, buckets);
   }
 
-  const actualDateByProjectId = new Map(
-    pagedProjectRows
-      .map((row) => {
-        const projectId = row.projectId;
-        const actualDate = normalizeDateOnly(row.actualDate);
-        if (typeof projectId !== "number" || actualDate === null) return null;
-        return [projectId, actualDate] as const;
-      })
-      .filter((entry): entry is readonly [number, string] => entry !== null),
-  );
-
   return {
     page: params.page,
     pageSize: params.pageSize,
@@ -287,8 +355,8 @@ export async function getVorlauflistePaged(params: {
     items: projectIds
       .map((projectId) => {
         const row = projectById.get(projectId);
-        const actualDate = actualDateByProjectId.get(projectId);
-        if (!row || !actualDate) return null;
+        const appointmentMeta = appointmentMetaByProjectId.get(projectId);
+        if (!row || !appointmentMeta) return null;
         const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
         const projectTags = tagsByProjectId.get(projectId) ?? [];
 
@@ -307,8 +375,9 @@ export async function getVorlauflistePaged(params: {
           roof: joinSorted(buckets.roof),
           plannedDateText: row.order?.plannedDateText ?? null,
           plannedWeek: row.order?.plannedWeek ?? null,
-          actualDate,
+          actualDate: appointmentMeta.actualDate,
           projectDescription: stripReportHtmlToText(row.project.descriptionMd),
+          reportState: appointmentMeta.reportState,
         };
       })
       .filter((entry): entry is VorlauflisteRow => entry !== null),

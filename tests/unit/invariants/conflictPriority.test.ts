@@ -4,6 +4,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   withAppointmentTransaction: vi.fn(),
   getAppointmentTx: vi.fn(),
   getProjectTx: vi.fn(),
+  getAppointmentTagsByAppointmentIds: vi.fn(),
   getConflictingEmployeesTx: vi.fn(),
   getInactiveEmployeesByIdsTx: vi.fn(),
   hasEmployeeDateOverlapTx: vi.fn(),
@@ -57,6 +58,7 @@ describe("PKG-01 Invariant: conflict priority", () => {
       customerId: 301,
       name: "Project 201",
     } as any);
+    appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
     customersRepoMock.getCustomer.mockResolvedValue({
       id: 301,
       customerNumber: "C-301",

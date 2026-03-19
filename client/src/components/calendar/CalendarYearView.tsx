@@ -146,7 +146,7 @@ export function CalendarYearView({
                           appointment={appointment}
                           isFirstDay={true}
                           isLastDay={true}
-                          isLocked={appointment.isLocked && !isAdmin}
+                          isLocked={appointment.isCancelled || (appointment.isLocked && !isAdmin)}
                           onDoubleClick={() => handleAppointmentClick(appointment.id)}
                         />
                       ))}

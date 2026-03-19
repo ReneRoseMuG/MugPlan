@@ -506,6 +506,7 @@ export function CustomersPage({
                     projectTags: [],
                     displayMode: "compact",
                     isLocked: false,
+                    isCancelled: false,
                     version: row.customer.version,
                   }, { sizeProfile: "sidebarTable" });
                 }

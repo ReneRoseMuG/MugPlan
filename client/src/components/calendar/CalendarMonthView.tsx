@@ -263,6 +263,17 @@ export function CalendarMonthView({
       return;
     }
 
+    if (appointment.isCancelled) {
+      console.info(`${logPrefix} drop blocked: cancelled appointment`, { appointmentId });
+      toast({
+        title: "Termin ist storniert",
+        description: "Stornierte Termine koennen nicht verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     if (appointment.isLocked && !isAdmin) {
       console.info(`${logPrefix} drop blocked`, { appointmentId });
       toast({
@@ -498,7 +509,7 @@ export function CalendarMonthView({
                                     const segmentStart = addDays(weekStart, item.startIndex);
                                     const segmentEnd = addDays(weekStart, item.endIndex);
                                     const position = getLaneItemPosition(item.startIndex, item.endIndex);
-                                    const isLocked = appointment.isLocked && !isAdmin;
+                                    const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDrag = !isLocked && !isHistoricalSource;
 

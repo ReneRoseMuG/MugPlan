@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
+import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import {
   appointmentAttachments,
   appointmentNotes,
@@ -21,6 +22,7 @@ import {
   projectTags,
   projects,
   products,
+  tags,
   tours,
   type AppointmentAttachment,
   type Appointment,
@@ -38,6 +40,16 @@ import {
 
 const logPrefix = "[appointments-repo]";
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function buildExcludeCancelledAppointmentCondition() {
+  return sql`not exists (
+    select 1
+    from ${appointmentTags}
+    inner join ${tags} on ${appointmentTags.tagId} = ${tags.id}
+    where ${appointmentTags.appointmentId} = ${appointments.id}
+      and lower(trim(${tags.name})) = lower(trim(${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME}))
+  )`;
+}
 
 export type AppointmentListFilters = {
   employeeId?: number;
@@ -361,6 +373,7 @@ export async function hasEmployeeDateOverlapTx(
     inArray(appointmentEmployees.employeeId, normalizedEmployeeIds),
     lte(appointments.startDate, effectiveEndDate),
     gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
+    buildExcludeCancelledAppointmentCondition(),
   ];
   if (params.startTimeHour == null) {
     conditions.push(isNull(appointments.startTime));
@@ -400,6 +413,7 @@ export async function getConflictingEmployeesTx(
     inArray(appointmentEmployees.employeeId, normalizedEmployeeIds),
     lte(appointments.startDate, effectiveEndDate),
     gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
+    buildExcludeCancelledAppointmentCondition(),
   ];
   if (params.startTimeHour == null) {
     conditions.push(isNull(appointments.startTime));

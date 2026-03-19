@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { InsertCustomer } from "@shared/schema";
-import { componentCategories, components, productCategories, products, projectTags, projects, tags } from "@shared/schema";
+import { appointmentTags, componentCategories, components, productCategories, products, projectTags, projects, tags } from "@shared/schema";
 import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
 import * as employeeAbsencesService from "../../server/services/employeeAbsencesService";
@@ -77,6 +77,17 @@ export async function createTagFixture(prefix = "TAG") {
   });
   const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
   return { id: insertedId, name: token };
+}
+
+export async function createExactTagFixture(name: string, color = "#2563eb") {
+  const result = await db.insert(tags).values({
+    name,
+    color,
+    isDefault: false,
+    version: 1,
+  });
+  const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
+  return { id: insertedId, name };
 }
 
 export async function ensureComponentCategoryFixture(name: string) {
@@ -216,6 +227,14 @@ export async function createComponentFixture(params: {
 export async function attachProjectTagFixture(projectId: number, tagId: number) {
   await db.insert(projectTags).values({
     projectId,
+    tagId,
+    version: 1,
+  });
+}
+
+export async function attachAppointmentTagFixture(appointmentId: number, tagId: number) {
+  await db.insert(appointmentTags).values({
+    appointmentId,
     tagId,
     version: 1,
   });

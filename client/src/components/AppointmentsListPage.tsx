@@ -287,7 +287,16 @@ export function AppointmentsListPage({
         header: "Projekt",
         accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName),
         minWidth: 220,
-        cell: ({ row }) => <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>,
+        cell: ({ row }) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>
+            {row.isCancelled ? (
+              <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                Storniert
+              </span>
+            ) : null}
+          </div>
+        ),
       },
       {
         id: "customerNumber",
@@ -325,6 +334,7 @@ export function AppointmentsListPage({
             variant="ghost"
             size="sm"
             data-testid={`button-remove-employee-from-appointment-${row.id}`}
+            disabled={row.isCancelled}
             onClick={(e) => { e.stopPropagation(); onRemoveEmployee(row.id); }}
             title="Mitarbeiter von Termin entfernen"
           >
@@ -446,6 +456,7 @@ export function AppointmentsListPage({
           rowKey={(row) => row.id}
           onRowDoubleClick={(row) => onOpenAppointment?.(row.id, context ?? { type: "standalone" })}
           rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
+          rowClassName={(row) => row.isCancelled ? "bg-amber-50/70 text-muted-foreground" : undefined}
           emptyState={emptyStateOverride ?? emptyState}
           stickyHeader
         />

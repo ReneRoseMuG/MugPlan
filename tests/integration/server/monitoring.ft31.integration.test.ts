@@ -5,11 +5,13 @@
  * - FT31 liefert Disponent/Admin frische Monitoring-Treffer nur fuer zukuenftige Termine im Horizont.
  * - FT31-Admin-Konfiguration ist exklusiv fuer Admin les- und schreibbar.
  * - Monitoring wird live aus Terminmutationen berechnet, nicht aus dem Auth-Flow.
+ * - Stornierte Termine werden im Monitoring ignoriert.
  *
  * Fehlerfaelle:
  * - Reader kann Monitoring lesen oder konfigurieren.
  * - Vergangene bzw. ausserhalb des Horizonts liegende Termine erscheinen in der Trefferliste.
  * - Terminmutationen spiegeln sich nicht im anschliessenden Monitoring wider.
+ * - Stornierte Termine bleiben trotz Storno als Treffer sichtbar.
  *
  * Ziel:
  * FT31 end-to-end ueber API-, Persistenz- und Mutationspfad absichern.
@@ -20,12 +22,14 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
-import { appointments } from "../../../shared/schema";
+import { appointments, tags } from "../../../shared/schema";
+import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "../../../shared/appointmentCancellation";
 import { createApiTestApp, loginAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
   createCustomerFixture,
   createEmployeeFixture,
+  createExactTagFixture,
   createTourFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
@@ -71,6 +75,23 @@ async function configureMonitoring(agent: Awaited<ReturnType<typeof createRoleAg
   await agent.put("/api/admin/monitoring/config").send({
     tr01: payload,
   }).expect(200);
+}
+
+async function ensureReservedCancellationTag() {
+  const [existing] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+    })
+    .from(tags)
+    .where(eq(tags.name, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createExactTagFixture(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
 }
 
 describe("FT31 integration: monitoring", () => {
@@ -251,6 +272,35 @@ describe("FT31 integration: monitoring", () => {
         startDate: getRelativeBerlinDate(40),
         triggerName: "TR-01 Ressourcenunterschreitung",
       });
+    });
+  });
+
+  it("ignores cancelled appointments after the one-way cancellation workflow", async () => {
+    const admin = await createRoleAgent("ADMIN");
+    const customer = await createCustomerFixture("FT31-CANCEL-CUST");
+    await ensureReservedCancellationTag();
+
+    await configureMonitoring(admin.agent, {
+      allAppointments: false,
+      horizonDays: 3,
+      minimumEmployees: 1,
+    });
+
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(1),
+      employeeIds: [],
+    });
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toHaveLength(1);
+      expect(body[0].appointmentId).toBe(appointment.id);
+    });
+
+    await admin.agent.post(`/api/appointments/${appointment.id}/cancel`).expect(204);
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toEqual([]);
     });
   });
 });

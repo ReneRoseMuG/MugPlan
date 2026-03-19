@@ -50,6 +50,13 @@ describe("FT26 reports page wiring", () => {
     expect(reportsPageSource).toContain("button-reports-vorlaufliste-show-to-date");
     expect(reportsPageSource).toContain("button-reports-product-vorlauf-show-to-date");
     expect(reportsPageSource).toContain('header: "Tags"');
+    expect(reportsPageSource).toContain("reportState: AppointmentCancellationReportState");
+    expect(reportsPageSource).toContain("resolveVorlauflisteStateLabel(");
+    expect(reportsPageSource).toContain("contains_cancelled");
+    expect(reportsPageSource).toContain("cancelled_only");
+    expect(reportsPageSource).toContain("rowClassName={resolveVorlauflisteRowClassName}");
+    expect(reportsPageSource).toContain("Teilweise storniert");
+    expect(reportsPageSource).toContain("Storniert");
     expect(reportsPageSource).toContain("const REPORT_PAGE_SIZE = 100;");
     expect(reportsPageSource).toContain('queryKey: ["reports-vorlaufliste", submittedFilters, reportRequestId, page]');
     expect(reportsPageSource).toContain('queryKey: ["reports-product-vorlauf", submittedFilters, reportRequestId]');

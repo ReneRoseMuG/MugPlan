@@ -1,15 +1,31 @@
+import {
+  MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+} from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
+import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
+import { filterVisibleAppointmentTags } from "../lib/appointmentCancellation";
 
 export type TagRelationDomain = "customer" | "project" | "appointment";
 export type TagRelationItem = tagRelationsRepository.TagRelationItem;
 
 export async function listTagCatalog(): Promise<Tag[]> {
-  return tagRelationsRepository.listTagCatalog();
+  await masterDataRepository.ensureTagDefinition({
+    name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
+    color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+    isDefault: true,
+  });
+  const tags = await tagRelationsRepository.listTagCatalog();
+  return filterVisibleAppointmentTags(tags);
 }
 
 export async function getTagById(tagId: number): Promise<Tag | null> {
   return tagRelationsRepository.getTagById(tagId);
+}
+
+export async function getTagByName(tagName: string): Promise<Tag | null> {
+  return tagRelationsRepository.getTagByName(tagName);
 }
 
 export async function listTagRelations(

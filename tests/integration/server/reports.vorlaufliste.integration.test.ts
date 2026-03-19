@@ -3,27 +3,38 @@
  *
  * Abgedeckte Regeln:
  * - Vorlaufliste liefert pro Projekt genau eine Zeile mit dem fruehesten passenden Termin.
+ * - Die Zeile leitet reportState und actualDate korrekt aus aktiven/stornierten Terminen ab.
+ * - Der systemverwaltete Tag "Reklamation" schliesst Projekt- oder Termin-Treffer aus der Vorlaufliste aus.
  * - Ohne Bis-Datum werden alle Termine ab Von-Datum beruecksichtigt.
  * - Paging greift serverseitig projektbasiert mit 100er-Seiten.
  * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
  *
  * Fehlerfaelle:
  * - Mehrere Termine eines Projekts erzeugen mehrere Zeilen.
- * - Report ignoriert Artikel-Mappings, Paging oder Rollenpruefung.
+ * - Report ignoriert Artikel-Mappings, reportState, Paging oder Rollenpruefung.
  * - Termine ohne Projektzuordnung landen im Report.
  *
  * Ziel:
  * Den End-to-end-Vertrag der neuen Reports-Vorlaufliste inklusive Rollen- und Pagingverhalten absichern.
  */
+import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
+import { db } from "../../../server/db";
+import {
+  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+} from "../../../shared/appointmentCancellation";
+import { tags } from "../../../shared/schema";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
 import {
+  attachAppointmentTagFixture,
   attachProjectTagFixture,
   createAppointmentFixture,
   createComponentFixture,
   createCustomerFixtureWithOverrides,
+  createExactTagFixture,
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
@@ -109,11 +120,12 @@ async function createReportProjectFixture(params: {
     throw new Error("Expected project order number for report fixture.");
   }
 
+  const appointments: Array<{ id: number }> = [];
   for (const appointmentDate of params.appointmentDates) {
-    await createAppointmentFixture({
+    appointments.push(await createAppointmentFixture({
       projectId: project.id,
       startDate: appointmentDate,
-    });
+    }));
   }
 
   const createdTags: string[] = [];
@@ -157,7 +169,41 @@ async function createReportProjectFixture(params: {
     });
   }
 
-  return { customer, project: updatedProject, createdTags };
+  return { customer, project: updatedProject, createdTags, appointments };
+}
+
+async function ensureReservedCancellationTag() {
+  const [existing] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+    })
+    .from(tags)
+    .where(eq(tags.name, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createExactTagFixture(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
+}
+
+async function ensureManagedReportExclusionTag() {
+  const [existing] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+    })
+    .from(tags)
+    .where(eq(tags.name, MANAGED_REPORT_EXCLUSION_TAG_NAME))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createExactTagFixture(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
 }
 
 describe("FT26 integration: report vorlaufliste", () => {
@@ -312,5 +358,81 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(response.body.page).toBe(2);
     expect(response.body.pageSize).toBe(100);
     expect(response.body.items).toHaveLength(5);
+  });
+
+  it("derives reportState and actualDate from active and cancelled appointments", async () => {
+    const admin = await loginAdminAgent(app);
+    const reservedTag = await ensureReservedCancellationTag();
+
+    const mixedProject = await createReportProjectFixture({
+      prefix: "FT26-CANCEL-MIXED",
+      appointmentDates: ["2099-09-05", "2099-09-08"],
+    });
+    const cancelledOnlyProject = await createReportProjectFixture({
+      prefix: "FT26-CANCEL-ONLY",
+      appointmentDates: ["2099-09-03", "2099-09-07"],
+    });
+
+    await attachAppointmentTagFixture(mixedProject.appointments[1].id, reservedTag.id);
+    await attachAppointmentTagFixture(cancelledOnlyProject.appointments[0].id, reservedTag.id);
+    await attachAppointmentTagFixture(cancelledOnlyProject.appointments[1].id, reservedTag.id);
+
+    const response = await admin
+      .get("/api/reports/vorlaufliste?fromDate=2099-09-01&toDate=2099-09-30&page=1&pageSize=100")
+      .expect(200);
+
+    const mixedRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string }>)
+      .find((item) => item.projectId === mixedProject.project.id);
+    const cancelledOnlyRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string }>)
+      .find((item) => item.projectId === cancelledOnlyProject.project.id);
+
+    expect(mixedRow).toMatchObject({
+      projectId: mixedProject.project.id,
+      actualDate: "2099-09-05",
+      reportState: "contains_cancelled",
+    });
+    expect(cancelledOnlyRow).toMatchObject({
+      projectId: cancelledOnlyProject.project.id,
+      actualDate: "2099-09-03",
+      reportState: "cancelled_only",
+    });
+  });
+
+  it("excludes projects tagged with Reklamation and skips only tagged appointments from the report", async () => {
+    const admin = await loginAdminAgent(app);
+    const managedReportTag = await ensureManagedReportExclusionTag();
+
+    const projectExcludedByProjectTag = await createReportProjectFixture({
+      prefix: "FT26-REKL-PROJECT",
+      appointmentDates: ["2099-10-03"],
+    });
+    const mixedAppointmentProject = await createReportProjectFixture({
+      prefix: "FT26-REKL-APPOINTMENT",
+      appointmentDates: ["2099-10-02", "2099-10-07"],
+    });
+    const appointmentOnlyExcludedProject = await createReportProjectFixture({
+      prefix: "FT26-REKL-ONLY",
+      appointmentDates: ["2099-10-01"],
+    });
+
+    await attachProjectTagFixture(projectExcludedByProjectTag.project.id, managedReportTag.id);
+    await attachAppointmentTagFixture(mixedAppointmentProject.appointments[0].id, managedReportTag.id);
+    await attachAppointmentTagFixture(appointmentOnlyExcludedProject.appointments[0].id, managedReportTag.id);
+
+    const response = await admin
+      .get("/api/reports/vorlaufliste?fromDate=2099-10-01&toDate=2099-10-31&page=1&pageSize=100")
+      .expect(200);
+
+    const projectIds = (response.body.items as Array<{ projectId: number }>).map((item) => item.projectId);
+    const mixedRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string }>)
+      .find((item) => item.projectId === mixedAppointmentProject.project.id);
+
+    expect(projectIds).not.toContain(projectExcludedByProjectTag.project.id);
+    expect(projectIds).not.toContain(appointmentOnlyExcludedProject.project.id);
+    expect(mixedRow).toMatchObject({
+      projectId: mixedAppointmentProject.project.id,
+      actualDate: "2099-10-07",
+      reportState: "default",
+    });
   });
 });

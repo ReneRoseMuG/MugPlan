@@ -52,6 +52,7 @@ export function CalendarAppointmentCompactBar({
   const rightContent = `PLZ: ${postalCode}`;
 
   const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
+  const isCancelled = appointment.isCancelled;
   const textColor = (() => {
     if (!backgroundColor.startsWith("#")) return "#1a1a1a";
     const r = parseInt(backgroundColor.slice(1, 3), 16);
@@ -63,7 +64,7 @@ export function CalendarAppointmentCompactBar({
 
   const barBody = (
     <div
-      className={`relative ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""}`}
+      className={`relative ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""} ${isCancelled ? "saturate-50" : ""}`}
       style={positionStyle}
       onDoubleClick={onDoubleClick}
       onDragOver={onDragOver}
@@ -98,6 +99,11 @@ export function CalendarAppointmentCompactBar({
         <span className={`inline-flex min-w-0 items-center text-[10px] ${isMultiDay ? "max-w-[72%]" : "max-w-[38%]"}`}>
           <span className="truncate">{leftContent}</span>
         </span>
+        {isCancelled ? (
+          <span className="inline-flex shrink-0 rounded bg-black/15 px-1 py-0.5 text-[9px] uppercase tracking-wide">
+            Storniert
+          </span>
+        ) : null}
         {!isMultiDay && middleContent && (
           <span className="inline-flex min-w-0 max-w-[27%] items-center justify-center text-[10px] text-center">
             <span className="truncate">{middleContent}</span>

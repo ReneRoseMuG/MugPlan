@@ -4,6 +4,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   withAppointmentTransaction: vi.fn(),
   getAppointmentTx: vi.fn(),
   getProjectTx: vi.fn(),
+  getAppointmentTagsByAppointmentIds: vi.fn(),
   getConflictingEmployeesTx: vi.fn(),
   hasEmployeeDateOverlapTx: vi.fn(),
   updateAppointmentWithVersionTx: vi.fn(),
@@ -57,6 +58,7 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       const fakeTx = {} as Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0];
       return handler(fakeTx);
     });
+    appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
   });
 
   it("appointment update succeeds with matching version", async () => {

@@ -16,6 +16,12 @@
   UpdateProduct,
   UpdateProductCategory,
 } from "@shared/schema";
+import {
+  MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+  isProtectedSystemTagName,
+} from "@shared/appointmentCancellation";
 import type { CanonicalRoleKey } from "../settings/registry";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 
@@ -120,6 +126,28 @@ function normalizeOptionalText(value: string | null | undefined): string | null 
   if (value === null) return null;
   const normalized = value.trim();
   return normalized.length === 0 ? null : normalized;
+}
+
+function isProtectedSystemTag(tag: Pick<Tag, "name" | "isDefault"> | null | undefined): boolean {
+  if (!tag) return false;
+  return Boolean(tag.isDefault) || isProtectedSystemTagName(tag.name);
+}
+
+async function ensureProtectedTagDefaults(): Promise<void> {
+  await masterDataRepository.ensureTagDefinition({
+    name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
+    color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+    isDefault: true,
+  });
+
+  const cancellationTag = await masterDataRepository.getTagByNormalizedName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
+  if (!cancellationTag || cancellationTag.isDefault) {
+    return;
+  }
+
+  await masterDataRepository.updateTagWithVersion(cancellationTag.id, cancellationTag.version, {
+    isDefault: true,
+  });
 }
 
 function normalizeProductInput(input: InsertProduct): InsertProduct {
@@ -864,11 +892,13 @@ export async function deleteComponentSpecification(
 
 export async function listTags(roleKey: CanonicalRoleKey): Promise<Tag[]> {
   requireAdmin(roleKey);
+  await ensureProtectedTagDefaults();
   return masterDataRepository.listTags();
 }
 
 export async function createTag(input: { name: string; color: string }, roleKey: CanonicalRoleKey): Promise<Tag> {
   requireAdmin(roleKey);
+  await ensureProtectedTagDefaults();
   try {
     return await masterDataRepository.createTag(input);
   } catch (error) {
@@ -886,6 +916,13 @@ export async function updateTag(
   roleKey: CanonicalRoleKey,
 ): Promise<Tag> {
   requireAdmin(roleKey);
+  const existingTag = await masterDataRepository.getTagById(id);
+  if (!existingTag) {
+    throw new MasterDataError(404, "NOT_FOUND");
+  }
+  if (isProtectedSystemTag(existingTag)) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  }
   try {
     const result = await masterDataRepository.updateTagWithVersion(id, expectedVersion, input);
     if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
@@ -905,6 +942,13 @@ export async function deleteTag(
   roleKey: CanonicalRoleKey,
 ): Promise<void> {
   requireAdmin(roleKey);
+  const existingTag = await masterDataRepository.getTagById(id);
+  if (!existingTag) {
+    throw new MasterDataError(404, "NOT_FOUND");
+  }
+  if (isProtectedSystemTag(existingTag)) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  }
   const relationCounts = await masterDataRepository.getTagRelationCounts(id);
   const relationTotal = relationCounts.projectCount
     + relationCounts.customerCount
