@@ -30,7 +30,8 @@ describe("FT01 UI: AppointmentEmployeeSlot wiring", () => {
     expect(source).toContain("tourMembersById: Map<number, { id: number; fullName: string }[]>;");
     expect(source).toContain("selectedTour: Tour | null;");
     expect(source).toContain("onTourChange: (tourId: number | null) => void;");
-    expect(source).toContain('className={`sub-panel flex h-full flex-col gap-4 ${className ?? ""}`.trim()}');
+    expect(source).toContain('className={`sub-panel flex flex-col gap-4 ${className ?? ""}`.trim()}');
+    expect(source).not.toContain("h-full");
     expect(source).toContain('data-testid="slot-appointment-employees"');
     expect(source).toContain(">Teams</Label>");
     expect(source).toContain("Waehle ein Team fuer diesen Termin");

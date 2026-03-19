@@ -36,7 +36,7 @@ export function AppointmentEmployeeSlot({
   onTourChange,
 }: AppointmentEmployeeSlotProps) {
   return (
-    <section className={`sub-panel flex h-full flex-col gap-4 ${className ?? ""}`.trim()} data-testid="slot-appointment-employees">
+    <section className={`sub-panel flex flex-col gap-4 ${className ?? ""}`.trim()} data-testid="slot-appointment-employees">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
           <Users className="w-4 h-4" />

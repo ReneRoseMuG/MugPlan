@@ -12,6 +12,7 @@
  * - AppointmentEmployeeSlot rendert einen Header-Action-Button (+) fuer die Auswahl.
  * - Team-, Tour- und Mitarbeiter-Badges liegen im selben hervorgehobenen Panel.
  * - Das Formular verdrahtet die Tour-Auswahl in das Mitarbeiterpanel und rendert die gesetzte Tour separat vollbreit.
+ * - Ein initialer Tour-Kontext befuellt im Create-Fall Tour und aktive Tour-Mitarbeiter.
  * - Der bisherige grosse Button "Mitarbeiter auswaehlen" unterhalb der Liste wird nicht mehr gerendert.
  *
  * Fehlerfaelle:
@@ -87,6 +88,14 @@ describe("FT01 appointment form save and employees panel wiring", () => {
     expect(employeeSlotSource).toContain("<PlusActionButton");
     expect(employeeSlotSource).toContain("data-testid=\"button-add-employee\"");
     expect(employeeSlotSource).toContain(">Teams</Label>");
+  });
+
+  it("prefills tour and active employees from initialTourId in create mode", () => {
+    expect(source).toContain("if (initialTourId === null || initialTourId === undefined) return;");
+    expect(source).toContain(".filter((employee) => employee.tourId === initialTourId && employee.isActive)");
+    expect(source).toContain("setSelectedTourId(initialTourId);");
+    expect(source).toContain("setAssignedEmployeeIds(tourEmployeeIds);");
+    expect(source).toContain("employeeCount: tourEmployeeIds.length");
   });
 
   it("removes legacy large employee selection button block", () => {

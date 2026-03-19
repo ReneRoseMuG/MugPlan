@@ -8,6 +8,7 @@
  * - AppointmentAttachmentsPanel erweitert den Attachment-Kontext um appointmentAttachments.
  * - Das bestehende SplitAttachmentsPanel behaelt die gruppierte Struktur und bekommt eine dritte Gruppe Terminanhaenge.
  * - Terminanhaenge nutzen die dedizierten Download-Routen fuer Terminattachments.
+ * - Im Create-Fall kann das Panel pending Terminanhaenge ohne appointmentId anzeigen und hochladen.
  *
  * Fehlerfaelle:
  * - Terminformular zeigt keine eigene Terminanhang-Gruppe.
@@ -33,11 +34,23 @@ describe("FT24 UI: appointment attachments panel grouping wiring", () => {
     expect(panelSource).toContain('title: "Projektdokumente"');
     expect(panelSource).toContain('title: "Terminanhaenge"');
     expect(panelSource).toContain('id: "appointment"');
-    expect(panelSource).toContain("items: data?.appointmentAttachments ?? []");
+    expect(panelSource).toContain("const resolvedAppointmentAttachments = appointmentId");
+    expect(panelSource).toContain("items: resolvedAppointmentAttachments");
   });
 
   it("uses dedicated appointment attachment download routes", () => {
-    expect(panelSource).toContain("buildOpenUrl: (id) => `/api/appointment-attachments/${id}/download`");
-    expect(panelSource).toContain("buildDownloadUrl: (id) => `/api/appointment-attachments/${id}/download?download=1`");
+    expect(panelSource).toContain("buildOpenUrl: (id) => appointmentId ? `/api/appointment-attachments/${id}/download` : buildPendingAttachmentUrl(id)");
+    expect(panelSource).toContain("buildDownloadUrl: (id) => appointmentId ? `/api/appointment-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id)");
+  });
+
+  it("supports create mode with pending appointment attachments and direct customer/project queries", () => {
+    expect(panelSource).toContain("export type PendingAppointmentAttachmentItem = AttachmentItem & {");
+    expect(panelSource).toContain("pendingAppointmentAttachments?: PendingAppointmentAttachmentItem[];");
+    expect(panelSource).toContain("onUploadPendingAppointmentAttachment?: (file: File) => void;");
+    expect(panelSource).toContain("queryKey: [\"/api/customers\", customerId, \"attachments\"]");
+    expect(panelSource).toContain("queryKey: [\"/api/projects\", projectId, \"attachments\"]");
+    expect(panelSource).toContain("const resolvedAppointmentAttachments = appointmentId");
+    expect(panelSource).toContain(": pendingAppointmentAttachments;");
+    expect(panelSource).toContain("buildPendingAttachmentUrl(id)");
   });
 });

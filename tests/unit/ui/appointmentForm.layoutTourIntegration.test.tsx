@@ -4,7 +4,7 @@
  * Feature: FT01/FT04 - Terminformular Layout + Tour-Integration
  *
  * Abgedeckte Regeln:
- * - AppointmentForm trennt Hauptformular und rechte Sidebar im Edit-Modus wieder in echte Spalten.
+ * - AppointmentForm trennt Hauptformular und rechte Sidebar in Create und Edit wieder in echte Spalten.
  * - Ohne selektierte Tour bleibt die Tour-Auswahl im AppointmentEmployeeSlot des Hauptbereichs.
  * - Dokumentextraktion bleibt im Hauptbereich, waehrend Attachments, Tags und Notizen in der Sidebar liegen.
  * - Die separate Tour-Badge bleibt im Hauptbereich oberhalb des Mitarbeiterpanels verdrahtet.
@@ -258,21 +258,24 @@ describe("FT01 appointment form layout tour integration", () => {
     });
   });
 
-  it("defines a two-column edit layout with explicit main column and sidebar markers", () => {
+  it("defines a two-column layout with explicit main column and sidebar markers", () => {
     expect(source).toContain('data-testid="appointment-form-main-column"');
     expect(source).toContain('data-testid="appointment-form-sidebar"');
-    expect(source).toContain('lg:grid-cols-3 lg:items-start');
-    expect(source).toContain('lg:col-span-2');
+    expect(source).toContain('<div className="grid gap-6 lg:grid-cols-3 lg:items-start">');
+    expect(source).toContain('<div className="space-y-6 lg:col-span-2" data-testid="appointment-form-main-column">');
   });
 
-  it("keeps create mode flow in the main column and routes tour selection through AppointmentEmployeeSlot", () => {
+  it("keeps create mode flow in the main column, routes tour selection through AppointmentEmployeeSlot and keeps the sidebar visible", () => {
     const markup = renderToStaticMarkup(<AppointmentForm />);
 
     expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "slot-project-relation"));
     expect(getIndex(markup, "slot-project-relation")).toBeLessThan(getIndex(markup, "slot-customer-relation"));
     expect(getIndex(markup, "slot-customer-relation")).toBeLessThan(getIndex(markup, "appointment-employee-slot-marker"));
     expect(getIndex(markup, "appointment-employee-slot-marker")).toBeLessThan(getIndex(markup, "document-extraction-dropzone-marker"));
-    expect(markup).not.toContain("appointment-form-sidebar");
+    expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "appointment-form-sidebar"));
+    expect(getIndex(markup, "appointment-form-sidebar")).toBeLessThan(getIndex(markup, "appointment-attachments-panel"));
+    expect(getIndex(markup, "appointment-attachments-panel")).toBeLessThan(getIndex(markup, "appointment-tag-picker-marker"));
+    expect(getIndex(markup, "appointment-tag-picker-marker")).toBeLessThan(getIndex(markup, "notes-section-marker"));
 
     const employeeSlotProps = employeeSlotCalls.at(-1);
     expect(employeeSlotProps).toMatchObject({

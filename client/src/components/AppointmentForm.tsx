@@ -28,7 +28,10 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
-import { AppointmentAttachmentsPanel } from "@/components/AppointmentAttachmentsPanel";
+import {
+  AppointmentAttachmentsPanel,
+  type PendingAppointmentAttachmentItem,
+} from "@/components/AppointmentAttachmentsPanel";
 import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";
 import { NotesSection } from "@/components/NotesSection";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
@@ -105,6 +108,10 @@ type ExtractedProjectDraft = {
   extractedArticleListHtml: string;
   productSelections: ProjectProductSelections;
   documentFile: File | null;
+};
+
+type DraftAppointmentNote = Note & {
+  templateId?: number;
 };
 
 const logPrefix = "[AppointmentForm]";
@@ -276,8 +283,13 @@ export function AppointmentForm({
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(null);
+  const [draftAppointmentTags, setDraftAppointmentTags] = useState<TagRelationItem[]>([]);
+  const [draftAppointmentNotes, setDraftAppointmentNotes] = useState<DraftAppointmentNote[]>([]);
+  const [draftAppointmentAttachments, setDraftAppointmentAttachments] = useState<PendingAppointmentAttachmentItem[]>([]);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string | null>(null);
   const weekTourPrefillAppliedRef = useRef(false);
+  const draftNoteIdRef = useRef(-1);
+  const draftAttachmentIdRef = useRef(-1);
 
   const buildFormSnapshot = (input: {
     projectId: number | null;
@@ -289,6 +301,7 @@ export function AppointmentForm({
     startTimeValue: string;
     startTimeEnabled: boolean;
     employeeIds: number[];
+    sidebarDraftSignature?: string | null;
   }) =>
     JSON.stringify({
       projectId: input.projectId,
@@ -300,6 +313,7 @@ export function AppointmentForm({
       startTimeEnabled: input.startTimeEnabled,
       startTimeValue: input.startTimeEnabled ? input.startTimeValue : "",
       employeeIds: [...input.employeeIds].sort((a, b) => a - b),
+      sidebarDraftSignature: input.sidebarDraftSignature ?? null,
     });
 
   const [userRole] = useState(() =>
@@ -402,7 +416,6 @@ export function AppointmentForm({
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: ["/api/tags"],
     queryFn: () => fetchJson<Tag[]>("/api/tags"),
-    enabled: Boolean(appointmentId),
   });
 
   const { data: appointmentNotes = [], isLoading: appointmentNotesLoading } = useQuery<Note[]>({
@@ -410,6 +423,24 @@ export function AppointmentForm({
     queryFn: () => fetchJson<Note[]>(`/api/appointments/${appointmentId}/notes`),
     enabled: Boolean(appointmentId),
   });
+  const createSidebarDraftSignature = useMemo(
+    () => JSON.stringify({
+      tagIds: draftAppointmentTags.map((item) => item.tag.id).sort((a, b) => a - b),
+      notes: draftAppointmentNotes.map((note) => ({
+        id: note.id,
+        title: note.title,
+        body: note.body,
+        cardColor: note.cardColor,
+        print: note.print,
+        isPinned: note.isPinned,
+      })),
+      attachments: draftAppointmentAttachments.map((attachment) => ({
+        id: attachment.id,
+        originalName: attachment.originalName,
+      })),
+    }),
+    [draftAppointmentAttachments, draftAppointmentNotes, draftAppointmentTags],
+  );
   const addAppointmentTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
       const response = await apiRequest("POST", `/api/appointments/${appointmentId}/tags`, { tagId });
@@ -469,28 +500,29 @@ export function AppointmentForm({
         startTimeValue: startTime,
         startTimeEnabled: Boolean(startTime),
         employeeIds: initialEmployeeIds,
+        sidebarDraftSignature: null,
       }),
     );
   }, [appointmentDetail]);
 
   useEffect(() => {
-    if (!isEditing) {
-      setInitialFormSnapshot(
-        buildFormSnapshot({
-          projectId: selectedProjectId,
-          customerId: selectedCustomerId,
-          tourId: selectedTourId,
-          startDate,
-          endDate,
-          isEndDateEnabled,
-          startTimeValue,
-          startTimeEnabled,
-          employeeIds: assignedEmployeeIds,
-        }),
-      );
-    }
+    if (isEditing || initialFormSnapshot !== null) return;
+    setInitialFormSnapshot(
+      buildFormSnapshot({
+        projectId: selectedProjectId,
+        customerId: selectedCustomerId,
+        tourId: selectedTourId,
+        startDate,
+        endDate,
+        isEndDateEnabled,
+        startTimeValue,
+        startTimeEnabled,
+        employeeIds: assignedEmployeeIds,
+        sidebarDraftSignature: createSidebarDraftSignature,
+      }),
+    );
     // Intentionally only initialize once for create mode.
-  }, [isEditing, selectedProjectId, selectedCustomerId, selectedTourId, startDate, endDate, isEndDateEnabled, startTimeValue, startTimeEnabled, assignedEmployeeIds]);
+  }, [isEditing, selectedProjectId, selectedCustomerId, selectedTourId, startDate, endDate, isEndDateEnabled, startTimeValue, startTimeEnabled, assignedEmployeeIds, createSidebarDraftSignature, initialFormSnapshot]);
   useEffect(() => {
     if (isEditing) return;
     if (initialTourId === null || initialTourId === undefined) return;
@@ -533,6 +565,8 @@ export function AppointmentForm({
     () => tours.find((tour) => tour.id === selectedTourId) ?? null,
     [tours, selectedTourId],
   );
+  const visibleAppointmentTags = isEditing ? appointmentTagRelations : draftAppointmentTags;
+  const visibleAppointmentNotes = isEditing ? appointmentNotes : draftAppointmentNotes;
 
   const assignedEmployeesById = useMemo(() => {
     const map = new Map<number, Employee>();
@@ -596,6 +630,7 @@ export function AppointmentForm({
     startTimeValue,
     startTimeEnabled,
     employeeIds: assignedEmployeeIds,
+    sidebarDraftSignature: isEditing ? null : createSidebarDraftSignature,
   }) !== initialFormSnapshot;
   const handleRequestClose = () => {
     if (isFormDirty && !isSaving) {
@@ -660,6 +695,118 @@ export function AppointmentForm({
     setSelectedCustomerId(id);
     setCustomerPickerOpen(false);
     console.info(`${logPrefix} customer selected`, { customerId: id });
+  };
+
+  const addDraftAppointmentTag = (tagId: number) => {
+    const tag = availableTags.find((entry) => entry.id === tagId);
+    if (!tag) {
+      toast({
+        title: "Tag konnte nicht hinzugefuegt werden",
+        description: "Der ausgewaehlte Tag ist nicht verfuegbar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setDraftAppointmentTags((current) => {
+      if (current.some((entry) => entry.tag.id === tagId)) {
+        return current;
+      }
+      return [...current, { tag, relationVersion: 1 }];
+    });
+  };
+
+  const removeDraftAppointmentTag = (item: TagRelationItem) => {
+    setDraftAppointmentTags((current) => current.filter((entry) => entry.tag.id !== item.tag.id));
+  };
+
+  const addDraftAppointmentAttachment = (file: File) => {
+    setDraftAppointmentAttachments((current) => {
+      const duplicate = current.some((attachment) =>
+        attachment.originalName === file.name &&
+        attachment.file.size === file.size &&
+        attachment.file.lastModified === file.lastModified,
+      );
+      if (duplicate) {
+        return current;
+      }
+      return [
+        ...current,
+        {
+          id: draftAttachmentIdRef.current--,
+          originalName: file.name,
+          mimeType: file.type || null,
+          file,
+        },
+      ];
+    });
+  };
+
+  const addDraftAppointmentNote = ({
+    title,
+    body,
+    cardColor,
+    print,
+    templateId,
+  }: {
+    title: string;
+    body: string;
+    cardColor?: string | null;
+    print: boolean;
+    templateId?: number;
+  }) => {
+    const now = new Date();
+    setDraftAppointmentNotes((current) => [
+      ...current,
+      {
+        id: draftNoteIdRef.current--,
+        title,
+        body,
+        cardColor: cardColor ?? null,
+        print,
+        cardColorLocked: false,
+        isPinned: false,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        templateId,
+      },
+    ]);
+  };
+
+  const updateDraftAppointmentNote = (
+    noteId: number,
+    data: { title: string; body: string; cardColor?: string | null; print: boolean },
+  ) => {
+    const updatedAt = new Date();
+    setDraftAppointmentNotes((current) => current.map((note) => (
+      note.id === noteId
+        ? {
+            ...note,
+            title: data.title,
+            body: data.body,
+            cardColor: data.cardColor ?? null,
+            print: data.print,
+            updatedAt,
+          }
+        : note
+    )));
+  };
+
+  const toggleDraftAppointmentNotePin = (noteId: number, isPinned: boolean) => {
+    const updatedAt = new Date();
+    setDraftAppointmentNotes((current) => current.map((note) => (
+      note.id === noteId
+        ? {
+            ...note,
+            isPinned,
+            updatedAt,
+          }
+        : note
+    )));
+  };
+
+  const deleteDraftAppointmentNote = (noteId: number) => {
+    setDraftAppointmentNotes((current) => current.filter((note) => note.id !== noteId));
   };
 
   const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
@@ -837,6 +984,7 @@ export function AppointmentForm({
       if (!response.ok) {
         throw new Error(payload?.message ?? "Dokumentextraktion fehlgeschlagen");
       }
+      addDraftAppointmentAttachment(file);
       const extraction = payload as {
         customer: ExtractionCustomerDraft;
         orderNumber: string | null;
@@ -1209,6 +1357,46 @@ export function AppointmentForm({
     },
   });
 
+  const persistDraftAppointmentTags = async (targetAppointmentId: number) => {
+    for (const item of draftAppointmentTags) {
+      await apiRequest("POST", `/api/appointments/${targetAppointmentId}/tags`, { tagId: item.tag.id });
+    }
+  };
+
+  const persistDraftAppointmentNotes = async (targetAppointmentId: number) => {
+    for (const note of draftAppointmentNotes) {
+      await apiRequest("POST", `/api/appointments/${targetAppointmentId}/notes`, {
+        title: note.title,
+        body: note.body,
+        cardColor: note.cardColor,
+        print: note.print,
+        templateId: note.templateId,
+      });
+    }
+  };
+
+  const persistDraftAppointmentAttachments = async (targetAppointmentId: number) => {
+    for (const attachment of draftAppointmentAttachments) {
+      const formData = new FormData();
+      formData.append("file", attachment.file);
+      const response = await fetch(`/api/appointments/${targetAppointmentId}/attachments`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Terminanhang konnte nicht hochgeladen werden");
+      }
+    }
+  };
+
+  const persistCreateSidebarDrafts = async (targetAppointmentId: number) => {
+    await persistDraftAppointmentTags(targetAppointmentId);
+    await persistDraftAppointmentNotes(targetAppointmentId);
+    await persistDraftAppointmentAttachments(targetAppointmentId);
+  };
+
   const persistAppointment = async () => {
     const resolvedPayloadCustomerId = selectedProject?.customerId ?? selectedCustomerId;
     if (!resolvedPayloadCustomerId) {
@@ -1332,6 +1520,30 @@ export function AppointmentForm({
         projectId: payload.projectId ?? null,
         appointmentId: savedAppointmentId,
       });
+      if (!isEditing) {
+        if (typeof savedAppointmentId !== "number" || savedAppointmentId < 1) {
+          throw new Error("Termin wurde erstellt, aber die Termin-ID fehlt fuer die Nachverarbeitung.");
+        }
+        try {
+          await persistCreateSidebarDrafts(savedAppointmentId);
+          setDraftAppointmentTags([]);
+          setDraftAppointmentNotes([]);
+          setDraftAppointmentAttachments([]);
+        } catch (error) {
+          await invalidateRelatedAppointmentQueries(payload.projectId);
+          await refreshMonitoringWithNotification(toast);
+          await queryClient.invalidateQueries({ queryKey: ["/api/appointments", savedAppointmentId] });
+          toast({
+            title: "Termin erstellt, aber Zusatzdaten sind unvollstaendig",
+            description: error instanceof Error
+              ? error.message
+              : "Tags, Notizen oder Terminanhaenge konnten nicht vollstaendig gespeichert werden.",
+            variant: "destructive",
+          });
+          onSaved?.();
+          return;
+        }
+      }
       if (payload.projectId) {
         const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
           projectId: payload.projectId,
@@ -1366,6 +1578,7 @@ export function AppointmentForm({
         startTimeValue,
         startTimeEnabled,
         employeeIds: assignedEmployeeIds,
+        sidebarDraftSignature: isEditing ? null : createSidebarDraftSignature,
       }));
       onSaved?.();
     } catch (error) {
@@ -1421,11 +1634,8 @@ export function AppointmentForm({
         </Alert>
       )}
 
-      <div className={`grid gap-6 ${isEditing && appointmentId ? "lg:grid-cols-3 lg:items-start" : ""}`}>
-        <div
-          className={`space-y-6 ${isEditing && appointmentId ? "lg:col-span-2" : ""}`.trim()}
-          data-testid="appointment-form-main-column"
-        >
+      <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
+        <div className="space-y-6 lg:col-span-2" data-testid="appointment-form-main-column">
           <div className="sub-panel space-y-3">
             <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -1584,42 +1794,76 @@ export function AppointmentForm({
           ) : null}
         </div>
 
-        {isEditing && appointmentId ? (
-          <div className="min-w-0 space-y-6" data-testid="appointment-form-sidebar">
-            <AppointmentAttachmentsPanel appointmentId={appointmentId} />
+        <div className="min-w-0 space-y-6" data-testid="appointment-form-sidebar">
+          <AppointmentAttachmentsPanel
+            appointmentId={appointmentId}
+            customerId={resolvedCustomerId}
+            projectId={selectedProjectId}
+            pendingAppointmentAttachments={isEditing ? undefined : draftAppointmentAttachments}
+            onUploadPendingAppointmentAttachment={isEditing ? undefined : addDraftAppointmentAttachment}
+          />
 
-            <TagPickerPanel
-              assignedTags={appointmentTagRelations}
-              availableTags={availableTags}
-              isLoading={appointmentTagsLoading}
-              loadErrorMessage={appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
-              canEdit={canManageAppointmentTags && !isLocked}
-              title="Tags"
-              addDialogTitle="Tag zu Termin hinzufügen"
-              testIdPrefix="appointment-tag-picker"
-              onAdd={(tagId) => addAppointmentTagMutation.mutate(tagId)}
-              onRemove={(item) => removeAppointmentTagMutation.mutate(item)}
-            />
+          <TagPickerPanel
+            assignedTags={visibleAppointmentTags}
+            availableTags={availableTags}
+            isLoading={isEditing ? appointmentTagsLoading : false}
+            loadErrorMessage={isEditing && appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
+            canEdit={canManageAppointmentTags && !isLocked}
+            title="Tags"
+            addDialogTitle="Tag zu Termin hinzufügen"
+            testIdPrefix="appointment-tag-picker"
+            onAdd={(tagId) => {
+              if (isEditing) {
+                addAppointmentTagMutation.mutate(tagId);
+                return;
+              }
+              addDraftAppointmentTag(tagId);
+            }}
+            onRemove={(item) => {
+              if (isEditing) {
+                removeAppointmentTagMutation.mutate(item);
+                return;
+              }
+              removeDraftAppointmentTag(item);
+            }}
+          />
 
-            <NotesSection
-              notes={appointmentNotes}
-              isLoading={appointmentNotesLoading}
-              onAdd={(data) => createAppointmentNoteMutation.mutate(data)}
-              onUpdate={(noteId, data) => {
+          <NotesSection
+            notes={visibleAppointmentNotes}
+            isLoading={isEditing ? appointmentNotesLoading : false}
+            onAdd={(data) => {
+              if (isEditing) {
+                createAppointmentNoteMutation.mutate(data);
+                return;
+              }
+              addDraftAppointmentNote(data);
+            }}
+            onUpdate={(noteId, data) => {
+              if (isEditing) {
                 const version = getAppointmentNoteVersion(noteId);
                 updateAppointmentNoteMutation.mutate({ noteId, ...data, version });
-              }}
-              onTogglePin={(id, isPinned) => {
+                return;
+              }
+              updateDraftAppointmentNote(noteId, data);
+            }}
+            onTogglePin={(id, isPinned) => {
+              if (isEditing) {
                 const version = getAppointmentNoteVersion(id);
                 toggleAppointmentNotePinMutation.mutate({ noteId: id, isPinned, version });
-              }}
-              onDelete={(noteId) => {
+                return;
+              }
+              toggleDraftAppointmentNotePin(id, isPinned);
+            }}
+            onDelete={(noteId) => {
+              if (isEditing) {
                 const version = getAppointmentNoteVersion(noteId);
                 deleteAppointmentNoteMutation.mutate({ noteId, version });
-              }}
-            />
-          </div>
-        ) : null}
+                return;
+              }
+              deleteDraftAppointmentNote(noteId);
+            }}
+          />
+        </div>
       </div>
 
       <DocumentExtractionDialog
