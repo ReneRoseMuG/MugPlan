@@ -2,19 +2,19 @@
  * Test Scope:
  *
  * Feature: FT03/FT24 - Wochenkalender Terminanhaenge
- * Use Case: UC Wochenkalender liefert pro Termin Terminanhang-Zaehler
+ * Use Case: UC Wochenkalender liefert akkumulierte Dokument-Zaehler fuer Kunde, Projekt und Termin
  *
  * Abgedeckte Regeln:
- * - /api/calendar/appointments liefert appointmentAttachmentsCount fuer jeden Termin.
- * - Termine ohne Anhaenge liefern 0.
- * - Mehrere Termine mit unterschiedlicher Anhangsanzahl werden getrennt korrekt gezaehlt.
+ * - /api/calendar/appointments liefert customerAttachmentsCount, projectAttachmentsCount, appointmentAttachmentsCount und totalAttachmentsCount.
+ * - Termine ohne Projekt liefern projectAttachmentsCount sauber als 0.
+ * - Kunden-, Projekt- und Terminanhaenge werden getrennt und summiert korrekt gezaehlt.
  *
  * Fehlerfaelle:
- * - Terminanhang-Zaehler fehlt im Kalenderpayload.
- * - Zaehler werden zwischen Terminen vermischt oder inkonsistent berechnet.
+ * - Dokument-Zaehler fehlen im Kalenderpayload oder summieren falsch.
+ * - Kunden-, Projekt- und Terminzaehler werden zwischen Terminen vermischt.
  *
  * Ziel:
- * End-to-end absichern, dass der Wochenkalender den Terminanhang-Zaehler korrekt aus der Aggregation erhaelt.
+ * End-to-end absichern, dass der Wochenkalender die akkumulierten Dokument-Zaehler korrekt aus der Aggregation erhaelt.
  */
 import express from "express";
 import { createServer } from "http";
@@ -83,31 +83,81 @@ async function createAppointment(project: { id: number }, startDate: string) {
   });
 }
 
-async function uploadAttachment(agent: SuperAgentTest, appointmentId: number, fileName: string) {
+async function createCustomerOnlyAppointment(label: string, startDate: string) {
+  const token = `FT24-CAL-ATT-CUSTOMER-ONLY-${label}-${Date.now()}-${seq++}`;
+  const customer = await customersService.createCustomer({
+    customerNumber: token,
+    firstName: "Kalender",
+    lastName: token,
+    fullName: `${token}, Kalender`,
+    company: null,
+    email: null,
+    phone: null,
+    addressLine1: null,
+    addressLine2: null,
+    postalCode: null,
+    city: null,
+    version: 1,
+  });
+
+  const appointment = await appointmentsService.createAppointment({
+    customerId: customer.id,
+    startDate,
+    endDate: null,
+    startTime: null,
+    employeeIds: [],
+  });
+
+  return { customer, appointment };
+}
+
+async function uploadAppointmentAttachment(agent: SuperAgentTest, appointmentId: number, fileName: string) {
   await agent
     .post(`/api/appointments/${appointmentId}/attachments`)
     .attach("file", Buffer.from(`payload-${fileName}`), fileName)
     .expect(201);
 }
 
+async function uploadProjectAttachment(agent: SuperAgentTest, projectId: number, fileName: string) {
+  await agent
+    .post(`/api/projects/${projectId}/attachments`)
+    .attach("file", Buffer.from(`payload-${fileName}`), fileName)
+    .expect(201);
+}
+
+async function uploadCustomerAttachment(agent: SuperAgentTest, customerId: number, fileName: string) {
+  await agent
+    .post(`/api/customers/${customerId}/attachments`)
+    .attach("file", Buffer.from(`payload-${fileName}`), fileName)
+    .expect(201);
+}
+
 describe("FT03/FT24 integration: calendar appointments attachment counts", () => {
-  it("returns appointment attachment counts per appointment for zero and mixed scenarios", async () => {
+  it("returns customer, project, appointment and total attachment counts per appointment", async () => {
     const admin = await loginAdminAgent();
-    const graphA = await createProjectWithCustomer("A");
-    const graphB = await createProjectWithCustomer("B");
-    const graphC = await createProjectWithCustomer("C");
+    const appointmentOnlyGraph = await createProjectWithCustomer("APPOINTMENT");
+    const projectOnlyGraph = await createProjectWithCustomer("PROJECT");
+    const customerOnlyGraph = await createProjectWithCustomer("CUSTOMER");
+    const mixedGraph = await createProjectWithCustomer("MIXED");
+    const noProjectGraph = await createCustomerOnlyAppointment("NO-PROJECT", "2098-08-14");
 
-    const appointmentA = await createAppointment(graphA.project, "2098-08-10");
-    const appointmentB = await createAppointment(graphB.project, "2098-08-11");
-    const appointmentC = await createAppointment(graphC.project, "2098-08-12");
+    const appointmentOnly = await createAppointment(appointmentOnlyGraph.project, "2098-08-10");
+    const projectOnly = await createAppointment(projectOnlyGraph.project, "2098-08-11");
+    const customerOnly = await createAppointment(customerOnlyGraph.project, "2098-08-12");
+    const mixed = await createAppointment(mixedGraph.project, "2098-08-13");
 
-    expect(appointmentA?.id).toBeTruthy();
-    expect(appointmentB?.id).toBeTruthy();
-    expect(appointmentC?.id).toBeTruthy();
+    expect(appointmentOnly?.id).toBeTruthy();
+    expect(projectOnly?.id).toBeTruthy();
+    expect(customerOnly?.id).toBeTruthy();
+    expect(mixed?.id).toBeTruthy();
+    expect(noProjectGraph.appointment?.id).toBeTruthy();
 
-    await uploadAttachment(admin, Number(appointmentB?.id), "b-1.pdf");
-    await uploadAttachment(admin, Number(appointmentC?.id), "c-1.pdf");
-    await uploadAttachment(admin, Number(appointmentC?.id), "c-2.png");
+    await uploadAppointmentAttachment(admin, Number(appointmentOnly?.id), "appointment-only.pdf");
+    await uploadProjectAttachment(admin, projectOnlyGraph.project.id, "project-only.pdf");
+    await uploadCustomerAttachment(admin, customerOnlyGraph.customer.id, "customer-only.pdf");
+    await uploadCustomerAttachment(admin, mixedGraph.customer.id, "mixed-customer.pdf");
+    await uploadProjectAttachment(admin, mixedGraph.project.id, "mixed-project.pdf");
+    await uploadAppointmentAttachment(admin, Number(mixed?.id), "mixed-appointment.pdf");
 
     const response = await admin
       .get("/api/calendar/appointments?fromDate=2098-08-01&toDate=2098-08-31&detail=full")
@@ -115,12 +165,42 @@ describe("FT03/FT24 integration: calendar appointments attachment counts", () =>
 
     const items = response.body as Array<{
       id: number;
+      customerAttachmentsCount: number;
+      projectAttachmentsCount: number;
       appointmentAttachmentsCount: number;
+      totalAttachmentsCount: number;
     }>;
 
     const byId = new Map(items.map((item) => [item.id, item] as const));
-    expect(byId.get(Number(appointmentA?.id))).toEqual(expect.objectContaining({ appointmentAttachmentsCount: 0 }));
-    expect(byId.get(Number(appointmentB?.id))).toEqual(expect.objectContaining({ appointmentAttachmentsCount: 1 }));
-    expect(byId.get(Number(appointmentC?.id))).toEqual(expect.objectContaining({ appointmentAttachmentsCount: 2 }));
+    expect(byId.get(Number(appointmentOnly?.id))).toEqual(expect.objectContaining({
+      customerAttachmentsCount: 0,
+      projectAttachmentsCount: 0,
+      appointmentAttachmentsCount: 1,
+      totalAttachmentsCount: 1,
+    }));
+    expect(byId.get(Number(projectOnly?.id))).toEqual(expect.objectContaining({
+      customerAttachmentsCount: 0,
+      projectAttachmentsCount: 1,
+      appointmentAttachmentsCount: 0,
+      totalAttachmentsCount: 1,
+    }));
+    expect(byId.get(Number(customerOnly?.id))).toEqual(expect.objectContaining({
+      customerAttachmentsCount: 1,
+      projectAttachmentsCount: 0,
+      appointmentAttachmentsCount: 0,
+      totalAttachmentsCount: 1,
+    }));
+    expect(byId.get(Number(mixed?.id))).toEqual(expect.objectContaining({
+      customerAttachmentsCount: 1,
+      projectAttachmentsCount: 1,
+      appointmentAttachmentsCount: 1,
+      totalAttachmentsCount: 3,
+    }));
+    expect(byId.get(Number(noProjectGraph.appointment?.id))).toEqual(expect.objectContaining({
+      customerAttachmentsCount: 0,
+      projectAttachmentsCount: 0,
+      appointmentAttachmentsCount: 0,
+      totalAttachmentsCount: 0,
+    }));
   });
 });

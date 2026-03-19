@@ -8,12 +8,14 @@ import {
   appointmentTags,
   componentCategories,
   components,
+  customerAttachments,
   customerNotes,
   customerTags,
   customers,
   employees,
   notes,
   projectOrder,
+  projectAttachments,
   projectOrderItems,
   projectNotes,
   projectTags,
@@ -180,6 +182,38 @@ export async function getAppointmentAttachmentCountsByAppointmentIds(appointment
     .groupBy(appointmentAttachments.appointmentId);
 
   return new Map(rows.map((row) => [row.appointmentId, Number(row.count)] as const));
+}
+
+export async function getCustomerAttachmentCountsByCustomerIds(customerIds: number[]): Promise<Map<number, number>> {
+  const uniqueCustomerIds = Array.from(new Set(customerIds.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueCustomerIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      customerId: customerAttachments.customerId,
+      count: sql<number>`count(*)`,
+    })
+    .from(customerAttachments)
+    .where(inArray(customerAttachments.customerId, uniqueCustomerIds))
+    .groupBy(customerAttachments.customerId);
+
+  return new Map(rows.map((row) => [row.customerId, Number(row.count)] as const));
+}
+
+export async function getProjectAttachmentCountsByProjectIds(projectIds: number[]): Promise<Map<number, number>> {
+  const uniqueProjectIds = Array.from(new Set(projectIds.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueProjectIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      projectId: projectAttachments.projectId,
+      count: sql<number>`count(*)`,
+    })
+    .from(projectAttachments)
+    .where(inArray(projectAttachments.projectId, uniqueProjectIds))
+    .groupBy(projectAttachments.projectId);
+
+  return new Map(rows.map((row) => [row.projectId, Number(row.count)] as const));
 }
 
 export async function getCustomerTagsByCustomerIds(customerIds: number[]): Promise<Map<number, Tag[]>> {

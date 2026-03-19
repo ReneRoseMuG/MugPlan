@@ -11,12 +11,64 @@ type AppointmentAttachmentItem = {
   mimeType: string | null;
 };
 
+type AppointmentAttachmentContext = {
+  appointmentId: number;
+  project: {
+    id: number;
+    name: string;
+    orderNumber: string | null;
+  } | null;
+  customer: {
+    id: number;
+    customerNumber: string;
+    fullName: string | null;
+  };
+  projectAttachments: AppointmentAttachmentItem[];
+  customerAttachments: AppointmentAttachmentItem[];
+  appointmentAttachments: AppointmentAttachmentItem[];
+};
+
+type PreviewAttachmentItem = AppointmentAttachmentItem & {
+  sourceType: "customer" | "project" | "appointment";
+  sourceLabel: string;
+  openUrl: string;
+  downloadUrl: string;
+};
+
+function buildPreviewAttachments(data: AppointmentAttachmentContext | undefined): PreviewAttachmentItem[] {
+  if (!data) return [];
+
+  return [
+    ...data.customerAttachments.map((attachment) => ({
+      ...attachment,
+      sourceType: "customer" as const,
+      sourceLabel: "Kunde",
+      openUrl: `/api/customer-attachments/${attachment.id}/download`,
+      downloadUrl: `/api/customer-attachments/${attachment.id}/download?download=1`,
+    })),
+    ...data.projectAttachments.map((attachment) => ({
+      ...attachment,
+      sourceType: "project" as const,
+      sourceLabel: "Projekt",
+      openUrl: `/api/project-attachments/${attachment.id}/download`,
+      downloadUrl: `/api/project-attachments/${attachment.id}/download?download=1`,
+    })),
+    ...data.appointmentAttachments.map((attachment) => ({
+      ...attachment,
+      sourceType: "appointment" as const,
+      sourceLabel: "Termin",
+      openUrl: `/api/appointment-attachments/${attachment.id}/download`,
+      downloadUrl: `/api/appointment-attachments/${attachment.id}/download?download=1`,
+    })),
+  ];
+}
+
 function AttachmentPreviewContent({
   attachments,
   isLoading,
   isError,
 }: {
-  attachments: AppointmentAttachmentItem[];
+  attachments: PreviewAttachmentItem[];
   isLoading: boolean;
   isError: boolean;
 }) {
@@ -28,6 +80,10 @@ function AttachmentPreviewContent({
     return <div className="text-xs text-slate-500">Anhaenge werden geladen...</div>;
   }
 
+  if (attachments.length === 0) {
+    return <div className="text-xs text-slate-500">Keine Anhaenge vorhanden.</div>;
+  }
+
   if (attachments.length <= 1) {
     return <CalendarWeekAppointmentAttachmentsSinglePreview attachment={attachments[0] ?? null} />;
   }
@@ -37,20 +93,21 @@ function AttachmentPreviewContent({
 
 export function CalendarWeekAppointmentAttachmentsHover({
   appointmentId,
-  appointmentAttachmentsCount,
+  totalAttachmentsCount,
 }: {
   appointmentId: number;
-  appointmentAttachmentsCount: number;
+  totalAttachmentsCount: number;
 }) {
   const [shouldLoadPreview, setShouldLoadPreview] = useState(false);
-  const normalizedCount = Number.isFinite(appointmentAttachmentsCount)
-    ? Math.max(0, appointmentAttachmentsCount)
+  const normalizedCount = Number.isFinite(totalAttachmentsCount)
+    ? Math.max(0, totalAttachmentsCount)
     : 0;
 
-  const attachmentsQuery = useQuery<AppointmentAttachmentItem[]>({
-    queryKey: ["/api/appointments", appointmentId, "attachments"],
+  const attachmentsQuery = useQuery<AppointmentAttachmentContext>({
+    queryKey: ["/api/appointments", appointmentId, "attachment-context"],
     enabled: shouldLoadPreview && normalizedCount > 0,
   });
+  const attachments = buildPreviewAttachments(attachmentsQuery.data);
 
   if (normalizedCount <= 0) {
     return null;
@@ -60,7 +117,7 @@ export function CalendarWeekAppointmentAttachmentsHover({
     <HoverPreview
       preview={(
         <AttachmentPreviewContent
-          attachments={attachmentsQuery.data ?? []}
+          attachments={attachments}
           isLoading={attachmentsQuery.isLoading}
           isError={attachmentsQuery.isError}
         />

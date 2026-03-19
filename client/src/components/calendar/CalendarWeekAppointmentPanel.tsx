@@ -160,7 +160,7 @@ export function CalendarWeekAppointmentPanel({
                     />
                     <CalendarWeekAppointmentAttachmentsHover
                       appointmentId={appointment.id}
-                      appointmentAttachmentsCount={appointment.appointmentAttachmentsCount ?? 0}
+                      totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
                     />
                   </>
                 ) : (

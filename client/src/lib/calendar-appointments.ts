@@ -40,7 +40,10 @@ export type CalendarAppointment = {
   customerNotesCount: number;
   projectNotesCount: number;
   appointmentNotesCount: number;
+  customerAttachmentsCount: number;
+  projectAttachmentsCount: number;
   appointmentAttachmentsCount: number;
+  totalAttachmentsCount: number;
   appointmentTags: Tag[];
   customerTags: Tag[];
   projectTags: Tag[];
@@ -107,16 +110,28 @@ export function useCalendarAppointments({
         const appointmentNotesCount = Number.isFinite(rawAppointment.appointmentNotesCount)
           ? Math.max(0, rawAppointment.appointmentNotesCount)
           : 0;
+        const customerAttachmentsCount = Number.isFinite(rawAppointment.customerAttachmentsCount)
+          ? Math.max(0, rawAppointment.customerAttachmentsCount)
+          : 0;
+        const projectAttachmentsCount = Number.isFinite(rawAppointment.projectAttachmentsCount)
+          ? Math.max(0, rawAppointment.projectAttachmentsCount)
+          : 0;
         const appointmentAttachmentsCount = Number.isFinite(rawAppointment.appointmentAttachmentsCount)
           ? Math.max(0, rawAppointment.appointmentAttachmentsCount)
           : 0;
+        const totalAttachmentsCount = Number.isFinite(rawAppointment.totalAttachmentsCount)
+          ? Math.max(0, rawAppointment.totalAttachmentsCount)
+          : customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount;
 
         return {
           ...rawAppointment,
           customerNotesCount,
           projectNotesCount,
           appointmentNotesCount,
+          customerAttachmentsCount,
+          projectAttachmentsCount,
           appointmentAttachmentsCount,
+          totalAttachmentsCount,
           appointmentTags: Array.isArray(rawAppointment.appointmentTags) ? rawAppointment.appointmentTags : [],
           customerTags: Array.isArray(rawAppointment.customerTags) ? rawAppointment.customerTags : [],
           projectTags: Array.isArray(rawAppointment.projectTags) ? rawAppointment.projectTags : [],

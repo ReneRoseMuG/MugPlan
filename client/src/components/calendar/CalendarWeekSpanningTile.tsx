@@ -131,7 +131,7 @@ export function CalendarWeekSpanningTile({
       />
       <CalendarWeekAppointmentAttachmentsHover
         appointmentId={appointment.id}
-        appointmentAttachmentsCount={appointment.appointmentAttachmentsCount ?? 0}
+        totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
       />
       <EntityTagFooterRow tags={mergedTags} testId={`week-spanning-tile-tags-${appointment.id}`} />
     </div>

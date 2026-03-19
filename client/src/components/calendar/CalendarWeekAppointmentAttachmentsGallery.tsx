@@ -6,6 +6,10 @@ type AppointmentAttachmentItem = {
   id: number;
   originalName: string;
   mimeType: string | null;
+  sourceType: "customer" | "project" | "appointment";
+  sourceLabel: string;
+  openUrl: string;
+  downloadUrl: string;
 };
 
 function resolveIsPdf(attachment: AppointmentAttachmentItem) {
@@ -19,14 +23,13 @@ function resolveIsImage(attachment: AppointmentAttachmentItem) {
 }
 
 function AttachmentThumbnail({ attachment }: { attachment: AppointmentAttachmentItem }) {
-  const openUrl = `/api/appointment-attachments/${attachment.id}/download`;
   const isImage = resolveIsImage(attachment);
   const isPdf = resolveIsPdf(attachment);
 
   return (
     <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
       {isImage ? (
-        <img src={openUrl} alt={attachment.originalName} className="h-full w-full object-cover" />
+        <img src={attachment.openUrl} alt={attachment.originalName} className="h-full w-full object-cover" />
       ) : isPdf ? (
         <FileText className="h-7 w-7 text-red-600" />
       ) : (
@@ -50,12 +53,12 @@ export function CalendarWeekAppointmentAttachmentsGallery({
   return (
     <div className="space-y-2">
       <div className="text-[10px] font-semibold tracking-wide text-slate-500">
-        Terminanhaenge ({attachments.length})
+        Anhaenge ({attachments.length})
       </div>
       <div className="flex flex-wrap gap-2">
         {visibleAttachments.map((attachment) => (
           <HoverPreview
-            key={attachment.id}
+            key={`${attachment.sourceType}-${attachment.id}`}
             preview={<CalendarWeekAppointmentAttachmentsSinglePreview attachment={attachment} />}
             openDelay={120}
             closeDelay={200}
@@ -67,7 +70,8 @@ export function CalendarWeekAppointmentAttachmentsGallery({
           >
             <div className="cursor-pointer space-y-1">
               <AttachmentThumbnail attachment={attachment} />
-              <div className="w-16 truncate text-[9px] text-slate-600">{attachment.originalName}</div>
+              <div className="w-16 truncate text-[9px] font-semibold text-slate-600">{attachment.sourceLabel}</div>
+              <div className="w-16 truncate text-[9px] text-slate-500">{attachment.originalName}</div>
             </div>
           </HoverPreview>
         ))}

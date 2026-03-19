@@ -816,6 +816,8 @@ export async function listCalendarAppointments({
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const customerAttachmentCounts = await appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds);
+  const projectAttachmentCounts = await appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds);
   const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds);
   const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
@@ -823,6 +825,9 @@ export async function listCalendarAppointments({
 
   return rows.map((row) => {
     const projectId = row.project?.id ?? null;
+    const customerAttachmentsCount = customerAttachmentCounts.get(row.customer.id) ?? 0;
+    const projectAttachmentsCount = projectId ? (projectAttachmentCounts.get(projectId) ?? 0) : 0;
+    const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
     const baseAppointment = {
       id: row.appointment.id,
       version: row.appointment.version,
@@ -851,7 +856,10 @@ export async function listCalendarAppointments({
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
-      appointmentAttachmentsCount: appointmentAttachmentCounts.get(row.appointment.id) ?? 0,
+      customerAttachmentsCount,
+      projectAttachmentsCount,
+      appointmentAttachmentsCount,
+      totalAttachmentsCount: customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount,
       appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],

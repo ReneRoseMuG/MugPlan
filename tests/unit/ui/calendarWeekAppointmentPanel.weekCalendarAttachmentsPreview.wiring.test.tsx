@@ -6,11 +6,11 @@
  *
  * Abgedeckte Regeln:
  * - CalendarWeekAppointmentPanel bindet den Attachment-Hover nur im week-calendar Kontext ein.
- * - Attachment-Hover erhaelt Termin-ID und appointmentAttachmentsCount aus dem Kalendertermin.
+ * - Attachment-Hover erhaelt Termin-ID und totalAttachmentsCount aus dem Kalendertermin.
  *
  * Fehlerfaelle:
  * - Attachment-Hover erscheint ausserhalb des week-calendar Kontexts.
- * - Termin-ID oder Anhang-Zaehler werden nicht korrekt weitergereicht.
+ * - Termin-ID oder aggregierter Dokument-Zaehler werden nicht korrekt weitergereicht.
  *
  * Ziel:
  * Die Verdrahtung des neuen Wochenkarten-Attachment-Hovers regressionssicher absichern.
@@ -27,6 +27,6 @@ describe("FT03 UI: week calendar attachments hover wiring", () => {
     expect(source).toContain('context === "week-calendar"');
     expect(source).toContain("<CalendarWeekAppointmentAttachmentsHover");
     expect(source).toContain("appointmentId={appointment.id}");
-    expect(source).toContain("appointmentAttachmentsCount={appointment.appointmentAttachmentsCount ?? 0}");
+    expect(source).toContain("totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}");
   });
 });
