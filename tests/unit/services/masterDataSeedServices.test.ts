@@ -24,6 +24,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
@@ -638,11 +640,12 @@ describe("FT27 unit: master data seed services", () => {
     await expect(readSeedFile(tempRoot, "tags.csv")).resolves.toContain("Bestehend;#111111");
     await expect(readSeedFile(tempRoot, "tags.csv")).resolves.not.toContain(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
     await expect(readSeedFile(tempRoot, "tags.csv")).resolves.not.toContain(MANAGED_REPORT_EXCLUSION_TAG_NAME);
+    await expect(readSeedFile(tempRoot, "tags.csv")).resolves.not.toContain(MANAGED_SPECIAL_MEASURE_TAG_NAME);
 
     await writeSeedFile(
       tempRoot,
       "tags.csv",
-      `Name;Farbe\nBestehend;#222222\nNeu;\n${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME};#000000\n${MANAGED_REPORT_EXCLUSION_TAG_NAME};#000000\n;#333333\n`,
+      `Name;Farbe\nBestehend;#222222\nNeu;\n${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME};#000000\n${MANAGED_REPORT_EXCLUSION_TAG_NAME};#000000\n${MANAGED_SPECIAL_MEASURE_TAG_NAME};#000000\n;#333333\n`,
     );
 
     const firstRun = await applyTagsSeed();
@@ -653,12 +656,14 @@ describe("FT27 unit: master data seed services", () => {
       "Tag angelegt: Neu",
       `System-Tag uebersprungen: ${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME}`,
       `System-Tag uebersprungen: ${MANAGED_REPORT_EXCLUSION_TAG_NAME}`,
+      `System-Tag uebersprungen: ${MANAGED_SPECIAL_MEASURE_TAG_NAME}`,
       "Tag uebersprungen: Name fehlt",
     ]);
     expect(secondRun.logLines).toContain("Tag aktualisiert: Neu");
     expect(secondRun.logLines).toContain(`System-Tag uebersprungen: ${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME}`);
     expect(secondRun.logLines).toContain(`System-Tag uebersprungen: ${MANAGED_REPORT_EXCLUSION_TAG_NAME}`);
-    expect(state.tags).toHaveLength(4);
+    expect(secondRun.logLines).toContain(`System-Tag uebersprungen: ${MANAGED_SPECIAL_MEASURE_TAG_NAME}`);
+    expect(state.tags).toHaveLength(5);
     expect(state.tags.find((entry) => entry.name === "Bestehend")?.color).toBe("#222222");
     expect(state.tags.find((entry) => entry.name === "Neu")?.color).toBe("#2563eb");
     expect(state.tags.find((entry) => entry.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toMatchObject({
@@ -667,6 +672,10 @@ describe("FT27 unit: master data seed services", () => {
     });
     expect(state.tags.find((entry) => entry.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toMatchObject({
       color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+      isDefault: true,
+    });
+    expect(state.tags.find((entry) => entry.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toMatchObject({
+      color: MANAGED_SPECIAL_MEASURE_TAG_COLOR,
       isDefault: true,
     });
   });

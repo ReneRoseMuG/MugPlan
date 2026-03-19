@@ -358,7 +358,7 @@ export async function getVorlauflistePaged(params: {
         const appointmentMeta = appointmentMetaByProjectId.get(projectId);
         if (!row || !appointmentMeta) return null;
         const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
-        const projectTags = tagsByProjectId.get(projectId) ?? [];
+        const projectTags = (tagsByProjectId.get(projectId) ?? []).filter((tag) => tag.isDefault);
 
         return {
           projectId,

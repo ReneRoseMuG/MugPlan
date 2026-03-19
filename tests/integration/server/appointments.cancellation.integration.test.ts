@@ -23,6 +23,7 @@ import { db } from "../../../server/db";
 import { appointmentEmployees, appointmentTags, projectOrder, tags } from "../../../shared/schema";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
@@ -43,7 +44,7 @@ beforeAll(async () => {
 });
 
 describe("FT01/FT28 integration: appointment cancellation workflow", () => {
-  it("hides the reserved cancellation tag, auto-creates both system tags in the catalog paths, and keeps them protected in admin master data", async () => {
+  it("hides the reserved cancellation tag, auto-creates managed system tags in the catalog paths, and keeps them protected in admin master data", async () => {
     const admin = await loginAdminAgent(app);
 
     await admin.get("/api/tags").expect(200).expect(({ body }) => {
@@ -55,9 +56,16 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
           color: "#f97316",
         }),
       );
+      expect((body as Array<{ name: string; color: string }>)).toContainEqual(
+        expect.objectContaining({
+          name: MANAGED_SPECIAL_MEASURE_TAG_NAME,
+          color: "#1e3a8a",
+        }),
+      );
     });
 
     let managedReportTag: { id: number; name: string; version: number; isDefault: boolean } | undefined;
+    let managedSpecialMeasureTag: { id: number; name: string; version: number; isDefault: boolean; color: string } | undefined;
     let normalizedCancellationTag: { id: number; name: string; version: number; isDefault: boolean; color: string } | undefined;
     await admin.get("/api/admin/master-data/tags").expect(200).expect(({ body }) => {
       normalizedCancellationTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean; color: string }>).find(
@@ -66,12 +74,18 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       managedReportTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean }>).find(
         (tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME,
       );
+      managedSpecialMeasureTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean; color: string }>).find(
+        (tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME,
+      );
     });
     expect(normalizedCancellationTag).toBeDefined();
     expect(normalizedCancellationTag?.color).toBe(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR);
     expect(normalizedCancellationTag?.isDefault).toBe(true);
     expect(managedReportTag).toBeDefined();
     expect(managedReportTag?.isDefault).toBe(true);
+    expect(managedSpecialMeasureTag).toBeDefined();
+    expect(managedSpecialMeasureTag?.color).toBe("#1e3a8a");
+    expect(managedSpecialMeasureTag?.isDefault).toBe(true);
 
     await admin
       .put(`/api/admin/master-data/tags/${normalizedCancellationTag!.id}`)
@@ -100,6 +114,22 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin
       .delete(`/api/admin/master-data/tags/${managedReportTag!.id}`)
       .send({ version: managedReportTag!.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .put(`/api/admin/master-data/tags/${managedSpecialMeasureTag!.id}`)
+      .send({ name: "Sondermaß Neu", version: managedSpecialMeasureTag!.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .delete(`/api/admin/master-data/tags/${managedSpecialMeasureTag!.id}`)
+      .send({ version: managedSpecialMeasureTag!.version })
       .expect(409)
       .expect(({ body }) => {
         expect(body.code).toBe("BUSINESS_CONFLICT");

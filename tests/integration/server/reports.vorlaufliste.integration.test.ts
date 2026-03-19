@@ -22,6 +22,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import { tags } from "../../../shared/schema";
@@ -206,9 +207,47 @@ async function ensureManagedReportExclusionTag() {
   return createExactTagFixture(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
 }
 
+async function ensureManagedSpecialMeasureTag() {
+  const [existing] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+    })
+    .from(tags)
+    .where(eq(tags.name, MANAGED_SPECIAL_MEASURE_TAG_NAME))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  await db.insert(tags).values({
+    name: MANAGED_SPECIAL_MEASURE_TAG_NAME,
+    color: "#1e3a8a",
+    isDefault: true,
+    version: 1,
+  });
+
+  const [created] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+    })
+    .from(tags)
+    .where(eq(tags.name, MANAGED_SPECIAL_MEASURE_TAG_NAME))
+    .limit(1);
+
+  if (!created) {
+    throw new Error("Expected Sondermaß system tag.");
+  }
+
+  return created;
+}
+
 describe("FT26 integration: report vorlaufliste", () => {
   it("returns one row per project with earliest matching appointment and mapped article columns", async () => {
     const admin = await loginAdminAgent(app);
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
     const reportProject = await createReportProjectFixture({
       prefix: "FT26-A",
       appointmentDates: ["2099-05-12", "2099-05-10"],
@@ -229,6 +268,7 @@ describe("FT26 integration: report vorlaufliste", () => {
         roof: "Anthrazit",
       },
     });
+    await attachProjectTagFixture(reportProject.project.id, specialMeasureTag.id);
 
     await createReportProjectFixture({
       prefix: "FT26-B",
@@ -255,9 +295,7 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(response.body.items).toHaveLength(2);
     expect(response.body.items[0]).toEqual(expect.objectContaining({
       projectId: reportProject.project.id,
-      tags: expect.arrayContaining(
-        reportProject.createdTags.map((name) => expect.objectContaining({ name })),
-      ),
+      tags: [expect.objectContaining({ name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: true })],
       customerFullName: "Mustermann, Max",
       postalCode: "12345",
       city: "Berlin",

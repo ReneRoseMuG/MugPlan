@@ -61,7 +61,7 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.listTags).not.toHaveBeenCalled();
   });
 
-  it("ensures both protected system tags before listing tags", async () => {
+  it("ensures all protected system tags before listing tags", async () => {
     repositoryMocks.listTags.mockResolvedValueOnce([]);
 
     await listTags("ADMIN");
@@ -74,6 +74,11 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
       name: "Reklamation",
       color: "#f97316",
+      isDefault: true,
+    });
+    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
+      name: "Sondermaß",
+      color: "#1e3a8a",
       isDefault: true,
     });
     expect(repositoryMocks.listTags).toHaveBeenCalledOnce();
@@ -93,6 +98,15 @@ describe("FT28 unit: masterDataService tags", () => {
       id: 99,
       name: "Reklamation",
       color: "#f97316",
+      isDefault: true,
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    repositoryMocks.ensureTagDefinition.mockResolvedValueOnce({
+      id: 100,
+      name: "Sondermaß",
+      color: "#1e3a8a",
       isDefault: true,
       version: 1,
       createdAt: new Date(),
@@ -130,6 +144,15 @@ describe("FT28 unit: masterDataService tags", () => {
       id: 99,
       name: "Reklamation",
       color: "#f97316",
+      isDefault: true,
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    repositoryMocks.ensureTagDefinition.mockResolvedValueOnce({
+      id: 100,
+      name: "Sondermaß",
+      color: "#1e3a8a",
       isDefault: true,
       version: 1,
       createdAt: new Date(),
@@ -256,6 +279,34 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.deleteTagWithVersion).not.toHaveBeenCalled();
   });
 
+  it("blocks updating the managed special measure tag", async () => {
+    repositoryMocks.getTagById.mockResolvedValueOnce({
+      id: 14,
+      name: "Sondermaß",
+      isDefault: true,
+    });
+
+    await expect(updateTag(14, 1, { name: "Neu" }, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+    expect(repositoryMocks.updateTagWithVersion).not.toHaveBeenCalled();
+  });
+
+  it("blocks deleting the managed special measure tag", async () => {
+    repositoryMocks.getTagById.mockResolvedValueOnce({
+      id: 15,
+      name: "Sondermaß",
+      isDefault: true,
+    });
+
+    await expect(deleteTag(15, 1, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+    expect(repositoryMocks.deleteTagWithVersion).not.toHaveBeenCalled();
+  });
+
   it("ensures the reserved cancellation tag with managed color and isDefault", async () => {
     repositoryMocks.listTags.mockResolvedValueOnce([]);
 
@@ -264,6 +315,11 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
       name: "Storniert",
       color: "#ef4444",
+      isDefault: true,
+    });
+    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
+      name: "Sondermaß",
+      color: "#1e3a8a",
       isDefault: true,
     });
   });

@@ -1,6 +1,8 @@
 import {
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   isProtectedSystemTagName,
@@ -28,6 +30,11 @@ async function ensureManagedSystemTags(): Promise<void> {
   await masterDataRepository.ensureTagDefinition({
     name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
     color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+    isDefault: true,
+  });
+  await masterDataRepository.ensureTagDefinition({
+    name: MANAGED_SPECIAL_MEASURE_TAG_NAME,
+    color: MANAGED_SPECIAL_MEASURE_TAG_COLOR,
     isDefault: true,
   });
 }

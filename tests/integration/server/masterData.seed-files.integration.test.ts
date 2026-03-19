@@ -29,6 +29,8 @@ import * as noteTemplatesRepository from "../../../server/repositories/noteTempl
 import {
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
@@ -343,10 +345,11 @@ describe("FT27 integration: seed file services", () => {
     await expect(readSeedFile("tags.csv")).resolves.toContain("Export Tag;#111111");
     await expect(readSeedFile("tags.csv")).resolves.not.toContain(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
     await expect(readSeedFile("tags.csv")).resolves.not.toContain(MANAGED_REPORT_EXCLUSION_TAG_NAME);
+    await expect(readSeedFile("tags.csv")).resolves.not.toContain(MANAGED_SPECIAL_MEASURE_TAG_NAME);
 
     await writeSeedFile(
       "tags.csv",
-      `Name;Farbe\nExport Tag;#222222\nSeed Tag;\n${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME};#000000\n${MANAGED_REPORT_EXCLUSION_TAG_NAME};#000000\n`,
+      `Name;Farbe\nExport Tag;#222222\nSeed Tag;\n${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME};#000000\n${MANAGED_REPORT_EXCLUSION_TAG_NAME};#000000\n${MANAGED_SPECIAL_MEASURE_TAG_NAME};#000000\n`,
     );
 
     const firstRun = await applyTagsSeed();
@@ -357,6 +360,7 @@ describe("FT27 integration: seed file services", () => {
     expect(firstRun.logLines).toContain("Tag angelegt: Seed Tag");
     expect(firstRun.logLines).toContain(`System-Tag uebersprungen: ${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME}`);
     expect(firstRun.logLines).toContain(`System-Tag uebersprungen: ${MANAGED_REPORT_EXCLUSION_TAG_NAME}`);
+    expect(firstRun.logLines).toContain(`System-Tag uebersprungen: ${MANAGED_SPECIAL_MEASURE_TAG_NAME}`);
     expect(secondRun.logLines).toContain("Tag aktualisiert: Seed Tag");
     expect(tags.filter((entry) => entry.name === "Seed Tag")).toHaveLength(1);
     expect(tags.find((entry) => entry.name === "Export Tag")?.color).toBe("#222222");
@@ -367,6 +371,10 @@ describe("FT27 integration: seed file services", () => {
     });
     expect(tags.find((entry) => entry.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toMatchObject({
       color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
+      isDefault: true,
+    });
+    expect(tags.find((entry) => entry.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toMatchObject({
+      color: MANAGED_SPECIAL_MEASURE_TAG_COLOR,
       isDefault: true,
     });
   });

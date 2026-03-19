@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Der reservierte Termin-Storno-Tag wird namensbasiert robust erkannt.
  * - Der systemverwaltete Vorlauflisten-Tag "Reklamation" wird namensbasiert robust erkannt.
+ * - Der systemverwaltete Sondermass-Tag wird namensbasiert robust erkannt.
  * - Termin-Tag-Listen blenden den reservierten Storno-Tag aus.
  * - Der Vorlauflisten-Tag bleibt in normalen Tag-Listen sichtbar.
  * - Die Storno-Erkennung bleibt gegen Gross-/Kleinschreibung und Leerzeichen stabil.
@@ -19,9 +20,12 @@ import { describe, expect, it } from "vitest";
 import {
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   isManagedReportExclusionTagName,
+  isManagedSpecialMeasureTagName,
   isProtectedSystemTagName,
   isReservedAppointmentCancellationTagName,
 } from "../../../shared/appointmentCancellation";
@@ -47,12 +51,19 @@ describe("appointment cancellation helpers", () => {
   it("detects the managed report exclusion tag and protected system tag names", () => {
     expect(MANAGED_REPORT_EXCLUSION_TAG_NAME).toBe("Reklamation");
     expect(MANAGED_REPORT_EXCLUSION_TAG_COLOR).toBe("#f97316");
+    expect(MANAGED_SPECIAL_MEASURE_TAG_NAME).toBe("Sondermaß");
+    expect(MANAGED_SPECIAL_MEASURE_TAG_COLOR).toBe("#1e3a8a");
     expect(isManagedReportExclusionTagName("Reklamation")).toBe(true);
     expect(isManagedReportExclusionTagName(" reklamation ")).toBe(true);
     expect(isManagedReportExclusionTagName("REKLAMATION")).toBe(true);
     expect(isManagedReportExclusionTagName("Reklamation Orange")).toBe(false);
+    expect(isManagedSpecialMeasureTagName("Sondermaß")).toBe(true);
+    expect(isManagedSpecialMeasureTagName(" sondermaß ")).toBe(true);
+    expect(isManagedSpecialMeasureTagName("SONDERMASS")).toBe(true);
+    expect(isManagedSpecialMeasureTagName("Sondermass Blau")).toBe(false);
     expect(isProtectedSystemTagName("Storniert")).toBe(true);
     expect(isProtectedSystemTagName("Reklamation")).toBe(true);
+    expect(isProtectedSystemTagName("Sondermaß")).toBe(true);
     expect(isProtectedSystemTagName("Info")).toBe(false);
   });
 

@@ -3,6 +3,8 @@ import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   MANAGED_REPORT_EXCLUSION_TAG_COLOR,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
 } from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
 import * as masterDataRepository from "../repositories/masterDataRepository";
@@ -28,10 +30,19 @@ export async function ensureManagedReportExclusionTag(): Promise<Tag> {
   });
 }
 
+export async function ensureManagedSpecialMeasureTag(): Promise<Tag> {
+  return masterDataRepository.ensureTagDefinition({
+    name: MANAGED_SPECIAL_MEASURE_TAG_NAME,
+    color: MANAGED_SPECIAL_MEASURE_TAG_COLOR,
+    isDefault: true,
+  });
+}
+
 export async function listTagCatalog(): Promise<Tag[]> {
   await Promise.all([
     ensureAppointmentCancellationTag(),
     ensureManagedReportExclusionTag(),
+    ensureManagedSpecialMeasureTag(),
   ]);
   const tags = await tagRelationsRepository.listTagCatalog();
   return filterVisibleAppointmentTags(tags);
