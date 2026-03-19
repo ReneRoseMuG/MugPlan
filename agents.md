@@ -250,6 +250,18 @@ Ohne bestandenes Safety Gate gilt jeder Testlauf als ungültig.
 
 Für `npm run test:integration` und `npm run test:e2e` ist standardmäßig ein langer Command-Timeout zu verwenden. `npm run test:e2e:browser` bleibt davon unberührt.
 
+### Test-Kommandos nur seriell
+
+Alle Test-Kommandos werden ausschließlich **seriell** ausgeführt. Das gilt nicht nur für den vollen Testlauf, sondern auch für gezielte Einzeldateien, Teilmengen, Re-Runs und lokale Fehlereingrenzung.
+
+Unzulässig ist insbesondere:
+
+- gleichzeitiges Starten mehrerer `vitest`-, `playwright`-, `npm run test:*`- oder vergleichbarer Testprozesse
+- paralleles Ausführen von Integrationstests gegen dieselbe Testdatenbank
+- paralleles Ausführen mehrerer Browserläufe, wenn sie denselben lokalen Webserver, dieselbe Testumgebung oder denselben Reset-/Fixture-Kontext verwenden
+
+Vor jedem weiteren Testkommando ist immer das Ergebnis des vorherigen Testkommandos abzuwarten und zu dokumentieren.
+
 ### Verbotene Testmuster
 
 - Direkter Insert/Update-Sprawl in Testdateien ohne zentralen Einstieg

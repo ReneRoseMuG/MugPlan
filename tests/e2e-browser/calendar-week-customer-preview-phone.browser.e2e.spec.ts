@@ -47,7 +47,6 @@ test("zeigt Telefonnummer im Kundendaten-Hover-Preview wenn am Kunden hinterlegt
   });
 
   await loginAsAdmin(page);
-  await page.goto("/");
 
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
@@ -77,7 +76,6 @@ test("zeigt 'nicht hinterlegt' im Kundendaten-Hover-Preview wenn keine Telefonnu
   });
 
   await loginAsAdmin(page);
-  await page.goto("/");
 
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });

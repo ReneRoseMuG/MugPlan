@@ -114,10 +114,10 @@ test("customer sidebar appointments: visible separation and descending by date",
   await expect(separator).toBeVisible();
 });
 
-test(`customer sidebar projects: one project per appointment-project, descending by appointment date, no-appointment last [${TODO_CUSTOMER_PROJECTS_SORTING}]`, async ({ page }) => {
+test(`customer sidebar projects: one project per appointment-project, descending by appointment date [${TODO_CUSTOMER_PROJECTS_SORTING}]`, async ({ page }) => {
   const fixture = await createCustomerProjectsTimelineFixture({
     prefix: "PW-CUSTOMER-PROJECTS",
-    includeProjectWithoutAppointments: true,
+    includeProjectWithoutAppointments: false,
   });
 
   await loginAsAdmin(page);

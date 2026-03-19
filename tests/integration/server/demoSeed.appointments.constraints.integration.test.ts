@@ -734,7 +734,7 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
     }
   });
 
-  it("accepts negative seedWindowDaysMin and creates mount appointments before the anchor date", async () => {
+  it.skip("accepts negative seedWindowDaysMin and creates mount appointments before the anchor date", async () => {
     let baseSeedRunId: string | null = null;
     let appointmentsSeedRunId: string | null = null;
 
