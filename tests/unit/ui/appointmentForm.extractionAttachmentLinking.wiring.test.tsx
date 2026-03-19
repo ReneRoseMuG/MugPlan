@@ -36,15 +36,17 @@ describe("FT21/FT24 unit: appointment extraction attachment linking", () => {
     expect(appointmentSource).toContain("onProjectCreated={(createdProjectId, result) => {");
     expect(appointmentSource).toContain("removeDraftAppointmentAttachmentForFile(pendingProjectDraft.documentFile);");
 
-    expect(projectSource).toContain("if (createdProjectId && documentExtractionFile)");
+    expect(projectSource).toContain("const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);");
+    expect(projectSource).toContain("let attachmentLinked = false;");
     expect(projectSource).toContain("let extractionAttachmentLinked = false;");
     expect(projectSource).toContain("/api/attachments/duplicates/check-original-name");
-    expect(projectSource).toContain("body: JSON.stringify({ originalName: documentExtractionFile.name })");
+    expect(projectSource).toContain("body: JSON.stringify({ originalName: file.name })");
     expect(projectSource).toContain("window.confirm(");
-    expect(projectSource).toContain("uploadData.append(\"file\", documentExtractionFile);");
-    expect(projectSource).toContain("fetch(`/api/projects/${createdProjectId}/attachments`");
-    expect(projectSource).toContain("extractionAttachmentLinked = true;");
+    expect(projectSource).toContain("uploadData.append(\"file\", file);");
+    expect(projectSource).toContain("fetch(`/api/projects/${targetProjectId}/attachments`");
+    expect(projectSource).toContain("attachmentLinked = true;");
+    expect(projectSource).toContain("extractionAttachmentLinked = await persistCreateSidebarDrafts(createdProject.id);");
     expect(projectSource).toContain("onProjectCreated?.(createdProjectId, { attachmentLinked: extractionAttachmentLinked });");
-    expect(projectSource).toContain("invalidateQueries({ queryKey: [\"/api/projects\", createdProjectId, \"attachments\"] })");
+    expect(projectSource).toContain("invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'attachments'] })");
   });
 });

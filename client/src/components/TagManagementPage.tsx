@@ -34,6 +34,10 @@ async function invalidateTagQueries(): Promise<void> {
   await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
 }
 
+function isProtectedSystemTag(tag: Pick<Tag, "isDefault">): boolean {
+  return Boolean(tag.isDefault);
+}
+
 export function TagManagementPage() {
   const { toast } = useToast();
   const [newTag, setNewTag] = useState({ name: "", color: "#2563eb" });
@@ -148,7 +152,16 @@ export function TagManagementPage() {
                       onChange={(event) => setEditTag({ ...editTag, name: event.target.value })}
                       data-testid={`input-edit-tag-name-${row.id}`}
                     />
-                  ) : row.name}
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>{row.name}</span>
+                      {isProtectedSystemTag(row) ? (
+                        <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                          System
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
                   {editTag?.id === row.id ? (
@@ -182,19 +195,23 @@ export function TagManagementPage() {
                       </Button>
                     </>
                   ) : (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditTag({ ...row })}>Bearbeiten</Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          if (!window.confirm(`Tag "${row.name}" löschen?`)) return;
-                          deleteTagMutation.mutate({ id: row.id, version: row.version });
-                        }}
-                      >
-                        Löschen
-                      </Button>
-                    </>
+                    isProtectedSystemTag(row) ? (
+                      <span className="text-sm text-muted-foreground">Geschuetzter System-Tag</span>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => setEditTag({ ...row })}>Bearbeiten</Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            if (!window.confirm(`Tag "${row.name}" löschen?`)) return;
+                            deleteTagMutation.mutate({ id: row.id, version: row.version });
+                          }}
+                        >
+                          Löschen
+                        </Button>
+                      </>
+                    )
                   )}
                 </TableCell>
               </TableRow>
@@ -205,8 +222,3 @@ export function TagManagementPage() {
     </section>
   );
 }
-
-
-
-
-

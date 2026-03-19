@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { FileText, Loader2 } from "lucide-react";
+import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ type ReportType = "vorlaufliste" | "product-vorlauf";
 
 type VorlauflisteItem = {
   projectId: number;
+  reportState: AppointmentCancellationReportState;
   tags: Tag[];
   amount: string | null;
   customerFullName: string | null;
@@ -123,6 +125,18 @@ function formatAmount(value: string | null): string {
 function resolveValue(value: string | null): string {
   if (!value || value.trim().length === 0) return "-";
   return value.trim();
+}
+
+function resolveVorlauflisteStateLabel(state: AppointmentCancellationReportState): string | null {
+  if (state === "contains_cancelled") return "Teilweise storniert";
+  if (state === "cancelled_only") return "Storniert";
+  return null;
+}
+
+function resolveVorlauflisteRowClassName(row: VorlauflisteItem): string | undefined {
+  if (row.reportState === "contains_cancelled") return "bg-amber-50/70";
+  if (row.reportState === "cancelled_only") return "bg-rose-50/70 text-muted-foreground";
+  return undefined;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -284,7 +298,32 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   });
 
   const columns = useMemo<TableViewColumnDef<VorlauflisteItem>[]>(() => [
-    { id: "tags", header: "Tags", accessor: (row) => row.tags.map((tag) => tag.name).join(", "), minWidth: 180, cell: ({ row }) => <EntityTagFooterRow tags={row.tags} testId={`reports-vorlaufliste-tags-${row.projectId}`} /> },
+    {
+      id: "tags",
+      header: "Tags",
+      accessor: (row) => row.tags.map((tag) => tag.name).join(", "),
+      minWidth: 180,
+      cell: ({ row }) => {
+        const stateLabel = resolveVorlauflisteStateLabel(row.reportState);
+        return (
+          <div className="space-y-2">
+            <EntityTagFooterRow tags={row.tags} testId={`reports-vorlaufliste-tags-${row.projectId}`} />
+            {stateLabel ? (
+              <span
+                className={cn(
+                  "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                  row.reportState === "cancelled_only"
+                    ? "border-rose-200 bg-rose-100 text-rose-800"
+                    : "border-amber-200 bg-amber-100 text-amber-800",
+                )}
+              >
+                {stateLabel}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+    },
     { id: "amount", header: "Auftragssumme", accessor: (row) => row.amount ?? "", minWidth: 160, align: "right", cell: ({ row }) => <span>{formatAmount(row.amount)}</span> },
     { id: "customerFullName", header: "Kunde", accessor: (row) => row.customerFullName ?? "", minWidth: 220, cell: ({ row }) => <span>{resolveValue(row.customerFullName)}</span> },
     { id: "postalCode", header: "PLZ", accessor: (row) => row.postalCode ?? "", minWidth: 110, cell: ({ row }) => <span>{resolveValue(row.postalCode)}</span> },
@@ -535,6 +574,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                       columns={columns}
                       rows={vorlauflisteData?.items ?? []}
                       rowKey={(row) => row.projectId}
+                      rowClassName={resolveVorlauflisteRowClassName}
                       testId="table-reports-vorlaufliste"
                       stickyHeader
                       emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Fuer den gewaehlten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}

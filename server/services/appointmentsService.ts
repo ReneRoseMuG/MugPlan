@@ -1,6 +1,7 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import type { InsertAppointment } from "@shared/schema";
 import { addWeeks, differenceInCalendarDays, endOfWeek, startOfWeek } from "date-fns";
+import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import {
   getProjectArticleField,
@@ -13,6 +14,12 @@ import * as employeesRepository from "../repositories/employeesRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatcher";
+import {
+  filterVisibleAppointmentTagRelations,
+  filterVisibleAppointmentTags,
+  hasAppointmentCancellationTag,
+  isAppointmentCancellationTag,
+} from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
 import * as tagRelationsService from "./tagRelationsService";
 
@@ -36,7 +43,10 @@ class AppointmentError extends Error {
     | "VALIDATION_ERROR"
     | "EMPLOYEE_OVERLAP_CONFLICT"
     | "INACTIVE_ENTITY_ASSIGNMENT"
-    | "PAST_APPOINTMENT_READONLY";
+    | "PAST_APPOINTMENT_READONLY"
+    | "CANCELLATION_TAG_NOT_CONFIGURED"
+    | "CANCELLATION_TAG_PROTECTED"
+    | "CANCELLED_APPOINTMENT_READONLY";
   conflictEmployees?: Array<{ id: number; fullName: string }>;
 
   constructor(
@@ -50,7 +60,10 @@ class AppointmentError extends Error {
       | "VALIDATION_ERROR"
       | "EMPLOYEE_OVERLAP_CONFLICT"
       | "INACTIVE_ENTITY_ASSIGNMENT"
-      | "PAST_APPOINTMENT_READONLY",
+      | "PAST_APPOINTMENT_READONLY"
+      | "CANCELLATION_TAG_NOT_CONFIGURED"
+      | "CANCELLATION_TAG_PROTECTED"
+      | "CANCELLED_APPOINTMENT_READONLY",
     options?: {
       conflictEmployees?: Array<{ id: number; fullName: string }>;
     },
@@ -123,6 +136,25 @@ function resolveOverlapStartTimeHour(startTime?: string | null): number | null {
     throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
   }
   return Math.floor(seconds / 3600);
+}
+
+function resolveVisibleAppointmentTags(tags: Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>> extends Map<number, infer TValue> ? TValue : never) {
+  const appointmentTags = tags ?? [];
+  return {
+    isCancelled: hasAppointmentCancellationTag(appointmentTags),
+    visibleTags: filterVisibleAppointmentTags(appointmentTags),
+  };
+}
+
+async function isAppointmentCancelled(appointmentId: number): Promise<boolean> {
+  const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds([appointmentId]);
+  return hasAppointmentCancellationTag(appointmentTagsByAppointmentId.get(appointmentId) ?? []);
+}
+
+async function assertAppointmentNotCancelled(appointmentId: number, message = "Stornierte Termine koennen nicht geaendert werden"): Promise<void> {
+  if (await isAppointmentCancelled(appointmentId)) {
+    throw new AppointmentError(message, 409, "CANCELLED_APPOINTMENT_READONLY");
+  }
 }
 
 function assertNotHistoricalInput(data: { startDate: string; startTime?: string | null }) {
@@ -279,6 +311,9 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
 
   return rows.map((row) => {
     const projectId = row.project?.id ?? null;
+    const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
+      appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+    );
     return {
       id: row.appointment.id,
       version: row.appointment.version,
@@ -308,11 +343,12 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
-      appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+      appointmentTags: visibleTags,
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
       isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      isCancelled,
     };
   });
 };
@@ -399,6 +435,7 @@ export async function getAppointmentDetails(id: number) {
   const projectTagsByProjectId = appointment.projectId != null
     ? await appointmentsRepository.getProjectTagsByProjectIds([appointment.projectId])
     : await appointmentsRepository.getProjectTagsByProjectIds([]);
+  const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(appointmentTagsByAppointmentId.get(id) ?? []);
 
   return {
     id: appointment.id,
@@ -414,9 +451,10 @@ export async function getAppointmentDetails(id: number) {
     endDate: toDateOnlyString(appointment.endDate),
     endTime: appointment.endTime ?? null,
     employees: appointment.employees,
-    appointmentTags: appointmentTagsByAppointmentId.get(id) ?? [],
+    appointmentTags: visibleTags,
     customerTags: customerTagsByCustomerId.get(appointment.customerId) ?? [],
     projectTags: appointment.projectId != null ? (projectTagsByProjectId.get(appointment.projectId) ?? []) : [],
+    isCancelled,
   };
 }
 
@@ -509,6 +547,8 @@ export async function updateAppointment(
       throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
     }
 
+    await assertAppointmentNotCancelled(appointmentId);
+
     assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
 
     const relation = await resolveAppointmentRelationTx(
@@ -581,6 +621,8 @@ export async function setAppointmentDisplayMode(
       }
       throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
     }
+
+    await assertAppointmentNotCancelled(appointmentId);
 
     const updateResult = await appointmentsRepository.updateAppointmentDisplayModeWithVersionTx(tx, {
       appointmentId,
@@ -825,6 +867,9 @@ export async function listCalendarAppointments({
 
   return rows.map((row) => {
     const projectId = row.project?.id ?? null;
+    const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
+      appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+    );
     const customerAttachmentsCount = customerAttachmentCounts.get(row.customer.id) ?? 0;
     const projectAttachmentsCount = projectId ? (projectAttachmentCounts.get(projectId) ?? 0) : 0;
     const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
@@ -860,12 +905,13 @@ export async function listCalendarAppointments({
       projectAttachmentsCount,
       appointmentAttachmentsCount,
       totalAttachmentsCount: customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount,
-      appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+      appointmentTags: visibleTags,
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
       employees: employeesByAppointment.get(row.appointment.id) ?? [],
       isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      isCancelled,
     };
 
     if (resolvedDetail === "full") {
@@ -965,6 +1011,9 @@ export async function listAppointmentsList(params: {
   const items = rows.map((row) => {
     const projectId = row.project?.id ?? null;
     const rowEmployees = employeesByAppointment.get(row.appointment.id) ?? [];
+    const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
+      appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+    );
     return {
       id: row.appointment.id,
       projectId,
@@ -993,11 +1042,12 @@ export async function listAppointmentsList(params: {
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
-      appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+      appointmentTags: visibleTags,
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
       isLocked: params.roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      isCancelled,
       allDay: row.appointment.startTime == null,
       singleEmployee: rowEmployees.length === 1,
     };
@@ -1022,6 +1072,8 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
       throw new AppointmentError("Historische Termine koennen nicht geloescht werden", 409, "PAST_APPOINTMENT_READONLY");
     }
 
+    await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht geloescht werden");
+
     const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
       appointmentId,
       expectedVersion,
@@ -1041,7 +1093,8 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
 export async function listAppointmentTagRelations(appointmentId: number) {
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
-  return tagRelationsService.listTagRelations("appointment", appointmentId);
+  const relations = await tagRelationsService.listTagRelations("appointment", appointmentId);
+  return filterVisibleAppointmentTagRelations(relations);
 }
 
 export async function addAppointmentTag(
@@ -1055,9 +1108,13 @@ export async function addAppointmentTag(
   if (isStartDateLocked(appointment.startDate)) {
     throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
   }
+  await assertAppointmentNotCancelled(appointmentId);
   const tag = await tagRelationsService.getTagById(tagId);
   if (!tag) {
     return null;
+  }
+  if (isAppointmentCancellationTag(tag)) {
+    throw new AppointmentError("Der Storno-Tag kann nur ueber die Storno-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   return tagRelationsService.addTagRelation("appointment", appointmentId, tagId);
 }
@@ -1077,6 +1134,14 @@ export async function removeAppointmentTag(
   if (isStartDateLocked(appointment.startDate)) {
     throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
   }
+  const tag = await tagRelationsService.getTagById(tagId);
+  if (!tag) {
+    return null;
+  }
+  if (isAppointmentCancellationTag(tag)) {
+    throw new AppointmentError("Der Storno-Tag kann nicht entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+  }
+  await assertAppointmentNotCancelled(appointmentId);
   const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
   if (result.kind === "version_conflict") {
     throw new AppointmentError("Termin-Tag wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
@@ -1095,9 +1160,32 @@ export async function removeEmployeeFromAppointment(
   requireDispatcherOrAdmin(roleKey);
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
+  await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht bearbeitet werden");
   await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     await appointmentsRepository.deleteAppointmentEmployeeTx(tx, appointmentId, employeeId);
   });
+  return { found: true };
+}
+
+export async function cancelAppointment(appointmentId: number, roleKey: CanonicalRoleKey): Promise<{ found: boolean }> {
+  requireDispatcherOrAdmin(roleKey);
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return { found: false };
+  if (isStartDateLocked(appointment.startDate)) {
+    throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
+  }
+
+  const cancellationTag = await tagRelationsService.getTagByName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
+  if (!cancellationTag) {
+    throw new AppointmentError("Der reservierte Storno-Tag ist nicht konfiguriert", 409, "CANCELLATION_TAG_NOT_CONFIGURED");
+  }
+
+  const relations = await tagRelationsService.listTagRelations("appointment", appointmentId);
+  if (relations.some((relation) => isAppointmentCancellationTag(relation.tag))) {
+    return { found: true };
+  }
+
+  await tagRelationsService.addTagRelation("appointment", appointmentId, cancellationTag.id);
   return { found: true };
 }
 

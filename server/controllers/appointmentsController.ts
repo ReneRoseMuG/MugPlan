@@ -302,6 +302,29 @@ export async function removeAppointmentTag(req: Request, res: Response, next: Ne
   }
 }
 
+export async function cancelAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const appointmentId = Number(req.params.id);
+    const result = await appointmentsService.cancelAppointment(appointmentId, roleKey);
+    if (!result.found) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.status(204).send();
+  } catch (err) {
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function removeEmployeeFromAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = getRoleKeyFromRequest(req);

@@ -52,4 +52,11 @@ describe("FT01 UI: calendar drag drop validation message wiring", () => {
     expect(weekSource).toContain("await refreshMonitoringWithNotification(toast);");
     expect(monthSource).toContain("await refreshMonitoringWithNotification(toast);");
   });
+
+  it("blocks drag and drop for cancelled appointments in both calendar views", () => {
+    expect(weekSource).toContain("drop blocked: cancelled appointment");
+    expect(weekSource).toContain("Stornierte Termine koennen nicht verschoben werden.");
+    expect(monthSource).toContain("drop blocked: cancelled appointment");
+    expect(monthSource).toContain("Stornierte Termine koennen nicht verschoben werden.");
+  });
 });

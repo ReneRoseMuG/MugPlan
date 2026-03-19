@@ -50,6 +50,7 @@ export type CalendarAppointment = {
   displayMode: "standard" | "compact" | "detail";
   employees: { id: number; fullName: string }[];
   isLocked: boolean;
+  isCancelled: boolean;
 };
 
 const logPrefix = "[calendar-appointments]";

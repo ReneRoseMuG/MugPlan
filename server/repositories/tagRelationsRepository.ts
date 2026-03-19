@@ -47,6 +47,19 @@ export async function getTagById(tagId: number): Promise<Tag | null> {
   return row ?? null;
 }
 
+export async function getTagByName(tagName: string): Promise<Tag | null> {
+  const normalizedTagName = tagName.trim();
+  if (normalizedTagName.length === 0) return null;
+
+  const [row] = await db
+    .select()
+    .from(tags)
+    .where(sql`lower(trim(${tags.name})) = lower(trim(${normalizedTagName}))`)
+    .limit(1);
+
+  return row ?? null;
+}
+
 export async function listCustomerTagRelations(customerId: number): Promise<TagRelationItem[]> {
   const rows = await db
     .select({

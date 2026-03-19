@@ -1,5 +1,6 @@
 import type { DbRoleCode, CanonicalRoleKey } from "../settings/registry";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
+import { hasAppointmentCancellationTag } from "../lib/appointmentCancellation";
 import * as userSettingsService from "./userSettingsService";
 
 export type MonitoringConfig = {
@@ -114,9 +115,15 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
     fromDate: parseDateOnly(todayBerlin),
     toDate: config.tr01.allAppointments ? undefined : parseDateOnly(tr01HorizonEnd),
   });
+  const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(
+    rows.map((row) => row.appointmentId),
+  );
 
   const items: MonitoringItem[] = [];
   for (const row of rows) {
+    if (hasAppointmentCancellationTag(appointmentTagsByAppointmentId.get(row.appointmentId) ?? [])) {
+      continue;
+    }
     if (row.startDate < todayBerlin) {
       continue;
     }
