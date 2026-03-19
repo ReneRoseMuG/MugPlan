@@ -4,12 +4,12 @@
  * Abgedeckte Regeln:
  * - Vorhandene Direkttermine lassen sich im Browser oeffnen und zeigen Kunde ohne Projekt.
  * - Das Formular blockiert Speichern, wenn weder Projekt noch Kunde gesetzt ist.
- * - Projektentfernung im Formular speichert einen Termin als Direkttermin mit bestehendem Kunden.
+ * - Vorhandene Projektzuordnungen an bestehenden Terminen lassen sich im Formular nicht entfernen.
  *
  * Fehlerfaelle:
  * - Direkttermin-Edit zeigt keine direkte Kundenrelation.
  * - Formular erlaubt Speichern ohne jede Relation.
- * - Projektentfernung behaelt projectId ungewollt oder verliert customerId.
+ * - Bestehende Projektzuordnung wird trotz gesperrter Abloselogik entfernt oder verliert die Kundenableitung.
  *
  * Ziel:
  * Stabile Browser-E2E fuer die wichtigsten Direkttermin-Pfade ohne Abhaengigkeit von den aktuell bruechigen Picker-Dialogen.
@@ -69,7 +69,7 @@ test("blocks save when neither project nor customer is set", async ({ page }) =>
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
 });
 
-test("removes project from an existing project appointment and keeps customer", async ({ page }) => {
+test("keeps project on an existing project appointment and offers no remove action", async ({ page }) => {
   const project = await createProjectFixture({ prefix: "BROWSER-REMOVE-PROJ" });
   const appointment = await createAppointmentFixture({
     projectId: project.id,
@@ -77,9 +77,7 @@ test("removes project from an existing project appointment and keeps customer", 
   });
 
   await openExistingAppointment(page, appointment.id);
-  await expect(page.getByTestId("slot-project-relation-action-remove")).toBeVisible();
-  await page.getByTestId("slot-project-relation-action-remove").click();
-  await expect(page.getByTestId("slot-project-relation")).toContainText("Kein Projekt ausgewählt");
+  await expect(page.getByTestId("slot-project-relation-action-remove")).toHaveCount(0);
   await page.getByTestId("button-save-appointment").click();
   await page.getByRole("button", { name: "Trotzdem speichern" }).click();
 
@@ -94,7 +92,7 @@ test("removes project from an existing project appointment and keeps customer", 
       customerId: body.customerId,
     };
   }).toEqual({
-    projectId: null,
+    projectId: project.id,
     customerId: project.customerId,
   });
 });

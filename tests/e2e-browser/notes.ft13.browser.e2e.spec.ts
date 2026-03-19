@@ -45,9 +45,7 @@ async function createLinkedFixture(prefix: string) {
 
 async function setNoteCardColor(page: Page, hex: string) {
   const dialog = page.getByRole("dialog");
-  const toggleButton = dialog.getByTestId("button-note-toggle-card-color");
-  await toggleButton.click();
-  await expect(toggleButton).toContainText("Farbe entfernen");
+  await expect(dialog.getByTestId("button-note-card-color-picker")).toBeVisible();
   await dialog.getByTestId("button-note-card-color-picker-hex").fill(hex);
   await expect(dialog.getByTestId("button-note-card-color-picker-preview")).toHaveCSS("background-color", hexToRgb(hex));
 }

@@ -142,6 +142,10 @@ vi.mock("@/components/AppointmentEmployeeSlot", () => ({
   AppointmentEmployeeSlot: () => <div>employee-slot</div>,
 }));
 
+vi.mock("@/components/TagPickerPanel", () => ({
+  TagPickerPanel: () => <div>tags</div>,
+}));
+
 vi.mock("@/components/NotesSection", () => ({
   NotesSection: () => <div>notes</div>,
 }));
