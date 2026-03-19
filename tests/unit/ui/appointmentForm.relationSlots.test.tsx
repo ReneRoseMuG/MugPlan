@@ -7,11 +7,13 @@
  * Abgedeckte Regeln:
  * - Projektrelation im Terminformular nutzt RelationSlot mit Projektdaten.
  * - Die Projektdatenquelle des Formulars nutzt `scope=all`.
+ * - Ein gesetztes Projekt rendert im Terminformular keine Remove-Aktion mehr.
  * - Bei Projektkontext ist der Kundenslot readonly und zeigt die abgeleitete Kundenkarte.
  * - Ohne Projektkontext bleiben Projekt- und Kundenslot leer und selektierbar.
  *
  * Fehlerfaelle:
  * - Projekt-Slot rendert keine aktive Relation trotz gewaehltem Projekt.
+ * - Projekt-Slot bietet weiter eine Abloeseaktion fuer bestehende Projektzuordnungen an.
  * - Kunden-Slot ignoriert die vom Projekt abgeleitete Readonly-Regel.
  *
  * Ziel:
@@ -254,6 +256,7 @@ describe("FT01 appointment form relation slots", () => {
     );
     expect(projectSlot.state).toBe("active");
     expect(projectSlot.addActionTestId).toBe("button-select-project");
+    expect(projectSlot.onRemove).toBeUndefined();
     expect(customerSlot.state).toBe("readonly");
     expect(customerSlot.emptyText).toBe("Kein Kunde ausgewählt");
     expect(projectDetailCardCalls[0]).toMatchObject({

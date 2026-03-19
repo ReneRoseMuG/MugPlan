@@ -1517,7 +1517,6 @@ export function AppointmentForm({
             icon={<FolderKanban className="w-4 h-4" />}
             state={isProjectReadOnly ? "readonly" : selectedProject ? "active" : "empty"}
             onAdd={isProjectReadOnly ? undefined : () => setProjectPickerOpen(true)}
-            onRemove={isProjectReadOnly ? undefined : () => setSelectedProjectId(null)}
             addLabel="Projekt auswählen"
             emptyText="Kein Projekt ausgewählt"
             testId="slot-project-relation"
