@@ -672,14 +672,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               )}
 
-          <NotesSection
-            notes={notes}
-            isLoading={notesLoading}
-            onAdd={handleAddNote}
-            onUpdate={isEditMode ? handleUpdateNote : undefined}
-            onTogglePin={isEditMode ? handleTogglePin : undefined}
-            onDelete={isEditMode ? handleDeleteNote : undefined}
-          />
         </div>
 
         <div className="min-w-0 space-y-6">
@@ -706,6 +698,17 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               onAdd={(tagId) => addCustomerTagMutation.mutate(tagId)}
               onRemove={(item) => removeCustomerTagMutation.mutate(item)}
               className="h-auto"
+            />
+          ) : null}
+
+          {isEditMode ? (
+            <NotesSection
+              notes={notes}
+              isLoading={notesLoading}
+              onAdd={handleAddNote}
+              onUpdate={isEditMode ? handleUpdateNote : undefined}
+              onTogglePin={isEditMode ? handleTogglePin : undefined}
+              onDelete={isEditMode ? handleDeleteNote : undefined}
             />
           ) : null}
         </div>

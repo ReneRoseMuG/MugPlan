@@ -1510,26 +1510,6 @@ export function ProjectForm({
                 />
               ) : null}
 
-              {/* Notizen - nur bei Bearbeitung */}
-              {isEditing && (
-                <NotesSection
-                  notes={projectNotes}
-                  isLoading={notesLoading}
-                  onAdd={(data) => createNoteMutation.mutate(data)}
-                  onUpdate={(noteId, data) => {
-                    const version = getProjectNoteVersion(noteId);
-                    updateNoteMutation.mutate({ noteId, ...data, version });
-                  }}
-                  onTogglePin={(id, isPinned) => {
-                    const version = getProjectNoteVersion(id);
-                    togglePinMutation.mutate({ noteId: id, isPinned, version });
-                  }}
-                  onDelete={(noteId) => {
-                    const version = getProjectNoteVersion(noteId);
-                    deleteNoteMutation.mutate({ noteId, version });
-                  }}
-                />
-              )}
           </div>
 
           {/* Rechte Spalte: Termine und Dokumente */}
@@ -1565,6 +1545,26 @@ export function ProjectForm({
                   onAdd={(tagId) => addProjectTagMutation.mutate(tagId)}
                   onRemove={(item) => removeProjectTagMutation.mutate(item)}
                   className="h-auto"
+                />
+              ) : null}
+
+              {isEditing ? (
+                <NotesSection
+                  notes={projectNotes}
+                  isLoading={notesLoading}
+                  onAdd={(data) => createNoteMutation.mutate(data)}
+                  onUpdate={(noteId, data) => {
+                    const version = getProjectNoteVersion(noteId);
+                    updateNoteMutation.mutate({ noteId, ...data, version });
+                  }}
+                  onTogglePin={(id, isPinned) => {
+                    const version = getProjectNoteVersion(id);
+                    togglePinMutation.mutate({ noteId: id, isPinned, version });
+                  }}
+                  onDelete={(noteId) => {
+                    const version = getProjectNoteVersion(noteId);
+                    deleteNoteMutation.mutate({ noteId, version });
+                  }}
                 />
               ) : null}
           </div>
