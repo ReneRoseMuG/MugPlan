@@ -1,5 +1,10 @@
 import { FileText, Paperclip } from "lucide-react";
 import { HoverPreview } from "@/components/ui/hover-preview";
+import {
+  parseAttachmentPreviewSize,
+  resolveAttachmentPreviewDimensions,
+} from "@/components/ui/badge-previews/attachment-info-badge-preview";
+import { useSetting } from "@/hooks/useSettings";
 import { CalendarWeekAppointmentAttachmentsSinglePreview } from "./CalendarWeekAppointmentAttachmentsSinglePreview";
 
 type AppointmentAttachmentItem = {
@@ -47,6 +52,8 @@ export function CalendarWeekAppointmentAttachmentsGallery({
 }: {
   attachments: AppointmentAttachmentItem[];
 }) {
+  const attachmentPreviewSize = parseAttachmentPreviewSize(useSetting("attachmentPreviewSize"));
+  const previewDimensions = resolveAttachmentPreviewDimensions(attachmentPreviewSize);
   const visibleAttachments = attachments.slice(0, 4);
   const hiddenCount = Math.max(0, attachments.length - visibleAttachments.length);
 
@@ -63,10 +70,14 @@ export function CalendarWeekAppointmentAttachmentsGallery({
             openDelay={120}
             closeDelay={200}
             side="right"
-            align="start"
-            maxWidth={420}
-            maxHeight={380}
-            className="z-[9999] w-[420px]"
+            align="end"
+            sideOffset={10}
+            collisionPadding={24}
+            maxWidth={previewDimensions.popoverMaxWidth}
+            minWidth={previewDimensions.popoverMaxWidth}
+            maxHeight={previewDimensions.popoverMaxHeight}
+            className="z-[9999]"
+            contentClassName="space-y-2"
           >
             <div className="cursor-pointer space-y-1">
               <AttachmentThumbnail attachment={attachment} />

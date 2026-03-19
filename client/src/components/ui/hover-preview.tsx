@@ -25,6 +25,7 @@ type HoverPreviewProps = {
   maxWidth?: number;
   minWidth?: number;
   maxHeight?: number | null;
+  collisionPadding?: number;
   cursorOffsetX?: number;
   cursorOffsetY?: number;
   viewportPadding?: number;
@@ -85,6 +86,7 @@ export function HoverPreview({
   maxWidth = 360,
   minWidth,
   maxHeight = 260,
+  collisionPadding = 8,
   cursorOffsetX = 14,
   cursorOffsetY = 18,
   viewportPadding = 8,
@@ -199,6 +201,7 @@ export function HoverPreview({
           side={side}
           align={align}
           sideOffset={sideOffset}
+          collisionPadding={collisionPadding}
           style={resolvedMaxHeight == null ? { maxWidth, minWidth } : { maxWidth, minWidth, maxHeight: resolvedMaxHeight }}
           className={cn(className)}
           onMouseEnter={handlePreviewMouseEnter}

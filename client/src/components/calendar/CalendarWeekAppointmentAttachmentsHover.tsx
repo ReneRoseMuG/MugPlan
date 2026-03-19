@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Paperclip } from "lucide-react";
 import { HoverPreview } from "@/components/ui/hover-preview";
+import {
+  parseAttachmentPreviewSize,
+  resolveAttachmentPreviewDimensions,
+} from "@/components/ui/badge-previews/attachment-info-badge-preview";
+import { useSetting } from "@/hooks/useSettings";
 import { CalendarWeekAppointmentAttachmentsGallery } from "./CalendarWeekAppointmentAttachmentsGallery";
 import { CalendarWeekAppointmentAttachmentsSinglePreview } from "./CalendarWeekAppointmentAttachmentsSinglePreview";
 
@@ -99,6 +104,8 @@ export function CalendarWeekAppointmentAttachmentsHover({
   totalAttachmentsCount: number;
 }) {
   const [shouldLoadPreview, setShouldLoadPreview] = useState(false);
+  const attachmentPreviewSize = parseAttachmentPreviewSize(useSetting("attachmentPreviewSize"));
+  const previewDimensions = resolveAttachmentPreviewDimensions(attachmentPreviewSize);
   const normalizedCount = Number.isFinite(totalAttachmentsCount)
     ? Math.max(0, totalAttachmentsCount)
     : 0;
@@ -124,10 +131,14 @@ export function CalendarWeekAppointmentAttachmentsHover({
       )}
       closeDelay={200}
       side="right"
-      align="start"
-      maxWidth={420}
-      maxHeight={380}
-      className="z-[9999] w-[420px]"
+      align="end"
+      sideOffset={10}
+      collisionPadding={24}
+      maxWidth={previewDimensions.popoverMaxWidth}
+      minWidth={previewDimensions.popoverMaxWidth}
+      maxHeight={previewDimensions.popoverMaxHeight}
+      className="z-[9999]"
+      contentClassName="space-y-2"
     >
       <div
         className="mt-1 cursor-pointer rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"

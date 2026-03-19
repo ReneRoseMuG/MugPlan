@@ -1,5 +1,11 @@
 import { FileText, Image as ImageIcon, Paperclip } from "lucide-react";
 
+import {
+  parseAttachmentPreviewSize,
+  resolveAttachmentPreviewDimensions,
+} from "@/components/ui/badge-previews/attachment-info-badge-preview";
+import { useSetting } from "@/hooks/useSettings";
+
 type AppointmentAttachmentItem = {
   id: number;
   originalName: string;
@@ -29,6 +35,8 @@ export function CalendarWeekAppointmentAttachmentsSinglePreview({
     return <div className="text-xs text-slate-500">Anhang konnte nicht geladen werden.</div>;
   }
 
+  const attachmentPreviewSize = parseAttachmentPreviewSize(useSetting("attachmentPreviewSize"));
+  const dimensions = resolveAttachmentPreviewDimensions(attachmentPreviewSize);
   const isImage = resolveIsImage(attachment);
   const isPdf = resolveIsPdf(attachment);
 
@@ -50,13 +58,16 @@ export function CalendarWeekAppointmentAttachmentsSinglePreview({
         </div>
       </div>
 
-      <div className="overflow-auto rounded-md border border-border bg-background p-2" style={{ maxHeight: 320 }}>
+      <div
+        className="overflow-auto rounded-md border border-border bg-background p-2"
+        style={{ maxHeight: dimensions.contentMaxHeight }}
+      >
         {isPdf ? (
           <iframe
             title={`Vorschau ${attachment.originalName}`}
             src={attachment.openUrl}
             className="w-full border-0"
-            style={{ height: 280 }}
+            style={{ height: dimensions.iframeHeight }}
           />
         ) : isImage ? (
           <img src={attachment.openUrl} alt={attachment.originalName} className="h-auto max-w-full rounded-sm" />
