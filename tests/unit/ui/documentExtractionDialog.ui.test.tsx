@@ -10,6 +10,7 @@
  * - Terminmodus kann einen einzelnen Daten-Button nutzen.
  * - Projektbereich nutzt RichTextEditor controlled mit articleListHtml.
  * - Projektbereich fuehrt den editierbaren Betrag im Payload mit.
+ * - Dialogdaten enthalten den zentralen Feldreport.
  *
  * Fehlerfälle:
  * - Regression auf Textarea/HTML-Plaintext-Anzeige.
@@ -53,6 +54,7 @@ describe("FT21 document extraction dialog composable ui", () => {
     expect(source).toContain("amount,");
     expect(source).toContain("articleListHtml,");
     expect(source).toContain("customer,");
+    expect(source).toContain("fieldReport: ExtractionFieldReport;");
     expect(source).toContain("company: data.customer.company ?? \"\"");
     expect(source).toContain("addressLine2: fallback.addressLine2");
   });

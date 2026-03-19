@@ -11,6 +11,7 @@
  * - HTML-Ausgabe ist flach (eine UL-Ebene) und escaped nutzernahe Inhalte.
  * - Warnings werden getrimmt und leere Werte entfernt.
  * - Optionale Auftragsumme wird als normalisierter Betrag durchgereicht.
+ * - Der Feldreport wird nicht implizit im Validator erzeugt.
  *
  * Fehlerfaelle:
  * - Fehlende Pflichtfelder führen zu Zod-Validierungsfehlern.
@@ -19,7 +20,7 @@
  * Robuste Absicherung des Extraction-Validators für strukturierte KI-Ausgaben.
  */
 import { describe, expect, it } from "vitest";
-import { validateAndNormalizeExtraction } from "../../../server/services/extractionValidator";
+import { buildExtractionFieldReport, validateAndNormalizeExtraction } from "../../../server/services/extractionValidator";
 
 describe("FT20 extraction validator structure", () => {
   it("normalizes optional fields and trims warnings", () => {
@@ -149,5 +150,25 @@ describe("FT20 extraction validator structure", () => {
         articleItems: [],
       }),
     ).toThrow();
+  });
+
+  it("keeps field report generation as explicit follow-up step", () => {
+    const extraction = validateAndNormalizeExtraction({
+      customer: {
+        customerNumber: "1001",
+        firstName: "Erika",
+        lastName: "Muster",
+        phone: "12345",
+      },
+      orderNumber: null,
+      saunaModel: "Modell X",
+      articleItems: [{ quantity: "1", description: "Ofen", category: "Technik" }],
+      warnings: [],
+    });
+
+    const report = buildExtractionFieldReport(extraction, "customer_form");
+
+    expect("fieldReport" in extraction).toBe(false);
+    expect(report.recognized.some((item) => item.key === "customerNumber")).toBe(true);
   });
 });

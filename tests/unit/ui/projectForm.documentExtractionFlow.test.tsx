@@ -41,6 +41,7 @@ describe("FT20 project form document extraction flow wiring", () => {
     expect(source).toContain("<DocumentExtractionDialog");
     expect(source).toContain("open={documentExtractionOpen}");
     expect(source).toContain("data={documentExtractionData}");
+    expect(source).toContain("fieldReport: extraction.fieldReport");
   });
 
   it("wires single data apply callback", () => {

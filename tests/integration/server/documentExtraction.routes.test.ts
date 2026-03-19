@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - Extract-Route validiert Scope, Dateityp und Fehlerpfade mit korrekten Statuscodes.
  * - Extract-Route liefert bei Erfolg die erwartete Extraktionsstruktur.
+ * - Erfolgsresponses liefern den zusaetzlichen Feldreport mit.
  * - Customer-Duplicate und Resolve-Routen liefern none/single/multiple korrekt.
  *
  * Fehlerfaelle:
@@ -169,6 +170,10 @@ describe("FT20 integration: document extraction routes", () => {
       articleItems: [{ quantity: "1x", description: "Ofen", category: "Ofen" }],
       categorizedItems: [{ category: "Ofen", items: [{ quantity: "1x", description: "Ofen", category: "Ofen" }] }],
       articleListHtml: "<ul><li>Ofen</li></ul>",
+      fieldReport: {
+        recognized: [{ key: "customerNumber", label: "Kundennummer", section: "customer", value: "1001" }],
+        missing: [{ key: "phone", label: "Telefon", section: "customer", reason: "Kein gueltiges Mobil- oder Telefonfeld erkannt." }],
+      },
       warnings: [],
     });
 
@@ -182,6 +187,7 @@ describe("FT20 integration: document extraction routes", () => {
         expect(res.body.customer.phone).toBeNull();
         expect(res.body.orderNumber).toBe("A0218229A");
         expect(res.body.amount).toBe("17136.00");
+        expect(res.body.fieldReport.recognized[0].key).toBe("customerNumber");
         expect(Array.isArray(res.body.articleItems)).toBe(true);
       });
   });
@@ -207,6 +213,10 @@ describe("FT20 integration: document extraction routes", () => {
       articleItems: [{ quantity: "1x", description: "Ofen", category: "Artikel" }],
       categorizedItems: [{ category: "Artikel", items: [{ quantity: "1x", description: "Ofen", category: "Artikel" }] }],
       articleListHtml: "<ul><li>1x Ofen</li></ul>",
+      fieldReport: {
+        recognized: [{ key: "customerNumber", label: "Kundennummer", section: "customer", value: "1001" }],
+        missing: [{ key: "phone", label: "Telefon", section: "customer", reason: "Kein gueltiges Mobil- oder Telefonfeld erkannt." }],
+      },
       warnings: [],
     });
 
@@ -216,6 +226,7 @@ describe("FT20 integration: document extraction routes", () => {
       .expect(200)
       .expect((res) => {
         expect(res.body.customer.customerNumber).toBe("1001");
+        expect(res.body.fieldReport.missing[0].key).toBe("phone");
       });
   });
 

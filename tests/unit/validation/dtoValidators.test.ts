@@ -10,6 +10,7 @@
  * - Deterministische Parserfehler werden als kontrollierter Fehler propagiert.
  * - Extrahierte Auftragsummen werden in den zentralen Extract-Output uebernommen.
  * - Projekt- und Termin-Extract bevorzugen den Mining-Parser; customer_form bleibt beim Legacy-Parser.
+ * - Der Extract-Output enthaelt einen scope-spezifischen Feldreport.
  *
  * Fehlerfaelle:
  * - Ungueltige DTO-Payload.
@@ -165,6 +166,13 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(result.orderNumber).toBe("A-1");
     expect(result.amount).toBeNull();
     expect(result.saunaModel).toBe("XL Sauna");
+    expect(result.fieldReport.recognized).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "customerNumber", value: "K-1" }),
+        expect.objectContaining({ key: "orderNumber", value: "A-1" }),
+        expect.objectContaining({ key: "saunaModel", value: "XL Sauna" }),
+      ]),
+    );
     expect(result.articleItems).toEqual([
       { quantity: "1", description: "XL Sauna - Sauna Modell X mit Ofen", category: "Produkt" },
       { quantity: "1", description: "Ofen - Bio-Kombiofen", category: "Komponente" },
@@ -285,6 +293,8 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(parseMasterDataArticleItemsDeterministicallyMock).not.toHaveBeenCalled();
     expect(result.customer.customerNumber).toBe("K-3");
     expect(result.saunaModel).toBe("Sauna Modell Z");
+    expect(result.fieldReport.recognized.some((item) => item.key === "saunaModel")).toBe(false);
+    expect(result.fieldReport.missing.some((item) => item.key === "orderNumber")).toBe(false);
     expect(result.articleItems).toEqual([
       { quantity: "1", description: "Sauna Modell Z", category: "Artikel" },
       { quantity: "2", description: "Ofenrohr Set", category: "Artikel" },

@@ -34,6 +34,7 @@ describe("FT21 customer data document extraction flow wiring", () => {
     expect(source).toContain("{!isEditMode ? (");
     expect(source).toContain("<DocumentExtractionDropzone");
     expect(source).toContain("showProjectSection={false}");
+    expect(source).toContain("fieldReport: extraction.fieldReport");
   });
 
   it("blocks duplicate customer numbers before applying extracted data", () => {

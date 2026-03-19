@@ -31,6 +31,25 @@ export type ExtractionCategory = {
   items: ExtractionArticleItem[];
 };
 
+export type ExtractionFieldReportRecognizedItem = {
+  key: string;
+  label: string;
+  section: "customer" | "project";
+  value: string;
+};
+
+export type ExtractionFieldReportMissingItem = {
+  key: string;
+  label: string;
+  section: "customer" | "project";
+  reason: string;
+};
+
+export type ExtractionFieldReport = {
+  recognized: ExtractionFieldReportRecognizedItem[];
+  missing: ExtractionFieldReportMissingItem[];
+};
+
 export type ExtractionDialogData = {
   customer: ExtractionCustomerDraft;
   orderNumber: string | null;
@@ -39,6 +58,7 @@ export type ExtractionDialogData = {
   articleItems: ExtractionArticleItem[];
   categorizedItems: ExtractionCategory[];
   articleListHtml: string;
+  fieldReport: ExtractionFieldReport;
   warnings: string[];
 };
 
@@ -173,6 +193,43 @@ export function DocumentExtractionDialog({
                   <p key={`${warning}-${index}`}>{warning}</p>
                 ))}
               </div>
+            ) : null}
+
+            {data.fieldReport.recognized.length > 0 ? (
+              <section
+                className="rounded-md border border-emerald-200 bg-emerald-50 p-3"
+                data-testid="document-extraction-report-recognized"
+              >
+                <h3 className="text-sm font-bold tracking-wider text-emerald-900">Erfolgreich erkannt</h3>
+                <div className="mt-3 space-y-2 text-sm text-emerald-950">
+                  {data.fieldReport.recognized.map((item) => (
+                    <div
+                      key={`${item.section}-${item.key}`}
+                      className="grid grid-cols-[minmax(0,180px)_1fr] gap-3"
+                    >
+                      <span className="font-medium">{item.label}</span>
+                      <span className="break-words">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {data.fieldReport.missing.length > 0 ? (
+              <section
+                className="rounded-md border border-slate-300 bg-slate-50 p-3"
+                data-testid="document-extraction-report-missing"
+              >
+                <h3 className="text-sm font-bold tracking-wider text-slate-900">Nicht erkannt</h3>
+                <div className="mt-3 space-y-3 text-sm text-slate-800">
+                  {data.fieldReport.missing.map((item) => (
+                    <div key={`${item.section}-${item.key}`} className="space-y-1">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-muted-foreground">{item.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
             ) : null}
 
             {showCustomerSection ? (

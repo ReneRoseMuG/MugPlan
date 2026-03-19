@@ -42,10 +42,68 @@ export type ValidatedExtraction = {
   warnings: string[];
 };
 
+type ExtractionScope = "project_form" | "appointment_form" | "customer_form";
+type ExtractionFieldKey =
+  | "customerNumber"
+  | "firstName"
+  | "lastName"
+  | "company"
+  | "phone"
+  | "addressLine1"
+  | "postalCode"
+  | "city"
+  | "orderNumber"
+  | "amount"
+  | "saunaModel";
+
+export type ExtractionFieldReportRecognizedItem = {
+  key: ExtractionFieldKey;
+  label: string;
+  section: "customer" | "project";
+  value: string;
+};
+
+export type ExtractionFieldReportMissingItem = {
+  key: ExtractionFieldKey;
+  label: string;
+  section: "customer" | "project";
+  reason: string;
+};
+
+export type ExtractionFieldReport = {
+  recognized: ExtractionFieldReportRecognizedItem[];
+  missing: ExtractionFieldReportMissingItem[];
+};
+
+type ExtractionFieldConfig = {
+  key: ExtractionFieldKey;
+  label: string;
+  section: "customer" | "project";
+  scopes: ExtractionScope[];
+};
+
+const extractionFieldConfigs: ExtractionFieldConfig[] = [
+  { key: "customerNumber", label: "Kundennummer", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "firstName", label: "Vorname", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "lastName", label: "Nachname", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "company", label: "Firma", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "phone", label: "Telefon", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "addressLine1", label: "Strasse", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "postalCode", label: "PLZ", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "city", label: "Ort", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "orderNumber", label: "Auftragsnummer", section: "project", scopes: ["project_form", "appointment_form"] },
+  { key: "amount", label: "Betrag", section: "project", scopes: ["project_form", "appointment_form"] },
+  { key: "saunaModel", label: "Projektname", section: "project", scopes: ["project_form", "appointment_form"] },
+];
+
 function normalizeOptional(value: string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function hasValue(value: string | null | undefined): value is string {
+  return normalizeOptional(value) !== null;
 }
 
 function escapeHtml(value: string): string {
@@ -78,6 +136,93 @@ function buildSemanticArticleHtml(items: Array<z.infer<typeof articleItemSchema>
     .map((item) => `<li>${escapeHtml(item.quantity)} ${escapeHtml(item.description)}</li>`)
     .join("");
   return `<ul>${listItems}</ul>`;
+}
+
+function readExtractionFieldValue(extraction: ValidatedExtraction, key: ExtractionFieldKey): string | null {
+  switch (key) {
+    case "customerNumber":
+    case "firstName":
+    case "lastName":
+    case "company":
+    case "phone":
+    case "addressLine1":
+    case "postalCode":
+    case "city":
+      return extraction.customer[key] ?? null;
+    case "orderNumber":
+      return extraction.orderNumber;
+    case "amount":
+      return extraction.amount;
+    case "saunaModel":
+      return extraction.saunaModel;
+    default:
+      return null;
+  }
+}
+
+function buildMissingReason(extraction: ValidatedExtraction, key: ExtractionFieldKey): string {
+  switch (key) {
+    case "company":
+      return "Keine Firmenzeile im Dokumentkopf erkannt.";
+    case "firstName":
+    case "lastName":
+      if (
+        hasValue(extraction.customer.company) &&
+        !hasValue(extraction.customer.firstName) &&
+        !hasValue(extraction.customer.lastName)
+      ) {
+        return "Firmenkunde ohne Personenname im Dokumentkopf.";
+      }
+      return "Kein Personenname im Dokumentkopf erkannt.";
+    case "phone":
+      return "Kein gueltiges Mobil- oder Telefonfeld erkannt.";
+    case "addressLine1":
+      return "Keine Strassenzeile erkannt.";
+    case "postalCode":
+    case "city":
+      return "PLZ/Ort im Dokumentkopf nicht eindeutig erkannt.";
+    case "customerNumber":
+      return "Kundennummer nicht erkannt.";
+    case "orderNumber":
+      return "Auftragsnummer nicht erkannt.";
+    case "amount":
+      return "Gesamtbetrag nicht erkannt.";
+    case "saunaModel":
+      return "Projektname bzw. Modellbezeichnung nicht eindeutig erkannt.";
+    default:
+      return "Feld konnte nicht erkannt werden.";
+  }
+}
+
+export function buildExtractionFieldReport(
+  extraction: ValidatedExtraction,
+  scope: ExtractionScope,
+): ExtractionFieldReport {
+  const relevantFields = extractionFieldConfigs.filter((field) => field.scopes.includes(scope));
+  const recognized: ExtractionFieldReportRecognizedItem[] = [];
+  const missing: ExtractionFieldReportMissingItem[] = [];
+
+  for (const field of relevantFields) {
+    const value = normalizeOptional(readExtractionFieldValue(extraction, field.key));
+    if (value) {
+      recognized.push({
+        key: field.key,
+        label: field.label,
+        section: field.section,
+        value,
+      });
+      continue;
+    }
+
+    missing.push({
+      key: field.key,
+      label: field.label,
+      section: field.section,
+      reason: buildMissingReason(extraction, field.key),
+    });
+  }
+
+  return { recognized, missing };
 }
 
 export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtraction {

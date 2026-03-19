@@ -1,7 +1,12 @@
 ﻿import type { Customer, InsertCustomer } from "@shared/schema";
 import type { ExtractionScope } from "./aiExtractionService";
 import { extractTextFromPdfBuffer } from "./documentTextExtractor";
-import { validateAndNormalizeExtraction } from "./extractionValidator";
+import {
+  buildExtractionFieldReport,
+  type ExtractionFieldReport,
+  type ValidatedExtraction,
+  validateAndNormalizeExtraction,
+} from "./extractionValidator";
 import { parseDocumentHeaderDeterministically } from "./documentHeaderDeterministicParser";
 import {
   parseDocumentArticleItemsDeterministically,
@@ -11,7 +16,9 @@ import { parseMasterDataArticleItemsDeterministically } from "./documentArticleM
 import * as customersService from "./customersService";
 import * as projectsService from "./projectsService";
 
-export type DocumentExtractionResult = ReturnType<typeof validateAndNormalizeExtraction>;
+export type DocumentExtractionResult = ValidatedExtraction & {
+  fieldReport: ExtractionFieldReport;
+};
 
 export type CustomerNumberResolution =
   | { resolution: "none"; count: 0; customer: null }
@@ -123,7 +130,7 @@ export async function extractFromPdf(params: {
     const extractionContent = buildExtractionContentFromDocument(params.scope, extractedText);
     const amount = parseDocumentTotalAmountDeterministically(extractedText);
 
-    return validateAndNormalizeExtraction({
+    const extraction = validateAndNormalizeExtraction({
       customer: {
         customerNumber: header.customerNumber,
         firstName: header.firstName,
@@ -142,6 +149,11 @@ export async function extractFromPdf(params: {
       articleItems: extractionContent.articleItems,
       warnings: [],
     });
+
+    return {
+      ...extraction,
+      fieldReport: buildExtractionFieldReport(extraction, params.scope),
+    };
   } catch (error) {
     if (error instanceof DocumentExtractionOrderConflictError) {
       throw error;

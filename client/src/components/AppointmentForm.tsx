@@ -845,6 +845,7 @@ export function AppointmentForm({
         articleItems: ExtractionDialogData["articleItems"];
         categorizedItems: ExtractionDialogData["categorizedItems"];
         articleListHtml: string;
+        fieldReport: ExtractionDialogData["fieldReport"];
         warnings: string[];
       };
       setDocumentExtractionData({
@@ -866,6 +867,7 @@ export function AppointmentForm({
         articleItems: extraction.articleItems ?? [],
         categorizedItems: extraction.categorizedItems ?? [],
         articleListHtml: extraction.articleListHtml ?? "",
+        fieldReport: extraction.fieldReport,
         warnings: extraction.warnings ?? [],
       });
       setDocumentExtractionOpen(true);

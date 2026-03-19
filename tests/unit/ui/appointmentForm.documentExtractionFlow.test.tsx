@@ -38,6 +38,7 @@ describe("FT20 appointment form document extraction flow wiring", () => {
     expect(source).toContain("<DocumentExtractionDialog");
     expect(source).toContain("open={documentExtractionOpen}");
     expect(source).toContain("data={documentExtractionData}");
+    expect(source).toContain("fieldReport: extraction.fieldReport");
   });
 
   it("uses single data apply callback with disable rule", () => {

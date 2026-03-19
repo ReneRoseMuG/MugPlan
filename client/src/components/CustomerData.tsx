@@ -421,6 +421,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         articleItems: ExtractionDialogData["articleItems"];
         categorizedItems: ExtractionDialogData["categorizedItems"];
         articleListHtml: string;
+        fieldReport: ExtractionDialogData["fieldReport"];
         warnings: string[];
       };
       setDocumentExtractionData({
@@ -442,6 +443,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         articleItems: extraction.articleItems ?? [],
         categorizedItems: extraction.categorizedItems ?? [],
         articleListHtml: extraction.articleListHtml ?? "",
+        fieldReport: extraction.fieldReport,
         warnings: extraction.warnings ?? [],
       });
       setDocumentExtractionOpen(true);

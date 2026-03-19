@@ -66,6 +66,27 @@ const extractedArticleCategorySchema = z.object({
   items: z.array(extractedArticleItemSchema),
 });
 
+const extractedFieldReportSectionSchema = z.enum(["customer", "project"]);
+
+const extractedFieldRecognizedSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  section: extractedFieldReportSectionSchema,
+  value: z.string().min(1),
+});
+
+const extractedFieldMissingSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  section: extractedFieldReportSectionSchema,
+  reason: z.string().min(1),
+});
+
+const extractedFieldReportSchema = z.object({
+  recognized: z.array(extractedFieldRecognizedSchema),
+  missing: z.array(extractedFieldMissingSchema),
+});
+
 const entityAppointmentsScopeSchema = z.enum(["upcoming", "all"]);
 const tagNameSchema = z.string().min(1).max(100);
 const tagColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
@@ -707,6 +728,7 @@ export const api = {
             articleItems: z.array(extractedArticleItemSchema),
             categorizedItems: z.array(extractedArticleCategorySchema),
             articleListHtml: z.string().min(1),
+            fieldReport: extractedFieldReportSchema,
             warnings: z.array(z.string()),
         }),
         400: errorSchemas.validation,
