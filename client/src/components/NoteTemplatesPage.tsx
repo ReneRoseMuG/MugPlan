@@ -86,7 +86,6 @@ export function NoteTemplatesPage() {
   const [formTitle, setFormTitle] = useState("");
   const [formBody, setFormBody] = useState("");
   const [formCardColor, setFormCardColor] = useState(fallbackCardColor);
-  const [useCardColor, setUseCardColor] = useState(false);
   const [formPrint, setFormPrint] = useState(false);
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
@@ -164,7 +163,6 @@ export function NoteTemplatesPage() {
     setFormTitle("");
     setFormBody("");
     setFormCardColor(fallbackCardColor);
-    setUseCardColor(false);
     setFormPrint(false);
     setFormSortOrder(0);
     setFormIsActive(true);
@@ -176,7 +174,6 @@ export function NoteTemplatesPage() {
     setFormTitle(template.title);
     setFormBody(template.body);
     setFormCardColor(template.cardColor ?? fallbackCardColor);
-    setUseCardColor(template.cardColor !== null);
     setFormPrint(template.print);
     setFormSortOrder(template.sortOrder ?? 0);
     setFormIsActive(template.isActive);
@@ -189,7 +186,6 @@ export function NoteTemplatesPage() {
     setFormTitle("");
     setFormBody("");
     setFormCardColor(fallbackCardColor);
-    setUseCardColor(false);
     setFormPrint(false);
     setFormSortOrder(0);
     setFormIsActive(true);
@@ -203,7 +199,7 @@ export function NoteTemplatesPage() {
       body: formBody,
       sortOrder: formSortOrder,
       isActive: formIsActive,
-      cardColor: useCardColor ? formCardColor : null,
+      cardColor: formCardColor,
       print: formPrint,
     };
 
@@ -271,17 +267,13 @@ export function NoteTemplatesPage() {
         title={editingTemplate ? "Vorlage bearbeiten" : "Neue Vorlage"}
         icon={FileText}
         selectedColor={formCardColor}
-        onColorChange={(color) => {
-          setUseCardColor(true);
-          setFormCardColor(color);
-        }}
+        onColorChange={setFormCardColor}
         onSave={handleSave}
         onCancel={handleCloseDialog}
         isSaving={createMutation.isPending || updateMutation.isPending}
         saveDisabled={!formTitle.trim()}
         maxWidth="max-w-lg"
         colorPickerTestId="button-template-color-picker"
-        colorPickerDisabled={!useCardColor}
         saveTestId="button-save-template"
         cancelTestId="button-cancel-template"
       >
@@ -304,17 +296,8 @@ export function NoteTemplatesPage() {
             className="min-h-[150px]"
           />
         </div>
-        <div className="flex items-center justify-between gap-2">
+        <div className="space-y-2">
           <Label className="text-sm font-medium">Kartenfarbe</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setUseCardColor((current) => !current)}
-            data-testid="button-template-toggle-card-color"
-          >
-            {useCardColor ? "Farbe entfernen" : "Farbe aktivieren"}
-          </Button>
         </div>
         <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
           <div>

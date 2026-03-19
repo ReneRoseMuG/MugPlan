@@ -127,7 +127,6 @@ export function NotesSection({
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [noteCardColor, setNoteCardColor] = useState<string>(fallbackCardColor);
-  const [useCardColor, setUseCardColor] = useState(false);
   const [notePrint, setNotePrint] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
@@ -142,7 +141,6 @@ export function NotesSection({
     setNoteTitle("");
     setNoteBody("");
     setNoteCardColor(fallbackCardColor);
-    setUseCardColor(false);
     setNotePrint(false);
     setSelectedTemplateId("none");
     setEditingNoteId(null);
@@ -155,7 +153,6 @@ export function NotesSection({
     setNoteTitle("");
     setNoteBody("");
     setNoteCardColor(fallbackCardColor);
-    setUseCardColor(false);
     setNotePrint(false);
     setSelectedTemplateId("none");
     setCardColorLocked(false);
@@ -167,7 +164,6 @@ export function NotesSection({
     setNoteTitle(note.title);
     setNoteBody(note.body ?? "");
     setNoteCardColor(note.cardColor ?? fallbackCardColor);
-    setUseCardColor(note.cardColor !== null);
     setNotePrint(note.print);
     setSelectedTemplateId("none");
     setCardColorLocked(note.cardColorLocked);
@@ -179,7 +175,7 @@ export function NotesSection({
     const payload = {
       title: noteTitle,
       body: noteBody,
-      cardColor: useCardColor ? noteCardColor : null,
+      cardColor: noteCardColor,
       print: notePrint,
     };
     if (editingNoteId !== null) {
@@ -204,7 +200,6 @@ export function NotesSection({
     setNoteBody(template.body);
     setNotePrint(template.print);
     setCardColorLocked(template.cardColor !== null);
-    setUseCardColor(template.cardColor !== null);
     setNoteCardColor(template.cardColor ?? fallbackCardColor);
   };
 
@@ -311,27 +306,12 @@ export function NotesSection({
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Kartenfarbe</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setUseCardColor((current) => !current)}
-                  disabled={cardColorLocked}
-                  data-testid="button-note-toggle-card-color"
-                >
-                  {useCardColor ? "Farbe entfernen" : "Farbe aktivieren"}
-                </Button>
-              </div>
+              <Label className="text-sm font-medium">Kartenfarbe</Label>
               <ColorSelectButton
                 color={noteCardColor}
-                onChange={(color) => {
-                  setUseCardColor(true);
-                  setNoteCardColor(color);
-                }}
+                onChange={setNoteCardColor}
                 testId="button-note-card-color-picker"
-                disabled={!useCardColor || cardColorLocked}
+                disabled={cardColorLocked}
               />
               {cardColorLocked ? (
                 <p className="text-xs text-slate-500" data-testid="text-note-card-color-locked">

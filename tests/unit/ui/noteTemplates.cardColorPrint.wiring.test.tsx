@@ -3,11 +3,11 @@
  *
  * Abgedeckte Regeln:
  * - NoteTemplatesPage verdrahtet cardColor und print fuer Create/Update.
- * - Template-Dialog zeigt Druck-Switch und Kartenfarbesteuerung.
+ * - Template-Dialog zeigt Druck-Switch und einen immer aktiven Farbpicker ohne Toggle.
  *
  * Fehlerfaelle:
  * - Vorlagen-Requests senden die neuen Felder nicht.
- * - Dialog zeigt die neuen Steuerungen nicht.
+ * - Dialog behaelt den Farb-Aktivierungs-Toggle oder deaktiviert den Picker optional.
  *
  * Ziel:
  * Quellcodebasierte Verdrahtung der neuen Vorlagenfelder absichern.
@@ -27,6 +27,10 @@ describe("FT13 UI: note templates cardColor/print wiring", () => {
     expect(source).toContain("setFormPrint(false);");
     expect(source).toContain('colorPickerTestId="button-template-color-picker"');
     expect(source).toContain('data-testid="switch-template-print"');
-    expect(source).toContain("cardColor: useCardColor ? formCardColor : null");
+    expect(source).toContain("cardColor: formCardColor");
+    expect(source).toContain("onColorChange={setFormCardColor}");
+    expect(source).not.toContain("useCardColor");
+    expect(source).not.toContain('data-testid="button-template-toggle-card-color"');
+    expect(source).not.toContain("colorPickerDisabled");
   });
 });

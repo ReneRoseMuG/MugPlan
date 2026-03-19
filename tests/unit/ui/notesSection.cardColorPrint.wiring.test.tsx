@@ -3,10 +3,10 @@
  *
  * Abgedeckte Regeln:
  * - NotesSection zeigt Kartenfarbe und Druck-Switch im Dialog.
- * - Template-geerbte Kartenfarben sperren den Farbwaehler fuer die Notizbearbeitung.
+ * - Freie Notizen haben einen immer aktiven Farbpicker; template-geerbte Farben bleiben gesperrt.
  *
  * Fehlerfaelle:
- * - Notizdialog verdrahtet cardColor/print nicht.
+ * - Notizdialog behaelt einen Farb-Aktivierungs-Toggle oder sendet cardColor nicht stabil.
  * - Template-Farbsperre fehlt im UI-Wiring.
  *
  * Ziel:
@@ -29,5 +29,10 @@ describe("FT13 UI: notes section cardColor/print wiring", () => {
     expect(source).toContain('testId="button-note-card-color-picker"');
     expect(source).toContain('data-testid="switch-note-print"');
     expect(source).toContain('data-testid="text-note-card-color-locked"');
+    expect(source).toContain("cardColor: noteCardColor");
+    expect(source).toContain("onChange={setNoteCardColor}");
+    expect(source).toContain("disabled={cardColorLocked}");
+    expect(source).not.toContain("useCardColor");
+    expect(source).not.toContain('data-testid="button-note-toggle-card-color"');
   });
 });
