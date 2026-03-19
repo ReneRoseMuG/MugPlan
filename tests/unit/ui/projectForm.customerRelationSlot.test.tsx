@@ -134,6 +134,10 @@ vi.mock("@/components/NotesSection", () => ({
   NotesSection: () => <div>notes</div>,
 }));
 
+vi.mock("@/components/TagPickerPanel", () => ({
+  TagPickerPanel: () => <div>tags</div>,
+}));
+
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,

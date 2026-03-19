@@ -1,11 +1,11 @@
 /**
  * Test Scope:
  *
- * Feature: FT02/FT13 - Projektformular Notizen in Sidebar
- * Use Case: UC Projektnotizen im Bearbeitungsformular rechts einsortieren
+ * Feature: FT02/FT13/FT24 - Projektformular Sidebar-Layout
+ * Use Case: UC Projekt-Sidebar in Create und Edit mit Notizen am Ende
  *
  * Abgedeckte Regeln:
- * - ProjectForm rendert Notizen im Bearbeitungsmodus in der rechten Sidebar.
+ * - ProjectForm definiert eine explizite Hauptspalte und rechte Sidebar.
  * - Notizen folgen in der Sidebar auf Termine, Anhaenge und Tags.
  * - Im Hauptbereich bleibt keine inline-Notizsektion zurueck.
  *
@@ -14,7 +14,7 @@
  * - Die Sidebar-Reihenfolge driftet und Notizen stehen nicht mehr am Ende.
  *
  * Ziel:
- * Die geplante Umsortierung der Projektnotizen source-basiert regressionssicher absichern.
+ * Das Sidebar-Layout des Projektformulars source-basiert regressionssicher absichern.
  */
 import { readFileSync } from "fs";
 import path from "path";
@@ -24,7 +24,7 @@ describe("FT02/FT13 ProjectForm notes sidebar layout wiring", () => {
   const filePath = path.resolve(process.cwd(), "client/src/components/ProjectForm.tsx");
   const source = readFileSync(filePath, "utf8");
 
-  it("renders NotesSection after the sidebar panels in edit mode", () => {
+  it("renders NotesSection after the sidebar panels", () => {
     const notesIndex = source.indexOf("<NotesSection");
     const appointmentsIndex = source.indexOf("<ProjectAppointmentsPanel");
     const attachmentsIndex = source.indexOf("<ProjectAttachmentsPanel");
@@ -39,8 +39,10 @@ describe("FT02/FT13 ProjectForm notes sidebar layout wiring", () => {
     expect(tagsIndex).toBeLessThan(notesIndex);
   });
 
-  it("keeps the notes block out of the former inline left-column slot", () => {
+  it("defines explicit main-column and sidebar markers and keeps notes out of the left flow", () => {
+    expect(source).toContain('data-testid="project-form-main-column"');
+    expect(source).toContain('data-testid="project-form-sidebar"');
     expect(source).not.toContain("/* Notizen - nur bei Bearbeitung */");
-    expect(source).toContain("{isEditing ? (");
+    expect(source.indexOf("<NotesSection")).toBeGreaterThan(source.indexOf('data-testid="project-form-sidebar"'));
   });
 });

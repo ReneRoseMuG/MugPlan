@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
-import { ProjectAttachmentsPanel } from "@/components/ProjectAttachmentsPanel";
+import {
+  ProjectAttachmentsPanel,
+  type PendingProjectAttachmentItem,
+} from "@/components/ProjectAttachmentsPanel";
 import { ProjectOrderForm, ProjectProductFields, type ArticleCreateInput } from "@/components/ProjectOrderForm";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
@@ -83,6 +86,10 @@ interface ProjectFormProps {
   onProjectCreated?: (projectId: number, result?: { attachmentLinked: boolean }) => void;
 }
 
+type DraftProjectNote = Note & {
+  templateId?: number;
+};
+
 
 export function ProjectForm({
   projectId,
@@ -130,11 +137,18 @@ export function ProjectForm({
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
+  const [draftProjectTags, setDraftProjectTags] = useState<TagRelationItem[]>([]);
+  const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
+  const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
+  const draftNoteIdRef = useRef(-1);
+  const draftAttachmentIdRef = useRef(-1);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canManageProjectTags = isAdmin || userRole === "DISPATCHER";
+  const matchesAttachmentFileSignature = (attachment: PendingProjectAttachmentItem, file: File) =>
+    attachment.originalName === file.name && attachment.mimeType === (file.type || null) && attachment.file.size === file.size;
 
   const buildFormSnapshot = (input: {
     name: string;
@@ -147,6 +161,7 @@ export function ProjectForm({
     dynamicProductSelections: DynamicProjectProductSelections;
     extractedArticleListHtml: string;
     customerId: number | null;
+    sidebarDraftSignature?: string | null;
   }) =>
     JSON.stringify({
       name: input.name.trim(),
@@ -163,9 +178,10 @@ export function ProjectForm({
           productId: selection.productId,
           componentId: selection.componentId,
           componentName: selection.componentName.trim(),
-        })),
+      })),
       extractedArticleListHtml: input.extractedArticleListHtml.trim(),
       customerId: input.customerId,
+      sidebarDraftSignature: input.sidebarDraftSignature ?? null,
     });
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
@@ -182,7 +198,6 @@ export function ProjectForm({
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: ['/api/tags'],
-    enabled: isEditing,
   });
 
   // Fetch customers for selection
@@ -195,6 +210,30 @@ export function ProjectForm({
     queryKey: ['/api/projects', projectId, 'notes'],
     enabled: isEditing,
   });
+  const createSidebarDraftSignature = useMemo(
+    () => JSON.stringify({
+      tagIds: draftProjectTags.map((item) => item.tag.id).sort((a, b) => a - b),
+      notes: draftProjectNotes.map((note) => ({
+        id: note.id,
+        title: note.title,
+        body: note.body,
+        cardColor: note.cardColor,
+        print: note.print,
+        isPinned: note.isPinned,
+      })),
+      attachments: draftProjectAttachments.map((attachment) => ({
+        id: attachment.id,
+        originalName: attachment.originalName,
+      })),
+    }),
+    [draftProjectAttachments, draftProjectNotes, draftProjectTags],
+  );
+  const emptyCreateSidebarDraftSignature = useMemo(
+    () => JSON.stringify({ tagIds: [], notes: [], attachments: [] }),
+    [],
+  );
+  const visibleProjectTags = isEditing ? assignedTags : draftProjectTags;
+  const visibleProjectNotes = isEditing ? projectNotes : draftProjectNotes;
 
   const masterDataScope = isAdmin ? "all" : "active";
   const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${masterDataScope}`;
@@ -274,6 +313,7 @@ export function ProjectForm({
           dynamicProductSelections: createEmptyDynamicProjectProductSelections(dynamicCategorySlots),
           extractedArticleListHtml: "",
           customerId: projectData.project.customerId,
+          sidebarDraftSignature: null,
         }),
       );
     } else if (!isEditing) {
@@ -293,10 +333,11 @@ export function ProjectForm({
           dynamicProductSelections: createEmptyDynamicProjectProductSelections(dynamicCategorySlots),
           extractedArticleListHtml: "",
           customerId: null,
+          sidebarDraftSignature: emptyCreateSidebarDraftSignature,
         }),
       );
     }
-  }, [dynamicCategorySlots, isEditing, projectData]);
+  }, [dynamicCategorySlots, emptyCreateSidebarDraftSignature, isEditing, projectData]);
 
   useEffect(() => {
     if (!isEditing || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
@@ -309,6 +350,7 @@ export function ProjectForm({
   useEffect(() => {
     if (!isEditing && initialDocumentExtractionFile) {
       setDocumentExtractionFile(initialDocumentExtractionFile);
+      addDraftProjectAttachment(initialDocumentExtractionFile);
     }
   }, [initialDocumentExtractionFile, isEditing]);
 
@@ -337,10 +379,11 @@ export function ProjectForm({
         dynamicProductSelections: nextDynamicSelections,
         extractedArticleListHtml: initialDraft.extractedArticleListHtml ?? "",
         customerId: initialDraft.customerId ?? null,
+        sidebarDraftSignature: emptyCreateSidebarDraftSignature,
       }),
     );
     setDidApplyInitialDraft(true);
-  }, [didApplyInitialDraft, dynamicCategorySlots, initialDraft, isEditing]);
+  }, [didApplyInitialDraft, dynamicCategorySlots, emptyCreateSidebarDraftSignature, initialDraft, isEditing]);
 
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
@@ -362,6 +405,7 @@ export function ProjectForm({
         dynamicProductSelections: mapProjectOrderItemsToDynamicSelections(projectOrderItems, products, components, dynamicCategorySlots),
         extractedArticleListHtml: "",
         customerId: projectData.project.customerId,
+        sidebarDraftSignature: null,
       }),
     );
   }, [componentCategories, components, dynamicCategorySlots, isEditing, products, projectData, projectOrderItems]);
@@ -524,6 +568,7 @@ export function ProjectForm({
       if (!response.ok) {
         throw new Error(payload?.message ?? "Dokumentextraktion fehlgeschlagen");
       }
+      addDraftProjectAttachment(file);
       const extraction = payload as {
         customer: ExtractionCustomerDraft;
         orderNumber: string | null;
@@ -878,6 +923,7 @@ export function ProjectForm({
     dynamicProductSelections,
     extractedArticleListHtml,
     customerId,
+    sidebarDraftSignature: isEditing ? null : createSidebarDraftSignature,
   }) !== initialFormSnapshot;
   const handleRequestClose = () => {
     if (isFormDirty) {
@@ -942,6 +988,109 @@ export function ProjectForm({
       toast({ title: "Fehler beim Speichern", variant: "destructive" });
     },
   });
+
+  const addDraftProjectTag = (tagId: number) => {
+    const tag = availableTags.find((entry) => entry.id === tagId);
+    if (!tag) {
+      toast({
+        title: "Tag konnte nicht hinzugefuegt werden",
+        description: "Der ausgewaehlte Tag ist nicht verfuegbar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setDraftProjectTags((current) => {
+      if (current.some((entry) => entry.tag.id === tagId)) {
+        return current;
+      }
+      return [...current, { tag, relationVersion: 1 }];
+    });
+  };
+
+  const removeDraftProjectTag = (item: TagRelationItem) => {
+    setDraftProjectTags((current) => current.filter((entry) => entry.tag.id !== item.tag.id));
+  };
+
+  const addDraftProjectAttachment = (file: File) => {
+    setDraftProjectAttachments((current) => {
+      const duplicate = current.some((attachment) => matchesAttachmentFileSignature(attachment, file));
+      if (duplicate) {
+        return current;
+      }
+      return [
+        ...current,
+        {
+          id: draftAttachmentIdRef.current--,
+          originalName: file.name,
+          mimeType: file.type || null,
+          file,
+        },
+      ];
+    });
+  };
+
+  const addDraftProjectNote = ({
+    title,
+    body,
+    cardColor,
+    print,
+    templateId,
+  }: {
+    title: string;
+    body: string;
+    cardColor?: string | null;
+    print: boolean;
+    templateId?: number;
+  }) => {
+    const now = new Date();
+    setDraftProjectNotes((current) => [
+      ...current,
+      {
+        id: draftNoteIdRef.current--,
+        title,
+        body,
+        cardColor: cardColor ?? null,
+        print,
+        cardColorLocked: false,
+        isPinned: false,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        templateId,
+      },
+    ]);
+  };
+
+  const updateDraftProjectNote = (
+    noteId: number,
+    data: { title: string; body: string; cardColor?: string | null; print: boolean },
+  ) => {
+    const updatedAt = new Date();
+    setDraftProjectNotes((current) => current.map((note) => (
+      note.id === noteId
+        ? {
+            ...note,
+            title: data.title,
+            body: data.body,
+            cardColor: data.cardColor ?? null,
+            print: data.print,
+            updatedAt,
+          }
+        : note
+    )));
+  };
+
+  const toggleDraftProjectNotePin = (noteId: number, isPinned: boolean) => {
+    setDraftProjectNotes((current) => current.map((note) => (
+      note.id === noteId
+        ? { ...note, isPinned, updatedAt: new Date() }
+        : note
+    )));
+  };
+
+  const deleteDraftProjectNote = (noteId: number) => {
+    setDraftProjectNotes((current) => current.filter((note) => note.id !== noteId));
+  };
 
   // Note mutations
   const getProjectNoteVersion = (noteId: number): number => {
@@ -1111,6 +1260,90 @@ export function ProjectForm({
     },
   });
 
+  const checkAttachmentDuplicateByOriginalName = async (file: File) => {
+    const duplicateResponse = await fetch("/api/attachments/duplicates/check-original-name", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ originalName: file.name }),
+    });
+    const duplicatePayload = await duplicateResponse.json().catch(() => null);
+    if (!duplicateResponse.ok) {
+      throw new Error(duplicatePayload?.message ?? "Duplikatpruefung fehlgeschlagen");
+    }
+    return duplicatePayload as {
+      duplicate: boolean;
+      summary: { customer: number; project: number; employee: number };
+    };
+  };
+
+  const uploadProjectAttachment = async (targetProjectId: number, file: File) => {
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    const uploadResponse = await fetch(`/api/projects/${targetProjectId}/attachments`, {
+      method: "POST",
+      credentials: "include",
+      body: uploadData,
+    });
+    if (!uploadResponse.ok) {
+      const uploadPayload = await uploadResponse.json().catch(() => null);
+      throw new Error(uploadPayload?.message ?? "Projektanhang konnte nicht hochgeladen werden");
+    }
+  };
+
+  const persistDraftProjectTags = async (targetProjectId: number) => {
+    for (const item of draftProjectTags) {
+      await apiRequest("POST", `/api/projects/${targetProjectId}/tags`, { tagId: item.tag.id });
+    }
+  };
+
+  const persistDraftProjectNotes = async (targetProjectId: number) => {
+    for (const note of draftProjectNotes) {
+      await apiRequest("POST", `/api/projects/${targetProjectId}/notes`, {
+        title: note.title,
+        body: note.body,
+        cardColor: note.cardColor,
+        print: note.print,
+        templateId: note.templateId,
+      });
+    }
+  };
+
+  const persistDraftProjectAttachments = async (targetProjectId: number) => {
+    let attachmentLinked = false;
+    for (const attachment of draftProjectAttachments) {
+      const isExtractionAttachment = documentExtractionFile
+        ? matchesAttachmentFileSignature(attachment, documentExtractionFile)
+        : false;
+      if (isExtractionAttachment) {
+        const duplicateInfo = await checkAttachmentDuplicateByOriginalName(attachment.file);
+        if (duplicateInfo.duplicate) {
+          const confirmed = window.confirm(
+            `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknuepfen?`,
+          );
+          if (!confirmed) {
+            toast({ title: "Dokumentverknuepfung uebersprungen" });
+            continue;
+          }
+        }
+      }
+
+      await uploadProjectAttachment(targetProjectId, attachment.file);
+      if (isExtractionAttachment) {
+        attachmentLinked = true;
+      }
+    }
+    return attachmentLinked;
+  };
+
+  const persistCreateSidebarDrafts = async (targetProjectId: number) => {
+    await persistDraftProjectTags(targetProjectId);
+    await persistDraftProjectNotes(targetProjectId);
+    return persistDraftProjectAttachments(targetProjectId);
+  };
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
@@ -1187,6 +1420,23 @@ export function ProjectForm({
           });
         }
       }
+      try {
+        extractionAttachmentLinked = await persistCreateSidebarDrafts(createdProject.id);
+        await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'tags'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'notes'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'attachments'] });
+        setDraftProjectTags([]);
+        setDraftProjectNotes([]);
+        setDraftProjectAttachments([]);
+      } catch (error) {
+        toast({
+          title: "Projekt gespeichert, Sidebar-Daten konnten nicht vollstaendig persistiert werden",
+          description: error instanceof Error ? error.message : "Unbekannter Fehler",
+          variant: "destructive",
+        });
+      } finally {
+        setDocumentExtractionFile(null);
+      }
     }
     setInitialFormSnapshot(buildFormSnapshot({
       name,
@@ -1199,65 +1449,8 @@ export function ProjectForm({
       dynamicProductSelections,
       extractedArticleListHtml,
       customerId,
+      sidebarDraftSignature: isEditing ? null : emptyCreateSidebarDraftSignature,
     }));
-
-    if (createdProjectId && documentExtractionFile) {
-      try {
-        const duplicateResponse = await fetch("/api/attachments/duplicates/check-original-name", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ originalName: documentExtractionFile.name }),
-        });
-        const duplicatePayload = await duplicateResponse.json().catch(() => null);
-        if (!duplicateResponse.ok) {
-          throw new Error(duplicatePayload?.message ?? "Duplikatpruefung fehlgeschlagen");
-        }
-
-        const duplicateInfo = duplicatePayload as {
-          duplicate: boolean;
-          summary: { customer: number; project: number; employee: number };
-        };
-        if (duplicateInfo.duplicate) {
-          const confirmed = window.confirm(
-            `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknuepfen?`,
-          );
-          if (!confirmed) {
-            toast({ title: "Dokumentverknuepfung uebersprungen" });
-            setDocumentExtractionFile(null);
-            if (onSaved && onSaved !== onCancel) {
-              onSaved();
-            }
-            return;
-          }
-        }
-
-        const uploadData = new FormData();
-        uploadData.append("file", documentExtractionFile);
-        const uploadResponse = await fetch(`/api/projects/${createdProjectId}/attachments`, {
-          method: "POST",
-          credentials: "include",
-          body: uploadData,
-        });
-        if (!uploadResponse.ok) {
-          const uploadPayload = await uploadResponse.json().catch(() => null);
-          throw new Error(uploadPayload?.message ?? "Dokumentverknuepfung fehlgeschlagen");
-        }
-        extractionAttachmentLinked = true;
-        await queryClient.invalidateQueries({ queryKey: ["/api/projects", createdProjectId, "attachments"] });
-        toast({ title: "Projekt angelegt und Dokument verknuepft" });
-      } catch (error) {
-        toast({
-          title: "Projekt angelegt, aber Dokumentverknuepfung fehlgeschlagen",
-          description: error instanceof Error ? error.message : "Unbekannter Fehler",
-          variant: "destructive",
-        });
-      } finally {
-        setDocumentExtractionFile(null);
-      }
-    }
 
     if (onSaved && onSaved !== onCancel) {
       onSaved();
@@ -1433,7 +1626,7 @@ export function ProjectForm({
 
         <div className="grid grid-cols-3 gap-6">
           {/* Linke Spalte: Beschreibung und Kunde */}
-          <div className="col-span-2 min-w-0 space-y-6">
+          <div className="col-span-2 min-w-0 space-y-6" data-testid="project-form-main-column">
               <div className="space-y-4">
                 <Tabs defaultValue="description" className="w-full" data-testid="project-description-tabs">
                   <TabsList className="grid w-full grid-cols-2 rounded-b-none">
@@ -1515,7 +1708,7 @@ export function ProjectForm({
           </div>
 
           {/* Rechte Spalte: Termine und Dokumente */}
-          <div className="min-w-0 space-y-6">
+          <div className="min-w-0 space-y-6" data-testid="project-form-sidebar">
               <ProjectAppointmentsPanel
                 projectId={projectId}
                 projectName={projectNamePreview}
@@ -1525,50 +1718,76 @@ export function ProjectForm({
                 onOpenCalendarWorkspace={onOpenCalendarWorkspace}
               />
 
-              {/* Dokumente - nur bei Bearbeitung */}
-              {isEditing && (
-                <ProjectAttachmentsPanel
-                  projectId={projectId}
-                  isEditing={isEditing}
-                  className="h-auto"
-                />
-              )}
+              <ProjectAttachmentsPanel
+                projectId={projectId}
+                customerId={customerId}
+                isEditing={isEditing}
+                pendingProjectAttachments={isEditing ? undefined : draftProjectAttachments}
+                onUploadPendingProjectAttachment={isEditing ? undefined : addDraftProjectAttachment}
+                className="h-auto"
+              />
 
-              {isEditing ? (
-                <TagPickerPanel
-                  assignedTags={assignedTags}
-                  availableTags={availableTags}
-                  isLoading={assignedTagsLoading}
-                  loadErrorMessage={assignedTagsError instanceof Error ? assignedTagsError.message : null}
-                  canEdit={canManageProjectTags}
-                  title="Tags"
-                  addDialogTitle="Tag zu Projekt hinzufügen"
-                  testIdPrefix="project-tag-picker"
-                  onAdd={(tagId) => addProjectTagMutation.mutate(tagId)}
-                  onRemove={(item) => removeProjectTagMutation.mutate(item)}
-                  className="h-auto"
-                />
-              ) : null}
+              <TagPickerPanel
+                assignedTags={visibleProjectTags}
+                availableTags={availableTags}
+                isLoading={isEditing ? assignedTagsLoading : false}
+                loadErrorMessage={isEditing && assignedTagsError instanceof Error ? assignedTagsError.message : null}
+                canEdit={canManageProjectTags}
+                title="Tags"
+                addDialogTitle="Tag zu Projekt hinzufuegen"
+                testIdPrefix="project-tag-picker"
+                onAdd={(tagId) => {
+                  if (isEditing) {
+                    addProjectTagMutation.mutate(tagId);
+                    return;
+                  }
+                  addDraftProjectTag(tagId);
+                }}
+                onRemove={(item) => {
+                  if (isEditing) {
+                    removeProjectTagMutation.mutate(item);
+                    return;
+                  }
+                  removeDraftProjectTag(item);
+                }}
+                className="h-auto"
+              />
 
-              {isEditing ? (
-                <NotesSection
-                  notes={projectNotes}
-                  isLoading={notesLoading}
-                  onAdd={(data) => createNoteMutation.mutate(data)}
-                  onUpdate={(noteId, data) => {
+              <NotesSection
+                notes={visibleProjectNotes}
+                isLoading={isEditing ? notesLoading : false}
+                onAdd={(data) => {
+                  if (isEditing) {
+                    createNoteMutation.mutate(data);
+                    return;
+                  }
+                  addDraftProjectNote(data);
+                }}
+                onUpdate={(noteId, data) => {
+                  if (isEditing) {
                     const version = getProjectNoteVersion(noteId);
                     updateNoteMutation.mutate({ noteId, ...data, version });
-                  }}
-                  onTogglePin={(id, isPinned) => {
+                    return;
+                  }
+                  updateDraftProjectNote(noteId, data);
+                }}
+                onTogglePin={(id, isPinned) => {
+                  if (isEditing) {
                     const version = getProjectNoteVersion(id);
                     togglePinMutation.mutate({ noteId: id, isPinned, version });
-                  }}
-                  onDelete={(noteId) => {
+                    return;
+                  }
+                  toggleDraftProjectNotePin(id, isPinned);
+                }}
+                onDelete={(noteId) => {
+                  if (isEditing) {
                     const version = getProjectNoteVersion(noteId);
                     deleteNoteMutation.mutate({ noteId, version });
-                  }}
-                />
-              ) : null}
+                    return;
+                  }
+                  deleteDraftProjectNote(noteId);
+                }}
+              />
           </div>
         </div>
       </div>

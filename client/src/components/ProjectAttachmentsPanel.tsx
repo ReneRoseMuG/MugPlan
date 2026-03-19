@@ -1,17 +1,37 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { CustomerAttachment, ProjectAttachment } from "@shared/schema";
 
+type AttachmentItem = {
+  id: number;
+  originalName: string;
+  mimeType: string | null;
+};
+
+export type PendingProjectAttachmentItem = AttachmentItem & {
+  file: File;
+};
+
 interface ProjectAttachmentsPanelProps {
   projectId?: number | null;
+  customerId?: number | null;
   isEditing: boolean;
   className?: string;
+  pendingProjectAttachments?: PendingProjectAttachmentItem[];
+  onUploadPendingProjectAttachment?: (file: File) => void;
 }
 
-export function ProjectAttachmentsPanel({ projectId, isEditing, className }: ProjectAttachmentsPanelProps) {
+export function ProjectAttachmentsPanel({
+  projectId,
+  customerId,
+  isEditing,
+  className,
+  pendingProjectAttachments = [],
+  onUploadPendingProjectAttachment,
+}: ProjectAttachmentsPanelProps) {
   const { toast } = useToast();
 
   const { data: attachments = [], isLoading } = useQuery<ProjectAttachment[]>({
@@ -24,10 +44,10 @@ export function ProjectAttachmentsPanel({ projectId, isEditing, className }: Pro
     queryKey: ["/api/projects", projectId],
     enabled: isEditing && Boolean(projectId),
   });
-  const customerId = projectWithCustomer?.project.customerId ?? null;
+  const resolvedCustomerId = isEditing ? (projectWithCustomer?.project.customerId ?? null) : customerId;
   const { data: customerAttachments = [], isLoading: isCustomerAttachmentsLoading } = useQuery<CustomerAttachment[]>({
-    queryKey: ["/api/customers", customerId, "attachments"],
-    enabled: isEditing && Boolean(customerId),
+    queryKey: ["/api/customers", resolvedCustomerId, "attachments"],
+    enabled: Boolean(resolvedCustomerId),
   });
 
   const uploadMutation = useMutation({
@@ -56,8 +76,37 @@ export function ProjectAttachmentsPanel({ projectId, isEditing, className }: Pro
     },
   });
 
-  const items = useMemo(() => attachments, [attachments]);
-  const customerItems = useMemo(() => customerAttachments, [customerAttachments]);
+  const pendingAttachmentUrls = useMemo(
+    () => pendingProjectAttachments.map((attachment) => ({
+      id: attachment.id,
+      url: URL.createObjectURL(attachment.file),
+    })),
+    [pendingProjectAttachments],
+  );
+
+  useEffect(() => {
+    return () => {
+      for (const attachment of pendingAttachmentUrls) {
+        URL.revokeObjectURL(attachment.url);
+      }
+    };
+  }, [pendingAttachmentUrls]);
+
+  const pendingAttachmentUrlsById = useMemo(
+    () => new Map(pendingAttachmentUrls.map((attachment) => [attachment.id, attachment.url])),
+    [pendingAttachmentUrls],
+  );
+
+  const resolvedProjectAttachments = isEditing ? attachments : pendingProjectAttachments;
+  const canUploadProjectAttachment = Boolean(projectId) || typeof onUploadPendingProjectAttachment === "function";
+  const handleProjectUpload = (file: File) => {
+    if (projectId) {
+      uploadMutation.mutate(file);
+      return;
+    }
+    onUploadPendingProjectAttachment?.(file);
+  };
+  const buildPendingAttachmentUrl = (id: number) => pendingAttachmentUrlsById.get(id) ?? "#";
 
   return (
     <SplitAttachmentsPanel
@@ -68,21 +117,21 @@ export function ProjectAttachmentsPanel({ projectId, isEditing, className }: Pro
         {
           id: "project",
           title: "Projektdokumente",
-          items,
+          items: resolvedProjectAttachments,
           isLoading,
           emptyText: "Keine Dokumente vorhanden",
-          canUpload: isEditing && Boolean(projectId),
+          canUpload: canUploadProjectAttachment,
           isUploading: uploadMutation.isPending,
-          onUpload: (file) => uploadMutation.mutate(file),
-          buildOpenUrl: (id) => `/api/project-attachments/${id}/download`,
-          buildDownloadUrl: (id) => `/api/project-attachments/${id}/download?download=1`,
+          onUpload: handleProjectUpload,
+          buildOpenUrl: (id) => projectId ? `/api/project-attachments/${id}/download` : buildPendingAttachmentUrl(id),
+          buildDownloadUrl: (id) => projectId ? `/api/project-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id),
         },
         {
           id: "customer",
           title: "Kundendokumente",
-          items: customerItems,
+          items: customerAttachments,
           isLoading: isCustomerAttachmentsLoading,
-          emptyText: "Keine Kundendokumente vorhanden",
+          emptyText: resolvedCustomerId ? "Keine Kundendokumente vorhanden" : "Kein Kunde zugeordnet",
           buildOpenUrl: (id) => `/api/customer-attachments/${id}/download`,
           buildDownloadUrl: (id) => `/api/customer-attachments/${id}/download?download=1`,
         },
