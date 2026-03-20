@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Projektattachment-Delete bleibt serverseitig blockiert.
+ * - Downloadpfade nutzen die vorgesehenen Sicherheitshelfer.
+ *
+ * Fehlerfaelle:
+ * - Unzulaessige Delete-Pfade werden freigegeben.
+ *
+ * Ziel:
+ * Zentrale Attachment-Sicherheitsregeln absichern.
+ */
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/services/projectAttachmentsService", () => ({

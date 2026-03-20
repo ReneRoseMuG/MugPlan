@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Bootstrap legt Systemrollen idempotent an.
+ * - Rollen bleiben nach wiederholter Ausfuehrung konsistent sortiert und vollstaendig.
+ *
+ * Fehlerfaelle:
+ * - Fehlende oder doppelte Systemrollen nach dem Bootstrap.
+ *
+ * Ziel:
+ * Die Integritaet der zentralen Systemrollen beim Bootstrap absichern.
+ */
 import { describe, expect, it } from "vitest";
 import mysql from "mysql2/promise";
 import { asc } from "drizzle-orm";

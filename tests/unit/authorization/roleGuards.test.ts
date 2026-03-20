@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Nicht-Admin-Kontexte werden fuer geschuetzte Benutzeraktionen abgewiesen.
+ * - Rollenwechsel und Benutzerlisten folgen den Service-Guards.
+ *
+ * Fehlerfaelle:
+ * - Rollenbasierte Guards lassen unerlaubte Benutzeraktionen zu.
+ *
+ * Ziel:
+ * Die serverseitigen Rollengrenzen im Users-Service absichern.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/repositories/usersRepository", () => ({

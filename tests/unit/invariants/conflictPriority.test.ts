@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Termin-Update priorisiert Konfliktpruefungen deterministisch.
+ * - Repository-Rueckgaben werden in Appointment-Fehler korrekt gemappt.
+ *
+ * Fehlerfaelle:
+ * - Konfliktarten werden in falscher Reihenfolge oder mit falschem Code behandelt.
+ *
+ * Ziel:
+ * Die Prioritaet konkurrierender Appointment-Konflikte absichern.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/repositories/appointmentsRepository", () => ({

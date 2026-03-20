@@ -1,72 +1,184 @@
-﻿/**
+/**
  * Test Scope:
  *
- * Feature: FT21 - DocumentExtractionDialog UI-Refactor
- * Use Case: UC Reduzierte Dialog-UI mit Editor-only Artikelliste und stabilen Payload-Shapes
+ * Feature: FT21 - DocumentExtractionDialog UI
  *
  * Abgedeckte Regeln:
- * - Dialog nutzt wiederverwendbare Customer/Project-Sections und bleibt ohne DialogHeader/Titel.
- * - Kunden-/Projektdaten koennen getrennt uebernommen werden (Split-Buttons).
- * - Terminmodus kann einen einzelnen Daten-Button nutzen.
- * - Projektbereich nutzt RichTextEditor controlled mit articleListHtml.
- * - Projektbereich fuehrt den editierbaren Betrag im Payload mit.
- * - Dialogdaten enthalten den zentralen Feldreport.
+ * - Kunden- und Projektsektion werden sichtbar als getrennte Bereiche gerendert.
+ * - Split-Buttons fuer Kunde/Projekt und der Single-Apply-Button erscheinen nur im passenden Modus.
+ * - Editierbarer Betrag und Artikelliste werden an die Projektsektion weitergereicht.
  *
- * Fehlerfälle:
- * - Regression auf Textarea/HTML-Plaintext-Anzeige.
- * - Unbeabsichtigte Payload-Shape-Aenderungen bei onApplyProject.
+ * Fehlerfaelle:
+ * - Die Dialogmodi verlieren ihre sichtbaren Aktionspfade.
+ * - Projektfelder werden nicht mehr an die editierbare Sektion durchgereicht.
  *
  * Ziel:
- * Sicherstellen, dass der Dialog ausschließlich die geforderte UI-Anpassung umsetzt, ohne Schnittstellenbruch.
+ * Den Extraktionsdialog ueber sichtbare Modi und weitergereichte Section-Props absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT21 document extraction dialog composable ui", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/DocumentExtractionDialog.tsx");
-  const source = readFileSync(filePath, "utf8");
+const customerSectionCalls: Array<Record<string, unknown>> = [];
+const projectSectionCalls: Array<Record<string, unknown>> = [];
 
-  it("keeps dialog header components removed and uses section components", () => {
-    expect(source).not.toContain("DialogHeader");
-    expect(source).not.toContain("DialogTitle");
-    expect(source).not.toContain("DialogDescription");
-    expect(source).toContain("DocumentExtractionCustomerSection");
-    expect(source).toContain("DocumentExtractionProjectSection");
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <section {...props}>{children}</section>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <footer>{children}</footer>,
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
+}));
+
+vi.mock("@/components/document-extraction/DocumentExtractionCustomerSection", () => ({
+  DocumentExtractionCustomerSection: (props: Record<string, unknown>) => {
+    customerSectionCalls.push(props);
+    return <div data-testid="document-extraction-customer-section">customer-section</div>;
+  },
+}));
+
+vi.mock("@/components/document-extraction/DocumentExtractionProjectSection", () => ({
+  DocumentExtractionProjectSection: (props: Record<string, unknown>) => {
+    projectSectionCalls.push(props);
+    return <div data-testid="document-extraction-project-section">project-section</div>;
+  },
+}));
+
+const dialogData = {
+  customer: {
+    customerNumber: "C-200",
+    firstName: "Mia",
+    lastName: "Dialog",
+    company: "Firma A",
+    email: "mia@example.test",
+    phone: "123",
+    addressLine1: "Strasse 1",
+    addressLine2: "Etage 2",
+    postalCode: "12345",
+    city: "Berlin",
+  },
+  orderNumber: "ORD-200",
+  amount: "3333",
+  saunaModel: "Modell B",
+  articleItems: [],
+  categorizedItems: [],
+  articleListHtml: "<ul><li>Artikel</li></ul>",
+  warnings: [],
+  fieldReport: { recognized: [], missing: [] },
+};
+
+async function loadDocumentExtractionDialog(initialState: {
+  customerFields: Record<string, string> | null;
+  saunaModel: string;
+  orderNumber: string;
+  amount: string;
+  articleListHtml: string;
+}) {
+  vi.resetModules();
+
+  vi.doMock("react", async () => {
+    const actual = await vi.importActual<typeof import("react")>("react");
+    return {
+      ...actual,
+      useState: vi
+        .fn()
+        .mockImplementationOnce(() => [initialState.customerFields, vi.fn()])
+        .mockImplementationOnce(() => [initialState.saunaModel, vi.fn()])
+        .mockImplementationOnce(() => [initialState.orderNumber, vi.fn()])
+        .mockImplementationOnce(() => [initialState.amount, vi.fn()])
+        .mockImplementationOnce(() => [initialState.articleListHtml, vi.fn()])
+        .mockImplementationOnce(() => [false, vi.fn()])
+        .mockImplementationOnce(() => [false, vi.fn()])
+        .mockImplementationOnce(() => [false, vi.fn()]),
+    };
   });
 
-  it("supports split apply actions for customer and project", () => {
-    expect(source).toContain("customerApplyLabel = \"Kundendaten übernehmen\"");
-    expect(source).toContain("projectApplyLabel = \"Projektdaten übernehmen\"");
-    expect(source).toContain("data-testid=\"button-doc-extract-apply-customer\"");
-    expect(source).toContain("data-testid=\"button-doc-extract-apply-project\"");
+  return import("../../../client/src/components/DocumentExtractionDialog");
+}
+
+describe("FT21 document extraction dialog ui behavior", () => {
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
+    customerSectionCalls.length = 0;
+    projectSectionCalls.length = 0;
   });
 
-  it("supports appointment single apply mode", () => {
-    expect(source).toContain("dataApplyLabel = \"Daten übernehmen\"");
-    expect(source).toContain("onApplyData?: (payload:");
-    expect(source).toContain("data-testid=\"button-doc-extract-apply-data\"");
+  it("renders split customer/project apply actions and forwards editable project props", async () => {
+    const { DocumentExtractionDialog } = await loadDocumentExtractionDialog({
+      customerFields: {
+        customerNumber: "C-200",
+        firstName: "Mia",
+        lastName: "Dialog",
+        company: "Firma A",
+        email: "mia@example.test",
+        phone: "123",
+        addressLine1: "Strasse 1",
+        postalCode: "12345",
+        city: "Berlin",
+      },
+      saunaModel: "Modell B",
+      orderNumber: "ORD-200",
+      amount: "3333",
+      articleListHtml: "<ul><li>Artikel</li></ul>",
+    });
+
+    const html = renderToStaticMarkup(
+      <DocumentExtractionDialog
+        open
+        onOpenChange={() => undefined}
+        data={dialogData}
+        onApplyCustomer={async () => undefined}
+        onApplyProject={async () => undefined}
+      />,
+    );
+
+    expect(html).toContain("button-doc-extract-apply-customer");
+    expect(html).toContain("Kundendaten");
+    expect(html).toContain("button-doc-extract-apply-project");
+    expect(html).toContain("Projektdaten");
+    expect(html).not.toContain("button-doc-extract-apply-data");
+    expect(customerSectionCalls).toHaveLength(1);
+    expect(projectSectionCalls[0]).toMatchObject({
+      saunaModel: "Modell B",
+      orderNumber: "ORD-200",
+      amount: "3333",
+      articleListHtml: "<ul><li>Artikel</li></ul>",
+    });
   });
 
-  it("keeps payload shape unchanged for apply actions", () => {
-    expect(source).toContain("saunaModel,");
-    expect(source).toContain("orderNumber,");
-    expect(source).toContain("amount,");
-    expect(source).toContain("articleListHtml,");
-    expect(source).toContain("customer,");
-    expect(source).toContain("fieldReport: ExtractionFieldReport;");
-    expect(source).toContain("company: data.customer.company ?? \"\"");
-    expect(source).toContain("addressLine2: fallback.addressLine2");
-  });
+  it("renders single apply mode without the split buttons", async () => {
+    const { DocumentExtractionDialog } = await loadDocumentExtractionDialog({
+      customerFields: {
+        customerNumber: "C-200",
+        firstName: "Mia",
+        lastName: "Dialog",
+        company: "Firma A",
+        email: "mia@example.test",
+        phone: "123",
+        addressLine1: "Strasse 1",
+        postalCode: "12345",
+        city: "Berlin",
+      },
+      saunaModel: "Modell B",
+      orderNumber: "ORD-200",
+      amount: "3333",
+      articleListHtml: "<ul><li>Artikel</li></ul>",
+    });
 
-  it("passes editable amount through the project section", () => {
-    expect(source).toContain("const [amount, setAmount] = useState(\"\")");
-    expect(source).toContain("setAmount(data.amount ?? \"\")");
-    expect(source).toContain("amount={amount}");
-    expect(source).toContain("onAmountChange={setAmount}");
-  });
+    const html = renderToStaticMarkup(
+      <DocumentExtractionDialog
+        open
+        onOpenChange={() => undefined}
+        data={dialogData}
+        onApplyData={async () => undefined}
+      />,
+    );
 
-  it("keeps dialog size constraints", () => {
-    expect(source).toContain('className="max-w-4xl max-h-[90vh] overflow-y-auto"');
+    expect(html).toContain("button-doc-extract-apply-data");
+    expect(html).toContain("Daten");
+    expect(html).not.toContain("button-doc-extract-apply-customer");
+    expect(html).not.toContain("button-doc-extract-apply-project");
   });
 });

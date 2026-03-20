@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Die PDF-Fixture laesst sich ueber den echten Extraktor lesen.
+ * - Zentrale Dokumentinhalte bleiben im extrahierten Text sichtbar.
+ *
+ * Fehlerfaelle:
+ * - Die Extraktion liefert leeren oder unvollstaendigen Text fuer die Referenzdatei.
+ *
+ * Ziel:
+ * Die fixturebasierte Grundfunktion der PDF-Textextraktion absichern.
+ */
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";

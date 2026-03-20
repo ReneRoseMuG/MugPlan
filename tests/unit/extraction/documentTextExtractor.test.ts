@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - PDF-Text wird seitenuebergreifend extrahiert und normalisiert.
+ * - Loading-Tasks werden sauber aufgeraeumt.
+ *
+ * Fehlerfaelle:
+ * - Zeilen oder Seiten gehen in der Extraktion verloren.
+ *
+ * Ziel:
+ * Die Kernlogik des PDF-Text-Extraktors absichern.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockGetPage = vi.fn();
