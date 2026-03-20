@@ -1,41 +1,143 @@
 /**
  * Test Scope:
  *
- * Feature: FT29 - CalendarWorkspace Wrapper
- * Use Case: UC Global/Contextual Woche-Monat Umschaltung
- *
  * Abgedeckte Regeln:
- * - CalendarWorkspace rendert im Wochenmodus die WeekGrid-Komponente.
- * - CalendarWorkspace rendert im Monatsmodus die CalendarGrid-Komponente.
- * - New/Open Appointment Events werden in beiden Modi an den zentralen Callback weitergereicht.
+ * - CalendarWorkspace rendert im Wochenmodus sichtbar das WeekGrid.
+ * - CalendarWorkspace rendert im Monatsmodus sichtbar das CalendarGrid.
+ * - New/Open-Callbacks werden mit dem passenden Rueckkehrkontext weitergereicht.
  *
  * Fehlerfaelle:
- * - Falsches Grid wird fuer die aktive View gerendert.
- * - Appointment-Callbacks werden nicht konsistent weitergeleitet.
+ * - Falsches Grid wird fuer die aktive Ansicht gerendert.
+ * - Week- und Month-Callbacks verlieren ihren View-Kontext.
  *
  * Ziel:
- * Wrapper-Verdrahtung fuer week/month ohne Verhaltensdrift absichern.
+ * Wrapper-Verhalten fuer Woche und Monat ueber gerenderten Laufzeitkontext absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const weekGridCalls: Array<Record<string, unknown>> = [];
+const monthGridCalls: Array<Record<string, unknown>> = [];
+const openAppointmentFormMock = vi.fn();
+
+vi.mock("@/components/WeekGrid", () => ({
+  WeekGrid: (props: Record<string, unknown>) => {
+    weekGridCalls.push(props);
+    return <div data-testid="week-grid-marker">week-grid</div>;
+  },
+}));
+
+vi.mock("@/components/CalendarGrid", () => ({
+  CalendarGrid: (props: Record<string, unknown>) => {
+    monthGridCalls.push(props);
+    return <div data-testid="month-grid-marker">month-grid</div>;
+  },
+}));
+
+vi.mock("@/components/calendar/CalendarTourPrintPreviewDialog", () => ({
+  CalendarTourPrintPreviewDialog: () => <div data-testid="tour-print-dialog-marker">dialog</div>,
+}));
+
+vi.mock("@/components/ui/filter-panels/calendar-filter-panel", () => ({
+  CalendarFilterPanel: () => <div data-testid="calendar-filter-panel-marker">filter</div>,
+}));
+
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: () => 33,
+}));
+
+vi.mock("@/lib/project-appointments", () => ({
+  getBerlinTodayDateString: () => "2099-01-01",
+}));
+
+vi.mock("@/lib/tour-print-preview", () => ({
+  normalizeTourPrintWeekCount: (value: number) => value,
+}));
+
+import { CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
 
 describe("FT29 UI: calendar workspace week/month wiring", () => {
-  const source = readFileSync(
-    path.resolve(process.cwd(), "client/src/components/CalendarWorkspace.tsx"),
-    "utf8",
-  );
-
-  it("switches between WeekGrid and CalendarGrid by active view", () => {
-    expect(source).toContain("if (activeView === \"week\")");
-    expect(source).toContain("<WeekGrid");
-    expect(source).toContain("<CalendarGrid");
+  beforeEach(() => {
+    weekGridCalls.length = 0;
+    monthGridCalls.length = 0;
+    openAppointmentFormMock.mockReset();
+    vi.stubGlobal("React", React);
   });
 
-  it("forwards new/open appointment callbacks for week and month", () => {
-    expect(source).toContain("onNewAppointment={(date, options) => {");
-    expect(source).toContain("onOpenAppointment={(appointmentId) => {");
-    expect(source).toContain("returnView: \"week\"");
-    expect(source).toContain("returnView: \"month\"");
+  it("renders the week grid in week mode and forwards week callbacks with return context", () => {
+    const markup = renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="week"
+        currentDate={new Date("2099-01-07")}
+        employeeFilterId={17}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={openAppointmentFormMock}
+        projectId={88}
+        restoreScrollLeft={144}
+        onScrollRestoreApplied={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("week-grid-marker");
+    expect(markup).not.toContain("month-grid-marker");
+
+    const props = weekGridCalls.at(-1);
+    expect(props?.employeeFilterId).toBe(17);
+    expect(props?.restoreScrollLeft).toBe(144);
+
+    (props?.onNewAppointment as (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void)(
+      "2099-01-10",
+      { tourId: 5, scrollLeft: 220 },
+    );
+    (props?.onOpenAppointment as (appointmentId: number) => void)(501);
+
+    expect(openAppointmentFormMock).toHaveBeenNthCalledWith(1, {
+      initialDate: "2099-01-10",
+      initialTourId: 5,
+      projectId: 88,
+      returnView: "week",
+      weekScrollLeft: 220,
+    });
+    expect(openAppointmentFormMock).toHaveBeenNthCalledWith(2, {
+      appointmentId: 501,
+      returnView: "week",
+    });
+  });
+
+  it("renders the month grid in month mode and forwards month callbacks with month return context", () => {
+    const markup = renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="month"
+        currentDate={new Date("2099-01-07")}
+        employeeFilterId={null}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={openAppointmentFormMock}
+        projectId={42}
+      />,
+    );
+
+    expect(markup).toContain("month-grid-marker");
+    expect(markup).not.toContain("week-grid-marker");
+
+    const props = monthGridCalls.at(-1);
+    (props?.onNewAppointment as (date: string) => void)("2099-01-12");
+    (props?.onOpenAppointment as (appointmentId: number) => void)(601);
+
+    expect(openAppointmentFormMock).toHaveBeenNthCalledWith(1, {
+      initialDate: "2099-01-12",
+      projectId: 42,
+      returnView: "month",
+    });
+    expect(openAppointmentFormMock).toHaveBeenNthCalledWith(2, {
+      appointmentId: 601,
+      returnView: "month",
+    });
   });
 });
