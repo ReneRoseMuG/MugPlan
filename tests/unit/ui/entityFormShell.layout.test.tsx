@@ -1,76 +1,57 @@
 /**
  * Test Scope:
  *
- * Feature: EntityFormShell — Shell-Architektur mit Amber-Tokens
- * Use Case: UC Layout-Shell fuer alle zukuenftigen Formular-Seiten
- *
  * Abgedeckte Regeln:
- * - Shell rendert ohne Fehler mit Pflicht-Props (footer + children).
- * - data-testid "entity-form-shell" ist im Markup vorhanden.
- * - Sidebar wird nur gerendert wenn sidebar-Prop uebergeben wird.
- * - Header wird nur gerendert wenn header-Prop uebergeben wird.
- * - Footer ist immer vorhanden (kein optionaler Slot).
- * - sidebarWidth-Prop setzt die Inline-Breite (Standard: 240).
+ * - EntityFormShell rendert Footer immer sichtbar.
+ * - Header und Sidebar erscheinen nur bei uebergebenen Slots.
+ * - sidebarWidth wirkt auf die gerenderte Sidebar-Breite.
  *
  * Fehlerfaelle:
- * - Sidebar oder Header werden immer gerendert (kein konditionaler Check).
- * - Footer fehlt oder ist optional.
- * - sidebarWidth wird ignoriert oder ohne Fallback verwendet.
+ * - Header oder Sidebar tauchen ohne Props auf.
+ * - Footer fehlt im gerenderten Shell-Markup.
  *
  * Ziel:
- * Sicherstellen, dass die Shell-Komponente die Slot-Logik korrekt implementiert
- * und der Footer stets sichtbar bleibt.
+ * Sichtbares Slot-Verhalten der Formular-Shell ohne Source-Assertions absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { EntityFormShell } from "../../../client/src/components/ui/entity-form-shell";
+
 describe("EntityFormShell layout", () => {
-  const filePath = path.resolve(
-    process.cwd(),
-    "client/src/components/ui/entity-form-shell.tsx"
-  );
-  const source = readFileSync(filePath, "utf8");
+  it("renders footer by default while header and sidebar stay optional", () => {
+    const html = renderToStaticMarkup(
+      <EntityFormShell footer={<div>Footer</div>}>
+        <div>Inhalt</div>
+      </EntityFormShell>,
+    );
 
-  it("1: Datei existiert und enthaelt die EntityFormShell-Komponente", () => {
-    expect(source).toContain("export function EntityFormShell(");
+    expect(html).toContain("entity-form-shell");
+    expect(html).toContain("entity-form-shell-main");
+    expect(html).toContain(">Inhalt<");
+    expect(html).toContain("entity-form-shell-footer");
+    expect(html).toContain(">Footer<");
+    expect(html).not.toContain("entity-form-shell-header");
+    expect(html).not.toContain("entity-form-shell-sidebar");
   });
 
-  it("2: data-testid entity-form-shell ist im Markup vorhanden", () => {
-    expect(source).toContain('data-testid="entity-form-shell"');
-  });
+  it("renders optional header and sidebar with the configured width", () => {
+    const html = renderToStaticMarkup(
+      <EntityFormShell
+        header={<div>Kopf</div>}
+        sidebar={<div>Sidebar</div>}
+        sidebarWidth={320}
+        footer={<div>Footer</div>}
+      >
+        <div>Inhalt</div>
+      </EntityFormShell>,
+    );
 
-  it("3: Sidebar erscheint nur wenn sidebar-Prop uebergeben wird", () => {
-    expect(source).toContain('data-testid="entity-form-shell-sidebar"');
-    expect(source).toContain("{sidebar && (");
-  });
-
-  it("4: Kein Sidebar-DOM-Element wenn sidebar-Prop fehlt (konditionaler Render)", () => {
-    // Der Sidebar-Block darf nur einmal auftreten und muss conditional sein
-    const sidebarOccurrences = (source.match(/data-testid="entity-form-shell-sidebar"/g) ?? []).length;
-    expect(sidebarOccurrences).toBe(1);
-    expect(source).toContain("{sidebar && (");
-  });
-
-  it("5: Header erscheint nur wenn header-Prop uebergeben wird", () => {
-    expect(source).toContain('data-testid="entity-form-shell-header"');
-    expect(source).toContain("{header && (");
-  });
-
-  it("6: Kein Header-DOM-Element wenn header-Prop fehlt (konditionaler Render)", () => {
-    const headerOccurrences = (source.match(/data-testid="entity-form-shell-header"/g) ?? []).length;
-    expect(headerOccurrences).toBe(1);
-    expect(source).toContain("{header && (");
-  });
-
-  it("7: Footer ist immer vorhanden — kein konditionaler Render", () => {
-    expect(source).toContain('data-testid="entity-form-shell-footer"');
-    // Footer darf nicht hinter einem konditionalen Check stehen
-    expect(source).not.toContain("{footer && (");
-  });
-
-  it("8: sidebarWidth-Prop setzt die Inline-Breite mit Standard 240", () => {
-    expect(source).toContain("sidebarWidth ?? 240");
-    expect(source).toContain("style={{ width: sidebarWidth ?? 240 }}");
+    expect(html).toContain("entity-form-shell-header");
+    expect(html).toContain(">Kopf<");
+    expect(html).toContain("entity-form-shell-sidebar");
+    expect(html).toContain(">Sidebar<");
+    expect(html).toContain("width:320px");
   });
 });

@@ -1,58 +1,131 @@
 /**
  * Test Scope:
  *
- * Feature: FT15 - Projekt Status Verwaltung
- * Use Case: UC Projektstatus verwalten
- *
  * Abgedeckte Regeln:
- * - API-Mutationen fuer Toggle/Delete bleiben in der Page verdrahtet.
- * - Edit-Entry-Points sind zentral ueber canEdit verdrahtet.
- * - Update/Toggle/Delete senden Versionsinformationen fuer Optimistic Locking.
- * - Nach Mutationen werden alle Projektstatus-Queryvarianten fuer Picker und Admin-Liste invalidiert.
- * - ListView rendert keine Footer-Action-Buttons (Toggle/Edit/Delete).
+ * - ProjectStatusPage reicht Toggle/Delete ueber sichtbare Listenaktionen weiter.
+ * - Toggle und Delete senden Versionsinformationen an die API.
+ * - Query-Invalidierung laeuft nach erfolgreichen Mutationen ueber die Projektstatus-Familie.
+ * - Default-Status wird nicht geloescht.
  *
  * Fehlerfaelle:
- * - Keine Laufzeitfehler, Fokus auf Verdrahtung der FT15-UI-Aktionslogik.
+ * - Listenaktionen triggern keine Mutation.
+ * - Delete ignoriert Versionsdaten oder den Default-Schutz.
  *
  * Ziel:
- * Sicherstellen, dass die Projektstatus-Page weiterhin korrekt verdrahtet ist, waehrend die Card-Actions entfernt bleiben.
+ * Beobachtbares Aktionsverhalten der Projektstatus-Seite statt Source-Strings absichern.
  */
-import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
-import path from "path";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const useQueryMock = vi.fn();
+const useMutationMock = vi.fn();
+const apiRequestMock = vi.fn();
+const invalidateQueriesMock = vi.fn();
+const toastMock = vi.fn();
+const listViewCalls: Array<Record<string, unknown>> = [];
+const mutationPromises: Promise<unknown>[] = [];
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: (options: unknown) => useQueryMock(options),
+  useMutation: (options: unknown) => useMutationMock(options),
+}));
+
+vi.mock("@/components/ProjectStatusList", () => ({
+  ProjectStatusListView: (props: Record<string, unknown>) => {
+    listViewCalls.push(props);
+    return <div>project-status-list-view</div>;
+  },
+}));
+
+vi.mock("@/components/ui/project-status-edit-dialog", () => ({
+  ProjectStatusEditDialog: () => <div>project-status-edit-dialog</div>,
+}));
+
+vi.mock("@/lib/queryClient", () => ({
+  apiRequest: (...args: unknown[]) => apiRequestMock(...args),
+  queryClient: { invalidateQueries: (...args: unknown[]) => invalidateQueriesMock(...args) },
+}));
+
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({ toast: toastMock }),
+}));
+
+import { ProjectStatusPage } from "../../../client/src/components/ProjectStatusPage";
+
+beforeEach(() => {
+  listViewCalls.length = 0;
+  mutationPromises.length = 0;
+  useQueryMock.mockReset();
+  useMutationMock.mockReset();
+  apiRequestMock.mockReset();
+  invalidateQueriesMock.mockReset();
+  toastMock.mockReset();
+  vi.stubGlobal("React", React);
+
+  useQueryMock.mockReturnValue({
+    data: [
+      { id: 1, title: "Aktiv", version: 3, isActive: true, isDefault: false, sortOrder: 0, color: "#fff", description: "" },
+      { id: 2, title: "Default", version: 9, isActive: true, isDefault: true, sortOrder: 1, color: "#000", description: "" },
+    ],
+    isLoading: false,
+  });
+
+  apiRequestMock.mockResolvedValue({ ok: true });
+
+  useMutationMock.mockImplementation((options: {
+    mutationFn: (variables: unknown) => Promise<unknown> | unknown;
+    onSuccess?: () => void | Promise<void>;
+    onError?: (error: unknown) => void;
+  }) => ({
+    mutate: (variables: unknown) => {
+      const work = Promise.resolve()
+        .then(() => options.mutationFn(variables))
+        .then(() => options.onSuccess?.())
+        .catch((error) => options.onError?.(error));
+      mutationPromises.push(work);
+    },
+    isPending: false,
+  }));
+
+  vi.stubGlobal("window", {
+    confirm: vi.fn(() => true),
+  });
+});
 
 describe("FT15 project status page action wiring", () => {
-  it("wires toggle and delete API mutations", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusPage.tsx");
-    const source = readFileSync(filePath, "utf8");
+  it("renders list view in editable page mode", () => {
+    renderToStaticMarkup(<ProjectStatusPage />);
 
-    expect(source).toContain("canEdit={true}");
-    expect(source).toContain('apiRequest("PATCH", `/api/project-status/${status.id}/active`');
-    expect(source).toContain('apiRequest("DELETE", `/api/project-status/${status.id}`');
+    const latestCall = listViewCalls.at(-1);
+    expect(latestCall?.canEdit).toBe(true);
+    expect(latestCall?.hideHeader).toBe(true);
   });
 
-  it("sends version for update/toggle/delete", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusPage.tsx");
-    const source = readFileSync(filePath, "utf8");
+  it("toggles active state with versioned payload and invalidates project status queries", async () => {
+    renderToStaticMarkup(<ProjectStatusPage />);
 
-    expect(source).toContain("version: status.version");
+    const latestCall = listViewCalls.at(-1) as { statuses: Array<Record<string, unknown>>; onToggleStatusActive: (status: Record<string, unknown>) => void };
+    latestCall.onToggleStatusActive(latestCall.statuses[0]);
+    await Promise.all(mutationPromises.splice(0));
+
+    expect(apiRequestMock).toHaveBeenCalledWith("PATCH", "/api/project-status/1/active", {
+      isActive: false,
+      version: 3,
+    });
+    expect(invalidateQueriesMock).toHaveBeenCalled();
   });
 
-  it("invalidates both active picker and admin list queries after mutations", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusPage.tsx");
-    const source = readFileSync(filePath, "utf8");
+  it("deletes non-default statuses only after confirmation", async () => {
+    renderToStaticMarkup(<ProjectStatusPage />);
 
-    expect(source).toContain("async function invalidateProjectStatusQueries()");
-    expect(source).toContain('firstKey.startsWith("/api/project-status")');
-  });
+    const latestCall = listViewCalls.at(-1) as { statuses: Array<Record<string, unknown>>; onDeleteStatus: (status: Record<string, unknown>) => void };
+    latestCall.onDeleteStatus(latestCall.statuses[1]);
+    await Promise.all(mutationPromises.splice(0));
+    expect(apiRequestMock).not.toHaveBeenCalledWith("DELETE", "/api/project-status/2", expect.anything());
 
-  it("removes footer action buttons in list view while keeping double-click edit wiring", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/ProjectStatusList.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("onDoubleClick={!isPicker && canEdit ? () => onEditStatus?.(status) : undefined}");
-    expect(source).not.toContain("button-toggle-status-");
-    expect(source).not.toContain("button-edit-status-");
-    expect(source).not.toContain("button-delete-status-");
+    latestCall.onDeleteStatus(latestCall.statuses[0]);
+    await Promise.all(mutationPromises.splice(0));
+    expect(apiRequestMock).toHaveBeenCalledWith("DELETE", "/api/project-status/1", { version: 3 });
   });
 });
