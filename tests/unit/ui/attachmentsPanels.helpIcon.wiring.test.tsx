@@ -1,53 +1,66 @@
 /**
  * Test Scope:
  *
- * Feature: FT16 - Hilfetexte in Sidebar-Panels
- * Use Case: UC Dokumenten-Panels mit kontextspezifischen Hilfe-Keys
- *
  * Abgedeckte Regeln:
- * - AttachmentsPanel akzeptiert optionalen helpKey-Prop.
- * - AttachmentsPanel reicht helpKey an SidebarChildPanel weiter.
- * - Projekt-/Kunden-/Mitarbeiter-Wrapper setzen individuelle panel-spezifische HelpKeys.
+ * - Projekt-, Kunden- und Mitarbeiter-Dokumentenpanels geben ihre panel-spezifischen HelpKeys weiter.
  *
  * Fehlerfaelle:
- * - HelpIcon kann fuer Dokumentenpanels nicht aktiviert werden.
- * - Mehrere Panels teilen denselben unspezifischen Key.
+ * - Dokumentenpanels verlieren ihren kontextbezogenen HelpKey.
  *
  * Ziel:
- * Die Verdrahtung der Help-Icon-Funktion fuer alle Dokumenten-Sidebar-Panels regressionssicher absichern.
+ * HelpKey-Verhalten der Attachments-Panels im Laufzeit-Render absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: ({ queryKey }: { queryKey: unknown[] }) => {
+    if (queryKey[0] === "/api/projects" && queryKey.length === 2) {
+      return { data: { project: { customerId: 21 } }, isLoading: false };
+    }
+    if (queryKey[0] === "/api/customers" && queryKey[2] === "project-attachments") {
+      return { data: { items: [], hasMore: false }, isLoading: false };
+    }
+    return { data: [], isLoading: false };
+  },
+  useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
+
+vi.mock("@/lib/queryClient", () => ({
+  queryClient: { invalidateQueries: vi.fn() },
+}));
+
+vi.mock("@/components/SplitAttachmentsPanel", () => ({
+  SplitAttachmentsPanel: ({ helpKey }: { helpKey?: string }) => <div>{helpKey}</div>,
+}));
+
+vi.mock("@/components/AttachmentsPanel", () => ({
+  AttachmentsPanel: ({ helpKey }: { helpKey?: string }) => <div>{helpKey}</div>,
+}));
+
+import { CustomerAttachmentsPanel } from "../../../client/src/components/CustomerAttachmentsPanel";
+import { EmployeeAttachmentsPanel } from "../../../client/src/components/EmployeeAttachmentsPanel";
+import { ProjectAttachmentsPanel } from "../../../client/src/components/ProjectAttachmentsPanel";
 
 describe("FT16 attachments panels help key wiring", () => {
-  const attachmentsPanelSource = readFileSync(
-    path.resolve(process.cwd(), "client/src/components/AttachmentsPanel.tsx"),
-    "utf8",
-  );
-  const projectWrapperSource = readFileSync(
-    path.resolve(process.cwd(), "client/src/components/ProjectAttachmentsPanel.tsx"),
-    "utf8",
-  );
-  const customerWrapperSource = readFileSync(
-    path.resolve(process.cwd(), "client/src/components/CustomerAttachmentsPanel.tsx"),
-    "utf8",
-  );
-  const employeeWrapperSource = readFileSync(
-    path.resolve(process.cwd(), "client/src/components/EmployeeAttachmentsPanel.tsx"),
-    "utf8",
-  );
-
-  it("extends AttachmentsPanel props and forwards helpKey", () => {
-    expect(attachmentsPanelSource).toContain("helpKey?: string;");
-    expect(attachmentsPanelSource).toContain("helpKey,");
-    expect(attachmentsPanelSource).toContain("helpKey={helpKey}");
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
   });
 
-  it("sets panel-specific help keys in all attachment wrappers", () => {
-    expect(projectWrapperSource).toContain("helpKey=\"projects.sidebar.attachments\"");
-    expect(customerWrapperSource).toContain("helpKey=\"customers.sidebar.attachments\"");
-    expect(employeeWrapperSource).toContain("helpKey=\"employees.sidebar.attachments\"");
+  it("keeps panel-specific help keys for project, customer and employee attachments", () => {
+    const projectMarkup = renderToStaticMarkup(
+      <ProjectAttachmentsPanel projectId={11} customerId={21} isEditing />,
+    );
+    const customerMarkup = renderToStaticMarkup(<CustomerAttachmentsPanel customerId={31} />);
+    const employeeMarkup = renderToStaticMarkup(<EmployeeAttachmentsPanel employeeId={41} />);
+
+    expect(projectMarkup).toContain("projects.sidebar.attachments");
+    expect(customerMarkup).toContain("customers.sidebar.attachments");
+    expect(employeeMarkup).toContain("employees.sidebar.attachments");
   });
 });
-
