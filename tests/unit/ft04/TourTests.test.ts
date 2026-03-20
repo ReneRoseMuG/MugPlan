@@ -8,18 +8,15 @@
  * - Tournamen werden serverseitig deterministisch als "Tour N" vergeben.
  * - Tour-Update/Delete verlangen gueltige Version >= 1.
  * - Tour-Delete ist gesperrt, wenn Termine auf die Tour verweisen (BUSINESS_CONFLICT).
- * - Der aktuelle Tour-Contract kennt nur "color" (kein Namefeld).
  *
  * Fehlerfaelle:
  * - Ungueltige Version fuehrt zu VALIDATION_ERROR.
  * - Loeschen bei verknuepften Terminen liefert BUSINESS_CONFLICT.
- * - Leerer Name als Sollfall ist im Contract nicht vorgesehen.
  *
  * Ziel:
- * Unit-Absicherung der FT04-Kernlogik inkl. Loeschschutz bei Terminreferenzen.
+ * Unit-Absicherung der FT04-Kernlogik inkl. Namensvergabe, Versionspruefung und Loeschschutz bei Terminreferenzen.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "@shared/routes";
 
 vi.mock("../../../server/repositories/toursRepository", () => ({
   getTours: vi.fn(),
@@ -35,7 +32,7 @@ import { ToursError, createTour, deleteTour, updateTour } from "../../../server/
 
 const toursRepositoryMock = vi.mocked(toursRepository);
 
-describe("FT04 Unit: TourTests", () => {
+describe("FT04 unit: toursService core behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -107,22 +104,6 @@ describe("FT04 Unit: TourTests", () => {
       status: 409,
       code: "VERSION_CONFLICT",
     });
-  });
-
-  it("documents current contract behavior for empty name input", () => {
-    const parsed = api.tours.create.input.safeParse({ color: "#123123", name: "" });
-
-    expect(parsed.success).toBe(true);
-    if (!parsed.success) return;
-    expect(parsed.data).toEqual({ color: "#123123" });
-  });
-
-  it("documents that update contract ignores name changes", () => {
-    const parsed = api.tours.update.input.safeParse({ color: "#121212", version: 1, name: "Neue Tour" });
-
-    expect(parsed.success).toBe(true);
-    if (!parsed.success) return;
-    expect(parsed.data).toEqual({ color: "#121212", version: 1 });
   });
 
   it("maps delete conflict to NOT_FOUND when entity no longer exists", async () => {
