@@ -8,7 +8,6 @@
  * - Team-CRUD arbeitet ueber /api/teams mit serverseitiger Namensgenerierung.
  * - Team-Mitarbeiterverwaltung erfolgt getrennt ueber /api/teams/:teamId/employees.
  * - Join-Relationen werden bei Remove/Delete bereinigt.
- * - Rollenverhalten wird als IST-Zustand ueber READER/DISPATCHER/ADMIN sichtbar gemacht.
  *
  * Fehlerfaelle:
  * - Ungueltige Payloads liefern VALIDATION_ERROR (IST: 422).
@@ -16,7 +15,7 @@
  * - Duplicate-Assign im selben Batch fuehrt zu VERSION_CONFLICT.
  *
  * Ziel:
- * Vollstaendige API-Bestandsaufnahme fuer FT11 liefern, ohne Produktionscode zu veraendern.
+ * Beobachtbares Team-CRUD und Team-Mitarbeiterverhalten der FT11-Routen absichern, ohne fehlende Rechte-Guards als Soll zu konservieren.
  */
 import express from "express";
 import { createServer } from "http";
@@ -24,12 +23,9 @@ import request, { type SuperAgentTest } from "supertest";
 import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { createUser } from "../../../server/repositories/usersRepository";
-import { hashPassword } from "../../../server/security/passwordHash";
 
 let app: express.Express;
 let employeeCounter = 1;
-let userCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -42,7 +38,6 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   employeeCounter = 1;
-  userCounter = 1;
 });
 
 async function loginAgent(username: string, password: string): Promise<SuperAgentTest> {
@@ -53,24 +48,6 @@ async function loginAgent(username: string, password: string): Promise<SuperAgen
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
   return loginAgent("test-admin", "test-admin-password");
-}
-
-async function createRoleAgent(roleCode: "READER" | "DISPATCHER"): Promise<SuperAgentTest> {
-  const idx = userCounter++;
-  const username = `ft11-${roleCode.toLowerCase()}-${idx}`;
-  const password = `ft11-${roleCode.toLowerCase()}-password`;
-  const passwordHash = await hashPassword(password);
-
-  await createUser({
-    username,
-    email: `${username}@local.test`,
-    firstName: "FT11",
-    lastName: roleCode,
-    passwordHash,
-    roleCode,
-  });
-
-  return loginAgent(username, password);
 }
 
 async function createEmployee(agent: SuperAgentTest) {
@@ -88,7 +65,7 @@ async function createEmployee(agent: SuperAgentTest) {
   return response.body as { id: number; version: number; teamId: number | null; isActive: boolean };
 }
 
-describe("FT11 integration: team management IST", () => {
+describe("FT11 integration: team management core behavior", () => {
   it("creates a team, auto-generates name and ignores client-provided name", async () => {
     const admin = await loginAdminAgent();
 
@@ -259,26 +236,4 @@ describe("FT11 integration: team management IST", () => {
     });
   });
 
-  it("documents current role behavior for FT11 routes (no server-side 403 guards)", async () => {
-    const admin = await loginAdminAgent();
-    const reader = await createRoleAgent("READER");
-    const dispatcher = await createRoleAgent("DISPATCHER");
-
-    const readerCreate = await reader.post("/api/teams").send({ color: "#aa0000" }).expect(201);
-    const dispatcherCreate = await dispatcher.post("/api/teams").send({ color: "#00aa00" }).expect(201);
-    const adminCreate = await admin.post("/api/teams").send({ color: "#0000aa" }).expect(201);
-
-    await reader
-      .patch(`/api/teams/${readerCreate.body.id}`)
-      .send({ color: "#ababab", version: readerCreate.body.version })
-      .expect(200);
-
-    await dispatcher
-      .delete(`/api/teams/${dispatcherCreate.body.id}`)
-      .send({ version: dispatcherCreate.body.version })
-      .expect(204);
-
-    await admin.delete(`/api/teams/${adminCreate.body.id}`).send({ version: adminCreate.body.version }).expect(204);
-  });
 });
-

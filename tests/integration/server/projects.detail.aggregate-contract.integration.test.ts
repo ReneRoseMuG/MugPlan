@@ -11,7 +11,7 @@
  * - Endpoint liefert nur Teilobjekte und verletzt den geforderten Aggregate-Vertrag.
  *
  * Ziel:
- * Fachliche Soll-Luecke am bestehenden Detail-Endpoint transparent als bewusst fehlschlagenden Test ausweisen.
+ * Projektdetail als beobachtbaren Aggregate-Response fuer Kunde, Notizen, Anhaenge und Termine absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -87,7 +87,6 @@ describe("FT02 integration: project detail aggregate contract", () => {
     const response = await admin.get(`/api/projects/${project.id}`).expect(200);
     const body = response.body as Record<string, unknown>;
 
-    // FT02 aggregate contract expectation (intentional gap exposure)
     expect(body).toHaveProperty("project");
     expect(body).toHaveProperty("customer");
     expect(body).toHaveProperty("projectNotes");
