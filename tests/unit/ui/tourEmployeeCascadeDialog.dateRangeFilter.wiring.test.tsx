@@ -2,59 +2,169 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der Date-Range-Filter im TourEmployeeCascadeDialog ist dialoglokaler State (filterDateFrom / filterDateTo).
- * - Die gefilterte Liste wird per useMemo aus previewItems berechnet.
- * - Die Filter-UI hat die korrekten data-testids.
- * - Der Reset-Button erscheint nur wenn mindestens ein Filterfeld gesetzt ist.
- * - appointmentRangeLabel basiert weiterhin auf den ungefilterten previewItems.
+ * - Ohne aktive Filter bleiben beide Date-Inputs sichtbar und der Reset-Button ausgeblendet.
+ * - Mit aktivem Datumsfilter erscheinen nur passende Vorschauzeilen und der Reset-Button wird sichtbar.
+ * - Die Summenzeile bleibt auf allen Vorschauterminen und nicht nur auf den gefilterten Treffern bezogen.
  *
  * Fehlerfaelle:
- * - Der Filter darf selectedAppointmentIds nicht beeinflussen.
- * - appointmentRangeLabel darf nicht auf filteredItems umgestellt werden.
+ * - Die Filter-UI verliert ihre sichtbaren Eingabefelder.
+ * - Die Filterung blendet Treffer nicht sauber ein oder aus.
+ * - Die Bereichssummenzeile kippt auf die gefilterte Teilmenge.
  *
  * Ziel:
- * Die neue Date-Range-Filter-Verdrahtung im TourEmployeeCascadeDialog regressionssicher absichern.
+ * Den sichtbaren Date-Range-Filter des TourEmployeeCascadeDialog ueber gerendertes Verhalten statt ueber useState-Quelltext absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT04 UI: TourEmployeeCascadeDialog Date-Range-Filter wiring", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/TourEmployeeCascadeDialog.tsx");
-  const source = readFileSync(filePath, "utf8");
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
+}));
 
-  it("declares dialoglokale Filter-State-Variablen", () => {
-    expect(source).toContain("filterDateFrom, setFilterDateFrom] = useState<string | undefined>(undefined)");
-    expect(source).toContain("filterDateTo, setFilterDateTo] = useState<string | undefined>(undefined)");
+vi.mock("@/components/ui/checkbox", () => ({
+  Checkbox: ({ checked, disabled, ...props }: { checked?: boolean; disabled?: boolean; [key: string]: unknown }) => (
+    <input type="checkbox" checked={checked} disabled={disabled} readOnly {...props} />
+  ),
+}));
+
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <section {...props}>{children}</section>,
+  DialogDescription: ({ children }: { children?: React.ReactNode }) => <p>{children}</p>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <footer>{children}</footer>,
+  DialogHeader: ({ children }: { children?: React.ReactNode }) => <header>{children}</header>,
+  DialogTitle: ({ children }: { children?: React.ReactNode }) => <h2>{children}</h2>,
+}));
+
+vi.mock("@/components/ui/input", () => ({
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
+}));
+
+async function loadDialogWithFilters(filterDateFrom?: string, filterDateTo?: string) {
+  vi.resetModules();
+
+  let stateCall = 0;
+  vi.doMock("react", async () => {
+    const actual = await vi.importActual<typeof import("react")>("react");
+    return {
+      ...actual,
+      useState: (<T,>(initial: T) => {
+        stateCall += 1;
+        if (stateCall === 1) {
+          return [filterDateFrom, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        if (stateCall === 2) {
+          return [filterDateTo, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        return actual.useState(initial);
+      }) as typeof actual.useState,
+    };
   });
 
-  it("berechnet gefilterte Liste per useMemo aus previewItems", () => {
-    expect(source).toContain("const filteredItems = useMemo(");
-    expect(source).toContain("previewItems.filter(");
-    expect(source).toContain("item.startDate < filterDateFrom");
-    expect(source).toContain("item.startDate > filterDateTo");
-    expect(source).toContain("[previewItems, filterDateFrom, filterDateTo]");
+  return import("../../../client/src/components/TourEmployeeCascadeDialog");
+}
+
+const previewItems = [
+  {
+    appointmentId: 51,
+    startDate: "2099-02-03",
+    endDate: null,
+    tourName: "Nordtour",
+    customerNumber: null,
+    customerName: null,
+    projectName: "Projekt Eins",
+    orderNumber: "A-1",
+    currentEmployees: [],
+    eligible: true,
+    conflictReason: null,
+  },
+  {
+    appointmentId: 52,
+    startDate: "2099-02-20",
+    endDate: null,
+    tourName: "Nordtour",
+    customerNumber: null,
+    customerName: null,
+    projectName: "Projekt Zwei",
+    orderNumber: "A-2",
+    currentEmployees: [],
+    eligible: true,
+    conflictReason: null,
+  },
+];
+
+describe("FT04 TourEmployeeCascadeDialog date filter behavior", () => {
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
   });
 
-  it("rendert die Filter-UI mit korrekten data-testids", () => {
-    expect(source).toContain('data-testid="filter-tour-cascade-date-range"');
-    expect(source).toContain('data-testid="input-tour-cascade-date-from"');
-    expect(source).toContain('data-testid="input-tour-cascade-date-to"');
-    expect(source).toContain('data-testid="button-tour-cascade-date-filter-reset"');
+  it("shows the filter inputs without a reset button when no filter is active", async () => {
+    const { TourEmployeeCascadeDialog } = await loadDialogWithFilters(undefined, undefined);
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="add"
+        employeeName="Mia Muster"
+        previewItems={previewItems}
+        selectedAppointmentIds={[51, 52]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("input-tour-cascade-date-from");
+    expect(html).toContain("input-tour-cascade-date-to");
+    expect(html).not.toContain("button-tour-cascade-date-filter-reset");
+    expect(html).toContain("tour-employee-cascade-row-51");
+    expect(html).toContain("tour-employee-cascade-row-52");
   });
 
-  it("Reset-Button ist nur bei aktivem Filter sichtbar (isFilterActive)", () => {
-    expect(source).toContain("const isFilterActive = filterDateFrom !== undefined || filterDateTo !== undefined");
-    expect(source).toContain("{isFilterActive ? (");
+  it("filters visible rows, shows reset and keeps the range summary on all preview items", async () => {
+    const { TourEmployeeCascadeDialog } = await loadDialogWithFilters("2099-02-10", undefined);
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="add"
+        employeeName="Mia Muster"
+        previewItems={previewItems}
+        selectedAppointmentIds={[52]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("button-tour-cascade-date-filter-reset");
+    expect(html).not.toContain("tour-employee-cascade-row-51");
+    expect(html).toContain("tour-employee-cascade-row-52");
+    expect(html).toContain("Termine (2) - Termine im Zeitraum von 03.02.99 bis 20.02.99");
   });
 
-  it("appointmentRangeLabel basiert weiterhin auf ungefilterten previewItems", () => {
-    expect(source).toContain("const appointmentRangeLabel = buildAppointmentRangeLabel(previewItems)");
-    expect(source).not.toContain("buildAppointmentRangeLabel(filteredItems)");
-  });
+  it("shows the empty state when the active date filter excludes every preview item", async () => {
+    const { TourEmployeeCascadeDialog } = await loadDialogWithFilters("2099-03-01", undefined);
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="add"
+        employeeName="Mia Muster"
+        previewItems={previewItems}
+        selectedAppointmentIds={[]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
 
-  it("Terminliste iteriert ueber filteredItems, nicht ueber previewItems", () => {
-    expect(source).toContain("filteredItems.map((item) => {");
-    expect(source).toContain("filteredItems.length === 0");
+    expect(html).toContain("button-tour-cascade-date-filter-reset");
+    expect(html).toContain("Keine zuk");
+    expect(html).not.toContain("tour-employee-cascade-row-51");
+    expect(html).not.toContain("tour-employee-cascade-row-52");
   });
 });
