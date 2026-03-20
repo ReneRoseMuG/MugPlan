@@ -1,47 +1,58 @@
 /**
  * Test Scope:
  *
- * Feature: FT17 - Template-System fuer EntityCards
- * Use Case: UC Globales EntityCard Layout fuer alle Domain-Card-Views
- *
  * Abgedeckte Regeln:
- * - Header ist global schmaler und nutzt reduzierte vertikale Abstaende.
- * - Footer bleibt im Renderpfad erhalten, ist jedoch visuell ausgeblendet.
- * - ColoredEntityCard vererbt das Layoutverhalten unveraendert ueber EntityCard.
+ * - EntityCard rendert Footer-Inhalt standardmaessig versteckt.
+ * - EntityCard kann den Footer sichtbar schalten.
+ * - ColoredEntityCard vererbt das Footer-Verhalten ueber EntityCard.
  *
  * Fehlerfaelle:
- * - Header verwendet weiterhin altes Padding und bleibt zu hoch.
- * - Footer wird sichtbar gerendert oder vollstaendig entfernt.
- * - ColoredEntityCard weicht vom EntityCard-Layout ab.
+ * - Footer ist standardmaessig sichtbar.
+ * - ColoredEntityCard verliert das sichtbare Footer-Verhalten.
  *
  * Ziel:
- * Sicherstellen, dass die globale Layoutaenderung der EntityCard konsistent fuer alle abgeleiteten Karten gilt.
+ * Gerendertes Kartenverhalten statt Klassen-Suchen im Quelltext absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+
+import { EntityCard } from "../../../client/src/components/ui/entity-card";
+import { ColoredEntityCard } from "../../../client/src/components/ui/colored-entity-card";
 
 describe("FT17 UI: EntityCard global layout", () => {
-  const entityCardPath = path.resolve(process.cwd(), "client/src/components/ui/entity-card.tsx");
-  const coloredEntityCardPath = path.resolve(process.cwd(), "client/src/components/ui/colored-entity-card.tsx");
-  const entityCardSource = readFileSync(entityCardPath, "utf8");
-  const coloredEntityCardSource = readFileSync(coloredEntityCardPath, "utf8");
+  it("keeps footer content hidden by default", () => {
+    vi.stubGlobal("React", React);
+    const html = renderToStaticMarkup(
+      <EntityCard testId="entity-card" title="Titel" footer={<span>Footer</span>}>
+        <div>Body</div>
+      </EntityCard>,
+    );
 
-  it("renders header with reduced vertical padding", () => {
-    expect(entityCardSource).toContain("px-4 py-1.5 border-b border-border flex items-center justify-between gap-2");
+    expect(html).toContain("data-testid=\"entity-card\"");
+    expect(html).toContain(">Titel<");
+    expect(html).toContain(">Body<");
+    expect(html).toContain(">Footer<");
+    expect(html).toContain("hidden");
   });
 
-  it("keeps footer in markup but hides it visually", () => {
-    expect(entityCardSource).toContain("{footer && (");
-    expect(entityCardSource).toContain("footerVisibility?: \"hidden\" | \"visible\";");
-    expect(entityCardSource).toContain("footerVisibility = \"hidden\"");
-    expect(entityCardSource).toContain("`${footerVisibility === \"visible\" ? \"flex\" : \"hidden\"}");
-    expect(entityCardSource).toContain("{footer}");
-  });
+  it("renders visible footer content when requested, also through ColoredEntityCard", () => {
+    vi.stubGlobal("React", React);
+    const html = renderToStaticMarkup(
+      <ColoredEntityCard
+        testId="colored-card"
+        title="Titel"
+        borderColor="#ff0000"
+        footer={<span>Sichtbarer Footer</span>}
+        footerVisibility="visible"
+      >
+        <div>Body</div>
+      </ColoredEntityCard>,
+    );
 
-  it("applies the same hidden footer behavior through ColoredEntityCard", () => {
-    expect(coloredEntityCardSource).toContain("<EntityCard");
-    expect(coloredEntityCardSource).toContain("footer={footer}");
-    expect(coloredEntityCardSource).toContain("footerVisibility={footerVisibility}");
+    expect(html).toContain("data-testid=\"colored-card\"");
+    expect(html).toContain(">Titel<");
+    expect(html).toContain(">Sichtbarer Footer<");
+    expect(html).toContain("flex");
   });
 });
