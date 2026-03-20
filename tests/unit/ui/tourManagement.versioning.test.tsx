@@ -1,65 +1,350 @@
-﻿/**
+/**
  * Test Scope:
  *
- * Feature: FT07 - Tourverwaltung Multi-User
- * Use Case: UC Tour bearbeiten/loeschen/zuweisen mit Versionspflicht
- *
  * Abgedeckte Regeln:
- * - Tour-PATCH sendet color und version.
- * - Tour-DELETE sendet version.
- * - Batch-Assign sendet items[{ employeeId, version }].
- * - Dialog-Delete ist nur fuer ADMIN sichtbar und nutzt den Dialog-Delete-Flow.
- * - Appointment-wirksame Kaskaden triggern anschliessend den zentralen Monitoring-Refresh.
+ * - TourCreate sendet den Create-Request und danach die Mitarbeiterzuweisung mit employee-version.
+ * - Der Admin-Dialog behaelt den Delete-Flow mit versioniertem DELETE-Payload.
+ * - Erfolgreiche Kaskaden bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
  *
  * Fehlerfaelle:
- * - Fehlende Tour-/Employee-Version wird als VALIDATION_ERROR blockiert.
- * - VERSION_CONFLICT wird konfliktbezogen gemeldet.
- * - BUSINESS_CONFLICT beim Loeschen wird mit FT04-Hinweistext gemeldet.
+ * - Versionsdaten fehlen in Tour- oder Mitarbeiter-Mutationen.
+ * - Der Admin-Delete-Flow driftet aus dem Dialog heraus.
+ * - Erfolgreiche Kaskaden lassen Monitoring- und Query-Refresh aus.
  *
  * Ziel:
- * Verdrahtung der Tour-Mutationen auf den Multi-User-Contract absichern.
+ * TourManagement ueber beobachtbare Mutations- und Folgeeffekte statt ueber Quelltextstrings absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT07 TourManagement versioning wiring", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/TourManagement.tsx");
-  const source = readFileSync(filePath, "utf8");
+const apiRequestMock = vi.fn();
+const invalidateQueriesMock = vi.fn();
+const invalidateTagProjectionQueriesMock = vi.fn();
+const refreshMonitoringWithNotificationMock = vi.fn();
+const toastMock = vi.fn();
+const useQueryMock = vi.fn();
+const tourEditFormCalls: Array<Record<string, unknown>> = [];
+const cascadeDialogCalls: Array<Record<string, unknown>> = [];
 
-  it("sends version in tour update and delete payloads", () => {
-    expect(source).toContain("apiRequest(\"PATCH\", `/api/tours/${id}`, { color, version })");
-    expect(source).toContain("apiRequest(\"DELETE\", `/api/tours/${id}`, { version })");
-    expect(source).toContain("deleteMutation.mutateAsync({ id: currentTour.id, version: currentTour.version })");
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: (options: unknown) => useQueryMock(options),
+  useMutation: (options: {
+    mutationFn: (variables: unknown) => Promise<unknown>;
+    onSuccess?: (result: unknown, variables: unknown, context: unknown) => unknown;
+    onError?: (error: unknown, variables: unknown, context: unknown) => unknown;
+  }) => {
+    const run = async (
+      variables: unknown,
+      mutateOptions?: {
+        onSuccess?: (result: unknown, variables: unknown, context: unknown) => unknown;
+        onError?: (error: unknown, variables: unknown, context: unknown) => unknown;
+      },
+    ) => {
+      try {
+        const result = await options.mutationFn(variables);
+        await options.onSuccess?.(result, variables, undefined);
+        await mutateOptions?.onSuccess?.(result, variables, undefined);
+        return result;
+      } catch (error) {
+        options.onError?.(error, variables, undefined);
+        mutateOptions?.onError?.(error, variables, undefined);
+        throw error;
+      }
+    };
+
+    return {
+      mutateAsync: (variables: unknown) => run(variables),
+      mutate: (variables: unknown, mutateOptions?: { onSuccess?: (result: unknown) => unknown; onError?: (error: unknown) => unknown }) =>
+        run(variables, mutateOptions).catch(() => undefined),
+      isPending: false,
+    };
+  },
+}));
+
+vi.mock("@/lib/queryClient", () => ({
+  apiRequest: (...args: unknown[]) => apiRequestMock(...args),
+  queryClient: {
+    invalidateQueries: (...args: unknown[]) => invalidateQueriesMock(...args),
+  },
+}));
+
+vi.mock("@/lib/project-appointments", () => ({
+  getBerlinTodayDateString: () => "2099-01-10",
+}));
+
+vi.mock("@/lib/tag-invalidation", () => ({
+  invalidateTagProjectionQueries: (...args: unknown[]) => invalidateTagProjectionQueriesMock(...args),
+}));
+
+vi.mock("@/lib/monitoring", () => ({
+  refreshMonitoringWithNotification: (...args: unknown[]) => refreshMonitoringWithNotificationMock(...args),
+}));
+
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({ toast: toastMock }),
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
+}));
+
+vi.mock("@/components/ui/list-layout", () => ({
+  ListLayout: ({ footerSlot, contentSlot }: { footerSlot?: React.ReactNode; contentSlot?: React.ReactNode }) => (
+    <section>
+      {footerSlot}
+      {contentSlot}
+    </section>
+  ),
+}));
+
+vi.mock("@/components/ui/board-view", () => ({
+  BoardView: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/colored-entity-card", () => ({
+  ColoredEntityCard: ({ children, footer, testId }: { children?: React.ReactNode; footer?: React.ReactNode; testId?: string }) => (
+    <article data-testid={testId}>
+      {children}
+      {footer}
+    </article>
+  ),
+}));
+
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ testId }: { testId?: string }) => <div data-testid={testId}>member</div>,
+}));
+
+vi.mock("@/components/ui/members-section-header", () => ({
+  MembersSectionHeader: () => <div>members</div>,
+}));
+
+vi.mock("@/components/ui/badge-interaction-provider", () => ({
+  BadgeInteractionProvider: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock("@/components/ui/appointment-count-badge", () => ({
+  AppointmentCountBadge: ({ count, testId }: { count: number; testId?: string }) => <div data-testid={testId}>{count}</div>,
+}));
+
+vi.mock("@/components/TourEditForm", () => ({
+  TourEditForm: (props: Record<string, unknown>) => {
+    tourEditFormCalls.push(props);
+    return <section data-testid="tour-edit-form">tour-edit-form</section>;
+  },
+}));
+
+vi.mock("@/components/TourEmployeeCascadeDialog", () => ({
+  TourEmployeeCascadeDialog: (props: Record<string, unknown>) => {
+    cascadeDialogCalls.push(props);
+    return <section data-testid="tour-cascade-dialog">tour-cascade-dialog</section>;
+  },
+}));
+
+async function loadTourManagement(options?: {
+  editingTour?: Record<string, unknown> | null;
+  isCreating?: boolean;
+  cascadeDialogState?: Record<string, unknown> | null;
+}) {
+  vi.resetModules();
+
+  let stateCall = 0;
+  vi.doMock("react", async () => {
+    const actual = await vi.importActual<typeof import("react")>("react");
+    return {
+      ...actual,
+      useState: (<T,>(initial: T) => {
+        stateCall += 1;
+        if (stateCall === 1) {
+          return [options?.editingTour ?? null, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        if (stateCall === 2) {
+          return [options?.isCreating ?? false, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        if (stateCall === 3) {
+          return [options?.cascadeDialogState ?? null, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        return actual.useState(initial);
+      }) as typeof actual.useState,
+    };
   });
 
-  it("uses batch payload items with employee version", () => {
-    expect(source).toContain("const items = employeeIds.map((employeeId) => {");
-    expect(source).toContain("return { employeeId, version: employee.version };");
-    expect(source).toContain("apiRequest(\"POST\", `/api/tours/${tourId}/employees`, { items })");
+  return import("../../../client/src/components/TourManagement");
+}
+
+describe("FT07 TourManagement behavior", () => {
+  const tour = {
+    id: 5,
+    name: "Nordtour",
+    color: "#335577",
+    version: 6,
+  };
+
+  const employee = {
+    id: 11,
+    firstName: "Mia",
+    lastName: "Tour",
+    fullName: "Mia Tour",
+    tourId: 5,
+    version: 8,
+    isActive: true,
+  };
+
+  beforeEach(() => {
+    tourEditFormCalls.length = 0;
+    cascadeDialogCalls.length = 0;
+    apiRequestMock.mockReset();
+    invalidateQueriesMock.mockReset();
+    invalidateTagProjectionQueriesMock.mockReset();
+    refreshMonitoringWithNotificationMock.mockReset();
+    toastMock.mockReset();
+    useQueryMock.mockReset();
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/tours") return { data: [tour], isLoading: false };
+      if (key === "/api/employees") return { data: [employee], isLoading: false };
+      if (key === "tour-management-appointments-count") return { data: new Map([[5, 3]]), isLoading: false };
+      return { data: [], isLoading: false };
+    });
+
+    vi.unstubAllGlobals();
+    vi.stubGlobal("React", React);
+    vi.stubGlobal("window", {
+      localStorage: { getItem: () => "ADMIN" },
+      confirm: vi.fn(() => true),
+    });
   });
 
-  it("maps VERSION_CONFLICT and BUSINESS_CONFLICT to user-facing conflict text", () => {
-    expect(source).toContain("extractApiCode(error) === \"VERSION_CONFLICT\"");
-    expect(source).toContain("Datensatz wurde zwischenzeitlich geaendert");
-    expect(source).toContain("if (code === \"BUSINESS_CONFLICT\")");
-    expect(source).toContain("Tour kann nicht geloescht werden, solange Termine zugeordnet sind.");
+  it("creates a tour and assigns selected employees with their versions", async () => {
+    apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
+      if (method === "POST" && url === "/api/tours") {
+        return {
+          ok: true,
+          json: async () => ({ id: 77, color: (payload as { color: string }).color }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({}),
+      };
+    });
+
+    const { TourManagement } = await loadTourManagement({
+      editingTour: null,
+      isCreating: true,
+      cascadeDialogState: null,
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="DISPONENT" />);
+
+    expect(tourEditFormCalls).toHaveLength(1);
+    expect(tourEditFormCalls[0]).toMatchObject({
+      isCreate: true,
+      canDelete: false,
+    });
+
+    const onSubmit = tourEditFormCalls[0].onSubmit as (tourId: number | null, employeeIds: number[], color: string) => Promise<void>;
+    await onSubmit(null, [11], "#1188aa");
+
+    expect(apiRequestMock).toHaveBeenNthCalledWith(1, "POST", "/api/tours", { color: "#1188aa" });
+    expect(apiRequestMock).toHaveBeenNthCalledWith(2, "POST", "/api/tours/77/employees", {
+      items: [{ employeeId: 11, version: 8 }],
+    });
   });
 
-  it("wires admin-only delete action into the tour edit dialog", () => {
-    expect(source).toContain("const isAdmin = effectiveUserRole === \"ADMIN\";");
-    expect(source).toContain("onDelete={handleDeleteFromDialog}");
-    expect(source).toContain("canDelete={isAdmin}");
+  it("keeps an admin delete action in the edit dialog and sends a versioned delete", async () => {
+    apiRequestMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+
+    const { TourManagement } = await loadTourManagement({
+      editingTour: { ...tour, members: [employee] },
+      isCreating: false,
+      cascadeDialogState: null,
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
+
+    expect(tourEditFormCalls[0]).toMatchObject({
+      canDelete: true,
+      tour: expect.objectContaining({ id: 5, version: 6 }),
+    });
+
+    const onDelete = tourEditFormCalls[0].onDelete as () => Promise<void>;
+    await onDelete();
+
+    expect(apiRequestMock).toHaveBeenCalledWith("DELETE", "/api/tours/5", { version: 6 });
   });
 
-  it("refreshes monitoring after appointment-wirksame cascade executions", () => {
-    expect(source).toContain("void refreshMonitoringWithNotification(toast);");
-  });
+  it("executes cascade updates and refreshes dependent views after success", async () => {
+    apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
+      if (method === "POST" && url === "/api/tours/5/employees/cascade-add") {
+        return {
+          ok: true,
+          json: async () => ({
+            updatedAppointmentCount: (payload as { selectedAppointmentIds: number[] }).selectedAppointmentIds.length,
+            skipped: [],
+          }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({}),
+      };
+    });
 
-  it("invalidates server-state driven appointment projections after cascade success", () => {
-    expect(source).toContain('import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";');
-    expect(source).toContain("const refreshCascadeDependentViews = async () => {");
-    expect(source).toContain("await invalidateTagProjectionQueries();");
-    expect(source).toContain("await queryClient.invalidateQueries({ queryKey: [\"/api/tours\"] });");
+    const { TourManagement } = await loadTourManagement({
+      editingTour: { ...tour, members: [employee] },
+      isCreating: false,
+      cascadeDialogState: {
+        open: true,
+        mode: "add",
+        tourId: 5,
+        employeeId: 11,
+        employeeVersion: 8,
+        employeeName: "Mia Tour",
+        previewItems: [{
+          appointmentId: 900,
+          startDate: "2099-02-01",
+          endDate: null,
+          tourName: "Nordtour",
+          customerNumber: "C-1",
+          customerName: "Kunde Eins",
+          projectName: "Projekt Eins",
+          orderNumber: "A-1",
+          currentEmployees: [],
+          eligible: true,
+          conflictReason: null,
+        }],
+        selectedAppointmentIds: [900],
+      },
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
+
+    expect(cascadeDialogCalls).toHaveLength(1);
+
+    const onConfirm = cascadeDialogCalls[0].onConfirm as () => void;
+    onConfirm();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/employees/cascade-add", {
+      employeeId: 11,
+      employeeVersion: 8,
+      selectedAppointmentIds: [900],
+    });
+    expect(invalidateTagProjectionQueriesMock).toHaveBeenCalledTimes(1);
+    expect(invalidateQueriesMock).toHaveBeenCalledWith(expect.objectContaining({
+      queryKey: ["/api/tours"],
+    }));
+    expect(refreshMonitoringWithNotificationMock).toHaveBeenCalledWith(toastMock);
+    expect(toastMock).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Kaskade abgeschlossen",
+      description: "1 Termine wurden aktualisiert.",
+    }));
   });
 });

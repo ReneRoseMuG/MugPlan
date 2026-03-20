@@ -2,44 +2,128 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der FT04-Kaskadendialog verwendet geschaerfte Titel und Untertitel fuer Hinzufuegen und Abziehen.
- * - Der Header zeigt eine Summenzeile mit Terminanzahl und Datumsbereich aller vorgeschlagenen Termine.
- * - Die Preview-Zeilen zeigen Datum im Format dd.mm.yy sowie Auftragsnummer und Projektname in einer Zeile.
- * - Kundenkontext erscheint nur, wenn ein Kunde verfuegbar ist.
+ * - Der Kaskadendialog zeigt fuer Hinzufuegen und Abziehen unterschiedliche sichtbare Texte.
+ * - Der Header zeigt Terminanzahl und Zeitraum aller Vorschautermine.
+ * - Vorschauzeilen zeigen Kurzdatum, Projektkontext, optionalen Kundenkontext und Konflikthinweise.
  *
  * Fehlerfaelle:
- * - Der Dialog bleibt bei generischer Kaskaden-Sprache oder ASCII-Ersatztexten.
- * - Die Preview zeigt weiterhin missverstaendliche Mitarbeiterinfos oder verliert die Projektzeile.
+ * - Der Dialog faellt auf generische Copy zurueck.
+ * - Datums- und Kontextinformationen verschwinden aus der sichtbaren Vorschau.
+ * - Konflikte bleiben ohne sichtbaren Hinweis.
  *
  * Ziel:
- * Die sichtbare FT04-Dialogverdrahtung fuer die selektive Tour-Mitarbeiter-Kaskade regressionssicher absichern.
+ * Das sichtbare Verhalten des TourEmployeeCascadeDialog direkt ueber gerendertes Markup absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT04 UI: TourEmployeeCascadeDialog wiring", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/TourEmployeeCascadeDialog.tsx");
-  const source = readFileSync(filePath, "utf8");
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
+}));
 
-  it("uses the sharpened add and remove dialog copy", () => {
-    expect(source).toContain('const title = mode === "add" ? "Mitarbeiter zu Tour-Terminen');
-    expect(source).toContain(': "Mitarbeiter von Tour-Terminen abziehen";');
-    expect(source).toContain("W");
-    expect(source).toContain("die Termine aus,");
-    expect(source).toContain("function buildAppointmentRangeLabel(items: PreviewItem[]): string | null");
-    expect(source).toContain("Termine (${items.length}) - Termine im Zeitraum von");
-    expect(source).toContain('data-testid="text-tour-employee-cascade-range"');
-    expect(source).toContain('"Best');
+vi.mock("@/components/ui/checkbox", () => ({
+  Checkbox: ({ checked, disabled, ...props }: { checked?: boolean; disabled?: boolean; [key: string]: unknown }) => (
+    <input type="checkbox" checked={checked} disabled={disabled} readOnly {...props} />
+  ),
+}));
+
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <section {...props}>{children}</section>,
+  DialogDescription: ({ children }: { children?: React.ReactNode }) => <p>{children}</p>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <footer>{children}</footer>,
+  DialogHeader: ({ children }: { children?: React.ReactNode }) => <header>{children}</header>,
+  DialogTitle: ({ children }: { children?: React.ReactNode }) => <h2>{children}</h2>,
+}));
+
+vi.mock("@/components/ui/input", () => ({
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
+}));
+
+import { TourEmployeeCascadeDialog } from "../../../client/src/components/TourEmployeeCascadeDialog";
+
+const basePreviewItems = [
+  {
+    appointmentId: 41,
+    startDate: "2099-02-03",
+    endDate: "2099-02-05",
+    tourName: "Nordtour",
+    customerNumber: "C-100",
+    customerName: "Kunde Nord",
+    projectName: "Projekt Nord",
+    orderNumber: "A-100",
+    currentEmployees: [],
+    eligible: true,
+    conflictReason: null,
+  },
+  {
+    appointmentId: 42,
+    startDate: "2099-02-10",
+    endDate: null,
+    tourName: "Nordtour",
+    customerNumber: null,
+    customerName: null,
+    projectName: "Projekt Sued",
+    orderNumber: null,
+    currentEmployees: [],
+    eligible: false,
+    conflictReason: "EMPLOYEE_OVERLAP" as const,
+  },
+];
+
+describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
   });
 
-  it("formats preview rows with short dates, project line and optional customer context", () => {
-    expect(source).toContain("function formatShortDate(dateValue: string): string");
-    expect(source).toContain("return `${day}.${month}.${year.slice(-2)}`;");
-    expect(source).toContain("function formatCustomerLabel(item: PreviewItem): string | null");
-    expect(source).toContain("if (!item.customerNumber) return null;");
-    expect(source).toContain("function formatProjectLabel(item: PreviewItem): string | null");
-    expect(source).toContain("if (orderNumber && projectName) return `${orderNumber} - ${projectName}`;");
-    expect(source).not.toContain("Mitarbeiter:");
+  it("renders add mode with sharpened copy, range summary and contextual preview rows", () => {
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="add"
+        employeeName="Mia Muster"
+        previewItems={basePreviewItems}
+        selectedAppointmentIds={[41]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Mitarbeiter zu Tour-Terminen hinzuf");
+    expect(html).toContain("W");
+    expect(html).toContain("Mia Muster");
+    expect(html).toContain("Termine (2) - Termine im Zeitraum von 03.02.99 bis 10.02.99");
+    expect(html).toContain("03.02.99");
+    expect(html).toContain("bis 05.02.99");
+    expect(html).toContain("A-100 - Projekt Nord");
+    expect(html).toContain("K: C-100 - Kunde Nord");
+    expect(html).toContain("Projekt Sued");
+    expect(html).toContain("Ueberschneidung mit bestehendem Termin");
+    expect(html).toContain("button-tour-employee-cascade-confirm");
+  });
+
+  it("renders remove mode with the dedicated removal copy", () => {
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="remove"
+        employeeName="Mia Muster"
+        previewItems={[basePreviewItems[0]]}
+        selectedAppointmentIds={[41]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Mitarbeiter von Tour-Terminen abziehen");
+    expect(html).toContain("von denen Mia Muster abgezogen werden soll");
+    expect(html).toContain("Termine (1) - Termine im Zeitraum von 03.02.99 bis 05.02.99");
   });
 });

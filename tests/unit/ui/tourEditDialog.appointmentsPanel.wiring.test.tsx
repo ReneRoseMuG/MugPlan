@@ -1,45 +1,157 @@
 /**
  * Test Scope:
  *
- * Feature: FT04/FT16 - Tourenverwaltung
- * Use Case: UC Tour bearbeiten mit kontextbasierter Terminliste
- *
  * Abgedeckte Regeln:
- * - TourEditForm bindet AppointmentsListPage ueber context={{ type: "tour", tourId }} ein.
- * - Neue Tour (tourId=null) bleibt ueber emptyStateOverride im leeren Zustand.
- * - Individueller helpKey fuer den Tour-Form-Kontext bleibt verdrahtet.
- * - Der Formular-Tab nutzt den eingebetteten Listenmodus ohne aeusseren Formular-Scroll.
- * - Legacy-Props hideTourFilter/lockedTourId/hideTourColumn/enforceFromToday werden im TourEditForm nicht mehr verwendet.
+ * - TourEditForm bindet die eingebettete Terminliste mit Tour-Kontext und dem tour-spezifischen helpKey an.
+ * - Im Neuanlagezustand bleibt der leere Hinweistext sichtbar und der Listencontainer im contained-Scrollmodus.
+ * - Veraltete Legacy-Props werden nicht mehr an die Terminliste weitergereicht.
  *
  * Fehlerfaelle:
- * - TourEditForm nutzt weiterhin Legacy-Props statt context.
+ * - Die Terminliste verliert ihren Tour-Kontext oder den spezifischen helpKey.
+ * - Der leere Neuanlagezustand verschwindet aus dem Formular.
+ * - Alte Prop-Pfade tauchen wieder an der Terminliste auf.
  *
  * Ziel:
- * Die UI-Verdrahtung fuer die neue kontextbasierte Terminliste im Tour-Form regressionssicher absichern.
+ * Die TourEditForm-Terminlistenverdrahtung ueber gerenderte Props statt ueber Dateiinhaltspruefungen absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT04 TourEditForm appointments context wiring", () => {
-  const tourFormPath = path.resolve(process.cwd(), "client/src/components/TourEditForm.tsx");
-  const tourFormSource = readFileSync(tourFormPath, "utf8");
+const entityFormLayoutCalls: Array<Record<string, unknown>> = [];
+const appointmentsListPageCalls: Array<Record<string, unknown>> = [];
 
-  it("wires AppointmentsListPage in tour form using context", () => {
-    expect(tourFormSource).toContain("<AppointmentsListPage");
-    expect(tourFormSource).toContain("helpKey=\"appointments.list.tourForm\"");
-    expect(tourFormSource).toContain("context={{ type: \"tour\", tourId: tour?.id ?? null }}");
-    expect(tourFormSource).toContain("emptyStateOverride={leftEmptyState}");
-    expect(tourFormSource).toContain("contentScrollMode=\"contained\"");
-    expect(tourFormSource).toContain("className=\"min-h-0 flex-1\"");
-    expect(tourFormSource).toContain("<Tabs defaultValue=\"stammdaten\" className=\"flex h-full min-h-0 flex-col space-y-4\">");
-    expect(tourFormSource).toContain("<TabsContent value=\"termine\" className=\"flex min-h-0 flex-1 flex-col\">");
+vi.mock("@/components/ui/entity-form-layout", () => ({
+  EntityFormLayout: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
+    entityFormLayoutCalls.push(props);
+    return (
+      <section data-testid="tour-entity-form-layout">
+        {props.footerActions}
+        {props.children}
+      </section>
+    );
+  },
+}));
+
+vi.mock("@/components/ui/color-select-button", () => ({
+  ColorSelectButton: ({ testId }: { testId?: string }) => <button type="button" data-testid={testId}>farbe</button>,
+}));
+
+vi.mock("@/components/ui/members-section-header", () => ({
+  MembersSectionHeader: ({ action }: { action?: React.ReactNode }) => (
+    <div>
+      members
+      {action}
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/plus-action-button", () => ({
+  PlusActionButton: (props: Record<string, unknown>) => <button type="button" {...props}>plus</button>,
+}));
+
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ testId }: { testId?: string }) => <div data-testid={testId}>member</div>,
+}));
+
+vi.mock("@/components/AppointmentsListPage", () => ({
+  AppointmentsListPage: (props: Record<string, unknown>) => {
+    appointmentsListPageCalls.push(props);
+    return (
+      <section data-testid="appointments-list-page">
+        {props.emptyStateOverride as React.ReactNode}
+      </section>
+    );
+  },
+}));
+
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
+}));
+
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children, className }: { children?: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
+  TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsTrigger: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
+  TabsContent: ({ children, className }: { children?: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
+}));
+
+vi.mock("@/components/EmployeePickerDialogList", () => ({
+  EmployeePickerDialogList: () => <div>employee-picker</div>,
+}));
+
+import { TourEditForm } from "../../../client/src/components/TourEditForm";
+
+describe("FT04 TourEditForm appointments list behavior", () => {
+  const noop = async () => undefined;
+
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
+    entityFormLayoutCalls.length = 0;
+    appointmentsListPageCalls.length = 0;
   });
 
-  it("does not use deprecated appointments list props in tour form", () => {
-    expect(tourFormSource).not.toContain("hideTourFilter");
-    expect(tourFormSource).not.toContain("lockedTourId");
-    expect(tourFormSource).not.toContain("hideTourColumn");
-    expect(tourFormSource).not.toContain("enforceFromToday");
+  it("passes the tour context, help key and empty state into the embedded appointments list", () => {
+    const html = renderToStaticMarkup(
+      <TourEditForm
+        tour={null}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        isCreate
+        defaultName="Neue Tour"
+        defaultColor="#225577"
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(entityFormLayoutCalls[0]).toMatchObject({
+      contentScrollMode: "contained",
+      testIdPrefix: "tour",
+    });
+    expect(appointmentsListPageCalls[0]).toMatchObject({
+      title: "Termine",
+      helpKey: "appointments.list.tourForm",
+      context: { type: "tour", tourId: null },
+      className: "min-h-0 flex-1",
+    });
+    expect(appointmentsListPageCalls[0]).not.toHaveProperty("hideTourFilter");
+    expect(appointmentsListPageCalls[0]).not.toHaveProperty("lockedTourId");
+    expect(appointmentsListPageCalls[0]).not.toHaveProperty("hideTourColumn");
+    expect(appointmentsListPageCalls[0]).not.toHaveProperty("enforceFromToday");
+    expect(html).toContain("Nach dem Speichern der Tour werden Termine angezeigt.");
+  });
+
+  it("keeps the appointments list bound to the edited tour id and forwards open handlers", () => {
+    const onOpenAppointment = vi.fn();
+
+    renderToStaticMarkup(
+      <TourEditForm
+        tour={{
+          id: 12,
+          name: "Nordtour",
+          color: "#335577",
+          version: 4,
+          members: [],
+        }}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        onCancel={() => undefined}
+        onOpenAppointment={onOpenAppointment}
+      />,
+    );
+
+    expect(appointmentsListPageCalls[0]).toMatchObject({
+      context: { type: "tour", tourId: 12 },
+      onOpenAppointment,
+    });
   });
 });
