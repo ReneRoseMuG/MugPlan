@@ -65,6 +65,24 @@ Codex dokumentiert kurz:
 - warum diese Auswahl genügt,
 - warum keine weitere Lektüre nötig ist.
 
+### 1.1 Notion als fachlicher Einstiegspunkt
+
+Wenn für einen Auftrag fachliche Projektkontexte, Feature-Listen oder Statusstände benötigt werden und die lokalen Repo-Dokumente dafür nicht ausreichen, nutzt Codex als bevorzugten Einstiegspunkt zuerst diese Notion-Seite:
+
+- `https://www.notion.so/Meisel-Gerken-Tourenplaner-303da094354e80ba83a5f0a1659bd723`
+
+Von dort aus ist insbesondere die Datenbank `Lastenheft` relevant. Sie enthält Feature-Dokumente. Die Eigenschaft `Status` ist dabei fachlich wichtig und wird mindestens mit folgenden Werten verwendet:
+
+- `geplant`
+- `Entfernt`
+- `Abgeschlossen`
+
+Codex nutzt diesen Notion-Einstiegspunkt gezielt und nur auftragsbezogen. Die lokale Dokumentenstrategie aus Abschnitt 1 bleibt der Standard für repo-interne Arbeit; Notion ergänzt sie nur dann, wenn fachliche Einordnung oder Projektkontext aus dem Repo allein nicht sicher genug hervorgehen.
+
+Feature-Dokumente und Use-Case-Beschreibungen sind dabei als informative Arbeitsgrundlage zu lesen, nicht als absolute Wahrheit. Sie können veraltet, unvollständig oder gegenüber dem aktuellen Fachverhalten im Code anders ausgelegt sein.
+
+Wenn ein Auftrag direkten Bezug auf ein bestimmtes Feature oder einen Use Case hat und Doku und Code nicht eindeutig zusammenpassen, behandelt Codex diese Abweichung nicht automatisch als Bug. In solchen Fällen fragt Codex vor einer fachlichen Umdeutung oder vor riskanten Änderungen nach. Das gilt besonders dann, wenn bestehender Code fachliche Regeln sichtbar anders auslegt als die Dokumentation.
+
 ---
 
 ## 2. Analyse vor der Umsetzung (Pflicht, aber klein starten)
