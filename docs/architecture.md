@@ -89,6 +89,8 @@ Die zentrale Pipeline in `server/routes.ts` ist:
 
 Aktive Domänen-Routen umfassen u. a. Auth inkl. Passwort-Login, 2FA-Flow und Quick-Login, Termine, Kalender, Kunden, Projekte, Mitarbeiter, Teams, Touren, Projektstatus, Notizen, Anhänge und Attachment-Queries, User Settings, Users, Backups, Demo Seed/Purge, Dokumentextraktion, Help-Texts, Masterdata und Admin Bulk Imports.
 
+Reste der früheren FT30-Abwesenheitsdomäne existieren weiterhin in `shared/routes.ts`, `shared/schema.ts` sowie einzelnen Service-/UI-Dateien, sind aber nicht Teil der aktiven Routing-Architektur, solange `registerRoutes` keine `employeeAbsencesRoutes` mountet.
+
 ## 5. Rollen- und Zugriffsarchitektur
 
 ### 5.1 Autoritativer Rollen-Kontext

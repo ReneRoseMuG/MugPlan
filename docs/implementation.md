@@ -349,9 +349,8 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält Zugriff auf `/api/monitoring`, aber nicht auf die Admin-Konfiguration unter `/api/admin/monitoring/config`
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
-- erhält bei terminbezogenen Mitarbeiterlisten derzeit dieselbe aktive Mitarbeiterliste wie in der allgemeinen Mitarbeiteransicht; eine serverseitige Verfügbarkeitsprüfung über FT30 oder `exit_date` ist funktional abgeklemmt
-- bei Termin-Mutationen mit verfuegbarkeitsbedingten Personaländerungen erfolgt keine stille Bereinigung mehr; der Server liefert stattdessen einen bestaetigungspflichtigen Verfuegbarkeitskonflikt und speichert erst nach explizitem Confirm
-- erhält bei Mitarbeiter-Abwesenheiten nur nicht-historische Einträge; historische FT30-Einträge sind in Listen- und Detailpfaden nicht sichtbar
+- erhält bei terminbezogenen Mitarbeiterlisten derzeit dieselbe aktive Mitarbeiterliste wie in der allgemeinen Mitarbeiteransicht; serverseitig aktiv durchgesetzt bleiben in diesem Pfad vor allem Overlap- und Historical-Lock-Regeln
+- erhält keine aktive FT30-Abwesenheitsdomäne; frühere FT30-Reste sind im aktuellen Routing nicht registriert
 
 ### Admin
 
@@ -360,13 +359,12 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - kann archivierte Einträge einsehen
 - erhält Lese- und Schreibzugriff auf die FT31-Monitoring-Konfiguration sowie Lesezugriff auf `/api/monitoring`
 - erhält den Projektstatus-Katalog nur noch im Admin-Stammdatenbereich
-- erhält bei Mitarbeiter-Abwesenheiten historische und zukünftige FT30-Einträge
+- erhält ebenfalls keine aktiv verdrahtete FT30-Abwesenheitsdomäne; vorhandene Restartefakte in Contracts, Schema oder UI sind derzeit nicht Teil des aktiven Routing
 
 ### Leser
 
 - erhält ausschließlich lesenden Zugriff
 - keine schreibenden Endpunkte verfügbar
-- kein Zugriff auf FT30-Endpunkte für Mitarbeiter-Abwesenheiten
 - kein Zugriff auf FT31-Monitoring-Endpunkte oder Monitoring-Konfiguration
 
 ### Listenfilter (serverseitig)
