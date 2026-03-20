@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Join-Ersetzungen bleiben bei fehlerhaften Replacement-Daten atomar.
+ * - Bestehende Relationen werden bei Abbruch nicht teilaktualisiert.
+ *
+ * Fehlerfaelle:
+ * - Teilweise uebernommene Join-Aenderungen trotz fachlichem Fehler.
+ *
+ * Ziel:
+ * Atomaritaet von Join-Replacements ueber mehrere Services hinweg absichern.
+ */
 import { describe, expect, it } from "vitest";
 
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";

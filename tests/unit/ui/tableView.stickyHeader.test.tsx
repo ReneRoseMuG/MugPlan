@@ -1,3 +1,17 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - `stickyHeader=true` rendert Sticky-Header-Klassen auf Headerzellen.
+ * - `stickyHeader=false` bleibt ohne Sticky-Klassen.
+ * - Basis-Headerstil sowie Width-/MinWidth-Werte bleiben erhalten.
+ *
+ * Fehlerfaelle:
+ * - Sticky-Header oder Breitenstile gehen beim TableView-Rendern verloren.
+ *
+ * Ziel:
+ * Das sichtbare Sticky-Header-Verhalten der TableView absichern.
+ */
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";

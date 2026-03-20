@@ -2,48 +2,103 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TableView rendert Sticky-Header nur im aktivierten Modus.
- * - TableView zeigt den persistenten Footer-Bereich nur bei Footer-Inhalt oder horizontalem Overflow.
- * - Die horizontale Scrollposition bleibt zwischen Tabellenkoerper und Footer-Scrollbar synchron.
- * - Die Footer-Scrollbar bleibt sichtbar und griffig ueber die gemeinsame Scrollbar-Variante.
- * - Die gemeinsame Tabellenbasis behaelt kompakte Zellen, Zebra-Striping und klare Headerflaechen.
+ * - `footerSlot` rendert einen sichtbaren Footer-Bereich.
+ * - Bei horizontalem Overflow erscheint die gemeinsame Footer-Scrollbar.
+ * - Kompakte Zellpadding- und Row-Klassen bleiben im gerenderten Tabellenmarkup sichtbar.
  *
  * Fehlerfaelle:
- * - Sticky-Klassen gehen beim TableView-Refactor verloren.
- * - Footer-Bar verschwindet trotz Footer-Inhalt oder horizontalem Overflow.
- * - Body- und Footer-Scroll laufen auseinander.
+ * - Footer oder Footer-Scrollbar verschwinden trotz aktivem Zustand.
+ * - Kompaktes Tabellenlayout driftet im Shared-Primitive weg.
  *
  * Ziel:
- * Die gemeinsame Sticky-Tabellenhuelle fuer Listen und Reports regressionssicher absichern.
+ * Die gemeinsame TableView-Huelle ueber sichtbares Markup und State statt ueber Quelltextsuche absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT-UI table view sticky frame", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/ui/table-view.tsx");
-  const source = readFileSync(filePath, "utf8");
+vi.mock("@/components/ui/hover-preview", () => ({
+  HoverPreview: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
 
-  it("renders sticky header classes only when stickyHeader is enabled", () => {
-    expect(source).toContain("stickyHeader && \"sticky top-0 z-10 bg-muted/95 border-b");
+vi.mock("@/components/ui/table", () => ({
+  Table: ({
+    children,
+    containerClassName: _containerClassName,
+    containerRef: _containerRef,
+    ...props
+  }: {
+    children?: React.ReactNode;
+    containerClassName?: string;
+    containerRef?: unknown;
+    [key: string]: unknown;
+  }) => <table {...props}>{children}</table>,
+  TableBody: ({ children }: { children?: React.ReactNode }) => <tbody>{children}</tbody>,
+  TableCell: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <td {...props}>{children}</td>,
+  TableHead: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <th {...props}>{children}</th>,
+  TableHeader: ({ children }: { children?: React.ReactNode }) => <thead>{children}</thead>,
+  TableRow: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <tr {...props}>{children}</tr>,
+}));
+
+async function loadTableViewWithOverflow() {
+  vi.resetModules();
+
+  vi.doMock("react", async () => {
+    const actual = await vi.importActual<typeof import("react")>("react");
+    return {
+      ...actual,
+      useState: vi
+        .fn()
+        .mockImplementationOnce(() => [{
+          hasOverflow: true,
+          scrollWidth: 600,
+        }, vi.fn()]),
+      useEffect: vi.fn(),
+    };
   });
 
-  it("renders the footer bar only when footer content is present", () => {
-    expect(source).toContain("const showFooterBar = stickyFooter && (Boolean(footerSlot) || horizontalMetrics.hasOverflow);");
-    expect(source).toContain("{footerSlot ? (");
+  return import("../../../client/src/components/ui/table-view");
+}
+
+type Row = { id: number; name: string };
+
+describe("FT-UI table view sticky frame behavior", () => {
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
   });
 
-  it("keeps horizontal footer scrollbar and body scroll in sync", () => {
-    expect(source).toContain("const handleBodyScroll = () => {");
-    expect(source).toContain("const handleFooterScroll = () => {");
-    expect(source).toContain("footerScroll.scrollLeft = viewport.scrollLeft;");
-    expect(source).toContain("viewport.scrollLeft = footerScroll.scrollLeft;");
-    expect(source).toContain("visible-horizontal-scrollbar overflow-x-scroll overflow-y-hidden");
+  it("renders footer content and shared footer scrollbar when overflow is active", async () => {
+    const { TableView } = await loadTableViewWithOverflow();
+    const columns = [{ id: "name", header: "Name", accessor: (row: Row) => row.name }];
+    const html = renderToStaticMarkup(
+      <TableView<Row>
+        testId="table-sample"
+        columns={columns}
+        rows={[{ id: 1, name: "Alpha" }]}
+        rowKey={(row) => row.id}
+        footerSlot={<div>Footer Inhalt</div>}
+      />,
+    );
+
+    expect(html).toContain("Footer Inhalt");
+    expect(html).toContain("table-sample-footer-scrollbar");
+    expect(html).toContain("visible-horizontal-scrollbar");
   });
 
-  it("keeps compact row, zebra and header surface classes on the shared table primitives", () => {
-    expect(source).toContain("const rowPaddingClass = density === \"compact\" ? \"py-1.5\" : \"py-2.5\";");
-    expect(source).toContain("className={cn(rowPaddingClass, alignmentClass(column.align), column.className)}");
-    expect(source).toContain("className={cn(onRowDoubleClick && \"cursor-pointer\", rowClassName?.(row, rowIndex))}");
+  it("keeps compact cell padding and row class names in the rendered table", async () => {
+    const { TableView } = await loadTableViewWithOverflow();
+    const columns = [{ id: "name", header: "Name", accessor: (row: Row) => row.name }];
+    const html = renderToStaticMarkup(
+      <TableView<Row>
+        columns={columns}
+        rows={[{ id: 1, name: "Alpha" }]}
+        rowKey={(row) => row.id}
+        density="compact"
+        rowClassName={() => "custom-row"}
+      />,
+    );
+
+    expect(html).toContain("py-1.5");
+    expect(html).toContain("custom-row");
   });
 });

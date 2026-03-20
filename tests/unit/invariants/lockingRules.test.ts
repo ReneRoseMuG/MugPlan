@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Update- und Delete-Pfade halten die vorgesehenen Locking-Regeln ein.
+ * - Appointment-Fehlercodes werden fuer Locking-Faelle konsistent gemappt.
+ *
+ * Fehlerfaelle:
+ * - Version- oder Delete-Konflikte werden falsch behandelt.
+ *
+ * Ziel:
+ * Die zentralen Locking-Regeln rund um Appointment-Mutationen absichern.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/repositories/appointmentsRepository", () => ({

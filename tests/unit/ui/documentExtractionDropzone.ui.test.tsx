@@ -1,38 +1,60 @@
 /**
  * Test Scope:
  *
- * Feature: FT21 - Document Extraction Dropzone UI
- * Use Case: UC Footer-Action-Zone mit rechter Auswahlaktion
+ * Feature: FT21 - Document Extraction Dropzone
  *
  * Abgedeckte Regeln:
- * - Auswahlaktion liegt in einer Footer-Action-Zone.
- * - Beschriftung "PDF auswaehlen" ist vorhanden und mit Plus-Button gekoppelt.
- * - Die Plus-Aktion nutzt den zentralen randlosen PlusActionButton-Standard.
- * - Alter Body-Button mit Textlabel wird nicht mehr gerendert.
+ * - Die Auswahlaktion erscheint sichtbar in der Footer-Zone mit PlusActionButton.
+ * - Das versteckte File-Input fuer PDF-Auswahl bleibt vorhanden.
+ * - Im Processing-Zustand wechselt die sichtbare Footer-Beschriftung.
  *
  * Fehlerfaelle:
- * - Regression auf altes Layout mit grossem Auswahlbutton im Body.
+ * - Die Footer-Aktion verschwindet oder der Input-Trigger geht verloren.
+ * - Der Processing-Zustand bleibt ohne sichtbare Rueckmeldung.
  *
  * Ziel:
- * Stabilitaet des neuen Dropzone-Layouts absichern.
+ * Das sichtbare Dropzone-Verhalten statt Quelltextmarker absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT21 document extraction dropzone ui", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/DocumentExtractionDropzone.tsx");
-  const source = readFileSync(filePath, "utf8");
+vi.mock("lucide-react", () => ({
+  FileUp: () => <span>file-up</span>,
+}));
 
-  it("renders footer action zone with label and normalized plus button", () => {
-    expect(source).toContain("PDF auswählen");
-    expect(source).toContain("<PlusActionButton");
-    expect(source).toContain("border-t border-slate-300/80");
-    expect(source).not.toContain("variant=\"outline\"");
+vi.mock("@/components/ui/plus-action-button", () => ({
+  PlusActionButton: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children ?? "plus"}</button>
+  ),
+}));
+
+import { DocumentExtractionDropzone } from "../../../client/src/components/DocumentExtractionDropzone";
+
+describe("FT21 document extraction dropzone behavior", () => {
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
   });
 
-  it("keeps hidden file input trigger", () => {
-    expect(source).toContain("type=\"file\"");
-    expect(source).toContain("data-testid=\"button-select-document-extraction\"");
+  it("renders footer label, plus action and hidden pdf input", () => {
+    const html = renderToStaticMarkup(
+      <DocumentExtractionDropzone onFileSelected={() => undefined} />,
+    );
+
+    expect(html).toContain("dropzone-document-extraction");
+    expect(html).toContain("PDF hier ablegen oder ausw");
+    expect(html).toContain("PDF ausw");
+    expect(html).toContain("button-select-document-extraction");
+    expect(html).toContain('type="file"');
+    expect(html).toContain('accept=".pdf,application/pdf"');
+  });
+
+  it("shows a processing label while extraction is running", () => {
+    const html = renderToStaticMarkup(
+      <DocumentExtractionDropzone onFileSelected={() => undefined} isProcessing />,
+    );
+
+    expect(html).toContain("Extraktion l");
+    expect(html).toContain("button-select-document-extraction");
   });
 });

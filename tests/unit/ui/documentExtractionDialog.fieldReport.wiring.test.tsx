@@ -2,46 +2,141 @@
  * Test Scope:
  *
  * Feature: FT21 - Dokumentextraktion Feldreport im Dialog
- * Use Case: UC Sichtbarer Erfolgs-/Fehlerreport vor der Datenuebernahme
  *
  * Abgedeckte Regeln:
- * - Der Dialog zeigt einen Erfolgsblock fuer erkannte Felder.
- * - Der Dialog zeigt einen Fehlerreport fuer fehlende Felder.
- * - Der Report steht zwischen Warnings und den editierbaren Bereichen.
+ * - Der Dialog zeigt Erfolgs- und Fehlreport sichtbar an.
+ * - Der Report bleibt zwischen Warnings und den editierbaren Bereichen.
  *
  * Fehlerfaelle:
- * - Report wird gar nicht gerendert.
- * - Reihenfolge im Dialog verschiebt Warnings oder Eingabebereiche ungewollt.
+ * - Der Report fehlt oder driftet im Dialog an die falsche Stelle.
  *
  * Ziel:
- * Sicherstellen, dass der neue Report zentral im bestehenden Dialog verdrahtet ist.
+ * Die Report-Darstellung im Extraktionsdialog ueber gerendertes Markup absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("FT21 document extraction dialog field report wiring", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/components/DocumentExtractionDialog.tsx");
-  const source = readFileSync(filePath, "utf8");
+const customerSectionCalls: Array<Record<string, unknown>> = [];
+const projectSectionCalls: Array<Record<string, unknown>> = [];
 
-  it("renders dedicated recognized and missing report sections", () => {
-    expect(source).toContain("data-testid=\"document-extraction-report-recognized\"");
-    expect(source).toContain("data-testid=\"document-extraction-report-missing\"");
-    expect(source).toContain("Erfolgreich erkannt");
-    expect(source).toContain("Nicht erkannt");
-    expect(source).toContain("data.fieldReport.recognized.length > 0");
-    expect(source).toContain("data.fieldReport.missing.length > 0");
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <section {...props}>{children}</section>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <footer>{children}</footer>,
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
+}));
+
+vi.mock("@/components/document-extraction/DocumentExtractionCustomerSection", () => ({
+  DocumentExtractionCustomerSection: (props: Record<string, unknown>) => {
+    customerSectionCalls.push(props);
+    return <div data-testid="document-extraction-customer-section">customer-section</div>;
+  },
+}));
+
+vi.mock("@/components/document-extraction/DocumentExtractionProjectSection", () => ({
+  DocumentExtractionProjectSection: (props: Record<string, unknown>) => {
+    projectSectionCalls.push(props);
+    return <div data-testid="document-extraction-project-section">project-section</div>;
+  },
+}));
+
+async function loadDocumentExtractionDialog() {
+  vi.resetModules();
+
+  vi.doMock("react", async () => {
+    const actual = await vi.importActual<typeof import("react")>("react");
+    return {
+      ...actual,
+      useState: vi
+        .fn()
+        .mockImplementationOnce(() => [{
+          customerNumber: "C-100",
+          firstName: "Ina",
+          lastName: "Beispiel",
+          company: "",
+          email: "",
+          phone: "",
+          addressLine1: "",
+          postalCode: "",
+          city: "",
+        }, vi.fn()])
+        .mockImplementationOnce(() => ["Modell A", vi.fn()])
+        .mockImplementationOnce(() => ["ORD-100", vi.fn()])
+        .mockImplementationOnce(() => ["1234", vi.fn()])
+        .mockImplementationOnce(() => ["<ul><li>Eintrag</li></ul>", vi.fn()])
+        .mockImplementationOnce(() => [false, vi.fn()])
+        .mockImplementationOnce(() => [false, vi.fn()])
+        .mockImplementationOnce(() => [false, vi.fn()]),
+    };
   });
 
-  it("keeps report order between warnings and editable sections", () => {
-    const warningsIndex = source.indexOf("data.warnings.length > 0");
-    const recognizedIndex = source.indexOf("data.fieldReport.recognized.length > 0");
-    const missingIndex = source.indexOf("data.fieldReport.missing.length > 0");
-    const customerSectionIndex = source.indexOf("showCustomerSection ? (");
+  return import("../../../client/src/components/DocumentExtractionDialog");
+}
 
-    expect(warningsIndex).toBeGreaterThan(-1);
+describe("FT21 document extraction dialog field report behavior", () => {
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
+    customerSectionCalls.length = 0;
+    projectSectionCalls.length = 0;
+  });
+
+  it("renders recognized and missing report blocks between warnings and edit sections", async () => {
+    const { DocumentExtractionDialog } = await loadDocumentExtractionDialog();
+    const html = renderToStaticMarkup(
+      <DocumentExtractionDialog
+        open
+        onOpenChange={() => undefined}
+        data={{
+          customer: {
+            customerNumber: "C-100",
+            firstName: "Ina",
+            lastName: "Beispiel",
+            company: null,
+            email: null,
+            phone: null,
+            addressLine1: null,
+            addressLine2: null,
+            postalCode: null,
+            city: null,
+          },
+          orderNumber: "ORD-100",
+          amount: "1234",
+          saunaModel: "Modell A",
+          articleItems: [],
+          categorizedItems: [],
+          articleListHtml: "<ul><li>Eintrag</li></ul>",
+          warnings: ["Warnung A"],
+          fieldReport: {
+            recognized: [{ key: "customerNumber", label: "Kundennummer", section: "customer", value: "C-100" }],
+            missing: [{ key: "email", label: "E-Mail", section: "customer", reason: "Nicht im Dokument gefunden" }],
+          },
+        }}
+      />,
+    );
+
+    expect(html).toContain("Warnung A");
+    expect(html).toContain("document-extraction-report-recognized");
+    expect(html).toContain("Erfolgreich erkannt");
+    expect(html).toContain("Kundennummer");
+    expect(html).toContain("C-100");
+    expect(html).toContain("document-extraction-report-missing");
+    expect(html).toContain("Nicht erkannt");
+    expect(html).toContain("E-Mail");
+    expect(html).toContain("Nicht im Dokument gefunden");
+
+    const warningsIndex = html.indexOf("Warnung A");
+    const recognizedIndex = html.indexOf("document-extraction-report-recognized");
+    const missingIndex = html.indexOf("document-extraction-report-missing");
+    const customerIndex = html.indexOf("document-extraction-customer-section");
+    const projectIndex = html.indexOf("document-extraction-project-section");
+
     expect(recognizedIndex).toBeGreaterThan(warningsIndex);
     expect(missingIndex).toBeGreaterThan(recognizedIndex);
-    expect(customerSectionIndex).toBeGreaterThan(missingIndex);
+    expect(customerIndex).toBeGreaterThan(missingIndex);
+    expect(projectIndex).toBeGreaterThan(customerIndex);
   });
 });

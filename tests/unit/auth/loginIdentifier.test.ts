@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Login akzeptiert die vorgesehenen Identifier-Pfade.
+ * - Repository-, Bootstrap- und Password-Guards werden korrekt ausgewertet.
+ *
+ * Fehlerfaelle:
+ * - Ungueltige Identifier oder gesperrte Login-Pfade werden falsch akzeptiert.
+ *
+ * Ziel:
+ * Die Identifier-Aufloesung im Auth-Login deterministisch absichern.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/repositories/usersRepository", () => ({

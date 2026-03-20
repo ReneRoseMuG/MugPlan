@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Optimistic-Locking-Konflikte werden fuer Termine, Projekte und Notizen konsistent gemappt.
+ * - Versioned Repository-Mutationen signalisieren Konflikte ueber die vorgesehenen Fehlerpfade.
+ *
+ * Fehlerfaelle:
+ * - Stale Writes bleiben unbemerkt oder liefern falsche Fehlercodes.
+ *
+ * Ziel:
+ * Den gemeinsamen Optimistic-Locking-Vertrag mehrerer Domain-Services absichern.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/repositories/appointmentsRepository", () => ({

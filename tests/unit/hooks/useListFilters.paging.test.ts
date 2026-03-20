@@ -2,34 +2,87 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - useListFilters setzt die Seite bei Filteraenderungen deterministisch auf 1 zurueck.
- * - useListFilters baut Query-Parameter aus Filterzustand und aktueller Seite.
+ * - `setFilter` setzt Paging deterministisch auf Seite 1 zurueck.
+ * - `resetFilters` stellt Initialfilter wieder her und setzt Seite 1.
+ * - `buildQueryParams` erhaelt Filterzustand und aktuelle Seite fuer paginierte Listen.
  *
  * Fehlerfaelle:
- * - Paging bleibt nach Filterwechsel auf einer alten Seite stehen.
- * - Query-Parameter verlieren den Seitenbezug fuer paginierte Listen.
+ * - Paging bleibt nach Filteraenderungen auf einer alten Seite stehen.
+ * - Query-Parameter verlieren den Seitenbezug.
  *
  * Ziel:
- * Den gemeinsamen Paging-/Filtervertrag des Listen-Hooks regressionssicher absichern.
+ * Den Paging-/Filtervertrag von `useListFilters` ueber Hook-Verhalten statt ueber Quelltextmarker absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import type React from "react";
+import { describe, expect, it, vi } from "vitest";
 
-describe("FT30 useListFilters paging wiring", () => {
-  const filePath = path.resolve(process.cwd(), "client/src/hooks/useListFilters.ts");
-  const source = readFileSync(filePath, "utf8");
+async function loadUseListFilters<TFilters extends object>(params: {
+  filters: TFilters;
+  page: number;
+}) {
+  vi.resetModules();
 
-  it("resets paging to page 1 on setFilter and resetFilters", () => {
-    expect(source).toContain("const [page, setPage] = useState(initialPage);");
-    expect(source).toContain("setFilters((prev) => ({ ...prev, [key]: value }));");
-    expect(source).toContain("setPage(1);");
-    expect(source).toContain("const resetFilters = () => {");
+  const setFiltersMock = vi.fn();
+  const setPageMock = vi.fn();
+
+  vi.doMock("react", async () => {
+    const actual = await vi.importActual<typeof import("react")>("react");
+    return {
+      ...actual,
+      useState: vi
+        .fn()
+        .mockImplementationOnce(() => [params.filters, setFiltersMock] as [TFilters, React.Dispatch<React.SetStateAction<TFilters>>])
+        .mockImplementationOnce(() => [params.page, setPageMock] as [number, React.Dispatch<React.SetStateAction<number>>]),
+      useMemo: ((factory: () => unknown) => factory()) as typeof actual.useMemo,
+    };
   });
 
-  it("includes the current page when query params are built", () => {
-    expect(source).toContain("buildQueryParams?: (filters: TFilters, page: number) => QueryParamsInput;");
-    expect(source).toContain("const rawParams = buildQueryParams ? buildQueryParams(filters, page) : {};");
-    expect(source).toContain("page,");
+  const module = await import("../../../client/src/hooks/useListFilters");
+  return { ...module, setFiltersMock, setPageMock };
+}
+
+describe("PKG-08 useListFilters paging behavior", () => {
+  it("resets paging to 1 when a filter changes or filters are reset", async () => {
+    const { useListFilters, setFiltersMock, setPageMock } = await loadUseListFilters({
+      filters: { query: "Alt", archived: false },
+      page: 4,
+    });
+
+    const result = useListFilters({
+      initialFilters: { query: "", archived: false },
+      initialPage: 4,
+    });
+
+    result.setFilter("query", "Neu");
+    expect(setFiltersMock).toHaveBeenNthCalledWith(1, expect.any(Function));
+    const filterUpdater = setFiltersMock.mock.calls[0]?.[0] as (value: { query: string; archived: boolean }) => { query: string; archived: boolean };
+    expect(filterUpdater({ query: "Alt", archived: false })).toEqual({ query: "Neu", archived: false });
+    expect(setPageMock).toHaveBeenNthCalledWith(1, 1);
+
+    result.resetFilters();
+    expect(setFiltersMock).toHaveBeenNthCalledWith(2, { query: "", archived: false });
+    expect(setPageMock).toHaveBeenNthCalledWith(2, 1);
+  });
+
+  it("passes the current page into query param construction", async () => {
+    const buildQueryParams = vi.fn((filters: { query: string; archived: boolean }, page: number) => ({
+      q: filters.query,
+      archived: filters.archived,
+      page,
+    }));
+
+    const { useListFilters } = await loadUseListFilters({
+      filters: { query: "Tour", archived: true },
+      page: 3,
+    });
+
+    const result = useListFilters({
+      initialFilters: { query: "", archived: false },
+      initialPage: 1,
+      buildQueryParams,
+    });
+
+    expect(buildQueryParams).toHaveBeenCalledWith({ query: "Tour", archived: true }, 3);
+    expect(result.queryParams.toString()).toBe("q=Tour&archived=true&page=3");
   });
 });

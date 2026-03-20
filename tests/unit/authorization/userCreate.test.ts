@@ -1,3 +1,16 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Benutzeranlage mappt Repository- und Hashing-Pfade korrekt.
+ * - Duplicate- und Validierungsfehler werden als UsersError signalisiert.
+ *
+ * Fehlerfaelle:
+ * - Doppelte Benutzer oder Hashingfehler werden falsch behandelt.
+ *
+ * Ziel:
+ * Die Kernregeln der Benutzeranlage im Users-Service absichern.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/repositories/usersRepository", () => ({
