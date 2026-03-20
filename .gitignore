@@ -17,7 +17,9 @@ test-results/
 server.log
 *.log
 *.zip
+.tmp-analysis-*.json
 .tmp-unit-*.json
+tests/coverage/
 plans/
 reports/
 shared/uploads
