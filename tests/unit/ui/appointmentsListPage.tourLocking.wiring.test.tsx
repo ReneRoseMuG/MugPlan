@@ -1,139 +1,218 @@
 /**
  * Test Scope:
  *
- * Feature: FT04 - Tourenverwaltung
- * Use Case: UC Terminliste im Tour-Formular mit fixierter Tour
- *
  * Abgedeckte Regeln:
- * - AppointmentsListPage unterstuetzt die neue context-Prop (standalone/tour/employee).
- * - Legacy-Props hideTourFilter, lockedTourId, hideTourColumn und enforceFromToday bleiben kompatibel markiert.
- * - Im Tour-Kontext wird Tour intern fixiert und die Tour-Spalte ausgeblendet.
- * - Der Show-All-Switch ist verdrahtet und steuert dateFrom (undefined vs. Berlin-heute).
- * - Projektnamen in der Terminliste werden ohne Kundennummer-Praefix gerendert.
- * - Auftragsnummer bleibt als eigene Listen-Spalte und als Filter erhalten.
+ * - Die Terminliste reagiert im Tour-Kontext sichtbar mit verstecktem Tour-Filter und ohne Tour-Spalte.
+ * - Im Standalone-Kontext bleibt die Tour-Spalte sichtbar.
+ * - Stornierte Termine werden in der Liste markiert und blockieren die Mitarbeiter-Entfernen-Aktion.
  *
  * Fehlerfaelle:
- * - Tour-Filter bleibt im Tour-Formular sichtbar.
- * - Tour-Spalte bleibt trotz hideTourColumn sichtbar.
- * - Projektspalte zeigt weiterhin den gespeicherten "K: ... - ..."-Praefix.
+ * - Die Tour-Spalte bleibt in eingebetteten Tour-Kontexten sichtbar.
+ * - Stornierte Zeilen verlieren ihre Kennzeichnung oder bleiben fuer Entfernen-Aktionen aktiv.
  *
  * Ziel:
- * Regressionssichere Verdrahtung der wiederverwendeten Terminliste fuer das Tour-Formular.
+ * Laufzeitverhalten der wiederverwendeten Terminliste statt Quelltext-Verdrahtung absichern.
  */
-import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
-import path from "path";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+let appointmentItems: Array<Record<string, unknown>> = [];
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: ({ queryKey }: { queryKey: unknown[] }) => {
+    if (queryKey[0] === "/api/tours") return { data: [{ id: 9, name: "Nordtour", color: "#123456" }], isLoading: false };
+    if (queryKey[0] === "/api/tags") return { data: [], isLoading: false };
+    if (queryKey[0] === "appointments-list") {
+      return {
+        data: {
+          page: 1,
+          pageSize: 25,
+          total: appointmentItems.length,
+          totalPages: 1,
+          items: appointmentItems,
+        },
+        isLoading: false,
+      };
+    }
+    return { data: [], isLoading: false };
+  },
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    disabled,
+    onClick,
+    ...props
+  }: {
+    children?: React.ReactNode;
+    disabled?: boolean;
+    onClick?: () => void;
+    [key: string]: unknown;
+  }) => (
+    <button type="button" disabled={disabled} onClick={onClick} {...props}>
+      {children}
+    </button>
+  ),
+}));
+
+vi.mock("@/components/ui/list-layout", () => ({
+  ListLayout: ({
+    helpKey,
+    showCloseButton,
+    filterSlot,
+    contentSlot,
+    footerSlot,
+  }: {
+    helpKey?: string;
+    showCloseButton?: boolean;
+    filterSlot?: React.ReactNode;
+    contentSlot?: React.ReactNode;
+    footerSlot?: React.ReactNode;
+  }) => (
+    <div data-testid="appointments-list-layout">
+      <div>{helpKey}</div>
+      <div>{showCloseButton ? "close-visible" : "close-hidden"}</div>
+      <div>{filterSlot}</div>
+      <div>{contentSlot}</div>
+      <div>{footerSlot}</div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/list-empty-state", () => ({
+  ListEmptyState: ({ fallbackTitle }: { fallbackTitle: string }) => <div>{fallbackTitle}</div>,
+}));
+
+vi.mock("@/components/ui/list-paging-footer", () => ({
+  ListPagingFooter: ({ summaryText }: { summaryText: string }) => <div>{summaryText}</div>,
+}));
+
+vi.mock("@/components/ui/filter-panels/appointments-filter-panel", () => ({
+  AppointmentsFilterPanel: ({
+    hideTourFilter,
+    showAllAppointments,
+  }: {
+    hideTourFilter: boolean;
+    showAllAppointments: boolean;
+  }) => (
+    <div data-testid="appointments-filter-panel">
+      <span>{hideTourFilter ? "tour-filter-hidden" : "tour-filter-visible"}</span>
+      <span>{showAllAppointments ? "show-all-on" : "show-all-off"}</span>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/table-view", () => ({
+  TableView: ({
+    columns,
+    rows,
+    rowClassName,
+  }: {
+    columns: Array<{ id: string; cell?: ({ row }: { row: Record<string, unknown> }) => React.ReactNode; accessor: (row: Record<string, unknown>) => unknown }>;
+    rows: Array<Record<string, unknown>>;
+    rowClassName?: (row: Record<string, unknown>) => string | undefined;
+  }) => (
+    <div data-testid="appointments-table">
+      <div>{columns.map((column) => <span key={column.id}>{column.id}</span>)}</div>
+      {rows.map((row) => (
+        <article key={String(row.id)} data-row-class={rowClassName?.(row)}>
+          {columns.map((column) => (
+            <div key={column.id} data-column={column.id}>
+              {column.cell
+                ? renderToStaticMarkup(<>{column.cell({ row })}</>)
+                : String(column.accessor(row) ?? "")}
+            </div>
+          ))}
+        </article>
+      ))}
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
+  createAppointmentWeeklyPanelPreview: () => <div>preview</div>,
+}));
+
+vi.mock("@/lib/project-appointments", () => ({
+  getBerlinTodayDateString: () => "2099-01-01",
+}));
+
+vi.mock("@/lib/domain-icons", () => ({
+  domainIcons: {
+    appointmentsList: () => <span>icon</span>,
+  },
+}));
+
+vi.mock("@/lib/list-display-format", () => ({
+  formatListDate: (value: string) => value,
+  formatListTime: (value: string | null) => value ?? "",
+}));
+
+import { AppointmentsListPage } from "../../../client/src/components/AppointmentsListPage";
 
 describe("FT04 appointments list page tour locking wiring", () => {
-  it("supports context prop and keeps legacy props as deprecated fallback", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("type AppointmentsListContext =");
-    expect(source).toContain("context?: AppointmentsListContext;");
-    expect(source).toContain("type: \"standalone\"");
-    expect(source).toContain("type: \"tour\"; tourId: number | null");
-    expect(source).toContain("type: \"employee\"; employeeId: number");
-    expect(source).toContain("TODO(deprecated): use `context` instead.");
-    expect(source).toContain("hideTourFilter?: boolean;");
-    expect(source).toContain("lockedTourId?: number | null;");
-    expect(source).toContain("hideTourColumn?: boolean;");
-    expect(source).toContain("enforceFromToday?: boolean;");
-    expect(source).toContain("helpKey?: string;");
-    expect(source).toContain("helpKey = \"appointments\"");
+  beforeEach(() => {
+    appointmentItems = [
+      {
+        id: 71,
+        version: 1,
+        startDate: "2099-02-01",
+        startTime: "08:30",
+        projectName: "Projekt Nord",
+        projectOrderNumber: "ORD-71",
+        customer: { customerNumber: "C-71", fullName: "Kunde Nord" },
+        tourName: "Nordtour",
+        isCancelled: false,
+      },
+      {
+        id: 72,
+        version: 1,
+        startDate: "2099-02-02",
+        startTime: "09:00",
+        projectName: "Projekt Storno",
+        projectOrderNumber: "ORD-72",
+        customer: { customerNumber: "C-72", fullName: "Kunde Storno" },
+        tourName: "Nordtour",
+        isCancelled: true,
+      },
+    ];
+    vi.stubGlobal("React", React);
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "DISPATCHER",
+      },
+    });
   });
 
-  it("hides tour column in tour and employee context", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
+  it("hides tour filter and tour column in tour context", () => {
+    const markup = renderToStaticMarkup(
+      <AppointmentsListPage context={{ type: "tour", tourId: 9 }} />,
+    );
 
-    expect(source).toContain("const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;");
-    expect(source).toContain("if (!resolvedHideTourColumn) {");
-    expect(source).toContain("id: \"tour\"");
+    expect(markup).toContain("appointments-list-layout");
+    expect(markup).toContain("tour-filter-hidden");
+    expect(markup).toContain("close-hidden");
+    expect(markup).toContain("orderNumber");
+    expect(markup).toContain("project");
+    expect(markup).not.toContain(">tour<");
   });
 
-  it("locks tour and employee ids via resolved context", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
+  it("keeps the tour column in standalone mode and marks cancelled rows as non-removable", () => {
+    const markup = renderToStaticMarkup(
+      <AppointmentsListPage
+        context={{ type: "standalone" }}
+        onRemoveEmployee={() => undefined}
+      />,
+    );
 
-    expect(source).toContain("const resolvedTourId = context?.type === \"tour\" ? context.tourId : lockedTourId;");
-    expect(source).toContain("const resolvedEmployeeId = context?.type === \"employee\" ? context.employeeId : undefined;");
-    expect(source).toContain("enabled: resolvedTourId !== null");
-    expect(source).toContain("const patchWithTour = resolvedTourId == null");
-    expect(source).toContain("const nextPatch = resolvedEmployeeId == null");
-    expect(source).toContain("const resolvedHideTourFilter = (isTourContext || isEmployeeContext) ? true : hideTourFilter;");
-    expect(source).toContain("hideTourFilter={resolvedHideTourFilter}");
-  });
-
-  it("uses date as default descending sort while other list columns stay sortable", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("const [sortDirection, setSortDirection] = useState<SortDirection>(\"desc\");");
-    expect(source).toContain("const toggleSort = (key: SortKey) => {");
-    expect(source).toContain("setSortDirection(key === \"date\" ? \"desc\" : \"asc\");");
-    expect(source).toContain("return resolveDateSortValue(left).localeCompare(resolveDateSortValue(right), \"de\") * multiplier;");
-    expect(source).toContain("onClick={() => toggleSort(key)}");
-  });
-
-  it("renders project name isolated from customer prefix and keeps order number as separate column", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("function resolveAppointmentProjectDisplayName(storedProjectName: string): string");
-    expect(source).toContain("return storedProjectName.trim();");
-    expect(source).not.toContain("const separator = \" - \";");
-    expect(source).not.toContain("if (suffix && (kPrefixed || /\\\\d/.test(prefix)))");
-    expect(source).toContain("id: \"orderNumber\"");
-    expect(source).toContain("header: renderSortHeader(\"Auftrag Nr.\", \"orderNumber\")");
-    expect(source).toContain("id: \"project\"");
-    expect(source).toContain("accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName)");
-    expect(source).toContain("row.isCancelled ? (");
-    expect(source).toContain("Storniert");
-  });
-
-  it("wires show-all switch to toggle dateFrom against Berlin-today", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("const todayBerlin = getBerlinTodayDateString();");
-    expect(source).toContain("const [showAllAppointments, setShowAllAppointments] = useState(false);");
-    expect(source).toContain("if (showAllAppointments) return;");
-    expect(source).toContain("dateFrom: checked ? undefined : todayBerlin");
-    expect(source).toContain("showAllAppointmentsHelpKey=\"appointments.filter.showAll\"");
-  });
-
-  it("forwards optional orderNumber filter into appointments list query", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("orderNumber: \"\",");
-    expect(source).toContain("if (filters.orderNumber.trim().length > 0) params.set(\"orderNumber\", filters.orderNumber.trim());");
-  });
-
-  it("forwards resolved helpKey into ListLayout", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("helpKey={helpKey}");
-  });
-
-  it("keeps the paging footer below the filter panel in every context", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("footerSlot={tableFooter}");
-    expect(source).not.toContain("const isEmbeddedListContext = contextType !== \"standalone\";");
-    expect(source).not.toContain("footerSlot={isEmbeddedListContext ? undefined : tableFooter}");
-    expect(source).not.toContain("footerSlot={isEmbeddedListContext ? tableFooter : undefined}");
-    expect(source).toContain("contentClassName=\"flex min-h-0 flex-col\"");
-  });
-
-  it("marks cancelled appointments visually and blocks remove-employee action for them", () => {
-    const filePath = path.resolve(process.cwd(), "client/src/components/AppointmentsListPage.tsx");
-    const source = readFileSync(filePath, "utf8");
-
-    expect(source).toContain("disabled={row.isCancelled}");
-    expect(source).toContain("rowClassName={(row) => row.isCancelled ? \"bg-amber-50/70 text-muted-foreground\" : undefined}");
+    expect(markup).toContain("tour-filter-visible");
+    expect(markup).toContain("close-visible");
+    expect(markup).toContain(">tour<");
+    expect(markup).toContain("Storniert");
+    expect(markup).toContain("data-row-class=\"bg-amber-50/70 text-muted-foreground\"");
+    expect(markup).toContain("button-remove-employee-from-appointment-72");
+    expect(markup).toContain("disabled=&quot;&quot;");
   });
 });

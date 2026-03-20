@@ -1,50 +1,109 @@
 /**
  * Test Scope:
  *
- * Feature: FT01 - Terminformular Mitarbeiterbereich
- *
  * Abgedeckte Regeln:
- * - Der Mitarbeiterbereich ist als eigene Komponente AppointmentEmployeeSlot gekapselt.
- * - Team-, Tour- und Mitarbeiter-Badges liegen innerhalb desselben hervorgehobenen Panels.
- * - Die Mitarbeiter-Auswahl bleibt als Header-Action im Panel verankert.
- * - Der Tour-Picker erscheint nur im Zustand ohne selektierte Tour.
+ * - Der Mitarbeiterbereich zeigt Teams, Tour-Picker und Zuweisungen in einem sichtbaren Panel.
+ * - Der Tour-Picker wird nur ohne bereits ausgewaehlte Tour angezeigt.
+ * - Leere und belegte Zuweisungszustaende werden sichtbar unterschieden.
  *
  * Fehlerfaelle:
- * - Mitarbeiter- und Teambereich zerfallen wieder in getrennte Blaecke.
- * - AppointmentForm baut den Mitarbeiterbereich inline statt ueber AppointmentEmployeeSlot.
+ * - Tour-Auswahl bleibt trotz selektierter Tour sichtbar.
+ * - Das Panel verliert seine Plus-Aktion oder die leeren Zuweisungshinweise.
  *
  * Ziel:
- * Die neue Panel-Struktur des Mitarbeiterbereichs im Terminformular regressionssicher absichern.
+ * Beobachtbares Rendering des Mitarbeiter-Panels im Terminformular absichern.
  */
-import { readFileSync } from "fs";
-import path from "path";
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/ui/label", () => ({
+  Label: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
+
+vi.mock("@/components/ui/plus-action-button", () => ({
+  PlusActionButton: ({ disabled, ...props }: { disabled?: boolean; ["data-testid"]?: string }) => (
+    <button type="button" disabled={disabled} data-testid={props["data-testid"]}>
+      add
+    </button>
+  ),
+}));
+
+vi.mock("@/components/ui/team-info-badge", () => ({
+  TeamInfoBadge: ({ name, testId }: { name: string; testId?: string }) => (
+    <div data-testid={testId}>{name}</div>
+  ),
+}));
+
+vi.mock("@/components/ui/tour-info-badge", () => ({
+  TourInfoBadge: ({ name, testId }: { name: string; testId?: string }) => (
+    <div data-testid={testId}>{name}</div>
+  ),
+}));
+
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ firstName, lastName, testId }: { firstName: string; lastName: string; testId?: string }) => (
+    <div data-testid={testId}>{`${firstName} ${lastName}`}</div>
+  ),
+}));
+
+import { AppointmentEmployeeSlot } from "../../../client/src/components/AppointmentEmployeeSlot";
+
+function renderSlot(
+  overrides: Partial<React.ComponentProps<typeof AppointmentEmployeeSlot>> = {},
+) {
+  return renderToStaticMarkup(
+    <AppointmentEmployeeSlot
+      teams={[
+        { id: 11, name: "Montage", color: "#111111" } as never,
+      ]}
+      assignedEmployees={[]}
+      teamMembersById={new Map([[11, [{ id: 201, fullName: "Alex Team" }]]])}
+      isLocked={false}
+      onAssignTeam={() => undefined}
+      onAddEmployee={() => undefined}
+      onRemoveEmployee={() => undefined}
+      tours={[
+        { id: 21, name: "Nordtour", color: "#224466" } as never,
+      ]}
+      tourMembersById={new Map([[21, [{ id: 301, fullName: "Tina Tour" }]]])}
+      selectedTour={null}
+      onTourChange={() => undefined}
+      {...overrides}
+    />,
+  );
+}
 
 describe("FT01 UI: AppointmentEmployeeSlot wiring", () => {
-  const source = readFileSync(path.resolve(process.cwd(), "client/src/components/AppointmentEmployeeSlot.tsx"), "utf8");
-
-  it("renders as its own highlighted slot panel with team, tour and employee sections", () => {
-    expect(source).toContain('export function AppointmentEmployeeSlot({');
-    expect(source).toContain("className?: string;");
-    expect(source).toContain("tours: Tour[];");
-    expect(source).toContain("tourMembersById: Map<number, { id: number; fullName: string }[]>;");
-    expect(source).toContain("selectedTour: Tour | null;");
-    expect(source).toContain("onTourChange: (tourId: number | null) => void;");
-    expect(source).toContain('className={`sub-panel flex flex-col gap-4 ${className ?? ""}`.trim()}');
-    expect(source).not.toContain("h-full");
-    expect(source).toContain('data-testid="slot-appointment-employees"');
-    expect(source).toContain(">Teams</Label>");
-    expect(source).toContain("Waehle ein Team fuer diesen Termin");
-    expect(source).toContain('data-testid="section-tour-picker"');
-    expect(source).toContain(">Tour</Label>");
-    expect(source).toContain("Waehle eine Tour, zu der dieser Termin hinzugefuegt werden soll");
-    expect(source).toContain("testId={`badge-tour-select-${tour.id}`}");
-    expect(source).toContain(">Zugewiesen</Label>");
+  beforeEach(() => {
+    vi.stubGlobal("React", React);
   });
 
-  it("keeps the employee picker plus action in the panel header", () => {
-    expect(source).toContain("<PlusActionButton");
-    expect(source).toContain('data-testid="button-add-employee"');
-    expect(source).toContain("onAddEmployee");
+  it("renders visible team, tour and assignment sections while no tour is selected", () => {
+    const markup = renderSlot();
+
+    expect(markup).toContain("slot-appointment-employees");
+    expect(markup).toContain("button-add-employee");
+    expect(markup).toContain("Teams");
+    expect(markup).toContain("Tour");
+    expect(markup).toContain("Zugewiesen");
+    expect(markup).toContain("badge-team-11");
+    expect(markup).toContain("badge-tour-select-21");
+    expect(markup).toContain("Keine Mitarbeiter zugewiesen");
+    expect(markup).toContain("section-tour-picker");
+  });
+
+  it("hides the tour picker after a tour is selected and shows assigned employees", () => {
+    const markup = renderSlot({
+      selectedTour: { id: 21, name: "Nordtour", color: "#224466" } as never,
+      assignedEmployees: [
+        { id: 41, firstName: "Mia", lastName: "Muster" } as never,
+      ],
+    });
+
+    expect(markup).not.toContain("section-tour-picker");
+    expect(markup).toContain("badge-employee-41");
+    expect(markup).toContain("Mia Muster");
+    expect(markup).not.toContain("Keine Mitarbeiter zugewiesen");
   });
 });
