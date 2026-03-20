@@ -3,25 +3,24 @@
  *
  * Abgedeckte Regeln:
  * - Der Wochenkalender rendert die Drucksteuerung inline im Kalenderfilter.
- * - Footer-Bereich bleibt zweispaltig; die Druck-UI sitzt vollstaendig rechts.
- * - Tour-Auswahl, Wochenzahl und Drucken bleiben als kompakter Block zusammen.
+ * - CalendarWorkspace reicht die Drucksteuerung nur im Wochenmodus weiter.
+ * - Die Druckvorschau erhaelt Tour, Wochenzahl und Startdatum aus dem Workspace-Zustand.
  *
  * Fehlerfaelle:
- * - Die Wochenansicht faellt auf einen separaten Druckpfad zurueck.
- * - Druck-Controls verteilen sich wieder ungeordnet ueber mehrere Layoutbereiche.
+ * - Die Drucksteuerung faellt in einen separaten Pfad zurueck.
+ * - Die Vorschau verliert die verdrahteten Filterwerte aus dem Workspace.
  *
  * Ziel:
- * Die Drucksteuerung im Wochenkalender ueber gerendertes Filter-Markup und Workspace-Verdrahtung absichern.
+ * Sichtbares Print-Preview-Wiring ueber CalendarFilterPanel und CalendarWorkspace absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readFileSync } from "fs";
-import path from "path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
 const setSettingMock = vi.fn();
 const toastMock = vi.fn();
+const dialogCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -41,15 +40,9 @@ vi.mock("@/components/calendar/CalendarEmployeeFilter", () => ({
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({
-    children,
-    disabled,
-    ...props
-  }: {
-    children?: React.ReactNode;
-    disabled?: boolean;
-    [key: string]: unknown;
-  }) => <button type="button" disabled={disabled} {...props}>{children}</button>,
+  Button: ({ children, disabled, ...props }: { children?: React.ReactNode; disabled?: boolean; [key: string]: unknown }) => (
+    <button type="button" disabled={disabled} {...props}>{children}</button>
+  ),
 }));
 
 vi.mock("@/components/ui/filter-panels/filter-panel", () => ({
@@ -74,25 +67,48 @@ vi.mock("@/components/ui/select", () => ({
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
+vi.mock("@/components/CalendarGrid", () => ({
+  CalendarGrid: () => <div>month-grid</div>,
+}));
+
+vi.mock("@/components/WeekGrid", () => ({
+  WeekGrid: () => <div>week-grid</div>,
+}));
+
+vi.mock("@/components/calendar/CalendarTourPrintPreviewDialog", () => ({
+  CalendarTourPrintPreviewDialog: (props: Record<string, unknown>) => {
+    dialogCalls.push(props);
+    return <div data-testid="tour-print-dialog-marker">dialog</div>;
+  },
+}));
+
+vi.mock("@/lib/project-appointments", () => ({
+  getBerlinTodayDateString: () => "2099-02-01",
+}));
+
+vi.mock("@/lib/tour-print-preview", () => ({
+  normalizeTourPrintWeekCount: (value: number) => value,
+}));
+
+import { CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
 import { CalendarFilterPanel } from "../../../client/src/components/ui/filter-panels/calendar-filter-panel";
 
 describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
-  const workspaceSource = readFileSync(path.resolve(process.cwd(), "client/src/components/CalendarWorkspace.tsx"), "utf8");
-
   beforeEach(() => {
+    dialogCalls.length = 0;
+    useQueryMock.mockReset();
+    useQueryMock.mockReturnValue({
+      data: [{ id: 1, name: "Tour A" }],
+    });
     vi.stubGlobal("React", React);
-  });
-
-  it("renders two footer columns with the print controls grouped on the right", () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: () => "ADMIN",
       },
     });
-    useQueryMock.mockReturnValue({
-      data: [{ id: 1, name: "Tour A" }],
-    });
+  });
 
+  it("renders the print controls as one compact block in the calendar filter", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel
         employeeId={null}
@@ -106,23 +122,56 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
       />,
     );
 
-    expect(html).toContain("grid gap-4 lg:grid-cols-2");
-    expect(html).toContain("lg:justify-self-end");
     expect(html).toContain("Wochenplanung drucken");
     expect(html).toContain("select-tour-print-preview");
     expect(html).toContain("input-tour-print-week-count");
-    expect(html).toContain("Drucken");
+    expect(html).toContain("button-open-tour-print-preview");
     expect(html.indexOf("select-tour-print-preview")).toBeLessThan(html.indexOf("input-tour-print-week-count"));
-    expect(html.indexOf("input-tour-print-week-count")).toBeLessThan(html.indexOf("Drucken"));
+    expect(html.indexOf("input-tour-print-week-count")).toBeLessThan(html.indexOf("button-open-tour-print-preview"));
   });
 
-  it("keeps the print controls wired through the shared calendar filter panel", () => {
-    expect(workspaceSource).toContain("<CalendarFilterPanel");
-    expect(workspaceSource).toContain('showWeekDisplayMode={activeView === "week"}');
-    expect(workspaceSource).toContain("selectedPrintTourId={selectedPrintTourId}");
-    expect(workspaceSource).toContain("onSelectedPrintTourIdChange={setSelectedPrintTourId}");
-    expect(workspaceSource).toContain("printWeekCount={printWeekCount}");
-    expect(workspaceSource).toContain("onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}");
-    expect(workspaceSource).toContain("const printFromDate = getBerlinTodayDateString();");
+  it("wires the dialog state from the workspace only for the week footer flow", () => {
+    const weekMarkup = renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="week"
+        currentDate={new Date("2099-02-01")}
+        employeeFilterId={null}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={() => undefined}
+      />,
+    );
+    const weekDialogProps = dialogCalls.at(-1);
+
+    const monthMarkup = renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="month"
+        currentDate={new Date("2099-02-01")}
+        employeeFilterId={null}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={() => undefined}
+      />,
+    );
+    const monthDialogProps = dialogCalls.at(-1);
+
+    expect(weekMarkup).toContain("data-testid=\"calendar-filter-panel\"");
+    expect(monthMarkup).toContain("data-testid=\"calendar-filter-panel\"");
+    expect(weekDialogProps).toMatchObject({
+      tourId: null,
+      weekCount: 1,
+      fromDate: "2099-02-01",
+      weekendColumnPercent: 33,
+    });
+    expect(monthDialogProps).toMatchObject({
+      tourId: null,
+      weekCount: 1,
+      fromDate: "2099-02-01",
+      weekendColumnPercent: 33,
+    });
   });
 });
