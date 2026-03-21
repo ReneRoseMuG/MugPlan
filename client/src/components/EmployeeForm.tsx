@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Phone, Route, Users } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeAttachmentsPanel } from "@/components/EmployeeAttachmentsPanel";
+import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
@@ -11,8 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
+import { fetchTagCatalog, tagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
-import type { Employee, Team, Tour } from "@shared/schema";
+import type { Employee, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeeWithRelations {
   employee: Employee;
@@ -45,6 +48,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const isEditing = Boolean(employeeId);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const canManageEmployeeTags = isAdmin || userRole === "DISPATCHER";
   const [formData, setFormData] = useState<EmployeeFormData>({
     firstName: "",
     lastName: "",
@@ -59,6 +63,15 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
         return Array.isArray(key) && key[0] === "/api/employees";
       },
     });
+  };
+
+  const invalidateEmployeeTagQueries = async () => {
+    invalidateEmployees();
+    if (employeeId) {
+      await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "tags"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+    }
+    await invalidateTagProjectionQueries();
   };
 
   const { data: employeeDetails, isLoading: employeeDetailsLoading } = useQuery<EmployeeWithRelations>({
@@ -82,6 +95,21 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     queryKey: ["/api/employees", { scope: "inactive" }],
     queryFn: () => fetch("/api/employees?scope=inactive").then((response) => response.json()),
     enabled: isAdmin,
+  });
+
+  const {
+    data: employeeTagRelations = [],
+    isLoading: employeeTagsLoading,
+    error: employeeTagsError,
+  } = useQuery<TagRelationItem[]>({
+    queryKey: ["/api/employees", employeeId, "tags"],
+    enabled: isEditing && Boolean(employeeId),
+  });
+
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: [...tagCatalogQueryKey],
+    queryFn: fetchTagCatalog,
+    enabled: isEditing,
   });
 
   useEffect(() => {
@@ -205,6 +233,41 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     },
     onError: () => {
       toast({ title: "Entfernen fehlgeschlagen", variant: "destructive" });
+    },
+  });
+
+  const addEmployeeTagMutation = useMutation({
+    mutationFn: async (tagId: number) => {
+      const response = await apiRequest("POST", `/api/employees/${employeeId}/tags`, { tagId });
+      return response.json();
+    },
+    onSuccess: async () => {
+      await invalidateEmployeeTagQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "FORBIDDEN" ? "Tag kann nicht zugewiesen werden" : "Tag-Zuweisung fehlgeschlagen",
+        description: code === "FORBIDDEN" ? "Keine Berechtigung fuer Tag-Aenderungen." : error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeEmployeeTagMutation = useMutation({
+    mutationFn: async (item: TagRelationItem) => {
+      await apiRequest("DELETE", `/api/employees/${employeeId}/tags/${item.tag.id}`, { version: item.relationVersion });
+    },
+    onSuccess: async () => {
+      await invalidateEmployeeTagQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      toast({
+        title: code === "VERSION_CONFLICT" ? "Tag wurde zwischenzeitlich geaendert" : "Tag konnte nicht entfernt werden",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -349,6 +412,22 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
             <div className="space-y-6">
               {employeeId ? <EmployeeAttachmentsPanel employeeId={employeeId} className="h-auto" /> : null}
+
+              {isEditing && employeeId ? (
+                <TagPickerPanel
+                  assignedTags={employeeTagRelations}
+                  availableTags={availableTags}
+                  isLoading={employeeTagsLoading}
+                  loadErrorMessage={employeeTagsError instanceof Error ? employeeTagsError.message : null}
+                  canEdit={canManageEmployeeTags}
+                  title="Tags"
+                  addDialogTitle="Tag zu Mitarbeiter hinzufuegen"
+                  testIdPrefix="employee-tag-picker"
+                  onAdd={(tagId) => addEmployeeTagMutation.mutate(tagId)}
+                  onRemove={(item) => removeEmployeeTagMutation.mutate(item)}
+                  className="h-auto"
+                />
+              ) : null}
 
               <div className="space-y-2">
                 <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">

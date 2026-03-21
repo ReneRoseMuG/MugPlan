@@ -11,7 +11,7 @@ import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
 import { filterVisibleAppointmentTags } from "../lib/appointmentCancellation";
 
-export type TagRelationDomain = "customer" | "project" | "appointment";
+export type TagRelationDomain = "customer" | "project" | "employee" | "appointment";
 export type TagRelationItem = tagRelationsRepository.TagRelationItem;
 
 export async function ensureAppointmentCancellationTag(): Promise<Tag> {
@@ -66,6 +66,9 @@ export async function listTagRelations(
   if (domain === "project") {
     return tagRelationsRepository.listProjectTagRelations(ownerId);
   }
+  if (domain === "employee") {
+    return tagRelationsRepository.listEmployeeTagRelations(ownerId);
+  }
   return tagRelationsRepository.listAppointmentTagRelations(ownerId);
 }
 
@@ -79,6 +82,9 @@ export async function addTagRelation(
   }
   if (domain === "project") {
     return tagRelationsRepository.addProjectTag(ownerId, tagId);
+  }
+  if (domain === "employee") {
+    return tagRelationsRepository.addEmployeeTag(ownerId, tagId);
   }
   return tagRelationsRepository.addAppointmentTag(ownerId, tagId);
 }
@@ -94,6 +100,9 @@ export async function removeTagRelation(
   }
   if (domain === "project") {
     return tagRelationsRepository.removeProjectTagWithVersion(ownerId, tagId, expectedVersion);
+  }
+  if (domain === "employee") {
+    return tagRelationsRepository.removeEmployeeTagWithVersion(ownerId, tagId, expectedVersion);
   }
   return tagRelationsRepository.removeAppointmentTagWithVersion(ownerId, tagId, expectedVersion);
 }

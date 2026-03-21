@@ -1,5 +1,7 @@
-import type { Employee, InsertEmployee, Team, Tour, UpdateEmployee } from "@shared/schema";
+import type { Employee, InsertEmployee, Tag, Team, Tour, UpdateEmployee } from "@shared/schema";
 import * as employeesRepository from "../repositories/employeesRepository";
+import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
+import * as tagRelationsService from "./tagRelationsService";
 import * as teamsRepository from "../repositories/teamsRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
@@ -62,7 +64,12 @@ function requireAdmin(roleKey: CanonicalRoleKey): void {
 }
 
 export async function listEmployees(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<Employee[]> {
-  return employeesRepository.getEmployees(resolveScope(roleKey, scope));
+  const employees = await employeesRepository.getEmployees(resolveScope(roleKey, scope));
+  const tagsByEmployeeId = await tagRelationsRepository.getEmployeeTagsByEmployeeIds(employees.map((employee) => employee.id));
+  return employees.map((employee) => ({
+    ...employee,
+    tags: tagsByEmployeeId.get(employee.id) ?? [],
+  })) as Array<Employee & { tags: Tag[] }>;
 }
 
 export async function listEmployeesForAppointmentDate(
@@ -93,6 +100,57 @@ export async function getEmployeeWithRelations(
   }
 
   return { employee, team, tour };
+}
+
+export async function listEmployeeTagRelations(id: number, roleKey: CanonicalRoleKey) {
+  const employee = await employeesRepository.getEmployee(id);
+  if (!employee) return null;
+  if (roleKey !== "ADMIN" && !employee.isActive) return null;
+  return tagRelationsService.listTagRelations("employee", id);
+}
+
+export async function addEmployeeTag(
+  id: number,
+  tagId: number,
+  roleKey: CanonicalRoleKey,
+) {
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+    throw new EmployeesError(403, "FORBIDDEN");
+  }
+  const employee = await employeesRepository.getEmployee(id);
+  if (!employee) return null;
+  if (roleKey !== "ADMIN" && !employee.isActive) return null;
+  const tag = await tagRelationsService.getTagById(tagId);
+  if (!tag) {
+    throw new EmployeesError(404, "NOT_FOUND");
+  }
+  return tagRelationsService.addTagRelation("employee", id, tagId);
+}
+
+export async function removeEmployeeTag(
+  id: number,
+  tagId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+) {
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+    throw new EmployeesError(403, "FORBIDDEN");
+  }
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new EmployeesError(422, "VALIDATION_ERROR");
+  }
+  const employee = await employeesRepository.getEmployee(id);
+  if (!employee) return null;
+  if (roleKey !== "ADMIN" && !employee.isActive) return null;
+
+  const result = await tagRelationsService.removeTagRelation("employee", id, tagId, expectedVersion);
+  if (result.kind === "version_conflict") {
+    throw new EmployeesError(409, "VERSION_CONFLICT");
+  }
+  if (result.kind === "not_found") {
+    throw new EmployeesError(404, "NOT_FOUND");
+  }
+  return;
 }
 
 export async function createEmployee(data: InsertEmployee): Promise<Employee> {
