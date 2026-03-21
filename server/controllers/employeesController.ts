@@ -62,6 +62,25 @@ export async function getEmployee(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function listEmployeeTags(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const employeeId = Number(req.params.employeeId);
+    const relations = await employeesService.listEmployeeTagRelations(employeeId, roleKey);
+    if (!relations) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.json(relations);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function createEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = getRoleKeyFromRequest(req);
@@ -157,6 +176,63 @@ export async function updateEmployee(req: Request, res: Response, next: NextFunc
       return;
     }
     res.json(employee);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof employeesService.EmployeesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function addEmployeeTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const employeeId = Number(req.params.employeeId);
+    const input = api.employeeTags.add.input.parse(req.body);
+    const relation = await employeesService.addEmployeeTag(employeeId, input.tagId, roleKey);
+    if (!relation) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.status(201).json(relation);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof employeesService.EmployeesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function removeEmployeeTag(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const employeeId = Number(req.params.employeeId);
+    const tagId = Number(req.params.tagId);
+    const input = api.employeeTags.remove.input.parse(req.body);
+    const result = await employeesService.removeEmployeeTag(employeeId, tagId, input.version, roleKey);
+    if (result === null) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {
       res.status(422).json({ code: "VALIDATION_ERROR" });

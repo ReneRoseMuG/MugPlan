@@ -1,5 +1,3 @@
-import type { Employee } from "@shared/schema";
-
 export interface EmployeeFilters {
   lastName: string;
 }
@@ -10,10 +8,10 @@ export const defaultEmployeeFilters: EmployeeFilters = {
 
 const normalizeText = (value: string) => value.trim().toLowerCase();
 
-export function applyEmployeeFilters(
-  employees: Employee[],
+export function applyEmployeeFilters<TEmployee extends { lastName: string }>(
+  employees: TEmployee[],
   filters: EmployeeFilters,
-): Employee[] {
+): TEmployee[] {
   const normalizedLastName = normalizeText(filters.lastName);
 
   return employees.filter((employee) => {

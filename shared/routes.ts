@@ -1575,7 +1575,7 @@ export const api = {
         appointmentDate: z.string().optional(),
       }).strict(),
       responses: {
-        200: z.array(z.custom<typeof employees.$inferSelect>()),
+        200: z.array(z.custom<typeof employees.$inferSelect & { tags: typeof tags.$inferSelect[] }>()),
       },
     },
     get: {
@@ -1774,6 +1774,43 @@ export const api = {
         responses: {
           200: z.array(entityAppointmentItemSchema),
         },
+      },
+    },
+  },
+  employeeTags: {
+    list: {
+      method: "GET" as const,
+      path: "/api/employees/:employeeId/tags",
+      responses: {
+        200: z.array(tagRelationItemSchema),
+        404: errorSchemas.notFound,
+      },
+    },
+    add: {
+      method: "POST" as const,
+      path: "/api/employees/:employeeId/tags",
+      input: z.object({
+        tagId: z.number().int().positive(),
+      }).strict(),
+      responses: {
+        201: tagRelationItemSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    remove: {
+      method: "DELETE" as const,
+      path: "/api/employees/:employeeId/tags/:tagId",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },

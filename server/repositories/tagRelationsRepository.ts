@@ -2,6 +2,7 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import {
   appointmentTags,
   customerTags,
+  employeeTags,
   projectTags,
   tags,
   type Tag,
@@ -212,6 +213,84 @@ export async function getProjectTagsByProjectIds(projectIds: number[]): Promise<
     .innerJoin(tags, eq(projectTags.tagId, tags.id))
     .where(inArray(projectTags.projectId, uniqueProjectIds))
     .orderBy(asc(projectTags.projectId), asc(tags.name), asc(tags.id));
+
+  return buildTagsByOwnerMap(rows);
+}
+
+export async function listEmployeeTagRelations(employeeId: number): Promise<TagRelationItem[]> {
+  const rows = await db
+    .select({
+      tag: tags,
+      relationVersion: employeeTags.version,
+    })
+    .from(employeeTags)
+    .innerJoin(tags, eq(employeeTags.tagId, tags.id))
+    .where(eq(employeeTags.employeeId, employeeId))
+    .orderBy(asc(tags.name), asc(tags.id));
+
+  return rows.map((row) => ({ tag: row.tag, relationVersion: row.relationVersion }));
+}
+
+export async function addEmployeeTag(employeeId: number, tagId: number): Promise<TagRelationItem | null> {
+  await db.execute(sql`
+    insert into employee_tags (employee_id, tag_id, version)
+    values (${employeeId}, ${tagId}, 1)
+    on duplicate key update version = version
+  `);
+
+  const [row] = await db
+    .select({
+      tag: tags,
+      relationVersion: employeeTags.version,
+    })
+    .from(employeeTags)
+    .innerJoin(tags, eq(employeeTags.tagId, tags.id))
+    .where(sql`${employeeTags.employeeId} = ${employeeId} and ${employeeTags.tagId} = ${tagId}`)
+    .limit(1);
+
+  return row ? { tag: row.tag, relationVersion: row.relationVersion } : null;
+}
+
+export async function removeEmployeeTagWithVersion(
+  employeeId: number,
+  tagId: number,
+  expectedVersion: number,
+): Promise<VersionedDeleteResult> {
+  const result = await db.execute(sql`
+    delete from employee_tags
+    where employee_id = ${employeeId}
+      and tag_id = ${tagId}
+      and version = ${expectedVersion}
+  `);
+
+  if (toAffectedRows(result) > 0) {
+    return { kind: "deleted" };
+  }
+
+  const [existing] = await db
+    .select({ version: employeeTags.version })
+    .from(employeeTags)
+    .where(sql`${employeeTags.employeeId} = ${employeeId} and ${employeeTags.tagId} = ${tagId}`)
+    .limit(1);
+
+  return existing ? { kind: "version_conflict" } : { kind: "not_found" };
+}
+
+export async function getEmployeeTagsByEmployeeIds(employeeIds: number[]): Promise<Map<number, Tag[]>> {
+  const uniqueEmployeeIds = Array.from(new Set(employeeIds.filter((value) => Number.isFinite(value) && value > 0)));
+  if (uniqueEmployeeIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db
+    .select({
+      ownerId: employeeTags.employeeId,
+      tag: tags,
+    })
+    .from(employeeTags)
+    .innerJoin(tags, eq(employeeTags.tagId, tags.id))
+    .where(inArray(employeeTags.employeeId, uniqueEmployeeIds))
+    .orderBy(asc(employeeTags.employeeId), asc(tags.name), asc(tags.id));
 
   return buildTagsByOwnerMap(rows);
 }

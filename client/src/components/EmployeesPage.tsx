@@ -38,7 +38,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
-import type { Employee, Team, Tour } from "@shared/schema";
+import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
+import type { Employee, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeesPageProps {
   onClose?: () => void;
@@ -52,6 +53,7 @@ type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
 type EmployeeSortKey = "lastName" | "firstName" | "tour" | "team";
 type EmployeeAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
+type EmployeeListItem = Employee & { tags: Tag[] };
 
 function parseViewMode(value: unknown): ViewMode {
   return value === "table" ? "table" : "board";
@@ -135,18 +137,18 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
 
   const effectiveEmployeeScope = isAdmin ? employeeScope : "active";
 
-  const { data: employees = [], isLoading } = useQuery<Employee[]>({
+  const { data: employees = [], isLoading } = useQuery<EmployeeListItem[]>({
     queryKey: ["/api/employees", { scope: effectiveEmployeeScope }],
     queryFn: () => fetch(`/api/employees?scope=${effectiveEmployeeScope}`).then((response) => response.json()),
   });
 
-  const { data: activeEmployees = [] } = useQuery<Employee[]>({
+  const { data: activeEmployees = [] } = useQuery<EmployeeListItem[]>({
     queryKey: ["/api/employees", { scope: "active" }],
     queryFn: () => fetch("/api/employees?scope=active").then((response) => response.json()),
     enabled: isAdmin,
   });
 
-  const { data: inactiveEmployees = [] } = useQuery<Employee[]>({
+  const { data: inactiveEmployees = [] } = useQuery<EmployeeListItem[]>({
     queryKey: ["/api/employees", { scope: "inactive" }],
     queryFn: () => fetch("/api/employees?scope=inactive").then((response) => response.json()),
     enabled: isAdmin,
@@ -200,7 +202,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
 
   const allEmployees = useMemo(() => {
     if (!isAdmin) return employees;
-    const byId = new Map<number, Employee>();
+    const byId = new Map<number, EmployeeListItem>();
     for (const employee of activeEmployees) byId.set(employee.id, employee);
     for (const employee of inactiveEmployees) byId.set(employee.id, employee);
     return Array.from(byId.values());
@@ -568,12 +570,13 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     </Button>
                   }
                   footer={
-                    <div className="flex w-full">
+                    <div className="flex w-full flex-col gap-2">
                       <AppointmentCountBadge
                         count={currentAppointmentsCount}
                         testId={`text-employee-current-appointments-${employee.id}`}
                         fullWidth
                       />
+                      <EntityTagFooterRow tags={employee.tags ?? []} testId={`employee-card-tags-${employee.id}`} />
                     </div>
                   }
                   footerVisibility="visible"
