@@ -5,13 +5,14 @@ import {
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_COLOR,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
+  type TagPickerDomain,
 } from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
-import { filterVisibleAppointmentTags } from "../lib/appointmentCancellation";
+import { filterPickerTagsForDomain } from "../lib/appointmentCancellation";
 
-export type TagRelationDomain = "customer" | "project" | "employee" | "appointment";
+export type TagRelationDomain = TagPickerDomain;
 export type TagRelationItem = tagRelationsRepository.TagRelationItem;
 
 export async function ensureAppointmentCancellationTag(): Promise<Tag> {
@@ -38,14 +39,14 @@ export async function ensureManagedSpecialMeasureTag(): Promise<Tag> {
   });
 }
 
-export async function listTagCatalog(): Promise<Tag[]> {
+export async function listTagCatalog(domain: TagPickerDomain = "appointment"): Promise<Tag[]> {
   await Promise.all([
     ensureAppointmentCancellationTag(),
     ensureManagedReportExclusionTag(),
     ensureManagedSpecialMeasureTag(),
   ]);
   const tags = await tagRelationsRepository.listTagCatalog();
-  return filterVisibleAppointmentTags(tags);
+  return filterPickerTagsForDomain(tags, domain);
 }
 
 export async function getTagById(tagId: number): Promise<Tag | null> {

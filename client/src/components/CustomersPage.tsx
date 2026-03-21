@@ -19,6 +19,7 @@ import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPrev
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Customer, Tag } from "@shared/schema";
 import { domainIcons } from "@/lib/domain-icons";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { CustomerTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
@@ -135,7 +136,8 @@ export function CustomersPage({
     },
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
-    queryKey: ["/api/tags"],
+    queryKey: getTagCatalogQueryKey("customer"),
+    queryFn: () => fetchTagCatalog("customer"),
   });
 
   const customers = data?.items ?? [];

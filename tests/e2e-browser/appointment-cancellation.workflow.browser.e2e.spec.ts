@@ -1,0 +1,240 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Ein Projekttermin kann im Browser aus Kunde, Projekt mit Betrag und Mitarbeiter als regulaerer Zukunftstermin angelegt werden.
+ * - Der Einweg-Storno laesst sich ueber das Terminformular ausloesen und markiert den Termin sichtbar als storniert.
+ * - Der Wochenkalender zeigt den stornierten Termin nach dem Verlassen des Formulars weiterhin sichtbar, aber mit Storniert-Tag.
+ * - Der Projektbetrag wird nach dem Storno im Projektformular auf 0.00 gesetzt.
+ * - Die Vorlaufliste zeigt den stornierten Termin weiterhin mit Betrag 0 und sichtbarer Storno-Kennzeichnung.
+ * - Der Produkt-Vorlauf soll stornierte Projekte ausfiltern; dieser Soll-Test beschreibt die aktuelle Luecke bewusst rot.
+ *
+ * Fehlerfaelle:
+ * - Der Termin verschwindet vor dem Storno oder traegt bereits vorher den Storniert-Tag.
+ * - Der Storno bleibt auf den Button beschraenkt und propagiert nicht in Kalender, Projektbetrag oder Reports.
+ * - Die Vorlaufliste zeigt nach dem Storno weiterhin den alten Betrag.
+ * - Der Produkt-Vorlauf listet das stornierte Projekt trotz Soll-Regel weiterhin in Mengenlisten.
+ *
+ * Ziel:
+ * Den kompletten fachlichen Storno-Flow aus Anwendersicht ueber Kalender, Formular, Projekt und Reports absichern.
+ */
+import { expect, test, type Page } from "@playwright/test";
+
+import {
+  createComponentFixture,
+  createCustomerFixture,
+  createEmployeeFixture,
+  createProductFixture,
+  createProjectOrderItemFixture,
+  getRelativeBerlinDate,
+} from "../helpers/testDataFactory";
+import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  await resetBrowserSuiteState();
+});
+
+async function openProjects(page: Page) {
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-projekte").click();
+  await expect(page.getByTestId("button-new-project")).toBeVisible();
+}
+
+async function openReports(page: Page) {
+  await page.getByTestId("nav-reports").click();
+  await expect(page.getByTestId("reports-panel")).toBeVisible();
+}
+
+async function openNewAppointmentFromProjectContext(page: Page) {
+  await page.getByTestId("button-new-appointment-from-project").click();
+  await expect(page.getByTestId("button-calendar-context-back")).toBeVisible();
+  const button = page.locator('[data-testid^="button-new-appointment-week-"]').first();
+  await expect(button).toBeVisible();
+  await button.click();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+}
+
+async function openCustomerPickerAndSelect(page: Page, customerNumber: string) {
+  await page.getByTestId("button-select-customer").click();
+  await expect(page.getByTestId("table-customers")).toBeVisible();
+  await page.locator("#customer-filter-last-name").fill(customerNumber.slice(-12));
+  await page.getByTestId("table-customers").locator("tr").filter({ hasText: customerNumber }).first().dblclick();
+}
+
+async function selectEmployeeForAppointment(page: Page, employeeId: number) {
+  await page.getByTestId("button-add-employee").click();
+  await expect(page.getByTestId("list-employee-picker")).toBeVisible();
+  await page.getByTestId(`employee-picker-card-${employeeId}`).dblclick();
+  await expect(page.getByTestId(`badge-employee-${employeeId}`)).toBeVisible();
+}
+
+async function openProjectById(page: Page, projectId: number, scope: "all" | "noAppointments" = "all") {
+  await openProjects(page);
+  if (scope === "noAppointments") {
+    await page.getByLabel("Ohne Termine").click();
+  } else {
+    await page.getByLabel("Alle Projekte").click();
+  }
+  await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
+  await page.getByTestId(`project-card-${projectId}`).dblclick();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+}
+
+test("runs the browser cancellation flow from regular future appointment to cancelled report state", async ({ page }) => {
+  const customer = await createCustomerFixture("FT28-CANCEL-BROWSER-CUST");
+  const employee = await createEmployeeFixture("FT28-CANCEL-BROWSER-EMP");
+  const product = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "FT28 Browser Cancel Sauna",
+  });
+  const component = await createComponentFixture({
+    categoryName: "Fenster",
+    name: "FT28 Browser Cancel Fenster",
+  });
+  const appointmentDate = getRelativeBerlinDate(1);
+  const projectName = "FT28 Browser Storno Projekt";
+  const projectOrderNumber = "FT28-CANCEL-001";
+  const initialAmount = "14999.90";
+
+  await openProjects(page);
+  await page.getByTestId("button-new-project").click();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+  await page.getByTestId("input-project-name").fill(projectName);
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
+  await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
+  await page.getByTestId("input-project-order-number").fill(projectOrderNumber);
+  await page.getByTestId("input-project-amount").fill(initialAmount);
+
+  const createProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && response.url().includes("/api/projects")
+    && !response.url().includes("/order-items")
+  ));
+  await page.getByTestId("button-save-project").click();
+  const createProjectResponse = await createProjectResponsePromise;
+  expect(createProjectResponse.ok()).toBeTruthy();
+  const createdProject = await createProjectResponse.json() as {
+    id: number;
+    orderNumber?: string | null;
+    projectOrder?: { orderNumber?: string | null } | null;
+  };
+  const projectId = Number(createdProject.id);
+  expect(projectId).toBeGreaterThan(0);
+  const persistedOrderNumber = createdProject.projectOrder?.orderNumber ?? createdProject.orderNumber ?? projectOrderNumber;
+
+  await createProjectOrderItemFixture({
+    projectId,
+    orderNumber: persistedOrderNumber,
+    productId: product.id,
+    quantity: 1,
+  });
+  await createProjectOrderItemFixture({
+    projectId,
+    orderNumber: persistedOrderNumber,
+    componentId: component.id,
+    quantity: 2,
+  });
+
+  await openProjectById(page, projectId, "noAppointments");
+  await openNewAppointmentFromProjectContext(page);
+  await page.getByTestId("input-start-date").fill(appointmentDate);
+  await expect(page.getByTestId("badge-project")).toContainText(projectName);
+  await selectEmployeeForAppointment(page, employee.id);
+
+  const createAppointmentResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && response.url().includes("/api/appointments")
+    && !response.url().includes("/cancel")
+  ));
+  await page.getByTestId("button-save-appointment").click();
+  const createAppointmentResponse = await createAppointmentResponsePromise;
+  expect(createAppointmentResponse.ok()).toBeTruthy();
+  const createdAppointment = await createAppointmentResponse.json() as { id: number };
+  const appointmentId = Number(createdAppointment.id);
+  expect(appointmentId).toBeGreaterThan(0);
+
+  const regularAppointmentPanel = page.getByTestId(`week-appointment-panel-${appointmentId}`);
+  await expect(regularAppointmentPanel).toBeVisible();
+  await expect(regularAppointmentPanel).toContainText(projectName);
+  await expect(regularAppointmentPanel.getByText("Storniert", { exact: true })).toHaveCount(0);
+
+  await regularAppointmentPanel.dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
+  const openCancelWorkflowButton = page.getByRole("button", { name: "Termin stornieren" }).first();
+  await expect(openCancelWorkflowButton).toBeVisible();
+
+  const cancelResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && response.url().includes(`/api/appointments/${appointmentId}/cancel`)
+  ));
+  await openCancelWorkflowButton.click();
+  await page.getByRole("button", { name: "Termin stornieren" }).click();
+  const cancelResponse = await cancelResponsePromise;
+  expect(cancelResponse.status()).toBe(204);
+
+  await expect(page.getByRole("heading", { name: "Termin storniert" })).toBeVisible();
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointmentId}`);
+    if (!response.ok()) {
+      return { isCancelled: false, tagNames: [] as string[], employeeIds: [] as number[] };
+    }
+    const body = await response.json();
+    return {
+      isCancelled: body.isCancelled === true,
+      tagNames: Array.isArray(body.appointmentTags)
+        ? body.appointmentTags.map((tag: { name: string }) => tag.name)
+        : [],
+      employeeIds: Array.isArray(body.employees)
+        ? body.employees.map((entry: { id: number }) => entry.id)
+        : [],
+    };
+  }).toEqual({
+    isCancelled: true,
+    tagNames: expect.arrayContaining(["Storniert"]),
+    employeeIds: [],
+  });
+  await expect(page.getByRole("button", { name: "Termin stornieren" })).toHaveCount(0);
+
+  await page.getByTestId("button-close-appointment").click();
+  const cancelledAppointmentPanel = page.getByTestId(`week-appointment-panel-${appointmentId}`);
+  await expect(cancelledAppointmentPanel).toBeVisible();
+  await expect(cancelledAppointmentPanel).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByTestId(`week-appointment-tags-${appointmentId}`)).toContainText("Sto");
+  await expect(cancelledAppointmentPanel).toContainText(projectName);
+
+  await page.getByTestId("button-calendar-context-back").click();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+  await page.getByTestId("button-close-project").click();
+
+  await openProjectById(page, projectId);
+  await expect(page.getByTestId("input-project-order-number")).toHaveValue(persistedOrderNumber);
+  await expect(page.getByTestId("input-project-amount")).toHaveValue("0.00");
+  await page.getByTestId("button-close-project").click();
+
+  await openReports(page);
+  await page.getByTestId("reports-vorlaufliste-from-date").fill(appointmentDate);
+  await page.getByTestId("button-reports-vorlaufliste-show-to-date").click();
+  await page.getByTestId("reports-vorlaufliste-to-date").fill(appointmentDate);
+  await page.getByTestId("button-reports-vorlaufliste-generate").click();
+
+  const vorlauflisteTable = page.getByTestId("table-reports-vorlaufliste");
+  await expect(vorlauflisteTable).toBeVisible();
+  await expect(vorlauflisteTable).toContainText(customer.fullName ?? "");
+  await expect(vorlauflisteTable).toContainText("Storniert");
+  await expect(vorlauflisteTable).toContainText(/0,00\s*€/);
+
+  await page.getByTestId("button-reports-back").click();
+  await page.getByTestId("reports-product-vorlauf-from-date").fill(appointmentDate);
+  await page.getByTestId("button-reports-product-vorlauf-show-to-date").click();
+  await page.getByTestId("reports-product-vorlauf-to-date").fill(appointmentDate);
+  await page.getByTestId("button-reports-product-vorlauf-generate").click();
+
+  await expect(page.getByTestId("reports-product-vorlauf-overlay")).toBeVisible();
+  await expect(page.getByTestId("reports-product-vorlauf-products")).toContainText("Keine passenden Produkte gefunden.");
+  await expect(page.getByTestId("reports-product-vorlauf-components")).toContainText("Keine passenden Komponenten gefunden.");
+  await expect(page.getByTestId("reports-product-vorlauf-overlay")).not.toContainText("FT28 Browser Cancel Sauna");
+  await expect(page.getByTestId("reports-product-vorlauf-overlay")).not.toContainText("FT28 Browser Cancel Fenster");
+});

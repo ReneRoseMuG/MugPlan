@@ -85,7 +85,7 @@ vi.mock("@/lib/tag-invalidation", () => ({
 }));
 
 vi.mock("@/lib/tags", () => ({
-  tagCatalogQueryKey: ["/api/tags"],
+  getTagCatalogQueryKey: (domain: string) => ["/api/tags", domain],
   fetchTagCatalog: vi.fn(),
 }));
 
@@ -128,7 +128,7 @@ function buildQueryResult(queryKey: unknown) {
     };
   }
 
-  if (key === "/api/tags") {
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/tags" && queryKey[1] === "employee") {
     return {
       data: [
         { id: 5, name: "Service", color: "#112233", isDefault: false, version: 1 },
@@ -183,6 +183,9 @@ describe("FT05+ employee form tags sidebar wiring", () => {
       { id: 5, name: "Service" },
       { id: 6, name: "Montage" },
     ]);
+    expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
+      queryKey: ["/api/tags", "employee"],
+    }));
   });
 
   it("does not render the employee tag picker in create mode", () => {

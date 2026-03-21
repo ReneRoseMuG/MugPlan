@@ -22,6 +22,7 @@ import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Project, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { domainIcons } from "@/lib/domain-icons";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
@@ -161,7 +162,8 @@ export function ProjectsPage({
   });
 
   const { data: availableTags = [] } = useQuery<Tag[]>({
-    queryKey: ["/api/tags"],
+    queryKey: getTagCatalogQueryKey("project"),
+    queryFn: () => fetchTagCatalog("project"),
   });
 
   const projects = data?.items ?? [];

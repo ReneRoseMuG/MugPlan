@@ -17,6 +17,7 @@ import {
 } from "@/components/DocumentExtractionDialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
@@ -90,7 +91,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     enabled: isEditMode && Boolean(customerId),
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
-    queryKey: ['/api/tags'],
+    queryKey: getTagCatalogQueryKey("customer"),
+    queryFn: () => fetchTagCatalog("customer"),
     enabled: isEditMode,
   });
 

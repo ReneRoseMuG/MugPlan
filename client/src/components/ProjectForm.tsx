@@ -38,6 +38,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { DEFAULT_PROJECT_TYPE, resolveProjectEditForm } from "@/lib/project-edit-form";
 import {
   buildDynamicProjectCategorySlots,
@@ -197,7 +198,8 @@ export function ProjectForm({
     enabled: isEditing,
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
-    queryKey: ['/api/tags'],
+    queryKey: getTagCatalogQueryKey("project"),
+    queryFn: () => fetchTagCatalog("project"),
   });
 
   // Fetch customers for selection

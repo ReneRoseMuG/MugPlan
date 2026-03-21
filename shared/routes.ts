@@ -96,6 +96,7 @@ const tagRelationItemSchema = z.object({
   tag: tagSchema,
   relationVersion: z.number().int().min(1),
 });
+const tagPickerDomainSchema = z.enum(["appointment", "project", "customer", "employee"]);
 
 const entityAppointmentsQuerySchema = z.object({
   scope: entityAppointmentsScopeSchema.default("upcoming"),
@@ -1271,6 +1272,9 @@ export const api = {
     list: {
       method: "GET" as const,
       path: "/api/tags",
+      input: z.object({
+        domain: tagPickerDomainSchema.default("appointment"),
+      }).strict(),
       responses: {
         200: z.array(tagSchema),
       },

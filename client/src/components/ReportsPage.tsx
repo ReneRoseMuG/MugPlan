@@ -19,6 +19,7 @@ import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { cn } from "@/lib/utils";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 
 type ReportType = "vorlaufliste" | "product-vorlauf";
 
@@ -200,8 +201,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     queryFn: () => fetchJson("/api/admin/master-data/component-categories?active=all"),
   });
   const { data: tags = [] } = useQuery<Tag[]>({
-    queryKey: ["/api/tags"],
-    queryFn: () => fetchJson("/api/tags"),
+    queryKey: getTagCatalogQueryKey("project"),
+    queryFn: () => fetchTagCatalog("project"),
   });
 
   const defaultProductCategories = useMemo(

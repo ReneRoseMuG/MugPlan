@@ -6,6 +6,7 @@ export const MANAGED_SPECIAL_MEASURE_TAG_NAME = "Sondermaß";
 export const MANAGED_SPECIAL_MEASURE_TAG_COLOR = "#1e3a8a";
 
 export type AppointmentCancellationReportState = "default" | "contains_cancelled" | "cancelled_only";
+export type TagPickerDomain = "appointment" | "project" | "customer" | "employee";
 
 function normalizeTagName(value: string): string {
   return value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
@@ -27,4 +28,16 @@ export function isProtectedSystemTagName(value: string): boolean {
   return isReservedAppointmentCancellationTagName(value)
     || isManagedReportExclusionTagName(value)
     || isManagedSpecialMeasureTagName(value);
+}
+
+export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain): boolean {
+  if (isReservedAppointmentCancellationTagName(value)) {
+    return false;
+  }
+
+  if (isManagedReportExclusionTagName(value) || isManagedSpecialMeasureTagName(value)) {
+    return domain === "project";
+  }
+
+  return true;
 }

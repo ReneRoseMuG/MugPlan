@@ -280,6 +280,9 @@ describe("FT02 project form customer relation slot", () => {
       testId: "badge-customer",
       customer: expect.objectContaining({ id: 21 }),
     });
+    expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
+      queryKey: ["/api/tags", "project"],
+    }));
   });
 
   it("keeps customer required validation on submit for a new project without customer", async () => {

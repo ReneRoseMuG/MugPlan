@@ -44,6 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import {
   createEmptyProjectProductSelections,
   resolveSelectionsFromExtraction,
@@ -421,8 +422,8 @@ export function AppointmentForm({
     enabled: Boolean(appointmentId),
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
-    queryKey: ["/api/tags"],
-    queryFn: () => fetchJson<Tag[]>("/api/tags"),
+    queryKey: getTagCatalogQueryKey("appointment"),
+    queryFn: () => fetchTagCatalog("appointment"),
   });
 
   const { data: appointmentNotes = [], isLoading: appointmentNotesLoading } = useQuery<Note[]>({

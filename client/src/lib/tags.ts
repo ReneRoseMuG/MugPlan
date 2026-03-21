@@ -1,9 +1,15 @@
+import type { TagPickerDomain } from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
 
-export const tagCatalogQueryKey = ["/api/tags"] as const;
+export type TagCatalogDomain = TagPickerDomain;
 
-export async function fetchTagCatalog(): Promise<Tag[]> {
-  const response = await fetch("/api/tags", {
+export function getTagCatalogQueryKey(domain: TagCatalogDomain = "appointment") {
+  return ["/api/tags", domain] as const;
+}
+
+export async function fetchTagCatalog(domain: TagCatalogDomain = "appointment"): Promise<Tag[]> {
+  const params = new URLSearchParams({ domain });
+  const response = await fetch(`/api/tags?${params.toString()}`, {
     credentials: "include",
   });
   if (!response.ok) {

@@ -2,14 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der reservierte Termin-Storno-Tag bleibt im Public-Tagkatalog verborgen.
- * - Der systemverwaltete Vorlauflisten-Tag "Reklamation" wird im Public-Tagkatalog automatisch angelegt und bleibt sichtbar.
+ * - Der Public-Tagkatalog filtert geschuetzte System-Tags domänenspezifisch fuer Picker.
+ * - Ohne Domain-Query entspricht `/api/tags` der restriktiven appointment-Sicht.
  * - Die Admin-Tagverwaltung normalisiert geschuetzte System-Tags auf isDefault=true und blockiert Update/Delete.
  * - Der Einweg-Storno setzt den reservierten Tag idempotent, zieht Mitarbeiter ab und setzt den Projektbetrag auf 0.
  * - Das Entfernen des reservierten Tags ueber den generischen Termin-Tag-Pfad ist blockiert.
  *
  * Fehlerfaelle:
- * - "Storniert" erscheint in normalen Tag-Listen.
+ * - System-Tags erscheinen im falschen Picker-Kontext.
  * - Der reservierte Tag kann in den Stammdaten umbenannt oder geloescht werden.
  * - Projektgebundene Stornos behalten den bisherigen Projektbetrag.
  * - Ein stornierter Termin bleibt ueber normale Mutationspfade veraenderbar.
@@ -44,10 +44,24 @@ beforeAll(async () => {
 });
 
 describe("FT01/FT28 integration: appointment cancellation workflow", () => {
-  it("hides the reserved cancellation tag, auto-creates managed system tags in the catalog paths, and keeps them protected in admin master data", async () => {
+  it("filters protected system tags per picker domain, auto-creates them, and keeps them protected in admin master data", async () => {
     const admin = await loginAdminAgent(app);
 
     await admin.get("/api/tags").expect(200).expect(({ body }) => {
+      expect(Array.isArray(body)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(false);
+    });
+
+    await admin.get("/api/tags?domain=appointment").expect(200).expect(({ body }) => {
+      expect(Array.isArray(body)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(false);
+    });
+
+    await admin.get("/api/tags?domain=project").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string; color: string }>)).toContainEqual(
@@ -62,6 +76,20 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
           color: "#1e3a8a",
         }),
       );
+    });
+
+    await admin.get("/api/tags?domain=customer").expect(200).expect(({ body }) => {
+      expect(Array.isArray(body)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(false);
+    });
+
+    await admin.get("/api/tags?domain=employee").expect(200).expect(({ body }) => {
+      expect(Array.isArray(body)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(false);
     });
 
     let managedReportTag: { id: number; name: string; version: number; isDefault: boolean } | undefined;

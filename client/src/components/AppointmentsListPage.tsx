@@ -15,6 +15,7 @@ import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import type { Tag, Tour } from "@shared/schema";
 import { domainIcons } from "@/lib/domain-icons";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type AppointmentListItem = CalendarAppointment & {
@@ -183,7 +184,8 @@ export function AppointmentsListPage({
     queryKey: ["/api/tours"],
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
-    queryKey: ["/api/tags"],
+    queryKey: getTagCatalogQueryKey("appointment"),
+    queryFn: () => fetchTagCatalog("appointment"),
   });
 
   const { data, isLoading } = useQuery<AppointmentListResponse>({

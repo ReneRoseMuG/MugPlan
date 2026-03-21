@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
-import { fetchTagCatalog, tagCatalogQueryKey } from "@/lib/tags";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
 import type { Employee, Tag, Team, Tour } from "@shared/schema";
 
@@ -107,8 +107,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   });
 
   const { data: availableTags = [] } = useQuery<Tag[]>({
-    queryKey: [...tagCatalogQueryKey],
-    queryFn: fetchTagCatalog,
+    queryKey: getTagCatalogQueryKey("employee"),
+    queryFn: () => fetchTagCatalog("employee"),
     enabled: isEditing,
   });
 

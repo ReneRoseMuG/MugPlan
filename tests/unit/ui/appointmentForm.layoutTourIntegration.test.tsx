@@ -259,6 +259,9 @@ describe("FT01 appointment form layout tour integration", () => {
       tours: [expect.objectContaining({ id: 31 })],
       selectedTour: null,
     });
+    expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
+      queryKey: ["/api/tags", "appointment"],
+    }));
   });
 
   it("renders attachments, tags and notes inside the sidebar in edit mode", () => {
