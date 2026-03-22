@@ -1350,15 +1350,15 @@ export function ProjectForm({
   const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
-      throw new Error("validation");
+      return;
     }
     if (!customerId) {
       toast({ title: "Kunde muss ausgewählt werden", variant: "destructive" });
-      throw new Error("validation");
+      return;
     }
     if (!selectedCustomerNumber) {
       toast({ title: "Kundennummer des zugeordneten Kunden fehlt", variant: "destructive" });
-      throw new Error("validation");
+      return;
     }
 
     const storedProjectName = name.trim();
@@ -1703,7 +1703,7 @@ export function ProjectForm({
                 type="button"
                 variant="outline"
                 onClick={handleRequestClose}
-                data-testid="button-secondary-cancel-project"
+                data-testid="button-cancel-project"
               >
                 Abbrechen
               </Button>
@@ -1711,7 +1711,7 @@ export function ProjectForm({
 
             <Button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
               disabled={isSubmitPending}
               data-testid="button-save-project"
             >

@@ -147,7 +147,7 @@
     "vitest": "^4.0.18"
   },
   "overrides": {
-    "flatted": "^3.4.1",
+    "flatted": "^3.4.2",
     "drizzle-kit": {
       "@esbuild-kit/esm-loader": "npm:tsx@^4.20.4"
     }
