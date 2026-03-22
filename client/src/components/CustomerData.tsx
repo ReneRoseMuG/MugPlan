@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { EntityFormLayout } from "@/components/ui/entity-form-layout";
-import { User, Phone, MapPin, Mail } from "lucide-react";
+import { EntityFormShell } from "@/components/ui/entity-form-shell";
+import { User, Phone, MapPin, Mail, X } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
-import { CustomerAttachmentsPanel } from "@/components/CustomerAttachmentsPanel";
+import { CustomerAttachmentsPanel, type PendingCustomerAttachmentItem } from "@/components/CustomerAttachmentsPanel";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
   DocumentExtractionDialog,
@@ -45,6 +46,7 @@ type CustomerSubmitPayload = {
 };
 
 type CustomerDetail = Customer & { tags: Tag[] };
+type DraftCustomerNote = Note & { templateId?: number };
 
 export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: CustomerDataProps) {
   const { toast } = useToast();
@@ -71,6 +73,11 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
+  const [draftCustomerTags, setDraftCustomerTags] = useState<TagRelationItem[]>([]);
+  const [draftCustomerNotes, setDraftCustomerNotes] = useState<DraftCustomerNote[]>([]);
+  const [draftCustomerAttachments, setDraftCustomerAttachments] = useState<PendingCustomerAttachmentItem[]>([]);
+  const draftCustomerNoteIdRef = useRef(-1);
+  const draftCustomerAttachmentIdRef = useRef(-1);
 
   const isEditMode = !!customerId;
   const normalizeOptionalInput = (value: string): string | null => {
@@ -93,13 +100,14 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: getTagCatalogQueryKey("customer"),
     queryFn: () => fetchTagCatalog("customer"),
-    enabled: isEditMode,
   });
 
   const { data: notes = [], isLoading: notesLoading } = useQuery<Note[]>({
     queryKey: ['/api/customers', customerId, 'notes'],
     enabled: isEditMode && !!customerId,
   });
+  const visibleCustomerTags = isEditMode ? customerTagRelations : draftCustomerTags;
+  const visibleCustomerNotes = isEditMode ? notes : draftCustomerNotes;
 
   const createNoteMutation = useMutation({
     mutationFn: async ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
@@ -213,6 +221,16 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     }
   }, [customer]);
 
+  useEffect(() => {
+    if (isEditMode) {
+      setDraftCustomerTags([]);
+      setDraftCustomerNotes([]);
+      setDraftCustomerAttachments([]);
+      draftCustomerNoteIdRef.current = -1;
+      draftCustomerAttachmentIdRef.current = -1;
+    }
+  }, [isEditMode, customerId]);
+
   const extractErrorCode = (error: unknown): string | null => {
     if (!(error instanceof Error)) return null;
     const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
@@ -313,6 +331,140 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       });
     },
   });
+  const addDraftCustomerTag = (tagId: number) => {
+    const selectedTag = availableTags.find((tag) => tag.id === tagId);
+    if (!selectedTag) return;
+    setDraftCustomerTags((current) => {
+      if (current.some((item) => item.tag.id === tagId)) {
+        return current;
+      }
+      return [...current, { tag: selectedTag, relationVersion: 1 }];
+    });
+  };
+
+  const removeDraftCustomerTag = (item: TagRelationItem) => {
+    setDraftCustomerTags((current) => current.filter((entry) => entry.tag.id !== item.tag.id));
+  };
+
+  const addDraftCustomerNote = ({
+    title,
+    body,
+    cardColor,
+    print,
+    templateId,
+  }: {
+    title: string;
+    body: string;
+    cardColor?: string | null;
+    print: boolean;
+    templateId?: number;
+  }) => {
+    const nextId = draftCustomerNoteIdRef.current;
+    draftCustomerNoteIdRef.current -= 1;
+    const timestamp = new Date();
+    setDraftCustomerNotes((current) => [
+      ...current,
+      {
+        id: nextId,
+        title,
+        body,
+        cardColor: cardColor ?? null,
+        print,
+        cardColorLocked: false,
+        isPinned: false,
+        version: 1,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        templateId,
+      },
+    ]);
+  };
+
+  const updateDraftCustomerNote = (
+    noteId: number,
+    data: { title: string; body: string; cardColor?: string | null; print: boolean },
+  ) => {
+    setDraftCustomerNotes((current) =>
+      current.map((note) =>
+        note.id === noteId
+          ? {
+              ...note,
+              ...data,
+              cardColor: data.cardColor ?? null,
+              updatedAt: new Date(),
+            }
+          : note,
+      ),
+    );
+  };
+
+  const toggleDraftCustomerNotePin = (noteId: number, isPinned: boolean) => {
+    setDraftCustomerNotes((current) =>
+      current.map((note) => (note.id === noteId ? { ...note, isPinned, updatedAt: new Date() } : note)),
+    );
+  };
+
+  const deleteDraftCustomerNote = (noteId: number) => {
+    setDraftCustomerNotes((current) => current.filter((note) => note.id !== noteId));
+  };
+
+  const addDraftCustomerAttachment = (file: File) => {
+    const nextId = draftCustomerAttachmentIdRef.current;
+    draftCustomerAttachmentIdRef.current -= 1;
+    setDraftCustomerAttachments((current) => [
+      ...current,
+      {
+        id: nextId,
+        originalName: file.name,
+        mimeType: file.type || null,
+        file,
+      },
+    ]);
+  };
+
+  const uploadCustomerAttachment = async (targetCustomerId: number, file: File) => {
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    const uploadResponse = await fetch(`/api/customers/${targetCustomerId}/attachments`, {
+      method: "POST",
+      credentials: "include",
+      body: uploadData,
+    });
+    if (!uploadResponse.ok) {
+      const uploadPayload = await uploadResponse.json().catch(() => null);
+      throw new Error(uploadPayload?.message ?? "Kundenanhang konnte nicht hochgeladen werden");
+    }
+  };
+
+  const persistDraftCustomerTags = async (targetCustomerId: number) => {
+    for (const item of draftCustomerTags) {
+      await apiRequest("POST", `/api/customers/${targetCustomerId}/tags`, { tagId: item.tag.id });
+    }
+  };
+
+  const persistDraftCustomerNotes = async (targetCustomerId: number) => {
+    for (const note of draftCustomerNotes) {
+      await apiRequest("POST", `/api/customers/${targetCustomerId}/notes`, {
+        title: note.title,
+        body: note.body,
+        cardColor: note.cardColor,
+        print: note.print,
+        templateId: note.templateId,
+      });
+    }
+  };
+
+  const persistDraftCustomerAttachments = async (targetCustomerId: number) => {
+    for (const attachment of draftCustomerAttachments) {
+      await uploadCustomerAttachment(targetCustomerId, attachment.file);
+    }
+  };
+
+  const persistCreateSidebarDrafts = async (targetCustomerId: number) => {
+    await persistDraftCustomerTags(targetCustomerId);
+    await persistDraftCustomerNotes(targetCustomerId);
+    await persistDraftCustomerAttachments(targetCustomerId);
+  };
 
   const handleSubmit = async () => {
     if (!formData.customerNumber.trim()) {
@@ -321,7 +473,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         description: "Bitte fuellen Sie die Kundennummer aus.",
         variant: "destructive",
       });
-      throw new Error("validation");
+      return;
     }
 
     const trimmedEmail = formData.email.trim();
@@ -331,7 +483,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         description: "Bitte geben Sie eine gueltige E-Mail-Adresse ein.",
         variant: "destructive",
       });
-      throw new Error("validation");
+      return;
     }
 
     const submitData: CustomerSubmitPayload & { isActive: boolean } = {
@@ -351,7 +503,22 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     if (isEditMode) {
       await updateMutation.mutateAsync(submitData);
     } else {
-      await createMutation.mutateAsync(submitData);
+      const createdCustomer = await createMutation.mutateAsync(submitData);
+      try {
+        await persistCreateSidebarDrafts(createdCustomer.id);
+        await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'tags'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'notes'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/customers', createdCustomer.id, 'attachments'] });
+        setDraftCustomerTags([]);
+        setDraftCustomerNotes([]);
+        setDraftCustomerAttachments([]);
+      } catch (error) {
+        toast({
+          title: "Kunde gespeichert, Sidebar-Daten konnten nicht vollstaendig persistiert werden",
+          description: error instanceof Error ? error.message : "Unbekannter Fehler",
+          variant: "destructive",
+        });
+      }
     }
 
     if (onSave && onSave !== onCancel) {
@@ -360,27 +527,39 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   };
 
   const handleAddNote = ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
-    if (!isEditMode || !customerId) {
-      toast({ title: "Notiz noch nicht verfügbar", description: "Bitte speichern Sie den Kunden zuerst." });
+    if (!isEditMode) {
+      addDraftCustomerNote({ title, body, cardColor, print, templateId });
       return;
     }
+    if (!customerId) return;
     createNoteMutation.mutate({ title, body, cardColor, print, templateId });
   };
 
   const handleTogglePin = (noteId: number, isPinned: boolean) => {
+    if (!isEditMode) {
+      toggleDraftCustomerNotePin(noteId, isPinned);
+      return;
+    }
     const version = getNoteVersion(noteId);
     togglePinMutation.mutate({ noteId, isPinned, version });
   };
 
   const handleDeleteNote = (noteId: number) => {
-    if (isEditMode && customerId) {
-      const version = getNoteVersion(noteId);
-      deleteNoteMutation.mutate({ noteId, version });
+    if (!isEditMode) {
+      deleteDraftCustomerNote(noteId);
+      return;
     }
+    if (!customerId) return;
+    const version = getNoteVersion(noteId);
+    deleteNoteMutation.mutate({ noteId, version });
   };
 
   const handleUpdateNote = (noteId: number, data: { title: string; body: string; cardColor?: string | null; print: boolean }) => {
-    if (!isEditMode || !customerId) return;
+    if (!isEditMode) {
+      updateDraftCustomerNote(noteId, data);
+      return;
+    }
+    if (!customerId) return;
     const version = getNoteVersion(noteId);
     updateNoteMutation.mutate({ noteId, ...data, version });
   };
@@ -513,17 +692,114 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     );
   }
 
+  const isSubmitPending = createMutation.isPending || updateMutation.isPending;
+
   return (
-    <EntityFormLayout
-      title={isEditMode ? "Kundendaten bearbeiten" : "Neuer Kunde"}
-      icon={<User className="w-6 h-6" />}
-      onClose={onCancel}
-      onCancel={onCancel}
-      onSubmit={handleSubmit}
-      testIdPrefix="customer"
-    >
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 min-w-0 space-y-6">
+    <div className="flex h-full min-h-0 w-full flex-1">
+      <EntityFormShell
+        header={(
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                <User className="w-6 h-6" />
+                {isEditMode ? "Kundendaten bearbeiten" : "Neuer Kunde"}
+              </h2>
+            </div>
+
+            {onCancel ? (
+              <Button
+                type="button"
+                size="lg"
+                variant="ghost"
+                onClick={onCancel}
+                data-testid="button-close-customer"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            ) : null}
+          </div>
+        )}
+        sidebar={(
+          <div className="min-w-0 space-y-6 p-6" data-testid="customer-form-sidebar">
+            <LinkedProjectsPanel
+              customerId={customerId}
+              customerNumber={formData.customerNumber}
+              onOpenProject={onOpenProject}
+            />
+
+            <CustomerAppointmentsPanel customerId={customerId} className="h-auto" />
+
+            <CustomerAttachmentsPanel
+              customerId={customerId}
+              isEditing={isEditMode}
+              pendingCustomerAttachments={isEditMode ? undefined : draftCustomerAttachments}
+              onUploadPendingCustomerAttachment={isEditMode ? undefined : addDraftCustomerAttachment}
+              className="h-auto"
+            />
+
+            <TagPickerPanel
+              assignedTags={visibleCustomerTags}
+              availableTags={availableTags}
+              isLoading={isEditMode ? customerTagsLoading : false}
+              loadErrorMessage={isEditMode && customerTagsError instanceof Error ? customerTagsError.message : null}
+              canEdit={canManageCustomerTags}
+              title="Tags"
+              addDialogTitle="Tag zu Kunden hinzufuegen"
+              testIdPrefix="customer-tag-picker"
+              onAdd={(tagId) => {
+                if (isEditMode) {
+                  addCustomerTagMutation.mutate(tagId);
+                  return;
+                }
+                addDraftCustomerTag(tagId);
+              }}
+              onRemove={(item) => {
+                if (isEditMode) {
+                  removeCustomerTagMutation.mutate(item);
+                  return;
+                }
+                removeDraftCustomerTag(item);
+              }}
+              className="h-auto"
+            />
+
+            <NotesSection
+              notes={visibleCustomerNotes}
+              isLoading={isEditMode ? notesLoading : false}
+              onAdd={handleAddNote}
+              onUpdate={handleUpdateNote}
+              onTogglePin={handleTogglePin}
+              onDelete={handleDeleteNote}
+            />
+          </div>
+        )}
+        footer={(
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {onCancel ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  data-testid="button-cancel-customer"
+                >
+                  Abbrechen
+                </Button>
+              ) : null}
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={isSubmitPending}
+              data-testid="button-save-customer"
+            >
+              {isSubmitPending ? "Kunde speichern..." : "Kunde speichern"}
+            </Button>
+          </div>
+        )}
+      >
+        <div className="space-y-6" data-testid="customer-form-main-column">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
@@ -676,45 +952,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
 
         </div>
 
-        <div className="min-w-0 space-y-6">
-          <LinkedProjectsPanel
-            customerId={customerId}
-            customerNumber={formData.customerNumber}
-            onOpenProject={onOpenProject}
-          />
 
-          <CustomerAppointmentsPanel customerId={customerId} className="h-auto" />
-
-          {isEditMode && <CustomerAttachmentsPanel customerId={customerId} className="h-auto" />}
-
-          {isEditMode && customerId ? (
-            <TagPickerPanel
-              assignedTags={customerTagRelations}
-              availableTags={availableTags}
-              isLoading={customerTagsLoading}
-              loadErrorMessage={customerTagsError instanceof Error ? customerTagsError.message : null}
-              canEdit={canManageCustomerTags}
-              title="Tags"
-              addDialogTitle="Tag zu Kunden hinzufügen"
-              testIdPrefix="customer-tag-picker"
-              onAdd={(tagId) => addCustomerTagMutation.mutate(tagId)}
-              onRemove={(item) => removeCustomerTagMutation.mutate(item)}
-              className="h-auto"
-            />
-          ) : null}
-
-          {isEditMode ? (
-            <NotesSection
-              notes={notes}
-              isLoading={notesLoading}
-              onAdd={handleAddNote}
-              onUpdate={isEditMode ? handleUpdateNote : undefined}
-              onTogglePin={isEditMode ? handleTogglePin : undefined}
-              onDelete={isEditMode ? handleDeleteNote : undefined}
-            />
-          ) : null}
-        </div>
-      </div>
+      </EntityFormShell>
 
       <DocumentExtractionDialog
         open={documentExtractionOpen}
@@ -725,6 +964,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         customerApplyLabel="Kundendaten übernehmen"
         onApplyCustomer={applyExtractedCustomerDraft}
       />
-    </EntityFormLayout>
+    </div>
   );
 }
