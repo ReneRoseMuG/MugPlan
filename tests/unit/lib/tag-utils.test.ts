@@ -5,7 +5,7 @@
  * Use Case: UC Kurzlabel und deduplizierte Tag-Sammlungen
  *
  * Abgedeckte Regeln:
- * - Einwort-Tags werden auf maximal drei Zeichen mit initialer Grossschreibung verkuerzt.
+ * - Einwort-Tags werden auf maximal vier Zeichen mit initialer Grossschreibung verkuerzt und erhalten nur bei echter Kuerzung einen Punkt.
  * - Mehrwort-Tags werden ueber bis zu drei Anfangsbuchstaben zusammengezogen.
  * - Tag-Sammlungen aus Termin/Kunde/Projekt werden stabil ueber die Tag-ID dedupliziert.
  *
@@ -34,9 +34,11 @@ function buildTag(input: Partial<Tag>): Tag {
 }
 
 describe("FT28 tag utils", () => {
-  it("builds a title-cased short label for single-word tags", () => {
-    expect(trimTagLabel("montage")).toBe("Mon");
+  it("builds a title-cased short label for single-word tags with an abbreviation dot only when needed", () => {
+    expect(trimTagLabel("montage")).toBe("Mont.");
+    expect(trimTagLabel("Reklamation")).toBe("Rekl.");
     expect(trimTagLabel("AB")).toBe("Ab");
+    expect(trimTagLabel("Demo")).toBe("Demo");
     expect(trimTagLabel("x")).toBe("X");
   });
 

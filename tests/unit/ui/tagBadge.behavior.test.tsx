@@ -4,7 +4,7 @@
  * Feature: FT28 - TagBadge
  *
  * Abgedeckte Regeln:
- * - TagBadge nutzt den gekuerzten sichtbaren Namen.
+ * - TagBadge nutzt den gekuerzten sichtbaren Namen inklusive Abkuerzungspunkt fuer lange Einwort-Tags.
  * - Vorschau, Farbe und Aktions-Callbacks werden an die gemeinsame Badge-Basis weitergereicht.
  *
  * Fehlerfaelle:
@@ -44,7 +44,7 @@ describe("FT28 UI: TagBadge behavior", () => {
 
     const html = renderToStaticMarkup(
       <TagBadge
-        tag={{ id: 7, name: "  System Tag  ", color: "#112233" } as any}
+        tag={{ id: 7, name: "  Systemtag  ", color: "#112233" } as any}
         action="remove"
         onAdd={onAdd}
         onRemove={onRemove}
@@ -53,14 +53,14 @@ describe("FT28 UI: TagBadge behavior", () => {
     );
 
     expect(badgeCalls[0]).toMatchObject({
-      label: "ST",
+      label: "Syst.",
       color: "#112233",
       action: "remove",
       onAdd,
       onRemove,
-      preview: "preview:  System Tag  ",
+      preview: "preview:  Systemtag  ",
       testId: "tag-badge-7",
     });
-    expect(html).toContain("ST");
+    expect(html).toContain("Syst.");
   });
 });

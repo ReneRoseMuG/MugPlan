@@ -4,14 +4,14 @@
  * Abgedeckte Regeln:
  * - Ein Projekttermin kann im Browser aus Kunde, Projekt mit Betrag und Mitarbeiter als regulaerer Zukunftstermin angelegt werden.
  * - Der Einweg-Storno laesst sich ueber das Terminformular ausloesen und markiert den Termin sichtbar als storniert.
- * - Der Wochenkalender zeigt den stornierten Termin nach dem Verlassen des Formulars weiterhin sichtbar, aber mit Storniert-Tag.
+ * - Der Wochenkalender zeigt den stornierten Termin nach dem Bestätigen des Stornos ohne manuelles Formularschließen weiterhin sichtbar, aber mit Storniert-Tag.
  * - Der Projektbetrag wird nach dem Storno im Projektformular auf 0.00 gesetzt.
  * - Die Vorlaufliste zeigt den stornierten Termin weiterhin mit Betrag 0 und sichtbarer Storno-Kennzeichnung.
  * - Der Produkt-Vorlauf soll stornierte Projekte ausfiltern; dieser Soll-Test beschreibt die aktuelle Luecke bewusst rot.
  *
  * Fehlerfaelle:
  * - Der Termin verschwindet vor dem Storno oder traegt bereits vorher den Storniert-Tag.
- * - Der Storno bleibt auf den Button beschraenkt und propagiert nicht in Kalender, Projektbetrag oder Reports.
+ * - Der Storno bleibt im offenen Formular hängen und propagiert nicht direkt in Kalender, Projektbetrag oder Reports.
  * - Die Vorlaufliste zeigt nach dem Storno weiterhin den alten Betrag.
  * - Der Produkt-Vorlauf listet das stornierte Projekt trotz Soll-Regel weiterhin in Mengenlisten.
  *
@@ -175,7 +175,6 @@ test("runs the browser cancellation flow from regular future appointment to canc
   const cancelResponse = await cancelResponsePromise;
   expect(cancelResponse.status()).toBe(204);
 
-  await expect(page.getByRole("heading", { name: "Termin storniert" })).toBeVisible();
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointmentId}`);
     if (!response.ok()) {
@@ -197,8 +196,8 @@ test("runs the browser cancellation flow from regular future appointment to canc
     employeeIds: [],
   });
   await expect(page.getByRole("button", { name: "Termin stornieren" })).toHaveCount(0);
-
-  await page.getByTestId("button-close-appointment").click();
+  await expect(page.getByTestId("button-close-appointment")).toHaveCount(0);
+  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
   const cancelledAppointmentPanel = page.getByTestId(`week-appointment-panel-${appointmentId}`);
   await expect(cancelledAppointmentPanel).toBeVisible();
   await expect(cancelledAppointmentPanel).toHaveAttribute("aria-disabled", "true");

@@ -2,15 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Das Terminformular rendert im Overlay-Kontext einen sichtbaren Zurueck-Button im Header.
- * - Der gleiche Close-Handler wird fuer Close und Cancel an das Formularlayout uebergeben.
+ * - Das Terminformular rendert im Overlay-Kontext einen sichtbaren Zurück-Button im Header.
+ * - Der gleiche Close-Handler wird für Close und Cancel an das Formularlayout übergeben.
+ * - Erfolgreiches Stornieren nutzt denselben `onSaved`-Rückweg und kann das Formular dadurch schließen.
  *
  * Fehlerfaelle:
- * - Overlay-Kontexte verlieren den sichtbaren Zurueck-Button.
- * - Close und Cancel laufen ueber unterschiedliche Handler.
+ * - Overlay-Kontexte verlieren den sichtbaren Zurück-Button.
+ * - Close und Cancel laufen über unterschiedliche Handler.
+ * - Der Storno-Erfolg lässt das Formular offen, obwohl ein `onSaved`-Schließpfad vorhanden ist.
  *
  * Ziel:
- * Sichtbare Overlay-Navigation des Terminformulars ohne Quelltext-Assertions absichern.
+ * Sichtbare Overlay-Navigation und den Schließpfad nach erfolgreichem Storno ohne Quelltext-Assertions absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -27,10 +29,14 @@ let layoutProps:
 
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
+const mutationConfigs: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
-  useMutation: () => useMutationMock(),
+  useMutation: (options: Record<string, unknown>) => {
+    mutationConfigs.push(options);
+    return useMutationMock(options);
+  },
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -40,6 +46,10 @@ vi.mock("@/hooks/use-toast", () => ({
 vi.mock("@/lib/queryClient", () => ({
   apiRequest: vi.fn(),
   queryClient: { invalidateQueries: vi.fn() },
+}));
+
+vi.mock("@/lib/monitoring", () => ({
+  refreshMonitoringWithNotification: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/project-product-form", () => ({
@@ -186,6 +196,7 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
 describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
   beforeEach(() => {
     layoutProps = undefined;
+    mutationConfigs.length = 0;
     useQueryMock.mockReset();
     useMutationMock.mockReset();
     useMutationMock.mockReturnValue({
@@ -208,7 +219,7 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
 
     expect(withoutBack).not.toContain("button-back-appointment");
     expect(withBack).toContain("button-back-appointment");
-    expect(withBack).toContain("Zurueck");
+    expect(withBack).toContain("Zurück");
   });
 
   it("passes one shared close handler into close and cancel slots", () => {
@@ -216,5 +227,17 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
 
     expect(layoutProps?.onClose).toBeTypeOf("function");
     expect(layoutProps?.onClose).toBe(layoutProps?.onCancel);
+  });
+
+  it("uses onSaved after a successful cancellation mutation", async () => {
+    const onSaved = vi.fn();
+    renderToStaticMarkup(<AppointmentForm appointmentId={77} onSaved={onSaved} />);
+
+    const cancelMutationConfig = mutationConfigs[2] as { onSuccess?: () => Promise<void> } | undefined;
+    expect(cancelMutationConfig?.onSuccess).toBeTypeOf("function");
+
+    await cancelMutationConfig?.onSuccess?.();
+
+    expect(onSaved).toHaveBeenCalledTimes(1);
   });
 });

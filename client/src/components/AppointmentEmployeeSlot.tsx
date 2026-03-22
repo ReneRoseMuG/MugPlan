@@ -11,6 +11,7 @@ type AppointmentEmployeeSlotProps = {
   assignedEmployees: Employee[];
   teamMembersById: Map<number, { id: number; fullName: string }[]>;
   isLocked: boolean;
+  readOnly?: boolean;
   className?: string;
   onAssignTeam: (team: Team) => void;
   onAddEmployee: () => void;
@@ -26,6 +27,7 @@ export function AppointmentEmployeeSlot({
   assignedEmployees,
   teamMembersById,
   isLocked,
+  readOnly = false,
   className,
   onAssignTeam,
   onAddEmployee,
@@ -35,6 +37,11 @@ export function AppointmentEmployeeSlot({
   selectedTour,
   onTourChange,
 }: AppointmentEmployeeSlotProps) {
+  const showAssignmentActions = !readOnly;
+  const showTeamSection = !readOnly;
+  const showTourPicker = !readOnly && selectedTour === null;
+  const badgeActionLocked = isLocked || readOnly;
+
   return (
     <section className={`sub-panel flex flex-col gap-4 ${className ?? ""}`.trim()} data-testid="slot-appointment-employees">
       <div className="flex items-center justify-between">
@@ -42,41 +49,45 @@ export function AppointmentEmployeeSlot({
           <Users className="w-4 h-4" />
           Mitarbeiter
         </h3>
-        <PlusActionButton
-          onClick={onAddEmployee}
-          disabled={isLocked}
-          data-testid="button-add-employee"
-        />
+        {showAssignmentActions ? (
+          <PlusActionButton
+            onClick={onAddEmployee}
+            disabled={isLocked}
+            data-testid="button-add-employee"
+          />
+        ) : null}
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Teams</Label>
-        <p className="text-xs italic text-muted-foreground">Waehle ein Team fuer diesen Termin</p>
-        <div className="flex flex-wrap gap-2">
-          {teams.map((team) => (
-            <TeamInfoBadge
-              key={team.id}
-              id={team.id}
-              name={team.name}
-              color={team.color}
-              members={teamMembersById.get(team.id) ?? []}
-              action={isLocked ? "none" : "add"}
-              onAdd={() => onAssignTeam(team)}
-              size="sm"
-              testId={`badge-team-${team.id}`}
-            />
-          ))}
-          {teams.length === 0 ? (
-            <div className="text-xs text-muted-foreground">Keine Teams vorhanden</div>
-          ) : null}
+      {showTeamSection ? (
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Teams</Label>
+          <p className="text-xs italic text-muted-foreground">Wähle ein Team für diesen Termin</p>
+          <div className="flex flex-wrap gap-2">
+            {teams.map((team) => (
+              <TeamInfoBadge
+                key={team.id}
+                id={team.id}
+                name={team.name}
+                color={team.color}
+                members={teamMembersById.get(team.id) ?? []}
+                action={badgeActionLocked ? "none" : "add"}
+                onAdd={() => onAssignTeam(team)}
+                size="sm"
+                testId={`badge-team-${team.id}`}
+              />
+            ))}
+            {teams.length === 0 ? (
+              <div className="text-xs text-muted-foreground">Keine Teams vorhanden</div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {selectedTour === null ? (
+      {showTourPicker ? (
         <div className="space-y-2" data-testid="section-tour-picker">
           <Label className="text-xs text-muted-foreground">Tour</Label>
           <p className="text-xs italic text-muted-foreground">
-            Waehle eine Tour, zu der dieser Termin hinzugefuegt werden soll
+            Wähle eine Tour, zu der dieser Termin hinzugefügt werden soll
           </p>
           <div className="flex flex-wrap gap-2">
             {tours.map((tour) => (
@@ -86,7 +97,7 @@ export function AppointmentEmployeeSlot({
                 name={tour.name}
                 color={tour.color}
                 members={tourMembersById.get(tour.id) ?? []}
-                action={isLocked ? "none" : "add"}
+                action={badgeActionLocked ? "none" : "add"}
                 onAdd={() => onTourChange(tour.id)}
                 size="sm"
                 testId={`badge-tour-select-${tour.id}`}
@@ -111,7 +122,7 @@ export function AppointmentEmployeeSlot({
                 id={employee.id}
                 firstName={employee.firstName}
                 lastName={employee.lastName}
-                action={isLocked ? "none" : "remove"}
+                action={badgeActionLocked ? "none" : "remove"}
                 onRemove={() => onRemoveEmployee(employee.id)}
                 size="sm"
                 testId={`badge-employee-${employee.id}`}

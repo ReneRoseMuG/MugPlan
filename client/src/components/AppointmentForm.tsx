@@ -512,6 +512,7 @@ export function AppointmentForm({
       await invalidateRelatedAppointmentQueries(selectedProjectId);
       await refreshMonitoringWithNotification(toast);
       toast({ title: "Termin storniert" });
+      onSaved?.();
     },
     onError: (error) => {
       const err = error as AppointmentApiError;
@@ -686,9 +687,10 @@ export function AppointmentForm({
   }, [employees]);
 
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
-  const isLocked = isEditing && !isAdmin && isPastStartDate(lockedStartDate);
+  const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate);
   const isCancelled = appointmentDetail?.isCancelled === true;
-  const isMutationLocked = isLocked || isCancelled;
+  const isReadOnlyView = isHistoricalReadOnly || isCancelled;
+  const isMutationLocked = isReadOnlyView;
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
   const isCustomerReadOnly = isMutationLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
   const closeAction = onBack ?? onCancel;
@@ -711,6 +713,7 @@ export function AppointmentForm({
     }
     closeAction?.();
   };
+  const readOnlyCloseAction = closeAction ?? handleRequestClose;
 
   const addEmployees = (ids: number[]) => {
     setAssignedEmployeeIds((prev) => {
@@ -1293,11 +1296,11 @@ export function AppointmentForm({
   const submitAppointment = async () => {
     if (isMutationLocked) {
       if (isCancelled) {
-        toast({ title: "Termin ist storniert", description: "Stornierte Termine koennen nicht mehr bearbeitet werden.", variant: "destructive" });
+        toast({ title: "Termin ist storniert", description: "Stornierte Termine können nicht mehr bearbeitet werden.", variant: "destructive" });
         console.info(`${logPrefix} save blocked: cancelled appointment`);
         return;
       }
-      toast({ title: "Termin ist gesperrt", description: "Nur Admins dürfen vergangene Termine ändern.", variant: "destructive" });
+      toast({ title: "Termin ist gesperrt", description: "Historische Termine können nicht geändert werden.", variant: "destructive" });
       console.info(`${logPrefix} save blocked: locked appointment`);
       return;
     }
@@ -1691,7 +1694,7 @@ export function AppointmentForm({
     <EntityFormLayout
       title={isEditing ? "Termin bearbeiten" : "Neuer Termin"}
       icon={<Calendar className="w-6 h-6" />}
-      headerStartAction={showBackButton ? (
+      headerStartAction={showBackButton && !isReadOnlyView ? (
         <Button
           type="button"
           variant="outline"
@@ -1699,18 +1702,19 @@ export function AppointmentForm({
           data-testid="button-back-appointment"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurueck
+          Zurück
         </Button>
       ) : undefined}
-      onClose={handleRequestClose}
-      onCancel={handleRequestClose}
-      onSubmit={!isMutationLocked ? submitAppointment : undefined}
+      onClose={!isReadOnlyView ? handleRequestClose : undefined}
+      onCancel={isReadOnlyView ? readOnlyCloseAction : handleRequestClose}
+      onSubmit={!isReadOnlyView ? submitAppointment : undefined}
       isSaving={isSaving}
       saveLabel={isEditing ? "Speichern" : "Termin erstellen"}
+      cancelLabel={isReadOnlyView ? "Schließen" : "Abbrechen"}
       closeOnSubmitSuccess={false}
       testIdPrefix="appointment"
       footerActions={
-        isEditing && appointmentId ? (
+        isEditing && appointmentId && !isReadOnlyView ? (
           <div className="flex flex-wrap items-center gap-2">
             {!isCancelled ? (
               <Button
@@ -1730,7 +1734,7 @@ export function AppointmentForm({
               disabled={isMutationLocked || deleteAppointmentMutation.isPending}
               data-testid="button-delete-appointment"
             >
-              Termin loeschen
+              Termin löschen
             </Button>
           </div>
         ) : undefined
@@ -1740,15 +1744,15 @@ export function AppointmentForm({
         <Alert variant="destructive" className="mb-6">
           <AlertTitle>Termin storniert</AlertTitle>
           <AlertDescription>
-            Dieser Termin wurde als Storno markiert und kann nicht mehr bearbeitet, verschoben oder geloescht werden.
+            Dieser Termin wurde als Storno markiert und kann nicht mehr bearbeitet, verschoben oder gelöscht werden.
           </AlertDescription>
         </Alert>
       )}
-      {isLocked && (
+      {isHistoricalReadOnly && (
         <Alert variant="destructive" className="mb-6">
           <AlertTitle>Termin gesperrt</AlertTitle>
           <AlertDescription>
-            Historische Termine können nicht verändert werden. Kontaktieren Sie einen Admin.
+            Historische Termine können nicht verändert werden.
           </AlertDescription>
         </Alert>
       )}
@@ -1881,7 +1885,7 @@ export function AppointmentForm({
               name={selectedTour.name}
               color={selectedTour.color}
               members={tourMembersById.get(selectedTour.id) ?? []}
-              action={isMutationLocked ? "none" : "remove"}
+              action={isReadOnlyView ? "none" : "remove"}
               onRemove={() => handleTourChange(null)}
               fullWidth
               testId="badge-tour"
@@ -1893,6 +1897,7 @@ export function AppointmentForm({
             assignedEmployees={assignedEmployees}
             teamMembersById={teamMembersById}
             isLocked={isMutationLocked}
+            readOnly={isReadOnlyView}
             onAssignTeam={handleAssignTeam}
             onAddEmployee={() => setEmployeePickerOpen(true)}
             onRemoveEmployee={removeEmployee}
@@ -1920,6 +1925,7 @@ export function AppointmentForm({
             projectId={selectedProjectId}
             pendingAppointmentAttachments={isEditing ? undefined : draftAppointmentAttachments}
             onUploadPendingAppointmentAttachment={isEditing ? undefined : addDraftAppointmentAttachment}
+            readOnly={isReadOnlyView}
           />
 
           <TagPickerPanel
@@ -1950,6 +1956,7 @@ export function AppointmentForm({
           <NotesSection
             notes={visibleAppointmentNotes}
             isLoading={isEditing ? appointmentNotesLoading : false}
+            readOnly={isReadOnlyView}
             onAdd={(data) => {
               if (isEditing) {
                 createAppointmentNoteMutation.mutate(data);
@@ -2128,7 +2135,7 @@ export function AppointmentForm({
           <AlertDialogHeader>
             <AlertDialogTitle>Termin stornieren?</AlertDialogTitle>
             <AlertDialogDescription>
-              Der Termin wird dauerhaft als storniert markiert. Eine Reaktivierung ist ueber die Anwendung nicht vorgesehen.
+              Der Termin wird dauerhaft als storniert markiert. Alle Mitarbeiter werden vom Termin abgezogen und sind im Terminzeitraum zur erneuten Planung verfügbar. Der Auftragswert wird im System auf 0,- Euro gesetzt. Stornierte Termine können nicht reaktiviert werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

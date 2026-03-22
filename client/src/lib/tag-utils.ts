@@ -14,11 +14,12 @@ export function trimTagLabel(name: string): string {
     .filter((segment) => segment.length > 0);
 
   if (segments.length <= 1) {
-    const shortLabel = normalizedName.slice(0, 3);
+    const shortLabel = normalizedName.slice(0, 4);
     if (shortLabel.length <= 1) {
       return shortLabel.toLocaleUpperCase("de-DE");
     }
-    return `${shortLabel[0].toLocaleUpperCase("de-DE")}${shortLabel.slice(1).toLocaleLowerCase("de-DE")}`;
+    const formattedLabel = `${shortLabel[0].toLocaleUpperCase("de-DE")}${shortLabel.slice(1).toLocaleLowerCase("de-DE")}`;
+    return normalizedName.length > shortLabel.length ? `${formattedLabel}.` : formattedLabel;
   }
 
   return segments

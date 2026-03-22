@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Der Mitarbeiterbereich zeigt Teams, Tour-Picker und Zuweisungen in einem sichtbaren Panel.
  * - Der Tour-Picker wird nur ohne bereits ausgewaehlte Tour angezeigt.
+ * - Im Readonly-Modus verschwinden Team-, Tour- und Plus-Aktionen, während bestehende Mitarbeiter sichtbar bleiben.
  * - Leere und belegte Zuweisungszustaende werden sichtbar unterschieden.
  *
  * Fehlerfaelle:
@@ -105,5 +106,25 @@ describe("FT01 UI: AppointmentEmployeeSlot wiring", () => {
     expect(markup).toContain("badge-employee-41");
     expect(markup).toContain("Mia Muster");
     expect(markup).not.toContain("Keine Mitarbeiter zugewiesen");
+  });
+
+  it("hides team and tour selection actions in readonly mode while keeping assigned employees visible", () => {
+    const markup = renderSlot({
+      readOnly: true,
+      selectedTour: { id: 21, name: "Nordtour", color: "#224466" } as never,
+      assignedEmployees: [
+        { id: 41, firstName: "Mia", lastName: "Muster" } as never,
+      ],
+    });
+
+    expect(markup).not.toContain("button-add-employee");
+    expect(markup).not.toContain("Teams");
+    expect(markup).not.toContain("Wähle ein Team für diesen Termin");
+    expect(markup).not.toContain("badge-team-11");
+    expect(markup).not.toContain("section-tour-picker");
+    expect(markup).not.toContain("badge-tour-select-21");
+    expect(markup).toContain("Zugewiesen");
+    expect(markup).toContain("badge-employee-41");
+    expect(markup).toContain("Mia Muster");
   });
 });

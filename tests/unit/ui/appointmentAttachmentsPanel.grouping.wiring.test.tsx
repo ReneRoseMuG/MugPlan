@@ -5,6 +5,7 @@
  * - Das Termin-Dokumentenpanel rendert drei sichtbare Gruppen fuer Kunde, Projekt und Termin.
  * - Im Create-Fall werden pending Terminanhaenge mit lokalen Blob-URLs dargestellt.
  * - Im Edit-Fall werden serverseitige Termin-Downloadrouten fuer Terminanhaenge genutzt.
+ * - Im Readonly-Modus verschwindet die Upload-Aktion fuer Terminanhaenge.
  *
  * Fehlerfaelle:
  * - Die Terminanhang-Gruppe verschwindet oder zeigt im Create-Fall keine lokalen Dateien.
@@ -75,7 +76,7 @@ vi.mock("@/components/SplitAttachmentsPanel", () => ({
       {sections.map((section) => (
         <section key={section.id} data-testid={`section-${section.id}`}>
           <h2>{section.title}</h2>
-          <div>{section.canUpload ? "upload-enabled" : "upload-disabled"}</div>
+          <div>{`${section.id}:${section.canUpload ? "upload-enabled" : "upload-disabled"}`}</div>
           {section.items.map((item) => (
             <a
               key={item.id}
@@ -133,7 +134,7 @@ describe("FT24 UI: appointment attachments panel grouping wiring", () => {
     expect(markup).toContain("projekt.pdf");
     expect(markup).toContain("termin.pdf");
     expect(markup).toContain("href=\"blob:pending-attachment\"");
-    expect(markup).toContain("upload-enabled");
+    expect(markup).toContain("appointment:upload-enabled");
   });
 
   it("uses dedicated appointment download routes in edit mode", () => {
@@ -152,5 +153,19 @@ describe("FT24 UI: appointment attachments panel grouping wiring", () => {
     expect(markup).toContain("/api/project-attachments/201/download");
     expect(markup).toContain("/api/appointment-attachments/301/download");
     expect(markup).toContain("/api/appointment-attachments/301/download?download=1");
+    expect(markup).toContain("appointment:upload-enabled");
+  });
+
+  it("disables the appointment upload action in readonly mode", () => {
+    appointmentContext = {
+      customerAttachments: [],
+      projectAttachments: [],
+      appointmentAttachments: [{ id: 301, originalName: "termin-live.pdf", mimeType: "application/pdf" }],
+    };
+
+    const markup = renderToStaticMarkup(<AppointmentAttachmentsPanel appointmentId={77} readOnly />);
+
+    expect(markup).toContain("Terminanhaenge");
+    expect(markup).toContain("appointment:upload-disabled");
   });
 });

@@ -37,6 +37,7 @@ interface AppointmentAttachmentsPanelProps {
   projectId?: number | null;
   pendingAppointmentAttachments?: PendingAppointmentAttachmentItem[];
   onUploadPendingAppointmentAttachment?: (file: File) => void;
+  readOnly?: boolean;
 }
 
 export function AppointmentAttachmentsPanel({
@@ -45,6 +46,7 @@ export function AppointmentAttachmentsPanel({
   projectId,
   pendingAppointmentAttachments = [],
   onUploadPendingAppointmentAttachment,
+  readOnly = false,
 }: AppointmentAttachmentsPanelProps) {
   const { toast } = useToast();
   const { data, isLoading } = useQuery<AppointmentAttachmentContext>({
@@ -127,7 +129,7 @@ export function AppointmentAttachmentsPanel({
   const resolvedCustomerLoading = appointmentId ? isLoading : customerAttachmentsLoading;
   const resolvedProjectLoading = appointmentId ? isLoading : projectAttachmentsLoading;
   const resolvedAppointmentLoading = appointmentId ? isLoading : false;
-  const canUploadAppointmentAttachment = Boolean(appointmentId) || typeof onUploadPendingAppointmentAttachment === "function";
+  const canUploadAppointmentAttachment = !readOnly && (Boolean(appointmentId) || typeof onUploadPendingAppointmentAttachment === "function");
   const handleAppointmentUpload = (file: File) => {
     if (appointmentId) {
       uploadMutation.mutate(file);

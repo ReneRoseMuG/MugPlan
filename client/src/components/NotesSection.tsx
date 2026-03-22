@@ -29,6 +29,7 @@ interface NotesSectionProps {
   onTogglePin?: (id: number, isPinned: boolean) => void;
   onDelete?: (id: number) => void;
   title?: string;
+  readOnly?: boolean;
 }
 
 function NoteCard({
@@ -122,6 +123,7 @@ export function NotesSection({
   onTogglePin,
   onDelete,
   title = "Notizen",
+  readOnly = false,
 }: NotesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
@@ -149,6 +151,7 @@ export function NotesSection({
   };
 
   const handleOpenCreate = () => {
+    if (readOnly) return;
     setEditingNoteId(null);
     setNoteTitle("");
     setNoteBody("");
@@ -219,9 +222,11 @@ export function NotesSection({
           <StickyNote className="h-4 w-4" />
           {title} ({notes.length})
         </h3>
-        <Button size="icon" variant="ghost" onClick={handleOpenCreate} data-testid="button-new-note">
-          <Plus className="h-4 w-4" />
-        </Button>
+        {!readOnly ? (
+          <Button size="icon" variant="ghost" onClick={handleOpenCreate} data-testid="button-new-note">
+            <Plus className="h-4 w-4" />
+          </Button>
+        ) : null}
       </div>
 
       <div className="max-h-[400px] space-y-2 overflow-y-auto" data-testid="list-notes">
@@ -236,9 +241,9 @@ export function NotesSection({
               <NoteCard
                 key={note.id}
                 note={note}
-                onEdit={onUpdate ? () => handleOpenEdit(note) : undefined}
-                onTogglePin={onTogglePin ? (isPinned) => onTogglePin(note.id, isPinned) : undefined}
-                onDelete={onDelete ? () => handleDelete(note) : undefined}
+                onEdit={!readOnly && onUpdate ? () => handleOpenEdit(note) : undefined}
+                onTogglePin={!readOnly && onTogglePin ? (isPinned) => onTogglePin(note.id, isPinned) : undefined}
+                onDelete={!readOnly && onDelete ? () => handleDelete(note) : undefined}
               />
             ))}
             {notes.length === 0 ? (
