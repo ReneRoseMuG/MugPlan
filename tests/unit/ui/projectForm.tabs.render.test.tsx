@@ -63,8 +63,25 @@ vi.mock("@/hooks/useSettings", () => ({
   useSettings: vi.fn(() => ({ setSetting: vi.fn() })),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: ({
+    children,
+    header,
+    sidebar,
+    footer,
+  }: {
+    children?: React.ReactNode;
+    header?: React.ReactNode;
+    sidebar?: React.ReactNode;
+    footer?: React.ReactNode;
+  }) => (
+    <div data-testid="entity-form-shell">
+      <div>{header}</div>
+      <div>{children}</div>
+      <div>{sidebar}</div>
+      <div>{footer}</div>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/ui/button", () => ({

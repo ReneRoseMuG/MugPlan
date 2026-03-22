@@ -23,7 +23,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const relationSlotCalls: Array<Record<string, unknown>> = [];
 const customerDetailCardCalls: Array<Record<string, unknown>> = [];
-const entityFormLayoutCalls: Array<Record<string, unknown>> = [];
+const entityFormShellCalls: Array<Record<string, unknown>> = [];
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const toastMock = vi.fn();
@@ -68,15 +68,24 @@ vi.mock("@/hooks/useSettings", () => ({
   useSettings: vi.fn(() => ({ setSetting: vi.fn() })),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
-    entityFormLayoutCalls.push(props);
-    return <div>{props.children}</div>;
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: (props: Record<string, unknown> & { children?: React.ReactNode; header?: React.ReactNode; sidebar?: React.ReactNode; footer?: React.ReactNode }) => {
+    entityFormShellCalls.push(props);
+    return (
+      <div data-testid="entity-form-shell">
+        <div>{props.header}</div>
+        <div>{props.children}</div>
+        <div>{props.sidebar}</div>
+        <div>{props.footer}</div>
+      </div>
+    );
   },
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
 }));
 
 vi.mock("@/components/ui/relation-slot", () => ({
@@ -239,6 +248,22 @@ function getCustomerSlot() {
   return slot;
 }
 
+function findElementByTestId(node: React.ReactNode, testId: string): React.ReactElement | null {
+  if (!node) return null;
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const match = findElementByTestId(child, testId);
+      if (match) return match;
+    }
+    return null;
+  }
+  if (!React.isValidElement(node)) return null;
+  if ((node.props as { ["data-testid"]?: string })["data-testid"] === testId) {
+    return node;
+  }
+  return findElementByTestId((node.props as { children?: React.ReactNode }).children, testId);
+}
+
 async function importProjectForm() {
   return import("../../../client/src/components/ProjectForm");
 }
@@ -247,7 +272,7 @@ describe("FT02 project form customer relation slot", () => {
   beforeEach(() => {
     relationSlotCalls.length = 0;
     customerDetailCardCalls.length = 0;
-    entityFormLayoutCalls.length = 0;
+    entityFormShellCalls.length = 0;
     toastMock.mockReset();
     useQueryMock.mockReset();
     useMutationMock.mockReset();
@@ -306,12 +331,13 @@ describe("FT02 project form customer relation slot", () => {
     const { ProjectForm } = await importProjectForm();
     renderToStaticMarkup(<ProjectForm />);
 
-    const layout = entityFormLayoutCalls[0];
-    if (typeof layout?.onSubmit !== "function") {
-      throw new Error("Missing form submit handler");
+    const shell = entityFormShellCalls[0];
+    const saveButton = findElementByTestId(shell?.footer, "button-save-project");
+    if (typeof saveButton?.props.onClick !== "function") {
+      throw new Error("Missing save action");
     }
 
-    await expect(layout.onSubmit()).rejects.toThrow("validation");
+    await expect(saveButton.props.onClick()).rejects.toThrow("validation");
     expect(toastMock).toHaveBeenCalledWith(
       expect.objectContaining({
         title: expect.stringContaining("Kunde muss"),
