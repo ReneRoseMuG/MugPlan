@@ -20,9 +20,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let layoutProps:
   | {
-      headerStartAction?: React.ReactNode;
-      onClose?: () => void;
-      onCancel?: () => void;
+      header?: React.ReactNode;
+      footer?: React.ReactNode;
       children?: React.ReactNode;
     }
   | undefined;
@@ -63,18 +62,19 @@ vi.mock("@/lib/project-appointments", () => ({
   getProjectAppointmentsQueryKey: vi.fn(() => ["projectAppointments"]),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: (props: {
-    headerStartAction?: React.ReactNode;
-    onClose?: () => void;
-    onCancel?: () => void;
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: (props: {
+    header?: React.ReactNode;
+    footer?: React.ReactNode;
+    sidebar?: React.ReactNode;
     children?: React.ReactNode;
   }) => {
     layoutProps = props;
     return (
-      <div data-testid="entity-form-layout">
-        <div>{props.headerStartAction}</div>
+      <div data-testid="entity-form-shell">
+        <div>{props.header}</div>
         <div>{props.children}</div>
+        <div>{props.footer}</div>
       </div>
     );
   },
@@ -193,6 +193,22 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
   return { data: [], isLoading: false };
 }
 
+function findElementByTestId(node: React.ReactNode, testId: string): React.ReactElement | null {
+  if (!node) return null;
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const match = findElementByTestId(child, testId);
+      if (match) return match;
+    }
+    return null;
+  }
+  if (!React.isValidElement(node)) return null;
+  if ((node.props as { ["data-testid"]?: string })["data-testid"] === testId) {
+    return node;
+  }
+  return findElementByTestId((node.props as { children?: React.ReactNode }).children, testId);
+}
+
 describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
   beforeEach(() => {
     layoutProps = undefined;
@@ -225,8 +241,11 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
   it("passes one shared close handler into close and cancel slots", () => {
     renderToStaticMarkup(<AppointmentForm showBackButton onBack={() => undefined} />);
 
-    expect(layoutProps?.onClose).toBeTypeOf("function");
-    expect(layoutProps?.onClose).toBe(layoutProps?.onCancel);
+    const closeButton = findElementByTestId(layoutProps?.header, "button-close-appointment");
+    const cancelButton = findElementByTestId(layoutProps?.footer, "button-cancel-appointment");
+
+    expect(closeButton?.props.onClick).toBeTypeOf("function");
+    expect(closeButton?.props.onClick).toBe(cancelButton?.props.onClick);
   });
 
   it("uses onSaved after a successful cancellation mutation", async () => {

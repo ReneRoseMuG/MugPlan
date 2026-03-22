@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - AppointmentForm rendert Hauptbereich und rechte Sidebar in Create und Edit sichtbar getrennt.
+ * - AppointmentForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
  * - Ohne selektierte Tour bleibt die Tour-Auswahl ueber AppointmentEmployeeSlot im Hauptbereich.
  * - Attachments, Tags und Notizen bleiben in der rechten Sidebar.
  * - Die separate Tour-Badge bleibt oberhalb des Mitarbeiterpanels im Hauptbereich.
@@ -21,6 +21,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const employeeSlotCalls: Array<Record<string, unknown>> = [];
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
+let appointmentDetailOverride:
+  | {
+      id: number;
+      version: number;
+      projectId: number | null;
+      customerId: number;
+      displayMode: "standard" | "compact" | "detail";
+      tourId: number | null;
+      title: string;
+      description: string | null;
+      startDate: string;
+      startTime: string | null;
+      endDate: string | null;
+      endTime: string | null;
+      employees: Array<Record<string, unknown>>;
+      isCancelled: boolean;
+    }
+  | null = null;
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -47,8 +65,25 @@ vi.mock("@/lib/project-appointments", () => ({
   getProjectAppointmentsQueryKey: vi.fn(() => ["projectAppointments"]),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: ({
+    children,
+    sidebar,
+    header,
+    footer,
+  }: {
+    children?: React.ReactNode;
+    sidebar?: React.ReactNode;
+    header?: React.ReactNode;
+    footer?: React.ReactNode;
+  }) => (
+    <div data-testid="entity-form-shell">
+      {header ? <div data-testid="entity-form-shell-header">{header}</div> : null}
+      <div data-testid="entity-form-shell-main">{children}</div>
+      {sidebar ? <div data-testid="entity-form-shell-sidebar">{sidebar}</div> : null}
+      <div data-testid="entity-form-shell-footer">{footer}</div>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -129,7 +164,12 @@ vi.mock("@/components/AppointmentAttachmentsPanel", () => ({
 vi.mock("@/components/AppointmentEmployeeSlot", () => ({
   AppointmentEmployeeSlot: (props: Record<string, unknown>) => {
     employeeSlotCalls.push(props);
-    return <section data-testid="appointment-employee-slot-marker">employee-slot</section>;
+    return (
+      <section data-testid="appointment-employee-slot-marker">
+        employee-slot
+        {props.selectedTour === null ? <div data-testid="section-tour-picker">tour-picker</div> : null}
+      </section>
+    );
   },
 }));
 
@@ -208,6 +248,10 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
     return { data: [], isLoading: false };
   }
 
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/appointments" && queryKey[1] === 77 && queryKey.length === 2) {
+    return { data: appointmentDetailOverride, isLoading: false };
+  }
+
   if (Array.isArray(queryKey) && queryKey[0] === "/api/appointments" && (queryKey[2] === "tags" || queryKey[2] === "notes")) {
     return { data: [], isLoading: false };
   }
@@ -230,6 +274,7 @@ function getIndex(markup: string, marker: string) {
 describe("FT01 appointment form layout tour integration", () => {
   beforeEach(() => {
     employeeSlotCalls.length = 0;
+    appointmentDetailOverride = null;
     useQueryMock.mockReset();
     useMutationMock.mockReset();
     useMutationMock.mockReturnValue({
@@ -249,6 +294,7 @@ describe("FT01 appointment form layout tour integration", () => {
   it("keeps create mode flow in the main column and routes tour selection through AppointmentEmployeeSlot", () => {
     const markup = renderToStaticMarkup(<AppointmentForm />);
 
+    expect(markup).toContain("entity-form-shell");
     expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "slot-project-relation"));
     expect(getIndex(markup, "slot-project-relation")).toBeLessThan(getIndex(markup, "slot-customer-relation"));
     expect(getIndex(markup, "slot-customer-relation")).toBeLessThan(getIndex(markup, "appointment-employee-slot-marker"));
@@ -264,7 +310,33 @@ describe("FT01 appointment form layout tour integration", () => {
     }));
   });
 
+  it("renders attachments, tags and notes inside the sidebar in create mode", () => {
+    const markup = renderToStaticMarkup(<AppointmentForm />);
+
+    expect(markup).toContain("appointment-form-sidebar");
+    expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "appointment-form-sidebar"));
+    expect(getIndex(markup, "appointment-form-sidebar")).toBeLessThan(getIndex(markup, "appointment-attachments-panel"));
+    expect(getIndex(markup, "appointment-attachments-panel")).toBeLessThan(getIndex(markup, "appointment-tag-picker-marker"));
+    expect(getIndex(markup, "appointment-tag-picker-marker")).toBeLessThan(getIndex(markup, "notes-section-marker"));
+  });
+
   it("renders attachments, tags and notes inside the sidebar in edit mode", () => {
+    appointmentDetailOverride = {
+      id: 77,
+      version: 4,
+      projectId: 11,
+      customerId: 21,
+      displayMode: "standard",
+      tourId: null,
+      title: "Termin A",
+      description: null,
+      startDate: "2099-01-02",
+      startTime: "08:00:00",
+      endDate: "2099-01-02",
+      endTime: "09:00:00",
+      employees: [],
+      isCancelled: false,
+    };
     const markup = renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
 
     expect(markup).toContain("appointment-form-sidebar");
@@ -275,10 +347,49 @@ describe("FT01 appointment form layout tour integration", () => {
   });
 
   it("keeps document extraction in create mode only, while edit mode stays focused on sidebar content", () => {
+    appointmentDetailOverride = {
+      id: 77,
+      version: 4,
+      projectId: 11,
+      customerId: 21,
+      displayMode: "standard",
+      tourId: null,
+      title: "Termin A",
+      description: null,
+      startDate: "2099-01-02",
+      startTime: "08:00:00",
+      endDate: "2099-01-02",
+      endTime: "09:00:00",
+      employees: [],
+      isCancelled: false,
+    };
     const createMarkup = renderToStaticMarkup(<AppointmentForm />);
     const editMarkup = renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
 
     expect(createMarkup).toContain("document-extraction-dropzone-marker");
     expect(editMarkup).not.toContain("document-extraction-dropzone-marker");
+  });
+
+  it("keeps the start date section before the project slot inside the shell main column", () => {
+    const markup = renderToStaticMarkup(<AppointmentForm />);
+
+    expect(getIndex(markup, "input-start-date")).toBeLessThan(getIndex(markup, "slot-project-relation"));
+  });
+
+  it("keeps editable shell actions in header and footer for create mode", () => {
+    const markup = renderToStaticMarkup(<AppointmentForm />);
+
+    expect(markup).toContain("Neuer Termin");
+    expect(markup).toContain("Abbrechen");
+    expect(markup).toContain("Termin erstellen");
+  });
+
+  it("keeps the tour picker inside the employee panel when no tour is selected", () => {
+    const markup = renderToStaticMarkup(<AppointmentForm />);
+
+    expect(markup).not.toContain("badge-tour");
+    expect(markup).toContain("section-tour-picker");
+    const employeeSlotProps = employeeSlotCalls.at(-1);
+    expect(employeeSlotProps?.selectedTour).toBeNull();
   });
 });
