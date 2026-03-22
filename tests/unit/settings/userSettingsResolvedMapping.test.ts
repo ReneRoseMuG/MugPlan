@@ -243,4 +243,48 @@ describe("PKG-08 user settings resolved mapping", () => {
     expect(helpTextPreviewSize?.resolvedScope).toBe("USER");
     expect(helpTextPreviewSize?.resolvedVersion).toBe(7);
   });
+
+  it("maps user versions and resolved values for entity form shell widths", async () => {
+    usersRepoMock.getUserWithRole.mockResolvedValue({
+      id: 1,
+      isActive: true,
+      roleCode: "ADMIN",
+    } as any);
+    settingsRepoMock.listSettingCandidates.mockResolvedValue([
+      {
+        settingKey: "entityFormShell.sidebarWidthPx",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: 400,
+        version: 9,
+        updatedAt: new Date("2026-03-22T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+      {
+        settingKey: "entityFormShell.contentMaxWidthPx",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: 900,
+        version: 10,
+        updatedAt: new Date("2026-03-22T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+    ] as any);
+
+    const result = await getResolvedSettingsForUser(1);
+    const sidebarWidth = result.find((entry) => entry.key === "entityFormShell.sidebarWidthPx");
+    const contentMaxWidth = result.find((entry) => entry.key === "entityFormShell.contentMaxWidthPx");
+
+    expect(sidebarWidth).toBeDefined();
+    expect(sidebarWidth?.userVersion).toBe(9);
+    expect(sidebarWidth?.resolvedValue).toBe(400);
+    expect(sidebarWidth?.resolvedScope).toBe("USER");
+    expect(sidebarWidth?.resolvedVersion).toBe(9);
+
+    expect(contentMaxWidth).toBeDefined();
+    expect(contentMaxWidth?.userVersion).toBe(10);
+    expect(contentMaxWidth?.resolvedValue).toBe(900);
+    expect(contentMaxWidth?.resolvedScope).toBe("USER");
+    expect(contentMaxWidth?.resolvedVersion).toBe(10);
+  });
 });

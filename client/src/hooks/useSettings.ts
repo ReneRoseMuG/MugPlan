@@ -16,6 +16,8 @@ export type UserSettingKey =
   // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
   | "attachmentPreviewSize"
   | "helpTextPreviewSize"
+  | "entityFormShell.sidebarWidthPx"
+  | "entityFormShell.contentMaxWidthPx"
   | "toastDesktopPosition"
   | "backup_enabled"
   | "auth_two_factor_enabled"
@@ -37,6 +39,8 @@ export type UserSettingKey =
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
   helpTextPreviewSize: "small" | "medium" | "large";
+  "entityFormShell.sidebarWidthPx": number;
+  "entityFormShell.contentMaxWidthPx": number;
   toastDesktopPosition: ToastDesktopPosition;
   backup_enabled: boolean;
   auth_two_factor_enabled: boolean;
@@ -142,6 +146,20 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
         return value as UserSettingValueByKey[K];
       }
       return "large" as UserSettingValueByKey[K];
+    }
+    if (key === "entityFormShell.sidebarWidthPx") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 260 && value <= 480) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 360 as UserSettingValueByKey[K];
+    }
+    if (key === "entityFormShell.contentMaxWidthPx") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 640 && value <= 1100) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 760 as UserSettingValueByKey[K];
     }
     if (key === "hoverPreviewOpenDelayMs") {
       const value = setting?.resolvedValue;

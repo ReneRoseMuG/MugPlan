@@ -242,7 +242,7 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
     renderToStaticMarkup(<AppointmentForm showBackButton onBack={() => undefined} />);
 
     const closeButton = findElementByTestId(layoutProps?.header, "button-close-appointment");
-    const cancelButton = findElementByTestId(layoutProps?.footer, "button-cancel-appointment");
+    const cancelButton = findElementByTestId(layoutProps?.footer, "button-secondary-cancel-appointment");
 
     expect(closeButton?.props.onClick).toBeTypeOf("function");
     expect(closeButton?.props.onClick).toBe(cancelButton?.props.onClick);

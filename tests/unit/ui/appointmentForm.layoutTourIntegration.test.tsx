@@ -87,7 +87,9 @@ vi.mock("@/components/ui/entity-form-shell", () => ({
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
 }));
 
 vi.mock("@/components/ui/input", () => ({
@@ -379,9 +381,11 @@ describe("FT01 appointment form layout tour integration", () => {
   it("keeps editable shell actions in header and footer for create mode", () => {
     const markup = renderToStaticMarkup(<AppointmentForm />);
 
+    expect(markup).toContain("button-close-appointment");
+    expect(markup).toContain("button-secondary-cancel-appointment");
+    expect(markup).toContain("button-save-appointment");
     expect(markup).toContain("Neuer Termin");
-    expect(markup).toContain("Abbrechen");
-    expect(markup).toContain("Termin erstellen");
+    expect(getIndex(markup, "button-secondary-cancel-appointment")).toBeLessThan(getIndex(markup, "button-save-appointment"));
   });
 
   it("keeps the tour picker inside the employee panel when no tour is selected", () => {

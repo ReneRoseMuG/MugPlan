@@ -1,4 +1,5 @@
 import React from "react";
+import { useSetting } from "@/hooks/useSettings";
 
 interface EntityFormShellProps {
   header?: React.ReactNode;
@@ -6,6 +7,7 @@ interface EntityFormShellProps {
   footer: React.ReactNode;
   children: React.ReactNode;
   sidebarWidth?: number;
+  contentMaxWidth?: number;
   className?: string;
 }
 
@@ -15,17 +17,23 @@ export function EntityFormShell({
   footer,
   children,
   sidebarWidth,
+  contentMaxWidth,
   className,
 }: EntityFormShellProps) {
+  const resolvedSidebarWidth = useSetting("entityFormShell.sidebarWidthPx");
+  const resolvedContentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx");
+  const effectiveSidebarWidth = sidebarWidth ?? resolvedSidebarWidth ?? 360;
+  const effectiveContentMaxWidth = contentMaxWidth ?? resolvedContentMaxWidth ?? 760;
+
   return (
     <div
       data-testid="entity-form-shell"
-      className={`flex flex-col h-full min-h-0${className ? ` ${className}` : ""}`}
+      className={`flex h-full min-h-0 w-full flex-col${className ? ` ${className}` : ""}`}
     >
       {header && (
         <div
           data-testid="entity-form-shell-header"
-          className="flex-shrink-0 bg-[hsl(var(--color-beige))] border-b border-[hsl(var(--color-border))]"
+          className="sticky top-0 z-10 flex-shrink-0 bg-[hsl(var(--color-beige))] border-b border-[hsl(var(--color-border))]"
         >
           {header}
         </div>
@@ -39,14 +47,20 @@ export function EntityFormShell({
           data-testid="entity-form-shell-main"
           className="flex-1 min-h-0 overflow-y-auto"
         >
-          {children}
+          <div
+            data-testid="entity-form-shell-main-inner"
+            className="mx-auto min-h-full w-full px-6 py-6"
+            style={{ maxWidth: effectiveContentMaxWidth }}
+          >
+            {children}
+          </div>
         </div>
 
         {sidebar && (
           <div
             data-testid="entity-form-shell-sidebar"
-            className="overflow-y-auto flex-shrink-0 border-l-2 border-l-[hsl(var(--color-blue-dark))]"
-            style={{ width: sidebarWidth ?? 240 }}
+            className="flex-shrink-0 overflow-y-auto border-l border-[hsl(var(--color-border))] bg-[hsl(var(--color-cream))]"
+            style={{ width: effectiveSidebarWidth }}
           >
             {sidebar}
           </div>
@@ -55,7 +69,7 @@ export function EntityFormShell({
 
       <div
         data-testid="entity-form-shell-footer"
-        className="flex-shrink-0 bg-[hsl(var(--color-beige))] border-t border-[hsl(var(--color-border))]"
+        className="sticky bottom-0 z-10 flex-shrink-0 bg-[hsl(var(--color-beige))] border-t border-[hsl(var(--color-border))]"
       >
         {footer}
       </div>

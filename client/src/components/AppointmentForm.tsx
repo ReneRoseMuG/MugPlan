@@ -1691,9 +1691,8 @@ export function AppointmentForm({
   };
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-1">
+    <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
-        sidebarWidth={360}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -1802,40 +1801,42 @@ export function AppointmentForm({
           </div>
         )}
         footer={(
-          <div className="flex flex-wrap justify-end gap-3 px-6 py-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={isReadOnlyView ? readOnlyCloseAction : handleRequestClose}
-              data-testid="button-cancel-appointment"
-            >
-              {isReadOnlyView ? "Schließen" : "Abbrechen"}
-            </Button>
-
-            {isEditing && appointmentId && !isReadOnlyView ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {!isCancelled ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {isEditing && appointmentId && !isReadOnlyView ? (
+                <>
+                  {!isCancelled ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCancelConfirmOpen(true)}
+                      disabled={isMutationLocked || cancelAppointmentMutation.isPending}
+                      data-testid="button-cancel-appointment"
+                    >
+                      {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={() => setCancelConfirmOpen(true)}
-                    disabled={isMutationLocked || cancelAppointmentMutation.isPending}
-                    data-testid="button-cancel-appointment"
+                    variant="destructive"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={isMutationLocked || deleteAppointmentMutation.isPending}
+                    data-testid="button-delete-appointment"
                   >
-                    {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
+                    Termin löschen
                   </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  disabled={isMutationLocked || deleteAppointmentMutation.isPending}
-                  data-testid="button-delete-appointment"
-                >
-                  Termin löschen
-                </Button>
-              </div>
-            ) : null}
+                </>
+              ) : null}
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={isReadOnlyView ? readOnlyCloseAction : handleRequestClose}
+                data-testid="button-secondary-cancel-appointment"
+              >
+                {isReadOnlyView ? "Schließen" : "Abbrechen"}
+              </Button>
+            </div>
 
             {!isReadOnlyView ? (
               <Button
@@ -1852,7 +1853,7 @@ export function AppointmentForm({
           </div>
         )}
       >
-        <div className="space-y-6 p-6" data-testid="appointment-form-main-column">
+        <div className="space-y-6" data-testid="appointment-form-main-column">
           {isCancelled && (
             <Alert variant="destructive">
               <AlertTitle>Termin storniert</AlertTitle>
