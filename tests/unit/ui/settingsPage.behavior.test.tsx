@@ -4,7 +4,7 @@
  * Feature: FT07/FT16/FT29 - SettingsPage
  *
  * Abgedeckte Regeln:
- * - Die SettingsPage zeigt die sichtbaren Save-Controls fuer `helpTextPreviewSize`, `backup_enabled` und `auth_two_factor_enabled`.
+ * - Die SettingsPage zeigt die sichtbaren Save-Controls fuer `helpTextPreviewSize`, die EntityFormShell-Breiten, `backup_enabled` und `auth_two_factor_enabled`.
  * - Der Backup-Bereich zeigt den manuellen Trigger und die sichtbaren Monitoring-Spalten.
  *
  * Fehlerfaelle:
@@ -60,6 +60,8 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map([
         ["helpTextPreviewSize", { resolvedValue: "large" }],
+        ["entityFormShell.sidebarWidthPx", { resolvedValue: 360 }],
+        ["entityFormShell.contentMaxWidthPx", { resolvedValue: 760 }],
         ["backup_enabled", { resolvedValue: true }],
         ["auth_two_factor_enabled", { resolvedValue: true }],
       ]),
@@ -93,6 +95,10 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
 
     expect(html).toContain("select-setting-helpTextPreviewSize");
     expect(html).toContain("button-save-helpTextPreviewSize");
+    expect(html).toContain("input-setting-entityFormShellSidebarWidthPx");
+    expect(html).toContain("button-save-entityFormShellSidebarWidthPx");
+    expect(html).toContain("input-setting-entityFormShellContentMaxWidthPx");
+    expect(html).toContain("button-save-entityFormShellContentMaxWidthPx");
     expect(html).toContain("switch-setting-auth-two-factor-enabled");
     expect(html).toContain("button-save-auth-two-factor-enabled");
     expect(html).toContain("switch-setting-backup-enabled");

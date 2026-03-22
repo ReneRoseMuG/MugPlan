@@ -50,8 +50,15 @@ vi.mock("@/lib/project-appointments", () => ({
   getProjectAppointmentsQueryKey: vi.fn(() => ["projectAppointments"]),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: ({ children, sidebar, header, footer }: { children?: React.ReactNode; sidebar?: React.ReactNode; header?: React.ReactNode; footer?: React.ReactNode }) => (
+    <div>
+      {header}
+      {children}
+      {sidebar}
+      {footer}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/ui/button", () => ({

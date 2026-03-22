@@ -28,6 +28,8 @@ const defaultWeekScrollRange = 4;
 const defaultMonthScrollRange = 3;
 const defaultHoverPreviewOpenDelayMs = 380;
 const defaultCardListColumns = 4;
+const defaultEntityFormShellSidebarWidthPx = 360;
+const defaultEntityFormShellContentMaxWidthPx = 760;
 const defaultToastDesktopPosition: ToastDesktopPosition = "bottom-right";
 
 type BackupLogRow = {
@@ -62,6 +64,8 @@ export function SettingsPage() {
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
   const helpTextPreviewSetting = settingsByKey.get("helpTextPreviewSize");
   const toastDesktopPositionSetting = settingsByKey.get("toastDesktopPosition");
+  const entityFormShellSidebarWidthSetting = settingsByKey.get("entityFormShell.sidebarWidthPx");
+  const entityFormShellContentMaxWidthSetting = settingsByKey.get("entityFormShell.contentMaxWidthPx");
   const weekendWidthSetting = settingsByKey.get("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = settingsByKey.get("calendarWeekScrollRange");
   const monthScrollRangeSetting = settingsByKey.get("calendarMonthScrollRange");
@@ -107,6 +111,22 @@ export function SettingsPage() {
     }
     return defaultToastDesktopPosition;
   }, [toastDesktopPositionSetting?.resolvedValue]);
+
+  const resolvedEntityFormShellSidebarWidth = useMemo(() => {
+    const value = entityFormShellSidebarWidthSetting?.resolvedValue;
+    if (typeof value === "number" && Number.isInteger(value) && value >= 260 && value <= 480) {
+      return value;
+    }
+    return defaultEntityFormShellSidebarWidthPx;
+  }, [entityFormShellSidebarWidthSetting?.resolvedValue]);
+
+  const resolvedEntityFormShellContentMaxWidth = useMemo(() => {
+    const value = entityFormShellContentMaxWidthSetting?.resolvedValue;
+    if (typeof value === "number" && Number.isInteger(value) && value >= 640 && value <= 1100) {
+      return value;
+    }
+    return defaultEntityFormShellContentMaxWidthPx;
+  }, [entityFormShellContentMaxWidthSetting?.resolvedValue]);
 
   const resolvedWeekendColumnPercent = useMemo(() => {
     const value = weekendWidthSetting?.resolvedValue;
@@ -160,6 +180,8 @@ export function SettingsPage() {
   const [previewValue, setPreviewValue] = useState<PreviewSize>(resolvedPreviewValue);
   const [helpTextPreviewValue, setHelpTextPreviewValue] = useState<HelpTextPreviewSize>(resolvedHelpTextPreviewValue);
   const [toastDesktopPositionValue, setToastDesktopPositionValue] = useState<ToastDesktopPosition>(resolvedToastDesktopPosition);
+  const [entityFormShellSidebarWidthValue, setEntityFormShellSidebarWidthValue] = useState<string>(String(resolvedEntityFormShellSidebarWidth));
+  const [entityFormShellContentMaxWidthValue, setEntityFormShellContentMaxWidthValue] = useState<string>(String(resolvedEntityFormShellContentMaxWidth));
   const [weekendColumnPercentValue, setWeekendColumnPercentValue] = useState<string>(String(resolvedWeekendColumnPercent));
   const [weekScrollRangeValue, setWeekScrollRangeValue] = useState<string>(String(resolvedWeekScrollRange));
   const [monthScrollRangeValue, setMonthScrollRangeValue] = useState<string>(String(resolvedMonthScrollRange));
@@ -170,6 +192,8 @@ export function SettingsPage() {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [helpTextPreviewError, setHelpTextPreviewError] = useState<string | null>(null);
   const [toastDesktopPositionError, setToastDesktopPositionError] = useState<string | null>(null);
+  const [entityFormShellSidebarWidthError, setEntityFormShellSidebarWidthError] = useState<string | null>(null);
+  const [entityFormShellContentMaxWidthError, setEntityFormShellContentMaxWidthError] = useState<string | null>(null);
   const [weekendError, setWeekendError] = useState<string | null>(null);
   const [weekScrollRangeError, setWeekScrollRangeError] = useState<string | null>(null);
   const [monthScrollRangeError, setMonthScrollRangeError] = useState<string | null>(null);
@@ -180,6 +204,8 @@ export function SettingsPage() {
   const [previewSaved, setPreviewSaved] = useState(false);
   const [helpTextPreviewSaved, setHelpTextPreviewSaved] = useState(false);
   const [toastDesktopPositionSaved, setToastDesktopPositionSaved] = useState(false);
+  const [entityFormShellSidebarWidthSaved, setEntityFormShellSidebarWidthSaved] = useState(false);
+  const [entityFormShellContentMaxWidthSaved, setEntityFormShellContentMaxWidthSaved] = useState(false);
   const [weekendSaved, setWeekendSaved] = useState(false);
   const [weekScrollRangeSaved, setWeekScrollRangeSaved] = useState(false);
   const [monthScrollRangeSaved, setMonthScrollRangeSaved] = useState(false);
@@ -202,6 +228,14 @@ export function SettingsPage() {
   useEffect(() => {
     setToastDesktopPositionValue(resolvedToastDesktopPosition);
   }, [resolvedToastDesktopPosition]);
+
+  useEffect(() => {
+    setEntityFormShellSidebarWidthValue(String(resolvedEntityFormShellSidebarWidth));
+  }, [resolvedEntityFormShellSidebarWidth]);
+
+  useEffect(() => {
+    setEntityFormShellContentMaxWidthValue(String(resolvedEntityFormShellContentMaxWidth));
+  }, [resolvedEntityFormShellContentMaxWidth]);
 
   useEffect(() => {
     setWeekendColumnPercentValue(String(resolvedWeekendColumnPercent));
@@ -296,6 +330,48 @@ export function SettingsPage() {
       setToastDesktopPositionSaved(true);
     } catch (error) {
       setToastDesktopPositionError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveEntityFormShellSidebarWidth = async () => {
+    setEntityFormShellSidebarWidthError(null);
+    setEntityFormShellSidebarWidthSaved(false);
+    const parsed = Number(entityFormShellSidebarWidthValue);
+    if (!Number.isInteger(parsed) || parsed < 260 || parsed > 480) {
+      setEntityFormShellSidebarWidthError("Bitte eine ganze Zahl von 260 bis 480 eingeben.");
+      return;
+    }
+
+    try {
+      await setSetting({
+        key: "entityFormShell.sidebarWidthPx",
+        scopeType: "USER",
+        value: parsed,
+      });
+      setEntityFormShellSidebarWidthSaved(true);
+    } catch (error) {
+      setEntityFormShellSidebarWidthError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveEntityFormShellContentMaxWidth = async () => {
+    setEntityFormShellContentMaxWidthError(null);
+    setEntityFormShellContentMaxWidthSaved(false);
+    const parsed = Number(entityFormShellContentMaxWidthValue);
+    if (!Number.isInteger(parsed) || parsed < 640 || parsed > 1100) {
+      setEntityFormShellContentMaxWidthError("Bitte eine ganze Zahl von 640 bis 1100 eingeben.");
+      return;
+    }
+
+    try {
+      await setSetting({
+        key: "entityFormShell.contentMaxWidthPx",
+        scopeType: "USER",
+        value: parsed,
+      });
+      setEntityFormShellContentMaxWidthSaved(true);
+    } catch (error) {
+      setEntityFormShellContentMaxWidthError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
 
@@ -563,6 +639,54 @@ export function SettingsPage() {
           <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(toastDesktopPositionSetting?.resolvedValue ?? defaultToastDesktopPosition)} ({toastDesktopPositionSetting?.resolvedScope ?? "-"})</p>
           {toastDesktopPositionSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
           {toastDesktopPositionError && <p className="mt-1 text-xs text-destructive">{toastDesktopPositionError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-entityFormShellSidebarWidthPx">
+          <p className="font-semibold text-slate-900">{entityFormShellSidebarWidthSetting?.label ?? "Formular Sidebar Breite (px)"}</p>
+          <p className="mb-3 text-xs text-slate-500">{entityFormShellSidebarWidthSetting?.description ?? "Steuert die feste Breite der rechten Formular-Sidebar."}</p>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+            <Input
+              type="number"
+              min={260}
+              max={480}
+              step={1}
+              value={entityFormShellSidebarWidthValue}
+              onChange={(event) => setEntityFormShellSidebarWidthValue(event.target.value)}
+              data-testid="input-setting-entityFormShellSidebarWidthPx"
+            />
+            <Button onClick={() => void handleSaveEntityFormShellSidebarWidth()} disabled={isSaving} data-testid="button-save-entityFormShellSidebarWidthPx">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(entityFormShellSidebarWidthSetting?.resolvedValue ?? defaultEntityFormShellSidebarWidthPx)} ({entityFormShellSidebarWidthSetting?.resolvedScope ?? "-"})</p>
+          {entityFormShellSidebarWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {entityFormShellSidebarWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellSidebarWidthError}</p>}
+        </div>
+
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-entityFormShellContentMaxWidthPx">
+          <p className="font-semibold text-slate-900">{entityFormShellContentMaxWidthSetting?.label ?? "Formular Inhalt Max-Breite (px)"}</p>
+          <p className="mb-3 text-xs text-slate-500">{entityFormShellContentMaxWidthSetting?.description ?? "Steuert die maximale Breite des zentrierten Formularinhalts."}</p>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+            <Input
+              type="number"
+              min={640}
+              max={1100}
+              step={1}
+              value={entityFormShellContentMaxWidthValue}
+              onChange={(event) => setEntityFormShellContentMaxWidthValue(event.target.value)}
+              data-testid="input-setting-entityFormShellContentMaxWidthPx"
+            />
+            <Button onClick={() => void handleSaveEntityFormShellContentMaxWidth()} disabled={isSaving} data-testid="button-save-entityFormShellContentMaxWidthPx">
+              Speichern
+            </Button>
+          </div>
+
+          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(entityFormShellContentMaxWidthSetting?.resolvedValue ?? defaultEntityFormShellContentMaxWidthPx)} ({entityFormShellContentMaxWidthSetting?.resolvedScope ?? "-"})</p>
+          {entityFormShellContentMaxWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+          {entityFormShellContentMaxWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellContentMaxWidthError}</p>}
         </div>
 
         <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-hoverPreviewOpenDelayMs">

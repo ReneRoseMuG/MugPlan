@@ -1,9 +1,9 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Calendar, Clock, FolderKanban, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, FolderKanban, Users, X } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Product, Project, Tag, Team, Tour } from "@shared/schema";
-import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1691,74 +1691,186 @@ export function AppointmentForm({
   };
 
   return (
-    <EntityFormLayout
-      title={isEditing ? "Termin bearbeiten" : "Neuer Termin"}
-      icon={<Calendar className="w-6 h-6" />}
-      headerStartAction={showBackButton && !isReadOnlyView ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleRequestClose}
-          data-testid="button-back-appointment"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Zurück
-        </Button>
-      ) : undefined}
-      onClose={!isReadOnlyView ? handleRequestClose : undefined}
-      onCancel={isReadOnlyView ? readOnlyCloseAction : handleRequestClose}
-      onSubmit={!isReadOnlyView ? submitAppointment : undefined}
-      isSaving={isSaving}
-      saveLabel={isEditing ? "Speichern" : "Termin erstellen"}
-      cancelLabel={isReadOnlyView ? "Schließen" : "Abbrechen"}
-      closeOnSubmitSuccess={false}
-      testIdPrefix="appointment"
-      footerActions={
-        isEditing && appointmentId && !isReadOnlyView ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {!isCancelled ? (
+    <div className="flex h-full min-h-0 w-full flex-1">
+      <EntityFormShell
+        header={(
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              {showBackButton && !isReadOnlyView ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRequestClose}
+                  data-testid="button-back-appointment"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Zurück
+                </Button>
+              ) : null}
+              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                <Calendar className="w-6 h-6" />
+                {isEditing ? "Termin bearbeiten" : "Neuer Termin"}
+              </h2>
+            </div>
+
+            {!isReadOnlyView ? (
+              <Button
+                type="button"
+                size="lg"
+                variant="ghost"
+                onClick={handleRequestClose}
+                data-testid="button-close-appointment"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            ) : null}
+          </div>
+        )}
+        sidebar={(
+          <div className="min-w-0 space-y-6 p-6" data-testid="appointment-form-sidebar">
+            <AppointmentAttachmentsPanel
+              appointmentId={appointmentId}
+              customerId={resolvedCustomerId}
+              projectId={selectedProjectId}
+              pendingAppointmentAttachments={isEditing ? undefined : draftAppointmentAttachments}
+              onUploadPendingAppointmentAttachment={isEditing ? undefined : addDraftAppointmentAttachment}
+              readOnly={isReadOnlyView}
+            />
+
+            <TagPickerPanel
+              assignedTags={visibleAppointmentTags}
+              availableTags={availableTags}
+              isLoading={isEditing ? appointmentTagsLoading : false}
+              loadErrorMessage={isEditing && appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
+              canEdit={canManageAppointmentTags && !isMutationLocked}
+              title="Tags"
+              addDialogTitle="Tag zu Termin hinzufügen"
+              testIdPrefix="appointment-tag-picker"
+              onAdd={(tagId) => {
+                if (isEditing) {
+                  addAppointmentTagMutation.mutate(tagId);
+                  return;
+                }
+                addDraftAppointmentTag(tagId);
+              }}
+              onRemove={(item) => {
+                if (isEditing) {
+                  removeAppointmentTagMutation.mutate(item);
+                  return;
+                }
+                removeDraftAppointmentTag(item);
+              }}
+            />
+
+            <NotesSection
+              notes={visibleAppointmentNotes}
+              isLoading={isEditing ? appointmentNotesLoading : false}
+              readOnly={isReadOnlyView}
+              onAdd={(data) => {
+                if (isEditing) {
+                  createAppointmentNoteMutation.mutate(data);
+                  return;
+                }
+                addDraftAppointmentNote(data);
+              }}
+              onUpdate={(noteId, data) => {
+                if (isEditing) {
+                  const version = getAppointmentNoteVersion(noteId);
+                  updateAppointmentNoteMutation.mutate({ noteId, ...data, version });
+                  return;
+                }
+                updateDraftAppointmentNote(noteId, data);
+              }}
+              onTogglePin={(id, isPinned) => {
+                if (isEditing) {
+                  const version = getAppointmentNoteVersion(id);
+                  toggleAppointmentNotePinMutation.mutate({ noteId: id, isPinned, version });
+                  return;
+                }
+                toggleDraftAppointmentNotePin(id, isPinned);
+              }}
+              onDelete={(noteId) => {
+                if (isEditing) {
+                  const version = getAppointmentNoteVersion(noteId);
+                  deleteAppointmentNoteMutation.mutate({ noteId, version });
+                  return;
+                }
+                deleteDraftAppointmentNote(noteId);
+              }}
+            />
+          </div>
+        )}
+        footer={(
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {isEditing && appointmentId && !isReadOnlyView ? (
+                <>
+                  {!isCancelled ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCancelConfirmOpen(true)}
+                      disabled={isMutationLocked || cancelAppointmentMutation.isPending}
+                      data-testid="button-cancel-appointment"
+                    >
+                      {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={isMutationLocked || deleteAppointmentMutation.isPending}
+                    data-testid="button-delete-appointment"
+                  >
+                    Termin löschen
+                  </Button>
+                </>
+              ) : null}
+
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setCancelConfirmOpen(true)}
-                disabled={isMutationLocked || cancelAppointmentMutation.isPending}
-                data-testid="button-cancel-appointment"
+                onClick={isReadOnlyView ? readOnlyCloseAction : handleRequestClose}
+                data-testid="button-secondary-cancel-appointment"
               >
-                {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
+                {isReadOnlyView ? "Schließen" : "Abbrechen"}
+              </Button>
+            </div>
+
+            {!isReadOnlyView ? (
+              <Button
+                type="button"
+                onClick={() => {
+                  void submitAppointment();
+                }}
+                disabled={isSaving}
+                data-testid="button-save-appointment"
+              >
+                {isSaving ? `${isEditing ? "Speichern" : "Termin erstellen"}...` : (isEditing ? "Speichern" : "Termin erstellen")}
               </Button>
             ) : null}
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setDeleteConfirmOpen(true)}
-              disabled={isMutationLocked || deleteAppointmentMutation.isPending}
-              data-testid="button-delete-appointment"
-            >
-              Termin löschen
-            </Button>
           </div>
-        ) : undefined
-      }
-    >
-      {isCancelled && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTitle>Termin storniert</AlertTitle>
-          <AlertDescription>
-            Dieser Termin wurde als Storno markiert und kann nicht mehr bearbeitet, verschoben oder gelöscht werden.
-          </AlertDescription>
-        </Alert>
-      )}
-      {isHistoricalReadOnly && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTitle>Termin gesperrt</AlertTitle>
-          <AlertDescription>
-            Historische Termine können nicht verändert werden.
-          </AlertDescription>
-        </Alert>
-      )}
+        )}
+      >
+        <div className="space-y-6" data-testid="appointment-form-main-column">
+          {isCancelled && (
+            <Alert variant="destructive">
+              <AlertTitle>Termin storniert</AlertTitle>
+              <AlertDescription>
+                Dieser Termin wurde als Storno markiert und kann nicht mehr bearbeitet, verschoben oder gelöscht werden.
+              </AlertDescription>
+            </Alert>
+          )}
+          {isHistoricalReadOnly && (
+            <Alert variant="destructive">
+              <AlertTitle>Termin gesperrt</AlertTitle>
+              <AlertDescription>
+                Historische Termine können nicht verändert werden.
+              </AlertDescription>
+            </Alert>
+          )}
 
-      <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
-        <div className="space-y-6 lg:col-span-2" data-testid="appointment-form-main-column">
           <div className="sub-panel space-y-3">
             <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -1917,80 +2029,7 @@ export function AppointmentForm({
             />
           ) : null}
         </div>
-
-        <div className="min-w-0 space-y-6" data-testid="appointment-form-sidebar">
-          <AppointmentAttachmentsPanel
-            appointmentId={appointmentId}
-            customerId={resolvedCustomerId}
-            projectId={selectedProjectId}
-            pendingAppointmentAttachments={isEditing ? undefined : draftAppointmentAttachments}
-            onUploadPendingAppointmentAttachment={isEditing ? undefined : addDraftAppointmentAttachment}
-            readOnly={isReadOnlyView}
-          />
-
-          <TagPickerPanel
-            assignedTags={visibleAppointmentTags}
-            availableTags={availableTags}
-            isLoading={isEditing ? appointmentTagsLoading : false}
-            loadErrorMessage={isEditing && appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
-            canEdit={canManageAppointmentTags && !isMutationLocked}
-            title="Tags"
-            addDialogTitle="Tag zu Termin hinzufügen"
-            testIdPrefix="appointment-tag-picker"
-            onAdd={(tagId) => {
-              if (isEditing) {
-                addAppointmentTagMutation.mutate(tagId);
-                return;
-              }
-              addDraftAppointmentTag(tagId);
-            }}
-            onRemove={(item) => {
-              if (isEditing) {
-                removeAppointmentTagMutation.mutate(item);
-                return;
-              }
-              removeDraftAppointmentTag(item);
-            }}
-          />
-
-          <NotesSection
-            notes={visibleAppointmentNotes}
-            isLoading={isEditing ? appointmentNotesLoading : false}
-            readOnly={isReadOnlyView}
-            onAdd={(data) => {
-              if (isEditing) {
-                createAppointmentNoteMutation.mutate(data);
-                return;
-              }
-              addDraftAppointmentNote(data);
-            }}
-            onUpdate={(noteId, data) => {
-              if (isEditing) {
-                const version = getAppointmentNoteVersion(noteId);
-                updateAppointmentNoteMutation.mutate({ noteId, ...data, version });
-                return;
-              }
-              updateDraftAppointmentNote(noteId, data);
-            }}
-            onTogglePin={(id, isPinned) => {
-              if (isEditing) {
-                const version = getAppointmentNoteVersion(id);
-                toggleAppointmentNotePinMutation.mutate({ noteId: id, isPinned, version });
-                return;
-              }
-              toggleDraftAppointmentNotePin(id, isPinned);
-            }}
-            onDelete={(noteId) => {
-              if (isEditing) {
-                const version = getAppointmentNoteVersion(noteId);
-                deleteAppointmentNoteMutation.mutate({ noteId, version });
-                return;
-              }
-              deleteDraftAppointmentNote(noteId);
-            }}
-          />
-        </div>
-      </div>
+      </EntityFormShell>
 
       <DocumentExtractionDialog
         open={documentExtractionOpen}
@@ -2204,6 +2243,6 @@ export function AppointmentForm({
           Daten werden geladen...
         </div>
       )}
-    </EntityFormLayout>
+    </div>
   );
 }

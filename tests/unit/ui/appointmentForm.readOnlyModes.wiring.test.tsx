@@ -19,19 +19,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let currentRole = "DISPATCHER";
 let currentMode: "historical" | "cancelled" = "historical";
-let layoutProps:
-  | {
-      headerStartAction?: React.ReactNode;
-      onClose?: () => void;
-      onCancel?: () => void;
-      onSubmit?: () => Promise<void>;
-      saveLabel?: string;
-      cancelLabel?: string;
-      footerActions?: React.ReactNode;
-      children?: React.ReactNode;
-    }
-  | undefined;
-
 const attachmentPanelCalls: Array<Record<string, unknown>> = [];
 const employeeSlotCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
@@ -68,28 +55,19 @@ vi.mock("@/lib/project-appointments", () => ({
   getProjectAppointmentsQueryKey: vi.fn(() => ["projectAppointments"]),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: (props: {
-    headerStartAction?: React.ReactNode;
-    onClose?: () => void;
-    onCancel?: () => void;
-    onSubmit?: () => Promise<void>;
-    saveLabel?: string;
-    cancelLabel?: string;
-    footerActions?: React.ReactNode;
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: (props: {
+    header?: React.ReactNode;
+    footer?: React.ReactNode;
+    sidebar?: React.ReactNode;
     children?: React.ReactNode;
   }) => {
-    layoutProps = props;
     return (
-      <div data-testid="entity-form-layout">
-        <header>{props.headerStartAction}</header>
-        {props.onClose ? <button data-testid="layout-close-button">close</button> : null}
+      <div data-testid="entity-form-shell">
+        <header>{props.header}</header>
         <main>{props.children}</main>
-        <footer>
-          {props.onCancel ? <button data-testid="layout-cancel-button">{props.cancelLabel}</button> : null}
-          {props.footerActions}
-          {props.onSubmit ? <button data-testid="layout-save-button">{props.saveLabel}</button> : null}
-        </footer>
+        <aside>{props.sidebar}</aside>
+        <footer>{props.footer}</footer>
       </div>
     );
   },
@@ -293,7 +271,6 @@ describe("FT01 UI: appointment form readonly modes", () => {
   beforeEach(() => {
     currentRole = "DISPATCHER";
     currentMode = "historical";
-    layoutProps = undefined;
     attachmentPanelCalls.length = 0;
     employeeSlotCalls.length = 0;
     notesSectionCalls.length = 0;
@@ -335,16 +312,14 @@ describe("FT01 UI: appointment form readonly modes", () => {
         />,
       );
 
-      expect(layoutProps?.onClose).toBeUndefined();
-      expect(layoutProps?.onSubmit).toBeUndefined();
-      expect(layoutProps?.cancelLabel).toBe("Schließen");
       expect(markup).toContain("Schließen");
       expect(markup).not.toContain("Speichern");
       expect(markup).not.toContain("Termin stornieren");
       expect(markup).not.toContain("Termin löschen");
       expect(markup).not.toContain("button-back-appointment");
       expect(markup).not.toContain("Zurück");
-      expect(markup).not.toContain("layout-close-button");
+      expect(markup).not.toContain("button-close-appointment");
+      expect(markup).not.toContain("button-save-appointment");
       if (mode === "historical") {
         expect(markup).toContain("Termin gesperrt");
         expect(markup).not.toContain("Termin storniert");

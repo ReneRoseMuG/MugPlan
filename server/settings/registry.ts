@@ -41,6 +41,8 @@ const attachmentPreviewSizeOptions = ["small", "medium", "large"] as const;
 type AttachmentPreviewSize = (typeof attachmentPreviewSizeOptions)[number];
 const helpTextPreviewSizeOptions = ["small", "medium", "large"] as const;
 type HelpTextPreviewSize = (typeof helpTextPreviewSizeOptions)[number];
+const entityFormShellSidebarWidthDefault = 360;
+const entityFormShellContentMaxWidthDefault = 760;
 const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
 type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const listViewModeOptions = ["board", "table"] as const;
@@ -198,6 +200,32 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: (value: unknown): value is HelpTextPreviewSize =>
       typeof value === "string" && helpTextPreviewSizeOptions.includes(value as HelpTextPreviewSize),
+  },
+  entityFormShellSidebarWidthPx: {
+    key: "entityFormShell.sidebarWidthPx",
+    label: "Formular Sidebar Breite (px)",
+    description: "Steuert die feste Breite der rechten Sidebar in EntityFormShell.",
+    type: "number",
+    defaultValue: entityFormShellSidebarWidthDefault,
+    min: 260,
+    max: 480,
+    integer: true,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 260 && value <= 480,
+  },
+  entityFormShellContentMaxWidthPx: {
+    key: "entityFormShell.contentMaxWidthPx",
+    label: "Formular Inhalt Max-Breite (px)",
+    description: "Steuert die maximale Breite des zentrierten Formularinhalts in EntityFormShell.",
+    type: "number",
+    defaultValue: entityFormShellContentMaxWidthDefault,
+    min: 640,
+    max: 1100,
+    integer: true,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 640 && value <= 1100,
   },
   toastDesktopPosition: {
     key: "toastDesktopPosition",
