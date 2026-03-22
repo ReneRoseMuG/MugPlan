@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
 import {
   ProjectAttachmentsPanel,
@@ -21,7 +21,8 @@ import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
   FolderKanban, 
-  UserCircle
+  UserCircle,
+  X,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1575,27 +1576,151 @@ export function ProjectForm({
     );
   }
 
+  const isSubmitPending = createMutation.isPending || updateMutation.isPending;
+
   return (
-    <EntityFormLayout
-      title={isEditing ? "Projektdaten bearbeiten" : "Neues Projekt"}
-      icon={<FolderKanban className="w-6 h-6" />}
-      onClose={handleRequestClose}
-      onCancel={handleRequestClose}
-      onSubmit={handleSubmit}
-      saveLabel="Projekt speichern"
-      testIdPrefix="project"
-      footerActions={isEditing ? (
-        <Button
-          variant="destructive"
-          onClick={() => setDeleteConfirmOpen(true)}
-          disabled={deleteProjectMutation.isPending}
-          data-testid="button-delete-project"
-        >
+    <div className="flex h-full min-h-0 w-full flex-1">
+      <EntityFormShell
+        header={(
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                <FolderKanban className="w-6 h-6" />
+                {isEditing ? "Projektdaten bearbeiten" : "Neues Projekt"}
+              </h2>
+            </div>
+
+            <Button
+              type="button"
+              size="lg"
+              variant="ghost"
+              onClick={handleRequestClose}
+              data-testid="button-close-project"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
+        )}
+        sidebar={(
+          <div className="min-w-0 space-y-6 p-6" data-testid="project-form-sidebar">
+            <ProjectAppointmentsPanel
+              projectId={projectId}
+              projectName={projectNamePreview}
+              isEditing={isEditing}
+              className="h-auto"
+              onOpenAppointment={onOpenAppointment}
+              onOpenCalendarWorkspace={onOpenCalendarWorkspace}
+            />
+
+            <ProjectAttachmentsPanel
+              projectId={projectId}
+              customerId={customerId}
+              isEditing={isEditing}
+              pendingProjectAttachments={isEditing ? undefined : draftProjectAttachments}
+              onUploadPendingProjectAttachment={isEditing ? undefined : addDraftProjectAttachment}
+              className="h-auto"
+            />
+
+            <TagPickerPanel
+              assignedTags={visibleProjectTags}
+              availableTags={availableTags}
+              isLoading={isEditing ? assignedTagsLoading : false}
+              loadErrorMessage={isEditing && assignedTagsError instanceof Error ? assignedTagsError.message : null}
+              canEdit={canManageProjectTags}
+              title="Tags"
+              addDialogTitle="Tag zu Projekt hinzufuegen"
+              testIdPrefix="project-tag-picker"
+              onAdd={(tagId) => {
+                if (isEditing) {
+                  addProjectTagMutation.mutate(tagId);
+                  return;
+                }
+                addDraftProjectTag(tagId);
+              }}
+              onRemove={(item) => {
+                if (isEditing) {
+                  removeProjectTagMutation.mutate(item);
+                  return;
+                }
+                removeDraftProjectTag(item);
+              }}
+              className="h-auto"
+            />
+
+            <NotesSection
+              notes={visibleProjectNotes}
+              isLoading={isEditing ? notesLoading : false}
+              onAdd={(data) => {
+                if (isEditing) {
+                  createNoteMutation.mutate(data);
+                  return;
+                }
+                addDraftProjectNote(data);
+              }}
+              onUpdate={(noteId, data) => {
+                if (isEditing) {
+                  const version = getProjectNoteVersion(noteId);
+                  updateNoteMutation.mutate({ noteId, ...data, version });
+                  return;
+                }
+                updateDraftProjectNote(noteId, data);
+              }}
+              onTogglePin={(id, isPinned) => {
+                if (isEditing) {
+                  const version = getProjectNoteVersion(id);
+                  togglePinMutation.mutate({ noteId: id, isPinned, version });
+                  return;
+                }
+                toggleDraftProjectNotePin(id, isPinned);
+              }}
+              onDelete={(noteId) => {
+                if (isEditing) {
+                  const version = getProjectNoteVersion(noteId);
+                  deleteNoteMutation.mutate({ noteId, version });
+                  return;
+                }
+                deleteDraftProjectNote(noteId);
+              }}
+            />
+          </div>
+        )}
+        footer={(
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {isEditing ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={deleteProjectMutation.isPending}
+                  data-testid="button-delete-project"
+                >
           {deleteProjectMutation.isPending ? "Projekt löschen..." : "Projekt löschen"}
         </Button>
-      ) : undefined}
-    >
-      <div className="space-y-6">
+              ) : null}
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRequestClose}
+                data-testid="button-secondary-cancel-project"
+              >
+                Abbrechen
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitPending}
+              data-testid="button-save-project"
+            >
+              {isSubmitPending ? "Projekt speichern..." : "Projekt speichern"}
+            </Button>
+          </div>
+        )}
+      >
+        <div className="space-y-6" data-testid="project-form-main-column">
         {isEditing ? (
           <ProjectOrderForm
             name={name}
@@ -1626,10 +1751,7 @@ export function ProjectForm({
           />
         )}
 
-        <div className="grid grid-cols-3 gap-6">
-          {/* Linke Spalte: Beschreibung und Kunde */}
-          <div className="col-span-2 min-w-0 space-y-6" data-testid="project-form-main-column">
-              <div className="space-y-4">
+          <div className="space-y-4">
                 <Tabs defaultValue="description" className="w-full" data-testid="project-description-tabs">
                   <TabsList className="grid w-full grid-cols-2 rounded-b-none">
                     <TabsTrigger value="description">Anmerkungen</TabsTrigger>
@@ -1709,90 +1831,7 @@ export function ProjectForm({
 
           </div>
 
-          {/* Rechte Spalte: Termine und Dokumente */}
-          <div className="min-w-0 space-y-6" data-testid="project-form-sidebar">
-              <ProjectAppointmentsPanel
-                projectId={projectId}
-                projectName={projectNamePreview}
-                isEditing={isEditing}
-                className="h-auto"
-                onOpenAppointment={onOpenAppointment}
-                onOpenCalendarWorkspace={onOpenCalendarWorkspace}
-              />
-
-              <ProjectAttachmentsPanel
-                projectId={projectId}
-                customerId={customerId}
-                isEditing={isEditing}
-                pendingProjectAttachments={isEditing ? undefined : draftProjectAttachments}
-                onUploadPendingProjectAttachment={isEditing ? undefined : addDraftProjectAttachment}
-                className="h-auto"
-              />
-
-              <TagPickerPanel
-                assignedTags={visibleProjectTags}
-                availableTags={availableTags}
-                isLoading={isEditing ? assignedTagsLoading : false}
-                loadErrorMessage={isEditing && assignedTagsError instanceof Error ? assignedTagsError.message : null}
-                canEdit={canManageProjectTags}
-                title="Tags"
-                addDialogTitle="Tag zu Projekt hinzufuegen"
-                testIdPrefix="project-tag-picker"
-                onAdd={(tagId) => {
-                  if (isEditing) {
-                    addProjectTagMutation.mutate(tagId);
-                    return;
-                  }
-                  addDraftProjectTag(tagId);
-                }}
-                onRemove={(item) => {
-                  if (isEditing) {
-                    removeProjectTagMutation.mutate(item);
-                    return;
-                  }
-                  removeDraftProjectTag(item);
-                }}
-                className="h-auto"
-              />
-
-              <NotesSection
-                notes={visibleProjectNotes}
-                isLoading={isEditing ? notesLoading : false}
-                onAdd={(data) => {
-                  if (isEditing) {
-                    createNoteMutation.mutate(data);
-                    return;
-                  }
-                  addDraftProjectNote(data);
-                }}
-                onUpdate={(noteId, data) => {
-                  if (isEditing) {
-                    const version = getProjectNoteVersion(noteId);
-                    updateNoteMutation.mutate({ noteId, ...data, version });
-                    return;
-                  }
-                  updateDraftProjectNote(noteId, data);
-                }}
-                onTogglePin={(id, isPinned) => {
-                  if (isEditing) {
-                    const version = getProjectNoteVersion(id);
-                    togglePinMutation.mutate({ noteId: id, isPinned, version });
-                    return;
-                  }
-                  toggleDraftProjectNotePin(id, isPinned);
-                }}
-                onDelete={(noteId) => {
-                  if (isEditing) {
-                    const version = getProjectNoteVersion(noteId);
-                    deleteNoteMutation.mutate({ noteId, version });
-                    return;
-                  }
-                  deleteDraftProjectNote(noteId);
-                }}
-              />
-          </div>
-        </div>
-      </div>
+      </EntityFormShell>
 
       <DocumentExtractionDialog
         open={documentExtractionOpen}
@@ -1864,7 +1903,7 @@ export function ProjectForm({
         </AlertDialogContent>
       </AlertDialog>
 
-    </EntityFormLayout>
+    </div>
   );
 }
 
