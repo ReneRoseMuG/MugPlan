@@ -421,6 +421,80 @@ export async function createAppointmentBrowserFixture(params?: {
   };
 }
 
+export async function createProjectCreateEditBrowserFixture(params?: {
+  prefix?: string;
+  employeeCount?: number;
+}) {
+  const prefix = params?.prefix ?? "PROJECT-BROWSER";
+  const employeeCount = Math.max(1, params?.employeeCount ?? 2);
+  const token = nextToken("PBF");
+  const label = `${prefix} ${token}`;
+
+  const customer = await createCustomerFixtureWithOverrides({
+    prefix: "PBFCUST",
+    firstName: "Elena",
+    lastName: `${label} Kunde`,
+    fullName: `Elena ${label} Kunde`,
+    company: `${label} GmbH`,
+    email: `${token.toLowerCase()}@example.test`,
+    phone: "0441123456",
+    addressLine1: "Projektweg 12",
+    addressLine2: "Aufgang B",
+    postalCode: "26135",
+    city: "Oldenburg",
+  });
+
+  const employees = await Promise.all(
+    Array.from({ length: employeeCount }, (_, index) => createEmployeeFixture(`PBFEMP-${index + 1}`)),
+  );
+
+  const tour = await createTourFixture("#225588");
+  await assignEmployeesToTourFixture(tour.id, employees);
+
+  const product = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: `${label} Sauna Komplett`,
+    description: `${label} Produktbeschreibung`,
+  });
+
+  const ovenComponent = await createComponentFixture({
+    categoryName: "Öfen",
+    name: `${label} Ofen Premium`,
+    description: `${label} Ofenbeschreibung`,
+  });
+
+  const roofComponent = await createComponentFixture({
+    categoryName: "Dachvarianten",
+    name: `${label} Dach Panorama`,
+    description: `${label} Dachbeschreibung`,
+  });
+
+  const doorComponent = await createComponentFixture({
+    categoryName: "Türen",
+    name: `${label} Tür Komfort`,
+    description: `${label} Türbeschreibung`,
+  });
+
+  return {
+    customer,
+    employees,
+    tour,
+    articles: {
+      product,
+      oven: ovenComponent,
+      roof: roofComponent,
+      door: doorComponent,
+    },
+    projectInput: {
+      name: `${label} Projekt`,
+      orderNumber: `PB${String(sequence).padStart(8, "0")}`.slice(0, 10),
+      amount: "24599.90",
+      plannedDateText: "Kalenderwoche 18 / Montag",
+      plannedWeek: "KW 18",
+    },
+  };
+}
+
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
   year: "numeric",
