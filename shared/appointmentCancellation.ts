@@ -36,7 +36,7 @@ export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain)
   }
 
   if (isManagedReportExclusionTagName(value)) {
-    return domain === "project";
+    return domain === "project" || domain === "appointment";
   }
 
   if (isManagedSpecialMeasureTagName(value)) {
