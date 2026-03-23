@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import type { InfoBadgePreview, InfoBadgePreviewOptions } from "@/components/ui/info-badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -39,6 +40,8 @@ export interface TableViewProps<T> {
   className?: string;
   tableClassName?: string;
   rowClassName?: (row: T, rowIndex: number) => string | undefined;
+  rowStyle?: (row: T, rowIndex: number) => React.CSSProperties | undefined;
+  rowTitle?: (row: T, rowIndex: number) => string | undefined;
   testId?: string;
 }
 
@@ -66,6 +69,19 @@ function isInfoBadgePreview(preview: ReactNode | InfoBadgePreview): preview is I
   return typeof preview === "object" && preview !== null && "content" in preview;
 }
 
+function wrapRowWithTooltip(rowNode: ReactNode, tooltipContent: string | undefined) {
+  if (!tooltipContent) {
+    return rowNode;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{rowNode}</TooltipTrigger>
+      <TooltipContent>{tooltipContent}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function TableView<T>({
   columns,
   rows,
@@ -80,6 +96,8 @@ export function TableView<T>({
   className,
   tableClassName,
   rowClassName,
+  rowStyle,
+  rowTitle,
   testId,
 }: TableViewProps<T>) {
   const rowPaddingClass = density === "compact" ? "py-1.5" : "py-2.5";
@@ -217,6 +235,7 @@ export function TableView<T>({
 
             {rows.map((row, rowIndex) => {
               const resolvedRowKey = rowKey(row, rowIndex);
+              const resolvedRowTooltip = rowTitle?.(row, rowIndex);
               const cells = columns.map((column) => {
                 const value = column.accessor ? column.accessor(row) : undefined;
                 const content = column.cell
@@ -239,15 +258,22 @@ export function TableView<T>({
                 );
               });
 
+              const rowNode = (
+                <TableRow
+                  className={cn(onRowDoubleClick && "cursor-pointer", rowClassName?.(row, rowIndex))}
+                  onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row, rowIndex) : undefined}
+                  style={rowStyle?.(row, rowIndex)}
+                  aria-label={resolvedRowTooltip}
+                >
+                  {cells}
+                </TableRow>
+              );
+
               if (!rowPreviewRenderer) {
                 return (
-                  <TableRow
-                    key={resolvedRowKey}
-                    className={cn(onRowDoubleClick && "cursor-pointer", rowClassName?.(row, rowIndex))}
-                    onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row, rowIndex) : undefined}
-                  >
-                    {cells}
-                  </TableRow>
+                  <React.Fragment key={resolvedRowKey}>
+                    {wrapRowWithTooltip(rowNode, resolvedRowTooltip)}
+                  </React.Fragment>
                 );
               }
 
@@ -270,24 +296,14 @@ export function TableView<T>({
                     maxHeight={previewOptions.maxHeight}
                     className={previewOptions.scrollY === "auto" ? "overflow-y-auto" : undefined}
                   >
-                    <TableRow
-                      className={cn(onRowDoubleClick && "cursor-pointer", rowClassName?.(row, rowIndex))}
-                      onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row, rowIndex) : undefined}
-                    >
-                      {cells}
-                    </TableRow>
+                    {wrapRowWithTooltip(rowNode, resolvedRowTooltip)}
                   </HoverPreview>
                 );
               }
 
               return (
                 <HoverPreview key={resolvedRowKey} preview={resolvedPreview} mode="cursor">
-                  <TableRow
-                    className={cn(onRowDoubleClick && "cursor-pointer", rowClassName?.(row, rowIndex))}
-                    onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row, rowIndex) : undefined}
-                  >
-                    {cells}
-                  </TableRow>
+                  {wrapRowWithTooltip(rowNode, resolvedRowTooltip)}
                 </HoverPreview>
               );
             })}

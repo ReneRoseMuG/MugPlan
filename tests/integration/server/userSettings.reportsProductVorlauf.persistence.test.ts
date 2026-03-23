@@ -3,11 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - Die Produkt-Vorlauf-Konfiguration wird pro Benutzer getrennt gespeichert.
- * - Persistierte Kategorie-IDs und Sondermass-Tag-ID bleiben ueber erneutes Laden erhalten.
+ * - Persistierte Kategorie-IDs bleiben ueber erneutes Laden erhalten.
+ * - Bewusst leere Arrays bleiben nach dem Speichern erhalten.
  *
  * Fehlerfaelle:
  * - Scope-Leak zwischen zwei Benutzern.
  * - Verlust der Produkt-Vorlauf-Konfiguration nach Reload.
+ * - Leere Arrays fallen auf Default-Werte zurueck.
  *
  * Ziel:
  * Die benutzerspezifische Persistenz der Produkt-Vorlauf-Konfiguration auf API-Ebene absichern.
@@ -75,7 +77,7 @@ function getSetting(settings: ResolvedSetting[], key: string): ResolvedSetting {
 
 async function setUserSetting(
   agent: SuperAgentTest,
-  value: { productCategoryIds: number[]; componentCategoryIds: number[]; specialMeasureTagId: number | null },
+  value: { productCategoryIds: number[]; componentCategoryIds: number[] },
 ): Promise<void> {
   const settings = await getResolvedSettings(agent);
   const setting = getSetting(settings, "reports.productVorlauf.selection");
@@ -100,7 +102,6 @@ describe("integration: reports product vorlauf selection persistence", () => {
     await setUserSetting(userA, {
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
-      specialMeasureTagId: 33,
     });
 
     const settingsA = await getResolvedSettings(userA);
@@ -109,19 +110,31 @@ describe("integration: reports product vorlauf selection persistence", () => {
     expect(getSetting(settingsA, "reports.productVorlauf.selection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
-      specialMeasureTagId: 33,
     });
     expect(getSetting(settingsB, "reports.productVorlauf.selection").resolvedValue).toEqual({
       productCategoryIds: [],
       componentCategoryIds: [],
-      specialMeasureTagId: null,
     });
 
     const reloadedA = await getResolvedSettings(userA);
     expect(getSetting(reloadedA, "reports.productVorlauf.selection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
-      specialMeasureTagId: 33,
+    });
+  });
+
+  it("keeps explicitly empty category arrays after reload", async () => {
+    const user = await createDispatcherAgent("empty");
+
+    await setUserSetting(user, {
+      productCategoryIds: [],
+      componentCategoryIds: [],
+    });
+
+    const reloaded = await getResolvedSettings(user);
+    expect(getSetting(reloaded, "reports.productVorlauf.selection").resolvedValue).toEqual({
+      productCategoryIds: [],
+      componentCategoryIds: [],
     });
   });
 });

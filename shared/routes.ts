@@ -333,6 +333,7 @@ const appointmentCancellationReportStateSchema = z.enum(["default", "contains_ca
 const reportVorlauflisteItemSchema = z.object({
   projectId: z.number().int().positive(),
   tags: z.array(tagSchema),
+  highlightTag: tagSchema.nullable(),
   amount: z.string().nullable(),
   customerFullName: z.string().nullable(),
   postalCode: z.string().nullable(),
@@ -3802,7 +3803,6 @@ export const api = {
             (value) => value == null ? [] : Array.isArray(value) ? value : [value],
             z.array(z.coerce.number().int().positive()).default([]),
           ),
-          specialMeasureTagId: z.coerce.number().int().positive().optional(),
         }).strict(),
         responses: {
           200: reportProductVorlaufResponseSchema,

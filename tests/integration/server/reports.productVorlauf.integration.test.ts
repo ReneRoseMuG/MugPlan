@@ -34,14 +34,15 @@ import {
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
-  createTagFixture,
 } from "../../helpers/testDataFactory";
 import * as projectsService from "../../../server/services/projectsService";
 import {
+  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
-import { tags } from "../../../shared/schema";
+import { tags, type Tag } from "../../../shared/schema";
 
 let app: Awaited<ReturnType<typeof createApiTestApp>>;
 let authCounter = 1;
@@ -72,7 +73,8 @@ async function createProductVorlaufProjectFixture(params: {
   descriptionMd?: string | null;
   productItems?: Array<{ categoryName: string; name: string; quantity: number }>;
   componentItems?: Array<{ categoryName: string; name: string; quantity: number }>;
-  tagNames?: string[];
+  projectTags?: Tag[];
+  appointmentTagsByIndex?: Tag[][];
 }) {
   const customer = await createCustomerFixtureWithOverrides({
     prefix: `${params.prefix}-CUST`,
@@ -97,11 +99,16 @@ async function createProductVorlaufProjectFixture(params: {
     appointments.push(await createAppointmentFixture({ projectId: project.id, startDate: appointmentDate }));
   }
 
-  const createdTags = [];
-  for (const tagName of params.tagNames ?? []) {
-    const tag = await createTagFixture(`${params.prefix}-${tagName}`);
+  for (const tag of params.projectTags ?? []) {
     await attachProjectTagFixture(project.id, tag.id);
-    createdTags.push(tag);
+  }
+
+  for (const [appointmentIndex, tagsForAppointment] of (params.appointmentTagsByIndex ?? []).entries()) {
+    const appointment = appointments[appointmentIndex];
+    if (!appointment) continue;
+    for (const tag of tagsForAppointment ?? []) {
+      await attachAppointmentTagFixture(appointment.id, tag.id);
+    }
   }
 
   for (const item of params.productItems ?? []) {
@@ -126,7 +133,6 @@ async function createProductVorlaufProjectFixture(params: {
 
   return {
     project: updatedProject,
-    tags: createdTags,
     appointments,
   };
 }
@@ -148,14 +154,19 @@ async function ensureExactTag(name: string, color?: string) {
   return createExactTagFixture(name, color);
 }
 
+async function ensureManagedSpecialMeasureTag() {
+  return ensureExactTag(MANAGED_SPECIAL_MEASURE_TAG_NAME, MANAGED_SPECIAL_MEASURE_TAG_COLOR);
+}
+
 describe("FT26 integration: report product vorlauf", () => {
   it("groups concrete products and components by category and sums their quantities", async () => {
     const admin = await loginAdminAgent(app);
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
     const specialProject = await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-A",
       appointmentDates: ["2099-09-10"],
       descriptionMd: "<p>Sondermass Alpha</p>",
-      tagNames: ["Sondermass"],
+      projectTags: [specialMeasureTag],
       productItems: [{ categoryName: "Fass Saunen", name: "Sauna A", quantity: 2 }],
       componentItems: [
         { categoryName: "Fenster", name: "Fenster A", quantity: 4 },
@@ -173,10 +184,9 @@ describe("FT26 integration: report product vorlauf", () => {
       ? (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna" })).categoryId
       : 0;
     const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster" })).categoryId;
-    const specialTagId = specialProject.tags[0]?.id;
 
     const response = await admin
-      .get(`/api/reports/product-vorlauf?fromDate=2099-09-01&toDate=2099-09-30&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&specialMeasureTagId=${specialTagId}`)
+      .get(`/api/reports/product-vorlauf?fromDate=2099-09-01&toDate=2099-09-30&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
       .expect(200);
 
     expect(response.body.productCategoryGroups).toEqual([
@@ -207,7 +217,7 @@ describe("FT26 integration: report product vorlauf", () => {
         customerNumber: expect.stringContaining("FT26-PV-A-CUST"),
         actualDate: "2099-09-10",
         projectDescription: "Sondermass Alpha",
-        specialMeasureTag: expect.objectContaining({ id: specialTagId }),
+        specialMeasureTag: expect.objectContaining({ id: specialMeasureTag.id }),
       }),
     ]);
   });
@@ -250,27 +260,48 @@ describe("FT26 integration: report product vorlauf", () => {
     ]);
   });
 
+  it("returns no grouped totals when no categories are selected", async () => {
+    const admin = await loginAdminAgent(app);
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
+
+    await createProductVorlaufProjectFixture({
+      prefix: "FT26-PV-EMPTY",
+      appointmentDates: ["2099-10-15"],
+      projectTags: [specialMeasureTag],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Leer", quantity: 1 }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Leer", quantity: 2 }],
+    });
+
+    const response = await admin
+      .get("/api/reports/product-vorlauf?fromDate=2099-10-01&toDate=2099-10-31")
+      .expect(200);
+
+    expect(response.body.productCategoryGroups).toEqual([]);
+    expect(response.body.componentCategoryGroups).toEqual([]);
+    expect(response.body.specialMeasureProjects).toEqual([]);
+  });
+
   it("lists only tagged projects that also contribute matching report positions", async () => {
     const admin = await loginAdminAgent(app);
-    const taggedWithoutMatch = await createProductVorlaufProjectFixture({
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
+    await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-TAG-ONLY",
       appointmentDates: ["2099-11-01"],
-      tagNames: ["Sondermass"],
+      projectTags: [specialMeasureTag],
       productItems: [{ categoryName: "Nicht im Report", name: "Ignored", quantity: 4 }],
     });
     const taggedWithMatch = await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-TAG-MATCH",
       appointmentDates: ["2099-11-02"],
       descriptionMd: "<p>Mit Treffer</p>",
-      tagNames: ["Sondermass"],
+      appointmentTagsByIndex: [[specialMeasureTag]],
       componentItems: [{ categoryName: "Fenster", name: "Fenster Treffer", quantity: 2 }],
     });
 
     const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Sondermass" })).categoryId;
-    const specialTagId = taggedWithMatch.tags[0]?.id ?? taggedWithoutMatch.tags[0]?.id;
 
     const response = await admin
-      .get(`/api/reports/product-vorlauf?fromDate=2099-11-01&componentCategoryIds=${windowCategoryId}&specialMeasureTagId=${specialTagId}`)
+      .get(`/api/reports/product-vorlauf?fromDate=2099-11-01&componentCategoryIds=${windowCategoryId}`)
       .expect(200);
 
     expect(response.body.specialMeasureProjects).toEqual([
@@ -301,7 +332,7 @@ describe("FT26 integration: report product vorlauf", () => {
   it("excludes cancelled projects from grouped totals and special-measure hits", async () => {
     const admin = await loginAdminAgent(app);
     const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
-    const specialMeasureTag = await createTagFixture("FT26-PV-CANCEL-SPECIAL");
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
 
     const cancelledProject = await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-CANCELLED",
@@ -326,7 +357,7 @@ describe("FT26 integration: report product vorlauf", () => {
     const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Cancel" })).categoryId;
 
     const response = await admin
-      .get(`/api/reports/product-vorlauf?fromDate=2099-12-01&toDate=2099-12-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&specialMeasureTagId=${specialMeasureTag.id}`)
+      .get(`/api/reports/product-vorlauf?fromDate=2099-12-01&toDate=2099-12-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
       .expect(200);
 
     expect(response.body.productCategoryGroups).toEqual([
@@ -354,7 +385,7 @@ describe("FT26 integration: report product vorlauf", () => {
   it("excludes projects and appointments tagged with Reklamation from grouped totals and special-measure hits", async () => {
     const admin = await loginAdminAgent(app);
     const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
-    const specialMeasureTag = await createTagFixture("FT26-PV-REKL-SPECIAL");
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
 
     const projectExcludedByProjectTag = await createProductVorlaufProjectFixture({
       prefix: "FT26-PV-REKL-PROJECT",
@@ -388,7 +419,7 @@ describe("FT26 integration: report product vorlauf", () => {
     const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Rekl" })).categoryId;
 
     const response = await admin
-      .get(`/api/reports/product-vorlauf?fromDate=2100-01-01&toDate=2100-01-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&specialMeasureTagId=${specialMeasureTag.id}`)
+      .get(`/api/reports/product-vorlauf?fromDate=2100-01-01&toDate=2100-01-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
       .expect(200);
 
     expect(response.body.productCategoryGroups).toEqual([

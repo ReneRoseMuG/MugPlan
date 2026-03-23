@@ -4,17 +4,17 @@
  * Abgedeckte Regeln:
  * - Der reservierte Termin-Storno-Tag wird namensbasiert robust erkannt.
  * - Der systemverwaltete Vorlauflisten-Tag "Reklamation" wird namensbasiert robust erkannt.
- * - Der systemverwaltete Sondermass-Tag wird namensbasiert robust erkannt.
+ * - Der systemverwaltete Sondermaß-Tag wird namensbasiert robust erkannt.
  * - Picker-Sichtbarkeit der drei System-Tags wird pro Domäne zentral entschieden.
  * - Bestehende Termin-Tag-Listen blenden weiterhin nur den reservierten Storno-Tag aus.
- * - Die Storno-Erkennung bleibt gegen Gross-/Kleinschreibung und Leerzeichen stabil.
+ * - Die Storno-Erkennung bleibt gegen Groß-/Kleinschreibung und Leerzeichen stabil.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - "Storniert" wird in anderen Schreibweisen nicht erkannt.
  * - System-Tags bleiben in verbotenen Domänen sichtbar oder verschwinden in Projekt-Pickern.
  *
  * Ziel:
- * Die zentrale Hilfslogik fuer den reservierten Einweg-Storno ohne DB-Abhaengigkeit absichern.
+ * Die zentrale Hilfslogik für den reservierten Einweg-Storno ohne DB-Abhängigkeit absichern.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -24,9 +24,9 @@ import {
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
-  isPickerVisibleForDomain,
   isManagedReportExclusionTagName,
   isManagedSpecialMeasureTagName,
+  isPickerVisibleForDomain,
   isProtectedSystemTagName,
   isReservedAppointmentCancellationTagName,
 } from "../../../shared/appointmentCancellation";
@@ -87,7 +87,7 @@ describe("appointment cancellation helpers", () => {
     expect(isPickerVisibleForDomain("Info", "appointment")).toBe(true);
     expect(isPickerVisibleForDomain("Storniert", "appointment")).toBe(false);
     expect(isPickerVisibleForDomain("Reklamation", "appointment")).toBe(false);
-    expect(isPickerVisibleForDomain(MANAGED_SPECIAL_MEASURE_TAG_NAME, "appointment")).toBe(false);
+    expect(isPickerVisibleForDomain(MANAGED_SPECIAL_MEASURE_TAG_NAME, "appointment")).toBe(true);
 
     expect(isPickerVisibleForDomain("Info", "project")).toBe(true);
     expect(isPickerVisibleForDomain("Storniert", "project")).toBe(false);
@@ -115,19 +115,22 @@ describe("appointment cancellation helpers", () => {
       { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
     ]);
 
-    expect(filterVisibleAppointmentTags([{ name: "Info" }, { name: "Storniert" }, { name: "Reklamation" }])).toEqual([
+    expect(filterVisibleAppointmentTags([{ name: "Info" }, { name: "Storniert" }, { name: "Reklamation" }, { name: MANAGED_SPECIAL_MEASURE_TAG_NAME }])).toEqual([
       { name: "Info" },
       { name: "Reklamation" },
+      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
     ]);
+
     const relations = [
       { tag: { name: "Storniert" }, relationVersion: 1 },
       { tag: { name: "Reklamation" }, relationVersion: 3 },
+      { tag: { name: MANAGED_SPECIAL_MEASURE_TAG_NAME }, relationVersion: 4 },
       { tag: { name: "Info" }, relationVersion: 2 },
     ];
-    expect(
-      filterVisibleAppointmentTagRelations(relations as any),
-    ).toEqual([
+
+    expect(filterVisibleAppointmentTagRelations(relations as any)).toEqual([
       { tag: { name: "Reklamation" }, relationVersion: 3 },
+      { tag: { name: MANAGED_SPECIAL_MEASURE_TAG_NAME }, relationVersion: 4 },
       { tag: { name: "Info" }, relationVersion: 2 },
     ]);
   });

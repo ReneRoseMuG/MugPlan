@@ -25,7 +25,7 @@ import {
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
-import { tags } from "../../../shared/schema";
+import { tags, type Tag } from "../../../shared/schema";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
@@ -88,6 +88,8 @@ async function createReportProjectFixture(params: {
     roof: string;
   }>;
   tagNames?: string[];
+  projectTags?: Tag[];
+  appointmentTagsByIndex?: Tag[][];
 }) {
   const customer = await createCustomerFixtureWithOverrides({
     prefix: `${params.prefix}-CUST`,
@@ -134,6 +136,18 @@ async function createReportProjectFixture(params: {
     const tag = await createTagFixture(`${params.prefix}-${tagName}`);
     await attachProjectTagFixture(project.id, tag.id);
     createdTags.push(tag.name);
+  }
+
+  for (const tag of params.projectTags ?? []) {
+    await attachProjectTagFixture(project.id, tag.id);
+  }
+
+  for (const [appointmentIndex, tagsForAppointment] of (params.appointmentTagsByIndex ?? []).entries()) {
+    const appointment = appointments[appointmentIndex];
+    if (!appointment) continue;
+    for (const tag of tagsForAppointment ?? []) {
+      await attachAppointmentTagFixture(appointment.id, tag.id);
+    }
   }
 
   if (params.articleValues?.sauna) {
@@ -296,6 +310,7 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(response.body.items[0]).toEqual(expect.objectContaining({
       projectId: reportProject.project.id,
       tags: [expect.objectContaining({ name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: true })],
+      highlightTag: expect.objectContaining({ name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: true }),
       customerFullName: "Mustermann, Max",
       postalCode: "12345",
       city: "Berlin",
@@ -401,10 +416,12 @@ describe("FT26 integration: report vorlaufliste", () => {
   it("derives reportState and actualDate from active and cancelled appointments", async () => {
     const admin = await loginAdminAgent(app);
     const reservedTag = await ensureReservedCancellationTag();
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
 
     const mixedProject = await createReportProjectFixture({
       prefix: "FT26-CANCEL-MIXED",
       appointmentDates: ["2099-09-05", "2099-09-08"],
+      projectTags: [specialMeasureTag],
     });
     const cancelledOnlyProject = await createReportProjectFixture({
       prefix: "FT26-CANCEL-ONLY",
@@ -419,24 +436,49 @@ describe("FT26 integration: report vorlaufliste", () => {
       .get("/api/reports/vorlaufliste?fromDate=2099-09-01&toDate=2099-09-30&page=1&pageSize=100")
       .expect(200);
 
-    const mixedRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string }>)
+    const mixedRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string; highlightTag: { name: string } | null }>)
       .find((item) => item.projectId === mixedProject.project.id);
-    const cancelledOnlyRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string }>)
+    const cancelledOnlyRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string; highlightTag: { name: string } | null }>)
       .find((item) => item.projectId === cancelledOnlyProject.project.id);
 
     expect(mixedRow).toMatchObject({
       projectId: mixedProject.project.id,
       actualDate: "2099-09-05",
       reportState: "contains_cancelled",
+      highlightTag: { name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME },
     });
     expect(cancelledOnlyRow).toMatchObject({
       projectId: cancelledOnlyProject.project.id,
       actualDate: "2099-09-03",
       reportState: "cancelled_only",
+      highlightTag: { name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME },
     });
   });
 
-  it("excludes projects tagged with Reklamation and skips only tagged appointments from the report", async () => {
+  it("marks rows with Sondermaß when the system tag is attached to an appointment", async () => {
+    const admin = await loginAdminAgent(app);
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
+
+    const appointmentTaggedProject = await createReportProjectFixture({
+      prefix: "FT26-SM-APPOINTMENT",
+      appointmentDates: ["2099-09-20"],
+      appointmentTagsByIndex: [[specialMeasureTag]],
+    });
+
+    const response = await admin
+      .get("/api/reports/vorlaufliste?fromDate=2099-09-01&toDate=2099-09-30&page=1&pageSize=100")
+      .expect(200);
+
+    const appointmentTaggedRow = (response.body.items as Array<{ projectId: number; highlightTag: { name: string } | null }>)
+      .find((item) => item.projectId === appointmentTaggedProject.project.id);
+
+    expect(appointmentTaggedRow).toMatchObject({
+      projectId: appointmentTaggedProject.project.id,
+      highlightTag: { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
+    });
+  });
+
+  it("excludes projects tagged with Reklamation on project or appointment level from the report", async () => {
     const admin = await loginAdminAgent(app);
     const managedReportTag = await ensureManagedReportExclusionTag();
 
@@ -462,15 +504,8 @@ describe("FT26 integration: report vorlaufliste", () => {
       .expect(200);
 
     const projectIds = (response.body.items as Array<{ projectId: number }>).map((item) => item.projectId);
-    const mixedRow = (response.body.items as Array<{ projectId: number; actualDate: string; reportState: string }>)
-      .find((item) => item.projectId === mixedAppointmentProject.project.id);
-
     expect(projectIds).not.toContain(projectExcludedByProjectTag.project.id);
+    expect(projectIds).not.toContain(mixedAppointmentProject.project.id);
     expect(projectIds).not.toContain(appointmentOnlyExcludedProject.project.id);
-    expect(mixedRow).toMatchObject({
-      projectId: mixedAppointmentProject.project.id,
-      actualDate: "2099-10-07",
-      reportState: "default",
-    });
   });
 });

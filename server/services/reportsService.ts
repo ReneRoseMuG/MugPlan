@@ -44,7 +44,6 @@ export async function listProductVorlauf(
     toDate?: string;
     productCategoryIds: number[];
     componentCategoryIds: number[];
-    specialMeasureTagId?: number;
   },
   roleKey: CanonicalRoleKey,
 ) {

@@ -9,7 +9,6 @@ type VorlauflisteCategorySelection = {
 type ProductVorlaufSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
-  specialMeasureTagId: number | null;
 };
 
 export type UserSettingKey =
@@ -94,20 +93,9 @@ export function resolveVorlauflisteCategorySelection(value: unknown): Vorlauflis
 
 export function resolveProductVorlaufSelection(value: unknown): ProductVorlaufSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return { productCategoryIds: [], componentCategoryIds: [], specialMeasureTagId: null };
+    return { productCategoryIds: [], componentCategoryIds: [] };
   }
-  const candidate = value as Record<string, unknown>;
-  const resolvedCategories = resolveVorlauflisteCategorySelection(candidate);
-  const specialMeasureTagId = typeof candidate.specialMeasureTagId === "number"
-    && Number.isInteger(candidate.specialMeasureTagId)
-    && candidate.specialMeasureTagId > 0
-    ? candidate.specialMeasureTagId
-    : null;
-
-  return {
-    ...resolvedCategories,
-    specialMeasureTagId,
-  };
+  return resolveVorlauflisteCategorySelection(value);
 }
 
 export function useSettings() {
