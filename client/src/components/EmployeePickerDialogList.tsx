@@ -29,15 +29,24 @@ export function EmployeePickerDialogList({
   onClose,
 }: EmployeePickerDialogListProps) {
   const [nameFilter, setNameFilter] = useState("");
+  const [firstNameFilter, setFirstNameFilter] = useState("");
 
   const rows = useMemo(() => {
-    const value = nameFilter.trim().toLocaleLowerCase("de");
-    const filtered = !value
-      ? employees
-      : employees.filter((employee) => employee.fullName.toLocaleLowerCase("de").includes(value));
+    const lastNameValue = nameFilter.trim().toLocaleLowerCase("de");
+    const firstNameValue = firstNameFilter.trim().toLocaleLowerCase("de");
+
+    const filtered = employees.filter((employee) => {
+      if (lastNameValue && !(employee.lastName ?? "").toLocaleLowerCase("de").includes(lastNameValue)) {
+        return false;
+      }
+      if (firstNameValue && !(employee.firstName ?? "").toLocaleLowerCase("de").includes(firstNameValue)) {
+        return false;
+      }
+      return true;
+    });
 
     return [...filtered].sort((left, right) => left.lastName.localeCompare(right.lastName, "de"));
-  }, [employees, nameFilter]);
+  }, [employees, nameFilter, firstNameFilter]);
 
   return (
     <ListLayout
@@ -51,6 +60,8 @@ export function EmployeePickerDialogList({
         <EmployeePickerFilterPanel
           nameFilter={nameFilter}
           onNameFilterChange={setNameFilter}
+          firstNameFilter={firstNameFilter}
+          onFirstNameFilterChange={setFirstNameFilter}
         />
       )}
       contentSlot={(

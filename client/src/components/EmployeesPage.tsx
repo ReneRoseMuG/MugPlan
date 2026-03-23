@@ -506,6 +506,9 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
             employeeLastName={filters.lastName}
             onEmployeeLastNameChange={(value) => setFilter("lastName", value)}
             onEmployeeLastNameClear={() => setFilter("lastName", "")}
+            employeeFirstName={filters.firstName}
+            onEmployeeFirstNameChange={(value) => setFilter("firstName", value)}
+            onEmployeeFirstNameClear={() => setFilter("firstName", "")}
             employeeScope={isAdmin ? employeeScope : undefined}
             onEmployeeScopeChange={isAdmin ? setEmployeeScope : undefined}
           />
