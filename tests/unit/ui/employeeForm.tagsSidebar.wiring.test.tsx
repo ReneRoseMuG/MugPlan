@@ -2,11 +2,11 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - EmployeeForm rendert den TagPickerPanel in der Sidebar nur im Edit-Modus.
+ * - EmployeeForm rendert den TagPickerPanel im Shell-Layout in Edit und Create.
  * - Der TagPickerPanel erhaelt die geladenen Mitarbeiter-Tag-Relationen und den Tag-Katalog.
  *
  * Fehlerfaelle:
- * - Der Mitarbeiter-Tag-Picker fehlt trotz persistiertem Mitarbeiter.
+ * - Der Mitarbeiter-Tag-Picker fehlt trotz persistiertem oder neuem Mitarbeiterformular.
  * - Der Tag-Picker bekommt keine geladenen Tags oder keine Bearbeitungsrechte.
  *
  * Ziel:
@@ -25,8 +25,15 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: () => useMutationMock(),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: ({ children, sidebar, header, footer }: { children?: React.ReactNode; sidebar?: React.ReactNode; header?: React.ReactNode; footer?: React.ReactNode }) => (
+    <div>
+      {header}
+      {children}
+      {sidebar}
+      {footer}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/TagPickerPanel", () => ({
@@ -188,10 +195,20 @@ describe("FT05+ employee form tags sidebar wiring", () => {
     }));
   });
 
-  it("does not render the employee tag picker in create mode", () => {
+  it("renders the employee tag picker in create mode with empty draft tags", () => {
     const markup = renderToStaticMarkup(<EmployeeForm />);
 
-    expect(markup).not.toContain("employee-tag-picker-marker");
-    expect(tagPickerCalls).toHaveLength(0);
+    expect(markup).toContain("employee-tag-picker-marker");
+    expect(tagPickerCalls).toHaveLength(1);
+    expect(tagPickerCalls[0]).toMatchObject({
+      title: "Tags",
+      canEdit: true,
+      testIdPrefix: "employee-tag-picker",
+      assignedTags: [],
+    });
+    expect(tagPickerCalls[0].availableTags).toMatchObject([
+      { id: 5, name: "Service" },
+      { id: 6, name: "Montage" },
+    ]);
   });
 });

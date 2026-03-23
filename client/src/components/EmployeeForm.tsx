@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Mail, Phone, Route, Users } from "lucide-react";
+import { Mail, Phone, Route, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
-import { EmployeeAttachmentsPanel } from "@/components/EmployeeAttachmentsPanel";
+import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
-import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
@@ -37,6 +38,8 @@ interface EmployeeFormProps {
   onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
 }
 
+type EmployeeTagDraftItem = TagRelationItem;
+
 function extractApiCode(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
   const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
@@ -55,6 +58,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     phone: "",
     email: "",
   });
+  const [draftEmployeeTags, setDraftEmployeeTags] = useState<EmployeeTagDraftItem[]>([]);
+  const [draftEmployeeAttachments, setDraftEmployeeAttachments] = useState<PendingEmployeeAttachmentItem[]>([]);
 
   const invalidateEmployees = () => {
     void queryClient.invalidateQueries({
@@ -109,8 +114,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: getTagCatalogQueryKey("employee"),
     queryFn: () => fetchTagCatalog("employee"),
-    enabled: isEditing,
   });
+  const visibleEmployeeTags = isEditing ? employeeTagRelations : draftEmployeeTags;
 
   useEffect(() => {
     if (!employeeDetails) return;
@@ -121,6 +126,13 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       email: employeeDetails.employee.email ?? "",
     });
   }, [employeeDetails]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftEmployeeTags([]);
+      setDraftEmployeeAttachments([]);
+    }
+  }, [isEditing]);
 
   const allEmployees = useMemo(() => {
     if (!isAdmin) return employees;
@@ -146,7 +158,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
   const createMutation = useMutation({
     mutationFn: async (data: { firstName: string; lastName: string; phone?: string; email?: string }) => {
-      return apiRequest("POST", "/api/employees", data);
+      const response = await apiRequest("POST", "/api/employees", data);
+      return response.json() as Promise<Employee>;
     },
     onSuccess: () => {
       invalidateEmployees();
@@ -271,15 +284,83 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     },
   });
 
+  const addDraftEmployeeTag = (tagId: number) => {
+    const selectedTag = availableTags.find((tag) => tag.id === tagId);
+    if (!selectedTag) return;
+    setDraftEmployeeTags((current) => {
+      if (current.some((item) => item.tag.id === tagId)) {
+        return current;
+      }
+      return [...current, { tag: selectedTag, relationVersion: 1 }];
+    });
+  };
+
+  const removeDraftEmployeeTag = (item: TagRelationItem) => {
+    setDraftEmployeeTags((current) => current.filter((entry) => entry.tag.id !== item.tag.id));
+  };
+
+  const addDraftEmployeeAttachment = (file: File) => {
+    setDraftEmployeeAttachments((current) => [
+      ...current,
+      {
+        id: -Date.now() - current.length,
+        originalName: file.name,
+        mimeType: file.type || null,
+        file,
+      },
+    ]);
+  };
+
+  const uploadEmployeeAttachment = async (targetEmployeeId: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`/api/employees/${targetEmployeeId}/attachments`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || response.statusText);
+    }
+  };
+
+  const persistDraftEmployeeTags = async (targetEmployeeId: number) => {
+    for (const item of draftEmployeeTags) {
+      await apiRequest("POST", `/api/employees/${targetEmployeeId}/tags`, { tagId: item.tag.id });
+    }
+  };
+
+  const persistDraftEmployeeAttachments = async (targetEmployeeId: number) => {
+    for (const attachment of draftEmployeeAttachments) {
+      await uploadEmployeeAttachment(targetEmployeeId, attachment.file);
+    }
+  };
+
+  const persistCreateSidebarDrafts = async (targetEmployeeId: number) => {
+    await persistDraftEmployeeTags(targetEmployeeId);
+    await persistDraftEmployeeAttachments(targetEmployeeId);
+  };
+
   const handleSubmit = async () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      throw new Error("validation");
+      toast({
+        title: "Pflichtfelder fehlen",
+        description: "Vorname und Nachname sind erforderlich.",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (isEditing && employeeId && employeeDetails) {
       const version = employeeDetails.employee.version;
       if (!Number.isInteger(version) || (version ?? 0) < 1) {
-        throw new Error("validation");
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Mitarbeiterdaten sind unvollstaendig. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
       }
       await updateMutation.mutateAsync({
         id: employeeId,
@@ -292,12 +373,25 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
         },
       });
     } else {
-      await createMutation.mutateAsync({
+      const createdEmployee = await createMutation.mutateAsync({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
       });
+      try {
+        await persistCreateSidebarDrafts(createdEmployee.id);
+        await queryClient.invalidateQueries({ queryKey: ["/api/employees", createdEmployee.id, "tags"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/employees", createdEmployee.id, "attachments"] });
+        setDraftEmployeeTags([]);
+        setDraftEmployeeAttachments([]);
+      } catch (error) {
+        toast({
+          title: "Mitarbeiter gespeichert, Sidebar-Daten konnten nicht vollstaendig persistiert werden",
+          description: error instanceof Error ? error.message : "Unbekannter Fehler",
+          variant: "destructive",
+        });
+      }
     }
 
     if (onSaved && onSaved !== onCancel) {
@@ -317,28 +411,148 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const title = isEditing
     ? (employeeDetails ? `${employeeDetails.employee.lastName}, ${employeeDetails.employee.firstName}` : "Mitarbeiter bearbeiten")
     : "Neuer Mitarbeiter";
+  const isSubmitPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <EntityFormLayout
-      title={title}
-      icon={<Users className="w-6 h-6" />}
-      onClose={onCancel}
-      onCancel={onCancel}
-      onSubmit={handleSubmit}
-      isSaving={createMutation.isPending || updateMutation.isPending}
-      saveLabel="Speichern"
-      testIdPrefix="employee"
-      contentScrollMode="contained"
-    >
-      <Tabs defaultValue="stammdaten" className="flex h-full min-h-0 flex-col space-y-4">
-        <TabsList>
-          <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
-          <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
-        </TabsList>
+    <div className="flex h-full min-h-0 w-full flex-1">
+      <EntityFormShell
+        header={(
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                <Users className="w-6 h-6" />
+                {title}
+              </h2>
+            </div>
 
-        <TabsContent value="stammdaten" className="min-h-[620px]">
-          <div className="grid grid-cols-3 items-start gap-6">
-            <div className="col-span-2 space-y-6 min-h-0">
+            {onCancel ? (
+              <Button
+                type="button"
+                size="lg"
+                variant="ghost"
+                onClick={onCancel}
+                data-testid="button-close-employee"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            ) : null}
+          </div>
+        )}
+        sidebar={(
+          <div className="min-w-0 space-y-6 p-6" data-testid="employee-form-sidebar">
+            <EmployeeAttachmentsPanel
+              employeeId={employeeId}
+              isEditing={isEditing}
+              pendingEmployeeAttachments={isEditing ? undefined : draftEmployeeAttachments}
+              onUploadPendingEmployeeAttachment={isEditing ? undefined : addDraftEmployeeAttachment}
+              className="h-auto"
+            />
+
+            <TagPickerPanel
+              assignedTags={visibleEmployeeTags}
+              availableTags={availableTags}
+              isLoading={isEditing ? employeeTagsLoading : false}
+              loadErrorMessage={isEditing && employeeTagsError instanceof Error ? employeeTagsError.message : null}
+              canEdit={canManageEmployeeTags}
+              title="Tags"
+              addDialogTitle="Tag zu Mitarbeiter hinzufuegen"
+              testIdPrefix="employee-tag-picker"
+              onAdd={(tagId) => {
+                if (isEditing) {
+                  addEmployeeTagMutation.mutate(tagId);
+                  return;
+                }
+                addDraftEmployeeTag(tagId);
+              }}
+              onRemove={(item) => {
+                if (isEditing) {
+                  removeEmployeeTagMutation.mutate(item);
+                  return;
+                }
+                removeDraftEmployeeTag(item);
+              }}
+              className="h-auto"
+            />
+
+            <div className="space-y-2">
+              <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                <Route className="w-4 h-4" />
+                Tour
+              </h4>
+              {isEditing && employeeDetails?.tour ? (
+                <TourInfoBadge
+                  id={employeeDetails.tour.id}
+                  name={employeeDetails.tour.name}
+                  color={employeeDetails.tour.color}
+                  members={tourMembers}
+                  action="none"
+                  fullWidth
+                  testId="badge-employee-tour"
+                />
+              ) : (
+                <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
+                  <p className="text-sm text-slate-400 italic">Keiner Tour zugewiesen</p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
+                <Users className="w-4 h-4" />
+                Team
+              </h4>
+              {isEditing && employeeDetails?.team ? (
+                <TeamInfoBadge
+                  id={employeeDetails.team.id}
+                  name={employeeDetails.team.name}
+                  color={employeeDetails.team.color}
+                  members={teamMembers}
+                  action="none"
+                  fullWidth
+                  testId="badge-employee-team"
+                />
+              ) : (
+                <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
+                  <p className="text-sm text-slate-400 italic">Keinem Team zugewiesen</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        footer={(
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {onCancel ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  data-testid="button-cancel-employee"
+                >
+                  Abbrechen
+                </Button>
+              ) : null}
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={isSubmitPending}
+              data-testid="button-save-employee"
+            >
+              {isSubmitPending ? "Speichern..." : "Speichern"}
+            </Button>
+          </div>
+        )}
+      >
+        <Tabs defaultValue="stammdaten" className="flex h-full min-h-0 flex-col space-y-4" data-testid="employee-form-main-column">
+          <TabsList>
+            <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
+            <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="stammdaten" className="min-h-[620px]">
+            <div className="space-y-6 min-h-0">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -409,96 +623,32 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                 ) : null}
               </div>
             </div>
+          </TabsContent>
 
-            <div className="space-y-6">
-              {employeeId ? <EmployeeAttachmentsPanel employeeId={employeeId} className="h-auto" /> : null}
+          <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
+            {employeeId ? (
+              <AppointmentsListPage
+                title="Termine"
+                helpKey="appointments.list.employeeForm"
+                context={{ type: "employee", employeeId }}
+                onOpenAppointment={onOpenAppointment}
+                onRemoveEmployee={(appointmentId) => removeFromAppointmentMutation.mutate(appointmentId)}
+                className="min-h-0 flex-1"
+              />
+            ) : (
+              <p className="py-4 text-sm text-slate-400">
+                Nach dem Speichern des Mitarbeiters werden Termine angezeigt.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
 
-              {isEditing && employeeId ? (
-                <TagPickerPanel
-                  assignedTags={employeeTagRelations}
-                  availableTags={availableTags}
-                  isLoading={employeeTagsLoading}
-                  loadErrorMessage={employeeTagsError instanceof Error ? employeeTagsError.message : null}
-                  canEdit={canManageEmployeeTags}
-                  title="Tags"
-                  addDialogTitle="Tag zu Mitarbeiter hinzufuegen"
-                  testIdPrefix="employee-tag-picker"
-                  onAdd={(tagId) => addEmployeeTagMutation.mutate(tagId)}
-                  onRemove={(item) => removeEmployeeTagMutation.mutate(item)}
-                  className="h-auto"
-                />
-              ) : null}
-
-              <div className="space-y-2">
-                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                  <Route className="w-4 h-4" />
-                  Tour
-                </h4>
-                {isEditing && employeeDetails?.tour ? (
-                  <TourInfoBadge
-                    id={employeeDetails.tour.id}
-                    name={employeeDetails.tour.name}
-                    color={employeeDetails.tour.color}
-                    members={tourMembers}
-                    action="none"
-                    fullWidth
-                    testId="badge-employee-tour"
-                  />
-                ) : (
-                  <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                    <p className="text-sm text-slate-400 italic">Keiner Tour zugewiesen</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                  <Users className="w-4 h-4" />
-                  Team
-                </h4>
-                {isEditing && employeeDetails?.team ? (
-                  <TeamInfoBadge
-                    id={employeeDetails.team.id}
-                    name={employeeDetails.team.name}
-                    color={employeeDetails.team.color}
-                    members={teamMembers}
-                    action="none"
-                    fullWidth
-                    testId="badge-employee-team"
-                  />
-                ) : (
-                  <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                    <p className="text-sm text-slate-400 italic">Keinem Team zugewiesen</p>
-                  </div>
-                )}
-              </div>
-            </div>
+        {isEditing && employeeDetailsLoading ? (
+          <div className="mt-6 text-sm text-muted-foreground">
+            Daten werden geladen...
           </div>
-        </TabsContent>
-
-        <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
-          {employeeId ? (
-            <AppointmentsListPage
-              title="Termine"
-              helpKey="appointments.list.employeeForm"
-              context={{ type: "employee", employeeId }}
-              onOpenAppointment={onOpenAppointment}
-              onRemoveEmployee={(appointmentId) => removeFromAppointmentMutation.mutate(appointmentId)}
-              className="min-h-0 flex-1"
-            />
-          ) : (
-            <p className="py-4 text-sm text-slate-400">
-              Nach dem Speichern des Mitarbeiters werden Termine angezeigt.
-            </p>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {isEditing && employeeDetailsLoading ? (
-        <div className="mt-6 text-sm text-muted-foreground">
-          Daten werden geladen...
-        </div>
-      ) : null}
-    </EntityFormLayout>
+        ) : null}
+      </EntityFormShell>
+    </div>
   );
 }
