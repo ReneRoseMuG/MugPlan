@@ -3,6 +3,11 @@ import type { Product, ProductCategory } from "@shared/schema";
 import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
 import { ProductCreateDialog } from "@/components/ui/product-create-dialog";
 
+function formatProductLabel(product: Product): string {
+  const shortCode = product.shortCode?.trim();
+  return shortCode ? `${product.name} - ${shortCode}` : product.name;
+}
+
 interface ProductListProps {
   products: Product[];
   categories: ProductCategory[];
@@ -51,7 +56,7 @@ export function ProductList({
     return base.slice().sort((a, b) => a.name.localeCompare(b.name, "de"));
   }, [products, selectedCategoryId]);
 
-  const productOptions = filteredProducts.map((p) => ({ value: String(p.id), label: p.name }));
+  const productOptions = filteredProducts.map((p) => ({ value: String(p.id), label: formatProductLabel(p) }));
   const categoryOptions = categories.map((c) => ({ value: String(c.id), label: c.name }));
 
   const handleProductSelect = (id: string) => {

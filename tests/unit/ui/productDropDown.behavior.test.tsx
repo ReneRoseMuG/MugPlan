@@ -20,6 +20,7 @@ type EntitySelectionRowProps = {
   categoryValue: string;
   addDisabled?: boolean;
   deleteAllDisabled?: boolean;
+  itemOptions?: Array<{ value: string; label: string }>;
 };
 
 const entitySelectionRowMock = vi.fn();
@@ -67,5 +68,29 @@ describe("FT27 UI: ProductDropDown behavior", () => {
       addDisabled: false,
       deleteAllDisabled: false,
     });
+  });
+
+  it("renders shortcode labels while keeping name-based sort order", () => {
+    renderToStaticMarkup(
+      <ProductDropDown
+        products={[
+          { id: 2, categoryId: 7, name: "Zeta", shortCode: "Z9", description: null, isActive: true, version: 1 },
+          { id: 1, categoryId: 7, name: "Alpha", shortCode: "A1", description: null, isActive: true, version: 1 },
+          { id: 3, categoryId: 7, name: "Beta", shortCode: null, description: null, isActive: true, version: 1 },
+        ]}
+        categories={[{ id: 7, name: "Fass", isDefault: true, isActive: true, version: 1 }]}
+        selectedProductId=""
+        onSelectProduct={vi.fn()}
+        onCreateProduct={vi.fn()}
+        isAdmin
+      />,
+    );
+
+    expect(entitySelectionRowMock).toHaveBeenCalledTimes(1);
+    expect(entitySelectionRowMock.mock.calls[0]?.[0]?.itemOptions).toEqual([
+      { value: "1", label: "Alpha - A1" },
+      { value: "3", label: "Beta" },
+      { value: "2", label: "Zeta - Z9" },
+    ]);
   });
 });

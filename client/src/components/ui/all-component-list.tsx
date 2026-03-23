@@ -4,6 +4,11 @@ import { ComponentCreateDialog, type ComponentCreateInput } from "@/components/u
 import { ComponentDetails, type ComponentDetailsDraft } from "@/components/ui/component-details";
 import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
 
+function formatComponentLabel(component: Component): string {
+  const shortCode = component.shortCode?.trim();
+  return shortCode ? `${component.name} - ${shortCode}` : component.name;
+}
+
 export type ComponentEditorInput = {
   name: string;
   shortCode: string;
@@ -88,7 +93,7 @@ export function AllComponentList({
 
   const componentOptions = filteredComponents.map((c) => ({
     value: String(c.id),
-    label: c.name,
+    label: formatComponentLabel(c),
   }));
   const categoryOptions = categories.map((c) => ({
     value: String(c.id),

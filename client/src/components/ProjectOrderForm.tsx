@@ -15,6 +15,11 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 
+function formatArticleLabel(entry: { name: string; shortCode: string | null }): string {
+  const shortCode = entry.shortCode?.trim();
+  return shortCode ? `${entry.name} - ${shortCode}` : entry.name;
+}
+
 interface ProjectOrderFormProps {
   name: string;
   orderNumber: string;
@@ -156,14 +161,14 @@ export function ProjectProductFields({
       return products
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name, "de"))
-        .map((p) => ({ value: String(p.id), label: p.name }));
+        .map((p) => ({ value: String(p.id), label: formatArticleLabel(p) }));
     }
     const category = findProjectProductCategory(componentCategories, fieldKey);
     if (!category) return [];
     return components
       .filter((c) => c.categoryId === category.id)
       .sort((a, b) => a.name.localeCompare(b.name, "de"))
-      .map((c) => ({ value: String(c.id), label: c.name }));
+      .map((c) => ({ value: String(c.id), label: formatArticleLabel(c) }));
   };
 
   const getFieldCurrentValue = (fieldKey: ProjectProductFieldKey): string => {
@@ -239,8 +244,8 @@ export function ProjectProductFields({
       : String(sel?.componentId ?? "");
 
     const items = slot.source === "product"
-      ? products.filter((p) => p.categoryId === slot.categoryId).sort((a, b) => a.name.localeCompare(b.name, "de")).map((p) => ({ value: String(p.id), label: p.name }))
-      : components.filter((c) => c.categoryId === slot.categoryId).sort((a, b) => a.name.localeCompare(b.name, "de")).map((c) => ({ value: String(c.id), label: c.name }));
+      ? products.filter((p) => p.categoryId === slot.categoryId).sort((a, b) => a.name.localeCompare(b.name, "de")).map((p) => ({ value: String(p.id), label: formatArticleLabel(p) }))
+      : components.filter((c) => c.categoryId === slot.categoryId).sort((a, b) => a.name.localeCompare(b.name, "de")).map((c) => ({ value: String(c.id), label: formatArticleLabel(c) }));
 
     return (
       <div
