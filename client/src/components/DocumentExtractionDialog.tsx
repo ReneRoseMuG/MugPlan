@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DocumentExtractionCustomerSection,
@@ -180,130 +180,153 @@ export function DocumentExtractionDialog({
 
   const disableActions = isBusy || isApplyingProject || isApplyingCustomer || isApplyingData;
 
+  if (!open) {
+    return null;
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        {!data || !customerFields || !customer ? (
-          <div className="text-sm text-muted-foreground">Keine Extraktionsdaten vorhanden.</div>
-        ) : (
-          <div className="space-y-6">
-            {data.warnings.length > 0 ? (
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                {data.warnings.map((warning, index) => (
-                  <p key={`${warning}-${index}`}>{warning}</p>
-                ))}
-              </div>
-            ) : null}
-
-            {data.fieldReport.recognized.length > 0 ? (
-              <section
-                className="rounded-md border border-emerald-200 bg-emerald-50 p-3"
-                data-testid="document-extraction-report-recognized"
-              >
-                <h3 className="text-sm font-bold tracking-wider text-emerald-900">Erfolgreich erkannt</h3>
-                <div className="mt-3 space-y-2 text-sm text-emerald-950">
-                  {data.fieldReport.recognized.map((item) => (
-                    <div
-                      key={`${item.section}-${item.key}`}
-                      className="grid grid-cols-[minmax(0,180px)_1fr] gap-3"
-                    >
-                      <span className="font-medium">{item.label}</span>
-                      <span className="break-words">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {data.fieldReport.missing.length > 0 ? (
-              <section
-                className="rounded-md border border-slate-300 bg-slate-50 p-3"
-                data-testid="document-extraction-report-missing"
-              >
-                <h3 className="text-sm font-bold tracking-wider text-slate-900">Nicht erkannt</h3>
-                <div className="mt-3 space-y-3 text-sm text-slate-800">
-                  {data.fieldReport.missing.map((item) => (
-                    <div key={`${item.section}-${item.key}`} className="space-y-1">
-                      <p className="font-medium">{item.label}</p>
-                      <p className="text-muted-foreground">{item.reason}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {showCustomerSection ? (
-              <DocumentExtractionCustomerSection
-                value={customerFields}
-                onChange={setCustomerFields}
-              />
-            ) : null}
-
-            {showProjectSection ? (
-              <DocumentExtractionProjectSection
-                saunaModel={saunaModel}
-                orderNumber={orderNumber}
-                amount={amount}
-                articleListHtml={articleListHtml}
-                onSaunaModelChange={setSaunaModel}
-                onOrderNumberChange={setOrderNumber}
-                onAmountChange={setAmount}
-                onArticleListHtmlChange={setArticleListHtml}
-              />
-            ) : null}
+    <div
+      className="fixed inset-0 z-[60] overflow-y-auto bg-background"
+      data-testid="document-extraction-overlay"
+    >
+      <div className="min-h-full p-4 sm:p-6">
+        <div className="mx-auto max-w-4xl rounded-lg border bg-card shadow-xl">
+          <div className="flex items-center justify-end border-b px-4 py-3 sm:px-6">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={disableActions}
+              data-testid="button-doc-extract-close"
+              aria-label="Dokumentextraktion schließen"
+            >
+              <X className="h-5 w-5" />
+            </Button>
           </div>
-        )}
 
-        <DialogFooter>
-          <div className="flex w-full flex-wrap items-center justify-end gap-2">
-              {!onApplyData && onApplyCustomer && showCustomerSection ? (
-                <Button
-                  type="button"
-                  disabled={!payload || disableActions || disableCustomerApply}
-                  onClick={() => {
-                    if (!payload) return;
-                    setIsApplyingCustomer(true);
-                    void onApplyCustomer({ customer: payload.customer }).finally(() => setIsApplyingCustomer(false));
-                  }}
-                  data-testid="button-doc-extract-apply-customer"
-                >
-                  {isApplyingCustomer ? "Übernehme..." : customerApplyLabel}
-                </Button>
-              ) : null}
-              {!onApplyData && onApplyProject && showProjectSection ? (
-                <Button
-                  type="button"
-                  disabled={!payload || disableActions || disableProjectApply}
-                  onClick={() => {
-                    if (!payload) return;
-                    setIsApplyingProject(true);
-                    void onApplyProject(payload).finally(() => setIsApplyingProject(false));
-                  }}
-                  data-testid="button-doc-extract-apply-project"
-                >
-                  {isApplyingProject ? "Übernehme..." : projectApplyLabel}
-                </Button>
-              ) : null}
-              {onApplyData ? (
-                <Button
-                  type="button"
-                  disabled={!payload || disableActions || disableProjectApply || disableCustomerApply}
-                  onClick={() => {
-                    if (!payload) return;
-                    setIsApplyingData(true);
-                    void onApplyData(payload).finally(() => setIsApplyingData(false));
-                  }}
-                  data-testid="button-doc-extract-apply-data"
-                >
-                  {isApplyingData ? "Übernehme..." : dataApplyLabel}
-                </Button>
-              ) : null}
+          <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-4 py-4 sm:px-6">
+            {!data || !customerFields || !customer ? (
+              <div className="text-sm text-muted-foreground">Keine Extraktionsdaten vorhanden.</div>
+            ) : (
+              <div className="space-y-6">
+                {data.warnings.length > 0 ? (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                    {data.warnings.map((warning, index) => (
+                      <p key={`${warning}-${index}`}>{warning}</p>
+                    ))}
+                  </div>
+                ) : null}
+
+                {data.fieldReport.recognized.length > 0 ? (
+                  <section
+                    className="rounded-md border border-emerald-200 bg-emerald-50 p-3"
+                    data-testid="document-extraction-report-recognized"
+                  >
+                    <h3 className="text-sm font-bold tracking-wider text-emerald-900">Erfolgreich erkannt</h3>
+                    <div className="mt-3 space-y-2 text-sm text-emerald-950">
+                      {data.fieldReport.recognized.map((item) => (
+                        <div
+                          key={`${item.section}-${item.key}`}
+                          className="grid grid-cols-[minmax(0,180px)_1fr] gap-3"
+                        >
+                          <span className="font-medium">{item.label}</span>
+                          <span className="break-words">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {data.fieldReport.missing.length > 0 ? (
+                  <section
+                    className="rounded-md border border-slate-300 bg-slate-50 p-3"
+                    data-testid="document-extraction-report-missing"
+                  >
+                    <h3 className="text-sm font-bold tracking-wider text-slate-900">Nicht erkannt</h3>
+                    <div className="mt-3 space-y-3 text-sm text-slate-800">
+                      {data.fieldReport.missing.map((item) => (
+                        <div key={`${item.section}-${item.key}`} className="space-y-1">
+                          <p className="font-medium">{item.label}</p>
+                          <p className="text-muted-foreground">{item.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {showCustomerSection ? (
+                  <DocumentExtractionCustomerSection
+                    value={customerFields}
+                    onChange={setCustomerFields}
+                  />
+                ) : null}
+
+                {showProjectSection ? (
+                  <DocumentExtractionProjectSection
+                    saunaModel={saunaModel}
+                    orderNumber={orderNumber}
+                    amount={amount}
+                    articleListHtml={articleListHtml}
+                    onSaunaModelChange={setSaunaModel}
+                    onOrderNumberChange={setOrderNumber}
+                    onAmountChange={setAmount}
+                    onArticleListHtmlChange={setArticleListHtml}
+                  />
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 border-t px-4 py-4 sm:px-6">
+            {!onApplyData && onApplyCustomer && showCustomerSection ? (
+              <Button
+                type="button"
+                disabled={!payload || disableActions || disableCustomerApply}
+                onClick={() => {
+                  if (!payload) return;
+                  setIsApplyingCustomer(true);
+                  void onApplyCustomer({ customer: payload.customer }).finally(() => setIsApplyingCustomer(false));
+                }}
+                data-testid="button-doc-extract-apply-customer"
+              >
+                {isApplyingCustomer ? "Übernehme..." : customerApplyLabel}
+              </Button>
+            ) : null}
+            {!onApplyData && onApplyProject && showProjectSection ? (
+              <Button
+                type="button"
+                disabled={!payload || disableActions || disableProjectApply}
+                onClick={() => {
+                  if (!payload) return;
+                  setIsApplyingProject(true);
+                  void onApplyProject(payload).finally(() => setIsApplyingProject(false));
+                }}
+                data-testid="button-doc-extract-apply-project"
+              >
+                {isApplyingProject ? "Übernehme..." : projectApplyLabel}
+              </Button>
+            ) : null}
+            {onApplyData ? (
+              <Button
+                type="button"
+                disabled={!payload || disableActions || disableProjectApply || disableCustomerApply}
+                onClick={() => {
+                  if (!payload) return;
+                  setIsApplyingData(true);
+                  void onApplyData(payload).finally(() => setIsApplyingData(false));
+                }}
+                data-testid="button-doc-extract-apply-data"
+              >
+                {isApplyingData ? "Übernehme..." : dataApplyLabel}
+              </Button>
+            ) : null}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={disableActions}>
               Abbrechen
             </Button>
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -14,6 +14,7 @@
  * Ziel:
  * Browser-E2E fuer die neuen Notizfelder und deren Sichtbarkeit in Entity-Cards und Terminpreviews absichern.
  */
+import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
 import {
   createAppointmentFixture,
@@ -78,6 +79,56 @@ async function saveAppointmentAndClose(page: Page, appointmentId: number) {
     await confirmSaveButton.click();
   }
   await expect(page.getByTestId(`week-appointment-panel-${appointmentId}`)).toBeVisible();
+}
+
+async function openNewCustomer(page: Page) {
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-kunden").click();
+  await page.getByTestId("button-new-customer").click();
+  await expect(page.getByTestId("button-save-customer")).toBeVisible();
+}
+
+async function mockCustomerDocumentExtraction(page: Page, customerNumber: string) {
+  await page.route("**/api/document-extraction/extract?scope=customer_form", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        customer: {
+          customerNumber,
+          firstName: "Extrahiert",
+          lastName: "Abweichend",
+          company: "PDF Firma",
+          email: "pdf@example.test",
+          phone: "999",
+          addressLine1: "PDF Weg 1",
+          addressLine2: null,
+          postalCode: "99999",
+          city: "PDF Stadt",
+        },
+        orderNumber: null,
+        amount: null,
+        saunaModel: "Customer PDF",
+        articleItems: [],
+        categorizedItems: [],
+        articleListHtml: "",
+        fieldReport: {
+          recognized: [],
+          missing: [],
+        },
+        warnings: [],
+      }),
+    });
+  });
+}
+
+async function uploadExtractionPdf(page: Page, fileName: string) {
+  const fileInput = page.locator('[data-testid="dropzone-document-extraction"] input[type="file"]');
+  await fileInput.setInputFiles({
+    name: fileName,
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF", "utf8"),
+  });
 }
 
 function hexToRgb(hex: string): string {
@@ -197,4 +248,23 @@ test("shows cumulative customer, project and appointment notes in the week previ
   await expect(page.getByText("Kunde Kumulation")).toBeVisible();
   await expect(page.getByText("Projekt Kumulation")).toBeVisible();
   await expect(page.getByText("Termin Kumulation")).toBeVisible();
+});
+
+test("keeps the customer extraction overlay open on outside click and loads existing customer data", async ({ page }) => {
+  const customer = await createCustomerFixture("FT21-CUSTOMER-EXTRACTION");
+
+  await mockCustomerDocumentExtraction(page, customer.customerNumber);
+  await openNewCustomer(page);
+  await uploadExtractionPdf(page, "ft21-customer-existing.pdf");
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.mouse.click(10, 10);
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-customer").click();
+
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+  await expect(page.getByTestId("input-customernumber")).toHaveValue(customer.customerNumber);
+  await expect(page.getByTestId("input-firstname")).toHaveValue(customer.firstName ?? "");
+  await expect(page.getByTestId("input-lastname")).toHaveValue(customer.lastName ?? "");
+  await expect(page.getByTestId("input-phone")).toHaveValue(customer.phone ?? "");
 });

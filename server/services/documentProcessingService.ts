@@ -119,14 +119,6 @@ export async function extractFromPdf(params: {
 
   try {
     const header = parseDocumentHeaderDeterministically(extractedText);
-    const normalizedOrderNumber = header.orderNumber?.trim() ?? "";
-    const shouldCheckOrderConflict = params.scope === "project_form" || params.scope === "appointment_form";
-    if (shouldCheckOrderConflict && normalizedOrderNumber.length > 0) {
-      const alreadyImported = await projectsService.isOrderNumberAlreadyImported(normalizedOrderNumber);
-      if (alreadyImported) {
-        throw new DocumentExtractionOrderConflictError("Auftrag schon importiert");
-      }
-    }
     const extractionContent = buildExtractionContentFromDocument(params.scope, extractedText);
     const amount = parseDocumentTotalAmountDeterministically(extractedText);
 
@@ -173,6 +165,18 @@ export async function resolveCustomerByNumber(customerNumber: string): Promise<C
     return { resolution: "single", count: 1, customer: matches[0] };
   }
   return { resolution: "multiple", count: matches.length, customer: null };
+}
+
+export async function resolveProjectByOrderNumber(orderNumber: string) {
+  const normalizedOrderNumber = orderNumber.trim();
+  const matches = await projectsService.getProjectsByOrderNumber(normalizedOrderNumber);
+  if (matches.length === 0) {
+    return { resolution: "none", count: 0, project: null };
+  }
+  if (matches.length === 1) {
+    return { resolution: "single", count: 1, project: matches[0] };
+  }
+  return { resolution: "multiple", count: matches.length, project: null };
 }
 
 export async function checkCustomerDuplicate(customerNumber: string): Promise<{ duplicate: boolean; count: number }> {

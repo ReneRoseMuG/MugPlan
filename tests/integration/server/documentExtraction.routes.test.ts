@@ -313,4 +313,78 @@ describe("FT20 integration: document extraction routes", () => {
         expect(res.body.customer).toBeNull();
       });
   });
+
+  it("returns 401 for resolve-project-by-order-number without login", async () => {
+    await request(app)
+      .post("/api/document-extraction/resolve-project-by-order-number")
+      .send({ orderNumber: "ORD-401" })
+      .expect(401);
+  });
+
+  it("returns 400 for resolve-project-by-order-number with missing orderNumber", async () => {
+    const agent = await loginAdminAgent();
+
+    await agent
+      .post("/api/document-extraction/resolve-project-by-order-number")
+      .send({ orderNumber: "" })
+      .expect(400);
+  });
+
+  it("returns none/single/multiple in resolve-project-by-order-number", async () => {
+    const agent = await loginAdminAgent();
+    const suffix = nextDeterministicToken("doc-extract-project-resolve");
+    const customerResponse = await agent
+      .post("/api/customers")
+      .send({ customerNumber: `PRJ-CUST-${suffix}` })
+      .expect(201);
+
+    const createdProjectResponse = await agent
+      .post("/api/projects")
+      .send({
+        customerId: customerResponse.body.id,
+        name: `Projekt ${suffix}`,
+        orderNumber: `PRJ-ORD-${suffix}`,
+        descriptionMd: null,
+      })
+      .expect(201);
+
+    await agent
+      .post("/api/document-extraction/resolve-project-by-order-number")
+      .send({ orderNumber: "ORD-NOT-FOUND" })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          resolution: "none",
+          count: 0,
+          project: null,
+        });
+      });
+
+    await agent
+      .post("/api/document-extraction/resolve-project-by-order-number")
+      .send({ orderNumber: `PRJ-ORD-${suffix}` })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.resolution).toBe("single");
+        expect(res.body.project.id).toBe(createdProjectResponse.body.id);
+        expect(res.body.project.orderNumber).toBe(`PRJ-ORD-${suffix}`);
+      });
+
+    vi.spyOn(documentProcessingService, "resolveProjectByOrderNumber").mockResolvedValueOnce({
+      resolution: "multiple",
+      count: 2,
+      project: null,
+    });
+    await agent
+      .post("/api/document-extraction/resolve-project-by-order-number")
+      .send({ orderNumber: `PRJ-ORD-${suffix}` })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          resolution: "multiple",
+          count: 2,
+          project: null,
+        });
+      });
+  });
 });

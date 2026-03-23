@@ -28,6 +28,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   createAppointmentBrowserFixture,
   createCustomerFixture,
+  createProjectFixture,
   createTagFixture,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -404,4 +405,83 @@ test("keeps the extracted document as appointment draft when the project form is
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("appointment-form-sidebar").getByText(extractionFileName)).toBeVisible();
+});
+
+test("opens an existing project overlay for duplicate order numbers and links it back to the appointment", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-EXISTING-PROJECT");
+  const existingProject = await createProjectFixture({
+    prefix: "FT24-EXISTING-PROJECT",
+    customerId: customer.id,
+    name: "FT24 Bestehendes Terminprojekt",
+    orderNumber: "AO-FT24-EXISTING-001",
+  });
+  const extractionFileName = "ft24-existing-project-overlay.pdf";
+
+  await mockAppointmentDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Duplikat Terminprojekt",
+    orderNumber: existingProject.orderNumber ?? "AO-FT24-EXISTING-001",
+  });
+
+  await openNewAppointmentFromWeek(page);
+  await uploadExtractionPdf(page, extractionFileName);
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.mouse.click(10, 10);
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+  await expect(page.getByTestId("appointment-project-overlay")).toBeVisible();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+  await expect(page.getByText("Projektdaten bearbeiten")).toBeVisible();
+
+  const updateProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PATCH"
+    && new URL(response.url()).pathname === `/api/projects/${existingProject.id}`
+  ));
+  await page.getByTestId("button-save-project").click();
+  const updateProjectResponse = await updateProjectResponsePromise;
+  expect(updateProjectResponse.ok(), await updateProjectResponse.text()).toBeTruthy();
+
+  await expect(page.getByTestId("appointment-project-overlay")).toHaveCount(0);
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId("badge-project-name")).toContainText(existingProject.name);
+  await expect(page.getByTestId("badge-project-order-number")).toContainText(existingProject.orderNumber ?? "");
+
+  await page.getByTestId("button-save-appointment").click();
+  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
+  if (await confirmSaveButton.isVisible().catch(() => false)) {
+    await confirmSaveButton.click();
+  }
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);
+    if (!response.ok()) return 0;
+    const body = await response.json();
+    return Array.isArray(body) ? body.length : 0;
+  }).toBe(1);
+
+  const appointmentsResponse = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);
+  const appointments = await appointmentsResponse.json();
+  const createdAppointmentId = Number(appointments[0]?.id);
+  expect(createdAppointmentId).toBeGreaterThan(0);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${createdAppointmentId}/attachment-context`);
+    if (!response.ok()) {
+      return { project: [], appointment: [] };
+    }
+    const body = await response.json();
+    return {
+      project: Array.isArray(body?.projectAttachments)
+        ? body.projectAttachments.map((item: { originalName: string }) => item.originalName)
+        : [],
+      appointment: Array.isArray(body?.appointmentAttachments)
+        ? body.appointmentAttachments.map((item: { originalName: string }) => item.originalName)
+        : [],
+    };
+  }).toEqual({
+    project: expect.arrayContaining([extractionFileName]),
+    appointment: [],
+  });
 });
