@@ -125,10 +125,10 @@ describe("FT16/FT28 UI: help components behavior", () => {
     });
 
     const html = renderToStaticMarkup(
-      <ListEmptyState helpKey="customers.empty" fallbackTitle="Keine Eintraege" fallbackBody="Bitte Filter pruefen." />,
+      <ListEmptyState helpKey="customers.empty" fallbackTitle="Keine Einträge" fallbackBody="Bitte Filter pruefen." />,
     );
 
-    expect(html).toContain("Keine Eintraege");
+    expect(html).toContain("Keine Einträge");
     expect(html).toContain("Bitte Filter pruefen.");
     expect(html).not.toContain("customers.empty");
   });

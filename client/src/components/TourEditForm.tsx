@@ -92,11 +92,6 @@ export function TourEditForm({
   );
 
   const title = isCreate ? defaultName : (tour?.name ?? "Tour bearbeiten");
-  const leftEmptyState = (
-    <p className="py-4 text-sm text-slate-400">
-      Nach dem Speichern der Tour werden Termine angezeigt.
-    </p>
-  );
   const handleSubmit = async () => onSubmit(tour?.id ?? null, selectedMembers, selectedName, selectedColor);
 
   return (
@@ -258,9 +253,10 @@ export function TourEditForm({
             title="Termine"
             helpKey="appointments.list.tourForm"
             context={{ type: "tour", tourId: tour?.id ?? null }}
-            emptyStateOverride={leftEmptyState}
+            emptyStateOverride={<></>}
             onOpenAppointment={onOpenAppointment}
             className="min-h-0 flex-1"
+            splitDateRangeRow
           />
         </TabsContent>
       </Tabs>

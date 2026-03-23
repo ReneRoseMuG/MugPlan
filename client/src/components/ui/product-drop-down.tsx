@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Product, ProductCategory } from "@shared/schema";
 import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
 import { ProductCreateDialog } from "@/components/ui/product-create-dialog";
@@ -24,13 +24,25 @@ export function ProductList({
   onDeleteAllInCategory,
   isAdmin,
 }: ProductListProps) {
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState(() => (categories.length > 0 ? String(categories[0].id) : ""));
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const selectedProduct = useMemo(
     () => products.find((p) => String(p.id) === selectedProductId) ?? null,
     [products, selectedProductId],
   );
+
+  useEffect(() => {
+    if (!selectedCategoryId && categories.length > 0) {
+      setSelectedCategoryId(String(categories[0].id));
+    }
+  }, [categories, selectedCategoryId]);
+
+  useEffect(() => {
+    if (!selectedCategoryId) return;
+    if (categories.some((category) => String(category.id) === selectedCategoryId)) return;
+    setSelectedCategoryId(categories.length > 0 ? String(categories[0].id) : "");
+  }, [categories, selectedCategoryId]);
 
   const filteredProducts = useMemo(() => {
     const base = selectedCategoryId

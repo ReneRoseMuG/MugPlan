@@ -906,7 +906,7 @@ export function SettingsPage() {
           ) : backupsQuery.isError ? (
             <p className="text-sm text-destructive">Backups konnten nicht geladen werden.</p>
           ) : backupRows.length === 0 ? (
-            <p className="text-sm text-slate-500">Noch keine Backup-Eintraege vorhanden.</p>
+            <p className="text-sm text-slate-500">Noch keine Backup-Einträge vorhanden.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm" data-testid="table-backup-logs">

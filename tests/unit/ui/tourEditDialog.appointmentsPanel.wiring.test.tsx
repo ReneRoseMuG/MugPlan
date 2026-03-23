@@ -122,6 +122,7 @@ describe("FT04 TourEditForm appointments list behavior", () => {
       helpKey: "appointments.list.tourForm",
       context: { type: "tour", tourId: null },
       className: "min-h-0 flex-1",
+      splitDateRangeRow: true,
     });
     expect(appointmentsListPageCalls[0]).not.toHaveProperty("hideTourFilter");
     expect(appointmentsListPageCalls[0]).not.toHaveProperty("lockedTourId");
@@ -131,7 +132,7 @@ describe("FT04 TourEditForm appointments list behavior", () => {
     expect(html).toContain("tour-form-main-column");
     expect(html).toContain("entity-form-shell-footer");
     expect(html).not.toContain("entity-form-shell-sidebar");
-    expect(html).toContain("Nach dem Speichern der Tour werden Termine angezeigt.");
+    expect(html).not.toContain("Nach dem Speichern der Tour werden Termine angezeigt.");
   });
 
   it("keeps the appointments list bound to the edited tour id and forwards open handlers", () => {

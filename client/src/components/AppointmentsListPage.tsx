@@ -58,6 +58,7 @@ interface AppointmentsListPageProps {
   emptyStateOverride?: ReactNode;
   className?: string;
   onRemoveEmployee?: (appointmentId: number) => void;
+  splitDateRangeRow?: boolean;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -129,6 +130,7 @@ export function AppointmentsListPage({
   emptyStateOverride,
   className,
   onRemoveEmployee,
+  splitDateRangeRow = false,
 }: AppointmentsListPageProps) {
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
@@ -409,7 +411,7 @@ export function AppointmentsListPage({
   const AppointmentsIcon = domainIcons.appointmentsList;
   const tableFooter = (
     <ListPagingFooter
-      summaryText={`${data?.total ?? 0} Eintraege`}
+      summaryText={`${data?.total ?? 0} Einträge`}
       page={page}
       totalPages={totalPages}
       canGoPrev={canGoPrev}
@@ -447,6 +449,7 @@ export function AppointmentsListPage({
           tagPickerOpen={tagPickerOpen}
           onTagPickerOpenChange={setTagPickerOpen}
           hideTourFilter={resolvedHideTourFilter}
+          splitDateRangeRow={splitDateRangeRow}
         />
       }
       footerSlot={tableFooter}

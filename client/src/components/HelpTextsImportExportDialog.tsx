@@ -237,7 +237,7 @@ export function HelpTextsImportExportDialog({
                 <div>Per Entscheidung ueberschrieben: {resultReport.decisionOverwrittenCount}</div>
                 <div>Uebersprungen: {resultReport.skippedCount}</div>
                 {resultReport.mode === "export" && (
-                  <div className="col-span-2">Exportierte Eintraege: {resultReport.exportedCount ?? 0}</div>
+                  <div className="col-span-2">Exportierte Einträge: {resultReport.exportedCount ?? 0}</div>
                 )}
               </div>
             </div>

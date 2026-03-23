@@ -18,7 +18,7 @@ export interface ListEmptyStateProps {
 
 export function ListEmptyState({
   helpKey,
-  fallbackTitle = "Keine Eintraege vorhanden.",
+  fallbackTitle = "Keine Einträge vorhanden.",
   fallbackBody,
   className,
 }: ListEmptyStateProps) {

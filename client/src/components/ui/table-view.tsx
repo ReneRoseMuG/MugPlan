@@ -232,7 +232,7 @@ export function TableView<T>({
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columns.length} className="p-0">
                   <div className="flex min-h-[18rem] items-center justify-center px-4 py-10 text-center text-muted-foreground">
-                    {emptyState ?? "Keine Eintraege vorhanden."}
+                    {emptyState ?? "Keine Einträge vorhanden."}
                   </div>
                 </TableCell>
               </TableRow>

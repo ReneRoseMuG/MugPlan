@@ -332,7 +332,7 @@ export function ProjectsPage({
   const CustomersIcon = domainIcons.customers;
   const tableFooter = (
     <ListPagingFooter
-      summaryText={`${data?.total ?? 0} Eintraege`}
+      summaryText={`${data?.total ?? 0} Einträge`}
       page={page}
       totalPages={totalPages}
       canGoPrev={canGoPrev}

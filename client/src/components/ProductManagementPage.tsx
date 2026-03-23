@@ -395,7 +395,16 @@ export function ProductManagementPage() {
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.isDefault ? "Ja" : "Nein"}</TableCell>
                 <TableCell className="space-x-2 whitespace-nowrap text-right">
-                  <Button size="sm" variant="outline">{editRow?.id === row.id ? "Aktiv" : "Bearb."}</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setEditRow(editRow?.id === row.id ? null : { ...row });
+                    }}
+                  >
+                    {editRow?.id === row.id ? "Aktiv" : "Bearb."}
+                  </Button>
                   <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onImport(row); }} data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}>Import</Button>
                   <Button size="sm" variant="destructive" onClick={(event) => { event.stopPropagation(); onDelete(row); }}>-</Button>
                 </TableCell>

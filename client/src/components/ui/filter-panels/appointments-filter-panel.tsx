@@ -35,6 +35,7 @@ interface AppointmentsFilterPanelProps {
   tagPickerOpen: boolean;
   onTagPickerOpenChange: (open: boolean) => void;
   hideTourFilter?: boolean;
+  splitDateRangeRow?: boolean;
 }
 
 export function AppointmentsFilterPanel({
@@ -49,7 +50,37 @@ export function AppointmentsFilterPanel({
   tagPickerOpen,
   onTagPickerOpenChange,
   hideTourFilter = false,
+  splitDateRangeRow = false,
 }: AppointmentsFilterPanelProps) {
+  const dateRangeFilters = (
+    <>
+      <div className="flex min-w-[150px] flex-col gap-1">
+        <div className="flex min-h-5 items-center gap-1">
+          <HelpIcon helpKey="appointments.filter.dateFrom" size="sm" />
+          <Label htmlFor="appointments-date-from" className="text-xs">Datum von</Label>
+        </div>
+        <Input
+          id="appointments-date-from"
+          type="date"
+          value={filters.dateFrom ?? ""}
+          onChange={(event) => onChange({ dateFrom: event.target.value || undefined })}
+        />
+      </div>
+      <div className="flex min-w-[150px] flex-col gap-1">
+        <div className="flex min-h-5 items-center gap-1">
+          <HelpIcon helpKey="appointments.filter.dateTo" size="sm" />
+          <Label htmlFor="appointments-date-to" className="text-xs">Datum bis</Label>
+        </div>
+        <Input
+          id="appointments-date-to"
+          type="date"
+          value={filters.dateTo ?? ""}
+          onChange={(event) => onChange({ dateTo: event.target.value || undefined })}
+        />
+      </div>
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <FilterPanel title="Terminfilter" layout="row">
@@ -119,30 +150,6 @@ export function AppointmentsFilterPanel({
             </Select>
           </div>
         ) : null}
-        <div className="flex min-w-[150px] flex-col gap-1">
-          <div className="flex min-h-5 items-center gap-1">
-            <HelpIcon helpKey="appointments.filter.dateFrom" size="sm" />
-            <Label htmlFor="appointments-date-from" className="text-xs">Datum von</Label>
-          </div>
-          <Input
-            id="appointments-date-from"
-            type="date"
-            value={filters.dateFrom ?? ""}
-            onChange={(event) => onChange({ dateFrom: event.target.value || undefined })}
-          />
-        </div>
-        <div className="flex min-w-[150px] flex-col gap-1">
-          <div className="flex min-h-5 items-center gap-1">
-            <HelpIcon helpKey="appointments.filter.dateTo" size="sm" />
-            <Label htmlFor="appointments-date-to" className="text-xs">Datum bis</Label>
-          </div>
-          <Input
-            id="appointments-date-to"
-            type="date"
-            value={filters.dateTo ?? ""}
-            onChange={(event) => onChange({ dateTo: event.target.value || undefined })}
-          />
-        </div>
         <BooleanToggleFilterInput
           id="appointments-show-all"
           checked={showAllAppointments}
@@ -162,7 +169,13 @@ export function AppointmentsFilterPanel({
           addButtonTestId="button-add-appointment-tag-filter"
           testIdPrefix="appointment-filter-tag"
         />
+        {!splitDateRangeRow ? dateRangeFilters : null}
       </FilterPanel>
+      {splitDateRangeRow ? (
+        <FilterPanel title="Terminfilter Datum" layout="row">
+          {dateRangeFilters}
+        </FilterPanel>
+      ) : null}
     </div>
   );
 }
