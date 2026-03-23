@@ -776,6 +776,21 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    resolveProjectByOrderNumber: {
+      method: "POST" as const,
+      path: "/api/document-extraction/resolve-project-by-order-number",
+      input: z.object({
+        orderNumber: z.string().min(1),
+      }).strict(),
+      responses: {
+        200: z.object({
+          resolution: z.enum(["none", "single", "multiple"]),
+          count: z.number().int().min(0),
+          project: z.custom<Project>().nullable(),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
   },
   appointments: {
     list: {

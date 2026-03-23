@@ -97,7 +97,9 @@ export function ProjectAttachmentsPanel({
     [pendingAttachmentUrls],
   );
 
-  const resolvedProjectAttachments = isEditing ? attachments : pendingProjectAttachments;
+  const resolvedProjectAttachments = isEditing
+    ? [...attachments, ...pendingProjectAttachments]
+    : pendingProjectAttachments;
   const canUploadProjectAttachment = Boolean(projectId) || typeof onUploadPendingProjectAttachment === "function";
   const handleProjectUpload = (file: File) => {
     if (projectId) {
@@ -123,8 +125,12 @@ export function ProjectAttachmentsPanel({
           canUpload: canUploadProjectAttachment,
           isUploading: uploadMutation.isPending,
           onUpload: handleProjectUpload,
-          buildOpenUrl: (id) => projectId ? `/api/project-attachments/${id}/download` : buildPendingAttachmentUrl(id),
-          buildDownloadUrl: (id) => projectId ? `/api/project-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id),
+          buildOpenUrl: (id) => pendingAttachmentUrlsById.has(id)
+            ? buildPendingAttachmentUrl(id)
+            : `/api/project-attachments/${id}/download`,
+          buildDownloadUrl: (id) => pendingAttachmentUrlsById.has(id)
+            ? buildPendingAttachmentUrl(id)
+            : `/api/project-attachments/${id}/download?download=1`,
         },
         {
           id: "customer",

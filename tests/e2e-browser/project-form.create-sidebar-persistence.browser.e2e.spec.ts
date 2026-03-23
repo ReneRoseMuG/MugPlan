@@ -237,6 +237,47 @@ test("shows an extracted document as pending project attachment before save and 
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
 });
 
+test("opens an existing project in edit mode for duplicate order numbers and keeps the overlay path stable", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-PROJECT-DUPLICATE");
+  const existingProject = await createProjectFixture({
+    prefix: "FT24-PROJECT-DUPLICATE",
+    customerId: customer.id,
+    name: "FT24 Bestehendes Projekt",
+    orderNumber: "FT24-PROJECT-DUP-001",
+  });
+  const extractionFileName = "ft24-project-duplicate-existing.pdf";
+
+  await mockProjectDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Duplikat aus PDF",
+    orderNumber: existingProject.orderNumber ?? "FT24-PROJECT-DUP-001",
+  });
+
+  await openNewProject(page);
+  await uploadExtractionPdf(page, extractionFileName);
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.mouse.click(10, 10);
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+  await expect(page.getByText("Projektdaten bearbeiten")).toBeVisible();
+  await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
+
+  const updateProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PATCH"
+    && new URL(response.url()).pathname === `/api/projects/${existingProject.id}`
+  ));
+  await page.getByTestId("button-save-project").click();
+  const updateProjectResponse = await updateProjectResponsePromise;
+  expect(updateProjectResponse.ok(), await updateProjectResponse.text()).toBeTruthy();
+  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
+
+  await openProjectById(page, existingProject.id, "noAppointments");
+  await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
+});
+
 test("keeps the sidebar visible for existing project edit", async ({ page }) => {
   const project = await createProjectFixture({
     prefix: "FT02-PROJECT-SIDEBAR-EDIT",

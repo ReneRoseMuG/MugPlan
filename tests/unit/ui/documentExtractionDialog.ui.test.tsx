@@ -134,6 +134,7 @@ describe("FT21 document extraction dialog ui behavior", () => {
       />,
     );
 
+    expect(html).toContain("document-extraction-overlay");
     expect(html).toContain("button-doc-extract-apply-customer");
     expect(html).toContain("Kundendaten");
     expect(html).toContain("button-doc-extract-apply-project");
@@ -176,6 +177,7 @@ describe("FT21 document extraction dialog ui behavior", () => {
       />,
     );
 
+    expect(html).toContain("document-extraction-overlay");
     expect(html).toContain("button-doc-extract-apply-data");
     expect(html).toContain("Daten");
     expect(html).not.toContain("button-doc-extract-apply-customer");

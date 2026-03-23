@@ -87,3 +87,14 @@ export async function resolveCustomerByNumber(req: Request, res: Response, next:
     next(err);
   }
 }
+
+export async function resolveProjectByOrderNumber(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const input = api.documentExtraction.resolveProjectByOrderNumber.input.parse(req.body);
+    const result = await documentProcessingService.resolveProjectByOrderNumber(input.orderNumber);
+    res.json(result);
+  } catch (err) {
+    if (handleZodError(err, res)) return;
+    next(err);
+  }
+}

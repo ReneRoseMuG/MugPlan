@@ -81,6 +81,10 @@ export async function isOrderNumberAlreadyImported(orderNumber: string): Promise
   return projectsRepository.existsProjectByOrderNumber(orderNumber);
 }
 
+export async function getProjectsByOrderNumber(orderNumber: string): Promise<projectsRepository.ProjectWithTags[]> {
+  return projectsRepository.getProjectsByOrderNumber(orderNumber);
+}
+
 export async function getProjectWithCustomer(
   id: number,
 ): Promise<{ project: projectsRepository.ProjectWithTags; customer: Customer } | null> {

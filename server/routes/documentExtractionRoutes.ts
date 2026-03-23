@@ -7,5 +7,6 @@ const router = Router();
 router.post(api.documentExtraction.extract.path, documentExtractionController.extractDocument);
 router.post(api.documentExtraction.checkCustomerDuplicate.path, documentExtractionController.checkCustomerDuplicate);
 router.post(api.documentExtraction.resolveCustomerByNumber.path, documentExtractionController.resolveCustomerByNumber);
+router.post(api.documentExtraction.resolveProjectByOrderNumber.path, documentExtractionController.resolveProjectByOrderNumber);
 
 export default router;

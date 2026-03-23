@@ -547,6 +547,39 @@ export async function existsProjectByOrderNumber(orderNumber: string): Promise<b
   return rows.length > 0;
 }
 
+export async function getProjectsByOrderNumber(orderNumber: string): Promise<ProjectWithTags[]> {
+  const normalizedOrderNumber = orderNumber.trim();
+  if (normalizedOrderNumber.length === 0) {
+    return [];
+  }
+
+  const rows = await db
+    .select({
+      project: projects,
+      order: projectOrder,
+    })
+    .from(projects)
+    .innerJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(
+      sql`${projectOrder.orderNumber} is not null
+          and char_length(trim(${projectOrder.orderNumber})) > 0
+          and trim(${projectOrder.orderNumber}) = ${normalizedOrderNumber}
+          and ${projects.isActive} = true`,
+    );
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const projectIds = rows.map((row) => row.project.id);
+  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
+
+  return rows.map((row) => ({
+    ...mergeProjectWithOrder(row.project, row.order),
+    tags: tagsByProjectId.get(row.project.id) ?? [],
+  }));
+}
+
 export async function listProjectOrderNumbers(): Promise<string[]> {
   const rows = await db
     .select({ orderNumber: projectOrder.orderNumber })

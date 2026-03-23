@@ -646,8 +646,33 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         throw new Error("Kundennummer ist erforderlich.");
       }
       const resolution = await resolveCustomerByNumber(customer.customerNumber);
-      if (resolution.resolution !== "none") {
-        throw new Error("Kundennummer ist bereits vergeben.");
+      if (resolution.resolution === "multiple") {
+        throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
+      }
+      if (resolution.resolution === "single") {
+        if (!resolution.customer) {
+          throw new Error("Dateninkonsistenz: Vorhandener Kunde konnte nicht geladen werden.");
+        }
+        const existingCustomer = resolution.customer;
+        setFormData((prev) => ({
+          ...prev,
+          customerNumber: existingCustomer.customerNumber?.trim() ?? customer.customerNumber.trim(),
+          firstName: (existingCustomer.firstName ?? "").trim(),
+          lastName: (existingCustomer.lastName ?? "").trim(),
+          company: (existingCustomer.company ?? "").trim(),
+          email: (existingCustomer.email ?? "").trim(),
+          phone: (existingCustomer.phone ?? "").trim(),
+          addressLine1: (existingCustomer.addressLine1 ?? "").trim(),
+          addressLine2: (existingCustomer.addressLine2 ?? "").trim(),
+          postalCode: (existingCustomer.postalCode ?? "").trim(),
+          city: (existingCustomer.city ?? "").trim(),
+        }));
+        setDocumentExtractionOpen(false);
+        toast({
+          title: "Kundendaten übernommen",
+          description: "Kunde mit dieser Kundennummer existiert bereits.",
+        });
+        return;
       }
       setFormData((prev) => ({
         ...prev,

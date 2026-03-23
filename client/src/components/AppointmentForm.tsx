@@ -102,15 +102,22 @@ type ApiSuccessPayload = {
   message?: string;
   employees?: Array<{ id: number }>;
 };
-type ExtractedProjectDraft = {
-  name: string;
-  orderNumber: string;
-  amount: string;
-  customerId: number;
-  extractedArticleListHtml: string;
-  productSelections: ProjectProductSelections;
-  documentFile: File | null;
-};
+type ExtractedProjectDraft =
+  | {
+      mode: "create";
+      name: string;
+      orderNumber: string;
+      amount: string;
+      customerId: number;
+      extractedArticleListHtml: string;
+      productSelections: ProjectProductSelections;
+      documentFile: File | null;
+    }
+  | {
+      mode: "existing";
+      projectId: number;
+      documentFile: File | null;
+    };
 
 type DraftAppointmentNote = Note & {
   templateId?: number;
@@ -1010,6 +1017,22 @@ export function AppointmentForm({
     return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; customer: Customer | null };
   };
 
+  const resolveProjectByOrderNumber = async (orderNumber: string) => {
+    const response = await fetch("/api/document-extraction/resolve-project-by-order-number", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ orderNumber: orderNumber.trim() }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.message ?? "Auftragsnummer konnte nicht aufgelöst werden");
+    }
+    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; project: Project | null };
+  };
+
   const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
     const payload = mapExtractionCustomerToPayload(customerDraft);
     const response = await fetch("/api/customers", {
@@ -1125,9 +1148,33 @@ export function AppointmentForm({
         return;
       }
       const mergedCustomer = await tryPatchExistingCustomerFromExtraction(resolvedCustomer, payload.customer);
+      const normalizedOrderNumber = payload.orderNumber.trim();
+      if (normalizedOrderNumber.length > 0) {
+        const projectResolution = await resolveProjectByOrderNumber(normalizedOrderNumber);
+        if (projectResolution.resolution === "multiple") {
+          throw new Error("Dateninkonsistenz: Auftragsnummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
+        }
+        if (projectResolution.resolution === "single") {
+          if (!projectResolution.project) {
+            throw new Error("Dateninkonsistenz: Vorhandenes Projekt konnte nicht geladen werden.");
+          }
+          setPendingProjectDraft({
+            mode: "existing",
+            projectId: projectResolution.project.id,
+            documentFile: documentExtractionFile,
+          });
+          setDocumentExtractionOpen(false);
+          toast({
+            title: "Vorhandenes Projekt geöffnet",
+            description: "Projekt mit dieser Auftragsnummer existiert bereits.",
+          });
+          return;
+        }
+      }
       setPendingProjectDraft({
+        mode: "create",
         name: payload.saunaModel.trim(),
-        orderNumber: payload.orderNumber.trim(),
+        orderNumber: normalizedOrderNumber,
         amount: payload.amount.trim(),
         customerId: mergedCustomer.id,
         extractedArticleListHtml: payload.articleListHtml.trim(),
@@ -2041,35 +2088,45 @@ export function AppointmentForm({
         onApplyData={applyExtractedProject}
       />
 
-      <Dialog
-        open={pendingProjectDraft !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingProjectDraft(null);
-          }
-        }}
-      >
-        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[92vh] sm:max-w-6xl sm:rounded-lg">
-          {pendingProjectDraft ? (
+      {pendingProjectDraft ? (
+        <div
+          className="fixed inset-0 z-[70] overflow-y-auto bg-background"
+          data-testid="appointment-project-overlay"
+        >
+          <div className="min-h-full">
             <ProjectForm
-              initialDraft={{
+              projectId={pendingProjectDraft.mode === "existing" ? pendingProjectDraft.projectId : undefined}
+              initialDraft={pendingProjectDraft.mode === "create" ? {
                 name: pendingProjectDraft.name,
                 orderNumber: pendingProjectDraft.orderNumber,
                 amount: pendingProjectDraft.amount,
                 customerId: pendingProjectDraft.customerId,
                 extractedArticleListHtml: pendingProjectDraft.extractedArticleListHtml,
                 productSelections: pendingProjectDraft.productSelections,
-              }}
+              } : null}
               initialDocumentExtractionFile={pendingProjectDraft.documentFile}
               onSaved={() => {
+                const completedDraft = pendingProjectDraft;
+                if (completedDraft.mode === "existing") {
+                  setSelectedProjectId(completedDraft.projectId);
+                  setSelectedCustomerId(null);
+                  if (completedDraft.documentFile) {
+                    removeDraftAppointmentAttachmentForFile(completedDraft.documentFile);
+                  }
+                }
                 setPendingProjectDraft(null);
                 setDocumentExtractionFile(null);
-                toast({ title: "Projekt übernommen", description: "Neues Projekt wurde erzeugt und dem Termin zugeordnet." });
+                toast({
+                  title: "Projekt übernommen",
+                  description: completedDraft.mode === "existing"
+                    ? "Vorhandenes Projekt wurde dem Termin zugeordnet."
+                    : "Neues Projekt wurde erzeugt und dem Termin zugeordnet.",
+                });
               }}
               onProjectCreated={(createdProjectId, result) => {
                 setSelectedProjectId(createdProjectId);
                 setSelectedCustomerId(null);
-                if (result?.attachmentLinked && pendingProjectDraft?.documentFile) {
+                if (result?.attachmentLinked && pendingProjectDraft.documentFile) {
                   removeDraftAppointmentAttachmentForFile(pendingProjectDraft.documentFile);
                 }
               }}
@@ -2077,9 +2134,9 @@ export function AppointmentForm({
                 setPendingProjectDraft(null);
               }}
             />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      ) : null}
 
       <Dialog open={projectPickerOpen} onOpenChange={setProjectPickerOpen}>
         <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">

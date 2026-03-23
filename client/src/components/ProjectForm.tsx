@@ -104,7 +104,9 @@ export function ProjectForm({
   onProjectCreated,
 }: ProjectFormProps) {
   const { toast } = useToast();
-  const isEditing = !!projectId;
+  const [resolvedExistingProjectId, setResolvedExistingProjectId] = useState<number | null>(null);
+  const effectiveProjectId = projectId ?? resolvedExistingProjectId;
+  const isEditing = effectiveProjectId != null;
   const invalidateAppointmentProjectionQueries = async () => {
     await invalidateTagProjectionQueries();
   };
@@ -187,7 +189,7 @@ export function ProjectForm({
     });
   // Fetch project data if editing
   const { data: projectData, isLoading: projectLoading } = useQuery<{ project: Project; customer: Customer }>({
-    queryKey: ['/api/projects', projectId],
+    queryKey: ['/api/projects', effectiveProjectId],
     enabled: isEditing,
   });
   const {
@@ -195,7 +197,7 @@ export function ProjectForm({
     isLoading: assignedTagsLoading,
     error: assignedTagsError,
   } = useQuery<TagRelationItem[]>({
-    queryKey: ['/api/projects', projectId, 'tags'],
+    queryKey: ['/api/projects', effectiveProjectId, 'tags'],
     enabled: isEditing,
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
@@ -210,7 +212,7 @@ export function ProjectForm({
 
   // Fetch project notes
   const { data: projectNotes = [], isLoading: notesLoading } = useQuery<Note[]>({
-    queryKey: ['/api/projects', projectId, 'notes'],
+    queryKey: ['/api/projects', effectiveProjectId, 'notes'],
     enabled: isEditing,
   });
   const createSidebarDraftSignature = useMemo(
@@ -243,7 +245,7 @@ export function ProjectForm({
   const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
   const componentsUrl = `/api/admin/master-data/components?active=${masterDataScope}`;
-  const projectOrderItemsUrl = projectId ? `/api/projects/${projectId}/order-items` : null;
+  const projectOrderItemsUrl = effectiveProjectId ? `/api/projects/${effectiveProjectId}/order-items` : null;
 
   const { data: productCategories = [] } = useQuery<ProductCategory[]>({
     queryKey: [productCategoriesUrl],
@@ -351,11 +353,12 @@ export function ProjectForm({
   }, [componentCategories, components, dynamicCategorySlots, isEditing, products, projectOrderItems]);
 
   useEffect(() => {
-    if (!isEditing && initialDocumentExtractionFile) {
-      setDocumentExtractionFile(initialDocumentExtractionFile);
-      addDraftProjectAttachment(initialDocumentExtractionFile);
+    if (!initialDocumentExtractionFile) {
+      return;
     }
-  }, [initialDocumentExtractionFile, isEditing]);
+    setDocumentExtractionFile(initialDocumentExtractionFile);
+    addDraftProjectAttachment(initialDocumentExtractionFile);
+  }, [initialDocumentExtractionFile]);
 
   useEffect(() => {
     if (isEditing || !initialDraft || didApplyInitialDraft) return;
@@ -537,6 +540,22 @@ export function ProjectForm({
     return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; customer: Customer | null };
   };
 
+  const resolveProjectByOrderNumber = async (value: string) => {
+    const response = await fetch("/api/document-extraction/resolve-project-by-order-number", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ orderNumber: value.trim() }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.message ?? "Auftragsnummer konnte nicht aufgelöst werden");
+    }
+    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; project: Project | null };
+  };
+
   const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
     const payload = mapExtractionCustomerToPayload(customerDraft);
     const response = await fetch("/api/customers", {
@@ -619,7 +638,7 @@ export function ProjectForm({
   };
 
   const upsertExistingProjectSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
-    if (!projectId || !projectData?.project.orderNumber) return;
+    if (!effectiveProjectId || !projectData?.project.orderNumber) return;
     const field = getProjectProductField(fieldKey);
     const numericSelectedId = Number(selectedValue);
     if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
@@ -633,8 +652,8 @@ export function ProjectForm({
     if (field.source === "product" && !product) return;
     if (field.source === "component" && !component) return;
 
-    const response = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
-      projectId,
+    const response = await apiRequest("POST", `/api/projects/${effectiveProjectId}/order-items`, {
+      projectId: effectiveProjectId,
       orderNumber: projectData.project.orderNumber,
       productId: product?.id ?? null,
       componentId: component?.id ?? null,
@@ -652,11 +671,11 @@ export function ProjectForm({
         version: savedItem.version,
       },
     }));
-    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
   };
 
   const upsertExistingDynamicSelection = async (slot: DynamicProjectCategorySlot, selectedValue: string) => {
-    if (!projectId || !projectData?.project.orderNumber) return;
+    if (!effectiveProjectId || !projectData?.project.orderNumber) return;
     const numericSelectedId = Number(selectedValue);
     if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
 
@@ -669,8 +688,8 @@ export function ProjectForm({
     if (slot.source === "product" && !product) return;
     if (slot.source === "component" && !component) return;
 
-    const response = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
-      projectId,
+    const response = await apiRequest("POST", `/api/projects/${effectiveProjectId}/order-items`, {
+      projectId: effectiveProjectId,
       orderNumber: projectData.project.orderNumber,
       productId: product?.id ?? null,
       componentId: component?.id ?? null,
@@ -688,16 +707,16 @@ export function ProjectForm({
         version: savedItem.version,
       },
     }));
-    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
   };
 
   const handleFieldSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
     if (!selectedValue) {
       const existing = productSelections[fieldKey];
-      if (isEditing && projectId && existing.itemId != null && existing.version != null) {
+      if (isEditing && effectiveProjectId && existing.itemId != null && existing.version != null) {
         try {
-          await apiRequest("DELETE", `/api/projects/${projectId}/order-items/${existing.itemId}`, { version: existing.version });
-          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+          await apiRequest("DELETE", `/api/projects/${effectiveProjectId}/order-items/${existing.itemId}`, { version: existing.version });
+          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
           toast({ title: `${getProjectProductField(fieldKey).label} entfernt` });
         } catch (error) {
           toast({
@@ -724,7 +743,7 @@ export function ProjectForm({
     if (field.source === "product" && !product) return;
     if (field.source === "component" && !component) return;
 
-    if (isEditing && projectId) {
+    if (isEditing && effectiveProjectId) {
       try {
         await upsertExistingProjectSelection(fieldKey, selectedValue);
         toast({ title: `${getProjectProductField(fieldKey).label} übernommen` });
@@ -756,10 +775,10 @@ export function ProjectForm({
 
     if (!selectedValue) {
       const existing = dynamicProductSelections[slotId];
-      if (isEditing && projectId && existing?.itemId != null && existing.version != null) {
+      if (isEditing && effectiveProjectId && existing?.itemId != null && existing.version != null) {
         try {
-          await apiRequest("DELETE", `/api/projects/${projectId}/order-items/${existing.itemId}`, { version: existing.version });
-          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+          await apiRequest("DELETE", `/api/projects/${effectiveProjectId}/order-items/${existing.itemId}`, { version: existing.version });
+          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
           toast({ title: `${slot.label} entfernt` });
         } catch (error) {
           toast({
@@ -786,7 +805,7 @@ export function ProjectForm({
     if (slot.source === "product" && !product) return;
     if (slot.source === "component" && !component) return;
 
-    if (isEditing && projectId) {
+    if (isEditing && effectiveProjectId) {
       try {
         await upsertExistingDynamicSelection(slot, selectedValue);
         toast({ title: `${slot.label} uebernommen` });
@@ -855,9 +874,9 @@ export function ProjectForm({
     const productId = isProduct ? (created as Product).id : null;
     const componentId = isProduct ? null : (created as Component).id;
     const itemName = created.name;
-    if (isEditing && projectId && projectData?.project.orderNumber) {
-      const savedItemResponse = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
-        projectId,
+    if (isEditing && effectiveProjectId && projectData?.project.orderNumber) {
+      const savedItemResponse = await apiRequest("POST", `/api/projects/${effectiveProjectId}/order-items`, {
+        projectId: effectiveProjectId,
         orderNumber: projectData.project.orderNumber,
         productId,
         componentId,
@@ -869,7 +888,7 @@ export function ProjectForm({
         ...current,
         [fieldKey]: { productId, componentId, componentName: itemName, itemId: savedItem.id, version: savedItem.version },
       }));
-      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
     } else {
       setProductSelections((current) => ({
         ...current,
@@ -892,9 +911,9 @@ export function ProjectForm({
     const productId = isProduct ? (created as Product).id : null;
     const componentId = isProduct ? null : (created as Component).id;
     const itemName = created.name;
-    if (isEditing && projectId && projectData?.project.orderNumber) {
-      const savedItemResponse = await apiRequest("POST", `/api/projects/${projectId}/order-items`, {
-        projectId,
+    if (isEditing && effectiveProjectId && projectData?.project.orderNumber) {
+      const savedItemResponse = await apiRequest("POST", `/api/projects/${effectiveProjectId}/order-items`, {
+        projectId: effectiveProjectId,
         orderNumber: projectData.project.orderNumber,
         productId,
         componentId,
@@ -906,7 +925,7 @@ export function ProjectForm({
         ...current,
         [slotId]: { productId, componentId, componentName: itemName, itemId: savedItem.id, version: savedItem.version },
       }));
-      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/order-items`] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
     } else {
       setDynamicProductSelections((current) => ({
         ...current,
@@ -963,7 +982,7 @@ export function ProjectForm({
   // Update project mutation
   const updateMutation = useMutation({
     mutationFn: async (data: { version: number; type?: number; name?: string; orderNumber?: string | null; amount?: string | null; customerId?: number; descriptionMd?: string; projectOrder?: { amount?: string | null; plannedDateText?: string | null; plannedWeek?: string | null } }) => {
-      const res = await apiRequest('PATCH', `/api/projects/${projectId}`, data);
+      const res = await apiRequest('PATCH', `/api/projects/${effectiveProjectId}`, data);
       return res.json();
     },
     onSuccess: () => {
@@ -1106,11 +1125,11 @@ export function ProjectForm({
 
   const createNoteMutation = useMutation({
     mutationFn: async (data: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
-      const res = await apiRequest('POST', `/api/projects/${projectId}/notes`, data);
+      const res = await apiRequest('POST', `/api/projects/${effectiveProjectId}/notes`, data);
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
       void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
@@ -1122,7 +1141,7 @@ export function ProjectForm({
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
       void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
@@ -1146,7 +1165,7 @@ export function ProjectForm({
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
       void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
@@ -1164,10 +1183,10 @@ export function ProjectForm({
 
   const deleteNoteMutation = useMutation({
     mutationFn: async ({ noteId, version }: { noteId: number; version: number }) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/notes/${noteId}`, { version });
+      await apiRequest('DELETE', `/api/projects/${effectiveProjectId}/notes/${noteId}`, { version });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
       void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       void invalidateAppointmentProjectionQueries();
     },
@@ -1185,12 +1204,12 @@ export function ProjectForm({
 
   const addProjectTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      const response = await apiRequest('POST', `/api/projects/${projectId}/tags`, { tagId });
+      const response = await apiRequest('POST', `/api/projects/${effectiveProjectId}/tags`, { tagId });
       return response.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tags'] });
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId] });
       void invalidateProjectQueries();
     },
     onError: (error) => {
@@ -1204,13 +1223,13 @@ export function ProjectForm({
 
   const removeProjectTagMutation = useMutation({
     mutationFn: async (item: TagRelationItem) => {
-      await apiRequest('DELETE', `/api/projects/${projectId}/tags/${item.tag.id}`, {
+      await apiRequest('DELETE', `/api/projects/${effectiveProjectId}/tags/${item.tag.id}`, {
         version: item.relationVersion,
       });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tags'] });
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId] });
       void invalidateProjectQueries();
     },
     onError: (error) => {
@@ -1224,9 +1243,9 @@ export function ProjectForm({
 
   const deleteProjectMutation = useMutation({
     mutationFn: async () => {
-      if (!projectId) throw new Error("Projekt-ID fehlt");
+      if (!effectiveProjectId) throw new Error("Projekt-ID fehlt");
       if (!projectVersion) throw new Error("Projektversion fehlt");
-      await apiRequest("DELETE", `/api/projects/${projectId}`, { version: projectVersion });
+      await apiRequest("DELETE", `/api/projects/${effectiveProjectId}`, { version: projectVersion });
     },
     onSuccess: () => {
       void invalidateProjectQueries();
@@ -1347,6 +1366,13 @@ export function ProjectForm({
     return persistDraftProjectAttachments(targetProjectId);
   };
 
+  const persistEditAttachmentDrafts = async (targetProjectId: number) => {
+    const attachmentLinked = await persistDraftProjectAttachments(targetProjectId);
+    setDraftProjectAttachments([]);
+    setDocumentExtractionFile(null);
+    return attachmentLinked;
+  };
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
@@ -1397,6 +1423,9 @@ export function ProjectForm({
           plannedWeek: normalizedPlannedWeek,
         },
       });
+      if (effectiveProjectId && draftProjectAttachments.length > 0) {
+        extractionAttachmentLinked = await persistEditAttachmentDrafts(effectiveProjectId);
+      }
     } else {
       const createdProject = await createMutation.mutateAsync({
         name: storedProjectName,
@@ -1506,6 +1535,25 @@ export function ProjectForm({
         return;
       }
       const mergedCustomer = await tryPatchExistingCustomerFromExtraction(resolvedCustomer, payload.customer);
+      const extractedOrderNumber = payload.orderNumber.trim();
+      if (extractedOrderNumber.length > 0) {
+        const projectResolution = await resolveProjectByOrderNumber(extractedOrderNumber);
+        if (projectResolution.resolution === "multiple") {
+          throw new Error("Dateninkonsistenz: Auftragsnummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
+        }
+        if (projectResolution.resolution === "single") {
+          if (!projectResolution.project) {
+            throw new Error("Dateninkonsistenz: Vorhandenes Projekt konnte nicht geladen werden.");
+          }
+          setResolvedExistingProjectId(projectResolution.project.id);
+          setDocumentExtractionOpen(false);
+          toast({
+            title: "Vorhandenes Projekt geöffnet",
+            description: "Projekt mit dieser Auftragsnummer existiert bereits.",
+          });
+          return;
+        }
+      }
       setCustomerId(mergedCustomer.id);
 
       const hasDynamicValues = Object.values(dynamicProductSelections).some((selection) => selection.componentName.trim().length > 0);
@@ -1529,7 +1577,6 @@ export function ProjectForm({
           ),
         );
       }
-      const extractedOrderNumber = payload.orderNumber.trim();
       if (extractedOrderNumber.length > 0) {
         const currentOrderNumber = orderNumber.trim();
         if (!currentOrderNumber) {
@@ -1604,7 +1651,7 @@ export function ProjectForm({
         sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="project-form-sidebar">
             <ProjectAppointmentsPanel
-              projectId={projectId}
+              projectId={effectiveProjectId}
               projectName={projectNamePreview}
               isEditing={isEditing}
               className="h-auto"
@@ -1613,11 +1660,11 @@ export function ProjectForm({
             />
 
             <ProjectAttachmentsPanel
-              projectId={projectId}
+              projectId={effectiveProjectId}
               customerId={customerId}
               isEditing={isEditing}
-              pendingProjectAttachments={isEditing ? undefined : draftProjectAttachments}
-              onUploadPendingProjectAttachment={isEditing ? undefined : addDraftProjectAttachment}
+              pendingProjectAttachments={draftProjectAttachments}
+              onUploadPendingProjectAttachment={addDraftProjectAttachment}
               className="h-auto"
             />
 
