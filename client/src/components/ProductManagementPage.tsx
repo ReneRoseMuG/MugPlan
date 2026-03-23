@@ -18,6 +18,8 @@ type ApiErrorPayload = {
   code?: string;
   assignedProductCount?: number;
   projectOrderItemCount?: number;
+  productCount?: number;
+  componentCount?: number;
 };
 
 function extractApiPayload(error: unknown): ApiErrorPayload | null {
@@ -59,6 +61,31 @@ function resolveComponentDeleteError(error: unknown): string {
     return "Komponente ist noch Produkten zugeordnet.";
   }
   return "Komponente wird noch verwendet.";
+}
+
+function resolveCategoryDeleteError(error: unknown, entityLabel: "Produktkategorie" | "Komponentenkategorie"): string {
+  const payload = extractApiPayload(error);
+  if (payload?.code !== "BUSINESS_CONFLICT") {
+    return `${entityLabel} konnte nicht geloescht werden.`;
+  }
+
+  if (entityLabel === "Produktkategorie") {
+    const productCount = typeof payload.productCount === "number" ? payload.productCount : 0;
+    if (productCount > 0) {
+      return productCount === 1
+        ? "Produktkategorie wird noch von 1 Produkt verwendet."
+        : `Produktkategorie wird noch von ${productCount} Produkten verwendet.`;
+    }
+  }
+
+  const componentCount = typeof payload.componentCount === "number" ? payload.componentCount : 0;
+  if (componentCount > 0) {
+    return componentCount === 1
+      ? "Komponentenkategorie wird noch von 1 Komponente verwendet."
+      : `Komponentenkategorie wird noch von ${componentCount} Komponenten verwendet.`;
+  }
+
+  return `${entityLabel} wird noch verwendet.`;
 }
 
 function resolveCategoryImportError(code: string | null, entityLabel: "Produkte" | "Komponenten"): { title: string; description?: string } {
@@ -406,7 +433,7 @@ export function ProductManagementPage() {
                     {editRow?.id === row.id ? "Aktiv" : "Bearb."}
                   </Button>
                   <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onImport(row); }} data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}>Import</Button>
-                  <Button size="sm" variant="destructive" onClick={(event) => { event.stopPropagation(); onDelete(row); }}>-</Button>
+                  <Button size="sm" variant="destructive" onClick={(event) => { event.stopPropagation(); onDelete(row); }}>x</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -446,7 +473,7 @@ export function ProductManagementPage() {
               }
               if (!newProductCategoryName.trim()) return;
               categoryMutations.createProduct.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht angelegt werden") });
-            }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie wird noch verwendet", "Produktkategorie konnte nicht geloescht werden") }); }, (row) => { setPendingProductCategoryImportId(row.id); productCategoryImportInputRef.current?.click(); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
+            }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Produktkategorie"), variant: "destructive" }) }); }, (row) => { setPendingProductCategoryImportId(row.id); productCategoryImportInputRef.current?.click(); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
           </div>
 
           {/* Komponenten */}
@@ -462,7 +489,7 @@ export function ProductManagementPage() {
               }
               if (!newComponentCategoryName.trim()) return;
               categoryMutations.createComponent.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie existiert bereits", "Komponentenkategorie konnte nicht angelegt werden") });
-            }, (row) => { if (!window.confirm(`Komponentenkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteComponent.mutate({ id: row.id, version: row.version }, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie wird noch verwendet", "Komponentenkategorie konnte nicht geloescht werden") }); }, (row) => { setPendingComponentCategoryImportId(row.id); componentCategoryImportInputRef.current?.click(); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
+            }, (row) => { if (!window.confirm(`Komponentenkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteComponent.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Komponentenkategorie"), variant: "destructive" }) }); }, (row) => { setPendingComponentCategoryImportId(row.id); componentCategoryImportInputRef.current?.click(); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
           </div>
         </div>
       )}

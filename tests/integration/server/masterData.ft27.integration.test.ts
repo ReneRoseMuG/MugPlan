@@ -9,7 +9,7 @@
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
  * - Komponenten-Loeschkonflikte liefern Referenzdetails fuer Produktzuordnungen und Projektauftragspositionen.
- * - Default-Kategorien aus der Datei- und CRUD-Verwaltung sind nicht loeschbar.
+ * - Auch Default-Kategorien bleiben loeschbar, solange keine direkte Nutzung mehr besteht.
  * - Die dateibasierte Produktverwaltung importiert Kategorien, Produkte und Komponenten idempotent und reaktiviert vorhandene inaktive Kategorien.
  * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
  *
@@ -202,11 +202,14 @@ describe("FT27 integration: master data admin API", () => {
       .send({ version: category.body.version })
       .expect(409)
       .expect((res) => {
-        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+        expect(res.body).toMatchObject({
+          code: "BUSINESS_CONFLICT",
+          productCount: 1,
+        });
       });
   });
 
-  it("blocks deleting default product category with BUSINESS_CONFLICT", async () => {
+  it("allows deleting default product category when it is unused", async () => {
     const admin = await loginAdminAgent();
     await writeSeedFile("product-categories.csv", "Name;IsDefault;IsActive\nFass Saunen;true;true\n");
 
@@ -226,10 +229,7 @@ describe("FT27 integration: master data admin API", () => {
     await admin
       .delete(`/api/admin/master-data/product-categories/${defaultProductCategory!.id}`)
       .send({ version: defaultProductCategory!.version })
-      .expect(409)
-      .expect((res) => {
-        expect(res.body.code).toBe("BUSINESS_CONFLICT");
-      });
+      .expect(204);
   });
 
   it("allows deleting legacy product category name when it is not referenced", async () => {
@@ -243,7 +243,7 @@ describe("FT27 integration: master data admin API", () => {
   });
 
   it.each(protectedComponentCategoryNames)(
-    "blocks deleting protected component category %s with BUSINESS_CONFLICT",
+    "allows deleting default component category %s when it is unused",
     async (categoryName) => {
       const admin = await loginAdminAgent();
       const protectedCategory = await ensureDefaultComponentCategoryFixture(categoryName);
@@ -251,12 +251,40 @@ describe("FT27 integration: master data admin API", () => {
       await admin
         .delete(`/api/admin/master-data/component-categories/${protectedCategory.id}`)
         .send({ version: protectedCategory.version })
-        .expect(409)
-        .expect((res) => {
-          expect(res.body.code).toBe("BUSINESS_CONFLICT");
-        });
+        .expect(204);
     },
   );
+
+  it("blocks deleting used component category with BUSINESS_CONFLICT details", async () => {
+    const admin = await loginAdminAgent();
+
+    const category = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: "CK-FT27-INUSE", isActive: true, isDefault: true, version: 1 })
+      .expect(201);
+
+    await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: "CMP-FT27-INUSE",
+        categoryId: category.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .delete(`/api/admin/master-data/component-categories/${category.body.id}`)
+      .send({ version: category.body.version })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          code: "BUSINESS_CONFLICT",
+          componentCount: 1,
+        });
+      });
+  });
 
   it("returns FORBIDDEN for non-admin on FT27 list endpoint", async () => {
     const admin = await loginAdminAgent();

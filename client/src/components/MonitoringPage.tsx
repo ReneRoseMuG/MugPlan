@@ -209,7 +209,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     <div className="flex h-full min-h-0 flex-col gap-4 p-6">
       {isAdmin ? (
         <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="monitoring-config-panel">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[180px_180px_auto]">
+          <div className="flex flex-wrap items-end gap-4">
             <div className="flex items-center gap-3">
               <Switch
                 checked={allAppointments}
@@ -222,7 +222,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
               <span className="text-sm text-slate-700">alle Termine</span>
             </div>
             {!allAppointments ? (
-              <div className="flex flex-col gap-1">
+              <div className="flex w-28 flex-col gap-1">
                 <span className="text-sm font-medium text-slate-700">Vorlaufhorizont</span>
                 <Input
                   type="number"
@@ -238,7 +238,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
                 />
               </div>
             ) : null}
-            <div className="flex flex-col gap-1">
+            <div className="flex w-24 flex-col gap-1">
               <span className="text-sm font-medium text-slate-700">Mindestzahl Mitarbeiter</span>
               <Input
                 type="number"
@@ -253,7 +253,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
                 data-testid="input-monitoring-minimum-employees"
               />
             </div>
-            <div className="flex items-end">
+            <div className="ml-auto flex items-end">
               <Button
                 onClick={() => void handleSaveConfig()}
                 disabled={saveConfigMutation.isPending || configQuery.isLoading}
@@ -289,6 +289,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     <ListLayout
       title="Monitoring"
       icon={<AlertTriangle className="h-5 w-5" />}
+      helpKey="monitoring"
       isLoading={isInitialLoading && !initialItems}
       contentSlot={content}
     />

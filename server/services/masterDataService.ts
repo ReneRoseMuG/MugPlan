@@ -500,8 +500,9 @@ export async function deleteProductCategory(
   requireAdmin(roleKey);
   const category = await masterDataRepository.getProductCategoryById(id);
   if (!category) throw new MasterDataError(404, "NOT_FOUND");
-  if (category.isDefault) {
-    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  const usageCounts = await masterDataRepository.getProductCategoryUsageCounts(id);
+  if (usageCounts.productCount > 0) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT", usageCounts);
   }
   try {
     const result = await masterDataRepository.deleteProductCategoryWithVersion(id, expectedVersion);
@@ -509,7 +510,7 @@ export async function deleteProductCategory(
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
   } catch (error) {
     if (isRowReferencedError(error)) {
-      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+      throw new MasterDataError(409, "BUSINESS_CONFLICT", usageCounts);
     }
     throw error;
   }
@@ -633,8 +634,9 @@ export async function deleteComponentCategory(
   requireAdmin(roleKey);
   const category = await masterDataRepository.getComponentCategoryById(id);
   if (!category) throw new MasterDataError(404, "NOT_FOUND");
-  if (category.isDefault) {
-    throw new MasterDataError(409, "BUSINESS_CONFLICT");
+  const usageCounts = await masterDataRepository.getComponentCategoryUsageCounts(id);
+  if (usageCounts.componentCount > 0) {
+    throw new MasterDataError(409, "BUSINESS_CONFLICT", usageCounts);
   }
   try {
     const result = await masterDataRepository.deleteComponentCategoryWithVersion(id, expectedVersion);
@@ -642,7 +644,7 @@ export async function deleteComponentCategory(
     if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
   } catch (error) {
     if (isRowReferencedError(error)) {
-      throw new MasterDataError(409, "BUSINESS_CONFLICT");
+      throw new MasterDataError(409, "BUSINESS_CONFLICT", usageCounts);
     }
     throw error;
   }

@@ -8,7 +8,7 @@
  * - Nur ADMIN darf FT27-Stammdatenoperationen ausfuehren.
  * - Duplicate-/FK-Fehler werden als BUSINESS_CONFLICT gemappt.
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
- * - Default-Kategorien sind unabhaengig vom Namen nicht loeschbar.
+ * - Produkt- und Komponentenkategorien sind loeschbar, solange sie nicht mehr verwendet werden.
  * - Komponenten-Loeschkonflikte liefern differenzierte Referenzdetails fuer Produkte und Projektauftragspositionen.
  * - Component-Product m:n-Operationen folgen derselben Fehlersemantik.
  * - Ohne Filter wird serverseitig auf active normalisiert.
@@ -27,9 +27,11 @@ const repositoryMocks = vi.hoisted(() => ({
   createProductCategory: vi.fn(),
   createComponent: vi.fn(),
   getProductCategoryById: vi.fn(),
+  getProductCategoryUsageCounts: vi.fn(),
   getProductCategoryByName: vi.fn(),
   getProductByNormalizedName: vi.fn(),
   getComponentCategoryById: vi.fn(),
+  getComponentCategoryUsageCounts: vi.fn(),
   getComponentCategoryByName: vi.fn(),
   getComponentById: vi.fn(),
   getComponentDeleteRelationCounts: vi.fn(),
@@ -53,9 +55,11 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   createProductCategory: repositoryMocks.createProductCategory,
   createComponent: repositoryMocks.createComponent,
   getProductCategoryById: repositoryMocks.getProductCategoryById,
+  getProductCategoryUsageCounts: repositoryMocks.getProductCategoryUsageCounts,
   getProductCategoryByName: repositoryMocks.getProductCategoryByName,
   getProductByNormalizedName: repositoryMocks.getProductByNormalizedName,
   getComponentCategoryById: repositoryMocks.getComponentCategoryById,
+  getComponentCategoryUsageCounts: repositoryMocks.getComponentCategoryUsageCounts,
   getComponentCategoryByName: repositoryMocks.getComponentCategoryByName,
   getComponentById: repositoryMocks.getComponentById,
   getComponentDeleteRelationCounts: repositoryMocks.getComponentDeleteRelationCounts,
@@ -156,47 +160,61 @@ describe("FT27 unit: masterDataService", () => {
   });
 
   it("maps referenced category delete to BUSINESS_CONFLICT", async () => {
-    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 2, name: "Kategorie A" });
-    repositoryMocks.deleteProductCategoryWithVersion.mockRejectedValueOnce({
-      code: "ER_ROW_IS_REFERENCED_2",
-      errno: 1451,
-    });
+    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 2, name: "Kategorie A", isDefault: true });
+    repositoryMocks.getProductCategoryUsageCounts.mockResolvedValueOnce({ productCount: 2 });
 
     await expect(deleteProductCategory(2, 1, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
       status: 409,
       code: "BUSINESS_CONFLICT",
-    });
-  });
-
-  it("blocks deleting default product category as BUSINESS_CONFLICT", async () => {
-    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 1, name: "Fass Saunen", isDefault: true });
-
-    await expect(deleteProductCategory(1, 3, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
-      status: 409,
-      code: "BUSINESS_CONFLICT",
+      details: {
+        productCount: 2,
+      },
     });
     expect(repositoryMocks.deleteProductCategoryWithVersion).not.toHaveBeenCalled();
   });
 
+  it("allows deleting default product category when it is unused", async () => {
+    repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 1, name: "Fass Saunen", isDefault: true });
+    repositoryMocks.getProductCategoryUsageCounts.mockResolvedValueOnce({ productCount: 0 });
+    repositoryMocks.deleteProductCategoryWithVersion.mockResolvedValueOnce({ kind: "deleted" });
+
+    await expect(deleteProductCategory(1, 3, "ADMIN")).resolves.toBeUndefined();
+    expect(repositoryMocks.deleteProductCategoryWithVersion).toHaveBeenCalledWith(1, 3);
+  });
+
   it("does not block deleting legacy category name by default protection", async () => {
     repositoryMocks.getProductCategoryById.mockResolvedValueOnce({ id: 2, name: "Alle Produkte" });
+    repositoryMocks.getProductCategoryUsageCounts.mockResolvedValueOnce({ productCount: 0 });
     repositoryMocks.deleteProductCategoryWithVersion.mockResolvedValueOnce({ kind: "deleted" });
 
     await expect(deleteProductCategory(2, 1, "ADMIN")).resolves.toBeUndefined();
   });
 
   it.each(protectedComponentCategoryNames)(
-    "blocks deleting protected component category %s as BUSINESS_CONFLICT",
+    "allows deleting default component category %s when it is unused",
     async (categoryName) => {
       repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 1, name: categoryName, isDefault: true });
+      repositoryMocks.getComponentCategoryUsageCounts.mockResolvedValueOnce({ componentCount: 0 });
+      repositoryMocks.deleteComponentCategoryWithVersion.mockResolvedValueOnce({ kind: "deleted" });
 
-      await expect(deleteComponentCategory(1, 7, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
-        status: 409,
-        code: "BUSINESS_CONFLICT",
-      });
-      expect(repositoryMocks.deleteComponentCategoryWithVersion).not.toHaveBeenCalled();
+      await expect(deleteComponentCategory(1, 7, "ADMIN")).resolves.toBeUndefined();
+      expect(repositoryMocks.deleteComponentCategoryWithVersion).toHaveBeenCalledWith(1, 7);
     },
   );
+
+  it("blocks deleting component category with usage counts", async () => {
+    repositoryMocks.getComponentCategoryById.mockResolvedValueOnce({ id: 7, name: "Dachvarianten", isDefault: true });
+    repositoryMocks.getComponentCategoryUsageCounts.mockResolvedValueOnce({ componentCount: 3 });
+
+    await expect(deleteComponentCategory(7, 4, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+      details: {
+        componentCount: 3,
+      },
+    });
+    expect(repositoryMocks.deleteComponentCategoryWithVersion).not.toHaveBeenCalled();
+  });
 
   it("returns detailed BUSINESS_CONFLICT metadata when deleting a component assigned to products", async () => {
     repositoryMocks.getComponentDeleteRelationCounts.mockResolvedValueOnce({

@@ -96,6 +96,19 @@ export async function getProductCategoryByName(name: string): Promise<ProductCat
   return row;
 }
 
+export async function getProductCategoryUsageCounts(categoryId: number): Promise<{ productCount: number }> {
+  const [row] = await db
+    .select({
+      productCount: sql<number>`count(*)`,
+    })
+    .from(products)
+    .where(eq(products.categoryId, categoryId));
+
+  return {
+    productCount: Number(row?.productCount ?? 0),
+  };
+}
+
 export async function updateProductCategoryWithVersion(
   id: number,
   expectedVersion: number,
@@ -158,6 +171,19 @@ export async function getComponentCategoryById(id: number): Promise<ComponentCat
 export async function getComponentCategoryByName(name: string): Promise<ComponentCategory | undefined> {
   const [row] = await db.select().from(componentCategories).where(eq(componentCategories.name, name)).limit(1);
   return row;
+}
+
+export async function getComponentCategoryUsageCounts(categoryId: number): Promise<{ componentCount: number }> {
+  const [row] = await db
+    .select({
+      componentCount: sql<number>`count(*)`,
+    })
+    .from(components)
+    .where(eq(components.categoryId, categoryId));
+
+  return {
+    componentCount: Number(row?.componentCount ?? 0),
+  };
 }
 
 export async function updateComponentCategoryWithVersion(
