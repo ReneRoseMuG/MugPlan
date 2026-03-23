@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Projektanlage im Browser validiert Pflichtfelder und erzeugt nach Kundenauswahl einen neuen Datensatz.
+ * - Ein neues Projekt mit sichtbaren Artikeln, Sidebar und EntityFormShell laesst sich anlegen, auf der Karte wiederfinden und im Edit-Modus konsistent erneut oeffnen.
  * - Projektliste schaltet stabil zwischen Grundmengen um und filtert innerhalb der gewaehlten Menge.
  * - Produkt- und Komponenten-Dialoge im Projektformular bleiben fuer neue und bestehende Projekte sofort sichtbar, persistent und nach Reopen abrufbar.
  * - Projektnotizen lassen sich im Browser anlegen und loeschen.
@@ -10,6 +11,7 @@
  *
  * Fehlerfaelle:
  * - Speichern ohne Kunde oder Titel bleibt im Formular blockiert.
+ * - Shell-, Sidebar- oder Artikellisten-Inhalte gehen zwischen Create, Save und Reopen verloren.
  * - Scope-Wechsel vermischt kommende Projekte und Projekte ohne Termine nicht.
  * - Neu angelegte Produkt- oder Komponentenwerte verschwinden nach dem Speichern oder beim erneuten Oeffnen des Formulars.
  * - Loeschen eines Projekts mit Termin entfernt den Datensatz nicht.
@@ -23,6 +25,7 @@ import {
   createComponentFixture,
   createCustomerFixture,
   createProductFixture,
+  createProjectCreateEditBrowserFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
   getRelativeBerlinDate,
@@ -44,7 +47,7 @@ async function openProjects(page: Page) {
 async function openCustomerPickerAndSelect(page: Page, customerNumber: string) {
   await page.getByTestId("button-select-customer").click();
   await expect(page.getByTestId("table-customers")).toBeVisible();
-  await page.locator("#customer-filter-last-name").fill(customerNumber.slice(-12));
+  await page.locator("#customer-filter-number").fill(customerNumber.slice(-12));
   await page.getByTestId("table-customers").locator("tr").filter({ hasText: customerNumber }).first().dblclick();
 }
 
@@ -74,6 +77,38 @@ type ProjectOrderItemRow = {
 async function openProjectArticleList(page: Page) {
   await page.getByRole("tab", { name: "Artikelliste" }).click();
   await expect(page.getByTestId("project-product-fields")).toBeVisible();
+}
+
+async function expectProjectEntityFormShell(page: Page) {
+  await expect(page.getByTestId("entity-form-shell")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-header")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-middle")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-main")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-main-inner")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-sidebar")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-footer")).toBeVisible();
+}
+
+async function expectProjectSidebarPanels(page: Page, isEditing: boolean) {
+  const sidebar = page.getByTestId("project-form-sidebar");
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).toContainText("Alle Termine");
+  await expect(sidebar).toContainText("Dokumente");
+  await expect(sidebar).toContainText("Tags");
+  await expect(sidebar).toContainText("Notizen");
+  await expect(page.getByTestId("button-add-document-header")).toBeVisible();
+  await expect(page.getByTestId("project-tag-picker-button-add")).toBeVisible();
+  await expect(page.getByTestId("project-tag-picker-assigned-list")).toBeVisible();
+  await expect(page.getByTestId("button-new-note")).toBeVisible();
+  if (isEditing) {
+    await expect(page.getByTestId("button-new-appointment-from-project")).toBeVisible();
+  } else {
+    await expect(page.getByTestId("button-new-appointment-from-project")).toHaveCount(0);
+  }
+}
+
+async function selectProjectArticle(page: Page, fieldKey: string, itemId: number) {
+  await page.getByTestId(`select-project-product-${fieldKey}`).selectOption(String(itemId));
 }
 
 async function waitForNamedMasterDataId(page: Page, url: string, expectedName: string): Promise<number> {
@@ -185,6 +220,91 @@ test("creates a project via UI after customer selection and keeps validation err
   await expect(page.getByTestId("button-new-project")).toBeVisible();
   await page.getByLabel("Ohne Termine").click();
   await expect(page.getByTestId("list-projects")).toContainText("FT02 Browser Projekt");
+});
+
+test("creates a fully visible project, checks EntityFormShell and restores all values after reopen", async ({ page }) => {
+  const fixture = await createProjectCreateEditBrowserFixture({
+    prefix: "FT02-BROWSER-CREATE-EDIT",
+  });
+
+  await openProjects(page);
+  await page.getByTestId("button-new-project").click();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+
+  await expectProjectEntityFormShell(page);
+  await expectProjectSidebarPanels(page, false);
+
+  await openCustomerPickerAndSelect(page, fixture.customer.customerNumber);
+  await expect(page.getByTestId("badge-customer")).toContainText(fixture.customer.customerNumber);
+  await expect(page.getByTestId("badge-customer")).toContainText(fixture.customer.fullName ?? "");
+
+  await page.getByTestId("input-project-name").fill(fixture.projectInput.name);
+  await page.getByTestId("input-project-order-number").fill(fixture.projectInput.orderNumber);
+  await page.getByTestId("input-project-amount").fill(fixture.projectInput.amount);
+  await page.getByTestId("input-project-planned-date-text").fill(fixture.projectInput.plannedDateText);
+  await page.getByTestId("input-project-planned-week").fill(fixture.projectInput.plannedWeek);
+
+  await openProjectArticleList(page);
+  await selectProjectArticle(page, "saunaModel", fixture.articles.product.id);
+  await selectProjectArticle(page, "oven", fixture.articles.oven.id);
+  await selectProjectArticle(page, "roof", fixture.articles.roof.id);
+  await selectProjectArticle(page, "door", fixture.articles.door.id);
+
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.product.name);
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.oven.name);
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.roof.name);
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.door.name);
+  await expect(page.getByTestId("input-project-name")).toHaveValue(fixture.projectInput.name);
+  await expect(page.getByTestId("input-project-order-number")).toHaveValue(fixture.projectInput.orderNumber);
+  await expect(page.getByTestId("input-project-amount")).toHaveValue(fixture.projectInput.amount);
+  await expect(page.getByTestId("input-project-planned-date-text")).toHaveValue(fixture.projectInput.plannedDateText);
+  await expect(page.getByTestId("input-project-planned-week")).toHaveValue(fixture.projectInput.plannedWeek);
+
+  const createdProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && response.url().includes("/api/projects")
+    && !response.url().includes("/order-items")
+  ));
+  await page.getByTestId("button-save-project").click();
+  const createdProjectResponse = await createdProjectResponsePromise;
+  expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
+  await expect(page.getByTestId("button-new-project")).toBeVisible();
+
+  const createdProject = (await createdProjectResponse.json()) as { id: number };
+  const createdProjectId = Number(createdProject.id);
+  expect(createdProjectId).toBeGreaterThan(0);
+
+  await page.getByLabel("Ohne Termine").click();
+  const projectCard = page.getByTestId(`project-card-${createdProjectId}`);
+  await expect(projectCard).toBeVisible();
+  await expect(projectCard).toContainText(fixture.projectInput.name);
+  await expect(projectCard).toContainText(`A-Nr. ${fixture.projectInput.orderNumber}`);
+  await expect(projectCard).toContainText(fixture.articles.product.name);
+  await expect(projectCard).toContainText(fixture.articles.oven.name);
+  await expect(projectCard).toContainText(fixture.customer.fullName ?? "");
+
+  await projectCard.dblclick();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+
+  await expectProjectEntityFormShell(page);
+  await expectProjectSidebarPanels(page, true);
+  await openProjectArticleList(page);
+
+  await expect(page.getByTestId("input-project-name")).toHaveValue(fixture.projectInput.name);
+  await expect(page.getByTestId("input-project-order-number")).toHaveValue(fixture.projectInput.orderNumber);
+  await expect(page.getByTestId("input-project-amount")).toHaveValue(fixture.projectInput.amount);
+  await expect(page.getByTestId("input-project-planned-date-text")).toHaveValue(fixture.projectInput.plannedDateText);
+  await expect(page.getByTestId("input-project-planned-week")).toHaveValue(fixture.projectInput.plannedWeek);
+  await expect(page.getByTestId("badge-customer")).toContainText(fixture.customer.customerNumber);
+  await expect(page.getByTestId("badge-customer")).toContainText(fixture.customer.fullName ?? "");
+  await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(fixture.articles.product.id));
+  await expect(page.getByTestId("select-project-product-oven")).toHaveValue(String(fixture.articles.oven.id));
+  await expect(page.getByTestId("select-project-product-roof")).toHaveValue(String(fixture.articles.roof.id));
+  await expect(page.getByTestId("select-project-product-door")).toHaveValue(String(fixture.articles.door.id));
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.product.name);
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.oven.name);
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.roof.name);
+  await expect(page.getByTestId("project-product-fields")).toContainText(fixture.articles.door.name);
 });
 
 test("creates product and component entries in a new project form and restores them after reopen", async ({ page }) => {
