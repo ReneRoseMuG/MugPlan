@@ -210,6 +210,7 @@ Codex prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-ind
 
 `cleanup`  
 Codex führt den Abschluss des aktuellen Arbeitsbranches ausschließlich seriell aus:
+0. Wenn sich Codex bereits auf einem Arbeitsbranch ungleich `work` befindet und dieser noch uncommittete, auftragsbezogene Änderungen enthält, darf Codex genau diese Änderungen vor dem eigentlichen Cleanup seriell `stage`n, committen und nach `origin` pushen, sofern dies nur der Herstellung eines cleanup-fähigen Zustands dient.
 1. Codex stellt sicher, dass der aktuelle Branch nicht `work` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
 2. Codex wechselt auf `work`.
 3. Codex stellt sicher, dass `work` keine uncommitteten Änderungen enthält und vollständig mit `origin/work` synchronisiert ist.
@@ -217,7 +218,8 @@ Codex führt den Abschluss des aktuellen Arbeitsbranches ausschließlich seriell
 5. Codex prüft das Ergebnis auf `work`.
 6. Codex pusht `work`.
 7. Codex löscht danach nur den lokalen Arbeitsbranch. Der Remote-Branch wird nicht gelöscht.
-8. Bei uncommitteten Änderungen, fehlendem Push, Divergenzen, Merge-Konflikten oder anderen Blockern bricht Codex kontrolliert ab und dokumentiert den Grund.
+8. Unzulässig bleiben dabei zusätzliche inhaltliche Änderungen, Refactorings oder Dokumentationsarbeiten, die nicht bereits Teil des Arbeitsbranches sind; erlaubt ist nur die Sicherung des vorhandenen Branch-Zustands für den Cleanup.
+9. Bei uncommitteten Änderungen außerhalb dieses erlaubten Vorbereitungsfalls, fehlendem Push, Divergenzen, Merge-Konflikten oder anderen Blockern bricht Codex kontrolliert ab und dokumentiert den Grund.
 
 ---
 
