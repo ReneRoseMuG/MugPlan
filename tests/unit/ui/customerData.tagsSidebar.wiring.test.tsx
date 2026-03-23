@@ -2,15 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - CustomerData rendert den TagPickerPanel nur im Edit-Modus.
+ * - CustomerData rendert den TagPickerPanel im Shell-Layout in Edit und Create.
  * - Der Kunden-Tag-Picker laedt den domänenspezifischen Tag-Katalog fuer `customer`.
  *
  * Fehlerfaelle:
- * - Der Kunden-Tag-Picker fehlt trotz bestehendem Kunden.
+ * - Der Kunden-Tag-Picker fehlt trotz bestehendem oder neuem Kundenformular.
  * - CustomerData fragt weiterhin einen generischen statt domänenspezifischen Tag-Katalog an.
  *
  * Ziel:
- * Die Sidebar-Verdrahtung der Kunden-Tags ueber beobachtbare Query-Keys und Panel-Props absichern.
+ * Die Sidebar-Verdrahtung der Kunden-Tags im neuen Shell-Layout ueber beobachtbare Query-Keys und Panel-Props absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -25,8 +25,15 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: () => useMutationMock(),
 }));
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: ({ children, sidebar, header, footer }: { children?: React.ReactNode; sidebar?: React.ReactNode; header?: React.ReactNode; footer?: React.ReactNode }) => (
+    <div>
+      {header}
+      {children}
+      {sidebar}
+      {footer}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/TagPickerPanel", () => ({
@@ -180,6 +187,22 @@ describe("FT28 customer data tags sidebar wiring", () => {
     expect(tagPickerCalls[0]).toMatchObject({
       testIdPrefix: "customer-tag-picker",
       canEdit: true,
+      availableTags: [{ id: 7, name: "Service" }],
+    });
+    expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
+      queryKey: ["/api/tags", "customer"],
+    }));
+  });
+
+  it("renders the customer tag picker with empty draft tags in create mode", () => {
+    const markup = renderToStaticMarkup(<CustomerData />);
+
+    expect(markup).toContain("customer-tag-picker-marker");
+    expect(tagPickerCalls).toHaveLength(1);
+    expect(tagPickerCalls[0]).toMatchObject({
+      testIdPrefix: "customer-tag-picker",
+      canEdit: true,
+      assignedTags: [],
       availableTags: [{ id: 7, name: "Service" }],
     });
     expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
