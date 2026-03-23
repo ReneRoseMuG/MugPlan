@@ -16,6 +16,10 @@ export async function listTours(): Promise<Tour[]> {
   return toursRepository.getTours();
 }
 
+function normalizeTourName(name: string): string {
+  return name.trim().toLocaleLowerCase("de");
+}
+
 function buildNextTourName(existing: Tour[]): string {
   const usedNumbers = new Set(
     existing
@@ -43,7 +47,36 @@ export async function updateTour(id: number, data: UpdateTour & { version: numbe
   if (!Number.isInteger(data.version) || data.version < 1) {
     throw new ToursError(422, "VALIDATION_ERROR");
   }
-  const result = await toursRepository.updateTourWithVersion(id, data.version, data.color);
+  const currentTour = await toursRepository.getTour(id);
+  if (!currentTour) {
+    return null;
+  }
+
+  const requestedName = data.name.trim();
+  const requestedNameNormalized = normalizeTourName(requestedName);
+  if (requestedNameNormalized !== normalizeTourName(currentTour.name)) {
+    const existingTours = await toursRepository.getTours();
+    const conflictingTour = existingTours.find((tour) => (
+      tour.id !== id && normalizeTourName(tour.name) === requestedNameNormalized
+    ));
+    if (conflictingTour) {
+      throw new ToursError(409, "BUSINESS_CONFLICT");
+    }
+  }
+
+  let result: Awaited<ReturnType<typeof toursRepository.updateTourWithVersion>>;
+  try {
+    result = await toursRepository.updateTourWithVersion(id, data.version, requestedName, data.color);
+  } catch (error) {
+    const mysqlError = error as { code?: string; errno?: number } | null;
+    const isDuplicateName =
+      mysqlError?.code === "ER_DUP_ENTRY" ||
+      mysqlError?.errno === 1062;
+    if (isDuplicateName) {
+      throw new ToursError(409, "BUSINESS_CONFLICT");
+    }
+    throw error;
+  }
   if (result.kind === "version_conflict") {
     const exists = await toursRepository.getTour(id);
     if (!exists) return null;

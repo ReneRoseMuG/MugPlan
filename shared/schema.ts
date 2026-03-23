@@ -104,7 +104,9 @@ export const tours = mysqlTable("tours", {
   name: varchar("name", { length: 255 }).notNull(),
   color: varchar("color", { length: 255 }).notNull().default("#2563eb"),
   version: int("version").notNull().default(1),
-});
+}, (table) => ({
+  nameUnique: uniqueIndex("tours_name_unique").on(table.name),
+}));
 
 export const TOUR_DEFAULT_COLOR = "#2563eb";
 
@@ -113,7 +115,10 @@ export const insertTourSchema = createInsertSchema(tours)
   .extend({
     color: z.string().trim().min(1).default(TOUR_DEFAULT_COLOR),
   });
-export const updateTourSchema = z.object({ color: z.string() });
+export const updateTourSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  color: z.string(),
+});
 
 export type Tour = typeof tours.$inferSelect;
 export type InsertTour = z.infer<typeof insertTourSchema>;

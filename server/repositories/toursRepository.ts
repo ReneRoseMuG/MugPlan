@@ -21,11 +21,13 @@ export async function createTour(name: string, color: string): Promise<Tour> {
 export async function updateTourWithVersion(
   id: number,
   expectedVersion: number,
+  name: string,
   color: string,
 ): Promise<{ kind: "updated"; tour: Tour } | { kind: "version_conflict" }> {
   const result = await db.execute(sql`
     update tours
     set
+      name = ${name},
       color = ${color},
       version = version + 1
     where id = ${id}

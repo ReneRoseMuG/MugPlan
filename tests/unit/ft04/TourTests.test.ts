@@ -6,11 +6,13 @@
  *
  * Abgedeckte Regeln:
  * - Tournamen werden serverseitig deterministisch als "Tour N" vergeben.
+ * - Bestehende Touren koennen umbenannt werden, solange der Name eindeutig bleibt.
  * - Tour-Update/Delete verlangen gueltige Version >= 1.
  * - Tour-Delete ist gesperrt, wenn Termine auf die Tour verweisen (BUSINESS_CONFLICT).
  *
  * Fehlerfaelle:
  * - Ungueltige Version fuehrt zu VALIDATION_ERROR.
+ * - Doppelte Tournamen liefern BUSINESS_CONFLICT.
  * - Loeschen bei verknuepften Terminen liefert BUSINESS_CONFLICT.
  *
  * Ziel:
@@ -55,26 +57,58 @@ describe("FT04 unit: toursService core behavior", () => {
     expect(created.name).toBe("Tour 3");
   });
 
-  it("fills naming gaps when lower numbers are missing", async () => {
+  it("reuses freed numeric tour names after a previous tour was renamed", async () => {
     toursRepositoryMock.getTours.mockResolvedValue([
       { id: 10, name: "Tour 1", color: "#111111", version: 1 } as any,
-      { id: 11, name: "Tour 3", color: "#222222", version: 1 } as any,
+      { id: 11, name: "Tour 2", color: "#222222", version: 1 } as any,
+      { id: 12, name: "Tour A", color: "#333333", version: 2 } as any,
     ]);
     toursRepositoryMock.createTour.mockResolvedValue({
-      id: 12,
-      name: "Tour 2",
+      id: 13,
+      name: "Tour 3",
       color: "#abcdef",
       version: 1,
     } as any);
 
     const created = await createTour({ color: "#abcdef" } as any);
 
-    expect(toursRepositoryMock.createTour).toHaveBeenCalledWith("Tour 2", "#abcdef");
-    expect(created.name).toBe("Tour 2");
+    expect(toursRepositoryMock.createTour).toHaveBeenCalledWith("Tour 3", "#abcdef");
+    expect(created.name).toBe("Tour 3");
+  });
+
+  it("updates an existing tour name and color", async () => {
+    toursRepositoryMock.getTour.mockResolvedValue({ id: 5, name: "Tour 5", color: "#000000", version: 2 } as any);
+    toursRepositoryMock.getTours.mockResolvedValue([
+      { id: 5, name: "Tour 5", color: "#000000", version: 2 } as any,
+      { id: 6, name: "Tour 6", color: "#111111", version: 1 } as any,
+    ]);
+    toursRepositoryMock.updateTourWithVersion.mockResolvedValue({
+      kind: "updated",
+      tour: { id: 5, name: "Nordtour", color: "#101010", version: 3 },
+    } as any);
+
+    const updated = await updateTour(5, { name: "Nordtour", color: "#101010", version: 2 });
+
+    expect(toursRepositoryMock.updateTourWithVersion).toHaveBeenCalledWith(5, 2, "Nordtour", "#101010");
+    expect(updated).toMatchObject({ name: "Nordtour", color: "#101010", version: 3 });
+  });
+
+  it("rejects duplicate tour names case-insensitively", async () => {
+    toursRepositoryMock.getTour.mockResolvedValue({ id: 5, name: "Tour 5", color: "#000000", version: 2 } as any);
+    toursRepositoryMock.getTours.mockResolvedValue([
+      { id: 5, name: "Tour 5", color: "#000000", version: 2 } as any,
+      { id: 6, name: "Nordtour", color: "#111111", version: 1 } as any,
+    ]);
+
+    await expect(updateTour(5, { name: "  nordtour  ", color: "#101010", version: 2 })).rejects.toMatchObject({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+    expect(toursRepositoryMock.updateTourWithVersion).not.toHaveBeenCalled();
   });
 
   it("rejects update with invalid version", async () => {
-    await expect(updateTour(1, { color: "#123456", version: 0 })).rejects.toMatchObject({
+    await expect(updateTour(1, { name: "Tour 1", color: "#123456", version: 0 })).rejects.toMatchObject({
       status: 422,
       code: "VALIDATION_ERROR",
     });
@@ -87,20 +121,22 @@ describe("FT04 unit: toursService core behavior", () => {
     });
   });
 
-  it("returns null for missing tour in version conflict path", async () => {
-    toursRepositoryMock.updateTourWithVersion.mockResolvedValue({ kind: "version_conflict" } as any);
+  it("returns null when the requested tour no longer exists", async () => {
     toursRepositoryMock.getTour.mockResolvedValue(null);
 
-    const result = await updateTour(999, { color: "#999999", version: 1 });
+    const result = await updateTour(999, { name: "Tour 999", color: "#999999", version: 1 });
 
     expect(result).toBeNull();
+    expect(toursRepositoryMock.updateTourWithVersion).not.toHaveBeenCalled();
   });
 
   it("throws VERSION_CONFLICT when stale version hits existing tour", async () => {
+    toursRepositoryMock.getTour
+      .mockResolvedValueOnce({ id: 5, name: "Tour 5", color: "#000000", version: 2 } as any)
+      .mockResolvedValueOnce({ id: 5, name: "Tour 5", color: "#000000", version: 2 } as any);
     toursRepositoryMock.updateTourWithVersion.mockResolvedValue({ kind: "version_conflict" } as any);
-    toursRepositoryMock.getTour.mockResolvedValue({ id: 5, name: "Tour 5", color: "#000000", version: 2 } as any);
 
-    await expect(updateTour(5, { color: "#101010", version: 1 })).rejects.toMatchObject({
+    await expect(updateTour(5, { name: "Tour 5", color: "#101010", version: 1 })).rejects.toMatchObject({
       status: 409,
       code: "VERSION_CONFLICT",
     });

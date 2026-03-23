@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "1d0189ef-9da3-4831-91d7-936899efa00d",
+  "prevId": "4661da18-d7ef-4f82-a539-421f1559495d",
+  "note": "Manual snapshot placeholder for 0014_tour_name_unique. Authoritative migration logic lives in migrations/0014_tour_name_unique.sql."
+}

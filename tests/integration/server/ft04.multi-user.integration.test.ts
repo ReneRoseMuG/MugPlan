@@ -46,7 +46,7 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 
 async function createTour(agent: SuperAgentTest, color: string) {
   const response = await agent.post("/api/tours").send({ color }).expect(201);
-  return response.body as { id: number; version: number };
+  return response.body as { id: number; name: string; version: number };
 }
 
 async function createEmployee(agent: SuperAgentTest) {
@@ -70,8 +70,8 @@ describe("FT04 integration: MultiUserTests", () => {
     const created = await createTour(sessionA, "#101010");
 
     const [resA, resB] = await Promise.all([
-      sessionA.patch(`/api/tours/${created.id}`).send({ color: "#202020", version: created.version }),
-      sessionB.patch(`/api/tours/${created.id}`).send({ color: "#303030", version: created.version }),
+      sessionA.patch(`/api/tours/${created.id}`).send({ name: "Nordtour", color: "#202020", version: created.version }),
+      sessionB.patch(`/api/tours/${created.id}`).send({ name: "Suedtour", color: "#303030", version: created.version }),
     ]);
 
     const statuses = [resA.status, resB.status].sort((l, r) => l - r);
@@ -112,7 +112,7 @@ describe("FT04 integration: MultiUserTests", () => {
 
     await sessionA
       .patch(`/api/tours/${created.id}`)
-      .send({ color: "#777777", version: created.version })
+      .send({ name: created.name, color: "#777777", version: created.version })
       .expect(404)
       .expect((res) => {
         expect(res.body.code).toBe("NOT_FOUND");

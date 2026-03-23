@@ -80,6 +80,14 @@ vi.mock("@/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/input", () => ({
+  Input: (props: Record<string, unknown>) => <input {...props} />,
+}));
+
+vi.mock("@/components/ui/label", () => ({
+  Label: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <label {...props}>{children}</label>,
+}));
+
 vi.mock("@/components/ui/tabs", () => ({
   Tabs: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
   TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -115,7 +123,7 @@ const tourFixture = {
 };
 
 describe("FT04 tour form shell layout integration", () => {
-  const noop = async () => undefined;
+  const noop = async (..._args: unknown[]) => undefined;
 
   it("renders the expected create elements in shell mode without a sidebar", () => {
     const markup = renderToStaticMarkup(
@@ -141,6 +149,9 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).not.toContain("button-delete-tour-form");
     expect(markup).toContain("tab-tour-stammdaten");
     expect(markup).toContain("tab-tour-termine");
+    expect(markup).toContain("input-tour-name");
+    expect(markup).toContain("text-tour-generated-name-hint");
+    expect(markup).toContain("Neue Tour");
     expect(markup).toContain("button-tour-color-picker");
     expect(markup).toContain("button-add-tour-member");
     expect(markup).toContain("tour-members-section-header");
@@ -164,6 +175,9 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell");
     expect(markup).not.toContain("entity-form-shell-sidebar");
     expect(markup).toContain("button-delete-tour-form");
+    expect(markup).toContain("input-tour-name");
+    expect(markup).toContain("Nordtour");
+    expect(markup).not.toContain("text-tour-generated-name-hint");
     expect(markup).toContain("badge-tour-member-21");
     expect(markup).toContain("Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.");
   });

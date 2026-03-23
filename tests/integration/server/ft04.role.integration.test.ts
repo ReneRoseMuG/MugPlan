@@ -89,7 +89,7 @@ describe("FT04 integration: RoleTests", () => {
     const id = createForUpdate.body?.id ?? 1;
     const version = createForUpdate.body?.version ?? 1;
 
-    await reader.patch(`/api/tours/${id}`).send({ color: "#0000aa", version }).expect(403);
+    await reader.patch(`/api/tours/${id}`).send({ name: "Reader Tour", color: "#0000aa", version }).expect(403);
     await reader.delete(`/api/tours/${id}`).send({ version }).expect(403);
   });
 
@@ -99,7 +99,7 @@ describe("FT04 integration: RoleTests", () => {
     const created = await dispatcher.post("/api/tours").send({ color: "#1111aa" }).expect(201);
     const updated = await dispatcher
       .patch(`/api/tours/${created.body.id}`)
-      .send({ color: "#22aa22", version: created.body.version })
+      .send({ name: "Dispatcher Tour", color: "#22aa22", version: created.body.version })
       .expect(200);
 
     await dispatcher.delete(`/api/tours/${created.body.id}`).send({ version: updated.body.version }).expect(403);
@@ -111,7 +111,7 @@ describe("FT04 integration: RoleTests", () => {
     const created = await admin.post("/api/tours").send({ color: "#334455" }).expect(201);
     const updated = await admin
       .patch(`/api/tours/${created.body.id}`)
-      .send({ color: "#445566", version: created.body.version })
+      .send({ name: "Admin Tour", color: "#445566", version: created.body.version })
       .expect(200);
 
     const employee = await createEmployee(admin);

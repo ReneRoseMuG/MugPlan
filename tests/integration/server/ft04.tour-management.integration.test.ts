@@ -8,16 +8,17 @@
  * - Tour-CRUD ueber API mit Versionierung fuer Update/Delete.
  * - Tour-Create folgt dem Contract: Name wird serverseitig erzeugt, Farbe hat Default.
  * - Tour-Create erzeugt keine impliziten Mitarbeiterzuweisungen.
- * - Mehrfache Farbaenderung erhoeht Version deterministisch.
+ * - Mehrfache Stammdatenaenderung (Name/Farbe) erhoeht Version deterministisch.
+ * - Tour-Renames blockieren doppelte Namen und geben numerische Luecken fuer neue Touren wieder frei.
  * - Tour-Delete ist gesperrt, solange Termine mit tour_id verknuepft sind.
  * - Loeschen einer Tour setzt employee.tourId auf NULL.
- * - Tour-Update veraendert referenzierte Termine nicht ausser fortbestehender tour_id-Verknuepfung.
+ * - Tour-Update veraendert referenzierte Termine nicht ausser fortbestehender tour_id-Verknuepfung und aktualisiert Projektionen ueber den neuen Tournamen.
  * - Nicht existierende Tour-IDs liefern NOT_FOUND.
  *
  * Fehlerfaelle:
  * - Unerlaubter Datentyp in Create-Payload liefert VALIDATION_ERROR.
  * - Loeschen bei verknuepften Terminen liefert BUSINESS_CONFLICT.
- * - Name-Felder in Requests werden aktuell nicht als editierbares Tourmerkmal verarbeitet.
+ * - Doppelte Tournamen liefern BUSINESS_CONFLICT.
  *
  * Ziel:
  * End-to-end-Absicherung der FT04-Loeschregeln inklusive Termin-Referenzschutz.
@@ -142,18 +143,18 @@ describe("FT04 integration: TourTests", () => {
     expect(response.body.name).not.toBe("");
   });
 
-  it("updates tour color repeatedly and persists after reload", async () => {
+  it("updates tour name and color repeatedly and persists after reload", async () => {
     const admin = await loginAdminAgent();
     const created = await admin.post("/api/tours").send({ color: "#111111" }).expect(201);
 
     const firstUpdate = await admin
       .patch(`/api/tours/${created.body.id}`)
-      .send({ color: "#222222", version: created.body.version })
+      .send({ name: "Nordtour", color: "#222222", version: created.body.version })
       .expect(200);
 
     const secondUpdate = await admin
       .patch(`/api/tours/${created.body.id}`)
-      .send({ color: "#333333", version: firstUpdate.body.version })
+      .send({ name: "Suedtour", color: "#333333", version: firstUpdate.body.version })
       .expect(200);
 
     expect(firstUpdate.body.version).toBe(created.body.version + 1);
@@ -163,21 +164,68 @@ describe("FT04 integration: TourTests", () => {
     const persisted = list.body.find((tour: { id: number }) => tour.id === created.body.id);
 
     expect(persisted).toBeTruthy();
+    expect(persisted.name).toBe("Suedtour");
     expect(persisted.color).toBe("#333333");
     expect(persisted.version).toBe(secondUpdate.body.version);
   });
 
-  it("documents name-change attempt behavior on update", async () => {
+  it("renames a tour and refreshes the calendar projection with the new tour name", async () => {
     const admin = await loginAdminAgent();
     const created = await admin.post("/api/tours").send({ color: "#aabbcc" }).expect(201);
+    const project = await createProjectForTourDeleteTest();
+
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-02-20",
+      tourId: created.body.id,
+      employeeIds: [],
+    });
+    expect(appointment).toBeTruthy();
 
     const response = await admin
       .patch(`/api/tours/${created.body.id}`)
-      .send({ color: "#ccbb11", version: created.body.version, name: "Umbennenung" })
+      .send({ color: "#ccbb11", version: created.body.version, name: "Umbennung" })
       .expect(200);
 
-    expect(response.body.name).toBe(created.body.name);
+    expect(response.body.name).toBe("Umbennung");
     expect(response.body.color).toBe("#ccbb11");
+
+    await admin.get("/api/calendar/appointments?fromDate=2099-02-01&toDate=2099-02-28").expect(200).expect((res) => {
+      const updatedAppointment = res.body.find((entry: { id: number }) => entry.id === (appointment as { id: number }).id);
+      expect(updatedAppointment.tourId).toBe(created.body.id);
+      expect(updatedAppointment.tourName).toBe("Umbennung");
+      expect(updatedAppointment.tourColor).toBe("#ccbb11");
+    });
+  });
+
+  it("returns BUSINESS_CONFLICT when a tour rename would duplicate an existing name", async () => {
+    const admin = await loginAdminAgent();
+    const first = await admin.post("/api/tours").send({ color: "#445566" }).expect(201);
+    const second = await admin.post("/api/tours").send({ color: "#667788" }).expect(201);
+
+    await admin
+      .patch(`/api/tours/${second.body.id}`)
+      .send({ name: first.body.name, color: "#8899aa", version: second.body.version })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+  });
+
+  it("reuses a freed numeric tour name after a previous rename", async () => {
+    const admin = await loginAdminAgent();
+    await admin.post("/api/tours").send({ color: "#110000" }).expect(201);
+    await admin.post("/api/tours").send({ color: "#220000" }).expect(201);
+    const third = await admin.post("/api/tours").send({ color: "#330000" }).expect(201);
+
+    await admin
+      .patch(`/api/tours/${third.body.id}`)
+      .send({ name: "Tour A", color: third.body.color, version: third.body.version })
+      .expect(200);
+
+    await admin.post("/api/tours").send({ color: "#440000" }).expect(201).expect((res) => {
+      expect(res.body.name).toBe("Tour 3");
+    });
   });
 
   it("updates tour color without side effects on referenced appointment data", async () => {
@@ -201,7 +249,7 @@ describe("FT04 integration: TourTests", () => {
 
     await admin
       .patch(`/api/tours/${tour.body.id}`)
-      .send({ color: "#00aa99", version: tour.body.version })
+      .send({ name: tour.body.name, color: "#00aa99", version: tour.body.version })
       .expect(200);
 
     await admin.get(`/api/appointments/${appointmentId}`).expect(200).expect((res) => {

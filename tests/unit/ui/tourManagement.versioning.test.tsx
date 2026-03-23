@@ -3,11 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - TourCreate sendet den Create-Request und danach die Mitarbeiterzuweisung mit employee-version.
+ * - TourUpdate sendet Name, Farbe und Version als versionierten PATCH-Payload.
  * - Der Admin-Dialog behaelt den Delete-Flow mit versioniertem DELETE-Payload.
  * - Erfolgreiche Kaskaden bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
  *
  * Fehlerfaelle:
  * - Versionsdaten fehlen in Tour- oder Mitarbeiter-Mutationen.
+ * - Der Tourname wird im Update-Payload nicht mitgesendet.
  * - Der Admin-Delete-Flow driftet aus dem Dialog heraus.
  * - Erfolgreiche Kaskaden lassen Monitoring- und Query-Refresh aus.
  *
@@ -245,12 +247,46 @@ describe("FT07 TourManagement behavior", () => {
       canDelete: false,
     });
 
-    const onSubmit = tourEditFormCalls[0].onSubmit as (tourId: number | null, employeeIds: number[], color: string) => Promise<void>;
-    await onSubmit(null, [11], "#1188aa");
+    const onSubmit = tourEditFormCalls[0].onSubmit as (
+      tourId: number | null,
+      employeeIds: number[],
+      name: string,
+      color: string,
+    ) => Promise<void>;
+    await onSubmit(null, [11], "Tour 6", "#1188aa");
 
     expect(apiRequestMock).toHaveBeenNthCalledWith(1, "POST", "/api/tours", { color: "#1188aa" });
     expect(apiRequestMock).toHaveBeenNthCalledWith(2, "POST", "/api/tours/77/employees", {
       items: [{ employeeId: 11, version: 8 }],
+    });
+  });
+
+  it("sends the edited tour name in the versioned update payload", async () => {
+    apiRequestMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...tour, name: "Suedtour", color: "#1188aa", version: 7 }),
+    });
+
+    const { TourManagement } = await loadTourManagement({
+      editingTour: { ...tour, members: [employee] },
+      isCreating: false,
+      cascadeDialogState: null,
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="DISPONENT" />);
+
+    const onSubmit = tourEditFormCalls[0].onSubmit as (
+      tourId: number | null,
+      employeeIds: number[],
+      name: string,
+      color: string,
+    ) => Promise<void>;
+    await onSubmit(5, [], "Suedtour", "#1188aa");
+
+    expect(apiRequestMock).toHaveBeenCalledWith("PATCH", "/api/tours/5", {
+      name: "Suedtour",
+      color: "#1188aa",
+      version: 6,
     });
   });
 
@@ -277,6 +313,37 @@ describe("FT07 TourManagement behavior", () => {
     await onDelete();
 
     expect(apiRequestMock).toHaveBeenCalledWith("DELETE", "/api/tours/5", { version: 6 });
+  });
+
+  it("keeps the next generated tour name gap when a numeric tour name was renamed away", async () => {
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/tours") {
+        return {
+          data: [
+            { id: 1, name: "Tour 1", color: "#111111", version: 1 },
+            { id: 2, name: "Tour A", color: "#222222", version: 2 },
+          ],
+          isLoading: false,
+        };
+      }
+      if (key === "/api/employees") return { data: [employee], isLoading: false };
+      if (key === "tour-management-appointments-count") return { data: new Map(), isLoading: false };
+      return { data: [], isLoading: false };
+    });
+
+    const { TourManagement } = await loadTourManagement({
+      editingTour: null,
+      isCreating: true,
+      cascadeDialogState: null,
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
+
+    expect(tourEditFormCalls[0]).toMatchObject({
+      isCreate: true,
+      defaultName: "Tour 2",
+    });
   });
 
   it("executes cascade updates and refreshes dependent views after success", async () => {

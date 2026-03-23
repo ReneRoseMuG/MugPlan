@@ -60,7 +60,7 @@ export async function applyToursSeed(): Promise<SeedExecutionResult> {
       continue;
     }
 
-    const result = await toursRepository.updateTourWithVersion(existing.id, existing.version, color);
+    const result = await toursRepository.updateTourWithVersion(existing.id, existing.version, name, color);
     if (result.kind === "updated") {
       toursByName.set(name.toLocaleLowerCase("de"), result.tour);
     }

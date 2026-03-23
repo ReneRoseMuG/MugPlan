@@ -51,7 +51,7 @@ describe("FT06/FT07 integration: team/tour versioning contracts", () => {
     const tour = await toursRepository.createTour("Tour 1", "#1188cc");
 
     await expect(
-      toursService.updateTour(tour.id, { color: "#00aa88", version: tour.version + 1 }),
+      toursService.updateTour(tour.id, { name: tour.name, color: "#00aa88", version: tour.version + 1 }),
     ).rejects.toMatchObject({ status: 409, code: "VERSION_CONFLICT" });
 
     await expect(
@@ -63,7 +63,7 @@ describe("FT06/FT07 integration: team/tour versioning contracts", () => {
     const tour = await toursRepository.createTour("Tour 2", "#1188cc");
 
     await expect(
-      toursService.updateTour(tour.id, { color: "#00aa88", version: 0 }),
+      toursService.updateTour(tour.id, { name: tour.name, color: "#00aa88", version: 0 }),
     ).rejects.toMatchObject({ status: 422, code: "VALIDATION_ERROR" });
 
     await expect(
@@ -71,4 +71,3 @@ describe("FT06/FT07 integration: team/tour versioning contracts", () => {
     ).rejects.toMatchObject({ status: 422, code: "VALIDATION_ERROR" });
   });
 });
-

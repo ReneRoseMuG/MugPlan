@@ -132,7 +132,7 @@ describe("FT04 full UC coverage integration", () => {
     });
   });
 
-  it("UC 04/02 updates tour color and member list while keeping generated name unchanged", async () => {
+  it("UC 04/02 updates tour name, color and member list", async () => {
     const admin = await loginAdminAgent();
     const employeeA = await createEmployee(admin);
     const employeeB = await createEmployee(admin);
@@ -144,9 +144,9 @@ describe("FT04 full UC coverage integration", () => {
     const versionA = Number(firstAssign.body[0].version);
 
     const updated = await admin.patch(`/api/tours/${created.id}`).send({
+      name: "Nordtour",
       color: "#333333",
       version: created.version,
-      name: "Nicht editierbar",
     }).expect(200);
 
     await admin.post(`/api/tours/${created.id}/employees`).send({
@@ -157,7 +157,7 @@ describe("FT04 full UC coverage integration", () => {
     }).expect(200);
 
     expect(updated.body.color).toBe("#333333");
-    expect(updated.body.name).toBe(created.name);
+    expect(updated.body.name).toBe("Nordtour");
     await admin.get(`/api/tours/${created.id}/employees`).expect(200).expect((res) => {
       const ids = res.body.map((entry: { id: number }) => entry.id).sort((l: number, r: number) => l - r);
       expect(ids).toEqual([employeeA.id, employeeB.id].sort((l, r) => l - r));
@@ -223,7 +223,7 @@ describe("FT04 full UC coverage integration", () => {
     }
   });
 
-  it("UC 04/06 reflects tour color changes in calendar projections without changing other tours", async () => {
+  it("UC 04/06 reflects tour name and color changes in calendar projections without changing other tours", async () => {
     const admin = await loginAdminAgent();
     const project = await createProjectForAppointment();
     const tourA = await createTour(admin, "#336699");
@@ -242,13 +242,19 @@ describe("FT04 full UC coverage integration", () => {
       employeeIds: [],
     });
 
-    await admin.patch(`/api/tours/${tourA.id}`).send({ color: "#22bb88", version: tourA.version }).expect(200);
+    await admin.patch(`/api/tours/${tourA.id}`).send({
+      name: "Westtour",
+      color: "#22bb88",
+      version: tourA.version,
+    }).expect(200);
 
     await admin.get("/api/calendar/appointments?fromDate=2099-04-01&toDate=2099-04-30").expect(200).expect((res) => {
       const rowA = res.body.find((entry: { id: number }) => entry.id === (appointmentA as { id: number }).id);
       const rowB = res.body.find((entry: { id: number }) => entry.id === (appointmentB as { id: number }).id);
       expect(rowA.tourColor).toBe("#22bb88");
+      expect(rowA.tourName).toBe("Westtour");
       expect(rowB.tourColor).toBe("#aa5500");
+      expect(rowB.tourName).toBe(tourB.name);
     });
   });
 
@@ -335,8 +341,8 @@ describe("FT04 full UC coverage integration", () => {
     const tour = await createTour(sessionA, "#101010");
 
     const [resA, resB] = await Promise.all([
-      sessionA.patch(`/api/tours/${tour.id}`).send({ color: "#202020", version: tour.version }),
-      sessionB.patch(`/api/tours/${tour.id}`).send({ color: "#303030", version: tour.version }),
+      sessionA.patch(`/api/tours/${tour.id}`).send({ name: "Nordtour", color: "#202020", version: tour.version }),
+      sessionB.patch(`/api/tours/${tour.id}`).send({ name: "Suedtour", color: "#303030", version: tour.version }),
     ]);
 
     const { success, conflict } = getSuccessAndConflict(resA, resB);

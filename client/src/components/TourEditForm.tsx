@@ -8,6 +8,8 @@ import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import type { Tour, Employee } from "@shared/schema";
@@ -19,7 +21,7 @@ type TourWithMembers = Tour & {
 interface TourEditFormProps {
   tour: TourWithMembers | null;
   allEmployees: Employee[];
-  onSubmit: (tourId: number | null, employeeIds: number[], color: string) => Promise<void>;
+  onSubmit: (tourId: number | null, employeeIds: number[], name: string, color: string) => Promise<void>;
   onAddMember?: (employeeId: number) => Promise<void>;
   onRemoveMember?: (employee: Employee) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -52,13 +54,15 @@ export function TourEditForm({
   onOpenAppointment,
 }: TourEditFormProps) {
   const [selectedMembers, setSelectedMembers] = useState<number[]>(() => tour?.members.map((member) => member.id) ?? []);
+  const [selectedName, setSelectedName] = useState<string>(() => tour?.name ?? defaultName);
   const [selectedColor, setSelectedColor] = useState<string>(() => tour?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
 
   useEffect(() => {
     setSelectedMembers(tour?.members.map((member) => member.id) ?? []);
+    setSelectedName(tour?.name ?? defaultName);
     setSelectedColor(tour?.color ?? defaultColor);
-  }, [defaultColor, tour]);
+  }, [defaultColor, defaultName, tour]);
 
   const assignedElsewhere = (employee: Employee) => {
     if (tour?.id == null) return employee.tourId !== null;
@@ -93,7 +97,7 @@ export function TourEditForm({
       Nach dem Speichern der Tour werden Termine angezeigt.
     </p>
   );
-  const handleSubmit = async () => onSubmit(tour?.id ?? null, selectedMembers, selectedColor);
+  const handleSubmit = async () => onSubmit(tour?.id ?? null, selectedMembers, selectedName, selectedColor);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
@@ -151,7 +155,7 @@ export function TourEditForm({
               onClick={() => {
                 void handleSubmit();
               }}
-              disabled={isSaving}
+              disabled={isSaving || !selectedName.trim()}
               data-testid="button-save-tour"
             >
               {isSaving ? "Speichern..." : "Speichern"}
@@ -171,6 +175,26 @@ export function TourEditForm({
 
         <TabsContent value="stammdaten">
           <div className="max-w-xl space-y-4">
+            <div className="sub-panel space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="tour-name">Name</Label>
+                <Input
+                  id="tour-name"
+                  value={selectedName}
+                  readOnly={isCreate}
+                  disabled={isSaving}
+                  onChange={(event) => setSelectedName(event.target.value)}
+                  placeholder="Tourname eingeben"
+                  data-testid="input-tour-name"
+                />
+              </div>
+              {isCreate ? (
+                <p className="text-sm text-slate-500" data-testid="text-tour-generated-name-hint">
+                  Der Tourname wird beim Speichern serverseitig vergeben. Die Anzeige zeigt den naechsten freien Namen.
+                </p>
+              ) : null}
+            </div>
+
             <div className="sub-panel space-y-3">
               <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
                 <Route className="w-4 h-4" />

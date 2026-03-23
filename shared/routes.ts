@@ -1104,7 +1104,7 @@ export const api = {
       responses: {
         204: z.void(),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        409: z.object({ code: z.union([z.literal("VERSION_CONFLICT"), z.literal("BUSINESS_CONFLICT")]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

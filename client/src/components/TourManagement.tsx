@@ -177,16 +177,25 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, color, version }: { id: number; color: string; version: number }) =>
-      apiRequest("PATCH", `/api/tours/${id}`, { color, version }),
+    mutationFn: async ({ id, name, color, version }: { id: number; name: string; color: string; version: number }) =>
+      apiRequest("PATCH", `/api/tours/${id}`, { name, color, version }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
     },
     onError: (error) => {
-      if (extractApiCode(error) === "VERSION_CONFLICT") {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
         toast({
           title: "Speichern nicht moeglich",
           description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (code === "BUSINESS_CONFLICT") {
+        toast({
+          title: "Speichern nicht moeglich",
+          description: "Tourname ist bereits vergeben.",
           variant: "destructive",
         });
       }
@@ -366,7 +375,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     setIsCreating(true);
   };
 
-  const handleSubmitTour = async (tourId: number | null, employeeIds: number[], color: string) => {
+  const handleSubmitTour = async (tourId: number | null, employeeIds: number[], name: string, color: string) => {
     if (tourId === null) {
       const response = await createMutation.mutateAsync({ color });
       const newTour = await response.json();
@@ -378,7 +387,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     if (!tour || !Number.isInteger(tour.version) || tour.version < 1) {
       throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing tour version"}');
     }
-    await updateMutation.mutateAsync({ id: tourId, color, version: tour.version });
+    await updateMutation.mutateAsync({ id: tourId, name, color, version: tour.version });
   };
 
   const handleCloseDialog = () => {
