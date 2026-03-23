@@ -165,7 +165,7 @@ export function TourEditForm({
       >
       <Tabs
         defaultValue="stammdaten"
-        className="flex h-full min-h-0 flex-col space-y-4"
+        className="flex h-full min-h-0 w-full flex-col space-y-4"
         data-testid="tour-form-main-column"
       >
         <TabsList>
@@ -173,8 +173,8 @@ export function TourEditForm({
           <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="stammdaten">
-          <div className="max-w-xl space-y-4">
+        <TabsContent value="stammdaten" className="w-full">
+          <div className="w-full space-y-4">
             <div className="sub-panel space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="tour-name">Name</Label>
@@ -224,11 +224,6 @@ export function TourEditForm({
                 )}
               />
               <div className="space-y-2 bg-slate-50 p-3">
-                {!isCreate ? (
-                  <div className="text-sm text-slate-500">
-                    Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.
-                  </div>
-                ) : null}
                 {assignedEmployees.map((employee) => (
                   <EmployeeInfoBadge
                     key={employee.id}

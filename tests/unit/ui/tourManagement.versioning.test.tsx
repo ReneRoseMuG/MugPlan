@@ -22,6 +22,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiRequestMock = vi.fn();
 const invalidateQueriesMock = vi.fn();
+const setQueryDataMock = vi.fn();
 const invalidateTagProjectionQueriesMock = vi.fn();
 const refreshMonitoringWithNotificationMock = vi.fn();
 const toastMock = vi.fn();
@@ -68,6 +69,7 @@ vi.mock("@/lib/queryClient", () => ({
   apiRequest: (...args: unknown[]) => apiRequestMock(...args),
   queryClient: {
     invalidateQueries: (...args: unknown[]) => invalidateQueriesMock(...args),
+    setQueryData: (...args: unknown[]) => setQueryDataMock(...args),
   },
 }));
 
@@ -199,6 +201,7 @@ describe("FT07 TourManagement behavior", () => {
     cascadeDialogCalls.length = 0;
     apiRequestMock.mockReset();
     invalidateQueriesMock.mockReset();
+    setQueryDataMock.mockReset();
     invalidateTagProjectionQueriesMock.mockReset();
     refreshMonitoringWithNotificationMock.mockReset();
     toastMock.mockReset();
@@ -288,6 +291,7 @@ describe("FT07 TourManagement behavior", () => {
       color: "#1188aa",
       version: 6,
     });
+    expect(setQueryDataMock).toHaveBeenCalledWith(["/api/tours"], expect.any(Function));
   });
 
   it("keeps an admin delete action in the edit dialog and sends a versioned delete", async () => {

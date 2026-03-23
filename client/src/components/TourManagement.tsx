@@ -179,7 +179,20 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const updateMutation = useMutation({
     mutationFn: async ({ id, name, color, version }: { id: number; name: string; color: string; version: number }) =>
       apiRequest("PATCH", `/api/tours/${id}`, { name, color, version }),
-    onSuccess: () => {
+    onSuccess: async (response) => {
+      const updatedTour = await response.json() as Tour;
+      queryClient.setQueryData<Tour[]>(["/api/tours"], (current = []) =>
+        current.map((tour) => (tour.id === updatedTour.id ? updatedTour : tour)),
+      );
+      setEditingTour((current) => {
+        if (!current || current.id !== updatedTour.id) {
+          return current;
+        }
+        return {
+          ...current,
+          ...updatedTour,
+        };
+      });
       void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
     },
     onError: (error) => {

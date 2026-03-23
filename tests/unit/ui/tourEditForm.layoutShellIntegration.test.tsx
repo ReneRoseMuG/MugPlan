@@ -5,14 +5,16 @@
  * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich und Footer ohne Sidebar.
  * - Im Create-Modus bleiben die erwarteten Bedienelemente fuer Tabs, Farbauswahl, Mitgliederbereich und Footer sichtbar.
  * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Mitglieder werden weiter sichtbar gerendert.
+ * - Tabs und Stammdatenbereich bleiben im Hauptformular gleich breit.
  *
  * Fehlerfaelle:
  * - Das Tourformular bleibt am alten Layout haengen oder rendert versehentlich eine leere Sidebar.
  * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Mitgliederbereich verschwinden nach dem Shell-Umbau.
  * - Die Delete-Aktion geht im Edit-Modus verloren.
+ * - Der Stammdatenbereich wird schmaler als die Tab-Leiste gerendert.
  *
  * Ziel:
- * Das neue Shell-Layout des Tourformulars ueber sichtbare Struktur und die erwarteten Kernelemente regressionssicher absichern.
+ * Das neue Shell-Layout des Tourformulars ueber sichtbare Struktur, Breite und die erwarteten Kernelemente regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -179,6 +181,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("Nordtour");
     expect(markup).not.toContain("text-tour-generated-name-hint");
     expect(markup).toContain("badge-tour-member-21");
-    expect(markup).toContain("Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.");
+    expect(markup).toContain('data-testid="tour-form-main-column"');
+    expect(markup).toContain('class="w-full"');
   });
 });
