@@ -56,6 +56,12 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const invalidateAppointmentProjectionQueries = async () => {
     await invalidateTagProjectionQueries();
   };
+  const invalidateCustomerNotesQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/notes-preview"] });
+    await invalidateAppointmentProjectionQueries();
+  };
   
   const [formData, setFormData] = useState({
     customerNumber: "",
@@ -115,9 +121,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -130,9 +134,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
       const code = extractErrorCode(error);
@@ -162,9 +164,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
       const code = extractErrorCode(error);
@@ -185,9 +185,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`, { version });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
       const code = extractErrorCode(error);

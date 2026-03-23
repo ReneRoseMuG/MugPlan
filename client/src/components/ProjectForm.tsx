@@ -122,6 +122,12 @@ export function ProjectForm({
     });
     await invalidateAppointmentProjectionQueries();
   };
+  const invalidateProjectNotesQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/notes-preview"] });
+    await invalidateAppointmentProjectionQueries();
+  };
   
   const [name, setName] = useState("");
   const [projectType, setProjectType] = useState<number>(DEFAULT_PROJECT_TYPE);
@@ -1129,9 +1135,7 @@ export function ProjectForm({
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateProjectNotesQueries();
     },
   });
 
@@ -1141,9 +1145,7 @@ export function ProjectForm({
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateProjectNotesQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);
@@ -1165,9 +1167,7 @@ export function ProjectForm({
       return res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateProjectNotesQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);
@@ -1186,9 +1186,7 @@ export function ProjectForm({
       await apiRequest('DELETE', `/api/projects/${effectiveProjectId}/notes/${noteId}`, { version });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
-      void invalidateAppointmentProjectionQueries();
+      void invalidateProjectNotesQueries();
     },
     onError: (error) => {
       const code = extractApiCode(error);
