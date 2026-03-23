@@ -70,6 +70,10 @@ vi.mock("@/components/ui/color-select-button", () => ({
   ColorSelectButton: () => <button type="button">color</button>,
 }));
 
+vi.mock("@/components/ui/help/help-icon", () => ({
+  HelpIcon: ({ helpKey }: { helpKey: string }) => <span data-help-key={helpKey}>help</span>,
+}));
+
 import { NotesSection } from "../../../client/src/components/NotesSection";
 
 const notes = [
@@ -104,6 +108,7 @@ describe("FT13 UI: notes section readonly wiring", () => {
     expect(markup).toContain("button-new-note");
     expect(markup).toContain("button-pin-note-1");
     expect(markup).toContain("button-delete-note-1");
+    expect(markup).toContain("data-help-key=\"note-templates\"");
   });
 
   it("hides visible note actions in readonly mode", () => {

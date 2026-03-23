@@ -66,6 +66,14 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
   return <ArrowUpDown className="w-3.5 h-3.5" />;
 }
 
+export function shouldBlockHelpTextsLayout(params: {
+  isLoading: boolean;
+  searchQuery: string;
+  helpTextsCount: number;
+}): boolean {
+  return params.isLoading && params.searchQuery.trim().length === 0 && params.helpTextsCount === 0;
+}
+
 export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPageProps) {
   const { toast } = useToast();
   const { settingsByKey, setSetting } = useSettings();
@@ -277,6 +285,11 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
     </div>
   );
   const layoutFooter = viewMode === "board" ? tableFooter : undefined;
+  const blockLayoutWhileLoading = shouldBlockHelpTextsLayout({
+    isLoading,
+    searchQuery,
+    helpTextsCount: helpTexts.length,
+  });
 
   return (
     <>
@@ -284,7 +297,7 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
         title="Hilfetexte"
         icon={<HelpCircle className="w-5 h-5" />}
         viewModeKey={viewModeKey}
-        isLoading={isLoading}
+        isLoading={blockLayoutWhileLoading}
         filterSlot={(
           <HelpTextsFilterPanel
             searchQuery={searchQuery}

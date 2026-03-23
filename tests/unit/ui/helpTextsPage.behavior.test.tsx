@@ -115,7 +115,7 @@ vi.mock("@/components/HelpTextsImportExportDialog", () => ({
   HelpTextsImportExportDialog: () => null,
 }));
 
-import { HelpTextsPage } from "../../../client/src/components/HelpTextsPage";
+import { HelpTextsPage, shouldBlockHelpTextsLayout } from "../../../client/src/components/HelpTextsPage";
 
 describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
   beforeEach(() => {
@@ -160,6 +160,26 @@ describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
 
     (entityCardCalls[0].onDoubleClick as (() => void) | undefined)?.();
     expect(onEditHelpText).toHaveBeenCalledWith(7);
+  });
+
+  it("blocks the layout only during the initial load, not during an active search", () => {
+    expect(shouldBlockHelpTextsLayout({
+      isLoading: true,
+      searchQuery: "",
+      helpTextsCount: 0,
+    })).toBe(true);
+
+    expect(shouldBlockHelpTextsLayout({
+      isLoading: true,
+      searchQuery: "reports",
+      helpTextsCount: 0,
+    })).toBe(false);
+
+    expect(shouldBlockHelpTextsLayout({
+      isLoading: true,
+      searchQuery: "",
+      helpTextsCount: 2,
+    })).toBe(false);
   });
 
   it("keeps the dedicated helptexts empty-state when no rows are available", () => {

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { HelpIcon } from "@/components/ui/help/help-icon";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -274,7 +275,10 @@ export function NotesSection({
           <div className="space-y-4">
             {!isEditMode ? (
               <div className="space-y-2">
-                <Label>Vorlage</Label>
+                <div className="flex items-center gap-2">
+                  <Label>Vorlage</Label>
+                  <HelpIcon helpKey="note-templates" size="sm" />
+                </div>
                 <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
                   <SelectTrigger data-testid="select-note-template" disabled={templatesLoading}>
                     <SelectValue placeholder={templatesLoading ? "Vorlagen laden..." : "Vorlage auswaehlen (optional)"} />
