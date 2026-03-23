@@ -1,0 +1,170 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich und Footer ohne Sidebar.
+ * - Im Create-Modus bleiben die erwarteten Bedienelemente fuer Tabs, Farbauswahl, Mitgliederbereich und Footer sichtbar.
+ * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Mitglieder werden weiter sichtbar gerendert.
+ *
+ * Fehlerfaelle:
+ * - Das Tourformular bleibt am alten Layout haengen oder rendert versehentlich eine leere Sidebar.
+ * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Mitgliederbereich verschwinden nach dem Shell-Umbau.
+ * - Die Delete-Aktion geht im Edit-Modus verloren.
+ *
+ * Ziel:
+ * Das neue Shell-Layout des Tourformulars ueber sichtbare Struktur und die erwarteten Kernelemente regressionssicher absichern.
+ */
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: ({
+    children,
+    sidebar,
+    header,
+    footer,
+  }: {
+    children?: React.ReactNode;
+    sidebar?: React.ReactNode;
+    header?: React.ReactNode;
+    footer?: React.ReactNode;
+  }) => (
+    <div data-testid="entity-form-shell">
+      {header ? <div data-testid="entity-form-shell-header">{header}</div> : null}
+      <div data-testid="entity-form-shell-main">{children}</div>
+      {sidebar ? <div data-testid="entity-form-shell-sidebar">{sidebar}</div> : null}
+      <div data-testid="entity-form-shell-footer">{footer}</div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/color-select-button", () => ({
+  ColorSelectButton: ({ testId }: { testId?: string }) => <button type="button" data-testid={testId}>farbe</button>,
+}));
+
+vi.mock("@/components/ui/members-section-header", () => ({
+  MembersSectionHeader: ({ action }: { action?: React.ReactNode }) => (
+    <div data-testid="tour-members-section-header">
+      mitglieder
+      {action}
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/plus-action-button", () => ({
+  PlusActionButton: (props: Record<string, unknown>) => <button type="button" {...props}>plus</button>,
+}));
+
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ testId }: { testId?: string }) => <div data-testid={testId}>member</div>,
+}));
+
+vi.mock("@/components/AppointmentsListPage", () => ({
+  AppointmentsListPage: ({ emptyStateOverride }: { emptyStateOverride?: React.ReactNode }) => (
+    <section data-testid="tour-appointments-list-marker">
+      appointments
+      {emptyStateOverride}
+    </section>
+  ),
+}));
+
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
+}));
+
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
+  TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsTrigger: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
+  TabsContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
+}));
+
+vi.mock("@/components/EmployeePickerDialogList", () => ({
+  EmployeePickerDialogList: () => <div>employee-picker</div>,
+}));
+
+import { TourEditForm } from "../../../client/src/components/TourEditForm";
+
+const tourFixture = {
+  id: 12,
+  name: "Nordtour",
+  color: "#335577",
+  version: 4,
+  members: [
+    {
+      id: 21,
+      firstName: "Mia",
+      lastName: "Muster",
+      fullName: "Muster, Mia",
+      email: null,
+      phone: null,
+      isActive: true,
+      teamId: null,
+      tourId: 12,
+      version: 1,
+    },
+  ],
+};
+
+describe("FT04 tour form shell layout integration", () => {
+  const noop = async () => undefined;
+
+  it("renders the expected create elements in shell mode without a sidebar", () => {
+    const markup = renderToStaticMarkup(
+      <TourEditForm
+        tour={null}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        isCreate
+        defaultName="Neue Tour"
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("entity-form-shell");
+    expect(markup).toContain("entity-form-shell-header");
+    expect(markup).toContain("tour-form-main-column");
+    expect(markup).toContain("entity-form-shell-footer");
+    expect(markup).not.toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("button-close-tour");
+    expect(markup).toContain("button-cancel-tour");
+    expect(markup).toContain("button-save-tour");
+    expect(markup).not.toContain("button-delete-tour-form");
+    expect(markup).toContain("tab-tour-stammdaten");
+    expect(markup).toContain("tab-tour-termine");
+    expect(markup).toContain("button-tour-color-picker");
+    expect(markup).toContain("button-add-tour-member");
+    expect(markup).toContain("tour-members-section-header");
+    expect(markup).toContain("Keine Mitarbeiter zugewiesen");
+    expect(markup).toContain("Nach dem Speichern der Tour werden Termine angezeigt.");
+  });
+
+  it("keeps delete and existing member badges visible in edit mode", () => {
+    const markup = renderToStaticMarkup(
+      <TourEditForm
+        tour={tourFixture}
+        allEmployees={tourFixture.members}
+        onSubmit={noop}
+        onDelete={noop}
+        canDelete
+        isSaving={false}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("entity-form-shell");
+    expect(markup).not.toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("button-delete-tour-form");
+    expect(markup).toContain("badge-tour-member-21");
+    expect(markup).toContain("Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.");
+  });
+});

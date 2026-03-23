@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { Users } from "lucide-react";
-import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import React, { useEffect, useMemo, useState } from "react";
+import { Users, X } from "lucide-react";
+import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
@@ -41,8 +41,8 @@ export function TeamEditForm({
   defaultColor = "#60a5fa",
   onCancel,
 }: TeamEditFormProps) {
-  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
-  const [selectedColor, setSelectedColor] = useState<string>(defaultColor);
+  const [selectedMembers, setSelectedMembers] = useState<number[]>(() => team?.members.map((member) => member.id) ?? []);
+  const [selectedColor, setSelectedColor] = useState<string>(() => team?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
 
   useEffect(() => {
@@ -62,31 +62,69 @@ export function TeamEditForm({
   );
 
   const title = isCreate ? defaultName : (team?.name ?? "Team bearbeiten");
+  const handleSubmit = async () => onSubmit(team?.id ?? null, selectedMembers, selectedColor);
 
   return (
-    <EntityFormLayout
-      title={title}
-      icon={<Users className="w-6 h-6" />}
-      onClose={onCancel}
-      onCancel={onCancel}
-      onSubmit={() => onSubmit(team?.id ?? null, selectedMembers, selectedColor)}
-      isSaving={isSaving}
-      saveLabel="Speichern"
-      testIdPrefix="team"
-      footerActions={
-        !isCreate && canDelete && team && onDelete ? (
-          <Button
-            variant="destructive"
-            onClick={onDelete}
-            disabled={isSaving || isDeleting}
-            data-testid="button-delete-team-form"
-          >
-            {isDeleting ? "Loeschen..." : "Team loeschen"}
-          </Button>
-        ) : undefined
-      }
-    >
-      <div className="max-w-xl space-y-4">
+    <div className="flex h-full min-h-0 w-full flex-1">
+      <EntityFormShell
+        header={(
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                <Users className="w-6 h-6" />
+                {title}
+              </h2>
+            </div>
+
+            <Button
+              type="button"
+              size="lg"
+              variant="ghost"
+              onClick={onCancel}
+              data-testid="button-close-team"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
+        )}
+        footer={(
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {!isCreate && canDelete && team && onDelete ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={onDelete}
+                  disabled={isSaving || isDeleting}
+                  data-testid="button-delete-team-form"
+                >
+                  {isDeleting ? "Loeschen..." : "Team loeschen"}
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                data-testid="button-cancel-team"
+              >
+                Abbrechen
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => {
+                void handleSubmit();
+              }}
+              disabled={isSaving}
+              data-testid="button-save-team"
+            >
+              {isSaving ? "Speichern..." : "Speichern"}
+            </Button>
+          </div>
+        )}
+      >
+      <div className="max-w-xl space-y-4" data-testid="team-form-main-column">
         <div className="sub-panel space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
             <Users className="w-4 h-4" />
@@ -157,6 +195,7 @@ export function TeamEditForm({
           />
         </DialogContent>
       </Dialog>
-    </EntityFormLayout>
+      </EntityFormShell>
+    </div>
   );
 }

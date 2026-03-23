@@ -3,31 +3,35 @@
  *
  * Abgedeckte Regeln:
  * - TourEditForm bindet die eingebettete Terminliste mit Tour-Kontext und dem tour-spezifischen helpKey an.
- * - Im Neuanlagezustand bleibt der leere Hinweistext sichtbar und der Listencontainer im contained-Scrollmodus.
+ * - Im Neuanlagezustand bleibt der leere Hinweistext im EntityFormShell-Hauptbereich sichtbar.
+ * - Das Tourformular rendert im neuen Shell-Layout bewusst keine Sidebar.
  * - Veraltete Legacy-Props werden nicht mehr an die Terminliste weitergereicht.
  *
  * Fehlerfaelle:
  * - Die Terminliste verliert ihren Tour-Kontext oder den spezifischen helpKey.
- * - Der leere Neuanlagezustand verschwindet aus dem Formular.
+ * - Der leere Neuanlagezustand verschwindet aus dem Formular oder landet ausserhalb des Hauptbereichs.
+ * - Die Shell rendert versehentlich wieder eine Sidebar.
  * - Alte Prop-Pfade tauchen wieder an der Terminliste auf.
  *
  * Ziel:
- * Die TourEditForm-Terminlistenverdrahtung ueber gerenderte Props statt ueber Dateiinhaltspruefungen absichern.
+ * Die TourEditForm-Terminlistenverdrahtung und die Shell-Einbettung ueber gerenderte Props statt ueber Dateiinhaltspruefungen absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const entityFormLayoutCalls: Array<Record<string, unknown>> = [];
+const entityFormShellCalls: Array<Record<string, unknown>> = [];
 const appointmentsListPageCalls: Array<Record<string, unknown>> = [];
 
-vi.mock("@/components/ui/entity-form-layout", () => ({
-  EntityFormLayout: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
-    entityFormLayoutCalls.push(props);
+vi.mock("@/components/ui/entity-form-shell", () => ({
+  EntityFormShell: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
+    entityFormShellCalls.push(props);
     return (
-      <section data-testid="tour-entity-form-layout">
-        {props.footerActions}
-        {props.children}
+      <section data-testid="tour-entity-form-shell">
+        {props.header ? <div data-testid="entity-form-shell-header">{props.header as React.ReactNode}</div> : null}
+        <div data-testid="entity-form-shell-main">{props.children}</div>
+        {props.sidebar ? <div data-testid="entity-form-shell-sidebar">{props.sidebar as React.ReactNode}</div> : null}
+        <div data-testid="entity-form-shell-footer">{props.footer as React.ReactNode}</div>
       </section>
     );
   },
@@ -77,7 +81,7 @@ vi.mock("@/components/ui/button", () => ({
 }));
 
 vi.mock("@/components/ui/tabs", () => ({
-  Tabs: ({ children, className }: { children?: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
+  Tabs: ({ children, className, ...props }: { children?: React.ReactNode; className?: string; [key: string]: unknown }) => <div className={className} {...props}>{children}</div>,
   TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   TabsTrigger: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
   TabsContent: ({ children, className }: { children?: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
@@ -94,7 +98,7 @@ describe("FT04 TourEditForm appointments list behavior", () => {
 
   beforeEach(() => {
     vi.stubGlobal("React", React);
-    entityFormLayoutCalls.length = 0;
+    entityFormShellCalls.length = 0;
     appointmentsListPageCalls.length = 0;
   });
 
@@ -112,10 +116,7 @@ describe("FT04 TourEditForm appointments list behavior", () => {
       />,
     );
 
-    expect(entityFormLayoutCalls[0]).toMatchObject({
-      contentScrollMode: "contained",
-      testIdPrefix: "tour",
-    });
+    expect(entityFormShellCalls[0]?.sidebar).toBeUndefined();
     expect(appointmentsListPageCalls[0]).toMatchObject({
       title: "Termine",
       helpKey: "appointments.list.tourForm",
@@ -126,6 +127,10 @@ describe("FT04 TourEditForm appointments list behavior", () => {
     expect(appointmentsListPageCalls[0]).not.toHaveProperty("lockedTourId");
     expect(appointmentsListPageCalls[0]).not.toHaveProperty("hideTourColumn");
     expect(appointmentsListPageCalls[0]).not.toHaveProperty("enforceFromToday");
+    expect(html).toContain("entity-form-shell-header");
+    expect(html).toContain("tour-form-main-column");
+    expect(html).toContain("entity-form-shell-footer");
+    expect(html).not.toContain("entity-form-shell-sidebar");
     expect(html).toContain("Nach dem Speichern der Tour werden Termine angezeigt.");
   });
 

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { Route } from "lucide-react";
-import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import React, { useEffect, useMemo, useState } from "react";
+import { Route, X } from "lucide-react";
+import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
@@ -51,8 +51,8 @@ export function TourEditForm({
   onCancel,
   onOpenAppointment,
 }: TourEditFormProps) {
-  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
-  const [selectedColor, setSelectedColor] = useState<string>(defaultColor);
+  const [selectedMembers, setSelectedMembers] = useState<number[]>(() => tour?.members.map((member) => member.id) ?? []);
+  const [selectedColor, setSelectedColor] = useState<string>(() => tour?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
 
   useEffect(() => {
@@ -93,36 +93,77 @@ export function TourEditForm({
       Nach dem Speichern der Tour werden Termine angezeigt.
     </p>
   );
+  const handleSubmit = async () => onSubmit(tour?.id ?? null, selectedMembers, selectedColor);
 
   return (
-    <EntityFormLayout
-      title={title}
-      icon={<Route className="w-6 h-6" />}
-      onClose={onCancel}
-      onCancel={onCancel}
-      onSubmit={() => onSubmit(tour?.id ?? null, selectedMembers, selectedColor)}
-      isSaving={isSaving}
-      saveLabel="Speichern"
-      testIdPrefix="tour"
-      contentScrollMode="contained"
-      footerActions={
-        !isCreate && canDelete && tour && onDelete ? (
-          <Button
-            variant="destructive"
-            onClick={() => {
-              void onDelete().catch(() => {
-                // errors are handled via mutation toasts in parent
-              });
-            }}
-            disabled={isSaving || isDeleting}
-            data-testid="button-delete-tour-form"
-          >
-            {isDeleting ? "Loeschen..." : "Tour loeschen"}
-          </Button>
-        ) : undefined
-      }
-    >
-      <Tabs defaultValue="stammdaten" className="flex h-full min-h-0 flex-col space-y-4">
+    <div className="flex h-full min-h-0 w-full flex-1">
+      <EntityFormShell
+        header={(
+          <div className="flex items-center justify-between gap-4 px-6 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                <Route className="w-6 h-6" />
+                {title}
+              </h2>
+            </div>
+
+            <Button
+              type="button"
+              size="lg"
+              variant="ghost"
+              onClick={onCancel}
+              data-testid="button-close-tour"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
+        )}
+        footer={(
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {!isCreate && canDelete && tour && onDelete ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    void onDelete().catch(() => {
+                      // errors are handled via mutation toasts in parent
+                    });
+                  }}
+                  disabled={isSaving || isDeleting}
+                  data-testid="button-delete-tour-form"
+                >
+                  {isDeleting ? "Loeschen..." : "Tour loeschen"}
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                data-testid="button-cancel-tour"
+              >
+                Abbrechen
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => {
+                void handleSubmit();
+              }}
+              disabled={isSaving}
+              data-testid="button-save-tour"
+            >
+              {isSaving ? "Speichern..." : "Speichern"}
+            </Button>
+          </div>
+        )}
+      >
+      <Tabs
+        defaultValue="stammdaten"
+        className="flex h-full min-h-0 flex-col space-y-4"
+        data-testid="tour-form-main-column"
+      >
         <TabsList>
           <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
           <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
@@ -224,6 +265,7 @@ export function TourEditForm({
           />
         </DialogContent>
       </Dialog>
-    </EntityFormLayout>
+      </EntityFormShell>
+    </div>
   );
 }
