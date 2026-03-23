@@ -2,25 +2,22 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Ein bestehender Eintagestermin kann im Browser auf einen Mehrtagestermin erweitert werden.
- * - Nach dem Speichern rendert der Wochenkalender die Mehrtageskachel sichtbar als Spanning Tile.
- * - Beim erneuten Oeffnen bleiben Start- und Enddatum eines Mehrtagestermins korrekt im Formular gesetzt.
- * - Eine weitere Enddatum-Erweiterung bleibt nach erneutem Speichern und Wiederoeffnen stabil.
+ * - Ein neuer Zweitagestermin kann im Browser aus dem Tour-Kontext mit vollstaendigen Relationen angelegt werden.
+ * - Das Terminformular rendert in Create und Edit innerhalb der EntityFormShell mit sichtbarer Sidebar.
+ * - Nach dem Speichern rendert der Wochenkalender den Termin als sichtbare Mehrtageskachel mit stabilem `Tag 2`-Indikator.
+ * - Beim erneuten Oeffnen bleiben Start- und Enddatum sowie Projekt-, Kunden-, Tour- und Mitarbeiterrelationen korrekt geladen.
  *
  * Fehlerfaelle:
- * - Mehrtagestermine zeigen nach Save keine Spanning-Tile-Kachel im Wochenkalender.
+ * - Mehrtagestermine zeigen nach Save keine belastbare Spanning-Tile-Darstellung fuer beide Tage.
+ * - Create/Edit verlieren Shell-Struktur oder geladene Relationswerte.
  * - Edit-Formulare verlieren oder verfaelschen das gespeicherte Enddatum.
  *
  * Ziel:
- * Den Mehrtages-Edit-Flow im Wochenkalender Ende-zu-Ende gegen Datumsverlust und Render-Regressions absichern.
+ * Den kompletten Create/Edit-Flow eines Mehrtagestermins im Wochenkalender gegen Datums- und Relationsverlust sowie gegen Render-Regressions absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
 import {
-  createAppointmentFixture,
-  createCustomerFixture,
-  createEmployeeFixture,
-  createProjectFixture,
-  getRelativeBerlinDate,
+  createAppointmentBrowserFixture,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
@@ -39,48 +36,129 @@ async function openWeekAppointment(page: Page, appointmentId: number, kind: "sin
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
 }
 
-async function saveAppointment(page: Page) {
-  await page.getByTestId("button-save-appointment").click();
-  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
+type AppointmentBrowserFixture = Awaited<ReturnType<typeof createAppointmentBrowserFixture>>;
+
+async function openNewAppointmentFromTourLane(page: Page, tourId: number, targetDate: string) {
+  await loginAsAdmin(page);
+  const button = page.getByTestId(`button-new-appointment-week-${targetDate}-lane-tour-${tourId}`);
+  await expect(button).toBeVisible();
+  await button.click();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
 }
 
-test("keeps multi-day start and end dates stable across repeated edits", async ({ page }) => {
-  const customer = await createCustomerFixture("FT01-BROWSER-MULTIDAY-CUST");
-  const project = await createProjectFixture({
-    prefix: "FT01-BROWSER-MULTIDAY-PROJ",
-    customerId: customer.id,
-    name: "FT01 Browser Mehrtagesprojekt",
-  });
-  const employee = await createEmployeeFixture("FT01-BROWSER-MULTIDAY-EMP");
+async function selectProjectWithoutAppointments(page: Page, fixture: AppointmentBrowserFixture) {
+  await page.getByTestId("button-select-project").click();
+  const table = page.getByTestId("table-projects");
+  await expect(table).toBeVisible();
+  await page.getByLabel("Ohne Termine").click();
+  await page.locator("#project-filter-order-number").fill(fixture.project.orderNumber ?? "");
+  await page.locator("#project-filter-title").fill(fixture.project.name);
+  const row = table.locator("tbody tr")
+    .filter({ hasText: fixture.project.orderNumber ?? "" })
+    .filter({ hasText: fixture.project.name })
+    .filter({ hasText: fixture.customer.customerNumber })
+    .first();
+  await expect(row).toBeVisible();
+  await row.dblclick();
+  await expect(page.getByTestId("badge-project")).toBeVisible();
+}
 
-  const startDate = getRelativeBerlinDate(0);
-  const firstEndDate = getRelativeBerlinDate(1);
-  const secondEndDate = getRelativeBerlinDate(2);
+async function assertAppointmentFormShell(page: Page) {
+  await expect(page.getByTestId("entity-form-shell")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-header")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-middle")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-main")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-main-inner")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-sidebar")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-footer")).toBeVisible();
+}
 
-  const appointment = await createAppointmentFixture({
-    projectId: project.id,
-    startDate,
-    employeeIds: [employee.id],
-  });
+async function assertAppointmentSidebar(page: Page) {
+  await expect(page.getByTestId("appointment-form-sidebar")).toBeVisible();
+  await expect(page.getByTestId("button-add-document-header")).toBeVisible();
+  await expect(page.getByTestId("appointment-tag-picker-button-add")).toBeVisible();
+  await expect(page.getByTestId("button-new-note")).toBeVisible();
+  await expect(page.getByTestId("appointment-form-sidebar")).toContainText("Dokumente");
+  await expect(page.getByTestId("appointment-form-sidebar")).toContainText("Tags");
+  await expect(page.getByTestId("appointment-form-sidebar")).toContainText("Notizen");
+}
 
-  await loginAsAdmin(page);
+async function assertAppointmentFormLoaded(page: Page, fixture: AppointmentBrowserFixture, params: {
+  startDate: string;
+  endDate?: string;
+  relationsLoaded?: boolean;
+}) {
+  await assertAppointmentFormShell(page);
+  await assertAppointmentSidebar(page);
+  await expect(page.getByTestId("input-start-date")).toHaveValue(params.startDate);
+  if (params.endDate) {
+    await expect(page.getByTestId("input-end-date")).toHaveValue(params.endDate);
+  }
+  await expect(page.getByTestId("badge-tour")).toBeVisible();
+  await expect(page.getByTestId("badge-tour-remove")).toBeVisible();
+  await expect(page.locator('[data-testid="section-tour-picker"]')).toHaveCount(0);
+  for (const employee of fixture.employees) {
+    await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
+  }
+  if (params.relationsLoaded === false) {
+    await expect(page.getByTestId("slot-project-relation")).toContainText("Kein Projekt ausgewählt");
+    await expect(page.getByTestId("slot-customer-relation")).toContainText("Kein Kunde ausgewählt");
+    await expect(page.getByTestId("badge-project")).toHaveCount(0);
+    await expect(page.getByTestId("badge-customer")).toHaveCount(0);
+    return;
+  }
+  await expect(page.getByTestId("badge-project-name")).toContainText(fixture.project.name);
+  await expect(page.getByTestId("badge-project-order-number")).toContainText(fixture.project.orderNumber ?? "");
+  await expect(page.getByTestId("badge-customer-number")).toContainText(fixture.customer.customerNumber.slice(0, 10));
+  await expect(page.getByTestId("badge-customer-postal-code")).toContainText(fixture.customer.postalCode ?? "");
+  await expect(page.getByTestId("badge-customer-city")).toContainText(fixture.customer.city ?? "");
+}
 
-  await openWeekAppointment(page, appointment.id, "single");
+async function saveAppointmentAndResolveId(page: Page) {
+  const createAppointmentResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/appointments"
+  ));
+  await page.getByTestId("button-save-appointment").click();
+  const response = await createAppointmentResponsePromise;
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as { id: number };
+  expect(Number(body.id)).toBeGreaterThan(0);
+  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
+  return Number(body.id);
+}
+
+test("creates a multi-day appointment from a tour lane and keeps start and end dates stable on reopen", async ({ page }) => {
+  const fixture = await createAppointmentBrowserFixture({ prefix: "FT01-BROWSER-MULTIDAY", targetDayOffset: 2 });
+
+  await openNewAppointmentFromTourLane(page, fixture.tour.id, fixture.targetDate);
+  await assertAppointmentFormLoaded(page, fixture, { startDate: fixture.targetDate, relationsLoaded: false });
+
+  await selectProjectWithoutAppointments(page, fixture);
+  await assertAppointmentFormLoaded(page, fixture, { startDate: fixture.targetDate });
+
   await page.getByTestId("button-enable-end-date").click();
-  await page.getByTestId("input-end-date").fill(firstEndDate);
-  await saveAppointment(page);
+  await page.getByTestId("input-end-date").fill(fixture.nextDate);
+  await assertAppointmentFormLoaded(page, fixture, {
+    startDate: fixture.targetDate,
+    endDate: fixture.nextDate,
+  });
 
-  const spanningTile = page.getByTestId(`week-spanning-tile-${appointment.id}`).filter({ hasText: "Tag 2" }).first();
+  const appointmentId = await saveAppointmentAndResolveId(page);
+
+  const spanningTile = page.getByTestId(`week-spanning-tile-${appointmentId}`).filter({ hasText: "Tag 2" }).first();
   await expect(spanningTile).toBeVisible();
+  await expect(page.getByTestId(`week-spanning-tile-header-${appointmentId}`)).toContainText("Tag 2");
   await expect(spanningTile).toContainText("Tag 2");
+  await expect(spanningTile.getByTestId("week-project-header")).toContainText(fixture.project.orderNumber ?? "");
+  await expect(spanningTile.getByTestId("week-project-header")).toContainText(fixture.project.name);
+  await expect(spanningTile).toContainText(`K: ${fixture.customer.customerNumber}`);
+  await expect(spanningTile).toContainText(`PLZ: ${fixture.customer.postalCode}`);
+  await expect(spanningTile.getByTestId("week-appointment-employees-hover-trigger")).toContainText(String(fixture.employees.length));
 
-  await openWeekAppointment(page, appointment.id, "spanning");
-  await expect(page.getByTestId("input-start-date")).toHaveValue(startDate);
-  await expect(page.getByTestId("input-end-date")).toHaveValue(firstEndDate);
-  await page.getByTestId("input-end-date").fill(secondEndDate);
-  await saveAppointment(page);
-
-  await openWeekAppointment(page, appointment.id, "spanning");
-  await expect(page.getByTestId("input-start-date")).toHaveValue(startDate);
-  await expect(page.getByTestId("input-end-date")).toHaveValue(secondEndDate);
+  await openWeekAppointment(page, appointmentId, "spanning");
+  await assertAppointmentFormLoaded(page, fixture, {
+    startDate: fixture.targetDate,
+    endDate: fixture.nextDate,
+  });
 });

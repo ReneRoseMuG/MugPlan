@@ -1,10 +1,13 @@
 /**
  * Test Scope:
  *
- * Feature: FT01/FT04/FT13/FT24 - Neuer Termin mit Sidebar-Drafts
+ * Feature: FT01/FT04/FT13/FT24 - Neuer Termin mit Create/Edit-Workflow
  *
  * Abgedeckte Regeln:
- * - Ein neuer Termin aus dem Tour-Kontext zeigt die rechte Sidebar, die selektierte Tour und vorbefuellte Tour-Mitarbeiter.
+ * - Ein neuer Eintagestermin kann im Browser aus dem Tour-Kontext mit vollstaendigen Relationen angelegt werden.
+ * - Das Terminformular rendert in Create und Edit innerhalb der EntityFormShell mit sichtbarer Sidebar.
+ * - Nach Save zeigt der Wochenkalender die stabil sichtbaren Projekt-, Kunden- und Mitarbeiterwerte des angelegten Termins.
+ * - Beim erneuten Oeffnen bleiben Startdatum, Projekt, Kunde, Tour und Tour-Mitarbeiter im Edit-Formular korrekt geladen.
  * - Tags, Notizen und Terminanhaenge lassen sich im Neuer-Termin-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Terminanhang dem erzeugten Termin korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei wandert nach erfolgreicher Projektanlage in die Projektdokumente und nicht zusaetzlich in Terminanhaenge.
@@ -12,21 +15,20 @@
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
  *
  * Fehlerfaelle:
- * - Die Create-Sidebar fehlt im Tour- oder Projektkontext.
+ * - Die Create/Edit-Shell verliert Header-, Main-, Sidebar- oder Footer-Bereich.
+ * - Ein aus der Tour-Lane gestarteter Termin verliert vor oder nach dem Save Projekt-, Kunden- oder Tour-Relationen.
  * - Tour-Mitarbeiter werden trotz initialTourId nicht vorbefuellt.
  * - Draft-Tags, Draft-Notizen oder pending Terminanhaenge gehen beim ersten Save verloren.
  *
  * Ziel:
- * Browser-E2E fuer die angeglichene Create-UX und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
+ * Browser-E2E fuer den realen Create/Edit-Flow eines relationierten Eintagestermins sowie die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
  */
 import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
 import {
-  assignEmployeesToTourFixture,
+  createAppointmentBrowserFixture,
   createCustomerFixture,
-  createEmployeeFixture,
   createTagFixture,
-  createTourFixture,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
@@ -36,9 +38,11 @@ test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
 
-async function openNewAppointmentFromTourLane(page: Page, tourId: number) {
+type AppointmentBrowserFixture = Awaited<ReturnType<typeof createAppointmentBrowserFixture>>;
+
+async function openNewAppointmentFromTourLane(page: Page, tourId: number, targetDate: string) {
   await loginAsAdmin(page);
-  const button = page.locator(`[data-testid^="button-new-appointment-week-"][data-testid$="-lane-tour-${tourId}"]`).first();
+  const button = page.getByTestId(`button-new-appointment-week-${targetDate}-lane-tour-${tourId}`);
   await expect(button).toBeVisible();
   await button.click();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
@@ -114,17 +118,119 @@ async function uploadExtractionPdf(page: Page, fileName: string) {
   });
 }
 
-test("shows sidebar and prefilled tour employees for a new appointment opened from a tour lane", async ({ page }) => {
-  const tour = await createTourFixture("#226688");
-  const employee = await createEmployeeFixture("FT01-CREATE-TOUR");
-  await assignEmployeesToTourFixture(tour.id, [employee]);
+async function assertAppointmentFormShell(page: Page) {
+  await expect(page.getByTestId("entity-form-shell")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-header")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-middle")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-main")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-main-inner")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-sidebar")).toBeVisible();
+  await expect(page.getByTestId("entity-form-shell-footer")).toBeVisible();
+}
 
-  await openNewAppointmentFromTourLane(page, tour.id);
-
+async function assertAppointmentSidebar(page: Page) {
   await expect(page.getByTestId("appointment-form-sidebar")).toBeVisible();
+  await expect(page.getByTestId("button-add-document-header")).toBeVisible();
+  await expect(page.getByTestId("appointment-tag-picker-button-add")).toBeVisible();
+  await expect(page.getByTestId("button-new-note")).toBeVisible();
+  await expect(page.getByTestId("appointment-form-sidebar")).toContainText("Dokumente");
+  await expect(page.getByTestId("appointment-form-sidebar")).toContainText("Tags");
+  await expect(page.getByTestId("appointment-form-sidebar")).toContainText("Notizen");
+}
+
+async function assertAppointmentFormLoaded(page: Page, fixture: AppointmentBrowserFixture, params: {
+  startDate: string;
+  endDate?: string;
+  relationsLoaded?: boolean;
+}) {
+  await assertAppointmentFormShell(page);
+  await assertAppointmentSidebar(page);
+  await expect(page.getByTestId("input-start-date")).toHaveValue(params.startDate);
+  if (params.endDate) {
+    await expect(page.getByTestId("input-end-date")).toHaveValue(params.endDate);
+  } else {
+    await expect(page.getByTestId("button-enable-end-date")).toBeVisible();
+  }
+  await expect(page.getByTestId("slot-project-relation")).toBeVisible();
+  await expect(page.getByTestId("slot-customer-relation")).toBeVisible();
   await expect(page.getByTestId("badge-tour")).toBeVisible();
-  await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
+  await expect(page.getByTestId("badge-tour-remove")).toBeVisible();
   await expect(page.locator('[data-testid="section-tour-picker"]')).toHaveCount(0);
+  await expect(page.getByTestId("slot-appointment-employees")).toBeVisible();
+  await expect(page.getByTestId("button-add-employee")).toBeVisible();
+  for (const employee of fixture.employees) {
+    await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
+  }
+  if (params.relationsLoaded === false) {
+    await expect(page.getByTestId("slot-project-relation")).toContainText("Kein Projekt ausgewählt");
+    await expect(page.getByTestId("slot-customer-relation")).toContainText("Kein Kunde ausgewählt");
+    await expect(page.getByTestId("badge-project")).toHaveCount(0);
+    await expect(page.getByTestId("badge-customer")).toHaveCount(0);
+    return;
+  }
+  await expect(page.getByTestId("badge-project")).toBeVisible();
+  await expect(page.getByTestId("badge-project-name")).toContainText(fixture.project.name);
+  await expect(page.getByTestId("badge-project-order-number")).toContainText(fixture.project.orderNumber ?? "");
+  await expect(page.getByTestId("badge-customer-number")).toContainText(fixture.customer.customerNumber.slice(0, 10));
+  await expect(page.getByTestId("badge-customer-first-name")).toContainText(fixture.customer.firstName ?? "");
+  await expect(page.getByTestId("badge-customer-last-name")).toContainText(fixture.customer.lastName ?? "");
+  await expect(page.getByTestId("badge-customer-postal-code")).toContainText(fixture.customer.postalCode ?? "");
+  await expect(page.getByTestId("badge-customer-city")).toContainText(fixture.customer.city ?? "");
+}
+
+async function selectProjectWithoutAppointments(page: Page, fixture: AppointmentBrowserFixture) {
+  await page.getByTestId("button-select-project").click();
+  const table = page.getByTestId("table-projects");
+  await expect(table).toBeVisible();
+  await page.getByLabel("Ohne Termine").click();
+  await page.locator("#project-filter-order-number").fill(fixture.project.orderNumber ?? "");
+  await page.locator("#project-filter-title").fill(fixture.project.name);
+  const row = table.locator("tbody tr")
+    .filter({ hasText: fixture.project.orderNumber ?? "" })
+    .filter({ hasText: fixture.project.name })
+    .filter({ hasText: fixture.customer.customerNumber })
+    .first();
+  await expect(row).toBeVisible();
+  await row.dblclick();
+  await expect(page.getByTestId("badge-project")).toBeVisible();
+}
+
+async function saveNewAppointmentAndResolveId(page: Page) {
+  const createAppointmentResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/appointments"
+  ));
+  await page.getByTestId("button-save-appointment").click();
+  const response = await createAppointmentResponsePromise;
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as { id: number };
+  expect(Number(body.id)).toBeGreaterThan(0);
+  return Number(body.id);
+}
+
+test("creates a relation-complete single-day appointment from a tour lane and reloads the same values in edit mode", async ({ page }) => {
+  const fixture = await createAppointmentBrowserFixture({ prefix: "FT01-CREATE-EDIT", targetDayOffset: 2 });
+
+  await openNewAppointmentFromTourLane(page, fixture.tour.id, fixture.targetDate);
+  await assertAppointmentFormLoaded(page, fixture, { startDate: fixture.targetDate, relationsLoaded: false });
+
+  await selectProjectWithoutAppointments(page, fixture);
+  await assertAppointmentFormLoaded(page, fixture, { startDate: fixture.targetDate });
+
+  const createdAppointmentId = await saveNewAppointmentAndResolveId(page);
+
+  const appointmentPanel = page.getByTestId(`week-appointment-panel-${createdAppointmentId}`);
+  await expect(appointmentPanel).toBeVisible();
+  await expect(appointmentPanel.getByTestId("week-project-header")).toContainText(fixture.project.orderNumber ?? "");
+  await expect(appointmentPanel.getByTestId("week-project-header")).toContainText(fixture.project.name);
+  await expect(appointmentPanel).toContainText(fixture.customer.fullName ?? "");
+  await expect(appointmentPanel).toContainText(`K: ${fixture.customer.customerNumber}`);
+  await expect(appointmentPanel).toContainText(`PLZ: ${fixture.customer.postalCode}`);
+  await expect(appointmentPanel.getByTestId("week-appointment-employees-hover-trigger")).toContainText(String(fixture.employees.length));
+
+  await appointmentPanel.dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await assertAppointmentFormLoaded(page, fixture, { startDate: fixture.targetDate });
 });
 
 test("persists tag, note and appointment attachment from the new appointment form and restores them on reopen", async ({ page }) => {

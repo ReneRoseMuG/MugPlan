@@ -52,6 +52,10 @@ export async function createCustomerFixtureWithOverrides(params?: {
   lastName?: string | null;
   fullName?: string | null;
   company?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
   postalCode?: string | null;
   city?: string | null;
 }) {
@@ -62,6 +66,10 @@ export async function createCustomerFixtureWithOverrides(params?: {
     lastName: params?.lastName ?? payload.lastName,
     fullName: params?.fullName ?? payload.fullName,
     company: params?.company ?? payload.company,
+    email: params?.email ?? payload.email,
+    phone: params?.phone ?? payload.phone,
+    addressLine1: params?.addressLine1 ?? payload.addressLine1,
+    addressLine2: params?.addressLine2 ?? payload.addressLine2,
     postalCode: params?.postalCode ?? payload.postalCode,
     city: params?.city ?? payload.city,
   });
@@ -335,6 +343,82 @@ export async function createProjectOrderItemFixture(params: {
     specificationId: null,
     quantity: params.quantity ?? 1,
   });
+}
+
+export async function createAppointmentBrowserFixture(params?: {
+  prefix?: string;
+  targetDayOffset?: number;
+  employeeCount?: number;
+}) {
+  const prefix = params?.prefix ?? "APPT-BROWSER";
+  const employeeCount = Math.max(1, params?.employeeCount ?? 2);
+  const targetDayOffset = params?.targetDayOffset ?? 2;
+  const token = nextToken("ABF");
+  const label = `${prefix} ${token}`;
+
+  const customer = await createCustomerFixtureWithOverrides({
+    prefix: "BRCUST",
+    firstName: "Mia",
+    lastName: `${label} Kunde`,
+    fullName: `Mia ${label} Kunde`,
+    company: `${label} GmbH`,
+    email: `${token.toLowerCase()}@example.test`,
+    phone: "0441123456",
+    addressLine1: "Testweg 12",
+    addressLine2: "Hinterhaus",
+    postalCode: "26135",
+    city: "Oldenburg",
+  });
+
+  const project = await createProjectFixture({
+    prefix: "BRPROJ",
+    customerId: customer.id,
+    name: `${label} Projekt`,
+  });
+
+  const product = await createProductFixture({
+    categoryName: "Browser Produkte",
+    name: `${label} Produkt`,
+    description: `${label} Produktbeschreibung`,
+  });
+
+  const component = await createComponentFixture({
+    categoryName: "Browser Komponenten",
+    name: `${label} Komponente`,
+    description: `${label} Komponentenbeschreibung`,
+  });
+
+  await createProjectOrderItemFixture({
+    projectId: project.id,
+    orderNumber: project.orderNumber ?? `ORD-${token}`,
+    productId: product.id,
+    quantity: 1,
+  });
+
+  await createProjectOrderItemFixture({
+    projectId: project.id,
+    orderNumber: project.orderNumber ?? `ORD-${token}`,
+    componentId: component.id,
+    quantity: 2,
+  });
+
+  const employees = await Promise.all(
+    Array.from({ length: employeeCount }, (_, index) => createEmployeeFixture(`BREMP-${index + 1}`)),
+  );
+
+  const tour = await createTourFixture("#226688");
+  await assignEmployeesToTourFixture(tour.id, employees);
+
+  return {
+    customer,
+    project,
+    product,
+    component,
+    employees,
+    tour,
+    targetDate: getRelativeBerlinDate(targetDayOffset),
+    nextDate: getRelativeBerlinDate(targetDayOffset + 1),
+  };
 }
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
