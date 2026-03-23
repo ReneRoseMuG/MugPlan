@@ -50,7 +50,6 @@ export async function listProductVorlauf(req: Request, res: Response, next: Next
       toDate: input.toDate,
       productCategoryIds: input.productCategoryIds,
       componentCategoryIds: input.componentCategoryIds,
-      specialMeasureTagId: input.specialMeasureTagId,
     }, roleKey);
 
     res.json(report);

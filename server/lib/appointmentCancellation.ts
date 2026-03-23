@@ -2,6 +2,7 @@ import type { Tag } from "@shared/schema";
 import {
   isPickerVisibleForDomain,
   isManagedReportExclusionTagName,
+  isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
   type TagPickerDomain,
 } from "@shared/appointmentCancellation";
@@ -23,6 +24,15 @@ export function isManagedReportExclusionTag(tag: Pick<Tag, "name"> | null | unde
 
 export function hasManagedReportExclusionTag(tags: Array<Pick<Tag, "name">>): boolean {
   return tags.some((tag) => isManagedReportExclusionTag(tag));
+}
+
+export function isManagedSpecialMeasureTag(tag: Pick<Tag, "name"> | null | undefined): boolean {
+  if (!tag) return false;
+  return isManagedSpecialMeasureTagName(tag.name);
+}
+
+export function hasManagedSpecialMeasureTag(tags: Array<Pick<Tag, "name">>): boolean {
+  return tags.some((tag) => isManagedSpecialMeasureTag(tag));
 }
 
 export function filterPickerTagsForDomain<TTag extends Pick<Tag, "name">>(

@@ -56,7 +56,6 @@ type VorlauflisteCategorySelection = {
 type ProductVorlaufSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
-  specialMeasureTagId: number | null;
 };
 
 const templateAllowedKeys = [
@@ -168,14 +167,7 @@ function isValidVorlauflisteCategorySelection(value: unknown): value is Vorlaufl
 }
 
 function isValidProductVorlaufSelection(value: unknown): value is ProductVorlaufSelection {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const parsed = value as Record<string, unknown>;
-  const specialMeasureTagId = parsed.specialMeasureTagId;
-  const validTagId = specialMeasureTagId === null
-    || (typeof specialMeasureTagId === "number" && Number.isInteger(specialMeasureTagId) && specialMeasureTagId > 0);
-  return isValidPositiveIntegerArray(parsed.productCategoryIds)
-    && isValidPositiveIntegerArray(parsed.componentCategoryIds)
-    && validTagId;
+  return isValidVorlauflisteCategorySelection(value);
 }
 
 export const userSettingsRegistry = {
@@ -411,12 +403,11 @@ export const userSettingsRegistry = {
   reportsProductVorlaufSelection: {
     key: "reports.productVorlauf.selection",
     label: "Produkt Vorlauf Konfiguration",
-    description: "Speichert die benutzerspezifische Kategorie- und Sondermass-Auswahl fuer den Produkt-Vorlauf-Report.",
+    description: "Speichert die benutzerspezifische Kategorieauswahl fuer den Produkt-Vorlauf-Report.",
     type: "json",
     defaultValue: {
       productCategoryIds: [],
       componentCategoryIds: [],
-      specialMeasureTagId: null,
     },
     allowedScopes: ["USER"],
     validate: isValidProductVorlaufSelection,

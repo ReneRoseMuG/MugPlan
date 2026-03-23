@@ -19,12 +19,15 @@ import { resolveReportComponentSlot, stripReportHtmlToText } from "../lib/report
 import {
   hasAppointmentCancellationTag,
   hasManagedReportExclusionTag,
+  isAppointmentCancellationTag,
+  isManagedSpecialMeasureTag,
 } from "../lib/appointmentCancellation";
 import { getAppointmentTagsByAppointmentIds, getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
 export type VorlauflisteRow = {
   projectId: number;
   tags: Tag[];
+  highlightTag: Tag | null;
   amount: string | null;
   customerFullName: string | null;
   postalCode: string | null;
@@ -86,6 +89,18 @@ type ReportArticleBuckets = {
   roof: Set<string>;
 };
 
+type NormalizedProjectAppointmentRow = {
+  appointmentId: number;
+  projectId: number;
+  startDate: string;
+};
+
+type ProjectReportTagState = {
+  hasReportExclusion: boolean;
+  cancellationTag: Tag | null;
+  specialMeasureTag: Tag | null;
+};
+
 function createEmptyBuckets(): ReportArticleBuckets {
   return {
     sauna: new Set<string>(),
@@ -95,12 +110,6 @@ function createEmptyBuckets(): ReportArticleBuckets {
     control: new Set<string>(),
     roof: new Set<string>(),
   };
-}
-
-function normalizeDateOnly(value: unknown): string | null {
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (typeof value === "string") return value.slice(0, 10);
-  return null;
 }
 
 function joinSorted(values: Set<string>): string | null {
@@ -151,6 +160,49 @@ function buildAppointmentConditions(params: { fromDate: string; toDate?: string 
   return appointmentConditions;
 }
 
+function createEmptyProjectReportTagState(): ProjectReportTagState {
+  return {
+    hasReportExclusion: false,
+    cancellationTag: null,
+    specialMeasureTag: null,
+  };
+}
+
+function findFirstMatchingTag(tags: Tag[], predicate: (tag: Pick<Tag, "name">) => boolean): Tag | null {
+  return tags.find((tag) => predicate(tag)) ?? null;
+}
+
+function buildProjectReportTagStateByProjectId(
+  projectIds: number[],
+  appointmentRows: NormalizedProjectAppointmentRow[],
+  appointmentTagsByAppointmentId: Map<number, Tag[]>,
+  projectTagsByProjectId: Map<number, Tag[]>,
+): Map<number, ProjectReportTagState> {
+  const stateByProjectId = new Map<number, ProjectReportTagState>();
+
+  for (const projectId of projectIds) {
+    const projectTags = projectTagsByProjectId.get(projectId) ?? [];
+    stateByProjectId.set(projectId, {
+      hasReportExclusion: hasManagedReportExclusionTag(projectTags),
+      cancellationTag: findFirstMatchingTag(projectTags, isAppointmentCancellationTag),
+      specialMeasureTag: findFirstMatchingTag(projectTags, isManagedSpecialMeasureTag),
+    });
+  }
+
+  for (const row of appointmentRows) {
+    const current = stateByProjectId.get(row.projectId) ?? createEmptyProjectReportTagState();
+    const appointmentTags = appointmentTagsByAppointmentId.get(row.appointmentId) ?? [];
+
+    current.hasReportExclusion ||= hasManagedReportExclusionTag(appointmentTags);
+    current.cancellationTag ??= findFirstMatchingTag(appointmentTags, isAppointmentCancellationTag);
+    current.specialMeasureTag ??= findFirstMatchingTag(appointmentTags, isManagedSpecialMeasureTag);
+
+    stateByProjectId.set(row.projectId, current);
+  }
+
+  return stateByProjectId;
+}
+
 export async function getVorlauflistePaged(params: {
   fromDate: string;
   toDate?: string;
@@ -189,21 +241,13 @@ export async function getVorlauflistePaged(params: {
   const appointmentTagsByAppointmentId = await getAppointmentTagsByAppointmentIds(
     normalizedAppointmentRows.map((row) => row.appointmentId),
   );
-  const reportEligibleAppointmentRows = normalizedAppointmentRows.filter(
-    (row) => !hasManagedReportExclusionTag(appointmentTagsByAppointmentId.get(row.appointmentId) ?? []),
-  );
-  if (reportEligibleAppointmentRows.length === 0) {
-    return {
-      page: params.page,
-      pageSize: params.pageSize,
-      total: 0,
-      totalPages: 0,
-      items: [],
-    };
-  }
-
-  const tagsByProjectId = await getProjectTagsByProjectIds(
-    Array.from(new Set(reportEligibleAppointmentRows.map((row) => row.projectId))),
+  const allProjectIds = Array.from(new Set(normalizedAppointmentRows.map((row) => row.projectId)));
+  const tagsByProjectId = await getProjectTagsByProjectIds(allProjectIds);
+  const projectReportTagStateByProjectId = buildProjectReportTagStateByProjectId(
+    allProjectIds,
+    normalizedAppointmentRows,
+    appointmentTagsByAppointmentId,
+    tagsByProjectId,
   );
   const appointmentMetaByProjectId = new Map<number, {
     sortDate: string;
@@ -217,9 +261,9 @@ export async function getVorlauflistePaged(params: {
     hasCancelled: boolean;
   }>();
 
-  for (const row of reportEligibleAppointmentRows) {
-    const projectTags = tagsByProjectId.get(row.projectId) ?? [];
-    if (hasManagedReportExclusionTag(projectTags)) {
+  for (const row of normalizedAppointmentRows) {
+    const projectTagState = projectReportTagStateByProjectId.get(row.projectId) ?? createEmptyProjectReportTagState();
+    if (projectTagState.hasReportExclusion) {
       continue;
     }
 
@@ -356,6 +400,7 @@ export async function getVorlauflistePaged(params: {
       .map((projectId) => {
         const row = projectById.get(projectId);
         const appointmentMeta = appointmentMetaByProjectId.get(projectId);
+        const projectTagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
         if (!row || !appointmentMeta) return null;
         const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
         const projectTags = (tagsByProjectId.get(projectId) ?? []).filter((tag) => tag.isDefault);
@@ -363,6 +408,7 @@ export async function getVorlauflistePaged(params: {
         return {
           projectId,
           tags: projectTags,
+          highlightTag: projectTagState.cancellationTag ?? projectTagState.specialMeasureTag,
           amount: row.order?.amount ?? null,
           customerFullName: row.customer.fullName ?? null,
           postalCode: row.customer.postalCode ?? null,
@@ -389,40 +435,63 @@ export async function getProductVorlauf(params: {
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
-  specialMeasureTagId?: number;
 }): Promise<ProductVorlaufResult> {
   const appointmentConditions = buildAppointmentConditions(params);
-    const projectRows = await db
-      .select({
-        projectId: appointments.projectId,
-        actualDate: sql<string>`min(${appointments.startDate})`,
-      })
-      .from(appointments)
-      .where(and(...appointmentConditions))
-      .groupBy(appointments.projectId);
+  const projectAppointmentRows = await db
+    .select({
+      appointmentId: appointments.id,
+      projectId: appointments.projectId,
+      startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
+    })
+    .from(appointments)
+    .where(and(...appointmentConditions))
+    .orderBy(asc(appointments.startDate), asc(appointments.id));
 
-  const projectIds = projectRows
-    .map((row) => row.projectId)
-    .filter((value): value is number => typeof value === "number");
-
-    if (projectIds.length === 0) {
-      return {
+  const normalizedAppointmentRows = projectAppointmentRows.filter((row): row is NormalizedProjectAppointmentRow =>
+    typeof row.projectId === "number",
+  );
+  if (normalizedAppointmentRows.length === 0) {
+    return {
       productCategoryGroups: [],
       componentCategoryGroups: [],
-        specialMeasureProjects: [],
-      };
-    }
+      specialMeasureProjects: [],
+    };
+  }
 
-    const projectDetails = await db
-      .select({
-        project: projects,
-        customer: customers,
-        order: projectOrder,
-      })
-      .from(projects)
-      .leftJoin(customers, eq(projects.customerId, customers.id))
-      .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
-      .where(inArray(projects.id, projectIds));
+  const projectIds = Array.from(new Set(normalizedAppointmentRows.map((row) => row.projectId)));
+  const appointmentTagsByAppointmentId = await getAppointmentTagsByAppointmentIds(
+    normalizedAppointmentRows.map((row) => row.appointmentId),
+  );
+  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
+  const projectReportTagStateByProjectId = buildProjectReportTagStateByProjectId(
+    projectIds,
+    normalizedAppointmentRows,
+    appointmentTagsByAppointmentId,
+    tagsByProjectId,
+  );
+  const eligibleProjectIds = projectIds.filter((projectId) => {
+    const tagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
+    return !tagState.hasReportExclusion && !tagState.cancellationTag;
+  });
+
+  if (eligibleProjectIds.length === 0) {
+    return {
+      productCategoryGroups: [],
+      componentCategoryGroups: [],
+      specialMeasureProjects: [],
+    };
+  }
+
+  const projectDetails = await db
+    .select({
+      project: projects,
+      customer: customers,
+      order: projectOrder,
+    })
+    .from(projects)
+    .leftJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(inArray(projects.id, eligibleProjectIds));
 
   const orderItemRows = await db
     .select({
@@ -437,7 +506,7 @@ export async function getProductVorlauf(params: {
     .leftJoin(productCategories, eq(products.categoryId, productCategories.id))
     .leftJoin(components, eq(projectOrderItems.componentId, components.id))
     .leftJoin(componentCategories, eq(components.categoryId, componentCategories.id))
-    .where(inArray(projectOrderItems.projectId, projectIds));
+    .where(inArray(projectOrderItems.projectId, eligibleProjectIds));
 
   const selectedProductCategoryIds = new Set(params.productCategoryIds);
   const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
@@ -453,7 +522,7 @@ export async function getProductVorlauf(params: {
         row.product
         && row.productCategory
         && row.product.name.trim().length > 0
-        && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
+        && selectedProductCategoryIds.has(row.productCategory.id)
       ) {
         upsertGroupedItem(productGroups, {
           categoryId: row.productCategory.id,
@@ -468,7 +537,7 @@ export async function getProductVorlauf(params: {
         row.component
         && row.componentCategory
         && row.component.name.trim().length > 0
-        && (selectedComponentCategoryIds.size === 0 || selectedComponentCategoryIds.has(row.componentCategory.id))
+        && selectedComponentCategoryIds.has(row.componentCategory.id)
       ) {
         upsertGroupedItem(componentGroups, {
           categoryId: row.componentCategory.id,
@@ -491,22 +560,19 @@ export async function getProductVorlauf(params: {
   const sortedProductCategoryGroups = sortGroupedItems(productGroups);
   const sortedComponentCategoryGroups = sortGroupedItems(componentGroups);
 
-    const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
-    const appointmentDateByProjectId = new Map(
-      projectRows
-        .filter((row): row is { projectId: number; actualDate: string } => typeof row.projectId === "number")
-        .map((row) => [row.projectId, normalizeDateOnly(row.actualDate)] as const),
-    );
-    const tagsByProjectId = await getProjectTagsByProjectIds(Array.from(matchedProjectIds));
-    const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
-
-  for (const projectId of Array.from(matchedProjectIds)) {
-    if (!params.specialMeasureTagId) {
+  const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
+  const appointmentDateByProjectId = new Map<number, string>();
+  for (const row of normalizedAppointmentRows) {
+    if (!matchedProjectIds.has(row.projectId) || appointmentDateByProjectId.has(row.projectId)) {
       continue;
     }
+    appointmentDateByProjectId.set(row.projectId, row.startDate);
+  }
+  const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
 
-    const projectTags = tagsByProjectId.get(projectId) ?? [];
-    const specialMeasureTag = projectTags.find((tag) => tag.id === params.specialMeasureTagId) ?? null;
+  for (const projectId of Array.from(matchedProjectIds)) {
+    const projectTagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
+    const specialMeasureTag = projectTagState.specialMeasureTag;
     if (!specialMeasureTag) {
       continue;
     }
@@ -533,9 +599,9 @@ export async function getProductVorlauf(params: {
     return orderA.localeCompare(orderB, "de") || left.projectId - right.projectId;
   });
 
-    return {
+  return {
     productCategoryGroups: sortedProductCategoryGroups,
     componentCategoryGroups: sortedComponentCategoryGroups,
-      specialMeasureProjects,
-    };
-  }
+    specialMeasureProjects,
+  };
+}
