@@ -27,6 +27,9 @@ const invalidateTagProjectionQueriesMock = vi.fn();
 const refreshMonitoringWithNotificationMock = vi.fn();
 const toastMock = vi.fn();
 const useQueryMock = vi.fn();
+const setEditingTourMock = vi.fn();
+const setIsCreatingMock = vi.fn();
+const setCascadeDialogStateMock = vi.fn();
 const tourEditFormCalls: Array<Record<string, unknown>> = [];
 const cascadeDialogCalls: Array<Record<string, unknown>> = [];
 
@@ -162,13 +165,13 @@ async function loadTourManagement(options?: {
       useState: (<T,>(initial: T) => {
         stateCall += 1;
         if (stateCall === 1) {
-          return [options?.editingTour ?? null, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+          return [options?.editingTour ?? null, setEditingTourMock] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
         }
         if (stateCall === 2) {
-          return [options?.isCreating ?? false, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+          return [options?.isCreating ?? false, setIsCreatingMock] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
         }
         if (stateCall === 3) {
-          return [options?.cascadeDialogState ?? null, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+          return [options?.cascadeDialogState ?? null, setCascadeDialogStateMock] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
         }
         return actual.useState(initial);
       }) as typeof actual.useState,
@@ -205,6 +208,9 @@ describe("FT07 TourManagement behavior", () => {
     invalidateTagProjectionQueriesMock.mockReset();
     refreshMonitoringWithNotificationMock.mockReset();
     toastMock.mockReset();
+    setEditingTourMock.mockReset();
+    setIsCreatingMock.mockReset();
+    setCascadeDialogStateMock.mockReset();
     useQueryMock.mockReset();
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
@@ -222,7 +228,7 @@ describe("FT07 TourManagement behavior", () => {
     });
   });
 
-  it("creates a tour and assigns selected employees with their versions", async () => {
+  it("creates a tour, assigns selected employees with their versions and closes the dialog", async () => {
     apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
       if (method === "POST" && url === "/api/tours") {
         return {
@@ -262,9 +268,12 @@ describe("FT07 TourManagement behavior", () => {
     expect(apiRequestMock).toHaveBeenNthCalledWith(2, "POST", "/api/tours/77/employees", {
       items: [{ employeeId: 11, version: 8 }],
     });
+    expect(setEditingTourMock).toHaveBeenCalledWith(null);
+    expect(setIsCreatingMock).toHaveBeenCalledWith(false);
+    expect(setCascadeDialogStateMock).toHaveBeenCalledWith(null);
   });
 
-  it("sends the edited tour name in the versioned update payload", async () => {
+  it("sends the edited tour name in the versioned update payload and closes the dialog", async () => {
     apiRequestMock.mockResolvedValue({
       ok: true,
       json: async () => ({ ...tour, name: "Suedtour", color: "#1188aa", version: 7 }),
@@ -292,6 +301,9 @@ describe("FT07 TourManagement behavior", () => {
       version: 6,
     });
     expect(setQueryDataMock).toHaveBeenCalledWith(["/api/tours"], expect.any(Function));
+    expect(setEditingTourMock).toHaveBeenCalledWith(null);
+    expect(setIsCreatingMock).toHaveBeenCalledWith(false);
+    expect(setCascadeDialogStateMock).toHaveBeenCalledWith(null);
   });
 
   it("keeps an admin delete action in the edit dialog and sends a versioned delete", async () => {

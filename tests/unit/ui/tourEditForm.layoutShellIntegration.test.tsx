@@ -180,6 +180,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("input-tour-name");
     expect(markup).toContain("Nordtour");
     expect(markup).not.toContain("text-tour-generated-name-hint");
+    expect(markup).not.toContain("Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.");
     expect(markup).toContain("badge-tour-member-21");
     expect(markup).toContain('data-testid="tour-form-main-column"');
     expect(markup).toContain('class="w-full"');

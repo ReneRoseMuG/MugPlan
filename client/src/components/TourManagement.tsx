@@ -393,6 +393,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       const response = await createMutation.mutateAsync({ color });
       const newTour = await response.json();
       await assignMembersMutation.mutateAsync({ tourId: newTour.id, employeeIds });
+      handleCloseDialog();
       return;
     }
 
@@ -401,6 +402,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing tour version"}');
     }
     await updateMutation.mutateAsync({ id: tourId, name, color, version: tour.version });
+    handleCloseDialog();
   };
 
   const handleCloseDialog = () => {

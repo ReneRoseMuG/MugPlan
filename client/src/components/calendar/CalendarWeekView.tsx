@@ -19,6 +19,7 @@ import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
   CALENDAR_UNASSIGNED_TOUR_COLOR,
+  compareTourNamesForCalendar,
   getAppointmentDurationDays,
   getAppointmentEndDate,
   getAppointmentStackPriority,
@@ -307,7 +308,7 @@ export function CalendarWeekView({
 
       const initialLanes: WeekTourLane[] = tours
         .slice()
-        .sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" }))
+        .sort((a, b) => compareTourNamesForCalendar(a.name, b.name))
         .map((tour) => ({
           laneKey: `tour-${tour.id}`,
           label: tour.name,

@@ -70,28 +70,32 @@ export function extractTourIndex(tourName: string | null): number | null {
   return Number.isFinite(parsedIndex) ? parsedIndex : null;
 }
 
-export function compareAppointmentsByTourIndexThenTime(a: CalendarAppointment, b: CalendarAppointment) {
-  const aTourName = a.tourName?.trim() ?? "";
-  const bTourName = b.tourName?.trim() ?? "";
-  const aTourIndex = extractTourIndex(aTourName);
-  const bTourIndex = extractTourIndex(bTourName);
+export function compareTourNamesForCalendar(aTourName: string | null, bTourName: string | null) {
+  const aName = aTourName?.trim() ?? "";
+  const bName = bTourName?.trim() ?? "";
+  const aTourIndex = extractTourIndex(aName);
+  const bTourIndex = extractTourIndex(bName);
 
-  const aGroup = aTourIndex !== null ? 0 : aTourName.length > 0 ? 1 : 2;
-  const bGroup = bTourIndex !== null ? 0 : bTourName.length > 0 ? 1 : 2;
+  const aGroup = aTourIndex !== null ? 0 : aName.length > 0 ? 1 : 2;
+  const bGroup = bTourIndex !== null ? 0 : bName.length > 0 ? 1 : 2;
 
   if (aGroup !== bGroup) {
     return aGroup - bGroup;
   }
 
-  if (aGroup === 0 && bTourIndex !== null && aTourIndex !== null && aTourIndex !== bTourIndex) {
+  if (aGroup === 0 && aTourIndex !== null && bTourIndex !== null && aTourIndex !== bTourIndex) {
     return aTourIndex - bTourIndex;
   }
 
-  if (aGroup === 1) {
-    const nameCompare = aTourName.localeCompare(bTourName, "de", { sensitivity: "base" });
-    if (nameCompare !== 0) {
-      return nameCompare;
-    }
+  return aName.localeCompare(bName, "de", { sensitivity: "base" });
+}
+
+export function compareAppointmentsByTourIndexThenTime(a: CalendarAppointment, b: CalendarAppointment) {
+  const aTourName = a.tourName?.trim() ?? "";
+  const bTourName = b.tourName?.trim() ?? "";
+  const tourCompare = compareTourNamesForCalendar(aTourName, bTourName);
+  if (tourCompare !== 0) {
+    return tourCompare;
   }
 
   const aTime = a.startTime ? a.startTime.slice(0, 5) : "00:00";
