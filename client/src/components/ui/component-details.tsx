@@ -36,7 +36,7 @@ export function ComponentDetails({
   return (
     <div className="space-y-3">
       {showIsActive ? (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[140px_140px]">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[140px]">
           <div className="space-y-2">
             <Label htmlFor="component-details-active">Status</Label>
             <label className="flex h-10 items-center gap-2 rounded border border-slate-300 bg-white px-3 text-sm text-slate-700">
@@ -50,29 +50,8 @@ export function ComponentDetails({
               <span>Is Active</span>
             </label>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="component-details-short-code">ShortCode</Label>
-            <Input
-              id="component-details-short-code"
-              value={draft.shortCode}
-              disabled={disabled}
-              onChange={(event) => onDraftChange({ ...draft, shortCode: event.target.value })}
-              placeholder="Kurzcode"
-            />
-          </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <Label htmlFor="component-details-short-code">ShortCode</Label>
-          <Input
-            id="component-details-short-code"
-            value={draft.shortCode}
-            disabled={disabled}
-            onChange={(event) => onDraftChange({ ...draft, shortCode: event.target.value })}
-            placeholder="Kurzcode"
-          />
-        </div>
-      )}
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="component-details-name">Name</Label>
@@ -82,6 +61,17 @@ export function ComponentDetails({
           disabled={disabled}
           onChange={(event) => onDraftChange({ ...draft, name: event.target.value })}
           placeholder="Name eingeben"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="component-details-short-code">ShortCode</Label>
+        <Input
+          id="component-details-short-code"
+          value={draft.shortCode}
+          disabled={disabled}
+          onChange={(event) => onDraftChange({ ...draft, shortCode: event.target.value })}
+          placeholder="Kurzcode"
         />
       </div>
 
