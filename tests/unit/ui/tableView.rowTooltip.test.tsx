@@ -2,24 +2,27 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TableView rendert fuer Zeilen mit `rowTitle` einen sichtbaren Tooltip-Inhalt.
- * - Zeilen ohne `rowTitle` erzeugen keinen zusaetzlichen Tooltip-Inhalt.
+ * - TableView rendert für Zeilen mit `rowTitle` einen sichtbaren Hover-Inhalt.
+ * - Zeilen ohne `rowTitle` erzeugen keinen zusätzlichen Hover-Inhalt.
  *
- * Fehlerfaelle:
- * - Report-Zeilen mit Sondermaß- oder Storniert-Markierung zeigen beim Mouseover keinen Tag-Namen.
- * - TableView erzeugt Tooltips pauschal fuer jede Zeile statt nur fuer markierte Zeilen.
+ * Fehlerfälle:
+ * - Report-Zeilen mit Sondermaß- oder Storniert-Markierung zeigen beim Hover keinen Tag-Namen.
+ * - TableView erzeugt Hover-Previews pauschal für jede Zeile statt nur für markierte Zeilen.
  *
  * Ziel:
- * Die Tooltip-Verdrahtung der TableView fuer markierte Report-Zeilen ueber gerendertes Verhalten absichern.
+ * Die cursorbasierte Hover-Verdrahtung der TableView für markierte Report-Zeilen über gerendertes Verhalten absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children?: React.ReactNode }) => <div data-testid="tooltip-root">{children}</div>,
-  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-  TooltipContent: ({ children }: { children?: React.ReactNode }) => <div data-testid="tooltip-content">{children}</div>,
+vi.mock("@/components/ui/hover-preview", () => ({
+  HoverPreview: ({ children, preview }: { children?: React.ReactNode; preview?: React.ReactNode }) => (
+    <div data-testid="hover-preview">
+      {children}
+      <div data-testid="hover-preview-content">{preview}</div>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/ui/table", () => ({
@@ -45,12 +48,12 @@ import { TableView, type TableViewColumnDef } from "../../../client/src/componen
 
 type Row = { id: number; name: string; tooltip?: string };
 
-describe("FT26 table view row tooltip behavior", () => {
+describe("FT26 table view row hover behavior", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
   });
 
-  it("renders tooltip content only for rows with rowTitle", () => {
+  it("renders hover preview content only for rows with rowTitle", () => {
     const columns: TableViewColumnDef<Row>[] = [{ id: "name", header: "Name", accessor: (row) => row.name }];
 
     const html = renderToStaticMarkup(
@@ -65,7 +68,7 @@ describe("FT26 table view row tooltip behavior", () => {
       />,
     );
 
-    expect(html).toContain("tooltip-content");
+    expect(html).toContain("hover-preview-content");
     expect(html).toContain("Sondermaß");
     expect(html).toContain("aria-label=\"Sondermaß\"");
     expect(html).not.toContain("aria-label=\"undefined\"");

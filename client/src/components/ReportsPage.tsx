@@ -482,7 +482,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       <ListLayout
         title="Reports"
         icon={<FileText className="h-5 w-5" />}
-        helpKey="reports.vorlaufliste"
+        helpKey="reports"
         onClose={onCancel}
         showCloseButton={Boolean(onCancel)}
         className="h-full w-full"
@@ -493,6 +493,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
                 <ReportConfigSurface
                   title="Vorlaufliste"
+                  helpKey="reports-vorlaufliste"
                   footer={(
                     <div className="flex justify-end">
                       <Button type="button" onClick={() => handleGenerateReport("vorlaufliste")} disabled={vorlauflisteFromDate.trim().length === 0} data-testid="button-reports-vorlaufliste-generate">
@@ -557,6 +558,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
 
                 <ReportConfigSurface
                   title="Produkt Vorlauf"
+                  helpKey="reports-produkte"
                   footer={(
                     <div className="flex justify-end">
                       <Button type="button" onClick={() => handleGenerateReport("product-vorlauf")} disabled={productVorlaufFromDate.trim().length === 0} data-testid="button-reports-product-vorlauf-generate">

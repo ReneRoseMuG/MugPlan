@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import type { InfoBadgePreview, InfoBadgePreviewOptions } from "@/components/ui/info-badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -69,16 +68,22 @@ function isInfoBadgePreview(preview: ReactNode | InfoBadgePreview): preview is I
   return typeof preview === "object" && preview !== null && "content" in preview;
 }
 
-function wrapRowWithTooltip(rowNode: ReactNode, tooltipContent: string | undefined) {
-  if (!tooltipContent) {
-    return rowNode;
-  }
+function wrapRowWithCursorPreview(rowNode: ReactNode, tooltipContent: string | undefined) {
+  if (!tooltipContent) return rowNode;
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{rowNode}</TooltipTrigger>
-      <TooltipContent>{tooltipContent}</TooltipContent>
-    </Tooltip>
+    <HoverPreview
+      preview={<div className="rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md">{tooltipContent}</div>}
+      mode="cursor"
+      openDelay={80}
+      closeDelay={40}
+      cursorOffsetX={12}
+      cursorOffsetY={14}
+      maxWidth={220}
+      maxHeight={null}
+    >
+      {rowNode}
+    </HoverPreview>
   );
 }
 
@@ -272,7 +277,7 @@ export function TableView<T>({
               if (!rowPreviewRenderer) {
                 return (
                   <React.Fragment key={resolvedRowKey}>
-                    {wrapRowWithTooltip(rowNode, resolvedRowTooltip)}
+                    {wrapRowWithCursorPreview(rowNode, resolvedRowTooltip)}
                   </React.Fragment>
                 );
               }
@@ -296,14 +301,14 @@ export function TableView<T>({
                     maxHeight={previewOptions.maxHeight}
                     className={previewOptions.scrollY === "auto" ? "overflow-y-auto" : undefined}
                   >
-                    {wrapRowWithTooltip(rowNode, resolvedRowTooltip)}
+                    {rowNode}
                   </HoverPreview>
                 );
               }
 
               return (
                 <HoverPreview key={resolvedRowKey} preview={resolvedPreview} mode="cursor">
-                  {wrapRowWithTooltip(rowNode, resolvedRowTooltip)}
+                  {rowNode}
                 </HoverPreview>
               );
             })}

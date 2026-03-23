@@ -63,6 +63,10 @@ vi.mock("@/components/ui/entity-tag-footer-row", () => ({
   EntityTagFooterRow: () => <div>tag-row</div>,
 }));
 
+vi.mock("@/components/ui/help/help-icon", () => ({
+  HelpIcon: ({ helpKey }: { helpKey: string }) => <span data-help-key={helpKey}>help</span>,
+}));
+
 import { ReportsPage } from "../../../client/src/components/ReportsPage";
 
 describe("FT26/FT32 UI: ReportsPage wiring", () => {
@@ -107,6 +111,8 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
   it("renders both report configs with split columns and no special-measure select", () => {
     const html = renderToStaticMarkup(<ReportsPage />);
 
+    expect(html).toContain("data-help-key=\"reports-vorlaufliste\"");
+    expect(html).toContain("data-help-key=\"reports-produkte\"");
     expect(html).toContain("reports-vorlaufliste-date-range-column");
     expect(html).toContain("reports-vorlaufliste-categories-column");
     expect(html).toContain("reports-product-vorlauf-date-range-column");
