@@ -390,6 +390,7 @@ export function DraggableAttachmentBadge({
   };
 
   const scheduleOpen = () => {
+    if (dragPhaseRef.current !== "idle") return;
     clearCloseTimer();
     clearOpenTimer();
     const delay =
@@ -399,11 +400,10 @@ export function DraggableAttachmentBadge({
     openTimerRef.current = setTimeout(() => {
       if (triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
-        const w = typeof window !== "undefined" ? window.innerWidth : 1024;
         const h = typeof window !== "undefined" ? window.innerHeight : 768;
         const x = Math.max(
           VIEWPORT_PADDING,
-          Math.min(rect.right + 8, w - dimensions.popoverMaxWidth - VIEWPORT_PADDING),
+          rect.left - dimensions.popoverMaxWidth - 8,
         );
         const y = Math.max(
           VIEWPORT_PADDING,
