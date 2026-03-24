@@ -35,6 +35,7 @@ import { listProjectArticleRowsByProjectIds } from "./appointmentsRepository";
 import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
 export type ProjectWithTags = Project & { tags: Tag[] };
+export type ProjectWithArticleItemsAndTags = ProjectWithTags & { projectArticleItems: ProjectArticleItem[] };
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -592,7 +593,7 @@ export async function listProjectOrderNumbers(): Promise<string[]> {
 
 export async function getProjectWithCustomer(
   id: number,
-): Promise<{ project: ProjectWithTags; customer: typeof customers.$inferSelect } | null> {
+): Promise<{ project: ProjectWithArticleItemsAndTags; customer: typeof customers.$inferSelect } | null> {
   const [result] = await db
     .select({ project: projects, customer: customers, order: projectOrder })
     .from(projects)
@@ -601,10 +602,12 @@ export async function getProjectWithCustomer(
     .where(eq(projects.id, id));
   if (!result) return null;
   const tagsByProjectId = await getProjectTagsByProjectIds([id]);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject([id]);
   return {
     project: {
       ...mergeProjectWithOrder(result.project, result.order ?? null),
       tags: tagsByProjectId.get(id) ?? [],
+      projectArticleItems: projectArticleItemsByProject.get(id) ?? [],
     },
     customer: result.customer,
   };

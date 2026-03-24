@@ -90,6 +90,10 @@ type AppointmentFormProject = Project & {
   projectArticleItems?: ProjectArticleItem[];
 };
 
+type AppointmentFormProjectDetailResponse = {
+  project: AppointmentFormProject;
+};
+
 type AppointmentApiError = Error & { status?: number; code?: string };
 type ApiConflictEmployee = { id?: unknown; fullName?: unknown };
 type ApiErrorPayload = {
@@ -372,8 +376,8 @@ export function AppointmentForm({
     queryKey: [`/api/projects/${selectedProjectId}`],
     enabled: selectedProjectId !== null && selectedProjectInList === null,
     queryFn: async () => {
-      const data = await fetchJson<{ project: Project }>(`/api/projects/${selectedProjectId}`);
-      return data.project as AppointmentFormProject;
+      const data = await fetchJson<AppointmentFormProjectDetailResponse>(`/api/projects/${selectedProjectId}`);
+      return data.project;
     },
     staleTime: 60_000,
   });

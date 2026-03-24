@@ -11,6 +11,7 @@
  * - Tags, Notizen und Terminanhaenge lassen sich im Neuer-Termin-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Terminanhang dem erzeugten Termin korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei wandert nach erfolgreicher Projektanlage in die Projektdokumente und nicht zusaetzlich in Terminanhaenge.
+ * - Nach Save des neu angelegten Overlay-Projekts zeigt der Projektslot im Terminformular die persistierte Artikelliste statt des Fallbacktexts.
  * - Beim Abbrechen des aus der Dokumentextraktion geoeffneten Projektformulars bleibt die Datei als Termin-Draft sichtbar.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
  *
@@ -19,6 +20,7 @@
  * - Ein aus der Tour-Lane gestarteter Termin verliert vor oder nach dem Save Projekt-, Kunden- oder Tour-Relationen.
  * - Tour-Mitarbeiter werden trotz initialTourId nicht vorbefuellt.
  * - Draft-Tags, Draft-Notizen oder pending Terminanhaenge gehen beim ersten Save verloren.
+ * - Der Projektslot faellt nach dem Overlay-Rueckweg auf `nicht hinterlegt` zurueck, obwohl Order-Items gespeichert wurden.
  *
  * Ziel:
  * Browser-E2E fuer den realen Create/Edit-Flow eines relationierten Eintagestermins sowie die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
@@ -28,6 +30,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   createAppointmentBrowserFixture,
   createCustomerFixture,
+  createProductFixture,
   createProjectFixture,
   createTagFixture,
 } from "../helpers/testDataFactory";
@@ -322,6 +325,10 @@ test("persists tag, note and appointment attachment from the new appointment for
 
 test("shows an extracted document only as project attachment after successful project save", async ({ page }) => {
   const customer = await createCustomerFixture("FT24-EXTRACT-SAVE");
+  const saunaProduct = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "FT24 Overlay Rueckweg Sauna",
+  });
   const extractionFileName = "ft24-extract-project-only.pdf";
 
   await mockAppointmentDocumentExtraction(page, customer.customerNumber, {
@@ -335,6 +342,8 @@ test("shows an extracted document only as project attachment after successful pr
   await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
   await page.getByTestId("button-doc-extract-apply-data").click();
   await expect(page.getByTestId("button-save-project")).toBeVisible();
+  await page.getByRole("tab", { name: "Artikelliste" }).click();
+  await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
 
   await page.getByTestId("button-save-project").click();
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
@@ -342,6 +351,9 @@ test("shows an extracted document only as project attachment after successful pr
   await expect(
     page.getByTestId("appointment-form-sidebar").getByText(extractionFileName, { exact: true }),
   ).toHaveCount(1);
+  await expect(page.getByTestId("badge-project-project-content-articles")).toContainText("Saunamodell");
+  await expect(page.getByTestId("badge-project-project-content-articles")).toContainText(saunaProduct.name);
+  await expect(page.getByTestId("badge-project-description")).not.toContainText("nicht hinterlegt");
 
   await page.getByTestId("button-save-appointment").click();
   const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });

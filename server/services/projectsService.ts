@@ -87,7 +87,7 @@ export async function getProjectsByOrderNumber(orderNumber: string): Promise<pro
 
 export async function getProjectWithCustomer(
   id: number,
-): Promise<{ project: projectsRepository.ProjectWithTags; customer: Customer } | null> {
+): Promise<{ project: projectsRepository.ProjectWithArticleItemsAndTags; customer: Customer } | null> {
   return projectsRepository.getProjectWithCustomer(id);
 }
 
