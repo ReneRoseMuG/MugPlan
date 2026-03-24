@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFloatingPreviewKeeper } from "@/contexts/floating-preview-keeper";
-import { ExternalLink, FileText, Image as ImageIcon, Paperclip, X } from "lucide-react";
+import { ExternalLink, FileText, Image as ImageIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSetting } from "@/hooks/useSettings";
-import { InfoBadge, type InfoBadgePreview } from "@/components/ui/info-badge";
+import type { InfoBadgePreview } from "@/components/ui/info-badge";
 import type { ReactNode } from "react";
 
 export type AttachmentPreviewSize = "small" | "medium" | "large";
@@ -263,44 +263,26 @@ const VIEWPORT_PADDING = 8;
 
 type DragPhase = "idle" | "intent" | "dragging" | "pinned";
 
-function resolveAttachmentPreviewIcon(
-  mimeType: string | null | undefined,
-  originalName: string,
-): ReactNode {
-  const resolved = mimeType ?? "";
-  const lower = originalName.toLowerCase();
-  const isPdf = resolved === "application/pdf" || lower.endsWith(".pdf");
-  const isImage = resolved.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(lower);
-  if (isImage) return <ImageIcon className="h-4 w-4" />;
-  if (isPdf) return <FileText className="h-4 w-4" />;
-  return <Paperclip className="h-4 w-4" />;
-}
 
-export interface DraggableAttachmentBadgeProps {
+export interface AttachmentPreviewTriggerProps {
+  children: ReactNode;
   originalName: string;
   mimeType: string | null;
   openUrl: string;
   downloadUrl: string;
   previewSize?: AttachmentPreviewSize;
-  onRemove?: () => void;
-  actionDisabled?: boolean;
-  actionSlot?: ReactNode;
   testId?: string;
-  triggerChildren?: ReactNode;
 }
 
-export function DraggableAttachmentBadge({
+export function AttachmentPreviewTrigger({
+  children,
   originalName,
   mimeType,
   openUrl,
   downloadUrl,
   previewSize: previewSizeProp,
-  onRemove,
-  actionDisabled,
-  actionSlot,
   testId,
-  triggerChildren,
-}: DraggableAttachmentBadgeProps) {
+}: AttachmentPreviewTriggerProps) {
   const globalOpenDelayMs = useOptionalHoverPreviewDelaySetting();
   const keeper = useFloatingPreviewKeeper();
   const dimensions = resolveAttachmentPreviewDimensions(
@@ -491,18 +473,7 @@ export function DraggableAttachmentBadge({
           if (dragPhaseRef.current === "idle") scheduleClose();
         }}
       >
-        {triggerChildren ?? (
-          <InfoBadge
-            icon={resolveAttachmentPreviewIcon(mimeType, originalName)}
-            label={<span className="block max-w-full truncate">{originalName}</span>}
-            action={onRemove ? "remove" : "none"}
-            onRemove={onRemove}
-            actionDisabled={actionDisabled}
-            customAction={actionSlot}
-            fullWidth
-            testId={testId}
-          />
-        )}
+        {children}
       </div>
       {showPreview && typeof document !== "undefined"
         ? createPortal(
