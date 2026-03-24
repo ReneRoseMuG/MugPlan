@@ -302,6 +302,10 @@ export function DraggableAttachmentBadge({
   const dimensions = resolveAttachmentPreviewDimensions(
     parseAttachmentPreviewSize(previewSizeProp),
   );
+  const resolvedMime = mimeType?.toLowerCase() ?? "";
+  const lowerName = originalName.toLowerCase();
+  const isImageContent =
+    resolvedMime.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(lowerName);
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [dragPhase, setDragPhase] = useState<DragPhase>("idle");
@@ -474,7 +478,9 @@ export function DraggableAttachmentBadge({
               style={{
                 left: portalPos.x,
                 top: portalPos.y,
-                width: dimensions.popoverMaxWidth,
+                ...(isImageContent
+                  ? { maxWidth: dimensions.popoverMaxWidth }
+                  : { width: dimensions.popoverMaxWidth }),
                 maxHeight: dimensions.popoverMaxHeight,
                 cursor: isDragging ? "grabbing" : undefined,
               }}
