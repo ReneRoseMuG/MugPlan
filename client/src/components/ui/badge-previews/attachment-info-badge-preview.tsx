@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ExternalLink, FileText, Image as ImageIcon } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ExternalLink, FileText, Image as ImageIcon, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSetting } from "@/hooks/useSettings";
-import type { InfoBadgePreview } from "@/components/ui/info-badge";
+import { InfoBadge, type InfoBadgePreview } from "@/components/ui/info-badge";
+import type { ReactNode } from "react";
 
 export type AttachmentPreviewSize = "small" | "medium" | "large";
 
@@ -19,6 +21,7 @@ type AttachmentInfoBadgePreviewProps = {
   openUrl: string;
   downloadUrl: string;
   previewSize?: AttachmentPreviewSize;
+  onClose?: () => void;
 };
 
 const attachmentInfoBadgePreviewBaseOptions = {
@@ -43,6 +46,14 @@ const attachmentPreviewModeFactors: Record<AttachmentPreviewSize, number> = {
 function useOptionalAttachmentPreviewSizeSetting(): unknown {
   try {
     return useSetting("attachmentPreviewSize");
+  } catch {
+    return undefined;
+  }
+}
+
+function useOptionalHoverPreviewDelaySetting(): number | undefined {
+  try {
+    return useSetting("hoverPreviewOpenDelayMs");
   } catch {
     return undefined;
   }
@@ -84,6 +95,7 @@ export function AttachmentInfoBadgePreview({
   openUrl,
   downloadUrl,
   previewSize,
+  onClose,
 }: AttachmentInfoBadgePreviewProps) {
   const attachmentPreviewSizeSetting = useOptionalAttachmentPreviewSizeSetting();
   const effectivePreviewSize = parseAttachmentPreviewSize(previewSize ?? attachmentPreviewSizeSetting);
@@ -140,7 +152,7 @@ export function AttachmentInfoBadgePreview({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold" style={{ cursor: "grab" }}>
           {isImage ? (
             <ImageIcon className="h-4 w-4 text-muted-foreground" />
           ) : (
@@ -160,6 +172,11 @@ export function AttachmentInfoBadgePreview({
               Download
             </a>
           </Button>
+          {onClose && (
+            <Button size="sm" variant="ghost" onClick={onClose} aria-label="Vorschau schließen">
+              <X className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -212,7 +229,7 @@ export function AttachmentInfoBadgePreview({
 }
 
 export function createAttachmentInfoBadgePreview(
-  props: AttachmentInfoBadgePreviewProps,
+  props: Omit<AttachmentInfoBadgePreviewProps, "onClose">,
 ): InfoBadgePreview {
   const previewSize = parseAttachmentPreviewSize(props.previewSize);
   const dimensions = resolveAttachmentPreviewDimensions(previewSize);
@@ -225,4 +242,251 @@ export function createAttachmentInfoBadgePreview(
       maxHeight: dimensions.popoverMaxHeight,
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Draggable attachment preview
+// ---------------------------------------------------------------------------
+
+const DRAG_THRESHOLD = 4;
+const VIEWPORT_PADDING = 8;
+
+type DragPhase = "idle" | "intent" | "dragging" | "pinned";
+
+function resolveAttachmentPreviewIcon(
+  mimeType: string | null | undefined,
+  originalName: string,
+): ReactNode {
+  const resolved = mimeType ?? "";
+  const lower = originalName.toLowerCase();
+  const isPdf = resolved === "application/pdf" || lower.endsWith(".pdf");
+  const isImage = resolved.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(lower);
+  if (isImage) return <ImageIcon className="h-4 w-4" />;
+  if (isPdf) return <FileText className="h-4 w-4" />;
+  return <Paperclip className="h-4 w-4" />;
+}
+
+export interface DraggableAttachmentBadgeProps {
+  originalName: string;
+  mimeType: string | null;
+  openUrl: string;
+  downloadUrl: string;
+  previewSize?: AttachmentPreviewSize;
+  onRemove?: () => void;
+  actionDisabled?: boolean;
+  actionSlot?: ReactNode;
+  testId?: string;
+}
+
+export function DraggableAttachmentBadge({
+  originalName,
+  mimeType,
+  openUrl,
+  downloadUrl,
+  previewSize: previewSizeProp,
+  onRemove,
+  actionDisabled,
+  actionSlot,
+  testId,
+}: DraggableAttachmentBadgeProps) {
+  const globalOpenDelayMs = useOptionalHoverPreviewDelaySetting();
+  const dimensions = resolveAttachmentPreviewDimensions(
+    parseAttachmentPreviewSize(previewSizeProp),
+  );
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [dragPhase, setDragPhase] = useState<DragPhase>("idle");
+  const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
+
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intentStartRef = useRef({ x: 0, y: 0 });
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const portalPosRef = useRef({ x: 0, y: 0 });
+  const dragPhaseRef = useRef<DragPhase>("idle");
+
+  // Keep ref in sync with state for use in stale closures
+  useEffect(() => {
+    dragPhaseRef.current = dragPhase;
+  }, [dragPhase]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (openTimerRef.current) clearTimeout(openTimerRef.current);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  // Document-level mouse listeners during drag
+  useEffect(() => {
+    if (dragPhase !== "intent" && dragPhase !== "dragging") return;
+
+    const onMove = (e: MouseEvent) => {
+      if (dragPhaseRef.current === "intent") {
+        const dx = e.clientX - intentStartRef.current.x;
+        const dy = e.clientY - intentStartRef.current.y;
+        if (Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+          dragOffsetRef.current = {
+            x: portalPosRef.current.x - e.clientX,
+            y: portalPosRef.current.y - e.clientY,
+          };
+          setDragPhase("dragging");
+        }
+      } else if (dragPhaseRef.current === "dragging") {
+        const w = typeof window !== "undefined" ? window.innerWidth : 1024;
+        const h = typeof window !== "undefined" ? window.innerHeight : 768;
+        const clampedX = Math.max(
+          VIEWPORT_PADDING,
+          Math.min(e.clientX + dragOffsetRef.current.x, w - dimensions.popoverMaxWidth - VIEWPORT_PADDING),
+        );
+        const clampedY = Math.max(
+          VIEWPORT_PADDING,
+          Math.min(e.clientY + dragOffsetRef.current.y, h - dimensions.popoverMaxHeight - VIEWPORT_PADDING),
+        );
+        portalPosRef.current = { x: clampedX, y: clampedY };
+        setPortalPos({ x: clampedX, y: clampedY });
+      }
+    };
+
+    const onUp = () => {
+      if (dragPhaseRef.current === "dragging") {
+        setDragPhase("pinned");
+      } else {
+        setDragPhase("idle");
+      }
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [dragPhase, dimensions.popoverMaxWidth, dimensions.popoverMaxHeight]);
+
+  const clearOpenTimer = () => {
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+  };
+
+  const clearCloseTimer = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  };
+
+  const scheduleOpen = () => {
+    clearCloseTimer();
+    clearOpenTimer();
+    const delay =
+      typeof globalOpenDelayMs === "number" && Number.isFinite(globalOpenDelayMs)
+        ? Math.max(0, globalOpenDelayMs)
+        : 380;
+    openTimerRef.current = setTimeout(() => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        const w = typeof window !== "undefined" ? window.innerWidth : 1024;
+        const h = typeof window !== "undefined" ? window.innerHeight : 768;
+        const x = Math.max(
+          VIEWPORT_PADDING,
+          Math.min(rect.right + 8, w - dimensions.popoverMaxWidth - VIEWPORT_PADDING),
+        );
+        const y = Math.max(
+          VIEWPORT_PADDING,
+          Math.min(rect.top, h - dimensions.popoverMaxHeight - VIEWPORT_PADDING),
+        );
+        portalPosRef.current = { x, y };
+        setPortalPos({ x, y });
+      }
+      setIsPreviewOpen(true);
+    }, delay);
+  };
+
+  const scheduleClose = () => {
+    const phase = dragPhaseRef.current;
+    if (phase === "dragging" || phase === "pinned") return;
+    clearOpenTimer();
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      setIsPreviewOpen(false);
+    }, 80);
+  };
+
+  const handlePreviewMouseDown = (e: React.MouseEvent) => {
+    intentStartRef.current = { x: e.clientX, y: e.clientY };
+    setDragPhase("intent");
+  };
+
+  const handleClose = () => {
+    clearOpenTimer();
+    clearCloseTimer();
+    setIsPreviewOpen(false);
+    setDragPhase("idle");
+  };
+
+  const isPinned = dragPhase === "pinned";
+  const isDragging = dragPhase === "dragging";
+  const showPreview = isPreviewOpen || isDragging || isPinned;
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        data-testid={testId ? `${testId}-trigger` : undefined}
+        onMouseEnter={scheduleOpen}
+        onMouseLeave={() => {
+          if (dragPhaseRef.current === "idle") scheduleClose();
+        }}
+      >
+        <InfoBadge
+          icon={resolveAttachmentPreviewIcon(mimeType, originalName)}
+          label={<span className="block max-w-full truncate">{originalName}</span>}
+          action={onRemove ? "remove" : "none"}
+          onRemove={onRemove}
+          actionDisabled={actionDisabled}
+          customAction={actionSlot}
+          fullWidth
+          testId={testId}
+        />
+      </div>
+      {showPreview && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed z-50 overflow-auto rounded-lg border bg-popover p-4 shadow-md"
+              style={{
+                left: portalPos.x,
+                top: portalPos.y,
+                maxWidth: dimensions.popoverMaxWidth,
+                maxHeight: dimensions.popoverMaxHeight,
+                cursor: isDragging ? "grabbing" : undefined,
+              }}
+              data-testid={testId ? `${testId}-preview` : "attachment-preview-portal"}
+              data-drag-phase={dragPhase}
+              onMouseDown={handlePreviewMouseDown}
+              onMouseEnter={() => {
+                if (dragPhaseRef.current === "idle") clearCloseTimer();
+              }}
+              onMouseLeave={() => {
+                if (dragPhaseRef.current === "idle") scheduleClose();
+              }}
+            >
+              <AttachmentInfoBadgePreview
+                originalName={originalName}
+                mimeType={mimeType}
+                openUrl={openUrl}
+                downloadUrl={downloadUrl}
+                previewSize={previewSizeProp}
+                onClose={isPinned ? handleClose : undefined}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  );
 }

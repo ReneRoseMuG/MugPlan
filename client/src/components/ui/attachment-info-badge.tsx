@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { FileText, Image as ImageIcon, Paperclip } from "lucide-react";
 import { InfoBadge } from "@/components/ui/info-badge";
-import { createAttachmentInfoBadgePreview } from "@/components/ui/badge-previews/attachment-info-badge-preview";
+import {
+  createAttachmentInfoBadgePreview,
+  DraggableAttachmentBadge,
+} from "@/components/ui/badge-previews/attachment-info-badge-preview";
 import { useSetting } from "@/hooks/useSettings";
 
 export interface AttachmentBadgeItem {
@@ -18,6 +21,7 @@ interface AttachmentInfoBadgeProps {
   downloadUrl: string;
   openUrl: string;
   testId?: string;
+  draggable?: boolean;
 }
 
 function resolveAttachmentIcon(attachment: AttachmentBadgeItem) {
@@ -43,8 +47,25 @@ export function AttachmentInfoBadge({
   downloadUrl,
   openUrl,
   testId,
+  draggable = true,
 }: AttachmentInfoBadgeProps) {
   const previewSize = useSetting("attachmentPreviewSize");
+
+  if (draggable) {
+    return (
+      <DraggableAttachmentBadge
+        originalName={attachment.originalName}
+        mimeType={attachment.mimeType}
+        openUrl={openUrl}
+        downloadUrl={downloadUrl}
+        previewSize={previewSize}
+        onRemove={onRemove}
+        actionDisabled={actionDisabled}
+        actionSlot={actionSlot}
+        testId={testId}
+      />
+    );
+  }
 
   return (
     <InfoBadge
