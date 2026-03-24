@@ -163,46 +163,50 @@ export function AttachmentInfoBadgePreview({
         </div>
       </div>
 
-      <div
-        className="overflow-auto rounded-md border border-border bg-background p-2"
-        style={{ maxHeight: dimensions.contentMaxHeight }}
-      >
-        {isPdf ? (
-          <iframe
-            title={`Vorschau ${originalName}`}
-            src={openUrl}
-            className="w-full border-0"
-            style={{ height: dimensions.iframeHeight }}
-          />
-        ) : isImage ? (
+      {isImage ? (
+        <div className="overflow-auto rounded-md border border-border bg-background p-2">
           <img
             src={openUrl}
             alt={originalName}
             className="h-auto max-w-full"
           />
-        ) : isWord && officeEmbedUrl ? (
-          <iframe
-            title={`Word-Vorschau ${originalName}`}
-            src={officeEmbedUrl}
-            className="w-full border-0"
-            style={{ height: dimensions.iframeHeight }}
-          />
-        ) : isTxt ? (
-          <div className="text-sm text-muted-foreground">
-            {isLoadingText && <p>Textvorschau wird geladen...</p>}
-            {textError && <p>Textvorschau nicht verfügbar: {textError}</p>}
-            {textContent && (
-              <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground">
-                {textContent}
-              </pre>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>Keine Inline-Vorschau verfügbar.</p>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div
+          className="overflow-auto rounded-md border border-border bg-background p-2"
+          style={{ maxHeight: dimensions.contentMaxHeight }}
+        >
+          {isPdf ? (
+            <iframe
+              title={`Vorschau ${originalName}`}
+              src={openUrl}
+              className="w-full border-0"
+              style={{ height: dimensions.iframeHeight }}
+            />
+          ) : isWord && officeEmbedUrl ? (
+            <iframe
+              title={`Word-Vorschau ${originalName}`}
+              src={officeEmbedUrl}
+              className="w-full border-0"
+              style={{ height: dimensions.iframeHeight }}
+            />
+          ) : isTxt ? (
+            <div className="text-sm text-muted-foreground">
+              {isLoadingText && <p>Textvorschau wird geladen...</p>}
+              {textError && <p>Textvorschau nicht verfügbar: {textError}</p>}
+              {textContent && (
+                <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground">
+                  {textContent}
+                </pre>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>Keine Inline-Vorschau verfügbar.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
