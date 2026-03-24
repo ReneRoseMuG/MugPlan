@@ -21,4 +21,6 @@ export async function resetIsolatedTestStorage(): Promise<void> {
   const tempRoot = await getTempRoot();
   await fs.rm(path.join(tempRoot, "uploads"), { recursive: true, force: true });
   await fs.rm(path.join(tempRoot, "backups"), { recursive: true, force: true });
+  await fs.mkdir(path.join(tempRoot, "uploads"), { recursive: true });
+  await fs.mkdir(path.join(tempRoot, "backups"), { recursive: true });
 }

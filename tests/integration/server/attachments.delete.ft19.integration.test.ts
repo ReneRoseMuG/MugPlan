@@ -34,6 +34,7 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
+import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
 import * as projectAttachmentsService from "../../../server/services/projectAttachmentsService";
 import * as customerAttachmentsService from "../../../server/services/customerAttachmentsService";
 import * as employeeAttachmentsService from "../../../server/services/employeeAttachmentsService";
@@ -191,13 +192,11 @@ async function createHistoricalAppointmentParent(): Promise<{ id: number }> {
     descriptionMd: null,
     version: 1,
   });
-  const appointment = await appointmentsService.createAppointment({
-    projectId: project.id,
-    startDate: "2020-01-10",
-    endDate: null,
-    startTime: null,
-    employeeIds: [],
-  });
+  // Repository direkt verwenden, um Service-Validierung (PAST_APPOINTMENT_READONLY) zu umgehen
+  const appointment = await appointmentsRepository.createAppointment(
+    { projectId: project.id, startDate: "2020-01-10", endDate: null, startTime: null },
+    [],
+  );
   return { id: Number(appointment?.id) };
 }
 

@@ -1,63 +1,49 @@
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-type Domain = "project" | "customer" | "employee" | "appointment";
+type ParentType = "project" | "customer" | "employee" | "appointment";
 
-const domainConfig: Record<Domain, { deleteUrl: (id: number) => string; listQueryKey: (parentId: number) => unknown[] }> = {
-  project: {
-    deleteUrl: (id) => `/api/project-attachments/${id}`,
-    listQueryKey: (parentId) => ["/api/projects", parentId, "attachments"],
-  },
-  customer: {
-    deleteUrl: (id) => `/api/customer-attachments/${id}`,
-    listQueryKey: (parentId) => ["/api/customers", parentId, "attachments"],
-  },
-  employee: {
-    deleteUrl: (id) => `/api/employee-attachments/${id}`,
-    listQueryKey: (parentId) => ["/api/employees", parentId, "attachments"],
-  },
-  appointment: {
-    deleteUrl: (id) => `/api/appointment-attachments/${id}`,
-    listQueryKey: (parentId) => ["/api/appointments", parentId, "attachment-context"],
-  },
+const deleteUrlByType: Record<ParentType, (id: number) => string> = {
+  project: (id) => `/api/project-attachments/${id}`,
+  customer: (id) => `/api/customer-attachments/${id}`,
+  employee: (id) => `/api/employee-attachments/${id}`,
+  appointment: (id) => `/api/appointment-attachments/${id}`,
+};
+
+const parentTypeLabel: Record<ParentType, string> = {
+  project: "Projekt",
+  customer: "Kunde",
+  employee: "Mitarbeiter",
+  appointment: "Termin",
 };
 
 interface AttachmentDeleteActionProps {
   attachmentId: number;
-  parentId: number;
-  domain: Domain;
-  canDelete: boolean;
+  parentType: ParentType;
+  listQueryKey: unknown[];
+  canEdit: boolean;
+  defaultMode?: "soft" | "hard";
+  isHistoricalAppointment?: boolean;
 }
 
 export function AttachmentDeleteAction({
   attachmentId,
-  parentId,
-  domain,
-  canDelete,
+  parentType,
+  listQueryKey,
+  canEdit,
+  isHistoricalAppointment,
 }: AttachmentDeleteActionProps) {
-  const [open, setOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const { toast } = useToast();
-  const config = domainConfig[domain];
 
   const deleteMutation = useMutation({
     mutationFn: async (mode: "soft" | "hard") => {
-      const url = mode === "hard"
-        ? `${config.deleteUrl(attachmentId)}?mode=hard`
-        : config.deleteUrl(attachmentId);
+      const baseUrl = deleteUrlByType[parentType](attachmentId);
+      const url = mode === "hard" ? `${baseUrl}?mode=hard` : baseUrl;
       const response = await fetch(url, {
         method: "DELETE",
         credentials: "include",
@@ -68,60 +54,75 @@ export function AttachmentDeleteAction({
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: config.listQueryKey(parentId) });
-      setOpen(false);
-      toast({ title: "Anhang geloescht" });
+      void queryClient.invalidateQueries({ queryKey: listQueryKey });
+      setConfirmed(false);
+      toast({ title: "Anhang gelöscht" });
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Loeschen fehlgeschlagen";
+      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
     },
   });
 
-  if (!canDelete) return null;
+  if (!canEdit || isHistoricalAppointment) return null;
+
+  const label = parentTypeLabel[parentType];
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
+    <div
+      className="relative"
+      onClick={(e) => e.stopPropagation()}
+      data-testid={`attachment-delete-action-${attachmentId}`}
+    >
+      {/* Trigger — always in the tree */}
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-5 w-5"
+        data-testid={`attachment-delete-trigger-${attachmentId}`}
+        onClick={() => setConfirmed((v) => !v)}
+        aria-expanded={confirmed}
+      >
+        <Trash2 className="w-3 h-3" />
+      </Button>
+
+      {/* Confirmation panel — always in the tree, visibility controlled via CSS */}
+      <div
+        className={`absolute right-0 top-full z-50 flex w-56 flex-col gap-1 rounded border bg-popover p-2 text-sm shadow${confirmed ? "" : " hidden"}`}
+        data-testid={`attachment-delete-panel-${attachmentId}`}
+        aria-hidden={!confirmed}
+      >
+        <p className="text-xs text-muted-foreground">
+          Anhang des {label} löschen
+        </p>
         <Button
-          size="icon"
-          variant="ghost"
-          className="h-5 w-5"
-          data-testid={`attachment-delete-trigger-${attachmentId}`}
-          onClick={(e) => e.stopPropagation()}
+          size="sm"
+          variant="outline"
+          disabled={deleteMutation.isPending}
+          data-testid={`attachment-delete-soft-${attachmentId}`}
+          onClick={() => deleteMutation.mutate("soft")}
         >
-          <Trash2 className="w-3 h-3" />
+          Nur Verknüpfung entfernen
         </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Anhang loeschen</AlertDialogTitle>
-          <AlertDialogDescription>
-            Wie soll der Anhang geloescht werden?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col sm:flex-col gap-2">
-          <Button
-            variant="outline"
-            onClick={() => deleteMutation.mutate("soft")}
-            disabled={deleteMutation.isPending}
-            data-testid={`attachment-delete-soft-${attachmentId}`}
-          >
-            Nur Verknuepfung entfernen
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => deleteMutation.mutate("hard")}
-            disabled={deleteMutation.isPending}
-            data-testid={`attachment-delete-hard-${attachmentId}`}
-          >
-            Datei vollstaendig loeschen
-          </Button>
-          <AlertDialogCancel disabled={deleteMutation.isPending}>
-            Abbrechen
-          </AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        <Button
+          size="sm"
+          variant="destructive"
+          disabled={deleteMutation.isPending}
+          data-testid={`attachment-delete-hard-${attachmentId}`}
+          onClick={() => deleteMutation.mutate("hard")}
+        >
+          Datei vollständig löschen
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={deleteMutation.isPending}
+          onClick={() => setConfirmed(false)}
+        >
+          <X className="h-3 w-3" />
+          Abbrechen
+        </Button>
+      </div>
+    </div>
   );
 }

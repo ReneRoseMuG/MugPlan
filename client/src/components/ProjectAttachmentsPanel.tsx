@@ -138,9 +138,9 @@ export function ProjectAttachmentsPanel({
             ? (id) => (
                 <AttachmentDeleteAction
                   attachmentId={id}
-                  parentId={projectId}
-                  domain="project"
-                  canDelete={canDelete && !pendingAttachmentUrlsById.has(id)}
+                  parentType="project"
+                  listQueryKey={["/api/projects", projectId, "attachments"]}
+                  canEdit={canDelete && !pendingAttachmentUrlsById.has(id)}
                 />
               )
             : undefined,

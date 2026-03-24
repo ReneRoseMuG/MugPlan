@@ -180,9 +180,9 @@ export function AppointmentAttachmentsPanel({
             ? (id) => (
                 <AttachmentDeleteAction
                   attachmentId={id}
-                  parentId={appointmentId}
-                  domain="appointment"
-                  canDelete={canDelete && !readOnly && !pendingAttachmentUrlsById.has(id)}
+                  parentType="appointment"
+                  listQueryKey={["/api/appointments", appointmentId, "attachment-context"]}
+                  canEdit={canDelete && !readOnly && !pendingAttachmentUrlsById.has(id)}
                 />
               )
             : undefined,

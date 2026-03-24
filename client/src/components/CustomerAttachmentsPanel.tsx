@@ -169,9 +169,9 @@ export function CustomerAttachmentsPanel({
             ? (id) => (
                 <AttachmentDeleteAction
                   attachmentId={id}
-                  parentId={customerId}
-                  domain="customer"
-                  canDelete={canDelete && !pendingAttachmentUrlsById.has(id)}
+                  parentType="customer"
+                  listQueryKey={["/api/customers", customerId, "attachments"]}
+                  canEdit={canDelete && !pendingAttachmentUrlsById.has(id)}
                 />
               )
             : undefined,

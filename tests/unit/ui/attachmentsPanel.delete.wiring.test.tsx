@@ -22,8 +22,11 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const invalidateQueriesMock = vi.fn();
-const mutateMock = vi.fn();
+const { invalidateQueriesMock, mutateMock } = vi.hoisted(() => ({
+  invalidateQueriesMock: vi.fn(),
+  mutateMock: vi.fn(),
+}));
+
 let capturedOnSuccess: (() => void) | undefined;
 let capturedOnError: (() => void) | undefined;
 
