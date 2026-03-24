@@ -205,6 +205,14 @@ export function TableView<T>({
 
   const showFooterBar = stickyFooter && (Boolean(footerSlot) || horizontalMetrics.hasOverflow);
   const footerScrollTestId = testId ? `${testId}-footer-scrollbar` : undefined;
+  const totalColumnWidth = columns.reduce((sum, column) => {
+    const resolvedWidth = typeof column.width === "number"
+      ? column.width
+      : typeof column.minWidth === "number"
+        ? column.minWidth
+        : 0;
+    return sum + resolvedWidth;
+  }, 0);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -229,6 +237,8 @@ export function TableView<T>({
       );
 
       activeColumnResizeRef.current = null;
+      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("user-select");
       onColumnResizeEnd?.(activeResize.columnId, nextWidth);
     };
 
@@ -238,6 +248,8 @@ export function TableView<T>({
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("user-select");
     };
   }, [onColumnResize, onColumnResizeEnd]);
 
@@ -252,6 +264,7 @@ export function TableView<T>({
           className={cn("min-w-full", tableClassName)}
           containerClassName="overflow-visible"
           containerRef={tableContainerRef}
+          style={totalColumnWidth > 0 ? { minWidth: `${totalColumnWidth}px` } : undefined}
         >
           <TableHeader>
             <TableRow>
@@ -260,6 +273,7 @@ export function TableView<T>({
                   key={column.id}
                   className={cn(
                     alignmentClass(column.align),
+                    "border-r border-border/70 last:border-r-0",
                     stickyHeader && "sticky top-0 z-10 bg-muted/95 border-b shadow-[0_1px_0_0_hsl(var(--border))]",
                     column.truncate && "whitespace-nowrap",
                     column.headerClassName,
@@ -269,13 +283,13 @@ export function TableView<T>({
                     minWidth: toCssSize(column.minWidth),
                   }}
                 >
-                  <div className={cn("flex items-center gap-2", column.resizable && "justify-between")}>
-                    <span>{column.header}</span>
+                  <div className={cn("relative flex items-center gap-2", column.resizable && "pr-5")}>
+                    <span className="block">{column.header}</span>
                     {column.resizable ? (
                       <button
                         type="button"
                         aria-label={`Spalte ${typeof column.header === "string" ? column.header : column.id} in der Breite anpassen`}
-                        className="h-6 w-2 shrink-0 cursor-col-resize rounded-sm border border-border/70 bg-background/80 hover:bg-muted"
+                        className="absolute inset-y-[-4px] right-[-8px] z-20 w-5 cursor-col-resize select-none touch-none rounded-full hover:bg-slate-400/15"
                         data-testid={testId ? `${testId}-resize-${column.id}` : undefined}
                         onMouseDown={(event) => {
                           const startWidth = typeof column.width === "number"
@@ -291,10 +305,17 @@ export function TableView<T>({
                             startWidth: Math.max(minWidth, Math.round(startWidth)),
                             minWidth,
                           };
+                          document.body.style.setProperty("cursor", "col-resize");
+                          document.body.style.setProperty("user-select", "none");
                           event.preventDefault();
                           event.stopPropagation();
                         }}
-                      />
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-1 left-1/2 w-[2px] -translate-x-1/2 rounded-full bg-slate-600 shadow-[0_0_0_1px_rgba(255,255,255,0.4)]"
+                        />
+                      </button>
                     ) : null}
                   </div>
                 </TableHead>
@@ -411,10 +432,10 @@ export function TableView<T>({
           ) : null}
 
           {horizontalMetrics.hasOverflow ? (
-            <div className={cn("px-6 pb-3", footerSlot ? "border-t border-border/70 pt-2" : "pt-3")}>
+            <div className={cn("relative z-20 px-6 pb-4", footerSlot ? "border-t border-border/70 pt-3" : "pt-4")}>
               <div
                 ref={footerScrollRef}
-                className="visible-horizontal-scrollbar overflow-x-scroll overflow-y-hidden rounded-full bg-muted/35"
+                className="visible-horizontal-scrollbar relative z-20 h-6 overflow-x-scroll overflow-y-hidden rounded-full border border-border/70 bg-[hsl(var(--color-beige)/0.82)] shadow-sm"
                 data-testid={footerScrollTestId}
                 onScroll={handleFooterScroll}
               >

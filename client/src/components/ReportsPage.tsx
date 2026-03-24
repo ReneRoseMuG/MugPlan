@@ -511,11 +511,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     void persistVorlauflisteSelection(next);
   };
 
-  const resetVorlauflisteColumnWidths = () => {
-    setVorlauflisteColumnWidths({});
-    void persistVorlauflisteSelection({});
-  };
-
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
@@ -725,10 +720,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   {isVorlauflisteLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : (
-                    <>
-                      <div className="flex justify-end px-6 pt-4">
-                        <Button type="button" variant="outline" onClick={resetVorlauflisteColumnWidths} data-testid="button-reports-vorlaufliste-reset-widths">Spaltenbreiten zurücksetzen</Button>
-                      </div>
+                    
                       <TableView
                       columns={vorlauflisteColumns}
                       rows={vorlauflisteData?.items ?? []}
@@ -737,11 +729,12 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                       rowTitle={(row) => row.highlightTag?.name}
                       onColumnResize={updateVorlauflisteColumnWidth}
                       onColumnResizeEnd={commitVorlauflisteColumnWidth}
+                      tableClassName="table-fixed"
                       testId="table-reports-vorlaufliste"
                       stickyHeader
                       emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Für den gewählten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}
                     />
-                    </>
+                    
                   )}
                 </div>
                 <div className="border-t border-border px-6 py-4">
