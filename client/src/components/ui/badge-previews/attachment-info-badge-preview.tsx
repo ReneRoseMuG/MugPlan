@@ -407,11 +407,13 @@ export function DraggableAttachmentBadge({
     openTimerRef.current = setTimeout(() => {
       if (triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
+        const w = typeof window !== "undefined" ? window.innerWidth : 1024;
         const h = typeof window !== "undefined" ? window.innerHeight : 768;
-        const x = Math.max(
-          VIEWPORT_PADDING,
-          rect.left - dimensions.popoverMaxWidth - 8,
-        );
+        const spaceRight = w - rect.right - VIEWPORT_PADDING;
+        const x =
+          spaceRight >= dimensions.popoverMaxWidth
+            ? rect.right + 8
+            : Math.max(VIEWPORT_PADDING, rect.left - dimensions.popoverMaxWidth - 8);
         const y = Math.max(
           VIEWPORT_PADDING,
           Math.min(rect.top, h - dimensions.popoverMaxHeight - VIEWPORT_PADDING),
