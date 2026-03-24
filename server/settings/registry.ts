@@ -52,6 +52,7 @@ type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[num
 type VorlauflisteCategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  useShortCodes?: boolean;
 };
 type ProductVorlaufSelection = {
   productCategoryIds: number[];
@@ -162,8 +163,10 @@ function isValidPositiveIntegerArray(value: unknown): value is number[] {
 function isValidVorlauflisteCategorySelection(value: unknown): value is VorlauflisteCategorySelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const parsed = value as Record<string, unknown>;
-  return isValidPositiveIntegerArray(parsed.productCategoryIds)
-    && isValidPositiveIntegerArray(parsed.componentCategoryIds);
+  if (!isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
+  if (!isValidPositiveIntegerArray(parsed.componentCategoryIds)) return false;
+  if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
+  return true;
 }
 
 function isValidProductVorlaufSelection(value: unknown): value is ProductVorlaufSelection {

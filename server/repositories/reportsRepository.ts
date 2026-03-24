@@ -14,8 +14,7 @@ import {
   projects,
   type Tag,
 } from "@shared/schema";
-import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
-import { resolveReportComponentSlot, stripReportHtmlToText } from "../lib/reportVorlaufliste";
+import { stripReportHtmlToText } from "../lib/reportVorlaufliste";
 import {
   hasAppointmentCancellationTag,
   hasManagedReportExclusionTag,
@@ -23,6 +22,16 @@ import {
   isManagedSpecialMeasureTag,
 } from "../lib/appointmentCancellation";
 import { getAppointmentTagsByAppointmentIds, getProjectTagsByProjectIds } from "./tagRelationsRepository";
+
+export type VorlauflisteArticleValue = {
+  categoryId: number;
+  value: string | null;
+};
+
+export type VorlauflisteCategory = {
+  id: number;
+  name: string;
+};
 
 export type VorlauflisteRow = {
   projectId: number;
@@ -32,12 +41,7 @@ export type VorlauflisteRow = {
   customerFullName: string | null;
   postalCode: string | null;
   city: string | null;
-  sauna: string | null;
-  door: string | null;
-  window: string | null;
-  oven: string | null;
-  control: string | null;
-  roof: string | null;
+  articleValues: VorlauflisteArticleValue[];
   plannedDateText: string | null;
   plannedWeek: string | null;
   actualDate: string;
@@ -50,6 +54,8 @@ export type VorlauflistePagedResult = {
   pageSize: number;
   total: number;
   totalPages: number;
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
   items: VorlauflisteRow[];
 };
 
@@ -80,14 +86,7 @@ export type ProductVorlaufResult = {
   specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
 };
 
-type ReportArticleBuckets = {
-  sauna: Set<string>;
-  door: Set<string>;
-  window: Set<string>;
-  oven: Set<string>;
-  control: Set<string>;
-  roof: Set<string>;
-};
+type ReportArticleBuckets = Map<number, Set<string>>;
 
 type NormalizedProjectAppointmentRow = {
   appointmentId: number;
@@ -102,19 +101,23 @@ type ProjectReportTagState = {
 };
 
 function createEmptyBuckets(): ReportArticleBuckets {
-  return {
-    sauna: new Set<string>(),
-    door: new Set<string>(),
-    window: new Set<string>(),
-    oven: new Set<string>(),
-    control: new Set<string>(),
-    roof: new Set<string>(),
-  };
+  return new Map<number, Set<string>>();
+}
+
+function addToBucket(buckets: ReportArticleBuckets, categoryId: number, value: string): void {
+  const existing = buckets.get(categoryId) ?? new Set<string>();
+  existing.add(value);
+  buckets.set(categoryId, existing);
 }
 
 function joinSorted(values: Set<string>): string | null {
   if (values.size === 0) return null;
   return Array.from(values).sort((left, right) => left.localeCompare(right, "de")).join(", ");
+}
+
+function resolveArticleName(name: string, shortCode: string | null | undefined, useShortCodes: boolean): string {
+  if (useShortCodes && shortCode && shortCode.trim().length > 0) return shortCode.trim();
+  return name;
 }
 
 function upsertGroupedItem(
@@ -208,6 +211,7 @@ export async function getVorlauflistePaged(params: {
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  useShortCodes: boolean;
   page: number;
   pageSize: number;
 }): Promise<VorlauflistePagedResult> {
@@ -234,6 +238,8 @@ export async function getVorlauflistePaged(params: {
       pageSize: params.pageSize,
       total: 0,
       totalPages: 0,
+      productCategories: [],
+      componentCategories: [],
       items: [],
     };
   }
@@ -308,6 +314,8 @@ export async function getVorlauflistePaged(params: {
       pageSize: params.pageSize,
       total: 0,
       totalPages: 0,
+      productCategories: [],
+      componentCategories: [],
       items: [],
     };
   }
@@ -320,6 +328,8 @@ export async function getVorlauflistePaged(params: {
       pageSize: params.pageSize,
       total,
       totalPages: Math.ceil(total / params.pageSize),
+      productCategories: [],
+      componentCategories: [],
       items: [],
     };
   }
@@ -354,6 +364,8 @@ export async function getVorlauflistePaged(params: {
   const bucketsByProjectId = new Map<number, ReportArticleBuckets>();
   const selectedProductCategoryIds = new Set(params.productCategoryIds);
   const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
+  const productCategoryNameById = new Map<number, string>();
+  const componentCategoryNameById = new Map<number, string>();
 
   for (const row of orderItemRows) {
     const projectId = row.item.projectId;
@@ -363,9 +375,10 @@ export async function getVorlauflistePaged(params: {
       row.product
       && row.productCategory
       && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
-      && isReportSaunaProductCategoryName(row.productCategory.name)
     ) {
-      buckets.sauna.add(row.product.name.trim());
+      productCategoryNameById.set(row.productCategory.id, row.productCategory.name);
+      const displayName = resolveArticleName(row.product.name.trim(), row.product.shortCode, params.useShortCodes);
+      addToBucket(buckets, row.productCategory.id, displayName);
       bucketsByProjectId.set(projectId, buckets);
       continue;
     }
@@ -380,22 +393,32 @@ export async function getVorlauflistePaged(params: {
       continue;
     }
 
-    const fieldKey = resolveReportComponentSlot(row.componentCategory.name);
-    const componentName = row.component.name.trim();
-    if (fieldKey === "door") buckets.door.add(componentName);
-    if (fieldKey === "window") buckets.window.add(componentName);
-    if (fieldKey === "oven") buckets.oven.add(componentName);
-    if (fieldKey === "control") buckets.control.add(componentName);
-    if (fieldKey === "roof") buckets.roof.add(componentName);
-
+    componentCategoryNameById.set(row.componentCategory.id, row.componentCategory.name);
+    const displayName = resolveArticleName(row.component.name.trim(), row.component.shortCode, params.useShortCodes);
+    addToBucket(buckets, row.componentCategory.id, displayName);
     bucketsByProjectId.set(projectId, buckets);
   }
+
+  const orderedProductCategories: VorlauflisteCategory[] = params.productCategoryIds
+    .filter((id) => productCategoryNameById.has(id))
+    .map((id) => ({ id, name: productCategoryNameById.get(id)! }));
+
+  const orderedComponentCategories: VorlauflisteCategory[] = params.componentCategoryIds
+    .filter((id) => componentCategoryNameById.has(id))
+    .map((id) => ({ id, name: componentCategoryNameById.get(id)! }));
+
+  const allCategoryIds = [
+    ...params.productCategoryIds,
+    ...params.componentCategoryIds,
+  ];
 
   return {
     page: params.page,
     pageSize: params.pageSize,
     total,
     totalPages: Math.ceil(total / params.pageSize),
+    productCategories: orderedProductCategories,
+    componentCategories: orderedComponentCategories,
     items: projectIds
       .map((projectId) => {
         const row = projectById.get(projectId);
@@ -405,6 +428,11 @@ export async function getVorlauflistePaged(params: {
         const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
         const projectTags = (tagsByProjectId.get(projectId) ?? []).filter((tag) => tag.isDefault);
 
+        const articleValues: VorlauflisteArticleValue[] = allCategoryIds.map((categoryId) => ({
+          categoryId,
+          value: joinSorted(buckets.get(categoryId) ?? new Set()),
+        }));
+
         return {
           projectId,
           tags: projectTags,
@@ -413,12 +441,7 @@ export async function getVorlauflistePaged(params: {
           customerFullName: row.customer.fullName ?? null,
           postalCode: row.customer.postalCode ?? null,
           city: row.customer.city ?? null,
-          sauna: joinSorted(buckets.sauna),
-          door: joinSorted(buckets.door),
-          window: joinSorted(buckets.window),
-          oven: joinSorted(buckets.oven),
-          control: joinSorted(buckets.control),
-          roof: joinSorted(buckets.roof),
+          articleValues,
           plannedDateText: row.order?.plannedDateText ?? null,
           plannedWeek: row.order?.plannedWeek ?? null,
           actualDate: appointmentMeta.actualDate,

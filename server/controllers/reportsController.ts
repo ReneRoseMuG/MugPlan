@@ -18,6 +18,7 @@ export async function listVorlaufliste(req: Request, res: Response, next: NextFu
       toDate: input.toDate,
       productCategoryIds: input.productCategoryIds,
       componentCategoryIds: input.componentCategoryIds,
+      useShortCodes: input.useShortCodes,
       page: input.page,
       pageSize: input.pageSize,
     }, roleKey);

@@ -23,6 +23,7 @@ export interface TableViewColumnDef<T> {
   align?: TableViewColumnAlign;
   className?: string;
   headerClassName?: string;
+  truncate?: boolean;
 }
 
 export interface TableViewProps<T> {
@@ -214,6 +215,7 @@ export function TableView<T>({
                   className={cn(
                     alignmentClass(column.align),
                     stickyHeader && "sticky top-0 z-10 bg-muted/95 border-b shadow-[0_1px_0_0_hsl(var(--border))]",
+                    column.truncate && "whitespace-nowrap",
                     column.headerClassName,
                   )}
                   style={{
@@ -249,6 +251,17 @@ export function TableView<T>({
                     ? ""
                     : String(value);
 
+                const cellContent = column.truncate
+                  ? (
+                    <span
+                      className="block max-w-0 min-w-full overflow-hidden text-ellipsis whitespace-nowrap"
+                      title={typeof value === "string" ? value : (value == null ? "" : String(value))}
+                    >
+                      {content}
+                    </span>
+                  )
+                  : content;
+
                 return (
                   <TableCell
                     key={column.id}
@@ -258,7 +271,7 @@ export function TableView<T>({
                       minWidth: toCssSize(column.minWidth),
                     }}
                   >
-                    {content}
+                    {cellContent}
                   </TableCell>
                 );
               });

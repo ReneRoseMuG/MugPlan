@@ -330,6 +330,16 @@ const projectBoardListResponseSchema = pagedListMetaSchema.extend({
 
 const appointmentCancellationReportStateSchema = z.enum(["default", "contains_cancelled", "cancelled_only"]);
 
+const reportVorlauflisteCategorySchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string(),
+});
+
+const reportVorlauflisteArticleValueSchema = z.object({
+  categoryId: z.number().int().positive(),
+  value: z.string().nullable(),
+});
+
 const reportVorlauflisteItemSchema = z.object({
   projectId: z.number().int().positive(),
   tags: z.array(tagSchema),
@@ -338,12 +348,7 @@ const reportVorlauflisteItemSchema = z.object({
   customerFullName: z.string().nullable(),
   postalCode: z.string().nullable(),
   city: z.string().nullable(),
-  sauna: z.string().nullable(),
-  door: z.string().nullable(),
-  window: z.string().nullable(),
-  oven: z.string().nullable(),
-  control: z.string().nullable(),
-  roof: z.string().nullable(),
+  articleValues: z.array(reportVorlauflisteArticleValueSchema),
   plannedDateText: z.string().nullable(),
   plannedWeek: z.string().nullable(),
   actualDate: z.string(),
@@ -352,6 +357,8 @@ const reportVorlauflisteItemSchema = z.object({
 });
 
 const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
+  productCategories: z.array(reportVorlauflisteCategorySchema),
+  componentCategories: z.array(reportVorlauflisteCategorySchema),
   items: z.array(reportVorlauflisteItemSchema),
 });
 
@@ -3807,6 +3814,10 @@ export const api = {
           componentCategoryIds: z.preprocess(
             (value) => value == null ? [] : Array.isArray(value) ? value : [value],
             z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          useShortCodes: z.preprocess(
+            (value) => value === "true" || value === true,
+            z.boolean().default(false),
           ),
           page: z.coerce.number().int().min(1).default(1),
           pageSize: z.coerce.number().int().min(1).max(100).default(100),

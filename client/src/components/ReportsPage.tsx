@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { FileText, Loader2 } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
-import { getProjectArticleFieldByCategoryName, isReportSaunaProductCategoryName } from "@shared/projectArticleList";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,11 @@ import { cn } from "@/lib/utils";
 
 type ReportType = "vorlaufliste" | "product-vorlauf";
 type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
-type ReportComponentColumnId = "door" | "window" | "oven" | "control" | "roof";
+
+type VorlauflisteCategory = {
+  id: number;
+  name: string;
+};
 
 type VorlauflisteItem = {
   projectId: number;
@@ -34,12 +37,7 @@ type VorlauflisteItem = {
   customerFullName: string | null;
   postalCode: string | null;
   city: string | null;
-  sauna: string | null;
-  door: string | null;
-  window: string | null;
-  oven: string | null;
-  control: string | null;
-  roof: string | null;
+  articleValues: Array<{ categoryId: number; value: string | null }>;
   plannedDateText: string | null;
   plannedWeek: string | null;
   actualDate: string;
@@ -51,6 +49,8 @@ type VorlauflisteResponse = {
   pageSize: number;
   total: number;
   totalPages: number;
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
   items: VorlauflisteItem[];
 };
 
@@ -87,11 +87,13 @@ type SubmittedFilters = {
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  useShortCodes: boolean;
 };
 
 type CategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  useShortCodes?: boolean;
 };
 
 type ArticleCategorySelectionProps = {
@@ -171,23 +173,6 @@ function resolveInitialSelectionIds(params: {
   return params.persistedIds.length > 0 ? params.persistedIds : params.defaultIds;
 }
 
-function resolveVisibleComponentColumns(
-  selectedCategoryIds: number[],
-  componentCategories: ComponentCategory[],
-): Set<ReportComponentColumnId> {
-  const selectedIds = new Set(selectedCategoryIds);
-  const visibleColumns = new Set<ReportComponentColumnId>();
-
-  for (const category of componentCategories) {
-    if (!selectedIds.has(category.id)) continue;
-    const fieldKey = getProjectArticleFieldByCategoryName(category.name);
-    if (fieldKey === "door" || fieldKey === "window" || fieldKey === "oven" || fieldKey === "control" || fieldKey === "roof") {
-      visibleColumns.add(fieldKey);
-    }
-  }
-
-  return visibleColumns;
-}
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: "include" });
@@ -312,6 +297,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
 
   const [selectedVorlauflisteProductCategoryIds, setSelectedVorlauflisteProductCategoryIds] = useState<number[]>([]);
   const [selectedVorlauflisteComponentCategoryIds, setSelectedVorlauflisteComponentCategoryIds] = useState<number[]>([]);
+  const [useVorlauflisteShortCodes, setUseVorlauflisteShortCodes] = useState(false);
   const [selectedProductVorlaufProductCategoryIds, setSelectedProductVorlaufProductCategoryIds] = useState<number[]>([]);
   const [selectedProductVorlaufComponentCategoryIds, setSelectedProductVorlaufComponentCategoryIds] = useState<number[]>([]);
 
@@ -331,6 +317,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       persistedIds: resolvedComponentIds,
       defaultIds: defaultComponentCategories.map((category) => category.id),
     }));
+    setUseVorlauflisteShortCodes(vorlauflisteSelection?.useShortCodes ?? false);
   }, [defaultComponentCategories, defaultProductCategories, vorlauflisteResolvedScope, vorlauflisteSelection]);
 
   useEffect(() => {
@@ -352,13 +339,17 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   }, [defaultComponentCategories, defaultProductCategories, productVorlaufResolvedScope, productVorlaufSelection]);
 
   const persistSelection = async (reportType: ReportType, next: CategorySelection) => {
+    const value: CategorySelection = {
+      productCategoryIds: normalizeIds(next.productCategoryIds),
+      componentCategoryIds: normalizeIds(next.componentCategoryIds),
+    };
+    if (reportType === "vorlaufliste") {
+      value.useShortCodes = next.useShortCodes ?? false;
+    }
     await setSetting({
       key: reportType === "vorlaufliste" ? VORLAUFLISTE_SETTING_KEY : PRODUCT_VORLAUF_SETTING_KEY,
       scopeType: "USER",
-      value: {
-        productCategoryIds: normalizeIds(next.productCategoryIds),
-        componentCategoryIds: normalizeIds(next.componentCategoryIds),
-      },
+      value,
     });
   };
 
@@ -374,6 +365,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       if (submittedFilters?.toDate) params.set("toDate", submittedFilters.toDate);
       for (const id of submittedFilters?.productCategoryIds ?? []) params.append("productCategoryIds", String(id));
       for (const id of submittedFilters?.componentCategoryIds ?? []) params.append("componentCategoryIds", String(id));
+      if (submittedFilters?.useShortCodes) params.set("useShortCodes", "true");
       return fetchJson(`/api/reports/vorlaufliste?${params.toString()}`);
     },
   });
@@ -390,22 +382,9 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     },
   });
 
-  const effectiveVorlauflisteProductCategoryIds = submittedFilters?.reportType === "vorlaufliste"
-    ? submittedFilters.productCategoryIds
-    : selectedVorlauflisteProductCategoryIds;
-  const effectiveVorlauflisteComponentCategoryIds = submittedFilters?.reportType === "vorlaufliste"
-    ? submittedFilters.componentCategoryIds
-    : selectedVorlauflisteComponentCategoryIds;
-
   const vorlauflisteColumns = useMemo<TableViewColumnDef<VorlauflisteItem>[]>(() => {
-    const selectedProductIds = new Set(effectiveVorlauflisteProductCategoryIds);
-    const showSaunaColumn = defaultProductCategories.some(
-      (category) => selectedProductIds.has(category.id) && isReportSaunaProductCategoryName(category.name),
-    );
-    const visibleComponentColumns = resolveVisibleComponentColumns(
-      effectiveVorlauflisteComponentCategoryIds,
-      defaultComponentCategories,
-    );
+    const productCategories: VorlauflisteCategory[] = vorlauflisteData?.productCategories ?? [];
+    const componentCategories: VorlauflisteCategory[] = vorlauflisteData?.componentCategories ?? [];
 
     const columns: TableViewColumnDef<VorlauflisteItem>[] = [
       { id: "amount", header: "Auftragssumme", accessor: (row) => row.amount ?? "", minWidth: 160, align: "right", cell: ({ row }) => <span>{formatAmount(row.amount)}</span> },
@@ -414,23 +393,30 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       { id: "city", header: "Ort", accessor: (row) => row.city ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.city)}</span> },
     ];
 
-    if (showSaunaColumn) {
-      columns.push({ id: "sauna", header: "Sauna", accessor: (row) => row.sauna ?? "", minWidth: 180, cell: ({ row }) => <span>{resolveValue(row.sauna)}</span> });
+    for (const category of productCategories) {
+      columns.push({
+        id: `product-${category.id}`,
+        header: category.name,
+        accessor: (row) => row.articleValues.find((v) => v.categoryId === category.id)?.value ?? "",
+        truncate: true,
+        cell: ({ row }) => {
+          const value = row.articleValues.find((v) => v.categoryId === category.id)?.value ?? null;
+          return <span>{resolveValue(value)}</span>;
+        },
+      });
     }
-    if (visibleComponentColumns.has("door")) {
-      columns.push({ id: "door", header: "Tür", accessor: (row) => row.door ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.door)}</span> });
-    }
-    if (visibleComponentColumns.has("window")) {
-      columns.push({ id: "window", header: "Fenster", accessor: (row) => row.window ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.window)}</span> });
-    }
-    if (visibleComponentColumns.has("oven")) {
-      columns.push({ id: "oven", header: "Ofen", accessor: (row) => row.oven ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.oven)}</span> });
-    }
-    if (visibleComponentColumns.has("control")) {
-      columns.push({ id: "control", header: "Steuerung", accessor: (row) => row.control ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.control)}</span> });
-    }
-    if (visibleComponentColumns.has("roof")) {
-      columns.push({ id: "roof", header: "Dach", accessor: (row) => row.roof ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.roof)}</span> });
+
+    for (const category of componentCategories) {
+      columns.push({
+        id: `component-${category.id}`,
+        header: category.name,
+        accessor: (row) => row.articleValues.find((v) => v.categoryId === category.id)?.value ?? "",
+        truncate: true,
+        cell: ({ row }) => {
+          const value = row.articleValues.find((v) => v.categoryId === category.id)?.value ?? null;
+          return <span>{resolveValue(value)}</span>;
+        },
+      });
     }
 
     columns.push(
@@ -441,12 +427,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     );
 
     return columns;
-  }, [
-    defaultComponentCategories,
-    defaultProductCategories,
-    effectiveVorlauflisteComponentCategoryIds,
-    effectiveVorlauflisteProductCategoryIds,
-  ]);
+  }, [vorlauflisteData]);
 
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
@@ -470,6 +451,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       toDate: showToDate && toDate.trim().length > 0 ? toDate : undefined,
       productCategoryIds,
       componentCategoryIds,
+      useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : false,
     });
     setReportRequestId((current) => current + 1);
     setIsReportOverlayOpen(true);
@@ -538,6 +520,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           void persistSelection("vorlaufliste", {
                             productCategoryIds: nextIds,
                             componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
+                            useShortCodes: useVorlauflisteShortCodes,
                           });
                         }}
                         onComponentCategoryToggle={(categoryId, checked) => {
@@ -548,10 +531,27 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           void persistSelection("vorlaufliste", {
                             productCategoryIds: selectedVorlauflisteProductCategoryIds,
                             componentCategoryIds: nextIds,
+                            useShortCodes: useVorlauflisteShortCodes,
                           });
                         }}
                         testIdPrefix="reports-vorlaufliste"
                       />
+                      <label className="mt-3 flex items-center gap-3 text-sm text-foreground" data-testid="reports-vorlaufliste-use-shortcodes-label">
+                        <Checkbox
+                          checked={useVorlauflisteShortCodes}
+                          onCheckedChange={(checked) => {
+                            const next = Boolean(checked);
+                            setUseVorlauflisteShortCodes(next);
+                            void persistSelection("vorlaufliste", {
+                              productCategoryIds: selectedVorlauflisteProductCategoryIds,
+                              componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
+                              useShortCodes: next,
+                            });
+                          }}
+                          data-testid="checkbox-reports-vorlaufliste-use-shortcodes"
+                        />
+                        <span>Shortcodes verwenden?</span>
+                      </label>
                     </div>
                   </div>
                 </ReportConfigSurface>
