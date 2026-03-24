@@ -5,6 +5,7 @@ type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-r
 type VorlauflisteCategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  useShortCodes?: boolean;
 };
 type ProductVorlaufSelection = {
   productCategoryIds: number[];
@@ -88,6 +89,7 @@ export function resolveVorlauflisteCategorySelection(value: unknown): Vorlauflis
   return {
     productCategoryIds: Array.from(new Set(productCategoryIds)),
     componentCategoryIds: Array.from(new Set(componentCategoryIds)),
+    useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : undefined,
   };
 }
 
