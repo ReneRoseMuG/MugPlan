@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
+import { AttachmentDeleteAction } from "@/components/AttachmentDeleteAction";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { CustomerAttachment, ProjectAttachment } from "@shared/schema";
@@ -19,6 +20,7 @@ interface ProjectAttachmentsPanelProps {
   projectId?: number | null;
   customerId?: number | null;
   isEditing: boolean;
+  canDelete?: boolean;
   className?: string;
   pendingProjectAttachments?: PendingProjectAttachmentItem[];
   onUploadPendingProjectAttachment?: (file: File) => void;
@@ -28,6 +30,7 @@ export function ProjectAttachmentsPanel({
   projectId,
   customerId,
   isEditing,
+  canDelete = false,
   className,
   pendingProjectAttachments = [],
   onUploadPendingProjectAttachment,
@@ -131,6 +134,16 @@ export function ProjectAttachmentsPanel({
           buildDownloadUrl: (id) => pendingAttachmentUrlsById.has(id)
             ? buildPendingAttachmentUrl(id)
             : `/api/project-attachments/${id}/download?download=1`,
+          buildActionSlot: projectId
+            ? (id) => (
+                <AttachmentDeleteAction
+                  attachmentId={id}
+                  parentId={projectId}
+                  domain="project"
+                  canDelete={canDelete && !pendingAttachmentUrlsById.has(id)}
+                />
+              )
+            : undefined,
         },
         {
           id: "customer",

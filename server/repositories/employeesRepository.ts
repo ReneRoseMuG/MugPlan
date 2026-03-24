@@ -296,3 +296,7 @@ export async function createEmployeeAttachment(data: InsertEmployeeAttachment): 
     .where(eq(employeeAttachments.id, insertId));
   return attachment;
 }
+
+export async function deleteEmployeeAttachment(id: number): Promise<void> {
+  await db.delete(employeeAttachments).where(eq(employeeAttachments.id, id));
+}

@@ -17,3 +17,11 @@ export async function getEmployeeAttachmentById(id: number): Promise<EmployeeAtt
 export async function createEmployeeAttachment(data: InsertEmployeeAttachment): Promise<EmployeeAttachment> {
   return employeesRepository.createEmployeeAttachment(data);
 }
+
+export async function softDeleteEmployeeAttachment(id: number): Promise<void> {
+  await employeesRepository.deleteEmployeeAttachment(id);
+}
+
+export async function hardDeleteEmployeeAttachment(id: number): Promise<void> {
+  await employeesRepository.deleteEmployeeAttachment(id);
+}

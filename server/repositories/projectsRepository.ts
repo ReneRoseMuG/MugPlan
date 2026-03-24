@@ -1035,3 +1035,7 @@ export async function createProjectAttachment(data: InsertProjectAttachment): Pr
     .where(eq(projectAttachments.id, insertId));
   return attachment;
 }
+
+export async function deleteProjectAttachment(id: number): Promise<void> {
+  await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
+}

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { EmployeeAttachment } from "@shared/schema";
 import { AttachmentsPanel } from "@/components/AttachmentsPanel";
+import { AttachmentDeleteAction } from "@/components/AttachmentDeleteAction";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +19,7 @@ export type PendingEmployeeAttachmentItem = AttachmentItem & {
 interface EmployeeAttachmentsPanelProps {
   employeeId?: number | null;
   isEditing?: boolean;
+  canDelete?: boolean;
   className?: string;
   pendingEmployeeAttachments?: PendingEmployeeAttachmentItem[];
   onUploadPendingEmployeeAttachment?: (file: File) => void;
@@ -26,6 +28,7 @@ interface EmployeeAttachmentsPanelProps {
 export function EmployeeAttachmentsPanel({
   employeeId,
   isEditing = true,
+  canDelete = false,
   className,
   pendingEmployeeAttachments = [],
   onUploadPendingEmployeeAttachment,
@@ -109,6 +112,16 @@ export function EmployeeAttachmentsPanel({
       onUpload={handleEmployeeUpload}
       buildOpenUrl={(id) => employeeId ? `/api/employee-attachments/${id}/download` : buildPendingAttachmentUrl(id)}
       buildDownloadUrl={(id) => employeeId ? `/api/employee-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id)}
+      buildActionSlot={employeeId
+        ? (id) => (
+            <AttachmentDeleteAction
+              attachmentId={id}
+              parentId={employeeId}
+              domain="employee"
+              canDelete={canDelete && !pendingAttachmentUrlsById.has(id)}
+            />
+          )
+        : undefined}
     />
   );
 }

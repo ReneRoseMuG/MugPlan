@@ -3161,7 +3161,9 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/project-attachments/:id',
       responses: {
-        405: errorSchemas.validation,
+        200: z.object({ message: z.string() }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
       },
     },
     download: {
@@ -3195,9 +3197,11 @@ export const api = {
     },
     delete: {
       method: 'DELETE' as const,
-      path: '/api/appointments/:appointmentId/attachments/:id',
+      path: '/api/appointment-attachments/:id',
       responses: {
-        405: errorSchemas.validation,
+        200: z.object({ message: z.string() }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
       },
     },
     download: {
@@ -3231,7 +3235,9 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/employee-attachments/:id',
       responses: {
-        405: errorSchemas.validation,
+        200: z.object({ message: z.string() }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
       },
     },
     download: {
@@ -3257,6 +3263,15 @@ export const api = {
       responses: {
         201: z.custom<typeof customerAttachments.$inferSelect>(),
         400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/customer-attachments/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
       },
     },

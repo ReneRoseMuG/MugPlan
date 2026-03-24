@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { CustomerAttachment } from "@shared/schema";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
+import { AttachmentDeleteAction } from "@/components/AttachmentDeleteAction";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAttachmentsPanelProps {
   customerId?: number | null;
   isEditing?: boolean;
+  canDelete?: boolean;
   className?: string;
   pendingCustomerAttachments?: PendingCustomerAttachmentItem[];
   onUploadPendingCustomerAttachment?: (file: File) => void;
@@ -45,6 +47,7 @@ type CustomerProjectAttachmentAggregateResponse = {
 export function CustomerAttachmentsPanel({
   customerId,
   isEditing = true,
+  canDelete = false,
   className,
   pendingCustomerAttachments = [],
   onUploadPendingCustomerAttachment,
@@ -162,6 +165,16 @@ export function CustomerAttachmentsPanel({
           onUpload: handleCustomerUpload,
           buildOpenUrl: (id) => customerId ? `/api/customer-attachments/${id}/download` : buildPendingAttachmentUrl(id),
           buildDownloadUrl: (id) => customerId ? `/api/customer-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id),
+          buildActionSlot: customerId
+            ? (id) => (
+                <AttachmentDeleteAction
+                  attachmentId={id}
+                  parentId={customerId}
+                  domain="customer"
+                  canDelete={canDelete && !pendingAttachmentUrlsById.has(id)}
+                />
+              )
+            : undefined,
         },
         {
           id: "project",

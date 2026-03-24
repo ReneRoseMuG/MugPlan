@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
+import { AttachmentDeleteAction } from "@/components/AttachmentDeleteAction";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,6 +39,7 @@ interface AppointmentAttachmentsPanelProps {
   pendingAppointmentAttachments?: PendingAppointmentAttachmentItem[];
   onUploadPendingAppointmentAttachment?: (file: File) => void;
   readOnly?: boolean;
+  canDelete?: boolean;
 }
 
 export function AppointmentAttachmentsPanel({
@@ -47,6 +49,7 @@ export function AppointmentAttachmentsPanel({
   pendingAppointmentAttachments = [],
   onUploadPendingAppointmentAttachment,
   readOnly = false,
+  canDelete = false,
 }: AppointmentAttachmentsPanelProps) {
   const { toast } = useToast();
   const { data, isLoading } = useQuery<AppointmentAttachmentContext>({
@@ -173,6 +176,16 @@ export function AppointmentAttachmentsPanel({
           onUpload: handleAppointmentUpload,
           buildOpenUrl: (id) => appointmentId ? `/api/appointment-attachments/${id}/download` : buildPendingAttachmentUrl(id),
           buildDownloadUrl: (id) => appointmentId ? `/api/appointment-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id),
+          buildActionSlot: appointmentId
+            ? (id) => (
+                <AttachmentDeleteAction
+                  attachmentId={id}
+                  parentId={appointmentId}
+                  domain="appointment"
+                  canDelete={canDelete && !readOnly && !pendingAttachmentUrlsById.has(id)}
+                />
+              )
+            : undefined,
         },
       ]}
     />

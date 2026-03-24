@@ -336,6 +336,7 @@ export function AppointmentForm({
   );
   const isAdmin = userRole === "ADMIN";
   const canManageAppointmentTags = isAdmin || userRole === "DISPATCHER";
+  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
   const masterDataScope = isAdmin ? "all" : "active";
   const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
@@ -1782,6 +1783,7 @@ export function AppointmentForm({
               pendingAppointmentAttachments={isEditing ? undefined : draftAppointmentAttachments}
               onUploadPendingAppointmentAttachment={isEditing ? undefined : addDraftAppointmentAttachment}
               readOnly={isReadOnlyView}
+              canDelete={canDeleteAttachments}
             />
 
             <TagPickerPanel

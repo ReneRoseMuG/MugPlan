@@ -37,3 +37,9 @@ export async function writeAttachmentBuffer(storedFilename: string, buffer: Buff
   fs.writeFileSync(storagePath, buffer);
   return storagePath;
 }
+
+export function deleteAttachmentFile(storagePath: string): void {
+  if (fs.existsSync(storagePath)) {
+    fs.unlinkSync(storagePath);
+  }
+}

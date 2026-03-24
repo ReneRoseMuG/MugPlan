@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { FileText, Image as ImageIcon, Paperclip } from "lucide-react";
 import { InfoBadge } from "@/components/ui/info-badge";
 import { createAttachmentInfoBadgePreview } from "@/components/ui/badge-previews/attachment-info-badge-preview";
@@ -13,6 +14,7 @@ interface AttachmentInfoBadgeProps {
   attachment: AttachmentBadgeItem;
   onRemove?: () => void;
   actionDisabled?: boolean;
+  actionSlot?: ReactNode;
   downloadUrl: string;
   openUrl: string;
   testId?: string;
@@ -37,6 +39,7 @@ export function AttachmentInfoBadge({
   attachment,
   onRemove,
   actionDisabled,
+  actionSlot,
   downloadUrl,
   openUrl,
   testId,
@@ -50,6 +53,7 @@ export function AttachmentInfoBadge({
       action={onRemove ? "remove" : "none"}
       onRemove={onRemove}
       actionDisabled={actionDisabled}
+      customAction={actionSlot}
       fullWidth
       testId={testId}
       preview={createAttachmentInfoBadgePreview({

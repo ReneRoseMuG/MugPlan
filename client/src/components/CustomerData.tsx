@@ -53,6 +53,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canManageCustomerTags = isAdmin || userRole === "DISPATCHER";
+  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
   const invalidateAppointmentProjectionQueries = async () => {
     await invalidateTagProjectionQueries();
   };
@@ -755,6 +756,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
             <CustomerAttachmentsPanel
               customerId={customerId}
               isEditing={isEditMode}
+              canDelete={canDeleteAttachments}
               pendingCustomerAttachments={isEditMode ? undefined : draftCustomerAttachments}
               onUploadPendingCustomerAttachment={isEditMode ? undefined : addDraftCustomerAttachment}
               className="h-auto"

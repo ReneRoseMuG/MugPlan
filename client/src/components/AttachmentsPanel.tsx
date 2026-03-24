@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import type { ReactNode } from "react";
 import { Paperclip } from "lucide-react";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import {
@@ -16,6 +17,7 @@ interface AttachmentsPanelProps {
   onUpload: (file: File) => void;
   buildOpenUrl: (id: number) => string;
   buildDownloadUrl: (id: number) => string;
+  buildActionSlot?: (id: number) => ReactNode;
   className?: string;
 }
 
@@ -29,6 +31,7 @@ export function AttachmentsPanel({
   onUpload,
   buildOpenUrl,
   buildDownloadUrl,
+  buildActionSlot,
   className,
 }: AttachmentsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -72,6 +75,7 @@ export function AttachmentsPanel({
               attachment={attachment}
               openUrl={buildOpenUrl(attachment.id)}
               downloadUrl={buildDownloadUrl(attachment.id)}
+              actionSlot={buildActionSlot?.(attachment.id)}
               testId={`attachment-badge-${attachment.id}`}
             />
           ))}

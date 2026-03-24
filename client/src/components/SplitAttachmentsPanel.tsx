@@ -13,6 +13,7 @@ type AttachmentSection = {
   emptyText: string;
   buildOpenUrl: (id: number) => string;
   buildDownloadUrl: (id: number) => string;
+  buildActionSlot?: (id: number) => ReactNode;
   canUpload?: boolean;
   isUploading?: boolean;
   onUpload?: (file: File) => void;
@@ -84,6 +85,7 @@ export function SplitAttachmentsPanel({ title, helpKey, sections, className }: S
                     attachment={attachment}
                     openUrl={section.buildOpenUrl(attachment.id)}
                     downloadUrl={section.buildDownloadUrl(attachment.id)}
+                    actionSlot={section.buildActionSlot?.(attachment.id)}
                     testId={`attachment-badge-${section.id}-${attachment.id}`}
                   />
                 ))}

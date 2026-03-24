@@ -27,6 +27,7 @@ interface InfoBadgeProps {
   onAdd?: () => void;
   onRemove?: () => void;
   actionDisabled?: boolean;
+  customAction?: ReactNode;
   testId?: string;
   size?: "default" | "sm";
   fullWidth?: boolean;
@@ -43,14 +44,15 @@ const defaultPreviewOptions: InfoBadgePreviewOptions = {
   scrollY: "auto",
 };
 
-export function InfoBadge({ 
-  icon, 
-  label, 
-  borderColor, 
+export function InfoBadge({
+  icon,
+  label,
+  borderColor,
   action,
   onAdd,
   onRemove,
   actionDisabled = false,
+  customAction,
   testId,
   size = "default",
   fullWidth = false,
@@ -92,14 +94,15 @@ export function InfoBadge({
         <div className={`min-w-0 flex-1 font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}>{label}</div>
       </div>
       <div className={`flex items-center justify-end shrink-0 ${actionColumnClass}`}>
-        {resolvedAction === "add" && (
+        {customAction ?? null}
+        {!customAction && resolvedAction === "add" && (
           <PlusActionButton
             onClick={handleActionClick}
             disabled={actionDisabled}
             data-testid={testId ? `${testId}-add` : undefined}
           />
         )}
-        {resolvedAction === "remove" && (
+        {!customAction && resolvedAction === "remove" && (
           <Button
             size="icon"
             variant="ghost"

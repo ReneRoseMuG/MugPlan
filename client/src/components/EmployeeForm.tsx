@@ -52,6 +52,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canManageEmployeeTags = isAdmin || userRole === "DISPATCHER";
+  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
   const [formData, setFormData] = useState<EmployeeFormData>({
     firstName: "",
     lastName: "",
@@ -443,6 +444,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
             <EmployeeAttachmentsPanel
               employeeId={employeeId}
               isEditing={isEditing}
+              canDelete={canDeleteAttachments}
               pendingEmployeeAttachments={isEditing ? undefined : draftEmployeeAttachments}
               onUploadPendingEmployeeAttachment={isEditing ? undefined : addDraftEmployeeAttachment}
               className="h-auto"

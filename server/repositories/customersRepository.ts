@@ -384,3 +384,7 @@ export async function createCustomerAttachment(data: InsertCustomerAttachment): 
     .where(eq(customerAttachments.id, insertId));
   return attachment;
 }
+
+export async function deleteCustomerAttachment(id: number): Promise<void> {
+  await db.delete(customerAttachments).where(eq(customerAttachments.id, id));
+}

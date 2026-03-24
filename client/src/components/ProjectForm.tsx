@@ -157,6 +157,7 @@ export function ProjectForm({
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canManageProjectTags = isAdmin || userRole === "DISPATCHER";
+  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
   const matchesAttachmentFileSignature = (attachment: PendingProjectAttachmentItem, file: File) =>
     attachment.originalName === file.name && attachment.mimeType === (file.type || null) && attachment.file.size === file.size;
 
@@ -1661,6 +1662,7 @@ export function ProjectForm({
               projectId={effectiveProjectId}
               customerId={customerId}
               isEditing={isEditing}
+              canDelete={canDeleteAttachments}
               pendingProjectAttachments={draftProjectAttachments}
               onUploadPendingProjectAttachment={addDraftProjectAttachment}
               className="h-auto"

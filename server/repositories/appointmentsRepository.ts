@@ -334,6 +334,10 @@ export async function createAppointmentAttachment(data: InsertAppointmentAttachm
   return attachment;
 }
 
+export async function deleteAppointmentAttachment(id: number): Promise<void> {
+  await db.delete(appointmentAttachments).where(eq(appointmentAttachments.id, id));
+}
+
 export async function getAppointmentTx(tx: DbTx, id: number): Promise<Appointment | null> {
   const [appointment] = await tx.select().from(appointments).where(eq(appointments.id, id));
   return appointment || null;

@@ -4,6 +4,7 @@ import { sendAttachmentDownload } from "../lib/attachmentDownload";
 import {
   MAX_UPLOAD_BYTES,
   buildStoredFilename,
+  deleteAttachmentFile,
   resolveMimeType,
   sanitizeFilename,
   writeAttachmentBuffer,
@@ -106,10 +107,38 @@ export async function downloadEmployeeAttachment(req: Request, res: Response, ne
   }
 }
 
-export async function deleteEmployeeAttachment(_req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function deleteEmployeeAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    // Deletion is intentionally disabled system-wide.
-    res.status(405).json({ message: "Attachment deletion is disabled" });
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
+
+    const attachmentId = Number(req.params.id);
+    if (!Number.isFinite(attachmentId)) {
+      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      return;
+    }
+
+    const attachment = await employeeAttachmentsService.getEmployeeAttachmentById(attachmentId);
+    if (!attachment) {
+      res.status(404).json({ message: "Anhang nicht gefunden" });
+      return;
+    }
+
+    const mode = req.query.mode === "hard" ? "hard" : "soft";
+
+    if (mode === "hard") {
+      deleteAttachmentFile(attachment.storagePath);
+    }
+
+    await employeeAttachmentsService.softDeleteEmployeeAttachment(attachmentId);
+    res.status(200).json({ message: "Anhang geloescht" });
   } catch (err) {
     next(err);
   }

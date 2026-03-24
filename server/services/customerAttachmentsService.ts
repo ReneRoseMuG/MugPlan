@@ -12,3 +12,11 @@ export async function getCustomerAttachmentById(id: number): Promise<CustomerAtt
 export async function createCustomerAttachment(data: InsertCustomerAttachment): Promise<CustomerAttachment> {
   return customersRepository.createCustomerAttachment(data);
 }
+
+export async function softDeleteCustomerAttachment(id: number): Promise<void> {
+  await customersRepository.deleteCustomerAttachment(id);
+}
+
+export async function hardDeleteCustomerAttachment(id: number): Promise<void> {
+  await customersRepository.deleteCustomerAttachment(id);
+}
