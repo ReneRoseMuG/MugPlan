@@ -53,6 +53,7 @@ type VorlauflisteCategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
+  columnWidths?: Record<string, number>;
 };
 type ProductVorlaufSelection = {
   productCategoryIds: number[];
@@ -166,6 +167,20 @@ function isValidVorlauflisteCategorySelection(value: unknown): value is Vorlaufl
   if (!isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
   if (!isValidPositiveIntegerArray(parsed.componentCategoryIds)) return false;
   if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
+  if (parsed.columnWidths !== undefined) {
+    if (!parsed.columnWidths || typeof parsed.columnWidths !== "object" || Array.isArray(parsed.columnWidths)) {
+      return false;
+    }
+    const entries = Object.entries(parsed.columnWidths);
+    if (!entries.every(([key, width]) =>
+      key.trim().length > 0
+      && typeof width === "number"
+      && Number.isInteger(width)
+      && width >= 80
+      && width <= 960)) {
+      return false;
+    }
+  }
   return true;
 }
 

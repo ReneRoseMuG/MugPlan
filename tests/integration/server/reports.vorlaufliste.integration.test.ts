@@ -308,6 +308,7 @@ describe("FT26 integration: report vorlaufliste", () => {
       .get("/api/reports/vorlaufliste?fromDate=2099-05-01&toDate=2099-05-31&page=1&pageSize=100")
       .expect(200);
 
+    expect(response.headers["cache-control"]).toContain("no-store");
     expect(response.body.total).toBe(2);
     expect(response.body.items).toHaveLength(2);
     expect(response.body.items[0]).toEqual(expect.objectContaining({

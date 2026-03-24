@@ -5,10 +5,12 @@
  * - Der User-Setting-Key fuer die Vorlaufliste speichert Produkt- und Komponentenkategorie-IDs getrennt.
  * - Nur positive Integer-Arrays ohne Duplikate sind gueltig.
  * - Das optionale Feld useShortCodes wird als boolescher Wert akzeptiert oder abgewiesen.
+ * - Optionale columnWidths akzeptieren nur ganzzahlige Pixelwerte im erlaubten Bereich.
  *
  * Fehlerfaelle:
  * - Ungueltige JSON-Strukturen oder Duplikate werden als gueltig akzeptiert.
  * - Nicht-boolescher Wert fuer useShortCodes wird akzeptiert.
+ * - Ungueltige columnWidths werden trotz falscher Werte angenommen.
  *
  * Ziel:
  * Den Registry-Vertrag fuer die persistente Vorlaufliste-Kategorieauswahl absichern.
@@ -71,6 +73,39 @@ describe("settings registry: reports.vorlaufliste.categorySelection", () => {
       productCategoryIds: [1],
       componentCategoryIds: [2],
       useShortCodes: 1,
+    })).toBe(false);
+  });
+
+  it("accepts optional columnWidths with integer pixel values", () => {
+    expect(definition.validate({
+      productCategoryIds: [1],
+      componentCategoryIds: [2],
+      columnWidths: {
+        amount: 180,
+        "product-9": 320,
+      },
+    })).toBe(true);
+  });
+
+  it("rejects invalid columnWidths", () => {
+    expect(definition.validate({
+      productCategoryIds: [1],
+      componentCategoryIds: [2],
+      columnWidths: {
+        amount: 79,
+      },
+    })).toBe(false);
+    expect(definition.validate({
+      productCategoryIds: [1],
+      componentCategoryIds: [2],
+      columnWidths: {
+        amount: 120.5,
+      },
+    })).toBe(false);
+    expect(definition.validate({
+      productCategoryIds: [1],
+      componentCategoryIds: [2],
+      columnWidths: [],
     })).toBe(false);
   });
 });

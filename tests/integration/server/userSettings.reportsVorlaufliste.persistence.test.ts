@@ -4,10 +4,12 @@
  * Abgedeckte Regeln:
  * - Die Vorlaufliste-Kategorieauswahl wird pro Benutzer getrennt gespeichert.
  * - Persistierte Kategorie-ID-Arrays bleiben ueber erneutes Laden der resolved Settings erhalten.
+ * - Persistierte columnWidths bleiben benutzerspezifisch an die Vorlaufliste gebunden.
  *
  * Fehlerfaelle:
  * - Scope-Leak zwischen zwei Benutzern.
  * - Verlust der Report-Kategorieauswahl nach Reload.
+ * - Verlust oder Vermischung persistierter Spaltenbreiten nach Reload.
  *
  * Ziel:
  * Die benutzerspezifische Persistenz der Vorlaufliste-Checkboxauswahl auf API-Ebene absichern.
@@ -75,7 +77,11 @@ function getSetting(settings: ResolvedSetting[], key: string): ResolvedSetting {
   return setting;
 }
 
-async function setUserSetting(agent: SuperAgentTest, value: { productCategoryIds: number[]; componentCategoryIds: number[] }): Promise<void> {
+async function setUserSetting(agent: SuperAgentTest, value: {
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  columnWidths?: Record<string, number>;
+}): Promise<void> {
   const settings = await getResolvedSettings(agent);
   const setting = getSetting(settings, "reports.vorlaufliste.categorySelection");
   const version = typeof setting.userVersion === "number" && setting.userVersion >= 1 ? setting.userVersion : 1;
@@ -99,6 +105,10 @@ describe("integration: reports vorlaufliste category selection persistence", () 
     await setUserSetting(userA, {
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
+      columnWidths: {
+        amount: 180,
+        "product-11": 320,
+      },
     });
 
     const settingsA = await getResolvedSettings(userA);
@@ -107,6 +117,10 @@ describe("integration: reports vorlaufliste category selection persistence", () 
     expect(getSetting(settingsA, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
+      columnWidths: {
+        amount: 180,
+        "product-11": 320,
+      },
     });
     expect(getSetting(settingsB, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({
       productCategoryIds: [],
@@ -117,6 +131,10 @@ describe("integration: reports vorlaufliste category selection persistence", () 
     expect(getSetting(reloadedA, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
+      columnWidths: {
+        amount: 180,
+        "product-11": 320,
+      },
     });
   });
 });

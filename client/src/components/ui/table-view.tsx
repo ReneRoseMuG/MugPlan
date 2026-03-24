@@ -24,6 +24,7 @@ export interface TableViewColumnDef<T> {
   className?: string;
   headerClassName?: string;
   truncate?: boolean;
+  resizable?: boolean;
 }
 
 export interface TableViewProps<T> {
@@ -42,6 +43,8 @@ export interface TableViewProps<T> {
   rowClassName?: (row: T, rowIndex: number) => string | undefined;
   rowStyle?: (row: T, rowIndex: number) => React.CSSProperties | undefined;
   rowTitle?: (row: T, rowIndex: number) => string | undefined;
+  onColumnResize?: (columnId: string, width: number) => void;
+  onColumnResizeEnd?: (columnId: string, width: number) => void;
   testId?: string;
 }
 
@@ -104,6 +107,8 @@ export function TableView<T>({
   rowClassName,
   rowStyle,
   rowTitle,
+  onColumnResize,
+  onColumnResizeEnd,
   testId,
 }: TableViewProps<T>) {
   const rowPaddingClass = density === "compact" ? "py-1.5" : "py-2.5";
@@ -111,6 +116,12 @@ export function TableView<T>({
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
   const footerScrollRef = useRef<HTMLDivElement | null>(null);
   const syncSourceRef = useRef<"body" | "footer" | null>(null);
+  const activeColumnResizeRef = useRef<{
+    columnId: string;
+    startX: number;
+    startWidth: number;
+    minWidth: number;
+  } | null>(null);
   const [horizontalMetrics, setHorizontalMetrics] = useState({
     hasOverflow: false,
     scrollWidth: 0,
@@ -195,6 +206,41 @@ export function TableView<T>({
   const showFooterBar = stickyFooter && (Boolean(footerSlot) || horizontalMetrics.hasOverflow);
   const footerScrollTestId = testId ? `${testId}-footer-scrollbar` : undefined;
 
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const activeResize = activeColumnResizeRef.current;
+      if (!activeResize) return;
+
+      const nextWidth = Math.max(
+        activeResize.minWidth,
+        Math.round(activeResize.startWidth + (event.clientX - activeResize.startX)),
+      );
+
+      onColumnResize?.(activeResize.columnId, nextWidth);
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      const activeResize = activeColumnResizeRef.current;
+      if (!activeResize) return;
+
+      const nextWidth = Math.max(
+        activeResize.minWidth,
+        Math.round(activeResize.startWidth + (event.clientX - activeResize.startX)),
+      );
+
+      activeColumnResizeRef.current = null;
+      onColumnResizeEnd?.(activeResize.columnId, nextWidth);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [onColumnResize, onColumnResizeEnd]);
+
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)} data-testid={testId}>
       <div
@@ -223,7 +269,34 @@ export function TableView<T>({
                     minWidth: toCssSize(column.minWidth),
                   }}
                 >
-                  {column.header}
+                  <div className={cn("flex items-center gap-2", column.resizable && "justify-between")}>
+                    <span>{column.header}</span>
+                    {column.resizable ? (
+                      <button
+                        type="button"
+                        aria-label={`Spalte ${typeof column.header === "string" ? column.header : column.id} in der Breite anpassen`}
+                        className="h-6 w-2 shrink-0 cursor-col-resize rounded-sm border border-border/70 bg-background/80 hover:bg-muted"
+                        data-testid={testId ? `${testId}-resize-${column.id}` : undefined}
+                        onMouseDown={(event) => {
+                          const startWidth = typeof column.width === "number"
+                            ? column.width
+                            : (event.currentTarget.parentElement?.parentElement?.getBoundingClientRect().width ?? 0);
+                          const minWidth = typeof column.minWidth === "number"
+                            ? column.minWidth
+                            : Math.max(80, Math.round(startWidth));
+
+                          activeColumnResizeRef.current = {
+                            columnId: column.id,
+                            startX: event.clientX,
+                            startWidth: Math.max(minWidth, Math.round(startWidth)),
+                            minWidth,
+                          };
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                      />
+                    ) : null}
+                  </div>
                 </TableHead>
               ))}
             </TableRow>

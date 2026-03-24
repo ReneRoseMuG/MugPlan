@@ -94,6 +94,7 @@ type CategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
+  columnWidths?: Record<string, number>;
 };
 
 type ArticleCategorySelectionProps = {
@@ -109,6 +110,8 @@ type ArticleCategorySelectionProps = {
 const REPORT_PAGE_SIZE = 100;
 const VORLAUFLISTE_SETTING_KEY = "reports.vorlaufliste.categorySelection";
 const PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
+const MIN_REPORT_COLUMN_WIDTH = 80;
+const MAX_REPORT_COLUMN_WIDTH = 960;
 
 function normalizeIds(ids: number[]): number[] {
   return Array.from(new Set(ids.filter((value) => Number.isInteger(value) && value > 0))).sort((left, right) => left - right);
@@ -131,6 +134,31 @@ function formatAmount(value: string | null): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(normalized);
+}
+
+function normalizeColumnWidths(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key, width]) =>
+        key.trim().length > 0
+        && typeof width === "number"
+        && Number.isInteger(width)
+        && width >= MIN_REPORT_COLUMN_WIDTH
+        && width <= MAX_REPORT_COLUMN_WIDTH)
+      .map(([key, width]) => [key, width]),
+  );
+}
+
+function resolveColumnMinWidth(header: string, fallback: number): number {
+  return Math.max(fallback, Math.min(MAX_REPORT_COLUMN_WIDTH, Math.ceil(header.trim().length * 9) + 56));
+}
+
+function clampColumnWidth(width: number, minWidth: number): number {
+  return Math.min(MAX_REPORT_COLUMN_WIDTH, Math.max(minWidth, Math.round(width)));
 }
 
 function resolveValue(value: string | null): string {
@@ -174,8 +202,8 @@ function resolveInitialSelectionIds(params: {
 }
 
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { credentials: "include" });
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, { credentials: "include", ...init });
   if (!response.ok) {
     throw new Error((await response.text()) || `Request failed for ${url}`);
   }
@@ -298,6 +326,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [selectedVorlauflisteProductCategoryIds, setSelectedVorlauflisteProductCategoryIds] = useState<number[]>([]);
   const [selectedVorlauflisteComponentCategoryIds, setSelectedVorlauflisteComponentCategoryIds] = useState<number[]>([]);
   const [useVorlauflisteShortCodes, setUseVorlauflisteShortCodes] = useState(false);
+  const [vorlauflisteColumnWidths, setVorlauflisteColumnWidths] = useState<Record<string, number>>({});
   const [selectedProductVorlaufProductCategoryIds, setSelectedProductVorlaufProductCategoryIds] = useState<number[]>([]);
   const [selectedProductVorlaufComponentCategoryIds, setSelectedProductVorlaufComponentCategoryIds] = useState<number[]>([]);
 
@@ -318,6 +347,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       defaultIds: defaultComponentCategories.map((category) => category.id),
     }));
     setUseVorlauflisteShortCodes(vorlauflisteSelection?.useShortCodes ?? false);
+    setVorlauflisteColumnWidths(normalizeColumnWidths(vorlauflisteSelection?.columnWidths));
   }, [defaultComponentCategories, defaultProductCategories, vorlauflisteResolvedScope, vorlauflisteSelection]);
 
   useEffect(() => {
@@ -345,11 +375,21 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     };
     if (reportType === "vorlaufliste") {
       value.useShortCodes = next.useShortCodes ?? false;
+      value.columnWidths = normalizeColumnWidths(next.columnWidths);
     }
     await setSetting({
       key: reportType === "vorlaufliste" ? VORLAUFLISTE_SETTING_KEY : PRODUCT_VORLAUF_SETTING_KEY,
       scopeType: "USER",
       value,
+    });
+  };
+
+  const persistVorlauflisteSelection = async (columnWidths: Record<string, number>) => {
+    await persistSelection("vorlaufliste", {
+      productCategoryIds: selectedVorlauflisteProductCategoryIds,
+      componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
+      useShortCodes: useVorlauflisteShortCodes,
+      columnWidths,
     });
   };
 
@@ -366,7 +406,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       for (const id of submittedFilters?.productCategoryIds ?? []) params.append("productCategoryIds", String(id));
       for (const id of submittedFilters?.componentCategoryIds ?? []) params.append("componentCategoryIds", String(id));
       if (submittedFilters?.useShortCodes) params.set("useShortCodes", "true");
-      return fetchJson(`/api/reports/vorlaufliste?${params.toString()}`);
+      return fetchJson(`/api/reports/vorlaufliste?${params.toString()}`, { cache: "no-store" });
     },
   });
 
@@ -382,15 +422,25 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     },
   });
 
+  const resolvePersistedColumnWidth = (columnId: string, header: string, defaultWidth: number) => {
+    const minWidth = resolveColumnMinWidth(header, defaultWidth);
+    const width = clampColumnWidth(vorlauflisteColumnWidths[columnId] ?? defaultWidth, minWidth);
+    return { width, minWidth };
+  };
+
   const vorlauflisteColumns = useMemo<TableViewColumnDef<VorlauflisteItem>[]>(() => {
     const productCategories: VorlauflisteCategory[] = vorlauflisteData?.productCategories ?? [];
     const componentCategories: VorlauflisteCategory[] = vorlauflisteData?.componentCategories ?? [];
+    const wrapCellClassName = "align-top";
+    const renderWrappedText = (value: string | null) => (
+      <span className="block whitespace-normal break-words [overflow-wrap:anywhere]">{resolveValue(value)}</span>
+    );
 
     const columns: TableViewColumnDef<VorlauflisteItem>[] = [
-      { id: "amount", header: "Auftragssumme", accessor: (row) => row.amount ?? "", minWidth: 160, align: "right", cell: ({ row }) => <span>{formatAmount(row.amount)}</span> },
-      { id: "customerFullName", header: "Kunde", accessor: (row) => row.customerFullName ?? "", minWidth: 220, cell: ({ row }) => <span>{resolveValue(row.customerFullName)}</span> },
-      { id: "postalCode", header: "PLZ", accessor: (row) => row.postalCode ?? "", minWidth: 110, cell: ({ row }) => <span>{resolveValue(row.postalCode)}</span> },
-      { id: "city", header: "Ort", accessor: (row) => row.city ?? "", minWidth: 160, cell: ({ row }) => <span>{resolveValue(row.city)}</span> },
+      { id: "amount", header: "Auftragssumme", accessor: (row) => row.amount ?? "", width: 160, minWidth: 160, align: "right", resizable: true, cell: ({ row }) => <span>{formatAmount(row.amount)}</span> },
+      { id: "customerFullName", header: "Kunde", accessor: (row) => row.customerFullName ?? "", width: 220, minWidth: 220, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.customerFullName) },
+      { id: "postalCode", header: "PLZ", accessor: (row) => row.postalCode ?? "", width: 110, minWidth: 110, resizable: true, cell: ({ row }) => <span>{resolveValue(row.postalCode)}</span> },
+      { id: "city", header: "Ort", accessor: (row) => row.city ?? "", width: 160, minWidth: 160, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.city) },
     ];
 
     for (const category of productCategories) {
@@ -398,10 +448,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         id: `product-${category.id}`,
         header: category.name,
         accessor: (row) => row.articleValues.find((v) => v.categoryId === category.id)?.value ?? "",
-        truncate: true,
+        width: 220,
+        minWidth: 220,
+        className: wrapCellClassName,
+        headerClassName: "whitespace-nowrap",
+        resizable: true,
         cell: ({ row }) => {
           const value = row.articleValues.find((v) => v.categoryId === category.id)?.value ?? null;
-          return <span>{resolveValue(value)}</span>;
+          return renderWrappedText(value);
         },
       });
     }
@@ -411,23 +465,56 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         id: `component-${category.id}`,
         header: category.name,
         accessor: (row) => row.articleValues.find((v) => v.categoryId === category.id)?.value ?? "",
-        truncate: true,
+        width: 220,
+        minWidth: 220,
+        className: wrapCellClassName,
+        headerClassName: "whitespace-nowrap",
+        resizable: true,
         cell: ({ row }) => {
           const value = row.articleValues.find((v) => v.categoryId === category.id)?.value ?? null;
-          return <span>{resolveValue(value)}</span>;
+          return renderWrappedText(value);
         },
       });
     }
 
     columns.push(
-      { id: "plannedDateText", header: "Vorgeplanter Termin", accessor: (row) => row.plannedDateText ?? "", minWidth: 170, cell: ({ row }) => <span>{resolveValue(row.plannedDateText)}</span> },
-      { id: "plannedWeek", header: "KW Vorgeplant", accessor: (row) => row.plannedWeek ?? "", minWidth: 150, cell: ({ row }) => <span>{resolveValue(row.plannedWeek)}</span> },
+      { id: "plannedDateText", header: "Vorgeplanter Termin", accessor: (row) => row.plannedDateText ?? "", width: 190, minWidth: 190, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.plannedDateText) },
+      { id: "plannedWeek", header: "KW Vorgeplant", accessor: (row) => row.plannedWeek ?? "", width: 150, minWidth: 150, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.plannedWeek) },
       { id: "actualDate", header: "Tatsächlicher Termin", accessor: (row) => row.actualDate, minWidth: 170, cell: ({ row }) => <span>{formatDate(row.actualDate)}</span> },
-      { id: "projectDescription", header: "Anmerkungen", accessor: (row) => row.projectDescription ?? "", minWidth: 280, cell: ({ row }) => <span>{resolveValue(row.projectDescription)}</span> },
+      { id: "projectDescription", header: "Anmerkungen", accessor: (row) => row.projectDescription ?? "", width: 320, minWidth: 320, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.projectDescription) },
     );
 
-    return columns;
-  }, [vorlauflisteData]);
+    return columns.map((column) => {
+      const headerText = typeof column.header === "string" ? column.header : column.id;
+      const defaultWidth = typeof column.width === "number"
+        ? column.width
+        : typeof column.minWidth === "number"
+          ? column.minWidth
+          : 160;
+      const { width, minWidth } = resolvePersistedColumnWidth(column.id, headerText, defaultWidth);
+      return {
+        ...column,
+        width,
+        minWidth,
+        resizable: column.resizable ?? true,
+      };
+    });
+  }, [vorlauflisteColumnWidths, vorlauflisteData]);
+
+  const updateVorlauflisteColumnWidth = (columnId: string, width: number) => {
+    setVorlauflisteColumnWidths((current) => ({ ...current, [columnId]: width }));
+  };
+
+  const commitVorlauflisteColumnWidth = (columnId: string, width: number) => {
+    const next = { ...vorlauflisteColumnWidths, [columnId]: width };
+    setVorlauflisteColumnWidths(next);
+    void persistVorlauflisteSelection(next);
+  };
+
+  const resetVorlauflisteColumnWidths = () => {
+    setVorlauflisteColumnWidths({});
+    void persistVorlauflisteSelection({});
+  };
 
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
@@ -521,6 +608,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                             productCategoryIds: nextIds,
                             componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
                             useShortCodes: useVorlauflisteShortCodes,
+                            columnWidths: vorlauflisteColumnWidths,
                           });
                         }}
                         onComponentCategoryToggle={(categoryId, checked) => {
@@ -532,6 +620,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                             productCategoryIds: selectedVorlauflisteProductCategoryIds,
                             componentCategoryIds: nextIds,
                             useShortCodes: useVorlauflisteShortCodes,
+                            columnWidths: vorlauflisteColumnWidths,
                           });
                         }}
                         testIdPrefix="reports-vorlaufliste"
@@ -546,6 +635,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                               productCategoryIds: selectedVorlauflisteProductCategoryIds,
                               componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
                               useShortCodes: next,
+                              columnWidths: vorlauflisteColumnWidths,
                             });
                           }}
                           data-testid="checkbox-reports-vorlaufliste-use-shortcodes"
@@ -635,16 +725,23 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   {isVorlauflisteLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : (
-                    <TableView
+                    <>
+                      <div className="flex justify-end px-6 pt-4">
+                        <Button type="button" variant="outline" onClick={resetVorlauflisteColumnWidths} data-testid="button-reports-vorlaufliste-reset-widths">Spaltenbreiten zurücksetzen</Button>
+                      </div>
+                      <TableView
                       columns={vorlauflisteColumns}
                       rows={vorlauflisteData?.items ?? []}
                       rowKey={(row) => row.projectId}
                       rowStyle={(row) => resolveTagBackgroundStyle(row.highlightTag)}
                       rowTitle={(row) => row.highlightTag?.name}
+                      onColumnResize={updateVorlauflisteColumnWidth}
+                      onColumnResizeEnd={commitVorlauflisteColumnWidth}
                       testId="table-reports-vorlaufliste"
                       stickyHeader
                       emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Für den gewählten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}
                     />
+                    </>
                   )}
                 </div>
                 <div className="border-t border-border px-6 py-4">

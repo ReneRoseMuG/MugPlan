@@ -4,10 +4,12 @@
  * Abgedeckte Regeln:
  * - resolveVorlauflisteCategorySelection normalisiert Produkt- und Komponentenkategorie-IDs.
  * - Das optionale Feld useShortCodes wird erhalten und nicht verworfen.
+ * - Das optionale Feld columnWidths wird gefiltert und erhalten.
  * - Duplikate in den ID-Arrays werden entfernt.
  *
  * Fehlerfaelle:
  * - useShortCodes wird beim Auslesen aus dem Setting-Store verworfen, obwohl gespeichert.
+ * - Ungueltige columnWidths werden ungefiltert uebernommen.
  * - Ungueltige Eingaben werden nicht sauber auf leere Defaults zurueckgefuehrt.
  *
  * Ziel:
@@ -61,6 +63,23 @@ describe("useSettings: resolveVorlauflisteCategorySelection", () => {
       useShortCodes: "true",
     });
     expect(result.useShortCodes).toBeUndefined();
+  });
+
+  it("preserves valid columnWidths and filters invalid entries", () => {
+    const result = resolveVorlauflisteCategorySelection({
+      productCategoryIds: [1],
+      componentCategoryIds: [2],
+      columnWidths: {
+        amount: 180,
+        "product-5": 320,
+        invalidSmall: 79,
+        invalidFloat: 120.5,
+      },
+    });
+    expect(result.columnWidths).toEqual({
+      amount: 180,
+      "product-5": 320,
+    });
   });
 
   it("filters out non-positive-integer ids", () => {

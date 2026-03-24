@@ -6,6 +6,7 @@ type VorlauflisteCategorySelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
+  columnWidths?: Record<string, number>;
 };
 type ProductVorlaufSelection = {
   productCategoryIds: number[];
@@ -85,11 +86,24 @@ export function resolveVorlauflisteCategorySelection(value: unknown): Vorlauflis
 
   const productCategoryIds = parseIds(candidate.productCategoryIds);
   const componentCategoryIds = parseIds(candidate.componentCategoryIds);
+  const columnWidths = candidate.columnWidths && typeof candidate.columnWidths === "object" && !Array.isArray(candidate.columnWidths)
+    ? Object.fromEntries(
+      Object.entries(candidate.columnWidths)
+        .filter(([key, width]) =>
+          key.trim().length > 0
+          && typeof width === "number"
+          && Number.isInteger(width)
+          && width >= 80
+          && width <= 960)
+        .map(([key, width]) => [key, width]),
+    )
+    : undefined;
 
   return {
     productCategoryIds: Array.from(new Set(productCategoryIds)),
     componentCategoryIds: Array.from(new Set(componentCategoryIds)),
     useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : undefined,
+    columnWidths,
   };
 }
 

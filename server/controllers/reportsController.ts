@@ -4,6 +4,12 @@ import { ZodError } from "zod";
 import { api } from "@shared/routes";
 import * as reportsService from "../services/reportsService";
 
+function setNoStoreHeaders(res: Response) {
+  res.set("Cache-Control", "no-store");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+}
+
 export async function listVorlaufliste(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = req.userContext?.roleKey;
@@ -23,6 +29,7 @@ export async function listVorlaufliste(req: Request, res: Response, next: NextFu
       pageSize: input.pageSize,
     }, roleKey);
 
+    setNoStoreHeaders(res);
     res.json(report);
   } catch (error) {
     if (error instanceof ZodError) {
