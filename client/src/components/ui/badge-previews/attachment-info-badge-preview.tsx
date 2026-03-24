@@ -187,7 +187,10 @@ export function AttachmentInfoBadgePreview({
       </div>
 
       {isImage ? (
-        <div className="overflow-auto rounded-md border border-border bg-background p-2">
+        <div
+          className="overflow-auto rounded-md border border-border bg-background p-2"
+          style={{ maxHeight: dimensions.contentMaxHeight }}
+        >
           <img
             src={openUrl}
             alt={originalName}
