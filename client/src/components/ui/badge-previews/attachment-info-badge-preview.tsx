@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFloatingPreviewKeeper } from "@/contexts/floating-preview-keeper";
 import { ExternalLink, FileText, Image as ImageIcon, X } from "lucide-react";
@@ -90,6 +90,50 @@ function resolveAbsoluteUrl(value: string): string {
 function isTxtLikeFile(mimeType: string, lowerName: string) {
   return mimeType === "text/plain" || lowerName.endsWith(".txt");
 }
+
+function isImagePreviewContent(mimeType: string | null | undefined, originalName: string | undefined): boolean {
+  const resolvedMimeType = mimeType?.toLowerCase() ?? "";
+  const lowerName = originalName?.toLowerCase() ?? "";
+  return resolvedMimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(lowerName);
+}
+
+type AttachmentPreviewPortalPositionInput = {
+  triggerRect: {
+    left: number;
+    top: number;
+    right: number;
+  };
+  viewportWidth: number;
+  viewportHeight: number;
+  portalWidth: number;
+  portalHeight: number;
+  viewportPadding?: number;
+  sideOffset?: number;
+};
+
+export function resolveAttachmentPreviewPortalPosition({
+  triggerRect,
+  viewportWidth,
+  viewportHeight,
+  portalWidth,
+  portalHeight,
+  viewportPadding = VIEWPORT_PADDING,
+  sideOffset = 8,
+}: AttachmentPreviewPortalPositionInput): { x: number; y: number } {
+  const spaceRight = viewportWidth - triggerRect.right - viewportPadding;
+  const x =
+    spaceRight >= portalWidth
+      ? triggerRect.right + sideOffset
+      : Math.max(viewportPadding, triggerRect.left - portalWidth - sideOffset);
+  const y = Math.max(
+    viewportPadding,
+    Math.min(triggerRect.top, viewportHeight - portalHeight - viewportPadding),
+  );
+
+  return { x, y };
+}
+
+const useClientLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function AttachmentInfoBadgePreview({
   originalName,
@@ -190,7 +234,6 @@ export function AttachmentInfoBadgePreview({
       {isImage ? (
         <div
           className="overflow-auto rounded-md border border-border bg-background p-2"
-          style={{ maxHeight: dimensions.contentMaxHeight }}
         >
           <img
             src={openUrl}
@@ -263,15 +306,21 @@ const VIEWPORT_PADDING = 8;
 
 type DragPhase = "idle" | "intent" | "dragging" | "pinned";
 
+type AttachmentPreviewRenderControls = {
+  onClose?: () => void;
+  onDragHandleMouseDown?: (e: React.MouseEvent) => void;
+};
 
 export interface AttachmentPreviewTriggerProps {
   children: ReactNode;
-  originalName: string;
-  mimeType: string | null;
-  openUrl: string;
-  downloadUrl: string;
+  originalName?: string;
+  mimeType?: string | null;
+  openUrl?: string;
+  downloadUrl?: string;
   previewSize?: AttachmentPreviewSize;
   testId?: string;
+  renderPreviewContent?: (controls: AttachmentPreviewRenderControls) => ReactNode;
+  isImageContent?: boolean;
 }
 
 export function AttachmentPreviewTrigger({
@@ -282,16 +331,16 @@ export function AttachmentPreviewTrigger({
   downloadUrl,
   previewSize: previewSizeProp,
   testId,
+  renderPreviewContent,
+  isImageContent,
 }: AttachmentPreviewTriggerProps) {
   const globalOpenDelayMs = useOptionalHoverPreviewDelaySetting();
   const keeper = useFloatingPreviewKeeper();
   const dimensions = resolveAttachmentPreviewDimensions(
     parseAttachmentPreviewSize(previewSizeProp),
   );
-  const resolvedMime = mimeType?.toLowerCase() ?? "";
-  const lowerName = originalName.toLowerCase();
-  const isImageContent =
-    resolvedMime.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(lowerName);
+  const resolvedImageContent = isImageContent ?? isImagePreviewContent(mimeType, originalName);
+  const previewId = openUrl ?? testId ?? originalName ?? "attachment-preview";
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [dragPhase, setDragPhase] = useState<DragPhase>("idle");
@@ -318,6 +367,37 @@ export function AttachmentPreviewTrigger({
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
   }, []);
+
+  useClientLayoutEffect(() => {
+    if (!isPreviewOpen || dragPhase !== "idle") return;
+    if (!triggerRef.current || !portalRef.current || typeof window === "undefined") return;
+
+    const rect = triggerRef.current.getBoundingClientRect();
+    const portalWidth = portalRef.current.offsetWidth || dimensions.popoverMaxWidth;
+    const portalHeight = portalRef.current.offsetHeight || dimensions.popoverMaxHeight;
+    const nextPos = resolveAttachmentPreviewPortalPosition({
+      triggerRect: rect,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      portalWidth,
+      portalHeight,
+    });
+
+    if (portalPosRef.current.x !== nextPos.x || portalPosRef.current.y !== nextPos.y) {
+      portalPosRef.current = nextPos;
+      setPortalPos(nextPos);
+    }
+  }, [
+    isPreviewOpen,
+    dragPhase,
+    dimensions.popoverMaxWidth,
+    dimensions.popoverMaxHeight,
+    originalName,
+    mimeType,
+    openUrl,
+    downloadUrl,
+    resolvedImageContent,
+  ]);
 
   // Document-level mouse listeners during drag
   useEffect(() => {
@@ -395,15 +475,13 @@ export function AttachmentPreviewTrigger({
         const rect = triggerRef.current.getBoundingClientRect();
         const w = typeof window !== "undefined" ? window.innerWidth : 1024;
         const h = typeof window !== "undefined" ? window.innerHeight : 768;
-        const spaceRight = w - rect.right - VIEWPORT_PADDING;
-        const x =
-          spaceRight >= dimensions.popoverMaxWidth
-            ? rect.right + 8
-            : Math.max(VIEWPORT_PADDING, rect.left - dimensions.popoverMaxWidth - 8);
-        const y = Math.max(
-          VIEWPORT_PADDING,
-          Math.min(rect.top, h - dimensions.popoverMaxHeight - VIEWPORT_PADDING),
-        );
+        const { x, y } = resolveAttachmentPreviewPortalPosition({
+          triggerRect: rect,
+          viewportWidth: w,
+          viewportHeight: h,
+          portalWidth: dimensions.popoverMaxWidth,
+          portalHeight: dimensions.popoverMaxHeight,
+        });
         portalPosRef.current = { x, y };
         setPortalPos({ x, y });
       }
@@ -424,23 +502,25 @@ export function AttachmentPreviewTrigger({
   const handlePreviewMouseDown = (e: React.MouseEvent) => {
     if (keeper) {
       keeper.register({
-        id: openUrl,
+        id: previewId,
         pos: portalPosRef.current,
         intentStart: { x: e.clientX, y: e.clientY },
         popoverMaxWidth: dimensions.popoverMaxWidth,
         popoverMaxHeight: dimensions.popoverMaxHeight,
-        isImageContent,
-        renderContent: (onClose, onDragHandleMouseDown) => (
-          <AttachmentInfoBadgePreview
-            originalName={originalName}
-            mimeType={mimeType}
-            openUrl={openUrl}
-            downloadUrl={downloadUrl}
-            previewSize={previewSizeProp}
-            onClose={onClose}
-            onDragHandleMouseDown={onDragHandleMouseDown}
-          />
-        ),
+        isImageContent: resolvedImageContent,
+        renderContent: (onClose, onDragHandleMouseDown) => renderPreviewContent
+          ? renderPreviewContent({ onClose, onDragHandleMouseDown })
+          : (
+            <AttachmentInfoBadgePreview
+              originalName={originalName ?? "Anhang"}
+              mimeType={mimeType}
+              openUrl={openUrl ?? "#"}
+              downloadUrl={downloadUrl ?? "#"}
+              previewSize={previewSizeProp}
+              onClose={onClose}
+              onDragHandleMouseDown={onDragHandleMouseDown}
+            />
+          ),
       });
       clearOpenTimer();
       clearCloseTimer();
@@ -483,7 +563,7 @@ export function AttachmentPreviewTrigger({
               style={{
                 left: portalPos.x,
                 top: portalPos.y,
-                ...(isImageContent
+                ...(resolvedImageContent
                   ? { maxWidth: dimensions.popoverMaxWidth }
                   : { width: dimensions.popoverMaxWidth }),
                 maxHeight: dimensions.popoverMaxHeight,
@@ -498,15 +578,22 @@ export function AttachmentPreviewTrigger({
                 if (dragPhaseRef.current === "idle") scheduleClose();
               }}
             >
-              <AttachmentInfoBadgePreview
-                originalName={originalName}
-                mimeType={mimeType}
-                openUrl={openUrl}
-                downloadUrl={downloadUrl}
-                previewSize={previewSizeProp}
-                onClose={isPinned ? handleClose : undefined}
-                onDragHandleMouseDown={handlePreviewMouseDown}
-              />
+              {renderPreviewContent
+                ? renderPreviewContent({
+                    onClose: isPinned ? handleClose : undefined,
+                    onDragHandleMouseDown: handlePreviewMouseDown,
+                  })
+                : (
+                  <AttachmentInfoBadgePreview
+                    originalName={originalName ?? "Anhang"}
+                    mimeType={mimeType}
+                    openUrl={openUrl ?? "#"}
+                    downloadUrl={downloadUrl ?? "#"}
+                    previewSize={previewSizeProp}
+                    onClose={isPinned ? handleClose : undefined}
+                    onDragHandleMouseDown={handlePreviewMouseDown}
+                  />
+                )}
             </div>,
             document.body,
           )

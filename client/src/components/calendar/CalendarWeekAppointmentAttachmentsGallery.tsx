@@ -55,7 +55,7 @@ export function CalendarWeekAppointmentAttachmentsGallery({
   const hiddenCount = Math.max(0, attachments.length - visibleAttachments.length);
 
   return (
-    <div className="space-y-2">
+    <div className="inline-flex flex-col gap-2">
       <div className="text-[10px] font-semibold tracking-wide text-slate-500">
         Anhaenge ({attachments.length})
       </div>

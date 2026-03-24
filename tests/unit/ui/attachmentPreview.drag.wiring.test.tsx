@@ -7,14 +7,14 @@
  * Abgedeckte Regeln:
  * - AttachmentInfoBadgePreview zeigt den Schliessen-Button, wenn onClose uebergeben wird.
  * - AttachmentInfoBadgePreview zeigt keinen Schliessen-Button ohne onClose.
- * - Der Drag-Handle (cursor: grab) ist im Titel-Bereich gesetzt.
+ * - Der Drag-Handle (cursor: grab) ist im Titel-Bereich gesetzt, wenn ein Drag-Handler verdrahtet ist.
  * - Der Schliessen-Button hat das korrekte aria-label.
  * - Der Oeffnen-Link zeigt auf ein neues Tab (target="_blank").
  * - Der Schliessen-Button erscheint sowohl bei Bild- als auch bei PDF-Previews.
  *
  * Fehlerfaelle:
  * - Kein Schliessen-Button darf erscheinen, wenn onClose nicht gesetzt ist.
- * - Ohne Drag-Handle-Cursor fehlt die visuelle Drag-Einladung.
+ * - Ohne verdrahteten Drag-Handler darf kein irrefuehrender Grab-Cursor erscheinen.
  *
  * Ziel:
  * Korrekte bedingte Darstellung von Schliessen-Button und Drag-Handle
@@ -56,9 +56,12 @@ describe("FT-19 DraggableAttachmentBadge drag wiring", () => {
     expect(markup).not.toContain("Vorschau schließen");
   });
 
-  it("title bar has cursor grab style for drag handle", () => {
+  it("title bar has cursor grab style when a drag handle is wired", () => {
     const markup = renderToStaticMarkup(
-      createElement(AttachmentInfoBadgePreview, pdfProps),
+      createElement(AttachmentInfoBadgePreview, {
+        ...pdfProps,
+        onDragHandleMouseDown: vi.fn(),
+      }),
     );
 
     expect(markup).toContain("cursor:grab");

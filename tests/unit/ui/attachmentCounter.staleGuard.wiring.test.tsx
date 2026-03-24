@@ -69,6 +69,33 @@ vi.mock("@/components/ui/hover-preview", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/badge-previews/attachment-info-badge-preview", () => ({
+  AttachmentInfoBadgePreview: ({
+    originalName,
+  }: {
+    originalName: string;
+  }) => <div data-testid="attachment-info-preview">{originalName}</div>,
+  AttachmentPreviewTrigger: ({
+    children,
+    renderPreviewContent,
+  }: {
+    children: React.ReactNode;
+    renderPreviewContent?: (controls: Record<string, unknown>) => React.ReactNode;
+  }) => (
+    <div data-testid="attachment-preview-trigger">
+      <div data-testid="attachment-preview-trigger-children">{children}</div>
+      <div data-testid="attachment-preview-trigger-content">{renderPreviewContent?.({})}</div>
+    </div>
+  ),
+  parseAttachmentPreviewSize: () => "medium",
+  resolveAttachmentPreviewDimensions: () => ({
+    popoverMaxWidth: 988,
+    popoverMaxHeight: 923,
+    contentMaxHeight: 708,
+    iframeHeight: 677,
+  }),
+}));
+
 vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsGallery", () => ({
   CalendarWeekAppointmentAttachmentsGallery: ({
     attachments,
@@ -81,14 +108,6 @@ vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsGallery", () =>
       ))}
     </div>
   ),
-}));
-
-vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsSinglePreview", () => ({
-  CalendarWeekAppointmentAttachmentsSinglePreview: ({
-    attachment,
-  }: {
-    attachment: { originalName: string } | null;
-  }) => <div data-testid="single-preview">{attachment?.originalName}</div>,
 }));
 
 import { CalendarWeekAppointmentAttachmentsHover } from "../../../client/src/components/calendar/CalendarWeekAppointmentAttachmentsHover";

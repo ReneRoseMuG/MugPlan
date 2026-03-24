@@ -25,6 +25,7 @@ import { describe, expect, it } from "vitest";
 import {
   AttachmentInfoBadgePreview,
   createAttachmentInfoBadgePreview,
+  resolveAttachmentPreviewPortalPosition,
   resolveAttachmentPreviewDimensions,
 } from "../../../client/src/components/ui/badge-previews/attachment-info-badge-preview";
 
@@ -148,5 +149,37 @@ describe("FT18 attachment info badge preview sizing", () => {
     );
 
     expect(markup).toContain("max-height:708px");
+  });
+
+  it("positions image previews with their actual rendered width instead of the maximum width", () => {
+    const position = resolveAttachmentPreviewPortalPosition({
+      triggerRect: {
+        left: 900,
+        top: 120,
+        right: 940,
+      },
+      viewportWidth: 1220,
+      viewportHeight: 900,
+      portalWidth: 280,
+      portalHeight: 360,
+    });
+
+    expect(position).toEqual({ x: 612, y: 120 });
+  });
+
+  it("keeps image previews pinned inside the viewport vertically", () => {
+    const position = resolveAttachmentPreviewPortalPosition({
+      triggerRect: {
+        left: 40,
+        top: 760,
+        right: 120,
+      },
+      viewportWidth: 1280,
+      viewportHeight: 900,
+      portalWidth: 280,
+      portalHeight: 220,
+    });
+
+    expect(position).toEqual({ x: 128, y: 672 });
   });
 });
