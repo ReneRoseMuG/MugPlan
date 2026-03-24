@@ -155,6 +155,16 @@ export function AppointmentAttachmentsPanel({
           emptyText: "Keine Kundendokumente vorhanden",
           buildOpenUrl: (id) => `/api/customer-attachments/${id}/download`,
           buildDownloadUrl: (id) => `/api/customer-attachments/${id}/download?download=1`,
+          buildActionSlot: appointmentId
+            ? (id) => (
+                <AttachmentDeleteAction
+                  attachmentId={id}
+                  parentType="customer"
+                  listQueryKey={["/api/appointments", appointmentId, "attachment-context"]}
+                  canEdit={canDelete && !readOnly}
+                />
+              )
+            : undefined,
         },
         {
           id: "project",
@@ -164,6 +174,16 @@ export function AppointmentAttachmentsPanel({
           emptyText: resolvedProjectLabel ? "Keine Projektdokumente vorhanden" : "Kein Projekt zugeordnet",
           buildOpenUrl: (id) => `/api/project-attachments/${id}/download`,
           buildDownloadUrl: (id) => `/api/project-attachments/${id}/download?download=1`,
+          buildActionSlot: appointmentId
+            ? (id) => (
+                <AttachmentDeleteAction
+                  attachmentId={id}
+                  parentType="project"
+                  listQueryKey={["/api/appointments", appointmentId, "attachment-context"]}
+                  canEdit={canDelete && !readOnly}
+                />
+              )
+            : undefined,
         },
         {
           id: "appointment",

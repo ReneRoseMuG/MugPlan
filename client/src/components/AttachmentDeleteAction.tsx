@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { Minus, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { queryClient } from "@/lib/queryClient";
@@ -83,7 +83,7 @@ export function AttachmentDeleteAction({
         onClick={() => setConfirmed((v) => !v)}
         aria-expanded={confirmed}
       >
-        <Trash2 className="w-3 h-3" />
+        <Minus className="w-3 h-3" />
       </Button>
 
       {/* Confirmation panel — always in the tree, visibility controlled via CSS */}

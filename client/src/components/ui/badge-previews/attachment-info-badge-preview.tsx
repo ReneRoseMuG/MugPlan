@@ -22,6 +22,7 @@ type AttachmentInfoBadgePreviewProps = {
   downloadUrl: string;
   previewSize?: AttachmentPreviewSize;
   onClose?: () => void;
+  onDragHandleMouseDown?: (e: React.MouseEvent) => void;
 };
 
 const attachmentInfoBadgePreviewBaseOptions = {
@@ -96,6 +97,7 @@ export function AttachmentInfoBadgePreview({
   downloadUrl,
   previewSize,
   onClose,
+  onDragHandleMouseDown,
 }: AttachmentInfoBadgePreviewProps) {
   const attachmentPreviewSizeSetting = useOptionalAttachmentPreviewSizeSetting();
   const effectivePreviewSize = parseAttachmentPreviewSize(previewSize ?? attachmentPreviewSizeSetting);
@@ -151,8 +153,12 @@ export function AttachmentInfoBadgePreview({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold" style={{ cursor: "grab" }}>
+      <div
+        className="flex items-center justify-between gap-3"
+        style={{ cursor: onDragHandleMouseDown ? "grab" : undefined }}
+        onMouseDown={onDragHandleMouseDown}
+      >
+        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
           {isImage ? (
             <ImageIcon className="h-4 w-4 text-muted-foreground" />
           ) : (
@@ -160,7 +166,7 @@ export function AttachmentInfoBadgePreview({
           )}
           <span className="truncate">{originalName}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
           <Button size="sm" variant="outline" asChild>
             <a href={openUrl} target="_blank" rel="noreferrer">
               <ExternalLink className="h-3 w-3" />
@@ -299,6 +305,7 @@ export function DraggableAttachmentBadge({
   const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
 
   const triggerRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentStartRef = useRef({ x: 0, y: 0 });
@@ -337,13 +344,15 @@ export function DraggableAttachmentBadge({
       } else if (dragPhaseRef.current === "dragging") {
         const w = typeof window !== "undefined" ? window.innerWidth : 1024;
         const h = typeof window !== "undefined" ? window.innerHeight : 768;
+        const portalW = portalRef.current?.offsetWidth ?? dimensions.popoverMaxWidth;
+        const portalH = portalRef.current?.offsetHeight ?? dimensions.popoverMaxHeight;
         const clampedX = Math.max(
           VIEWPORT_PADDING,
-          Math.min(e.clientX + dragOffsetRef.current.x, w - dimensions.popoverMaxWidth - VIEWPORT_PADDING),
+          Math.min(e.clientX + dragOffsetRef.current.x, w - portalW - VIEWPORT_PADDING),
         );
         const clampedY = Math.max(
           VIEWPORT_PADDING,
-          Math.min(e.clientY + dragOffsetRef.current.y, h - dimensions.popoverMaxHeight - VIEWPORT_PADDING),
+          Math.min(e.clientY + dragOffsetRef.current.y, h - portalH - VIEWPORT_PADDING),
         );
         portalPosRef.current = { x: clampedX, y: clampedY };
         setPortalPos({ x: clampedX, y: clampedY });
@@ -457,17 +466,17 @@ export function DraggableAttachmentBadge({
       {showPreview && typeof document !== "undefined"
         ? createPortal(
             <div
+              ref={portalRef}
               className="fixed z-50 overflow-auto rounded-lg border bg-popover p-4 shadow-md"
               style={{
                 left: portalPos.x,
                 top: portalPos.y,
-                maxWidth: dimensions.popoverMaxWidth,
+                width: dimensions.popoverMaxWidth,
                 maxHeight: dimensions.popoverMaxHeight,
                 cursor: isDragging ? "grabbing" : undefined,
               }}
               data-testid={testId ? `${testId}-preview` : "attachment-preview-portal"}
               data-drag-phase={dragPhase}
-              onMouseDown={handlePreviewMouseDown}
               onMouseEnter={() => {
                 if (dragPhaseRef.current === "idle") clearCloseTimer();
               }}
@@ -482,6 +491,7 @@ export function DraggableAttachmentBadge({
                 downloadUrl={downloadUrl}
                 previewSize={previewSizeProp}
                 onClose={isPinned ? handleClose : undefined}
+                onDragHandleMouseDown={handlePreviewMouseDown}
               />
             </div>,
             document.body,
