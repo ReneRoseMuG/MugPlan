@@ -2131,6 +2131,7 @@ export function AppointmentForm({
                 if (result?.attachmentLinked && pendingProjectDraft.documentFile) {
                   removeDraftAppointmentAttachmentForFile(pendingProjectDraft.documentFile);
                 }
+                void queryClient.invalidateQueries({ queryKey: projectsQueryKey });
               }}
               onCancel={() => {
                 setPendingProjectDraft(null);
