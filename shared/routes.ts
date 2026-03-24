@@ -3807,6 +3807,7 @@ export const api = {
         input: z.object({
           fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
           toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          refreshKey: z.string().optional(),
           productCategoryIds: z.preprocess(
             (value) => value == null ? [] : Array.isArray(value) ? value : [value],
             z.array(z.coerce.number().int().positive()).default([]),

@@ -97,6 +97,17 @@ type CategorySelection = {
   columnWidths?: Record<string, number>;
 };
 
+type VorlauflisteRequestParams = {
+  fromDate: string;
+  toDate?: string;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  useShortCodes: boolean;
+  page: number;
+  pageSize: number;
+  refreshKey: number;
+};
+
 type ArticleCategorySelectionProps = {
   productCategories: ProductCategory[];
   componentCategories: ComponentCategory[];
@@ -208,6 +219,20 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
     throw new Error((await response.text()) || `Request failed for ${url}`);
   }
   return response.json() as Promise<T>;
+}
+
+export function buildVorlauflisteReportUrl(params: VorlauflisteRequestParams): string {
+  const searchParams = new URLSearchParams({
+    fromDate: params.fromDate,
+    refreshKey: String(params.refreshKey),
+    page: String(params.page),
+    pageSize: String(params.pageSize),
+  });
+  if (params.toDate) searchParams.set("toDate", params.toDate);
+  for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
+  for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  if (params.useShortCodes) searchParams.set("useShortCodes", "true");
+  return `/api/reports/vorlaufliste?${searchParams.toString()}`;
 }
 
 function renderGroupedCategoryList(groups: ProductVorlaufCategoryGroup[], emptyText: string, testIdPrefix: string) {
@@ -397,16 +422,16 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     queryKey: ["reports-vorlaufliste", submittedFilters, reportRequestId, page],
     enabled: submittedFilters?.reportType === "vorlaufliste" && isReportOverlayOpen,
     queryFn: async () => {
-      const params = new URLSearchParams({
+      return fetchJson(buildVorlauflisteReportUrl({
         fromDate: submittedFilters!.fromDate,
-        page: String(page),
-        pageSize: String(REPORT_PAGE_SIZE),
-      });
-      if (submittedFilters?.toDate) params.set("toDate", submittedFilters.toDate);
-      for (const id of submittedFilters?.productCategoryIds ?? []) params.append("productCategoryIds", String(id));
-      for (const id of submittedFilters?.componentCategoryIds ?? []) params.append("componentCategoryIds", String(id));
-      if (submittedFilters?.useShortCodes) params.set("useShortCodes", "true");
-      return fetchJson(`/api/reports/vorlaufliste?${params.toString()}`, { cache: "no-store" });
+        toDate: submittedFilters?.toDate,
+        productCategoryIds: submittedFilters?.productCategoryIds ?? [],
+        componentCategoryIds: submittedFilters?.componentCategoryIds ?? [],
+        useShortCodes: submittedFilters?.useShortCodes ?? false,
+        page,
+        pageSize: REPORT_PAGE_SIZE,
+        refreshKey: reportRequestId,
+      }), { cache: "no-store" });
     },
   });
 
