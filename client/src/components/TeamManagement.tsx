@@ -161,6 +161,8 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
       await updateMutation.mutateAsync({ id: teamId, color, version: team.version });
       await assignMembersMutation.mutateAsync({ teamId, employeeIds });
     }
+
+    handleCloseDialog();
   };
 
   const handleCloseDialog = () => {

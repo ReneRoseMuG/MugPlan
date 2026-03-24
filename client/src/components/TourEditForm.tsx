@@ -57,12 +57,19 @@ export function TourEditForm({
   const [selectedName, setSelectedName] = useState<string>(() => tour?.name ?? defaultName);
   const [selectedColor, setSelectedColor] = useState<string>(() => tour?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
+  const memberIdsKey = (tour?.members ?? []).map((member) => member.id).join(",");
 
   useEffect(() => {
     setSelectedMembers(tour?.members.map((member) => member.id) ?? []);
+  }, [memberIdsKey, tour?.id]);
+
+  useEffect(() => {
     setSelectedName(tour?.name ?? defaultName);
+  }, [defaultName, tour?.id, tour?.name]);
+
+  useEffect(() => {
     setSelectedColor(tour?.color ?? defaultColor);
-  }, [defaultColor, defaultName, tour]);
+  }, [defaultColor, tour?.color, tour?.id]);
 
   const assignedElsewhere = (employee: Employee) => {
     if (tour?.id == null) return employee.tourId !== null;

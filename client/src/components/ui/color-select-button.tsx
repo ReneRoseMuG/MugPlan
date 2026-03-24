@@ -26,30 +26,25 @@ export function ColorSelectButton({
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
+    <div
       className={`w-full flex items-center border border-border bg-muted/50 rounded px-3 py-2 gap-3 ${
-        disabled ? "cursor-not-allowed opacity-60" : "hover-elevate cursor-pointer"
+        disabled ? "opacity-60" : ""
       }`}
-      disabled={disabled}
       data-testid={testId}
     >
-      <div
-        className="w-8 h-8 rounded border border-border flex-shrink-0"
+      <button
+        type="button"
+        onClick={handleClick}
+        className={`w-8 h-8 rounded border border-border flex-shrink-0 ${
+          disabled ? "cursor-not-allowed" : "hover-elevate cursor-pointer"
+        }`}
         style={{ backgroundColor: color }}
+        disabled={disabled}
         data-testid={`${testId}-preview`}
+        aria-label="Farbe waehlen"
       />
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className="font-medium text-foreground">Farbe waehlen</span>
-        <input
-          type="text"
-          value={color}
-          disabled={disabled}
-          onChange={(event) => applyColor(event.target.value)}
-          className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1 text-sm"
-          data-testid={`${testId}-hex`}
-        />
       </div>
       <input
         ref={inputRef}
@@ -61,6 +56,6 @@ export function ColorSelectButton({
         className="sr-only"
         data-testid={`${testId}-input`}
       />
-    </button>
+    </div>
   );
 }

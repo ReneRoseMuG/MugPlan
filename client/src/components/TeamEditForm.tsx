@@ -44,11 +44,15 @@ export function TeamEditForm({
   const [selectedMembers, setSelectedMembers] = useState<number[]>(() => team?.members.map((member) => member.id) ?? []);
   const [selectedColor, setSelectedColor] = useState<string>(() => team?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
+  const memberIdsKey = (team?.members ?? []).map((member) => member.id).join(",");
 
   useEffect(() => {
     setSelectedMembers(team?.members.map((member) => member.id) ?? []);
+  }, [memberIdsKey, team?.id]);
+
+  useEffect(() => {
     setSelectedColor(team?.color ?? defaultColor);
-  }, [defaultColor, team]);
+  }, [defaultColor, team?.color, team?.id]);
 
   const availableEmployees = useMemo(
     () =>
