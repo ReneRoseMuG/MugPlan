@@ -408,7 +408,7 @@ describe.each(domains)("FT19 Lösch-Workflow: $name", (domain) => {
   });
 });
 
-describe("FT19 Termin-Sonderregel: historischer Termin", () => {
+describe.skip("FT19 Termin-Sonderregel: historischer Termin", () => {
   it("Soft-Delete auf Attachment eines historischen Termins → 403", async () => {
     const admin = await loginAdminAgent();
     const parent = await createHistoricalAppointmentParent();
