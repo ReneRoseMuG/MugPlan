@@ -180,12 +180,14 @@ export async function createProductFixture(params: {
   categoryName: string;
   name: string;
   description?: string | null;
+  shortCode?: string | null;
 }) {
   const category = await ensureProductCategoryFixture(params.categoryName);
   const result = await db.insert(products).values({
     name: params.name,
     categoryId: category.id,
     description: params.description ?? null,
+    shortCode: params.shortCode ?? null,
     isActive: true,
     version: 1,
   });
@@ -208,12 +210,14 @@ export async function createComponentFixture(params: {
   categoryName: string;
   name: string;
   description?: string | null;
+  shortCode?: string | null;
 }) {
   const category = await ensureComponentCategoryFixture(params.categoryName);
   const result = await db.insert(components).values({
     name: params.name,
     categoryId: category.id,
     description: params.description ?? null,
+    shortCode: params.shortCode ?? null,
     isActive: true,
     version: 1,
   });

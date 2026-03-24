@@ -8,11 +8,14 @@
  * - Ohne Bis-Datum werden alle Termine ab Von-Datum beruecksichtigt.
  * - Paging greift serverseitig projektbasiert mit 100er-Seiten.
  * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
+ * - articleValues enthaelt genau die per Kategorie-ID gefilterten Artikelwerte.
+ * - useShortCodes=true ersetzt Artikel- und Komponentennamen durch Shortcodes.
  *
  * Fehlerfaelle:
  * - Mehrere Termine eines Projekts erzeugen mehrere Zeilen.
  * - Report ignoriert Artikel-Mappings, reportState, Paging oder Rollenpruefung.
  * - Termine ohne Projektzuordnung landen im Report.
+ * - Shortcodes werden ignoriert und stattdessen immer die vollen Namen ausgegeben.
  *
  * Ziel:
  * Den End-to-end-Vertrag der neuen Reports-Vorlaufliste inklusive Rollen- und Pagingverhalten absichern.
@@ -184,7 +187,7 @@ async function createReportProjectFixture(params: {
     });
   }
 
-  return { customer, project: updatedProject, createdTags, appointments };
+  return { customer, project: updatedProject, orderNumber, createdTags, appointments };
 }
 
 async function ensureReservedCancellationTag() {
@@ -259,7 +262,7 @@ async function ensureManagedSpecialMeasureTag() {
 }
 
 describe("FT26 integration: report vorlaufliste", () => {
-  it("returns one row per project with earliest matching appointment and mapped article columns", async () => {
+  it("returns one row per project with earliest matching appointment and project metadata", async () => {
     const admin = await loginAdminAgent(app);
     const specialMeasureTag = await ensureManagedSpecialMeasureTag();
     const reportProject = await createReportProjectFixture({
@@ -314,12 +317,7 @@ describe("FT26 integration: report vorlaufliste", () => {
       customerFullName: "Mustermann, Max",
       postalCode: "12345",
       city: "Berlin",
-      sauna: "Fasssauna Nord",
-      door: "Ganzglas",
-      window: "Panorama",
-      oven: "Ofen XL",
-      control: "Digital",
-      roof: "Anthrazit",
+      articleValues: [],
       plannedDateText: "15.05.2099",
       plannedWeek: "KW 20",
       actualDate: "2099-05-10",
@@ -349,7 +347,7 @@ describe("FT26 integration: report vorlaufliste", () => {
     ]);
   });
 
-  it("filters report article columns by selected product and component category ids", async () => {
+  it("filters articleValues by selected category ids and returns category metadata in response", async () => {
     const admin = await loginAdminAgent(app);
     const filteredProject = await createReportProjectFixture({
       prefix: "FT26-FILTER",
@@ -372,12 +370,20 @@ describe("FT26 integration: report vorlaufliste", () => {
       .get(`/api/reports/vorlaufliste?fromDate=2099-06-01&page=1&pageSize=100&productCategoryIds=${unrelatedProduct.categoryId}&componentCategoryIds=${ovenComponent.categoryId}`)
       .expect(200);
 
-    expect(response.body.items).toEqual([
-      expect.objectContaining({
-        projectId: filteredProject.project.id,
-        sauna: null,
-        oven: "Ofen Filter",
-      }),
+    type AV = { categoryId: number; value: string | null };
+    type Item = { projectId: number; articleValues: AV[] };
+    const item = (response.body.items as Item[]).find((i) => i.projectId === filteredProject.project.id);
+    expect(item).toBeDefined();
+
+    const unrelatedAV = item!.articleValues.find((av) => av.categoryId === unrelatedProduct.categoryId);
+    const ovenAV = item!.articleValues.find((av) => av.categoryId === ovenComponent.categoryId);
+    expect(unrelatedAV?.value).toBeNull();
+    expect(ovenAV?.value).toBe("Ofen Filter");
+
+    // Response envelope contains only the queried component category (no match for unrelated product)
+    expect(response.body.productCategories).toEqual([]);
+    expect(response.body.componentCategories).toEqual([
+      expect.objectContaining({ id: ovenComponent.categoryId, name: "Ofen" }),
     ]);
   });
 
@@ -476,6 +482,50 @@ describe("FT26 integration: report vorlaufliste", () => {
       projectId: appointmentTaggedProject.project.id,
       highlightTag: { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
     });
+  });
+
+  it("substitutes shortcodes for article names when useShortCodes is true", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const scProduct = await createProductFixture({
+      categoryName: "FT26 SC Produkte",
+      name: "Voller Produktname ohne Kuerzung",
+      shortCode: "SC-P",
+    });
+    const scComponent = await createComponentFixture({
+      categoryName: "FT26 SC Komponenten",
+      name: "Voller Komponentenname ohne Kuerzung",
+      shortCode: "SC-K",
+    });
+
+    const { project: scProject, orderNumber: scOrderNumber } = await createReportProjectFixture({
+      prefix: "FT26-SC",
+      appointmentDates: ["2099-11-05"],
+    });
+
+    await createProjectOrderItemFixture({ projectId: scProject.id, orderNumber: scOrderNumber, productId: scProduct.id });
+    await createProjectOrderItemFixture({ projectId: scProject.id, orderNumber: scOrderNumber, componentId: scComponent.id });
+
+    type AV = { categoryId: number; value: string | null };
+    type Item = { projectId: number; articleValues: AV[] };
+
+    const responseWithSC = await admin
+      .get(`/api/reports/vorlaufliste?fromDate=2099-11-01&page=1&pageSize=100&productCategoryIds=${scProduct.categoryId}&componentCategoryIds=${scComponent.categoryId}&useShortCodes=true`)
+      .expect(200);
+
+    const itemWithSC = (responseWithSC.body.items as Item[]).find((i) => i.projectId === scProject.id);
+    expect(itemWithSC).toBeDefined();
+    expect(itemWithSC!.articleValues).toContainEqual({ categoryId: scProduct.categoryId, value: "SC-P" });
+    expect(itemWithSC!.articleValues).toContainEqual({ categoryId: scComponent.categoryId, value: "SC-K" });
+
+    const responseNoSC = await admin
+      .get(`/api/reports/vorlaufliste?fromDate=2099-11-01&page=1&pageSize=100&productCategoryIds=${scProduct.categoryId}&componentCategoryIds=${scComponent.categoryId}&useShortCodes=false`)
+      .expect(200);
+
+    const itemNoSC = (responseNoSC.body.items as Item[]).find((i) => i.projectId === scProject.id);
+    expect(itemNoSC).toBeDefined();
+    expect(itemNoSC!.articleValues).toContainEqual({ categoryId: scProduct.categoryId, value: "Voller Produktname ohne Kuerzung" });
+    expect(itemNoSC!.articleValues).toContainEqual({ categoryId: scComponent.categoryId, value: "Voller Komponentenname ohne Kuerzung" });
   });
 
   it("excludes projects tagged with Reklamation on project or appointment level from the report", async () => {

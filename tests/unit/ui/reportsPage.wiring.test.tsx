@@ -4,11 +4,13 @@
  * Abgedeckte Regeln:
  * - Die Reports-Seite rendert fuer beide Reports getrennte Datums- und Artikelkategorien-Spalten.
  * - Der Produkt-Vorlauf zeigt keine manuelle Sondermass-Auswahl mehr.
+ * - Die Checkbox "Shortcodes verwenden?" ist in der Vorlaufliste-Konfiguration sichtbar.
  * - Die alten Beschreibungssaetze werden nicht mehr gerendert.
  *
  * Fehlerfaelle:
  * - Die Konfigurationsbereiche bleiben einspaltig oder verlieren die Artikelkategorien-Spalte.
  * - Der entfernte Sondermass-Select erscheint weiterhin.
+ * - Die Shortcodes-Checkbox fehlt in der Konfiguration.
  *
  * Ziel:
  * Die sichtbare Reports-Konfiguration fuer den Refactor ueber gerendertes Markup absichern.
@@ -120,6 +122,7 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     expect(html).toContain("Artikel Kategorien");
     expect(html).toContain("button-reports-vorlaufliste-generate");
     expect(html).toContain("button-reports-product-vorlauf-generate");
+    expect(html).toContain("checkbox-reports-vorlaufliste-use-shortcodes");
     expect(html).not.toContain("select-reports-product-vorlauf-special-measure-tag");
     expect(html).not.toContain("Datumsbereich und Default-Kategorien für die Vorlaufliste festlegen.");
     expect(html).not.toContain("Datumsbereich, Kategorien und Sondermass-Kennzeichnung fuer den Produkt-Vorlauf festlegen.");
