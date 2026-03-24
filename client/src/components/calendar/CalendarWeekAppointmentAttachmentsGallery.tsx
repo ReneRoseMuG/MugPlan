@@ -1,11 +1,9 @@
 import { FileText, Paperclip } from "lucide-react";
-import { HoverPreview } from "@/components/ui/hover-preview";
 import {
+  DraggableAttachmentBadge,
   parseAttachmentPreviewSize,
-  resolveAttachmentPreviewDimensions,
 } from "@/components/ui/badge-previews/attachment-info-badge-preview";
 import { useSetting } from "@/hooks/useSettings";
-import { CalendarWeekAppointmentAttachmentsSinglePreview } from "./CalendarWeekAppointmentAttachmentsSinglePreview";
 
 type AppointmentAttachmentItem = {
   id: number;
@@ -53,7 +51,6 @@ export function CalendarWeekAppointmentAttachmentsGallery({
   attachments: AppointmentAttachmentItem[];
 }) {
   const attachmentPreviewSize = parseAttachmentPreviewSize(useSetting("attachmentPreviewSize"));
-  const previewDimensions = resolveAttachmentPreviewDimensions(attachmentPreviewSize);
   const visibleAttachments = attachments.slice(0, 4);
   const hiddenCount = Math.max(0, attachments.length - visibleAttachments.length);
 
@@ -64,27 +61,21 @@ export function CalendarWeekAppointmentAttachmentsGallery({
       </div>
       <div className="flex flex-wrap gap-2">
         {visibleAttachments.map((attachment) => (
-          <HoverPreview
+          <DraggableAttachmentBadge
             key={`${attachment.sourceType}-${attachment.id}`}
-            preview={<CalendarWeekAppointmentAttachmentsSinglePreview attachment={attachment} />}
-            openDelay={120}
-            closeDelay={200}
-            side="right"
-            align="end"
-            sideOffset={10}
-            collisionPadding={24}
-            maxWidth={previewDimensions.popoverMaxWidth}
-            minWidth={previewDimensions.popoverMaxWidth}
-            maxHeight={previewDimensions.popoverMaxHeight}
-            className="z-[9999]"
-            contentClassName="space-y-2"
-          >
-            <div className="cursor-pointer space-y-1">
-              <AttachmentThumbnail attachment={attachment} />
-              <div className="w-16 truncate text-[9px] font-semibold text-slate-600">{attachment.sourceLabel}</div>
-              <div className="w-16 truncate text-[9px] text-slate-500">{attachment.originalName}</div>
-            </div>
-          </HoverPreview>
+            originalName={attachment.originalName}
+            mimeType={attachment.mimeType}
+            openUrl={attachment.openUrl}
+            downloadUrl={attachment.downloadUrl}
+            previewSize={attachmentPreviewSize}
+            triggerChildren={(
+              <div className="cursor-pointer space-y-1">
+                <AttachmentThumbnail attachment={attachment} />
+                <div className="w-16 truncate text-[9px] font-semibold text-slate-600">{attachment.sourceLabel}</div>
+                <div className="w-16 truncate text-[9px] text-slate-500">{attachment.originalName}</div>
+              </div>
+            )}
+          />
         ))}
         {hiddenCount > 0 ? (
           <div className="flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-xs font-semibold text-slate-500">

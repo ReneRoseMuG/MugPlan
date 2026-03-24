@@ -129,7 +129,7 @@ export function CalendarWeekAppointmentAttachmentsHover({
           isError={attachmentsQuery.isError}
         />
       )}
-      closeDelay={200}
+      closeDelay={800}
       side="right"
       align="end"
       sideOffset={10}

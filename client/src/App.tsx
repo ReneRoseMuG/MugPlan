@@ -10,6 +10,7 @@ import AdminSetup from "@/pages/AdminSetup";
 import { getSetupStatus, logout } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { SettingsProvider } from "@/providers/SettingsProvider";
+import { FloatingPreviewKeeperProvider } from "@/contexts/floating-preview-keeper";
 
 type RouterProps = {
   onLogout: () => void;
@@ -96,13 +97,15 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <SettingsProvider>
-          <Toaster />
-          <AuthenticatedApp
-            onLogout={() => {
-              void logout();
-              setStage("login");
-            }}
-          />
+          <FloatingPreviewKeeperProvider>
+            <Toaster />
+            <AuthenticatedApp
+              onLogout={() => {
+                void logout();
+                setStage("login");
+              }}
+            />
+          </FloatingPreviewKeeperProvider>
         </SettingsProvider>
       </TooltipProvider>
     </QueryClientProvider>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useFloatingPreviewKeeper } from "@/contexts/floating-preview-keeper";
 import { ExternalLink, FileText, Image as ImageIcon, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSetting } from "@/hooks/useSettings";
@@ -285,6 +286,7 @@ export interface DraggableAttachmentBadgeProps {
   actionDisabled?: boolean;
   actionSlot?: ReactNode;
   testId?: string;
+  triggerChildren?: ReactNode;
 }
 
 export function DraggableAttachmentBadge({
@@ -297,8 +299,10 @@ export function DraggableAttachmentBadge({
   actionDisabled,
   actionSlot,
   testId,
+  triggerChildren,
 }: DraggableAttachmentBadgeProps) {
   const globalOpenDelayMs = useOptionalHoverPreviewDelaySetting();
+  const keeper = useFloatingPreviewKeeper();
   const dimensions = resolveAttachmentPreviewDimensions(
     parseAttachmentPreviewSize(previewSizeProp),
   );
@@ -436,8 +440,34 @@ export function DraggableAttachmentBadge({
   };
 
   const handlePreviewMouseDown = (e: React.MouseEvent) => {
-    intentStartRef.current = { x: e.clientX, y: e.clientY };
-    setDragPhase("intent");
+    if (keeper) {
+      keeper.register({
+        id: openUrl,
+        pos: portalPosRef.current,
+        intentStart: { x: e.clientX, y: e.clientY },
+        popoverMaxWidth: dimensions.popoverMaxWidth,
+        popoverMaxHeight: dimensions.popoverMaxHeight,
+        isImageContent,
+        renderContent: (onClose, onDragHandleMouseDown) => (
+          <AttachmentInfoBadgePreview
+            originalName={originalName}
+            mimeType={mimeType}
+            openUrl={openUrl}
+            downloadUrl={downloadUrl}
+            previewSize={previewSizeProp}
+            onClose={onClose}
+            onDragHandleMouseDown={onDragHandleMouseDown}
+          />
+        ),
+      });
+      clearOpenTimer();
+      clearCloseTimer();
+      setIsPreviewOpen(false);
+      setDragPhase("idle");
+    } else {
+      intentStartRef.current = { x: e.clientX, y: e.clientY };
+      setDragPhase("intent");
+    }
   };
 
   const handleClose = () => {
@@ -461,16 +491,18 @@ export function DraggableAttachmentBadge({
           if (dragPhaseRef.current === "idle") scheduleClose();
         }}
       >
-        <InfoBadge
-          icon={resolveAttachmentPreviewIcon(mimeType, originalName)}
-          label={<span className="block max-w-full truncate">{originalName}</span>}
-          action={onRemove ? "remove" : "none"}
-          onRemove={onRemove}
-          actionDisabled={actionDisabled}
-          customAction={actionSlot}
-          fullWidth
-          testId={testId}
-        />
+        {triggerChildren ?? (
+          <InfoBadge
+            icon={resolveAttachmentPreviewIcon(mimeType, originalName)}
+            label={<span className="block max-w-full truncate">{originalName}</span>}
+            action={onRemove ? "remove" : "none"}
+            onRemove={onRemove}
+            actionDisabled={actionDisabled}
+            customAction={actionSlot}
+            fullWidth
+            testId={testId}
+          />
+        )}
       </div>
       {showPreview && typeof document !== "undefined"
         ? createPortal(
