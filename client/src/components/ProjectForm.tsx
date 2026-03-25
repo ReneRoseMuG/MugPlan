@@ -153,6 +153,7 @@ export function ProjectForm({
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
   const didInitializeCreateFormRef = useRef(false);
+  const didInitializeEditFormRef = useRef(false);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -305,6 +306,7 @@ export function ProjectForm({
   useEffect(() => {
     if (projectData) {
       didInitializeCreateFormRef.current = false;
+      didInitializeEditFormRef.current = false;
       const projectName = projectData.project.name.trim();
       setProjectType(projectData.project.type ?? DEFAULT_PROJECT_TYPE);
       setName(projectName);
@@ -359,6 +361,8 @@ export function ProjectForm({
 
   useEffect(() => {
     if (!isEditing || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
+    if (didInitializeEditFormRef.current) return;
+    didInitializeEditFormRef.current = true;
     setProductSelections(mapProjectOrderItemsToSelections(projectOrderItems, products, components, componentCategories));
     setDynamicProductSelections(
       mapProjectOrderItemsToDynamicSelections(projectOrderItems, products, components, dynamicCategorySlots),
