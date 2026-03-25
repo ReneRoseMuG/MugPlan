@@ -1341,6 +1341,10 @@ export function ProjectForm({
       toast({ title: "Betrag ist ungueltig (max. 2 Nachkommastellen)", variant: "destructive" });
       throw new Error("validation");
     }
+    if (!isEditing && normalizedOrderNumber === null) {
+      toast({ title: "Auftragsnummer ist erforderlich", variant: "destructive" });
+      return;
+    }
 
     let createdProjectId: number | null = null;
     let extractionAttachmentLinked = false;
@@ -1381,19 +1385,29 @@ export function ProjectForm({
         extractionAttachmentLinked = await persistEditAttachmentDrafts(effectiveProjectId);
       }
     } else {
-      const createdProject = await createMutation.mutateAsync({
-        name: storedProjectName,
-        type: resolvedProjectEditForm.normalizedType,
-        orderNumber: normalizedOrderNumber,
-        amount: normalizedAmount,
-        customerId,
-        descriptionMd: persistedDescriptionMd,
-        projectOrder: {
+      let createdProject: Awaited<ReturnType<typeof createMutation.mutateAsync>>;
+      try {
+        createdProject = await createMutation.mutateAsync({
+          name: storedProjectName,
+          type: resolvedProjectEditForm.normalizedType,
+          orderNumber: normalizedOrderNumber,
           amount: normalizedAmount,
-          plannedDateText: normalizedPlannedDateText,
-          plannedWeek: normalizedPlannedWeek,
-        },
-      });
+          customerId,
+          descriptionMd: persistedDescriptionMd,
+          projectOrder: {
+            amount: normalizedAmount,
+            plannedDateText: normalizedPlannedDateText,
+            plannedWeek: normalizedPlannedWeek,
+          },
+        });
+      } catch (error) {
+        toast({
+          title: "Projekt konnte nicht gespeichert werden",
+          description: error instanceof Error ? error.message : "Unbekannter Fehler",
+          variant: "destructive",
+        });
+        return;
+      }
       createdProjectId = createdProject.id;
       if (createdProject.projectOrder?.orderNumber) {
         try {

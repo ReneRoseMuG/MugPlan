@@ -11,6 +11,8 @@
  * - Extrahierte Auftragsummen werden in den zentralen Extract-Output uebernommen.
  * - Projekt- und Termin-Extract bevorzugen den Mining-Parser; customer_form bleibt beim Legacy-Parser.
  * - Der Extract-Output enthaelt einen scope-spezifischen Feldreport.
+ * - Bereits importierte Auftragsnummern fuehren nicht zum Abbruch der Extraktion –
+ *   die Konfliktbehandlung (Edit-Modus-Wechsel) liegt im Client.
  *
  * Fehlerfaelle:
  * - Ungueltige DTO-Payload.
@@ -28,14 +30,12 @@ const {
   parseMasterDataArticleItemsDeterministicallyMock,
   parseDocumentArticleItemsDeterministicallyMock,
   parseDocumentTotalAmountDeterministicallyMock,
-  isOrderNumberAlreadyImportedMock,
 } = vi.hoisted(() => ({
   extractTextFromPdfBufferMock: vi.fn(),
   parseDocumentHeaderDeterministicallyMock: vi.fn(),
   parseMasterDataArticleItemsDeterministicallyMock: vi.fn(),
   parseDocumentArticleItemsDeterministicallyMock: vi.fn(),
   parseDocumentTotalAmountDeterministicallyMock: vi.fn(),
-  isOrderNumberAlreadyImportedMock: vi.fn(),
 }));
 
 vi.mock("../../../server/services/documentTextExtractor", () => ({
@@ -60,15 +60,10 @@ vi.mock("../../../server/services/customersService", () => ({
   createCustomer: vi.fn(),
 }));
 
-vi.mock("../../../server/services/projectsService", () => ({
-  isOrderNumberAlreadyImported: isOrderNumberAlreadyImportedMock,
-}));
-
 import { handleZodError } from "../../../server/controllers/validation";
 import * as customersService from "../../../server/services/customersService";
 import {
   DocumentExtractionDeterministicError,
-  DocumentExtractionOrderConflictError,
   extractFromPdf,
 } from "../../../server/services/documentProcessingService";
 
@@ -116,7 +111,6 @@ describe("PKG-04 Validation & DTO: handleZodError", () => {
 describe("FT21 Validation & DTO: deterministic extraction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    isOrderNumberAlreadyImportedMock.mockResolvedValue(false);
     parseDocumentTotalAmountDeterministicallyMock.mockReturnValue(null);
   });
 
@@ -351,7 +345,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(customersServiceMock.createCustomer).not.toHaveBeenCalled();
   });
 
-  it("aborts extraction with order conflict when order number already exists", async () => {
+  it("resolves successfully when order number already exists – conflict is handled by the client", async () => {
     extractTextFromPdfBufferMock.mockResolvedValue("doc text");
     parseDocumentHeaderDeterministicallyMock.mockReturnValue({
       orderNumber: "A-1",
@@ -364,13 +358,19 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       postalCode: "12345",
       city: "Leipzig",
     });
-    isOrderNumberAlreadyImportedMock.mockResolvedValueOnce(true);
+    parseMasterDataArticleItemsDeterministicallyMock.mockReturnValue({
+      productName: "XL Sauna",
+      productDescription: "Sauna Modell X",
+      articleItems: [
+        { kind: "product", quantity: "1", articleNumber: "S1001", name: "XL Sauna", description: "Sauna Modell X" },
+      ],
+    });
 
-    await expect(
-      extractFromPdf({
-        scope: "project_form",
-        fileBuffer: Buffer.from("dummy"),
-      }),
-    ).rejects.toBeInstanceOf(DocumentExtractionOrderConflictError);
+    const result = await extractFromPdf({
+      scope: "project_form",
+      fileBuffer: Buffer.from("dummy"),
+    });
+
+    expect(result.orderNumber).toBe("A-1");
   });
 });
