@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { CustomerAttachment } from "@shared/schema";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
 import { AttachmentDeleteAction } from "@/components/AttachmentDeleteAction";
+import { invalidateAttachmentProjectionQueries } from "@/lib/attachment-invalidation";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,8 +96,9 @@ export function CustomerAttachmentsPanel({
       }
       return response.json();
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "attachments"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "attachments"] });
+      await invalidateAttachmentProjectionQueries();
       toast({ title: "Dokument hochgeladen" });
     },
     onError: (error) => {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Minus, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { invalidateAttachmentProjectionQueries } from "@/lib/attachment-invalidation";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -55,7 +56,11 @@ export function AttachmentDeleteAction({
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: listQueryKey });
-      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      if (parentType === "employee") {
+        await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      } else {
+        await invalidateAttachmentProjectionQueries();
+      }
       setConfirmed(false);
       toast({ title: "Anhang gelöscht" });
     },

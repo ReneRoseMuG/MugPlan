@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
 import { AttachmentDeleteAction } from "@/components/AttachmentDeleteAction";
+import { invalidateAttachmentProjectionQueries } from "@/lib/attachment-invalidation";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { CustomerAttachment, ProjectAttachment } from "@shared/schema";
@@ -69,8 +70,9 @@ export function ProjectAttachmentsPanel({
       }
       return response.json();
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "attachments"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "attachments"] });
+      await invalidateAttachmentProjectionQueries();
       toast({ title: "Dokument hochgeladen" });
     },
     onError: (error) => {
