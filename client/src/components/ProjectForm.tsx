@@ -152,6 +152,7 @@ export function ProjectForm({
   const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
+  const didInitializeCreateFormRef = useRef(false);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -303,6 +304,7 @@ export function ProjectForm({
   // Initialize form when project data loads
   useEffect(() => {
     if (projectData) {
+      didInitializeCreateFormRef.current = false;
       const projectName = projectData.project.name.trim();
       setProjectType(projectData.project.type ?? DEFAULT_PROJECT_TYPE);
       setName(projectName);
@@ -329,6 +331,10 @@ export function ProjectForm({
         }),
       );
     } else if (!isEditing) {
+      if (didInitializeCreateFormRef.current) {
+        return;
+      }
+      didInitializeCreateFormRef.current = true;
       setProjectType(DEFAULT_PROJECT_TYPE);
       setProductSelections(createEmptyProjectProductSelections());
       setDynamicProductSelections(createEmptyDynamicProjectProductSelections(dynamicCategorySlots));

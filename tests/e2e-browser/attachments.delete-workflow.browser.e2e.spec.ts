@@ -25,6 +25,7 @@ import * as projectAttachmentsService from "../../server/services/projectAttachm
 import * as appointmentAttachmentsService from "../../server/services/appointmentAttachmentsService";
 import {
   createAppointmentFixture,
+  createRawAppointmentFixture,
   createCustomerFixture,
   createProjectFixture,
   getRelativeBerlinDate,
@@ -49,9 +50,13 @@ function buildAttachmentPayload(prefix: string, label: string) {
   };
 }
 
-async function openProjectForm(page: Page, projectId: number) {
+async function openProjectForm(page: Page, projectId: number, scope: "all" | "noAppointments" = "all") {
   await page.getByTestId("nav-projekte").click();
-  await page.getByLabel("Alle Projekte").click();
+  if (scope === "noAppointments") {
+    await page.getByLabel("Ohne Termine").click();
+  } else {
+    await page.getByLabel("Alle Projekte").click();
+  }
   const card = page.getByTestId(`project-card-${projectId}`);
   await expect(card).toBeVisible({ timeout: 10_000 });
   await card.dblclick();
@@ -93,18 +98,18 @@ test("Soft-Delete – Projekt: Anhang aus Liste entfernen, Counter und Hover-Pre
   await expect(page.getByText("Dokumente (1)")).toBeVisible();
 
   // Schritt 3: Action-Button klicken → Dialog erscheint mit Parent-Typ "Projekt"
-  const deleteBtn = page.getByTestId(`attachment-delete-btn-${attachment.id}`);
-  await expect(deleteBtn).toBeVisible();
-  await deleteBtn.click();
+  const deleteTrigger = page.getByTestId(`attachment-delete-trigger-${attachment.id}`);
+  await expect(deleteTrigger).toBeVisible();
+  await deleteTrigger.click();
 
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible({ timeout: 3_000 });
-  await expect(dialog).toContainText("Projekt");
-  await expect(dialog.getByRole("button", { name: "Nur Verknüpfung entfernen" })).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Datei vollständig löschen" })).toBeVisible();
+  const panel = page.getByTestId(`attachment-delete-panel-${attachment.id}`);
+  await expect(panel).toBeVisible({ timeout: 3_000 });
+  await expect(panel).toContainText("Projekt");
+  await expect(panel.getByRole("button", { name: "Nur Verknüpfung entfernen" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Datei vollständig löschen" })).toBeVisible();
 
   // Schritt 4: "Nur Verknüpfung entfernen" wählen
-  await dialog.getByRole("button", { name: "Nur Verknüpfung entfernen" }).click();
+  await panel.getByRole("button", { name: "Nur Verknüpfung entfernen" }).click();
 
   // Schritt 5: Attachmentliste aktualisiert sich ohne Seitenreload
   await expect(attachmentBadge).not.toBeVisible({ timeout: 5_000 });
@@ -114,7 +119,9 @@ test("Soft-Delete – Projekt: Anhang aus Liste entfernen, Counter und Hover-Pre
   await expect(page.getByText("Dokumente (0)")).toBeVisible();
 
   // Schritt 6: Wochenkarte zeigt aktualisierten Counter (kein Hover-Trigger mehr)
-  await page.getByTestId("nav-kalender").click();
+  await page.getByTestId("button-cancel-project").click();
+  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
+  await page.getByRole("button", { name: "Wochenuebersicht" }).click();
   await expect(page.getByTestId(`week-appointment-panel-${appointment?.id}`)).toBeVisible({ timeout: 10_000 });
   await expect(
     page.getByTestId(`week-appointment-panel-${appointment?.id}`)
@@ -145,11 +152,11 @@ test("Hard-Delete – Projekt: Anhang aus Liste und Counter entfernen", async ({
   const attachmentBadge = page.getByTestId(`attachment-badge-project-${attachment.id}`);
   await expect(attachmentBadge).toBeVisible({ timeout: 5_000 });
 
-  // Action-Button → Dialog → "Datei vollständig löschen"
-  await page.getByTestId(`attachment-delete-btn-${attachment.id}`).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible({ timeout: 3_000 });
-  await dialog.getByRole("button", { name: "Datei vollständig löschen" }).click();
+  // Action-Button → Bestaetigungspanel → "Datei vollständig löschen"
+  await page.getByTestId(`attachment-delete-trigger-${attachment.id}`).click();
+  const panel = page.getByTestId(`attachment-delete-panel-${attachment.id}`);
+  await expect(panel).toBeVisible({ timeout: 3_000 });
+  await panel.getByRole("button", { name: "Datei vollständig löschen" }).click();
 
   // Anhang verschwindet aus der Liste
   await expect(attachmentBadge).not.toBeVisible({ timeout: 5_000 });
@@ -172,22 +179,22 @@ test("Abbruch – Dialog schließen ohne Löschung", async ({ page }) => {
   });
 
   await loginAsAdmin(page);
-  await openProjectForm(page, project.id);
+  await openProjectForm(page, project.id, "noAppointments");
 
   const attachmentBadge = page.getByTestId(`attachment-badge-project-${attachment.id}`);
   await expect(attachmentBadge).toBeVisible({ timeout: 5_000 });
   await expect(page.getByText("Dokumente (1)")).toBeVisible();
 
-  // Action-Button → Dialog öffnet sich
-  await page.getByTestId(`attachment-delete-btn-${attachment.id}`).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible({ timeout: 3_000 });
+  // Action-Button → Bestaetigungspanel öffnet sich
+  await page.getByTestId(`attachment-delete-trigger-${attachment.id}`).click();
+  const panel = page.getByTestId(`attachment-delete-panel-${attachment.id}`);
+  await expect(panel).toBeVisible({ timeout: 3_000 });
 
   // Abbrechen wählen
-  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await panel.getByRole("button", { name: "Abbrechen" }).click();
 
-  // Dialog geschlossen
-  await expect(dialog).not.toBeVisible();
+  // Panel geschlossen
+  await expect(panel).not.toBeVisible();
 
   // Anhang ist noch vorhanden, Counter unverändert
   await expect(attachmentBadge).toBeVisible();
@@ -202,13 +209,14 @@ test("Historischer Termin: kein Action-Button für Anhänge sichtbar", async ({ 
     customerId: customer.id,
     name: "FT19 Historischer Termin",
   });
-  const appointment = await createAppointmentFixture({
+  const appointmentId = await createRawAppointmentFixture({
     projectId: project.id,
     startDate: "2020-03-15", // Vergangenes Datum → historischer Termin
+    title: "FT19 Historischer Termin",
   });
   const attachmentPayload = buildAttachmentPayload("hist-appt", "historisch-test");
   await appointmentAttachmentsService.createAppointmentAttachment({
-    appointmentId: Number(appointment?.id),
+    appointmentId,
     ...attachmentPayload,
   });
 
@@ -216,7 +224,8 @@ test("Historischer Termin: kein Action-Button für Anhänge sichtbar", async ({ 
 
   // Termin via Appointments-Liste öffnen
   await page.getByTestId("nav-termine").click();
-  const appointmentRow = page.locator(`[data-testid="appointment-row-${appointment?.id}"]`);
+  await page.getByRole("switch", { name: "Alle Termine" }).click();
+  const appointmentRow = page.getByRole("row").filter({ hasText: "FT19 Historischer Termin" }).first();
   await expect(appointmentRow).toBeVisible({ timeout: 10_000 });
   await appointmentRow.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible({ timeout: 10_000 });
@@ -225,5 +234,5 @@ test("Historischer Termin: kein Action-Button für Anhänge sichtbar", async ({ 
   await expect(page.getByText(attachmentPayload.originalName)).toBeVisible({ timeout: 5_000 });
 
   // Kein Action-Button sichtbar (historischer Termin → nur Lesen)
-  await expect(page.getByTestId(/^attachment-delete-btn-/)).toHaveCount(0);
+  await expect(page.getByTestId(/^attachment-delete-trigger-/)).toHaveCount(0);
 });

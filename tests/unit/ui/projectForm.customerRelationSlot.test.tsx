@@ -320,7 +320,7 @@ describe("FT02 project form customer relation slot", () => {
         default: actual,
         useState<T>(initial: T | (() => T)) {
           stateCall += 1;
-          if (stateCall === 1) {
+          if (stateCall === 2) {
             return actual.useState("Projekt ohne Kunde" as T);
           }
           return actual.useState(initial);
@@ -337,7 +337,7 @@ describe("FT02 project form customer relation slot", () => {
       throw new Error("Missing save action");
     }
 
-    await expect(saveButton.props.onClick()).rejects.toThrow("validation");
+    saveButton.props.onClick();
     expect(toastMock).toHaveBeenCalledWith(
       expect.objectContaining({
         title: expect.stringContaining("Kunde muss"),

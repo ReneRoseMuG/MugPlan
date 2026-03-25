@@ -1,22 +1,25 @@
 /**
  * Test Scope:
  *
- * Feature: FT19 – Attachment Lösch-Workflow
- * Use Case: UI-Reaktion nach Löschoperation (Wiring)
+ * Feature: FT19 - Attachment Loesch-Workflow
+ * Use Case: UI-Reaktion nach Loeschoperation (Wiring)
  *
  * Abgedeckte Regeln:
- * - Nach erfolgreichem Soft-Delete wird queryClient.invalidateQueries mit dem korrekten
- *   Query-Key aufgerufen.
- * - Nach erfolgreichem Hard-Delete wird queryClient.invalidateQueries mit dem korrekten
- *   Query-Key aufgerufen.
- * - Der Bestätigungsdialog ist im DOM enthalten, wenn der Action-Button sichtbar ist.
- * - Der Dialog zeigt den korrekten Parent-Typ-Label dynamisch an (je Domäne ein Test).
- * - Abbrechen im Dialog führt zu keiner Mutation und keiner Invalidierung.
- * - Der Action-Button ist nicht sichtbar, wenn der Akteur keine Änderungsrechte hat.
+ * - Nach erfolgreichem Soft-Delete wird der lokale Attachment-Query-Key invalidiert.
+ * - Nach erfolgreichem Hard-Delete wird der lokale Attachment-Query-Key invalidiert.
+ * - Nach erfolgreichem Delete wird zusaetzlich die Kalenderprojektion invalidiert.
+ * - Das Bestaetigungspanel ist im DOM enthalten, wenn der Action-Button sichtbar ist.
+ * - Das Panel zeigt das korrekte Parent-Typ-Label dynamisch an.
+ * - Abbrechen fuehrt zu keiner Mutation und keiner Invalidierung.
+ * - Der Action-Button ist nicht sichtbar, wenn keine Aenderungsrechte bestehen.
  * - Der Action-Button ist nicht sichtbar bei historischen Terminen.
  *
+ * Fehlerfaelle:
+ * - Delete invalidiert nur die lokale Liste und laesst Kalender-Counter stale.
+ * - Das Panel zeigt den falschen Parent-Typ an.
+ *
  * Ziel:
- * Sichtbares Komponentenverhalten und Query-Cache-Wiring des Lösch-Workflows absichern.
+ * Sichtbares Komponentenverhalten und Query-Cache-Wiring des Loesch-Workflows absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -27,12 +30,12 @@ const { invalidateQueriesMock, mutateMock } = vi.hoisted(() => ({
   mutateMock: vi.fn(),
 }));
 
-let capturedOnSuccess: (() => void) | undefined;
+let capturedOnSuccess: (() => void | Promise<void>) | undefined;
 let capturedOnError: (() => void) | undefined;
 
 vi.mock("@tanstack/react-query", () => ({
   useMutation: (options: {
-    onSuccess?: () => void;
+    onSuccess?: () => void | Promise<void>;
     onError?: () => void;
   }) => {
     capturedOnSuccess = options?.onSuccess;
@@ -60,8 +63,8 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
     vi.stubGlobal("React", React);
   });
 
-  describe("Query-Invalidierung nach erfolgreichem Löschen", () => {
-    it("ruft invalidateQueries nach Soft-Delete mit dem korrekten Projekt-Query-Key auf", () => {
+  describe("Query-Invalidierung nach erfolgreichem Loeschen", () => {
+    it("invalidiert nach Soft-Delete den Projekt-Query-Key und die Kalenderprojektion", async () => {
       const listQueryKey = ["/api/projects", 42, "attachments"];
 
       renderToStaticMarkup(
@@ -74,13 +77,17 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       );
 
       expect(capturedOnSuccess).toBeDefined();
-      capturedOnSuccess!();
+      await capturedOnSuccess!();
+
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: listQueryKey }),
       );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["calendarAppointments"] }),
+      );
     });
 
-    it("ruft invalidateQueries nach Hard-Delete mit dem korrekten Projekt-Query-Key auf", () => {
+    it("invalidiert nach Hard-Delete den Projekt-Query-Key und die Kalenderprojektion", async () => {
       const listQueryKey = ["/api/projects", 42, "attachments"];
 
       renderToStaticMarkup(
@@ -94,13 +101,17 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       );
 
       expect(capturedOnSuccess).toBeDefined();
-      capturedOnSuccess!();
+      await capturedOnSuccess!();
+
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: listQueryKey }),
       );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["calendarAppointments"] }),
+      );
     });
 
-    it("ruft invalidateQueries nach Soft-Delete mit dem korrekten Kunden-Query-Key auf", () => {
+    it("invalidiert nach Soft-Delete den Kunden-Query-Key und die Kalenderprojektion", async () => {
       const listQueryKey = ["/api/customers", 7, "attachments"];
 
       renderToStaticMarkup(
@@ -112,13 +123,17 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      capturedOnSuccess!();
+      await capturedOnSuccess!();
+
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: listQueryKey }),
       );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["calendarAppointments"] }),
+      );
     });
 
-    it("ruft invalidateQueries nach Soft-Delete mit dem korrekten Mitarbeiter-Query-Key auf", () => {
+    it("invalidiert nach Soft-Delete den Mitarbeiter-Query-Key und die Kalenderprojektion", async () => {
       const listQueryKey = ["/api/employees", 3, "attachments"];
 
       renderToStaticMarkup(
@@ -130,13 +145,17 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      capturedOnSuccess!();
+      await capturedOnSuccess!();
+
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: listQueryKey }),
       );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["calendarAppointments"] }),
+      );
     });
 
-    it("ruft invalidateQueries nach Soft-Delete mit dem korrekten Termin-Query-Key auf", () => {
+    it("invalidiert nach Soft-Delete den Termin-Query-Key und die Kalenderprojektion", async () => {
       const listQueryKey = ["/api/appointments", 55, "attachments"];
 
       renderToStaticMarkup(
@@ -148,15 +167,19 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      capturedOnSuccess!();
+      await capturedOnSuccess!();
+
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: listQueryKey }),
+      );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["calendarAppointments"] }),
       );
     });
   });
 
-  describe("Dialog-Inhalt und Parent-Typ-Label", () => {
-    it("Dialog zeigt 'Projekt' als Parent-Typ für Projektanhaenge", () => {
+  describe("Panel-Inhalt und Parent-Typ-Label", () => {
+    it("zeigt 'Projekt' fuer Projektanhaenge", () => {
       const markup = renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={101}
@@ -167,11 +190,11 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       );
 
       expect(markup).toContain("Projekt");
-      expect(markup).toContain("Nur Verknüpfung entfernen");
-      expect(markup).toContain("Datei vollständig löschen");
+      expect(markup).toContain("Nur Verkn");
+      expect(markup).toContain("Datei vollst");
     });
 
-    it("Dialog zeigt 'Kunde' als Parent-Typ für Kundendokumente", () => {
+    it("zeigt 'Kunde' fuer Kundendokumente", () => {
       const markup = renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={202}
@@ -184,7 +207,7 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       expect(markup).toContain("Kunde");
     });
 
-    it("Dialog zeigt 'Mitarbeiter' als Parent-Typ für Mitarbeiteranhaenge", () => {
+    it("zeigt 'Mitarbeiter' fuer Mitarbeiteranhaenge", () => {
       const markup = renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={303}
@@ -197,7 +220,7 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       expect(markup).toContain("Mitarbeiter");
     });
 
-    it("Dialog zeigt 'Termin' als Parent-Typ für Terminanhaenge", () => {
+    it("zeigt 'Termin' fuer Terminanhaenge", () => {
       const markup = renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={404}
@@ -211,8 +234,8 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
     });
   });
 
-  describe("Abbrechen löst keine Mutation und keine Invalidierung aus", () => {
-    it("keine Mutation und kein invalidateQueries wenn onCancel aufgerufen wird", () => {
+  describe("Abbrechen loest keine Mutation und keine Invalidierung aus", () => {
+    it("invalidiert nichts ohne erfolgreichen Abschluss", () => {
       renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={101}
@@ -222,14 +245,13 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      // onSuccess wurde nicht aufgerufen (kein Abschluss einer Mutation)
       expect(invalidateQueriesMock).not.toHaveBeenCalled();
       expect(mutateMock).not.toHaveBeenCalled();
     });
   });
 
   describe("Sichtbarkeitsregeln des Action-Buttons", () => {
-    it("Action-Button ist nicht im Markup, wenn canEdit=false (Leser-Rolle)", () => {
+    it("rendert keinen Action-Button ohne Edit-Rechte", () => {
       const markup = renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={101}
@@ -239,11 +261,11 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      expect(markup).not.toContain("Nur Verknüpfung entfernen");
-      expect(markup).not.toContain("Datei vollständig löschen");
+      expect(markup).not.toContain("Nur Verkn");
+      expect(markup).not.toContain("Datei vollst");
     });
 
-    it("Action-Button ist nicht im Markup bei historischen Terminen", () => {
+    it("rendert keinen Action-Button bei historischen Terminen", () => {
       const markup = renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={404}
@@ -254,11 +276,11 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      expect(markup).not.toContain("Nur Verknüpfung entfernen");
-      expect(markup).not.toContain("Datei vollständig löschen");
+      expect(markup).not.toContain("Nur Verkn");
+      expect(markup).not.toContain("Datei vollst");
     });
 
-    it("Action-Button ist sichtbar wenn canEdit=true und kein historischer Termin", () => {
+    it("rendert den Action-Button mit Delete-Optionen bei editierbaren Attachments", () => {
       const markup = renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={101}
@@ -269,15 +291,14 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      // Mindestens einer der beiden Lösch-Optionen muss im Markup stehen
-      const hasSoftLabel = markup.includes("Nur Verknüpfung entfernen");
-      const hasHardLabel = markup.includes("Datei vollständig löschen");
+      const hasSoftLabel = markup.includes("Nur Verkn");
+      const hasHardLabel = markup.includes("Datei vollst");
       expect(hasSoftLabel || hasHardLabel).toBe(true);
     });
   });
 
   describe("Fehlerfall: kein invalidateQueries bei fehlgeschlagener Mutation", () => {
-    it("invalidateQueries wird bei Mutation-Fehler nicht aufgerufen", () => {
+    it("invalidiert bei Mutation-Fehler nicht", () => {
       renderToStaticMarkup(
         <AttachmentDeleteAction
           attachmentId={101}
@@ -287,7 +308,6 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         />,
       );
 
-      // onError simulieren statt onSuccess
       if (capturedOnError) capturedOnError();
       expect(invalidateQueriesMock).not.toHaveBeenCalled();
     });

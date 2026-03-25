@@ -8,7 +8,7 @@ export const defaultEmployeeFilters: EmployeeFilters = {
   firstName: "",
 };
 
-const normalizeText = (value: string) => value.trim().toLowerCase();
+const normalizeText = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
 
 export function applyEmployeeFilters<TEmployee extends { lastName: string; firstName: string }>(
   employees: TEmployee[],

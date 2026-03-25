@@ -2,11 +2,12 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Projektattachment-Delete bleibt serverseitig blockiert.
+ * - Projektattachment-Delete ist nur fuer ADMIN und DISPONENT erlaubt.
+ * - Erfolgreicher Projektattachment-Delete fuehrt den Soft-Delete-Flow aus.
  * - Downloadpfade nutzen die vorgesehenen Sicherheitshelfer.
  *
  * Fehlerfaelle:
- * - Unzulaessige Delete-Pfade werden freigegeben.
+ * - Unberechtigte Rollen koennen Attachments loeschen.
  *
  * Ziel:
  * Zentrale Attachment-Sicherheitsregeln absichern.
@@ -17,11 +18,13 @@ vi.mock("../../../server/services/projectAttachmentsService", () => ({
   listProjectAttachments: vi.fn(),
   createProjectAttachment: vi.fn(),
   getProjectAttachmentById: vi.fn(),
+  softDeleteProjectAttachment: vi.fn(),
 }));
 
 vi.mock("../../../server/lib/attachmentFiles", () => ({
   MAX_UPLOAD_BYTES: 10 * 1024 * 1024,
   buildStoredFilename: vi.fn(),
+  deleteAttachmentFile: vi.fn(),
   resolveMimeType: vi.fn(),
   sanitizeFilename: vi.fn((name: string) => name),
   writeAttachmentBuffer: vi.fn(),
@@ -33,19 +36,51 @@ vi.mock("../../../server/lib/multipart", () => ({
 
 import { deleteProjectAttachment } from "../../../server/controllers/projectAttachmentsController";
 import { sendAttachmentDownload } from "../../../server/lib/attachmentDownload";
+import * as projectAttachmentsService from "../../../server/services/projectAttachmentsService";
 
 describe("PKG-05 Invariant: attachment security rules", () => {
-  it("returns 405 for project attachment delete endpoint", async () => {
+  it("returns 403 for project attachment delete when role is not allowed", async () => {
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
     } as any;
     const next = vi.fn();
 
-    await deleteProjectAttachment({} as any, res, next);
+    await deleteProjectAttachment({ userContext: { roleKey: "READER" } } as any, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(405);
-    expect(res.json).toHaveBeenCalledWith({ message: "Attachment deletion is disabled" });
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ code: "FORBIDDEN" });
+    expect(projectAttachmentsService.getProjectAttachmentById).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("soft-deletes an existing project attachment for privileged roles", async () => {
+    vi.mocked(projectAttachmentsService.getProjectAttachmentById).mockResolvedValueOnce({
+      id: 42,
+      storagePath: "./server/uploads/test.pdf",
+    } as any);
+    vi.mocked(projectAttachmentsService.softDeleteProjectAttachment).mockResolvedValueOnce(undefined as never);
+
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    } as any;
+    const next = vi.fn();
+
+    await deleteProjectAttachment(
+      {
+        userContext: { roleKey: "ADMIN" },
+        params: { id: "42" },
+        query: {},
+      } as any,
+      res,
+      next,
+    );
+
+    expect(projectAttachmentsService.getProjectAttachmentById).toHaveBeenCalledWith(42);
+    expect(projectAttachmentsService.softDeleteProjectAttachment).toHaveBeenCalledWith(42);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: "Anhang geloescht" });
     expect(next).not.toHaveBeenCalled();
   });
 

@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - Terminanhaenge koennen gelistet, hochgeladen und heruntergeladen werden.
  * - Upload ist nur fuer ADMIN und DISPONENT erlaubt.
- * - Delete fuer Terminanhaenge ist serverseitig deaktiviert (405).
+ * - Delete fuer Terminanhaenge entfernt den Anhang per Soft-Delete aus der Liste.
  * - Ungueltige oder fehlende Terminbeziehungen sowie zu grosse Payloads liefern die erwarteten Fehlercodes.
  *
  * Fehlerfaelle:
@@ -103,7 +103,7 @@ async function createAppointmentForAttachments() {
 }
 
 describe("FT24 integration: appointment attachments", () => {
-  it("supports admin/dispatcher upload plus list, open, download and delete=405", async () => {
+  it("supports admin/dispatcher upload plus list, open, download and soft-delete", async () => {
     const admin = await loginAdminAgent();
     const dispatcher = await loginRoleAgent("DISPATCHER");
     const appointment = await createAppointmentForAttachments();
@@ -149,11 +149,15 @@ describe("FT24 integration: appointment attachments", () => {
       });
 
     await admin
-      .delete(`/api/appointments/${appointment?.id}/attachments/${adminAttachmentId}`)
-      .expect(405)
+      .delete(`/api/appointment-attachments/${adminAttachmentId}`)
+      .expect(200)
       .expect((res) => {
-        expect(res.body.message).toBe("Attachment deletion is disabled");
+        expect(res.body.message).toBe("Anhang geloescht");
       });
+
+    const afterDelete = await admin.get(`/api/appointments/${appointment?.id}/attachments`).expect(200);
+    expect(afterDelete.body).toHaveLength(1);
+    expect(afterDelete.body[0].id).toBe(dispatcherAttachmentId);
   });
 
   it("enforces 401, 403, 404 and 413 for invalid appointment attachment mutations", async () => {
