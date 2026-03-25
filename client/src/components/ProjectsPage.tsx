@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -159,6 +159,7 @@ export function ProjectsPage({
       if (!response.ok) throw new Error("Projekte konnten nicht geladen werden");
       return (await response.json()) as ProjectListResponse;
     },
+    placeholderData: keepPreviousData,
   });
 
   const { data: availableTags = [] } = useQuery<Tag[]>({
