@@ -969,6 +969,30 @@ export const appointmentNotes = mysqlTable("appointment_note", {
 
 export type AppointmentNote = typeof appointmentNotes.$inferSelect;
 
+// Calendar Week Note Relation
+export const calendarWeekNotes = mysqlTable("calendar_week_note", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  noteId: bigint("note_id", { mode: "number" })
+    .notNull().references(() => notes.id, { onDelete: "cascade" }),
+  yearNumber: int("year_number").notNull(),
+  weekNumber: int("week_number").notNull(),
+  version: int("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  uniqueNoteWeek: uniqueIndex("uq_cwn_note_week")
+    .on(table.noteId, table.yearNumber, table.weekNumber),
+  byYearWeek: index("idx_cwn_year_week")
+    .on(table.yearNumber, table.weekNumber),
+  weekNumberValid: check(
+    "chk_cwn_week_valid",
+    sql`${table.weekNumber} >= 1 AND ${table.weekNumber} <= 53`,
+  ),
+}));
+
+export type CalendarWeekNote = typeof calendarWeekNotes.$inferSelect;
+export type InsertCalendarWeekNote = typeof calendarWeekNotes.$inferInsert;
+
 // Help Texts (FT 16)
 export const helpTexts = mysqlTable("help_texts", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),

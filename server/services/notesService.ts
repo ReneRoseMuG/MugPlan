@@ -90,6 +90,23 @@ export async function deleteProjectScopedNote(projectId: number, noteId: number,
   }
 }
 
+export async function deleteCalendarWeekScopedNote(yearNumber: number, weekNumber: number, noteId: number, version: number): Promise<void> {
+  if (!Number.isInteger(version) || version < 1) {
+    throw new NotesError(422, "VALIDATION_ERROR");
+  }
+  const result = await notesRepository.deleteCalendarWeekScopedNoteWithVersion(yearNumber, weekNumber, noteId, version);
+  if (result.kind === "not_found") {
+    throw new NotesError(404, "NOT_FOUND");
+  }
+  if (result.kind === "version_conflict") {
+    const exists = await notesRepository.getNote(noteId);
+    if (!exists) {
+      throw new NotesError(404, "NOT_FOUND");
+    }
+    throw new NotesError(409, "VERSION_CONFLICT");
+  }
+}
+
 export async function deleteAppointmentScopedNote(appointmentId: number, noteId: number, version: number): Promise<void> {
   if (!Number.isInteger(version) || version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");

@@ -4,6 +4,7 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 
 | Test-Datei | Feature | Bereich | Zweck | Status |
 |------------|---------|---------|-------|--------|
+| [tests/integration/server/calendar-week-notes.integration.test.ts](../tests/integration/server/calendar-week-notes.integration.test.ts) | Kalenderwochen-Notizen | Integration | CRUD-Infrastruktur für Kalenderwochen-Notizen inkl. Rollenguards und Validierung | ✓ |
 | [tests/integration/batch/batchRollback.test.ts](../tests/integration/batch/batchRollback.test.ts) | FT06 | Integration | Atomare Rollback-Regeln fuer Team-Batch-Zuweisungen bei VERSION_CONFLICT absichern | Erweitert |
 | [tests/integration/bootstrap/ensureSystemRoles.test.ts](../tests/integration/bootstrap/ensureSystemRoles.test.ts) | TBD | Integration | Systemrollen beim Bootstrap korrekt sicherstellen | Bestand |
 | [tests/integration/extraction/documentTextExtractor.fixture.test.ts](../tests/integration/extraction/documentTextExtractor.fixture.test.ts) | TBD | Integration | Fixture-basierte Prüfung der Textextraktion | Bestand |

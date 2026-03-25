@@ -3062,6 +3062,40 @@ export const api = {
       },
     },
   },
+  calendarWeekNotes: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/calendar-weeks/:yearNumber/:weekNumber/notes',
+      responses: {
+        200: z.array(z.custom<typeof notes.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/calendar-weeks/:yearNumber/:weekNumber/notes',
+      input: insertNoteSchema.extend({ templateId: z.number().optional() }),
+      responses: {
+        201: z.custom<typeof notes.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/calendar-weeks/:yearNumber/:weekNumber/notes/:noteId',
+      input: z.object({
+        version: z.number().int().min(1),
+      }),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   tourAppointments: {
     list: {
       method: 'GET' as const,
