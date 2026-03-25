@@ -49,10 +49,18 @@ async function fetchOrderItems(page: Page, projectId: number): Promise<ProjectOr
   return response.json() as Promise<ProjectOrderItemRow[]>;
 }
 
-async function openProjectEditForm(page: Page, projectId: number) {
+async function openProjectEditForm(
+  page: Page,
+  projectId: number,
+  scope: "all" | "noAppointments" = "all",
+) {
   await loginAsAdmin(page);
   await page.getByTestId("nav-projekte").click();
-  await page.getByLabel("Alle Projekte").click();
+  if (scope === "noAppointments") {
+    await page.getByLabel("Ohne Termine").click();
+  } else {
+    await page.getByLabel("Alle Projekte").click();
+  }
   await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
   await page.getByTestId(`project-card-${projectId}`).dblclick();
   await expect(page.getByTestId("button-save-project")).toBeVisible();
@@ -228,7 +236,7 @@ test("ändert Produkt im Edit-Modus – kein PUT vor dem Speichern", async ({ pa
     quantity: 1,
   });
 
-  await openProjectEditForm(page, project.id);
+  await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
   await page.getByTestId("select-project-product-saunaModel").selectOption(String(productB.id));
 
@@ -257,7 +265,7 @@ test("ersetzt Produkt im Edit-Modus nach Save – kein Leichen-Eintrag in DB", a
     quantity: 1,
   });
 
-  await openProjectEditForm(page, project.id);
+  await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
   await page.getByTestId("select-project-product-saunaModel").selectOption(String(productB.id));
   await page.getByTestId("button-save-project").click();
@@ -274,7 +282,7 @@ test("ersetzt Produkt im Edit-Modus nach Save – kein Leichen-Eintrag in DB", a
   expect(items.some((i) => i.productId === productA.id)).toBe(false);
 
   // Formular erneut öffnen – Dropdown zeigt Produkt B
-  await openProjectEditForm(page, project.id);
+  await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
   await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(productB.id));
 });
@@ -298,7 +306,7 @@ test("ändert Komponente im Edit-Modus, bricht ab – DB bleibt unverändert", a
     quantity: 1,
   });
 
-  await openProjectEditForm(page, project.id);
+  await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
   await page.getByTestId("select-project-product-oven").selectOption(String(componentY.id));
 
@@ -312,7 +320,7 @@ test("ändert Komponente im Edit-Modus, bricht ab – DB bleibt unverändert", a
   expect(items.some((i) => i.componentId === componentY.id), "Komponente Y darf nicht in DB stehen").toBe(false);
 
   // Formular erneut öffnen – Dropdown zeigt Komponente X
-  await openProjectEditForm(page, project.id);
+  await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
   await expect(page.getByTestId("select-project-product-oven")).toHaveValue(String(componentX.id));
 });
@@ -331,7 +339,7 @@ test("wählt Produkt ab (leer) und speichert – Item in DB entfernt", async ({ 
     quantity: 1,
   });
 
-  await openProjectEditForm(page, project.id);
+  await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
   await page.getByTestId("select-project-product-saunaModel").selectOption("");
   await page.getByTestId("button-save-project").click();
@@ -365,7 +373,7 @@ test("Dirty-Check erscheint nach Artikellisten-Änderung ohne Save", async ({ pa
     quantity: 1,
   });
 
-  await openProjectEditForm(page, project.id);
+  await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
 
   // Warten bis der initiale Snapshot gesetzt ist – Dropdown zeigt Produkt A
