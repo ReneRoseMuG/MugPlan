@@ -5,7 +5,7 @@
  * Use Case: UC 05/06 Mitarbeiteranhaenge verwalten
  *
  * Abgedeckte Regeln:
- * - Attachments koennen fuer Mitarbeiter hochgeladen, gelistet und heruntergeladen werden.
+ * - Attachments koennen fuer Mitarbeiter hochgeladen, gelistet, heruntergeladen und geloescht werden.
  * - Upload prueft employeeId-Parameter sowie Payload-Groesse.
  * - Rollen- und NotFound-Sollregeln werden als HTTP-Integration verifiziert.
  *
@@ -14,7 +14,7 @@
  * - Zu grosse Datei liefert 413.
  * - Unbekannter Mitarbeiter soll 404 liefern.
  * - Unberechtigte Rolle soll 403 liefern.
- * - DELETE auf Employee-Attachments soll blockiert werden (403/405).
+ * - Unbekanntes Employee-Attachment liefert beim Delete 404.
  *
  * Ziel:
  * FT05 Attachment-Flow end-to-end absichern und Soll-Ist-Luecken transparent machen.
@@ -82,7 +82,7 @@ async function createEmployee(admin: SuperAgentTest) {
 }
 
 describe("FT05 integration: employee attachments", () => {
-  it("uploads, lists and downloads employee attachment", async () => {
+  it("uploads, lists, downloads and soft-deletes employee attachment", async () => {
     const admin = await loginAdminAgent();
     const employee = await createEmployee(admin);
 
@@ -120,6 +120,21 @@ describe("FT05 integration: employee attachments", () => {
       .expect(200)
       .expect((res) => {
         expect(String(res.headers["content-disposition"] ?? "")).toContain("attachment");
+      });
+
+    await admin
+      .delete(`/api/employee-attachments/${attachmentId}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.message).toBe("Anhang geloescht");
+      });
+
+    await admin
+      .get(`/api/employees/${employee.id}/attachments`)
+      .expect(200)
+      .expect((res) => {
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body).toHaveLength(0);
       });
   });
 
@@ -164,15 +179,9 @@ describe("FT05 integration: employee attachments", () => {
       .expect(403);
   });
 
-  it("UC 05/06 Melder: DELETE requests on employee attachments must be blocked with 403 or 405", async () => {
+  it("returns 404 for unknown employee attachment delete", async () => {
     const admin = await loginAdminAgent();
 
-    const response = await admin.delete("/api/employee-attachments/123456");
-    if (response.status !== 403 && response.status !== 405) {
-      throw new Error(
-        "UC 05/06 not fulfilled: DELETE /api/employee-attachments/:id is not blocked with 403/405. " +
-          "Required production extension: explicit delete-blocking endpoint/handler for employee attachments.",
-      );
-    }
+    await admin.delete("/api/employee-attachments/123456").expect(404);
   });
 });

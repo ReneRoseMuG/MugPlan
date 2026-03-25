@@ -307,8 +307,8 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     expect(markup).not.toContain("document-extraction-dropzone-marker");
 
     expect(projectAppointmentsPanelCalls.at(-1)).toMatchObject({ isEditing: true, projectId: 7 });
-    expect(projectAttachmentsPanelCalls.at(-1)?.pendingProjectAttachments).toBeUndefined();
-    expect(projectAttachmentsPanelCalls.at(-1)?.onUploadPendingProjectAttachment).toBeUndefined();
+    expect(projectAttachmentsPanelCalls.at(-1)?.pendingProjectAttachments).toEqual([]);
+    expect(projectAttachmentsPanelCalls.at(-1)?.onUploadPendingProjectAttachment).toBeTypeOf("function");
   });
 
   it("keeps footer actions split and shows delete only in edit mode", () => {
@@ -316,13 +316,13 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     const editMarkup = renderToStaticMarkup(<ProjectForm projectId={7} />);
 
     expect(createMarkup).toContain("button-close-project");
-    expect(createMarkup).toContain("button-secondary-cancel-project");
+    expect(createMarkup).toContain("button-cancel-project");
     expect(createMarkup).toContain("button-save-project");
     expect(createMarkup).not.toContain("button-delete-project");
-    expect(getIndex(createMarkup, "button-secondary-cancel-project")).toBeLessThan(getIndex(createMarkup, "button-save-project"));
+    expect(getIndex(createMarkup, "button-cancel-project")).toBeLessThan(getIndex(createMarkup, "button-save-project"));
 
     expect(editMarkup).toContain("button-delete-project");
-    expect(getIndex(editMarkup, "button-delete-project")).toBeLessThan(getIndex(editMarkup, "button-secondary-cancel-project"));
-    expect(getIndex(editMarkup, "button-secondary-cancel-project")).toBeLessThan(getIndex(editMarkup, "button-save-project"));
+    expect(getIndex(editMarkup, "button-delete-project")).toBeLessThan(getIndex(editMarkup, "button-cancel-project"));
+    expect(getIndex(editMarkup, "button-cancel-project")).toBeLessThan(getIndex(editMarkup, "button-save-project"));
   });
 });

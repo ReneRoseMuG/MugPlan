@@ -158,7 +158,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("button-add-tour-member");
     expect(markup).toContain("tour-members-section-header");
     expect(markup).toContain("Keine Mitarbeiter zugewiesen");
-    expect(markup).toContain("Nach dem Speichern der Tour werden Termine angezeigt.");
+    expect(markup).toContain("tour-appointments-list-marker");
   });
 
   it("keeps delete and existing member badges visible in edit mode", () => {

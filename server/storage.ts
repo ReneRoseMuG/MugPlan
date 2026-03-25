@@ -16,6 +16,7 @@ import type {
   NoteTemplate,
   Project,
   ProjectAttachment,
+  ProjectOrder,
   ProjectStatus,
   Team,
   Tour,
@@ -29,6 +30,7 @@ import type {
   UpdateTeam,
   UpdateTour,
 } from "@shared/schema";
+import type { ProjectArticleItem } from "@shared/projectArticleList";
 import * as customerNotesService from "./services/customerNotesService";
 import * as customersService from "./services/customersService";
 import * as employeesService from "./services/employeesService";
@@ -97,7 +99,9 @@ export interface IStorage {
   setEmployeeTeam(employeeId: number, teamId: number | null, version: number): Promise<Employee | null>;
   getProjects(filter?: "active" | "inactive" | "all"): Promise<Project[]>;
   getProject(id: number): Promise<Project | null>;
-  getProjectWithCustomer(id: number): Promise<{ project: Project; customer: Customer } | null>;
+  getProjectWithCustomer(
+    id: number,
+  ): Promise<{ project: Project & { projectOrder?: ProjectOrder | null; projectArticleItems: ProjectArticleItem[] }; customer: Customer } | null>;
   createProject(data: InsertProject): Promise<Project>;
   updateProject(id: number, data: UpdateProject & { version: number }): Promise<Project | null>;
   deleteProject(id: number, version: number): Promise<void>;
@@ -337,7 +341,9 @@ export class DatabaseStorage implements IStorage {
     return projectsService.getProject(id);
   }
 
-  async getProjectWithCustomer(id: number): Promise<{ project: Project; customer: Customer } | null> {
+  async getProjectWithCustomer(
+    id: number,
+  ): Promise<{ project: Project & { projectOrder?: ProjectOrder | null; projectArticleItems: ProjectArticleItem[] }; customer: Customer } | null> {
     return projectsService.getProjectWithCustomer(id);
   }
 

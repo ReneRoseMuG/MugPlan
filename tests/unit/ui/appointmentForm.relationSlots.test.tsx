@@ -7,12 +7,14 @@
  * Abgedeckte Regeln:
  * - Projektrelation im Terminformular nutzt RelationSlot mit Projektdaten.
  * - Die Projektdatenquelle des Formulars nutzt `scope=all`.
+ * - Faellt das Projekt aus `scope=all` heraus, laedt das Formular den Detailpfad mit `projectArticleItems` nach.
  * - Ein gesetztes Projekt rendert im Terminformular keine Remove-Aktion mehr.
  * - Bei Projektkontext ist der Kundenslot readonly und zeigt die abgeleitete Kundenkarte.
  * - Ohne Projektkontext bleiben Projekt- und Kundenslot leer und selektierbar.
  *
  * Fehlerfaelle:
  * - Projekt-Slot rendert keine aktive Relation trotz gewaehltem Projekt.
+ * - Der Projekt-Detailfallback liefert zwar das Projekt, aber keine sichtbare Artikelliste.
  * - Projekt-Slot bietet weiter eine Abloeseaktion fuer bestehende Projektzuordnungen an.
  * - Kunden-Slot ignoriert die vom Projekt abgeleitete Readonly-Regel.
  *
@@ -282,6 +284,66 @@ describe("FT01 appointment form relation slots", () => {
       testId: "badge-customer",
       customer: expect.objectContaining({ id: 21 }),
       variant: "relationCompact",
+    });
+  });
+
+  it("falls back to the project detail query with article items when scope=all does not contain the project", () => {
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/projects?filter=all&scope=all") {
+        return { data: [], isLoading: false };
+      }
+      if (key === "/api/projects/44") {
+        return {
+          data: {
+            id: 44,
+            customerId: 54,
+            name: "Projekt Fallback",
+            orderNumber: "ORD-44",
+            projectArticleItems: [{ label: "Saunamodell", value: "Fallback Modell" }],
+            descriptionMd: null,
+            isActive: true,
+            type: 1,
+          },
+          isLoading: false,
+        };
+      }
+      if (key === "/api/customers") {
+        return {
+          data: [
+            {
+              id: 54,
+              customerNumber: "C-54",
+              fullName: "Kunde Fallback",
+              firstName: "Kunde",
+              lastName: "Fallback",
+              isActive: true,
+            },
+          ],
+          isLoading: false,
+        };
+      }
+      return buildQueryResult(options.queryKey);
+    });
+
+    renderToStaticMarkup(<AppointmentForm projectId={44} />);
+
+    const projectSlot = getSlot("slot-project-relation");
+    const customerSlot = getSlot("slot-customer-relation");
+
+    expect(projectSlot.state).toBe("active");
+    expect(customerSlot.state).toBe("readonly");
+    expect(projectDetailCardCalls[0]).toMatchObject({
+      testId: "badge-project",
+      project: expect.objectContaining({
+        id: 44,
+        customerId: 54,
+        projectArticleItems: [{ label: "Saunamodell", value: "Fallback Modell" }],
+      }),
+    });
+    expect(customerDetailCardCalls[0]).toMatchObject({
+      testId: "badge-customer",
+      customer: expect.objectContaining({ id: 54 }),
     });
   });
 

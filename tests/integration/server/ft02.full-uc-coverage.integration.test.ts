@@ -286,14 +286,11 @@ describe("FT02 integration: full uc coverage", () => {
       .expect(204);
   });
 
-  it("UC 02/06 invariant surface: project attachment delete endpoint is disabled", async () => {
+  it("UC 02/06 invariant surface: project attachment delete endpoint is active and returns 404 for unknown ids", async () => {
     const admin = await loginAdminAgent();
     await admin
       .delete("/api/project-attachments/123456")
-      .expect(405)
-      .expect((res) => {
-        expect(res.body.message).toBe("Attachment deletion is disabled");
-      });
+      .expect(404);
   });
 
   it("UC 02/08 delete rules: block when appointments exist and allow when empty", async () => {

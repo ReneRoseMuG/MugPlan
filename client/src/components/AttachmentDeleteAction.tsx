@@ -53,8 +53,9 @@ export function AttachmentDeleteAction({
         throw new Error(body?.message ?? `Fehler ${response.status}`);
       }
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: listQueryKey });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: listQueryKey });
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
       setConfirmed(false);
       toast({ title: "Anhang gelöscht" });
     },

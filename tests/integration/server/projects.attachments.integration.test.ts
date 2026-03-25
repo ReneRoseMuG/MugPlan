@@ -6,14 +6,14 @@
  *
  * Abgedeckte Regeln:
  * - Projektanhaenge koennen gelistet, hochgeladen und heruntergeladen werden.
- * - Delete fuer Projektanhaenge ist serverseitig deaktiviert (405).
+ * - Delete fuer Projektanhaenge entkoppelt den Anhang per Soft-Delete aus der Liste.
  *
  * Fehlerfaelle:
  * - Upload auf unbekanntes Projekt soll 404 liefern (fachliche Soll-Anforderung).
  * - READER ohne Aenderungsrechte soll Upload mit 403 blockiert bekommen (fachliche Soll-Anforderung).
  *
  * Ziel:
- * Projektattachment-Flow als Ist plus fachliche Soll-Luecken transparent machen.
+ * Projektattachment-Flow als Ist fuer Upload, Download und Delete absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -94,7 +94,7 @@ async function createProjectForAttachments() {
 }
 
 describe("FT02 integration: project attachments", () => {
-  it("UC 02/06 happy path: list, upload, open, download and delete=405", async () => {
+  it("UC 02/06 happy path: list, upload, open, download and soft-delete from list", async () => {
     const admin = await loginAdminAgent();
     const project = await createProjectForAttachments();
 
@@ -127,10 +127,13 @@ describe("FT02 integration: project attachments", () => {
 
     await admin
       .delete(`/api/project-attachments/${attachmentId}`)
-      .expect(405)
+      .expect(200)
       .expect((res) => {
-        expect(res.body.message).toBe("Attachment deletion is disabled");
+        expect(res.body.message).toBe("Anhang geloescht");
       });
+
+    const afterDelete = await admin.get(`/api/projects/${project.id}/attachments`).expect(200);
+    expect(afterDelete.body).toHaveLength(0);
   });
 
   it("UC 02/06 negative requirement: unknown project upload should return 404", async () => {

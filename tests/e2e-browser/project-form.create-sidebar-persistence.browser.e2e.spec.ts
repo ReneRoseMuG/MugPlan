@@ -22,6 +22,7 @@ import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
 import {
   createCustomerFixture,
+  createProductFixture,
   createProjectFixture,
   createTagFixture,
 } from "../helpers/testDataFactory";
@@ -235,6 +236,35 @@ test("shows an extracted document as pending project attachment before save and 
 
   await openProjectById(page, createdProjectId, "noAppointments");
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
+});
+
+test("keeps article dropdown selections stable in create mode after document extraction", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-PROJECT-EXTRACT-SELECT");
+  const saunaProduct = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "FT24 Create Dropdown Sauna",
+  });
+
+  await mockProjectDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Extrakt ohne Produktmatch",
+    orderNumber: "FT24-PROJECT-SELECT-001",
+  });
+
+  await openNewProject(page);
+  await uploadExtractionPdf(page, "ft24-project-create-selection.pdf");
+
+  await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+  await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
+
+  await page.getByRole("tab", { name: "Artikelliste" }).click();
+  await expect(page.getByTestId("project-product-fields")).toBeVisible();
+  await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
+  await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(saunaProduct.id));
+
+  await page.getByRole("tab", { name: "Anmerkungen" }).click();
+  await page.getByRole("tab", { name: "Artikelliste" }).click();
+  await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(saunaProduct.id));
 });
 
 test("opens an existing project in edit mode for duplicate order numbers and keeps the overlay path stable", async ({ page }) => {

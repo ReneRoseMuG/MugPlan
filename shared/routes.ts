@@ -243,6 +243,11 @@ const projectOrderResponseSchema = z.object({
 });
 
 const projectWithOrderSchema = z.custom<Project & { notesCount?: number; projectOrder?: ProjectOrder | null }>();
+const projectWithOrderAndArticleItemsSchema = z.custom<Project & {
+  notesCount?: number;
+  projectOrder?: ProjectOrder | null;
+  projectArticleItems: ProjectArticleItem[];
+}>();
 const projectListItemSchema = z.custom<Project & {
   notesCount?: number;
   projectOrder?: ProjectOrder | null;
@@ -2855,7 +2860,7 @@ export const api = {
       path: '/api/projects/:id',
       responses: {
         200: z.object({
-          project: projectWithOrderSchema,
+          project: projectWithOrderAndArticleItemsSchema,
           projectOrder: projectOrderResponseSchema.nullable(),
           customer: z.custom<typeof customers.$inferSelect>(),
           tags: z.array(tagSchema),
