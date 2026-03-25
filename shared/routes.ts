@@ -3066,14 +3066,14 @@ export const api = {
   calendarWeekNotes: {
     list: {
       method: 'GET' as const,
-      path: '/api/calendar-weeks/:yearNumber/:weekNumber/notes',
+      path: '/api/calendar-weeks/:yearNumber/:weekNumber/tours/:tourId/notes',
       responses: {
         200: z.array(z.custom<typeof notes.$inferSelect>()),
       },
     },
     create: {
       method: 'POST' as const,
-      path: '/api/calendar-weeks/:yearNumber/:weekNumber/notes',
+      path: '/api/calendar-weeks/:yearNumber/:weekNumber/tours/:tourId/notes',
       input: insertNoteSchema.extend({ templateId: z.number().optional() }),
       responses: {
         201: z.custom<typeof notes.$inferSelect>(),
@@ -3084,7 +3084,7 @@ export const api = {
     },
     delete: {
       method: 'DELETE' as const,
-      path: '/api/calendar-weeks/:yearNumber/:weekNumber/notes/:noteId',
+      path: '/api/calendar-weeks/:yearNumber/:weekNumber/tours/:tourId/notes/:noteId',
       input: z.object({
         version: z.number().int().min(1),
       }),

@@ -10,7 +10,8 @@ type CalendarWeekNotesDialogProps = {
   onOpenChange: (open: boolean) => void;
   yearNumber: number;
   weekNumber: number;
-  weekLabel: string;
+  tourId: number | null;
+  title: string;
   readOnly?: boolean;
 };
 
@@ -31,18 +32,21 @@ export function CalendarWeekNotesDialog({
   onOpenChange,
   yearNumber,
   weekNumber,
-  weekLabel,
+  tourId,
+  title,
   readOnly,
 }: CalendarWeekNotesDialogProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const queryKey = ["calendarWeekNotes", yearNumber, weekNumber];
+  const tourSegment = tourId === null ? "0" : String(tourId);
+  const queryKey = ["calendarWeekNotes", yearNumber, weekNumber, tourId];
+  const baseUrl = `/api/calendar-weeks/${yearNumber}/${weekNumber}/tours/${tourSegment}/notes`;
 
   const { data: notes = [], isLoading } = useQuery<Note[]>({
     queryKey,
     queryFn: async () => {
-      const res = await fetch(`/api/calendar-weeks/${yearNumber}/${weekNumber}/notes`, { credentials: "include" });
+      const res = await fetch(baseUrl, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load calendar week notes");
       return res.json();
     },
@@ -53,15 +57,15 @@ export function CalendarWeekNotesDialog({
 
   const createNoteMutation = useMutation({
     mutationFn: async (data: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
-      const res = await apiRequest("POST", `/api/calendar-weeks/${yearNumber}/${weekNumber}/notes`, data);
+      const res = await apiRequest("POST", baseUrl, data);
       return res.json();
     },
     onSuccess: () => { void invalidate(); },
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: async ({ noteId, title, body, cardColor, print, version }: { noteId: number; title: string; body: string; cardColor?: string | null; print: boolean; version: number }) => {
-      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
+    mutationFn: async ({ noteId, title: noteTitle, body, cardColor, print, version }: { noteId: number; title: string; body: string; cardColor?: string | null; print: boolean; version: number }) => {
+      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title: noteTitle, body, cardColor, print, version });
       return res.json();
     },
     onSuccess: () => { void invalidate(); },
@@ -83,7 +87,7 @@ export function CalendarWeekNotesDialog({
 
   const deleteNoteMutation = useMutation({
     mutationFn: async ({ noteId, version }: { noteId: number; version: number }) => {
-      await apiRequest("DELETE", `/api/calendar-weeks/${yearNumber}/${weekNumber}/notes/${noteId}`, { version });
+      await apiRequest("DELETE", `${baseUrl}/${noteId}`, { version });
     },
     onSuccess: () => { void invalidate(); },
     onError: (error) => {
@@ -102,7 +106,7 @@ export function CalendarWeekNotesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Notizen – {weekLabel}</DialogTitle>
+          <DialogTitle>Notizen – {title}</DialogTitle>
         </DialogHeader>
         <NotesSection
           notes={notes}

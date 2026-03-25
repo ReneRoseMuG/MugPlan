@@ -90,11 +90,11 @@ export async function deleteProjectScopedNote(projectId: number, noteId: number,
   }
 }
 
-export async function deleteCalendarWeekScopedNote(yearNumber: number, weekNumber: number, noteId: number, version: number): Promise<void> {
+export async function deleteCalendarWeekScopedNote(yearNumber: number, weekNumber: number, tourId: number | null, noteId: number, version: number): Promise<void> {
   if (!Number.isInteger(version) || version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");
   }
-  const result = await notesRepository.deleteCalendarWeekScopedNoteWithVersion(yearNumber, weekNumber, noteId, version);
+  const result = await notesRepository.deleteCalendarWeekScopedNoteWithVersion(yearNumber, weekNumber, tourId, noteId, version);
   if (result.kind === "not_found") {
     throw new NotesError(404, "NOT_FOUND");
   }

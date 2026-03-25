@@ -715,11 +715,6 @@ export function CalendarWeekView({
                         {format(weekStart, "d. MMM", { locale: de })} – {format(endOfWeek(weekStart, { weekStartsOn: 1 }), "d. MMM yyyy", { locale: de })}
                       </span>
                     </div>
-                    <CalendarWeekNotesButton
-                      yearNumber={getISOWeekYear(weekStart)}
-                      weekNumber={getISOWeek(weekStart)}
-                      readOnly={!canWriteNotes}
-                    />
                   </div>
                   <div className="grid divide-x divide-border/30 border-b border-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
                     {days.map((day, dayIdx) => {
@@ -819,6 +814,15 @@ export function CalendarWeekView({
                               });
                             }}
                             testId={`week-tour-lane-header-${tourLane.laneKey}`}
+                            weekNotesButton={
+                              <CalendarWeekNotesButton
+                                yearNumber={getISOWeekYear(weekStart)}
+                                weekNumber={getISOWeek(weekStart)}
+                                tourId={tourLane.tourId ?? null}
+                                tourLabel={tourLane.label}
+                                readOnly={!canWriteNotes}
+                              />
+                            }
                           />
                           <div
                             className="pointer-events-none absolute inset-0 grid"

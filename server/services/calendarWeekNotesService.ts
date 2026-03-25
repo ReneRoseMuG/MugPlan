@@ -5,13 +5,15 @@ import * as noteTemplatesRepository from "../repositories/noteTemplatesRepositor
 export async function listCalendarWeekNotes(
   yearNumber: number,
   weekNumber: number,
+  tourId: number | null,
 ): Promise<Note[]> {
-  return notesRepository.getCalendarWeekNotes(yearNumber, weekNumber);
+  return notesRepository.getCalendarWeekNotes(yearNumber, weekNumber, tourId);
 }
 
 export async function createCalendarWeekNote(
   yearNumber: number,
   weekNumber: number,
+  tourId: number | null,
   data: CreateNoteInput & { templateId?: number },
 ): Promise<Note> {
   const noteData: InsertNote = {
@@ -32,7 +34,7 @@ export async function createCalendarWeekNote(
 
   return notesRepository.withNotesTransaction(async (tx) => {
     const noteId = await notesRepository.createNoteTx(tx, noteData);
-    await notesRepository.addCalendarWeekNoteRelationTx(tx, noteId, yearNumber, weekNumber);
+    await notesRepository.addCalendarWeekNoteRelationTx(tx, noteId, yearNumber, weekNumber, tourId);
     const note = await notesRepository.getNoteTx(tx, noteId);
     if (!note) {
       throw new Error("NOTE_CREATE_READBACK_FAILED");

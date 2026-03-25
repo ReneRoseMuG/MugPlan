@@ -1,3 +1,4 @@
+import React from "react";
 import { TourInfoBadgePreview } from "@/components/ui/badge-previews/tour-info-badge-preview";
 import { HoverPreview } from "@/components/ui/hover-preview";
 
@@ -14,6 +15,7 @@ type CalendarWeekTourLaneHeaderBarProps = {
   interactive?: boolean;
   onClick?: () => void;
   testId?: string;
+  weekNotesButton?: React.ReactNode;
 };
 
 const OPEN_DELAY_MS = 380;
@@ -28,6 +30,7 @@ export function CalendarWeekTourLaneHeaderBar({
   interactive = false,
   onClick,
   testId,
+  weekNotesButton,
 }: CalendarWeekTourLaneHeaderBarProps) {
   const resolvedColor = color ?? "#64748b";
 
@@ -64,6 +67,11 @@ export function CalendarWeekTourLaneHeaderBar({
       >
         <div className="flex h-full items-center justify-between gap-2">
           <span className="truncate">{label}</span>
+          {weekNotesButton && (
+            <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+              {weekNotesButton}
+            </span>
+          )}
         </div>
       </button>
     </HoverPreview>

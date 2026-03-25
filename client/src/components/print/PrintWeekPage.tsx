@@ -13,11 +13,12 @@ type PrintWeekPageProps = {
   days: PrintWeekDay[];
   appointmentRows: ReactNode[][];
   gridTemplate: string;
+  footer?: ReactNode;
   testId?: string;
   gridTestId?: string;
 };
 
-export function PrintWeekPage({ header, days, appointmentRows, gridTemplate, testId, gridTestId }: PrintWeekPageProps) {
+export function PrintWeekPage({ header, days, appointmentRows, gridTemplate, footer, testId, gridTestId }: PrintWeekPageProps) {
   return (
     <PrintPageShell orientation="landscape" testId={testId}>
       {header}
@@ -37,6 +38,7 @@ export function PrintWeekPage({ header, days, appointmentRows, gridTemplate, tes
           ))
         )}
       </div>
+      {footer}
     </PrintPageShell>
   );
 }

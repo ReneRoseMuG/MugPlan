@@ -2,16 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - CalendarWeekNotesButton verwendet den Query-Key ["calendarWeekNotes", yearNumber, weekNumber].
+ * - CalendarWeekNotesButton verwendet den Query-Key ["calendarWeekNotes", yearNumber, weekNumber, tourId].
  * - Der Button zeigt den Notizen-Zähler aus den geladenen Daten.
  * - Ein Klick auf den Button öffnet den CalendarWeekNotesDialog.
+ * - tourId=null wird als 0-Segment in der URL kodiert.
  *
  * Fehlerfälle:
  * - Query-Key weicht vom erwarteten Schema ab.
  * - Dialog wird bei Klick nicht geöffnet.
  *
  * Ziel:
- * Absicherung des Wiring zwischen CalendarWeekNotesButton, Query-Key und Dialog-Öffnung.
+ * Absicherung des Wiring zwischen CalendarWeekNotesButton, Query-Key (inkl. tourId) und Dialog-Öffnung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -31,13 +32,6 @@ vi.mock("@/components/calendar/CalendarWeekNotesDialog", () => ({
   },
 }));
 
-vi.mock("date-fns", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("date-fns")>();
-  return { ...actual };
-});
-
-vi.mock("date-fns/locale", () => ({ de: {} }));
-
 import { CalendarWeekNotesButton } from "@/components/calendar/CalendarWeekNotesButton";
 
 beforeEach(() => {
@@ -47,10 +41,16 @@ beforeEach(() => {
 });
 
 describe("CalendarWeekNotesButton wiring", () => {
-  it("verwendet Query-Key [calendarWeekNotes, yearNumber, weekNumber]", () => {
-    renderToStaticMarkup(<CalendarWeekNotesButton yearNumber={2026} weekNumber={13} />);
+  it("verwendet Query-Key [calendarWeekNotes, yearNumber, weekNumber, tourId=null]", () => {
+    renderToStaticMarkup(<CalendarWeekNotesButton yearNumber={2026} weekNumber={13} tourId={null} tourLabel="KW 13" />);
     const call = useQueryMock.mock.calls[0]?.[0] as { queryKey: unknown[] };
-    expect(call.queryKey).toEqual(["calendarWeekNotes", 2026, 13]);
+    expect(call.queryKey).toEqual(["calendarWeekNotes", 2026, 13, null]);
+  });
+
+  it("verwendet Query-Key [calendarWeekNotes, yearNumber, weekNumber, tourId=42]", () => {
+    renderToStaticMarkup(<CalendarWeekNotesButton yearNumber={2026} weekNumber={13} tourId={42} tourLabel="Tour A" />);
+    const call = useQueryMock.mock.calls[0]?.[0] as { queryKey: unknown[] };
+    expect(call.queryKey).toEqual(["calendarWeekNotes", 2026, 13, 42]);
   });
 
   it("zeigt Notizen-Zähler aus Query-Daten", () => {
@@ -60,16 +60,17 @@ describe("CalendarWeekNotesButton wiring", () => {
         { id: 2, title: "B", body: "", version: 1, isPinned: false, print: false, cardColor: null, cardColorLocked: false, createdAt: new Date(), updatedAt: new Date() },
       ],
     });
-    const html = renderToStaticMarkup(<CalendarWeekNotesButton yearNumber={2026} weekNumber={14} />);
+    const html = renderToStaticMarkup(<CalendarWeekNotesButton yearNumber={2026} weekNumber={14} tourId={null} tourLabel="KW 14" />);
     expect(html).toContain("2");
   });
 
   it("rendert den Dialog mit korrekten Props", () => {
-    renderToStaticMarkup(<CalendarWeekNotesButton yearNumber={2026} weekNumber={15} readOnly={true} />);
+    renderToStaticMarkup(<CalendarWeekNotesButton yearNumber={2026} weekNumber={15} tourId={null} tourLabel="KW 15" readOnly={true} />);
     expect(dialogCalls.length).toBeGreaterThan(0);
     const dialogProps = dialogCalls[0];
     expect(dialogProps.yearNumber).toBe(2026);
     expect(dialogProps.weekNumber).toBe(15);
+    expect(dialogProps.tourId).toBeNull();
     expect(dialogProps.readOnly).toBe(true);
   });
 });

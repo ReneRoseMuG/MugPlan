@@ -6,24 +6,30 @@ import * as notesService from "../services/notesService";
 
 export async function listCalendarWeekNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const params = parseWeekParams(req, res);
+    const params = parseWeekTourParams(req, res);
     if (!params) return;
-    const { yearNumber, weekNumber } = params;
-    const notes = await calendarWeekNotesService.listCalendarWeekNotes(yearNumber, weekNumber);
+    const { yearNumber, weekNumber, tourId } = params;
+    const notes = await calendarWeekNotesService.listCalendarWeekNotes(yearNumber, weekNumber, tourId);
     res.json(notes);
   } catch (err) {
     next(err);
   }
 }
 
-function parseWeekParams(req: Request, res: Response): { yearNumber: number; weekNumber: number } | null {
+function parseWeekTourParams(req: Request, res: Response): { yearNumber: number; weekNumber: number; tourId: number | null } | null {
   const yearNumber = Number(req.params.yearNumber);
   const weekNumber = Number(req.params.weekNumber);
   if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 53) {
     res.status(422).json({ code: "VALIDATION_ERROR" });
     return null;
   }
-  return { yearNumber, weekNumber };
+  const tourIdRaw = req.params.tourId;
+  const tourId = tourIdRaw === "0" ? null : Number(tourIdRaw);
+  if (tourIdRaw !== "0" && (!Number.isInteger(tourId) || tourId! <= 0)) {
+    res.status(422).json({ code: "VALIDATION_ERROR" });
+    return null;
+  }
+  return { yearNumber, weekNumber, tourId };
 }
 
 export async function createCalendarWeekNote(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -38,11 +44,11 @@ export async function createCalendarWeekNote(req: Request, res: Response, next: 
       return;
     }
 
-    const params = parseWeekParams(req, res);
+    const params = parseWeekTourParams(req, res);
     if (!params) return;
-    const { yearNumber, weekNumber } = params;
+    const { yearNumber, weekNumber, tourId } = params;
     const input = api.calendarWeekNotes.create.input.parse(req.body);
-    const note = await calendarWeekNotesService.createCalendarWeekNote(yearNumber, weekNumber, input);
+    const note = await calendarWeekNotesService.createCalendarWeekNote(yearNumber, weekNumber, tourId, input);
     res.status(201).json(note);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -70,11 +76,11 @@ export async function deleteCalendarWeekNote(req: Request, res: Response, next: 
     }
 
     const input = api.calendarWeekNotes.delete.input.parse(req.body);
-    const params = parseWeekParams(req, res);
+    const params = parseWeekTourParams(req, res);
     if (!params) return;
-    const { yearNumber, weekNumber } = params;
+    const { yearNumber, weekNumber, tourId } = params;
     const noteId = Number(req.params.noteId);
-    await notesService.deleteCalendarWeekScopedNote(yearNumber, weekNumber, noteId, input.version);
+    await notesService.deleteCalendarWeekScopedNote(yearNumber, weekNumber, tourId, noteId, input.version);
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {

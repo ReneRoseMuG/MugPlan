@@ -767,7 +767,7 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
 
   const weekNotesByIndex = await Promise.all(
     weekRanges.map(({ weekStart }) =>
-      notesRepository.getCalendarWeekNotes(getISOWeekYear(weekStart), getISOWeek(weekStart)),
+      notesRepository.getCalendarWeekNotes(getISOWeekYear(weekStart), getISOWeek(weekStart), params.tourId === 0 ? null : params.tourId),
     ),
   );
 

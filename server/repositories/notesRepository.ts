@@ -134,12 +134,16 @@ export async function toggleNotePinWithVersion(
 export async function getCalendarWeekNotes(
   yearNumber: number,
   weekNumber: number,
+  tourId: number | null,
 ): Promise<Note[]> {
+  const tourFilter = tourId !== null
+    ? sql`${calendarWeekNotes.tourId} = ${tourId}`
+    : sql`${calendarWeekNotes.tourId} IS NULL`;
   const result = await db
     .select({ note: notes })
     .from(calendarWeekNotes)
     .innerJoin(notes, eq(calendarWeekNotes.noteId, notes.id))
-    .where(sql`${calendarWeekNotes.yearNumber} = ${yearNumber} AND ${calendarWeekNotes.weekNumber} = ${weekNumber}`)
+    .where(sql`${calendarWeekNotes.yearNumber} = ${yearNumber} AND ${calendarWeekNotes.weekNumber} = ${weekNumber} AND ${tourFilter}`)
     .orderBy(desc(notes.isPinned), desc(notes.updatedAt));
   return result.map((row) => row.note);
 }
@@ -149,20 +153,25 @@ export async function addCalendarWeekNoteRelationTx(
   noteId: number,
   yearNumber: number,
   weekNumber: number,
+  tourId: number | null,
 ): Promise<void> {
-  await tx.insert(calendarWeekNotes).values({ noteId, yearNumber, weekNumber });
+  await tx.insert(calendarWeekNotes).values({ noteId, yearNumber, weekNumber, tourId });
 }
 
 export async function deleteCalendarWeekScopedNoteWithVersion(
   yearNumber: number,
   weekNumber: number,
+  tourId: number | null,
   noteId: number,
   expectedVersion: number,
 ): Promise<{ kind: "deleted" } | { kind: "version_conflict" } | { kind: "not_found" }> {
+  const tourFilter = tourId !== null
+    ? sql`${calendarWeekNotes.tourId} = ${tourId}`
+    : sql`${calendarWeekNotes.tourId} IS NULL`;
   return db.transaction(async (tx) => {
     const relationResult = await tx
       .delete(calendarWeekNotes)
-      .where(sql`${calendarWeekNotes.yearNumber} = ${yearNumber} AND ${calendarWeekNotes.weekNumber} = ${weekNumber} AND ${calendarWeekNotes.noteId} = ${noteId}`);
+      .where(sql`${calendarWeekNotes.yearNumber} = ${yearNumber} AND ${calendarWeekNotes.weekNumber} = ${weekNumber} AND ${calendarWeekNotes.noteId} = ${noteId} AND ${tourFilter}`);
     const relationAffectedRows = Number((relationResult as any)?.[0]?.affectedRows ?? (relationResult as any)?.affectedRows ?? 0);
     if (relationAffectedRows === 0) {
       throw new Error("NOT_FOUND");
