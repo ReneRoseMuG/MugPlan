@@ -62,7 +62,7 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Customer, Note, Component, ComponentCategory, ProductCategory, ProjectOrderItem, Product, Tag } from "@shared/schema";
+import type { Project, Customer, Note, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
@@ -650,96 +650,8 @@ export function ProjectForm({
     }
   };
 
-  const upsertExistingProjectSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
-    if (!effectiveProjectId || !projectData?.project.orderNumber) return;
-    const field = getProjectProductField(fieldKey);
-    const numericSelectedId = Number(selectedValue);
-    if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
-
-    const product = field.source === "product"
-      ? products.find((entry) => entry.id === numericSelectedId) ?? null
-      : null;
-    const component = field.source === "component"
-      ? components.find((entry) => entry.id === numericSelectedId) ?? null
-      : null;
-    if (field.source === "product" && !product) return;
-    if (field.source === "component" && !component) return;
-
-    const response = await apiRequest("POST", `/api/projects/${effectiveProjectId}/order-items`, {
-      projectId: effectiveProjectId,
-      orderNumber: projectData.project.orderNumber,
-      productId: product?.id ?? null,
-      componentId: component?.id ?? null,
-      specificationId: null,
-      quantity: 1,
-    });
-    const savedItem = await response.json() as ProjectOrderItem;
-    setProductSelections((current) => ({
-      ...current,
-      [fieldKey]: {
-        productId: product?.id ?? null,
-        componentId: component?.id ?? null,
-        componentName: product?.name ?? component?.name ?? "",
-        itemId: savedItem.id,
-        version: savedItem.version,
-      },
-    }));
-    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
-  };
-
-  const upsertExistingDynamicSelection = async (slot: DynamicProjectCategorySlot, selectedValue: string) => {
-    if (!effectiveProjectId || !projectData?.project.orderNumber) return;
-    const numericSelectedId = Number(selectedValue);
-    if (!Number.isFinite(numericSelectedId) || numericSelectedId <= 0) return;
-
-    const product = slot.source === "product"
-      ? products.find((entry) => entry.id === numericSelectedId && entry.categoryId === slot.categoryId) ?? null
-      : null;
-    const component = slot.source === "component"
-      ? components.find((entry) => entry.id === numericSelectedId && entry.categoryId === slot.categoryId) ?? null
-      : null;
-    if (slot.source === "product" && !product) return;
-    if (slot.source === "component" && !component) return;
-
-    const response = await apiRequest("POST", `/api/projects/${effectiveProjectId}/order-items`, {
-      projectId: effectiveProjectId,
-      orderNumber: projectData.project.orderNumber,
-      productId: product?.id ?? null,
-      componentId: component?.id ?? null,
-      specificationId: null,
-      quantity: 1,
-    });
-    const savedItem = await response.json() as ProjectOrderItem;
-    setDynamicProductSelections((current) => ({
-      ...current,
-      [slot.slotId]: {
-        productId: product?.id ?? null,
-        componentId: component?.id ?? null,
-        componentName: product?.name ?? component?.name ?? "",
-        itemId: savedItem.id,
-        version: savedItem.version,
-      },
-    }));
-    await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
-  };
-
-  const handleFieldSelection = async (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
+  const handleFieldSelection = (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
     if (!selectedValue) {
-      const existing = productSelections[fieldKey];
-      if (isEditing && effectiveProjectId && existing.itemId != null && existing.version != null) {
-        try {
-          await apiRequest("DELETE", `/api/projects/${effectiveProjectId}/order-items/${existing.itemId}`, { version: existing.version });
-          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
-          toast({ title: `${getProjectProductField(fieldKey).label} entfernt` });
-        } catch (error) {
-          toast({
-            title: "Auswahl konnte nicht entfernt werden",
-            description: error instanceof Error ? error.message : "Unbekannter Fehler",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
       setProductSelections((current) => ({ ...current, [fieldKey]: createEmptySelection() }));
       return;
     }
@@ -756,20 +668,6 @@ export function ProjectForm({
     if (field.source === "product" && !product) return;
     if (field.source === "component" && !component) return;
 
-    if (isEditing && effectiveProjectId) {
-      try {
-        await upsertExistingProjectSelection(fieldKey, selectedValue);
-        toast({ title: `${getProjectProductField(fieldKey).label} übernommen` });
-      } catch (error) {
-        toast({
-          title: "Komponente konnte nicht übernommen werden",
-          description: error instanceof Error ? error.message : "Unbekannter Fehler",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
-
     setProductSelections((current) => ({
       ...current,
       [fieldKey]: {
@@ -782,26 +680,11 @@ export function ProjectForm({
     }));
   };
 
-  const handleDynamicFieldSelection = async (slotId: string, selectedValue: string) => {
+  const handleDynamicFieldSelection = (slotId: string, selectedValue: string) => {
     const slot = dynamicCategorySlots.find((entry) => entry.slotId === slotId);
     if (!slot) return;
 
     if (!selectedValue) {
-      const existing = dynamicProductSelections[slotId];
-      if (isEditing && effectiveProjectId && existing?.itemId != null && existing.version != null) {
-        try {
-          await apiRequest("DELETE", `/api/projects/${effectiveProjectId}/order-items/${existing.itemId}`, { version: existing.version });
-          await queryClient.invalidateQueries({ queryKey: [`/api/projects/${effectiveProjectId}/order-items`] });
-          toast({ title: `${slot.label} entfernt` });
-        } catch (error) {
-          toast({
-            title: `${slot.label} konnte nicht entfernt werden`,
-            description: error instanceof Error ? error.message : "Unbekannter Fehler",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
       setDynamicProductSelections((current) => ({ ...current, [slotId]: createEmptySelection() }));
       return;
     }
@@ -817,20 +700,6 @@ export function ProjectForm({
       : null;
     if (slot.source === "product" && !product) return;
     if (slot.source === "component" && !component) return;
-
-    if (isEditing && effectiveProjectId) {
-      try {
-        await upsertExistingDynamicSelection(slot, selectedValue);
-        toast({ title: `${slot.label} uebernommen` });
-      } catch (error) {
-        toast({
-          title: `${slot.label} konnte nicht uebernommen werden`,
-          description: error instanceof Error ? error.message : "Unbekannter Fehler",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
 
     setDynamicProductSelections((current) => ({
       ...current,
@@ -1378,6 +1247,73 @@ export function ProjectForm({
     return attachmentLinked;
   };
 
+  const persistArticleList = async (targetProjectId: number, orderNumber: string) => {
+    const items: InsertProjectOrderItem[] = [];
+
+    for (const field of PROJECT_PRODUCT_FIELDS) {
+      const sel = productSelections[field.key];
+      if (field.source === "product" && sel.productId != null) {
+        items.push({
+          projectId: targetProjectId,
+          orderNumber,
+          productId: sel.productId,
+          componentId: null,
+          specificationId: null,
+          quantity: 1,
+        });
+      }
+      if (field.source === "component" && sel.componentId != null) {
+        items.push({
+          projectId: targetProjectId,
+          orderNumber,
+          productId: null,
+          componentId: sel.componentId,
+          specificationId: null,
+          quantity: 1,
+        });
+      }
+    }
+
+    for (const slot of dynamicCategorySlots) {
+      const sel = dynamicProductSelections[slot.slotId];
+      if (!sel) continue;
+      if (slot.source === "product" && sel.productId != null) {
+        items.push({
+          projectId: targetProjectId,
+          orderNumber,
+          productId: sel.productId,
+          componentId: null,
+          specificationId: null,
+          quantity: 1,
+        });
+      }
+      if (slot.source === "component" && sel.componentId != null) {
+        items.push({
+          projectId: targetProjectId,
+          orderNumber,
+          productId: null,
+          componentId: sel.componentId,
+          specificationId: null,
+          quantity: 1,
+        });
+      }
+    }
+
+    const response = await apiRequest(
+      "PUT",
+      `/api/projects/${targetProjectId}/order-items`,
+      { items },
+    );
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error((payload as { code?: string } | null)?.code ?? "Artikelliste konnte nicht gespeichert werden");
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: [`/api/projects/${targetProjectId}/order-items`],
+    });
+  };
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
@@ -1428,6 +1364,17 @@ export function ProjectForm({
           plannedWeek: normalizedPlannedWeek,
         },
       });
+      if (effectiveProjectId && projectData?.project.orderNumber) {
+        try {
+          await persistArticleList(effectiveProjectId, projectData.project.orderNumber);
+        } catch (error) {
+          toast({
+            title: "Projekt gespeichert, Artikelliste konnte nicht persistiert werden",
+            description: error instanceof Error ? error.message : "Unbekannter Fehler",
+            variant: "destructive",
+          });
+        }
+      }
       if (effectiveProjectId && draftProjectAttachments.length > 0) {
         extractionAttachmentLinked = await persistEditAttachmentDrafts(effectiveProjectId);
       }
