@@ -25,8 +25,8 @@ const fixture: TourPrintPreviewResponse = {
   fromDate: "2099-06-15",
   toDate: "2099-06-28",
   weeks: [
-    { weekStart: "2099-06-15", weekEnd: "2099-06-21" },
-    { weekStart: "2099-06-22", weekEnd: "2099-06-28" },
+    { weekStart: "2099-06-15", weekEnd: "2099-06-21", weekNotes: [] },
+    { weekStart: "2099-06-22", weekEnd: "2099-06-28", weekNotes: [] },
   ],
   tour: {
     id: 7,

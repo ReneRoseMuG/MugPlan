@@ -464,6 +464,7 @@ const tourPrintPreviewResponseSchema = z.object({
     z.object({
       weekStart: z.string(),
       weekEnd: z.string(),
+      weekNotes: z.array(tourPrintPreviewNoteSchema),
     }),
   ),
   tour: z.object({

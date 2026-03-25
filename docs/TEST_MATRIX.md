@@ -4,6 +4,8 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 
 | Test-Datei | Feature | Bereich | Zweck | Status |
 |------------|---------|---------|-------|--------|
+| [tests/unit/ui/calendarWeekNotesButton.wiring.test.tsx](../tests/unit/ui/calendarWeekNotesButton.wiring.test.tsx) | Kalenderwochen-Notizen | Unit | Query-Key und Dialog-Wiring des CalendarWeekNotesButton | ✓ |
+| [tests/unit/lib/tour-print-preview.weekNotes.test.ts](../tests/unit/lib/tour-print-preview.weekNotes.test.ts) | Kalenderwochen-Notizen Druck | Unit | weekNotes werden korrekt in Wochenseiten übertragen | ✓ |
 | [tests/integration/server/calendar-week-notes.integration.test.ts](../tests/integration/server/calendar-week-notes.integration.test.ts) | Kalenderwochen-Notizen | Integration | CRUD-Infrastruktur für Kalenderwochen-Notizen inkl. Rollenguards und Validierung | ✓ |
 | [tests/integration/batch/batchRollback.test.ts](../tests/integration/batch/batchRollback.test.ts) | FT06 | Integration | Atomare Rollback-Regeln fuer Team-Batch-Zuweisungen bei VERSION_CONFLICT absichern | Erweitert |
 | [tests/integration/bootstrap/ensureSystemRoles.test.ts](../tests/integration/bootstrap/ensureSystemRoles.test.ts) | TBD | Integration | Systemrollen beim Bootstrap korrekt sicherstellen | Bestand |

@@ -13,6 +13,7 @@ import {
 import { PrintWeekPage } from "@/components/print/PrintWeekPage";
 import { CalendarTourPrintAppointmentCard } from "./CalendarTourPrintAppointmentCard";
 import { CalendarTourPrintContinuationCard } from "./CalendarTourPrintContinuationCard";
+import { CalendarTourPrintNoteBlock } from "./CalendarTourPrintNoteBlock";
 
 type CalendarTourPrintWeekPageProps = {
   page: Extract<TourPrintPreviewPage, { kind: "week" }>;
@@ -66,6 +67,21 @@ export function CalendarTourPrintWeekPage({ page, weekendColumnPercent }: Calend
           <p className="text-sm font-medium text-slate-700">
             {formatTourPrintDateShort2y(weekStart)} &ndash; {formatTourPrintDateShort2y(weekEnd)}
           </p>
+          {page.weekNotes && page.weekNotes.length > 0 ? (
+            <div className="mt-3 space-y-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                Wochen-Notizen
+              </p>
+              {page.weekNotes.map((note, noteIndex) => (
+                <CalendarTourPrintNoteBlock
+                  key={note.id}
+                  note={note}
+                  appointmentId={0}
+                  noteIndex={noteIndex}
+                />
+              ))}
+            </div>
+          ) : null}
         </header>
       }
       days={dayLabels}

@@ -1,7 +1,8 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import type { InsertAppointment } from "@shared/schema";
-import { addWeeks, differenceInCalendarDays, endOfWeek, startOfWeek } from "date-fns";
+import { addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
+import * as notesRepository from "../repositories/notesRepository";
 import {
   getProjectArticleField,
   getProjectArticleFieldByCategoryName,
@@ -758,14 +759,30 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
     appointmentsRepository.getAppointmentPrintNotesByAppointmentIds(appointmentIds),
   ]);
 
-  const weeks = Array.from({ length: normalizedWeekCount }, (_, index) => {
+  const weekRanges = Array.from({ length: normalizedWeekCount }, (_, index) => {
     const weekStart = addWeeks(firstWeekStart, index);
     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-    return {
-      weekStart: toDateOnlyString(weekStart) ?? "",
-      weekEnd: toDateOnlyString(weekEnd) ?? "",
-    };
+    return { weekStart, weekEnd };
   });
+
+  const weekNotesByIndex = await Promise.all(
+    weekRanges.map(({ weekStart }) =>
+      notesRepository.getCalendarWeekNotes(getISOWeekYear(weekStart), getISOWeek(weekStart)),
+    ),
+  );
+
+  const weeks = weekRanges.map(({ weekStart, weekEnd }, index) => ({
+    weekStart: toDateOnlyString(weekStart) ?? "",
+    weekEnd: toDateOnlyString(weekEnd) ?? "",
+    weekNotes: weekNotesByIndex[index].map((note) => ({
+      id: note.id,
+      sourceType: "appointment" as const,
+      title: note.title,
+      body: note.body ?? null,
+      cardColor: note.cardColor ?? null,
+      updatedAt: new Date(note.updatedAt).toISOString(),
+    })),
+  }));
 
   const appointments = rows.map((row) => {
     const projectId = row.project?.id ?? null;

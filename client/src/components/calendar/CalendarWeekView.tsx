@@ -5,6 +5,7 @@ import {
   endOfWeek,
   format,
   getISOWeek,
+  getISOWeekYear,
   isToday,
   parseISO,
   startOfWeek,
@@ -36,6 +37,7 @@ import {
 } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "./CalendarWeekSpanningTile";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
+import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import type { CalendarNavCommand } from "@/pages/Home";
 import type { Employee, Tour } from "@shared/schema";
@@ -187,6 +189,7 @@ export function CalendarWeekView({
   const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const isAdmin = userRole === "ADMIN";
+  const canWriteNotes = userRole !== "LESER";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const extraWeekCount =
     typeof weekScrollRangeSetting === "number" && Number.isInteger(weekScrollRangeSetting) && weekScrollRangeSetting >= 0
@@ -705,6 +708,19 @@ export function CalendarWeekView({
                 className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
                 <div className="h-full flex flex-col">
+                  <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/20 bg-muted/10">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                      <span>KW {getISOWeek(weekStart)}</span>
+                      <span className="text-xs font-normal">
+                        {format(weekStart, "d. MMM", { locale: de })} – {format(endOfWeek(weekStart, { weekStartsOn: 1 }), "d. MMM yyyy", { locale: de })}
+                      </span>
+                    </div>
+                    <CalendarWeekNotesButton
+                      yearNumber={getISOWeekYear(weekStart)}
+                      weekNumber={getISOWeek(weekStart)}
+                      readOnly={!canWriteNotes}
+                    />
+                  </div>
                   <div className="grid divide-x divide-border/30 border-b border-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
                     {days.map((day, dayIdx) => {
                       const isTodayDate = isToday(day);

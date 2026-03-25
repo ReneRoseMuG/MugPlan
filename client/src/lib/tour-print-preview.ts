@@ -37,6 +37,7 @@ export type TourPrintPreviewPage =
       weekStart: string;
       weekEnd: string;
       days: TourPrintWeekPage["days"];
+      weekNotes: TourPrintPreviewNote[];
     };
 
 export function normalizeTourPrintWeekCount(value: number): number {
@@ -178,6 +179,7 @@ export function buildTourPrintPages(data: TourPrintPreviewResponse): TourPrintPr
     weekStart: week.weekStart,
     weekEnd: week.weekEnd,
     days: week.days,
+    weekNotes: data.weeks[weekIndex]?.weekNotes ?? [],
   }));
 
   return [summaryPage, ...weekPages];
