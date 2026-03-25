@@ -55,7 +55,6 @@ import {
   mapProjectOrderItemsToDynamicSelections,
   mapProjectOrderItemsToSelections,
   PROJECT_PRODUCT_FIELDS,
-  resolveSelectionsFromExtraction,
   type DynamicProjectCategorySlot,
   type DynamicProjectProductSelections,
   type ProjectProductFieldKey,
@@ -1520,19 +1519,6 @@ export function ProjectForm({
       }
       setName(payload.saunaModel.trim());
       setExtractedArticleListHtml(payload.articleListHtml.trim());
-      if (products.length > 0 && components.length > 0 && componentCategories.length > 0 && documentExtractionData) {
-        setProductSelections(
-          resolveSelectionsFromExtraction(
-            {
-              saunaModel: payload.saunaModel.trim(),
-              categorizedItems: documentExtractionData.categorizedItems,
-            },
-            products,
-            components,
-            componentCategories,
-          ),
-        );
-      }
       if (extractedOrderNumber.length > 0) {
         const currentOrderNumber = orderNumber.trim();
         if (!currentOrderNumber) {

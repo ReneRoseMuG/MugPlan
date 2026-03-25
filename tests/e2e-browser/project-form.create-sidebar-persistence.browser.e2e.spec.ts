@@ -8,6 +8,7 @@
  * - Tags, Notizen und Projektanhaenge lassen sich im Neuer-Projekt-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Projektanhang dem erzeugten Projekt korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei erscheint vor dem Save als pending Projektanhang und nach dem Save als echter Projektanhang.
+ * - Die Dokumentextraktion fuellt die strukturierte Artikelliste nicht automatisch mit Produktselektionen vor.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
  *
  * Fehlerfaelle:
@@ -246,7 +247,7 @@ test("keeps article dropdown selections stable in create mode after document ext
   });
 
   await mockProjectDocumentExtraction(page, customer.customerNumber, {
-    saunaModel: "FT24 Extrakt ohne Produktmatch",
+    saunaModel: saunaProduct.name,
     orderNumber: "FT24-PROJECT-SELECT-001",
   });
 
@@ -259,6 +260,7 @@ test("keeps article dropdown selections stable in create mode after document ext
 
   await page.getByRole("tab", { name: "Artikelliste" }).click();
   await expect(page.getByTestId("project-product-fields")).toBeVisible();
+  await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue("");
   await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
   await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(saunaProduct.id));
 
