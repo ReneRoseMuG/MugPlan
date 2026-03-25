@@ -198,8 +198,8 @@ export function CalendarWeekView({
   const isCollapsedMode = Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
 
-  const dayGridTemplate = useMemo(
-    () => buildDayGridTemplate(getDayWeights(weekendColumnPercent)),
+  const dayWeights = useMemo(
+    () => getDayWeights(weekendColumnPercent),
     [weekendColumnPercent],
   );
 
@@ -702,13 +702,18 @@ export function CalendarWeekView({
                 }),
             );
 
+            const weekDayWeights = dayWeights.map((weight, dayIdx) =>
+              dayIdx >= 5 && dayHeaderBadges[dayIdx].length > 0 ? 1 : weight,
+            );
+            const weekDayGridTemplate = buildDayGridTemplate(weekDayWeights);
+
             return (
               <section
                 key={weekKey}
                 className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
                 <div className="h-full flex flex-col overflow-y-auto">
-                  <div className="sticky top-0 z-10 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: dayGridTemplate }}>
+                  <div className="sticky top-0 z-10 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: weekDayGridTemplate }}>
                     {days.map((day, dayIdx) => {
                       const isTodayDate = isToday(day);
                       const isWeekend = dayIdx >= 5;
@@ -820,7 +825,7 @@ export function CalendarWeekView({
                           />
                           <div
                             className="pointer-events-none absolute inset-0 grid"
-                            style={{ gridTemplateColumns: dayGridTemplate }}
+                            style={{ gridTemplateColumns: weekDayGridTemplate }}
                           >
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => (
                               <div
@@ -876,7 +881,7 @@ export function CalendarWeekView({
                           <div
                             className="relative grid divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden"
                             style={{
-                              gridTemplateColumns: dayGridTemplate,
+                              gridTemplateColumns: weekDayGridTemplate,
                               minHeight: `${MIN_WEEK_CARD_HEIGHT_PX}px`,
                               gridTemplateRows: laneGridTemplateRows,
                             }}
@@ -898,7 +903,7 @@ export function CalendarWeekView({
                             {hasLaneContent && draggedAppointmentId !== null ? (
                               <div
                                 className="absolute inset-0 grid z-20"
-                                style={{ gridTemplateColumns: dayGridTemplate }}
+                                style={{ gridTemplateColumns: weekDayGridTemplate }}
                               >
                                 {days.map((day) => (
                                   <div
