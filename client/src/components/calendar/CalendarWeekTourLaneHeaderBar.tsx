@@ -15,7 +15,8 @@ type CalendarWeekTourLaneHeaderBarProps = {
   interactive?: boolean;
   onClick?: () => void;
   testId?: string;
-  weekNotesButton?: React.ReactNode;
+  weekNotesIcon?: React.ReactNode;
+  weekNotesCount?: React.ReactNode;
 };
 
 const OPEN_DELAY_MS = 380;
@@ -30,7 +31,8 @@ export function CalendarWeekTourLaneHeaderBar({
   interactive = false,
   onClick,
   testId,
-  weekNotesButton,
+  weekNotesIcon,
+  weekNotesCount,
 }: CalendarWeekTourLaneHeaderBarProps) {
   const resolvedColor = color ?? "#64748b";
 
@@ -65,12 +67,11 @@ export function CalendarWeekTourLaneHeaderBar({
         data-testid={testId}
         aria-expanded={isExpanded}
       >
-        <div className="flex h-full items-center justify-between gap-2">
-          <span className="truncate">{label}</span>
-          {weekNotesButton && (
-            <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-              {weekNotesButton}
-            </span>
+        <div className="flex h-full items-center gap-1.5">
+          {weekNotesIcon && <span className="flex-shrink-0 opacity-80">{weekNotesIcon}</span>}
+          <span className="truncate flex-1">{label}</span>
+          {weekNotesCount !== undefined && (
+            <span className="flex-shrink-0 opacity-80">{weekNotesCount}</span>
           )}
         </div>
       </button>

@@ -4,15 +4,29 @@ import { StickyNote } from "lucide-react";
 import type { Note } from "@shared/schema";
 import { CalendarWeekNotesDialog } from "./CalendarWeekNotesDialog";
 
+type CalendarWeekNotesButtonRenderProps = {
+  iconSlot: React.ReactNode;
+  countSlot: React.ReactNode;
+  dialog: React.ReactNode;
+};
+
 type CalendarWeekNotesButtonProps = {
   yearNumber: number;
   weekNumber: number;
   tourId: number | null;
   tourLabel: string;
   readOnly?: boolean;
+  children: (props: CalendarWeekNotesButtonRenderProps) => React.ReactNode;
 };
 
-export function CalendarWeekNotesButton({ yearNumber, weekNumber, tourId, tourLabel, readOnly }: CalendarWeekNotesButtonProps) {
+export function CalendarWeekNotesButton({
+  yearNumber,
+  weekNumber,
+  tourId,
+  tourLabel,
+  readOnly,
+  children,
+}: CalendarWeekNotesButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const tourSegment = tourId === null ? "0" : String(tourId);
@@ -20,33 +34,51 @@ export function CalendarWeekNotesButton({ yearNumber, weekNumber, tourId, tourLa
   const { data: notes = [] } = useQuery<Note[]>({
     queryKey: ["calendarWeekNotes", yearNumber, weekNumber, tourId],
     queryFn: async () => {
-      const res = await fetch(`/api/calendar-weeks/${yearNumber}/${weekNumber}/tours/${tourSegment}/notes`, { credentials: "include" });
+      const res = await fetch(
+        `/api/calendar-weeks/${yearNumber}/${weekNumber}/tours/${tourSegment}/notes`,
+        { credentials: "include" },
+      );
       if (!res.ok) throw new Error("Failed to load calendar week notes");
       return res.json();
     },
   });
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setDialogOpen(true)}
-        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-        data-testid={`calendar-week-notes-button-${yearNumber}-${weekNumber}-${tourSegment}`}
-      >
-        <StickyNote className="h-3.5 w-3.5" />
-        <span>{notes.length}</span>
-      </button>
+  const open = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDialogOpen(true);
+  };
 
-      <CalendarWeekNotesDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        yearNumber={yearNumber}
-        weekNumber={weekNumber}
-        tourId={tourId}
-        title={tourLabel}
-        readOnly={readOnly}
-      />
-    </>
+  const iconSlot = (
+    <span
+      onClick={open}
+      className="inline-flex items-center cursor-pointer"
+      data-testid={`calendar-week-notes-icon-${yearNumber}-${weekNumber}-${tourSegment}`}
+    >
+      <StickyNote className="h-3.5 w-3.5" />
+    </span>
   );
+
+  const countSlot = (
+    <span
+      onClick={open}
+      className="inline-flex items-center cursor-pointer tabular-nums"
+      data-testid={`calendar-week-notes-count-${yearNumber}-${weekNumber}-${tourSegment}`}
+    >
+      {notes.length}
+    </span>
+  );
+
+  const dialog = (
+    <CalendarWeekNotesDialog
+      open={dialogOpen}
+      onOpenChange={setDialogOpen}
+      yearNumber={yearNumber}
+      weekNumber={weekNumber}
+      tourId={tourId}
+      title={tourLabel}
+      readOnly={readOnly}
+    />
+  );
+
+  return <>{children({ iconSlot, countSlot, dialog })}</>;
 }

@@ -708,14 +708,6 @@ export function CalendarWeekView({
                 className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
                 <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/20 bg-muted/10">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <span>KW {getISOWeek(weekStart)}</span>
-                      <span className="text-xs font-normal">
-                        {format(weekStart, "d. MMM", { locale: de })} – {format(endOfWeek(weekStart, { weekStartsOn: 1 }), "d. MMM yyyy", { locale: de })}
-                      </span>
-                    </div>
-                  </div>
                   <div className="grid divide-x divide-border/30 border-b border-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
                     {days.map((day, dayIdx) => {
                       const isTodayDate = isToday(day);
@@ -791,7 +783,16 @@ export function CalendarWeekView({
                           : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`;
 
                       return (
-                      <div key={tourLane.laneKey} className="rounded-lg border border-border/40 bg-muted/10">
+                      <CalendarWeekNotesButton
+                        key={tourLane.laneKey}
+                        yearNumber={getISOWeekYear(weekStart)}
+                        weekNumber={getISOWeek(weekStart)}
+                        tourId={tourLane.tourId ?? null}
+                        tourLabel={tourLane.label}
+                        readOnly={!canWriteNotes}
+                      >
+                        {({ iconSlot, countSlot, dialog }) => (
+                        <div className="rounded-lg border border-border/40 bg-muted/10">
                         <div className="relative">
                           <CalendarWeekTourLaneHeaderBar
                             label={tourLane.label}
@@ -814,15 +815,8 @@ export function CalendarWeekView({
                               });
                             }}
                             testId={`week-tour-lane-header-${tourLane.laneKey}`}
-                            weekNotesButton={
-                              <CalendarWeekNotesButton
-                                yearNumber={getISOWeekYear(weekStart)}
-                                weekNumber={getISOWeek(weekStart)}
-                                tourId={tourLane.tourId ?? null}
-                                tourLabel={tourLane.label}
-                                readOnly={!canWriteNotes}
-                              />
-                            }
+                            weekNotesIcon={iconSlot}
+                            weekNotesCount={countSlot}
                           />
                           <div
                             className="pointer-events-none absolute inset-0 grid"
@@ -1062,7 +1056,10 @@ export function CalendarWeekView({
                             }) : null}
                           </div>
                         </div>
+                        {dialog}
                       </div>
+                        )}
+                      </CalendarWeekNotesButton>
                       );
                     })}
                   </div>
