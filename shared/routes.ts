@@ -2978,6 +2978,19 @@ export const api = {
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },
+      replace: {
+        method: "PUT" as const,
+        path: "/api/projects/:id/order-items",
+        input: z.object({
+          items: z.array(insertProjectOrderItemSchema),
+        }).strict(),
+        responses: {
+          200: z.array(z.custom<typeof projectOrderItems.$inferSelect>()),
+          404: errorSchemas.notFound,
+          409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]) }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
     },
   },
   projectTags: {

@@ -345,3 +345,20 @@ export async function deleteProjectOrderItem(projectId: number, itemId: number, 
     throw new ProjectsError(409, "VERSION_CONFLICT");
   }
 }
+
+export async function replaceProjectOrderItems(
+  projectId: number,
+  items: InsertProjectOrderItem[],
+): Promise<ProjectOrderItem[]> {
+  const project = await projectsRepository.getProject(projectId);
+  if (!project) {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+
+  for (const item of items) {
+    assertValidOrderItemRelationState(item);
+    await ensureActiveOrderItemReferences(item);
+  }
+
+  return projectsRepository.replaceProjectOrderItems(projectId, items);
+}

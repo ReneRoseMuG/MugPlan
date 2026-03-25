@@ -325,3 +325,33 @@ export async function removeProjectTag(req: Request, res: Response, next: NextFu
     next(err);
   }
 }
+
+export async function replaceProjectOrderItems(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const projectId = Number(req.params.id);
+    if (!Number.isFinite(projectId) || projectId <= 0) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+
+    const input = api.projects.orderItems.replace.input.parse(req.body);
+    const items = input.items.map((item) => ({ ...item, projectId }));
+
+    const result = await projectsService.replaceProjectOrderItems(projectId, items);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}

@@ -1042,3 +1042,20 @@ export async function createProjectAttachment(data: InsertProjectAttachment): Pr
 export async function deleteProjectAttachment(id: number): Promise<void> {
   await db.delete(projectAttachments).where(eq(projectAttachments.id, id));
 }
+
+export async function replaceProjectOrderItems(
+  projectId: number,
+  items: InsertProjectOrderItem[],
+): Promise<ProjectOrderItem[]> {
+  return db.transaction(async (tx) => {
+    await tx.delete(projectOrderItems).where(eq(projectOrderItems.projectId, projectId));
+    if (items.length === 0) return [];
+    for (const item of items) {
+      await tx.insert(projectOrderItems).values(item);
+    }
+    return tx
+      .select()
+      .from(projectOrderItems)
+      .where(eq(projectOrderItems.projectId, projectId));
+  });
+}

@@ -13,6 +13,7 @@ router.delete(api.projects.delete.path, projectsController.deleteProject);
 router.get(api.projects.orderItems.list.path, projectsController.listProjectOrderItems);
 router.post(api.projects.orderItems.create.path, projectsController.createProjectOrderItem);
 router.put(api.projects.orderItems.update.path, projectsController.updateProjectOrderItem);
+router.put(api.projects.orderItems.replace.path, projectsController.replaceProjectOrderItems);
 router.delete(api.projects.orderItems.delete.path, projectsController.deleteProjectOrderItem);
 router.get(api.projectTags.list.path, projectsController.listProjectTags);
 router.post(api.projectTags.add.path, projectsController.addProjectTag);
