@@ -58,18 +58,34 @@ export function CalendarTourPrintAppointmentCard({ appointment }: CalendarTourPr
           <p className="text-[12px] font-semibold leading-4 text-slate-900">{appointment.projectName}</p>
           <p className="text-[11px] leading-4 text-slate-700">{appointment.customer.fullName}</p>
           <p className="text-[11px] leading-4 text-slate-700">{appointment.customer.city}</p>
+          {appointment.printNotes.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {appointment.printNotes.map((note, index) => (
+                <CalendarTourPrintNoteBlock
+                  key={`${appointment.id}-note-${note.id}-${index}`}
+                  note={note}
+                  appointmentId={appointment.id}
+                  noteIndex={index}
+                />
+              ))}
+            </div>
+          )}
         </div>
       }
       footer={
-        appointment.printNotes.length > 0
-          ? appointment.printNotes.map((note, index) => (
-              <CalendarTourPrintNoteBlock
-                key={`${appointment.id}-note-${note.id}-${index}`}
-                note={note}
-                appointmentId={appointment.id}
-                noteIndex={index}
-              />
-            ))
+        appointment.employees.length > 0
+          ? (
+            <div className="flex flex-col gap-1">
+              {appointment.employees.map((employee) => (
+                <span
+                  key={employee.id}
+                  className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700 leading-none"
+                >
+                  {employee.fullName}
+                </span>
+              ))}
+            </div>
+          )
           : undefined
       }
     />

@@ -6,6 +6,8 @@
  * - Wochenseiten rendern sieben Tagesspalten mit Terminkacheln nach Typ (Uhrzeit, Tagestermin, Mehrtagestermin).
  * - Mehrtagestermin-Folgetage werden als Sperrkacheln mit Tag-Nummer gerendert.
  * - Notizfarben werden im Druckpfad dezent ueber Rand und Hintergrundtoenung uebernommen.
+ * - Terminkacheln zeigen zugeordnete Mitarbeiter als Badges im footer-Bereich.
+ * - Terminkacheln ohne Mitarbeiter rendern keinen footer-Bereich.
  *
  * Fehlerfaelle:
  * - Die Druckseiten fallen auf monolithisches Dialog-Markup ohne wiederverwendbare Bereichskomponenten zurueck.
@@ -22,6 +24,7 @@ import { buildTourPrintPages, type TourPrintPreviewResponse } from "../../../cli
 import { CalendarTourPrintSummaryPage } from "../../../client/src/components/calendar/CalendarTourPrintSummaryPage";
 import { CalendarTourPrintWeekPage } from "../../../client/src/components/calendar/CalendarTourPrintWeekPage";
 import { CalendarTourPrintNoteBlock } from "../../../client/src/components/calendar/CalendarTourPrintNoteBlock";
+import { CalendarTourPrintAppointmentCard } from "../../../client/src/components/calendar/CalendarTourPrintAppointmentCard";
 
 const fixture: TourPrintPreviewResponse = {
   fromDate: "2099-06-15",
@@ -142,6 +145,29 @@ describe("FT31 UI: calendar tour print preview components", () => {
     // Kein Saunamodell mehr
     expect(html).not.toContain("Saunamodell");
     expect(html).not.toContain("Projektstatus");
+  });
+
+  it("renders employee badges in the footer when employees are present", () => {
+    const appointment = fixture.appointments[0]; // hat employees: [{ id: 11, fullName: "Muster, Mia" }]
+    const html = renderToStaticMarkup(
+      React.createElement(CalendarTourPrintAppointmentCard, { appointment }),
+    );
+
+    expect(html).toContain("tour-print-appointment-card-101");
+    expect(html).toContain("Muster, Mia");
+  });
+
+  it("renders no footer element when employees array is empty", () => {
+    const appointment = {
+      ...fixture.appointments[0],
+      employees: [],
+    };
+    const html = renderToStaticMarkup(
+      React.createElement(CalendarTourPrintAppointmentCard, { appointment }),
+    );
+
+    expect(html).toContain("tour-print-appointment-card-101");
+    expect(html).not.toContain("print-appointment-slot-footer");
   });
 
   it("renders note colors as subtle border and tint styling", () => {
