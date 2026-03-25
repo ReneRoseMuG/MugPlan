@@ -71,7 +71,7 @@ export function CalendarWeekTourLaneHeaderBar({
           {weekNotesIcon && <span className="flex-shrink-0 opacity-80">{weekNotesIcon}</span>}
           <span className="truncate">{label}</span>
           {weekNotesCount !== undefined && (
-            <span className="flex-shrink-0 opacity-80">{weekNotesCount}</span>
+            <span className="flex-shrink-0 opacity-80">({weekNotesCount})</span>
           )}
         </div>
       </button>
