@@ -707,8 +707,8 @@ export function CalendarWeekView({
                 key={weekKey}
                 className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
-                <div className="h-full flex flex-col">
-                  <div className="grid divide-x divide-border/30 border-b border-border/30" style={{ gridTemplateColumns: dayGridTemplate }}>
+                <div className="h-full flex flex-col overflow-y-auto">
+                  <div className="sticky top-0 z-10 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: dayGridTemplate }}>
                     {days.map((day, dayIdx) => {
                       const isTodayDate = isToday(day);
                       const isWeekend = dayIdx >= 5;
@@ -762,7 +762,7 @@ export function CalendarWeekView({
                     })}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto space-y-3">
+                  <div className="space-y-3 pb-3">
                     {weekLanes.map((tourLane) => {
                       const laneHeightKey = `${weekKey}:${tourLane.laneKey}`;
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
