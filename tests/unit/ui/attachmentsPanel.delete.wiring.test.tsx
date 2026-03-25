@@ -8,6 +8,7 @@
  * - Nach erfolgreichem Soft-Delete wird der lokale Attachment-Query-Key invalidiert.
  * - Nach erfolgreichem Hard-Delete wird der lokale Attachment-Query-Key invalidiert.
  * - Nach erfolgreichem Delete wird zusaetzlich die Kalenderprojektion invalidiert.
+ * - Projekt-, Kunden- und Termin-Loeschungen invalidieren zusaetzlich offene Appointment-Context-Projektionen.
  * - Das Bestaetigungspanel ist im DOM enthalten, wenn der Action-Button sichtbar ist.
  * - Das Panel zeigt das korrekte Parent-Typ-Label dynamisch an.
  * - Abbrechen fuehrt zu keiner Mutation und keiner Invalidierung.
@@ -15,7 +16,7 @@
  * - Der Action-Button ist nicht sichtbar bei historischen Terminen.
  *
  * Fehlerfaelle:
- * - Delete invalidiert nur die lokale Liste und laesst Kalender-Counter stale.
+ * - Delete invalidiert nur die lokale Liste und laesst Kalender-Counter oder Termin-Dokumentenkontext stale.
  * - Das Panel zeigt den falschen Parent-Typ an.
  *
  * Ziel:
@@ -64,7 +65,7 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
   });
 
   describe("Query-Invalidierung nach erfolgreichem Loeschen", () => {
-    it("invalidiert nach Soft-Delete den Projekt-Query-Key und die Kalenderprojektion", async () => {
+    it("invalidiert nach Soft-Delete den Projekt-Query-Key, die Kalenderprojektion und den Appointment-Context", async () => {
       const listQueryKey = ["/api/projects", 42, "attachments"];
 
       renderToStaticMarkup(
@@ -85,9 +86,12 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: ["calendarAppointments"] }),
       );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ predicate: expect.any(Function) }),
+      );
     });
 
-    it("invalidiert nach Hard-Delete den Projekt-Query-Key und die Kalenderprojektion", async () => {
+    it("invalidiert nach Hard-Delete den Projekt-Query-Key, die Kalenderprojektion und den Appointment-Context", async () => {
       const listQueryKey = ["/api/projects", 42, "attachments"];
 
       renderToStaticMarkup(
@@ -109,9 +113,12 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: ["calendarAppointments"] }),
       );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ predicate: expect.any(Function) }),
+      );
     });
 
-    it("invalidiert nach Soft-Delete den Kunden-Query-Key und die Kalenderprojektion", async () => {
+    it("invalidiert nach Soft-Delete den Kunden-Query-Key, die Kalenderprojektion und den Appointment-Context", async () => {
       const listQueryKey = ["/api/customers", 7, "attachments"];
 
       renderToStaticMarkup(
@@ -131,9 +138,12 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: ["calendarAppointments"] }),
       );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ predicate: expect.any(Function) }),
+      );
     });
 
-    it("invalidiert nach Soft-Delete den Mitarbeiter-Query-Key und die Kalenderprojektion", async () => {
+    it("invalidiert nach Soft-Delete den Mitarbeiter-Query-Key und die Kalenderprojektion, aber nicht den Appointment-Context", async () => {
       const listQueryKey = ["/api/employees", 3, "attachments"];
 
       renderToStaticMarkup(
@@ -153,9 +163,12 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: ["calendarAppointments"] }),
       );
+      expect(invalidateQueriesMock).not.toHaveBeenCalledWith(
+        expect.objectContaining({ predicate: expect.any(Function) }),
+      );
     });
 
-    it("invalidiert nach Soft-Delete den Termin-Query-Key und die Kalenderprojektion", async () => {
+    it("invalidiert nach Soft-Delete den Termin-Query-Key, die Kalenderprojektion und den Appointment-Context", async () => {
       const listQueryKey = ["/api/appointments", 55, "attachments"];
 
       renderToStaticMarkup(
@@ -174,6 +187,9 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       );
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: ["calendarAppointments"] }),
+      );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ predicate: expect.any(Function) }),
       );
     });
   });

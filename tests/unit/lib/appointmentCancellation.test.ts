@@ -86,7 +86,7 @@ describe("appointment cancellation helpers", () => {
   it("filters the reserved cancellation tag from visible tag collections", () => {
     expect(isPickerVisibleForDomain("Info", "appointment")).toBe(true);
     expect(isPickerVisibleForDomain("Storniert", "appointment")).toBe(false);
-    expect(isPickerVisibleForDomain("Reklamation", "appointment")).toBe(false);
+    expect(isPickerVisibleForDomain("Reklamation", "appointment")).toBe(true);
     expect(isPickerVisibleForDomain(MANAGED_SPECIAL_MEASURE_TAG_NAME, "appointment")).toBe(true);
 
     expect(isPickerVisibleForDomain("Info", "project")).toBe(true);
