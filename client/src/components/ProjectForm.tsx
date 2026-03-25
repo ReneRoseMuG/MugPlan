@@ -279,7 +279,7 @@ export function ProjectForm({
     staleTime: 0,
   });
 
-  const { data: projectOrderItems = [] } = useQuery<ProjectOrderItem[]>({
+  const { data: projectOrderItems = [], isFetched: projectOrderItemsFetched } = useQuery<ProjectOrderItem[]>({
     queryKey: projectOrderItemsUrl ? [projectOrderItemsUrl] : ["project-order-items-disabled"],
     enabled: Boolean(projectOrderItemsUrl),
   });
@@ -359,13 +359,14 @@ export function ProjectForm({
 
   useEffect(() => {
     if (!isEditing || products.length === 0 || components.length === 0 || componentCategories.length === 0) return;
+    if (projectOrderItemsUrl && !projectOrderItemsFetched) return;
     if (initializedEditProjectIdRef.current === effectiveProjectId) return;
     initializedEditProjectIdRef.current = effectiveProjectId ?? null;
     setProductSelections(mapProjectOrderItemsToSelections(projectOrderItems, products, components, componentCategories));
     setDynamicProductSelections(
       mapProjectOrderItemsToDynamicSelections(projectOrderItems, products, components, dynamicCategorySlots),
     );
-  }, [componentCategories, components, dynamicCategorySlots, effectiveProjectId, isEditing, products, projectOrderItems]);
+  }, [componentCategories, components, dynamicCategorySlots, effectiveProjectId, isEditing, products, projectOrderItems, projectOrderItemsFetched, projectOrderItemsUrl]);
 
   useEffect(() => {
     if (!initialDocumentExtractionFile) {

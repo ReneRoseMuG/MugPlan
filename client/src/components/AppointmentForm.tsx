@@ -47,7 +47,6 @@ import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import {
   createEmptyProjectProductSelections,
-  resolveSelectionsFromExtraction,
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import {
@@ -1183,17 +1182,7 @@ export function AppointmentForm({
         amount: payload.amount.trim(),
         customerId: mergedCustomer.id,
         extractedArticleListHtml: payload.articleListHtml.trim(),
-        productSelections: documentExtractionData
-          ? resolveSelectionsFromExtraction(
-              {
-                saunaModel: payload.saunaModel.trim(),
-                categorizedItems: documentExtractionData.categorizedItems,
-              },
-              products,
-              components,
-              componentCategories,
-            )
-          : createEmptyProjectProductSelections(),
+        productSelections: createEmptyProjectProductSelections(),
         documentFile: documentExtractionFile,
       });
       setDocumentExtractionOpen(false);
