@@ -6,7 +6,6 @@
  * - Bearbeitete Formularviews blenden die Sidebar sichtbar aus.
  * - Projektformulare koennen den Kontextkalender oeffnen.
  * - Rueckkehr aus dem Terminformular setzt den Wochen-Scroll-Restore ueber `returnContext`.
- * - Die neue globale Monatsblatt-Ansicht erhaelt einen eigenen Scroll-Restore-Rueckweg.
  *
  * Fehlerfaelle:
  * - Overlay- oder Rueckwegzustand gehen beim View-Wechsel verloren.
@@ -215,7 +214,7 @@ describe("PKG-08 home behavior wiring", () => {
     const { Home } = await loadHome({
       1: fixedDate,
       2: "employees",
-      14: true,
+      13: true,
     });
 
     const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
@@ -328,41 +327,4 @@ describe("PKG-08 home behavior wiring", () => {
     expect(calendarWorkspaceCalls[0].onScrollRestoreApplied).toEqual(expect.any(Function));
   });
 
-  it("restores the month sheet scroll position when returning from the fullscreen appointment form", async () => {
-    const { Home, setters } = await loadHome({
-      1: fixedDate,
-      2: "appointment",
-      10: {
-        appointmentId: 18,
-        returnContext: { targetView: "monthSheet" },
-        monthSheetScrollLeft: 222,
-      },
-    });
-
-    renderToStaticMarkup(<Home onLogout={() => undefined} />);
-
-    const onSaved = appointmentFormCalls[0].onSaved as () => void;
-    onSaved();
-
-    expect(setters.get(13)).toHaveBeenCalledWith(222);
-    expect(setters.get(10)).toHaveBeenCalledWith(null);
-    expect(setters.get(2)).toHaveBeenCalledWith("monthSheet");
-  });
-
-  it("passes pending month sheet scroll restore into the global month sheet workspace", async () => {
-    const { Home } = await loadHome({
-      1: fixedDate,
-      2: "monthSheet",
-      13: 166,
-    });
-
-    renderToStaticMarkup(<Home onLogout={() => undefined} />);
-
-    expect(calendarWorkspaceCalls[0]).toMatchObject({
-      mode: "global",
-      activeView: "monthSheet",
-      restoreScrollLeft: 166,
-    });
-    expect(calendarWorkspaceCalls[0].onScrollRestoreApplied).toEqual(expect.any(Function));
-  });
 });

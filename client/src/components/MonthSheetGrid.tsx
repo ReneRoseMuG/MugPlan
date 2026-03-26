@@ -5,8 +5,6 @@ interface MonthSheetGridProps {
   employeeFilterId?: number | null;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
-  restoreScrollLeft?: number | null;
-  onScrollRestoreApplied?: () => void;
 }
 
 export function MonthSheetGrid({
@@ -14,8 +12,6 @@ export function MonthSheetGrid({
   employeeFilterId,
   onNewAppointment,
   onOpenAppointment,
-  restoreScrollLeft,
-  onScrollRestoreApplied,
 }: MonthSheetGridProps) {
   return (
     <CalendarMonthSheetView
@@ -23,8 +19,6 @@ export function MonthSheetGrid({
       employeeFilterId={employeeFilterId}
       onNewAppointment={onNewAppointment}
       onOpenAppointment={onOpenAppointment}
-      restoreScrollLeft={restoreScrollLeft}
-      onScrollRestoreApplied={onScrollRestoreApplied}
     />
   );
 }

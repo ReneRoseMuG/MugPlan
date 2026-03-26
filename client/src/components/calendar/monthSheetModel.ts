@@ -1,6 +1,5 @@
 import {
   addDays,
-  addMonths,
   endOfMonth,
   endOfWeek,
   format,
@@ -35,13 +34,6 @@ export type MonthSheetMatrix = {
   visibleStart: Date;
   visibleEnd: Date;
   weeks: MonthSheetWeek[];
-};
-
-export type MonthSheetWindow = {
-  previousMonth: MonthSheetMatrix;
-  anchorMonth: MonthSheetMatrix;
-  nextMonth: MonthSheetMatrix;
-  months: [MonthSheetMatrix, MonthSheetMatrix, MonthSheetMatrix];
 };
 
 export function buildMonthSheetMatrix(year: number, month: number): MonthSheetMatrix {
@@ -83,26 +75,5 @@ export function buildMonthSheetMatrix(year: number, month: number): MonthSheetMa
     visibleStart,
     visibleEnd,
     weeks,
-  };
-}
-
-export function buildMonthSheetWindow(anchorDate: Date): MonthSheetWindow {
-  const anchorMonthDate = startOfMonth(anchorDate);
-  const previousMonth = buildMonthSheetMatrix(
-    addMonths(anchorMonthDate, -1).getFullYear(),
-    addMonths(anchorMonthDate, -1).getMonth() + 1,
-  );
-  const anchorMonth = buildMonthSheetMatrix(
-    anchorMonthDate.getFullYear(),
-    anchorMonthDate.getMonth() + 1,
-  );
-  const nextMonthDate = addMonths(anchorMonthDate, 1);
-  const nextMonth = buildMonthSheetMatrix(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1);
-
-  return {
-    previousMonth,
-    anchorMonth,
-    nextMonth,
-    months: [previousMonth, anchorMonth, nextMonth],
   };
 }

@@ -18,7 +18,6 @@ type OpenAppointmentContext = {
   projectId?: number;
   returnView?: CalendarWorkspaceView;
   weekScrollLeft?: number | null;
-  monthSheetScrollLeft?: number | null;
 };
 
 interface CalendarWorkspaceProps {
@@ -124,26 +123,22 @@ export function CalendarWorkspace({
     }
 
     return (
-      <MonthSheetGrid
-        currentDate={currentDate}
-        employeeFilterId={employeeFilterId}
-        onNewAppointment={(date, options) => {
-          onOpenAppointmentForm({
-            initialDate: date,
-            projectId,
-            returnView: "monthSheet",
-            monthSheetScrollLeft: options?.scrollLeft ?? null,
+        <MonthSheetGrid
+          currentDate={currentDate}
+          employeeFilterId={employeeFilterId}
+          onNewAppointment={(date) => {
+            onOpenAppointmentForm({
+              initialDate: date,
+              projectId,
+              returnView: "monthSheet",
+            });
+          }}
+          onOpenAppointment={(appointmentId) => {
+            onOpenAppointmentForm({
+              appointmentId,
+              returnView: "monthSheet",
           });
         }}
-        onOpenAppointment={(appointmentId, options) => {
-          onOpenAppointmentForm({
-            appointmentId,
-            returnView: "monthSheet",
-            monthSheetScrollLeft: options?.scrollLeft ?? null,
-          });
-        }}
-        restoreScrollLeft={restoreScrollLeft}
-        onScrollRestoreApplied={onScrollRestoreApplied}
       />
     );
   };

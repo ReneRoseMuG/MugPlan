@@ -76,7 +76,6 @@ type AppointmentContextState = {
   returnContext?: ReturnContext;
   readOnlyFields?: Array<"project" | "customer">;
   weekScrollLeft?: number | null;
-  monthSheetScrollLeft?: number | null;
 };
 
 type AppointmentOverlayOrigin = "appointmentsList" | "employeeAppointments" | "tourAppointments" | "monitoring";
@@ -116,11 +115,9 @@ export default function Home({ onLogout }: HomeProps) {
     returnContext?: ReturnContext;
     readOnlyFields?: Array<"project" | "customer">;
     weekScrollLeft?: number | null;
-    monthSheetScrollLeft?: number | null;
   } | null>(null);
   const [appointmentOverlayContext, setAppointmentOverlayContext] = useState<AppointmentOverlayState | null>(null);
   const [pendingWeekScrollRestore, setPendingWeekScrollRestore] = useState<number | null>(null);
-  const [pendingMonthSheetScrollRestore, setPendingMonthSheetScrollRestore] = useState<number | null>(null);
   const [employeeFormVisible, setEmployeeFormVisible] = useState(false);
   const [tourFormVisible, setTourFormVisible] = useState(false);
   const [teamFormVisible, setTeamFormVisible] = useState(false);
@@ -156,10 +153,6 @@ export default function Home({ onLogout }: HomeProps) {
   const handleWeekScrollRestoreApplied = useCallback(() => {
     if (view === "week") {
       setPendingWeekScrollRestore(null);
-      return;
-    }
-    if (view === "monthSheet") {
-      setPendingMonthSheetScrollRestore(null);
     }
   }, [view]);
 
@@ -191,18 +184,8 @@ export default function Home({ onLogout }: HomeProps) {
         && context.weekScrollLeft >= 0
       ) {
         setPendingWeekScrollRestore(context.weekScrollLeft);
-        setPendingMonthSheetScrollRestore(null);
-      } else if (
-        context.returnContext.targetView === "monthSheet"
-        && typeof context.monthSheetScrollLeft === "number"
-        && Number.isFinite(context.monthSheetScrollLeft)
-        && context.monthSheetScrollLeft >= 0
-      ) {
-        setPendingMonthSheetScrollRestore(context.monthSheetScrollLeft);
-        setPendingWeekScrollRestore(null);
       } else {
         setPendingWeekScrollRestore(null);
-        setPendingMonthSheetScrollRestore(null);
       }
       setAppointmentContext(null);
       applyReturnContext(context.returnContext);
@@ -212,22 +195,10 @@ export default function Home({ onLogout }: HomeProps) {
     const returnToProject = Boolean(context?.projectId);
     const returnView = context?.returnView ?? "month";
     const weekScrollLeft = context?.weekScrollLeft;
-    const monthSheetScrollLeft = context?.monthSheetScrollLeft;
     if (!returnToProject && returnView === "week" && typeof weekScrollLeft === "number" && Number.isFinite(weekScrollLeft) && weekScrollLeft >= 0) {
       setPendingWeekScrollRestore(weekScrollLeft);
-      setPendingMonthSheetScrollRestore(null);
-    } else if (
-      !returnToProject
-      && returnView === "monthSheet"
-      && typeof monthSheetScrollLeft === "number"
-      && Number.isFinite(monthSheetScrollLeft)
-      && monthSheetScrollLeft >= 0
-    ) {
-      setPendingMonthSheetScrollRestore(monthSheetScrollLeft);
-      setPendingWeekScrollRestore(null);
     } else {
       setPendingWeekScrollRestore(null);
-      setPendingMonthSheetScrollRestore(null);
     }
     setAppointmentContext(null);
     setView(returnToProject ? "project" : returnView);
@@ -488,11 +459,10 @@ export default function Home({ onLogout }: HomeProps) {
                   returnContext: { targetView: ctx.returnView ?? "month" },
                   returnView: ctx.returnView,
                   weekScrollLeft: ctx.weekScrollLeft,
-                  monthSheetScrollLeft: ctx.monthSheetScrollLeft,
                 });
                 setView("appointment");
               }}
-              restoreScrollLeft={view === "week" ? pendingWeekScrollRestore : view === "monthSheet" ? pendingMonthSheetScrollRestore : null}
+              restoreScrollLeft={view === "week" ? pendingWeekScrollRestore : null}
               onScrollRestoreApplied={handleWeekScrollRestoreApplied}
             />
           ) : isGlobalCalendarView && view === "year" ? (

@@ -5,12 +5,14 @@
  * - Neue isolierte Monatsblatt-Ansicht
  *
  * Abgedeckte Regeln:
- * - Die Ansicht rendert ein fixes 3-Monats-Fenster aus Vor-, Anker- und Folgemonat.
- * - Jede Monatssektion behaelt die feste Struktur aus KW-Spalte und 7 Tages-Spalten.
+ * - Die Ansicht rendert genau ein sichtbares Monatsblatt fuer den aktiven Monat.
+ * - Das Monatsblatt behaelt die feste Struktur aus KW-Spalte und 7 Tages-Spalten.
+ * - Monatsfremde Tage bleiben sichtbar, werden aber im Renderzustand als reduzierte Nachbar-Monatstage markiert.
+ * - Sechs-Wochen-Monate behalten ihre letzte Woche in einem eigenen vertikalen Wochen-Scroller erreichbar.
  * - Die bestehende Compact-Bar-Darstellung bleibt fuer geklippte Mehrtagessegmente wiederverwendet.
  *
  * Fehlerfaelle:
- * - Das Monatsblatt verliert die Parallelitaet der drei Monate oder rendert nur den Ankermonat.
+ * - Das Monatsblatt rendert versehentlich wieder mehrere Monate parallel.
  * - Wiederverwendete Termindarstellung verliert isFirstDay/isLastDay an sichtbaren Segmentgrenzen.
  *
  * Ziel:
@@ -142,7 +144,7 @@ describe("calendar month sheet view wiring", () => {
     });
   });
 
-  it("renders a fixed three-month window around the anchor month", async () => {
+  it("renders exactly one visible month sheet for the active month", async () => {
     configureDefaults([], [{ id: 7, name: "Alpha", color: "#225588", version: 1 }]);
 
     const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
@@ -150,11 +152,35 @@ describe("calendar month sheet view wiring", () => {
       <CalendarMonthSheetView currentDate={new Date("2026-03-15T00:00:00Z")} />,
     );
 
-    expect(markup).toContain("month-sheet-2026-02-01");
-    expect(markup).toContain("month-sheet-2026-03-01");
-    expect(markup).toContain("month-sheet-2026-04-01");
-    expect(markup).toContain("month-sheet-scroll-container");
+    expect(markup).toContain('data-testid="month-sheet-2026-03-01"');
+    expect(markup).not.toContain('data-testid="month-sheet-2026-04-01"');
+    expect(markup).not.toContain('data-testid="month-sheet-2026-05-01"');
+    expect(markup).toContain('data-testid="month-sheet-container"');
     expect(markup).toContain("month-sheet-week-number-2026-03-01-2026-02-23");
+  });
+
+  it("renders the last visible week of a six-week month inside the dedicated week scroller", async () => {
+    configureDefaults([], [{ id: 7, name: "Alpha", color: "#225588", version: 1 }]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView currentDate={new Date("2026-03-15T00:00:00Z")} />,
+    );
+
+    expect(markup).toContain('data-testid="month-sheet-weeks-scroll-2026-03-01"');
+    expect(markup).toContain("month-sheet-week-number-2026-03-01-2026-03-30");
+  });
+
+  it("marks adjacent-month days separately from current-month days in the rendered month sheet", async () => {
+    configureDefaults([], [{ id: 7, name: "Alpha", color: "#225588", version: 1 }]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView currentDate={new Date("2026-03-15T00:00:00Z")} />,
+    );
+
+    expect(markup).toContain('data-testid="month-sheet-day-2026-02-23" data-month-scope="adjacent"');
+    expect(markup).toContain('data-testid="month-sheet-day-2026-03-02" data-month-scope="current"');
   });
 
   it("keeps the reused compact-bar segment flags intact for clipped continuation segments", async () => {

@@ -8,18 +8,17 @@
  * - Jede Monatsmatrix startet am Montag der ersten sichtbaren Woche und endet am Sonntag der letzten sichtbaren Woche.
  * - Monatsblätter unterstützen 4, 5 und 6 sichtbare Wochen inklusive Februar- und Jahreswechsel-Faellen.
  * - Problemmonate Maerz 2026 und April 2026 bleiben als explizite Regressionen driftfrei.
- * - Das feste 3-Monats-Sichtfenster ordnet Vor-, Anker- und Folgemonat deterministisch zu.
  *
  * Fehlerfaelle:
  * - Monatsraster uebernehmen implizite Offsets aus vorherigen Monaten.
- * - Sichtfenster oder Navigation verlieren bei Monats- oder Jahreswechseln die korrekte Reihenfolge.
+ * - Monatsgrenzen oder sichtbare Wochenrahmen kippen bei Monats- oder Jahreswechseln.
  *
  * Ziel:
  * Die neue Monatsblatt-Datumslogik isoliert und deterministisch absichern.
  */
 import { describe, expect, it } from "vitest";
 import { format } from "date-fns";
-import { buildMonthSheetMatrix, buildMonthSheetWindow } from "../../../client/src/components/calendar/monthSheetModel";
+import { buildMonthSheetMatrix } from "../../../client/src/components/calendar/monthSheetModel";
 
 function toDateKeys(matrix: ReturnType<typeof buildMonthSheetMatrix>) {
   return matrix.weeks.flatMap((week) => week.days.map((day) => day.dateKey));
@@ -99,22 +98,5 @@ describe("month sheet model rules", () => {
 
     expect(flaggedDays).toHaveLength(1);
     expect(flaggedDays[0].dateKey).toBe(todayKey);
-  });
-
-  it("builds a deterministic three-month window around the anchor month across year boundaries", () => {
-    const decemberWindow = buildMonthSheetWindow(new Date("2026-12-15T12:00:00Z"));
-    const januaryWindow = buildMonthSheetWindow(new Date("2027-01-10T12:00:00Z"));
-
-    expect(decemberWindow.months.map((month) => month.monthKey)).toEqual([
-      "2026-11-01",
-      "2026-12-01",
-      "2027-01-01",
-    ]);
-    expect(januaryWindow.months.map((month) => month.monthKey)).toEqual([
-      "2026-12-01",
-      "2027-01-01",
-      "2027-02-01",
-    ]);
-    expect(buildMonthSheetWindow(new Date("2026-12-15T12:00:00Z"))).toEqual(decemberWindow);
   });
 });

@@ -153,7 +153,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     });
   });
 
-  it("renders the month sheet grid in monthSheet mode and forwards scroll restore plus return context", () => {
+  it("renders the month sheet grid in monthSheet mode and forwards the monthSheet return context", () => {
     const markup = renderToStaticMarkup(
       <CalendarWorkspace
         mode="global"
@@ -165,8 +165,6 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
         onDateChange={() => undefined}
         onOpenAppointmentForm={openAppointmentFormMock}
         projectId={99}
-        restoreScrollLeft={320}
-        onScrollRestoreApplied={() => undefined}
       />,
     );
 
@@ -176,7 +174,6 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
 
     const props = monthSheetGridCalls.at(-1);
     expect(props?.employeeFilterId).toBe(11);
-    expect(props?.restoreScrollLeft).toBe(320);
 
     (props?.onNewAppointment as (date: string, options?: { scrollLeft?: number | null }) => void)(
       "2099-01-20",
@@ -191,12 +188,10 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
       initialDate: "2099-01-20",
       projectId: 99,
       returnView: "monthSheet",
-      monthSheetScrollLeft: 444,
     });
     expect(openAppointmentFormMock).toHaveBeenNthCalledWith(2, {
       appointmentId: 701,
       returnView: "monthSheet",
-      monthSheetScrollLeft: 555,
     });
   });
 });

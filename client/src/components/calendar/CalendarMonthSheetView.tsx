@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { addDays, format, isSameDay, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +25,7 @@ import {
   MONTH_SLOT_SEPARATOR_HEIGHT_PX,
   type MonthWeekRowLayout,
 } from "./monthLaneState";
-import { buildMonthSheetWindow, type MonthSheetMatrix } from "./monthSheetModel";
+import { buildMonthSheetMatrix, type MonthSheetMatrix } from "./monthSheetModel";
 import type { Tour } from "@shared/schema";
 
 type CalendarMonthSheetViewProps = {
@@ -33,8 +33,6 @@ type CalendarMonthSheetViewProps = {
   employeeFilterId?: number | null;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
-  restoreScrollLeft?: number | null;
-  onScrollRestoreApplied?: () => void;
 };
 
 type MonthSheetRenderWeek = {
@@ -69,11 +67,8 @@ export function CalendarMonthSheetView({
   employeeFilterId,
   onNewAppointment,
   onOpenAppointment,
-  restoreScrollLeft,
-  onScrollRestoreApplied,
 }: CalendarMonthSheetViewProps) {
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
-  const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(
@@ -89,26 +84,12 @@ export function CalendarMonthSheetView({
   const totalDayWeight = useMemo(() => dayWeights.reduce((sum, weight) => sum + weight, 0), [dayWeights]);
   const berlinToday = getBerlinTodayDateString();
 
-  const monthWindow = useMemo(() => buildMonthSheetWindow(currentDate), [currentDate]);
-  const scrollResetKey = monthWindow.anchorMonth.monthKey;
-  const stripFromDate = format(monthWindow.months[0].visibleStart, "yyyy-MM-dd");
-  const stripToDate = format(monthWindow.months[monthWindow.months.length - 1].visibleEnd, "yyyy-MM-dd");
-
-  useEffect(() => {
-    const node = horizontalScrollContainerRef.current;
-    if (!node) return;
-
-    const frame = window.requestAnimationFrame(() => {
-      if (typeof restoreScrollLeft === "number" && Number.isFinite(restoreScrollLeft)) {
-        node.scrollLeft = Math.max(0, restoreScrollLeft);
-        onScrollRestoreApplied?.();
-        return;
-      }
-      node.scrollLeft = node.clientWidth;
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [onScrollRestoreApplied, restoreScrollLeft, scrollResetKey]);
+  const month = useMemo(
+    () => buildMonthSheetMatrix(currentDate.getFullYear(), currentDate.getMonth() + 1),
+    [currentDate],
+  );
+  const stripFromDate = format(month.visibleStart, "yyyy-MM-dd");
+  const stripToDate = format(month.visibleEnd, "yyyy-MM-dd");
 
   const { data: appointments = [] } = useCalendarAppointments({
     fromDate: stripFromDate,
@@ -127,7 +108,7 @@ export function CalendarMonthSheetView({
   );
   const tourSlots = useMemo(() => buildMonthTourSlots(tours), [tours]);
 
-  const getCurrentScrollLeft = () => horizontalScrollContainerRef.current?.scrollLeft ?? null;
+  const getCurrentScrollLeft = () => null;
 
   const getSlotBarPosition = (startIndex: number, endIndex: number) => {
     const startWeight = dayWeights.slice(0, startIndex).reduce((sum, weight) => sum + weight, 0);
@@ -138,46 +119,41 @@ export function CalendarMonthSheetView({
     };
   };
 
-  const monthRenderData = useMemo(() => {
-    return monthWindow.months.map((month) => {
-      const weekData = new Map<string, MonthSheetRenderWeek>();
+  const weekData = useMemo(() => {
+    const nextWeekData = new Map<string, MonthSheetRenderWeek>();
 
-      month.weeks.forEach((week) => {
-        const weekAppointments = appointments
-          .filter((appointment) => {
-            const start = parseISO(appointment.startDate);
-            const end = parseISO(getAppointmentEndDate(appointment));
-            return start <= week.weekEnd && end >= week.weekStart;
-          })
-          .sort(compareAppointmentsByTourIndexThenTime);
-        const weekDays = week.days.map((day) => day.date);
-        const rowLayout = buildMonthWeekRowLayout(weekDays, tourSlots, weekAppointments);
+    month.weeks.forEach((week) => {
+      const weekAppointments = appointments
+        .filter((appointment) => {
+          const start = parseISO(appointment.startDate);
+          const end = parseISO(getAppointmentEndDate(appointment));
+          return start <= week.weekEnd && end >= week.weekStart;
+        })
+        .sort(compareAppointmentsByTourIndexThenTime);
+      const weekDays = week.days.map((day) => day.date);
+      const rowLayout = buildMonthWeekRowLayout(weekDays, tourSlots, weekAppointments);
 
-        let currentTopPx = MONTH_DAY_HEADER_HEIGHT_PX;
-        const slotTopPxByTourId = new Map<number | null, number>();
-        for (const slot of rowLayout.slots) {
-          slotTopPxByTourId.set(slot.tourId, currentTopPx);
-          const subRows = rowLayout.subRowCountByTourId.get(slot.tourId) ?? 1;
-          currentTopPx +=
-            MONTH_SLOT_SEPARATOR_HEIGHT_PX +
-            subRows * MONTH_SLOT_BAR_HEIGHT_PX +
-            (subRows - 1) * MONTH_SLOT_BAR_GAP_PX +
-            MONTH_SLOT_PADDING_BOTTOM_PX;
-        }
+      let currentTopPx = MONTH_DAY_HEADER_HEIGHT_PX;
+      const slotTopPxByTourId = new Map<number | null, number>();
+      for (const slot of rowLayout.slots) {
+        slotTopPxByTourId.set(slot.tourId, currentTopPx);
+        const subRows = rowLayout.subRowCountByTourId.get(slot.tourId) ?? 1;
+        currentTopPx +=
+          MONTH_SLOT_SEPARATOR_HEIGHT_PX +
+          subRows * MONTH_SLOT_BAR_HEIGHT_PX +
+          (subRows - 1) * MONTH_SLOT_BAR_GAP_PX +
+          MONTH_SLOT_PADDING_BOTTOM_PX;
+      }
 
-        weekData.set(format(week.weekStart, "yyyy-MM-dd"), {
-          rowLayout,
-          slotTopPxByTourId,
-          weekAppointments,
-        });
+      nextWeekData.set(format(week.weekStart, "yyyy-MM-dd"), {
+        rowLayout,
+        slotTopPxByTourId,
+        weekAppointments,
       });
-
-      return {
-        month,
-        weekData,
-      };
     });
-  }, [appointments, monthWindow.months, tourSlots]);
+
+    return nextWeekData;
+  }, [appointments, month, tourSlots]);
 
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointmentsById.get(appointmentId);
@@ -340,42 +316,27 @@ export function CalendarMonthSheetView({
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-border/40 bg-muted/30 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-primary">
-            {format(monthWindow.anchorMonth.monthStart, "MMMM yyyy", { locale: de })}
-          </span>
-        </div>
-      </div>
-
       <div
-        key={scrollResetKey}
-        ref={horizontalScrollContainerRef}
-        className="flex-1 overflow-x-auto overflow-y-hidden"
-        data-testid="month-sheet-scroll-container"
+        className="flex-1 min-h-0"
+        data-testid="month-sheet-container"
       >
-        <div className="flex h-full">
-          {monthRenderData.map(({ month, weekData }) => (
-            <MonthSheetSection
-              key={month.monthKey}
-              month={month}
-              weekData={weekData}
-              monthRowTemplate={monthRowTemplate}
-              dayGridTemplate={dayGridTemplate}
-              appointmentsById={appointmentsById}
-              berlinToday={berlinToday}
-              isAdmin={isAdmin}
-              draggedAppointmentId={draggedAppointmentId}
-              getSlotBarPosition={getSlotBarPosition}
-              onDrop={handleDrop}
-              onNewAppointment={(dateKey) => onNewAppointment?.(dateKey, { scrollLeft: getCurrentScrollLeft() })}
-              onAppointmentClick={handleAppointmentClick}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              weekDays={weekDays}
-            />
-          ))}
-        </div>
+        <MonthSheetSection
+          month={month}
+          weekData={weekData}
+          monthRowTemplate={monthRowTemplate}
+          dayGridTemplate={dayGridTemplate}
+          appointmentsById={appointmentsById}
+          berlinToday={berlinToday}
+          isAdmin={isAdmin}
+          draggedAppointmentId={draggedAppointmentId}
+          getSlotBarPosition={getSlotBarPosition}
+          onDrop={handleDrop}
+          onNewAppointment={(dateKey) => onNewAppointment?.(dateKey, { scrollLeft: getCurrentScrollLeft() })}
+          onAppointmentClick={handleAppointmentClick}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          weekDays={weekDays}
+        />
       </div>
     </div>
   );
@@ -441,7 +402,8 @@ function MonthSheetSection({
         </div>
 
         <div
-          className="flex-1 grid overflow-hidden"
+          className="flex-1 grid overflow-y-auto overflow-x-hidden"
+          data-testid={`month-sheet-weeks-scroll-${month.monthKey}`}
           style={{
             gridTemplateRows: month.weeks
               .map((week) => `${(weekData.get(format(week.weekStart, "yyyy-MM-dd"))?.rowLayout.rowHeightPx ?? MONTH_DAY_HEADER_HEIGHT_PX)}px`)
@@ -470,6 +432,30 @@ function MonthSheetSection({
                 <div className="relative col-span-7 grid h-full min-h-0" style={{ gridTemplateColumns: dayGridTemplate }}>
                   {week.days.map((day, dayIdx) => {
                     const isWeekend = dayIdx >= 5;
+                    const dayCellClassName = !day.isCurrentMonth
+                      ? isWeekend
+                        ? "bg-slate-300/15 text-muted-foreground/30"
+                        : "bg-slate-200/20 text-muted-foreground/30"
+                      : isWeekend
+                        ? "bg-slate-200/40 text-foreground hover:bg-slate-200/60"
+                        : "bg-white text-foreground hover:bg-slate-50";
+                    const dayHeaderClassName = day.isToday
+                      ? "bg-primary/10"
+                      : day.isCurrentMonth
+                        ? isWeekend
+                          ? "bg-slate-300/35"
+                          : "bg-slate-100/90"
+                        : isWeekend
+                          ? "bg-slate-300/10"
+                          : "bg-slate-200/20";
+                    const dayNumberClassName = day.isToday
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                      : day.isCurrentMonth
+                        ? "text-foreground/70"
+                        : "text-muted-foreground/45";
+                    const newAppointmentButtonClassName = day.isCurrentMonth
+                      ? "flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-primary/10 hover:text-primary"
+                      : "flex h-5 w-5 items-center justify-center rounded text-muted-foreground/25 transition-colors hover:bg-muted/20 hover:text-muted-foreground/40";
 
                     return (
                       <div
@@ -477,7 +463,7 @@ function MonthSheetSection({
                         className={`
                           relative h-full min-h-0 border-r border-b border-border/30 px-1
                           transition-colors duration-200
-                          ${!day.isCurrentMonth ? (isWeekend ? "bg-slate-300/30 text-muted-foreground/40" : "bg-muted/10 text-muted-foreground/40") : isWeekend ? "bg-slate-200/40 text-foreground hover:bg-slate-200/60" : "bg-white text-foreground hover:bg-slate-50"}
+                          ${dayCellClassName}
                           ${dayIdx === 6 ? "border-r-0" : ""}
                         `}
                         onDragOver={(event) => event.preventDefault()}
@@ -485,25 +471,16 @@ function MonthSheetSection({
                           void onDrop(event, day.date);
                         }}
                         data-testid={`month-sheet-day-${day.dateKey}`}
+                        data-month-scope={day.isCurrentMonth ? "current" : "adjacent"}
                       >
                         <div
                           style={{ height: `${MONTH_DAY_HEADER_HEIGHT_PX}px` }}
-                          className={`flex items-center justify-between rounded-md px-1.5 ${
-                            day.isToday
-                              ? "bg-primary/10"
-                              : day.isCurrentMonth
-                                ? isWeekend
-                                  ? "bg-slate-300/35"
-                                  : "bg-slate-100/90"
-                                : isWeekend
-                                  ? "bg-slate-300/20"
-                                  : "bg-muted/30"
-                          }`}
+                          className={`flex items-center justify-between rounded-md px-1.5 ${dayHeaderClassName}`}
                         >
                           <span
                             className={`
                               flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium
-                              ${day.isToday ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
+                              ${dayNumberClassName}
                             `}
                           >
                             {format(day.date, "d")}
@@ -511,7 +488,7 @@ function MonthSheetSection({
                           {day.dateKey >= berlinToday ? (
                             <button
                               onClick={() => onNewAppointment(day.dateKey)}
-                              className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-primary/10 hover:text-primary"
+                              className={newAppointmentButtonClassName}
                               data-testid={`button-new-appointment-month-sheet-${day.dateKey}`}
                             >
                               <span className="text-sm font-bold">+</span>
@@ -535,7 +512,10 @@ function MonthSheetSection({
                                 key={slot.tourId ?? "unassigned"}
                                 style={{
                                   height: `${slotHeightPx}px`,
-                                  backgroundColor: toTransparentTourColor(slot.color, MONTH_SLOT_BACKGROUND_ALPHA),
+                                  backgroundColor: toTransparentTourColor(
+                                    slot.color,
+                                    day.isCurrentMonth ? MONTH_SLOT_BACKGROUND_ALPHA : MONTH_SLOT_BACKGROUND_ALPHA * 0.35,
+                                  ),
                                 }}
                                 className="relative w-full"
                                 onDragOver={(event) => event.preventDefault()}
