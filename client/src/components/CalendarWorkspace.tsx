@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { addMonths, addWeeks, subMonths, subWeeks } from "date-fns";
 import { CalendarGrid } from "@/components/CalendarGrid";
+import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
@@ -8,7 +9,7 @@ import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { normalizeTourPrintWeekCount } from "@/lib/tour-print-preview";
 import { useSetting } from "@/hooks/useSettings";
 
-type CalendarWorkspaceView = "week" | "month";
+type CalendarWorkspaceView = "week" | "month" | "monthSheet";
 
 type OpenAppointmentContext = {
   initialDate?: string;
@@ -17,6 +18,7 @@ type OpenAppointmentContext = {
   projectId?: number;
   returnView?: CalendarWorkspaceView;
   weekScrollLeft?: number | null;
+  monthSheetScrollLeft?: number | null;
 };
 
 interface CalendarWorkspaceProps {
@@ -57,7 +59,7 @@ export function CalendarWorkspace({
   const printFromDate = getBerlinTodayDateString();
 
   const next = () => {
-    if (activeView === "month") {
+    if (activeView === "month" || activeView === "monthSheet") {
       onDateChange(addMonths(currentDate, 1));
       return;
     }
@@ -65,7 +67,7 @@ export function CalendarWorkspace({
   };
 
   const prev = () => {
-    if (activeView === "month") {
+    if (activeView === "month" || activeView === "monthSheet") {
       onDateChange(subMonths(currentDate, 1));
       return;
     }
@@ -99,23 +101,49 @@ export function CalendarWorkspace({
       );
     }
 
+    if (activeView === "month") {
+      return (
+        <CalendarGrid
+          currentDate={currentDate}
+          employeeFilterId={employeeFilterId}
+          onNewAppointment={(date) => {
+            onOpenAppointmentForm({
+              initialDate: date,
+              projectId,
+              returnView: "month",
+            });
+          }}
+          onOpenAppointment={(appointmentId) => {
+            onOpenAppointmentForm({
+              appointmentId,
+              returnView: "month",
+            });
+          }}
+        />
+      );
+    }
+
     return (
-      <CalendarGrid
+      <MonthSheetGrid
         currentDate={currentDate}
         employeeFilterId={employeeFilterId}
-        onNewAppointment={(date) => {
+        onNewAppointment={(date, options) => {
           onOpenAppointmentForm({
             initialDate: date,
             projectId,
-            returnView: "month",
+            returnView: "monthSheet",
+            monthSheetScrollLeft: options?.scrollLeft ?? null,
           });
         }}
-        onOpenAppointment={(appointmentId) => {
+        onOpenAppointment={(appointmentId, options) => {
           onOpenAppointmentForm({
             appointmentId,
-            returnView: "month",
+            returnView: "monthSheet",
+            monthSheetScrollLeft: options?.scrollLeft ?? null,
           });
         }}
+        restoreScrollLeft={restoreScrollLeft}
+        onScrollRestoreApplied={onScrollRestoreApplied}
       />
     );
   };

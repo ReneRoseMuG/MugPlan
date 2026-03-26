@@ -121,6 +121,7 @@ export function Sidebar({
         <NavGroup title="Terminplanung">
           <NavButton icon={CalendarDays} label="Wochenuebersicht" isActive={currentView === "week"} onClick={() => onViewChange("week")} />
           <NavButton icon={Calendar} label="Monatsuebersicht" isActive={currentView === "month"} onClick={() => onViewChange("month")} />
+          <NavButton icon={Calendar} label="Monatsblatt" isActive={currentView === "monthSheet"} onClick={() => onViewChange("monthSheet")} />
           <NavButton icon={AppointmentsIcon} label="Termine" isActive={currentView === "appointmentsList"} onClick={() => onViewChange("appointmentsList")} />
         </NavGroup>
 
