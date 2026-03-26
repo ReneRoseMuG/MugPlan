@@ -6,6 +6,7 @@ import {
   cloneElement,
   isValidElement,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -94,11 +95,13 @@ export function HoverPreview({
   contentClassName,
 }: HoverPreviewProps) {
   const globalOpenDelayMs = useOptionalHoverPreviewDelaySetting();
+  const resolvedMaxHeight = typeof maxHeight === "number" && Number.isFinite(maxHeight) ? maxHeight : null;
   const [open, setOpen] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const resolvedMaxHeight = typeof maxHeight === "number" && Number.isFinite(maxHeight) ? maxHeight : null;
+  const [previewSize, setPreviewSize] = useState({ width: maxWidth, height: resolvedMaxHeight ?? 0 });
   const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
   const clearOpenTimer = () => {
     if (openTimeoutRef.current) {
@@ -165,6 +168,36 @@ export function HoverPreview({
     };
   }, []);
 
+  useLayoutEffect(() => {
+    if (!open || mode !== "cursor") {
+      return;
+    }
+
+    const previewNode = previewContainerRef.current;
+    if (!previewNode || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const updatePreviewSize = () => {
+      const rect = previewNode.getBoundingClientRect();
+      setPreviewSize({
+        width: rect.width > 0 ? rect.width : maxWidth,
+        height: rect.height > 0 ? rect.height : resolvedMaxHeight ?? 0,
+      });
+    };
+
+    updatePreviewSize();
+
+    const observer = new ResizeObserver(() => {
+      updatePreviewSize();
+    });
+    observer.observe(previewNode);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [open, mode, maxWidth, resolvedMaxHeight, preview]);
+
   if (!preview) {
     return <>{children}</>;
   }
@@ -221,16 +254,16 @@ export function HoverPreview({
       };
     }
 
+    const measuredWidth = previewSize.width > 0 ? previewSize.width : maxWidth;
+    const measuredHeight = previewSize.height > 0 ? previewSize.height : resolvedMaxHeight ?? 0;
     const preferredLeft = cursorPos.x + cursorOffsetX;
     const preferredTop = cursorPos.y + cursorOffsetY;
-    const fallbackLeft = cursorPos.x - maxWidth - cursorOffsetX;
-    const fallbackTop = resolvedMaxHeight == null
-      ? viewportPadding
-      : cursorPos.y - resolvedMaxHeight - cursorOffsetY;
-    const maxLeft = window.innerWidth - maxWidth - viewportPadding;
+    const fallbackLeft = cursorPos.x - measuredWidth - cursorOffsetX;
+    const fallbackTop = cursorPos.y - measuredHeight - cursorOffsetY;
+    const maxLeft = window.innerWidth - measuredWidth - viewportPadding;
     const maxTop = resolvedMaxHeight == null
       ? window.innerHeight - viewportPadding
-      : window.innerHeight - Math.max(0, resolvedMaxHeight) - viewportPadding;
+      : window.innerHeight - Math.max(0, measuredHeight) - viewportPadding;
     const resolvedLeft = preferredLeft <= maxLeft
       ? preferredLeft
       : Math.max(viewportPadding, fallbackLeft);
@@ -250,6 +283,7 @@ export function HoverPreview({
       {open && typeof document !== "undefined"
         ? createPortal(
             <div
+              ref={previewContainerRef}
               className={cn("fixed z-50", className)}
               style={
                 resolvedMaxHeight == null
