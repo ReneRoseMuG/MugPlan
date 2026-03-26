@@ -26,12 +26,14 @@
  * End-to-End-Absicherung der Dump-und-Import-Endpunkte mit echter Testdatenbank
  * und temporärem Dateisystem. Import-Happy-Path mit leerem data.json (kein Tabellen-Inhalt)
  * vermeidet destruktive Auswirkungen auf den geteilten Testdatenbankzustand.
+ * Admin-Session wird pro Test neu erstellt, da resetDatabase() in beforeEach die User-IDs
+ * zurücksetzt und gespeicherte Sessions ungültig macht.
  */
 import os from "os";
 import path from "path";
 import fs from "fs";
 import archiver from "archiver";
-import request, { type SuperAgentTest } from "supertest";
+import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import type express from "express";
@@ -49,50 +51,35 @@ const DUMP_TABLE_KEYS = [
 ];
 
 let app: express.Express;
-let adminAgent: SuperAgentTest;
-let readerAgent: SuperAgentTest;
 const tmpDumpDir = path.resolve(os.tmpdir(), "mugplan-dump-integration-test");
 
 async function buildMinimalZip(options: { includeDataJson: boolean; dataContent?: unknown; corrupt?: boolean }): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    const archive = archiver("zip");
-    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
-    archive.on("end", () => resolve(Buffer.concat(chunks)));
-    archive.on("error", reject);
+    const arc = archiver("zip");
+    arc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    arc.on("end", () => resolve(Buffer.concat(chunks)));
+    arc.on("error", reject);
 
     if (options.corrupt) {
-      // No finalize — reject immediately with fake content
       resolve(Buffer.from("this is not a valid zip file at all"));
       return;
     }
 
     if (options.includeDataJson) {
       const content = JSON.stringify(options.dataContent ?? {});
-      archive.append(content, { name: "data.json" });
+      arc.append(content, { name: "data.json" });
     }
 
-    void archive.finalize();
+    void arc.finalize();
   });
 }
 
 beforeAll(async () => {
   app = await createApiTestApp();
-  adminAgent = await loginAdminAgent(app);
-
-  // Login as a LESER user for role restriction tests
-  readerAgent = request.agent(app);
-  await readerAgent.post("/api/auth/login").send({
-    username: "test-reader",
-    password: "test-reader-password",
-  });
-  // If test-reader does not exist, readerAgent requests will fail with non-200 — that's fine for role tests
 });
 
 afterAll(() => {
-  // Clean up temp dump dir used by dumpService during tests
-  // (the actual dir depends on BACKUP_BASE_PATH env, no explicit cleanup needed here)
-  // Clean up our local temp dir if created
   if (fs.existsSync(tmpDumpDir)) {
     fs.rmSync(tmpDumpDir, { recursive: true, force: true });
   }
@@ -100,7 +87,8 @@ afterAll(() => {
 
 describe("GET /api/admin/dumps – Liste", () => {
   it("Admin erhält 200 mit Array", async () => {
-    const res = await adminAgent.get("/api/admin/dumps").expect(200);
+    const admin = await loginAdminAgent(app);
+    const res = await admin.get("/api/admin/dumps").expect(200);
     expect(Array.isArray(res.body)).toBe(true);
   });
 
@@ -111,41 +99,37 @@ describe("GET /api/admin/dumps – Liste", () => {
 });
 
 describe("POST /api/admin/dumps/create", () => {
-  let createdFilename: string | null = null;
-
-  afterAll(async () => {
-    if (createdFilename) {
-      // Cleanup: delete the created dump
-      await adminAgent.delete(`/api/admin/dumps/${encodeURIComponent(createdFilename)}`);
-    }
-  });
-
   it("erstellt einen Dump und gibt Metadaten zurück", async () => {
-    const res = await adminAgent.post("/api/admin/dumps/create").expect(200);
+    const admin = await loginAdminAgent(app);
+    const res = await admin.post("/api/admin/dumps/create").expect(200);
     expect(res.body).toHaveProperty("filename");
     expect(res.body).toHaveProperty("sizeBytes");
     expect(res.body).toHaveProperty("createdAt");
     expect(typeof res.body.filename).toBe("string");
     expect(res.body.filename).toMatch(/^dump_\d{4}-\d{2}-\d{2}T[\d-]+Z\.zip$/);
     expect(res.body.sizeBytes).toBeGreaterThan(0);
-    createdFilename = res.body.filename as string;
   });
 
   it("erstellter Dump erscheint in der Liste", async () => {
-    if (!createdFilename) return;
-    const res = await adminAgent.get("/api/admin/dumps").expect(200);
-    const filenames = (res.body as Array<{ filename: string }>).map((d) => d.filename);
-    expect(filenames).toContain(createdFilename);
+    const admin = await loginAdminAgent(app);
+    const createRes = await admin.post("/api/admin/dumps/create").expect(200);
+    const filename = createRes.body.filename as string;
+
+    const listRes = await admin.get("/api/admin/dumps").expect(200);
+    const filenames = (listRes.body as Array<{ filename: string }>).map((d) => d.filename);
+    expect(filenames).toContain(filename);
   });
 
-  it("Dump enthält gültige ZIP-Datei mit data.json (Dateinamen-Regex)", async () => {
-    if (!createdFilename) return;
-    const res = await adminAgent
-      .get(`/api/admin/dumps/${encodeURIComponent(createdFilename)}/download`)
+  it("Dump-Download liefert ZIP mit Content-Disposition: attachment", async () => {
+    const admin = await loginAdminAgent(app);
+    const createRes = await admin.post("/api/admin/dumps/create").expect(200);
+    const filename = createRes.body.filename as string;
+
+    const res = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(filename)}/download`)
       .expect(200);
     expect(res.headers["content-disposition"]).toContain("attachment");
     expect(res.headers["content-type"]).toContain("zip");
-    // Response body should be non-empty binary
     expect(res.body).toBeTruthy();
   });
 
@@ -157,21 +141,23 @@ describe("POST /api/admin/dumps/create", () => {
 
 describe("GET /api/admin/dumps/:filename/download", () => {
   it("nicht vorhandene Datei → 404", async () => {
-    await adminAgent
+    const admin = await loginAdminAgent(app);
+    await admin
       .get("/api/admin/dumps/dump_2000-01-01T00-00-00-000Z.zip/download")
       .expect(404);
   });
 
   it("Path-Traversal-Dateiname → 422", async () => {
-    await adminAgent
-      .get("/api/admin/dumps/..%2F..%2Fetc%2Fpasswd/download")
-      .expect([422, 404]); // 422 if validated, 404 if URL parsing intercepts
+    const admin = await loginAdminAgent(app);
+    const res = await admin.get("/api/admin/dumps/..%2F..%2Fetc%2Fpasswd/download");
+    expect([422, 404]).toContain(res.status);
   });
 });
 
 describe("DELETE /api/admin/dumps/:filename", () => {
   it("nicht vorhandene Datei → 404", async () => {
-    await adminAgent
+    const admin = await loginAdminAgent(app);
+    await admin
       .delete("/api/admin/dumps/dump_2000-01-01T00-00-00-000Z.zip")
       .expect(404);
   });
@@ -182,16 +168,18 @@ describe("DELETE /api/admin/dumps/:filename", () => {
   });
 
   it("vorhandene Datei wird gelöscht", async () => {
-    // Erst einen Dump erstellen
-    const createRes = await adminAgent.post("/api/admin/dumps/create").expect(200);
+    const admin = await loginAdminAgent(app);
+
+    // Dump erstellen
+    const createRes = await admin.post("/api/admin/dumps/create").expect(200);
     const filename = createRes.body.filename as string;
 
     // Löschen
-    const deleteRes = await adminAgent.delete(`/api/admin/dumps/${encodeURIComponent(filename)}`).expect(200);
+    const deleteRes = await admin.delete(`/api/admin/dumps/${encodeURIComponent(filename)}`).expect(200);
     expect(deleteRes.body.ok).toBe(true);
 
     // Nicht mehr in der Liste
-    const listRes = await adminAgent.get("/api/admin/dumps").expect(200);
+    const listRes = await admin.get("/api/admin/dumps").expect(200);
     const filenames = (listRes.body as Array<{ filename: string }>).map((d) => d.filename);
     expect(filenames).not.toContain(filename);
   });
@@ -199,30 +187,34 @@ describe("DELETE /api/admin/dumps/:filename", () => {
 
 describe("POST /api/admin/dumps/import", () => {
   it("kein multipart-Body → 422", async () => {
-    const res = await adminAgent
+    const admin = await loginAdminAgent(app);
+    const res = await admin
       .post("/api/admin/dumps/import")
       .set("Content-Type", "application/json")
       .send({});
     expect(res.status).toBe(422);
   });
 
-  it("korrupte ZIP → 422, DB unverändert", async () => {
+  it("korrupte ZIP → 422", async () => {
+    const admin = await loginAdminAgent(app);
     const corruptBuffer = await buildMinimalZip({ includeDataJson: false, corrupt: true });
-    const res = await adminAgent
+    const res = await admin
       .post("/api/admin/dumps/import")
       .attach("file", corruptBuffer, "dump.zip");
     expect(res.status).toBe(422);
   });
 
   it("gültige ZIP ohne data.json → 422", async () => {
+    const admin = await loginAdminAgent(app);
     const zipBuffer = await buildMinimalZip({ includeDataJson: false });
-    const res = await adminAgent
+    const res = await admin
       .post("/api/admin/dumps/import")
       .attach("file", zipBuffer, "dump.zip");
     expect(res.status).toBe(422);
   });
 
   it("data.json ist kein gültiges JSON → 422", async () => {
+    const admin = await loginAdminAgent(app);
     const chunks: Buffer[] = [];
     const arc = archiver("zip");
     arc.on("data", (chunk: Buffer) => chunks.push(chunk));
@@ -234,17 +226,18 @@ describe("POST /api/admin/dumps/import", () => {
     void arc.finalize();
     const zipBuffer = await zipReady;
 
-    const res = await adminAgent
+    const res = await admin
       .post("/api/admin/dumps/import")
       .attach("file", zipBuffer, "dump.zip");
     expect(res.status).toBe(422);
   });
 
   it("gültige ZIP mit leeren Tabellen (alle known keys, leere Arrays) → 200", async () => {
+    const admin = await loginAdminAgent(app);
     const emptyData = Object.fromEntries(DUMP_TABLE_KEYS.map((k) => [k, []]));
     const zipBuffer = await buildMinimalZip({ includeDataJson: true, dataContent: emptyData });
 
-    const res = await adminAgent
+    const res = await admin
       .post("/api/admin/dumps/import")
       .attach("file", zipBuffer, "dump.zip");
     expect(res.status).toBe(200);
@@ -256,10 +249,11 @@ describe("POST /api/admin/dumps/import", () => {
   });
 
   it("unbekannte Tabellennamen in data.json werden ignoriert → 200", async () => {
+    const admin = await loginAdminAgent(app);
     const dataWithUnknown = { unknownTable: [{ id: 1, name: "ghost" }], tags: [] };
     const zipBuffer = await buildMinimalZip({ includeDataJson: true, dataContent: dataWithUnknown });
 
-    const res = await adminAgent
+    const res = await admin
       .post("/api/admin/dumps/import")
       .attach("file", zipBuffer, "dump.zip");
     expect(res.status).toBe(200);
