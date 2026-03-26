@@ -3,10 +3,11 @@ import path from "path";
 import archiver from "archiver";
 import unzipper from "unzipper";
 import { drizzle } from "drizzle-orm/mysql2";
-import { getTableName } from "drizzle-orm";
+import { getTableColumns, getTableName } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import { db, pool } from "../db";
 import { getAttachmentStoragePath, getBackupBasePath } from "../config/storagePaths";
+import { logError } from "../lib/logger";
 
 export class DumpServiceError extends Error {
   status: number;
@@ -92,6 +93,40 @@ const DUMP_TABLE_ENTRIES = [
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTable = any;
+
+/**
+ * Converts ISO date strings back to Date objects for columns that Drizzle maps as Date
+ * (MySqlTimestamp and MySqlDate without mode:"string"). Required because JSON roundtrip
+ * serializes Date → string, and Drizzle's mysql2 driver calls .toISOString() on insert.
+ */
+function coerceRowDates(table: AnyTable, rows: unknown[]): unknown[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cols = getTableColumns(table as any) as Record<string, any>;
+  const dateKeys = new Set<string>();
+
+  for (const [key, col] of Object.entries(cols)) {
+    const ct: string = col.columnType ?? "";
+    const mode: string | undefined = col.config?.mode;
+    if (ct === "MySqlTimestamp" || (ct === "MySqlDate" && mode !== "string")) {
+      dateKeys.add(key);
+    }
+  }
+
+  if (dateKeys.size === 0) return rows;
+
+  const dateKeyList = Array.from(dateKeys);
+  return rows.map((row) => {
+    const r = { ...(row as Record<string, unknown>) };
+    for (const key of dateKeyList) {
+      const val = r[key];
+      if (typeof val === "string" && val.length > 0) {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) r[key] = d;
+      }
+    }
+    return r;
+  });
+}
 
 function buildArchive(zipPath: string): { archive: archiver.Archiver; finalize: () => Promise<void> } {
   const output = fs.createWriteStream(zipPath);
@@ -252,10 +287,13 @@ export async function importDump(
       const rows = tableData[entry.key];
       if (!Array.isArray(rows) || rows.length === 0) continue;
 
+      // Restore Date objects lost during JSON serialization
+      const coercedRows = coerceRowDates(entry.table, rows);
+
       // Insert in batches of 500
       const BATCH_SIZE = 500;
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < coercedRows.length; i += BATCH_SIZE) {
+        const batch = coercedRows.slice(i, i + BATCH_SIZE);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await connDb.insert(entry.table as AnyTable).values(batch as any[]);
       }
@@ -265,8 +303,10 @@ export async function importDump(
     await conn.commit();
   } catch (e) {
     await conn.rollback();
+    const detail = e instanceof Error ? e.message : String(e);
+    logError("importDump: Datenbankfehler", { detail, stack: e instanceof Error ? e.stack : undefined });
     throw new DumpServiceError(
-      `Datenbankfehler beim Import: ${e instanceof Error ? e.message : String(e)}`,
+      `Datenbankfehler beim Import: ${detail}`,
       500,
       "INTERNAL_ERROR",
     );
