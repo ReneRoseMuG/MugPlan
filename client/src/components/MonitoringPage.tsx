@@ -238,8 +238,8 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
                 />
               </div>
             ) : null}
-            <div className="flex w-24 flex-col gap-1">
-              <span className="text-sm font-medium text-slate-700">Mindestzahl Mitarbeiter</span>
+            <div className="flex w-44 flex-col gap-1">
+              <span className="whitespace-nowrap text-sm font-medium text-slate-700">Mindestzahl Mitarbeiter</span>
               <Input
                 type="number"
                 min={1}

@@ -111,7 +111,7 @@ test("Soft-Delete - Projekt: Anhang aus Liste entfernen, Counter und Hover-Previ
 
   await page.getByTestId("button-cancel-project").click();
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
-  await page.getByRole("button", { name: "Wochenuebersicht" }).click();
+  await page.getByRole("button", { name: "Wochenübersicht" }).click();
   await expect(page.getByTestId(`week-appointment-panel-${appointment?.id}`)).toBeVisible({ timeout: 10_000 });
   await expect(
     page.getByTestId(`week-appointment-panel-${appointment?.id}`)

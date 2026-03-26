@@ -103,7 +103,7 @@ test("aktualisiert Hover und Terminformular nach weiterem Projektattachment ohne
   await page.getByTestId("button-cancel-project").click();
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Wochenuebersicht" }).click();
+  await page.getByRole("button", { name: "Wochenübersicht" }).click();
 
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   const hoverTrigger = appointmentPanel.getByTestId("week-appointment-attachments-hover-trigger");
