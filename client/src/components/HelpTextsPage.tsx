@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
-import { BoardView } from "@/components/ui/board-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HelpTextsFilterPanel } from "@/components/ui/filter-panels/help-texts-filter-panel";
 import { HelpTextsImportExportDialog } from "@/components/HelpTextsImportExportDialog";
-import { useSetting, useSettings } from "@/hooks/useSettings";
-import { HelpCircle, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown, Upload } from "lucide-react";
+import { useSetting } from "@/hooks/useSettings";
+import { HelpCircle, Plus, ArrowDown, ArrowUp, ArrowUpDown, Upload } from "lucide-react";
 import type { HelpText } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -21,14 +17,9 @@ interface HelpTextsPageProps {
   onEditHelpText: (id: number) => void;
 }
 
-type ViewMode = "board" | "table";
 type HelpTextSortKey = "helpKey" | "hasContent";
 type SortDirection = "asc" | "desc";
 type HelpTextPreviewSize = "small" | "medium" | "large";
-
-function parseViewMode(value: unknown): ViewMode {
-  return value === "table" ? "table" : "board";
-}
 
 function parseHelpTextPreviewSize(value: unknown): HelpTextPreviewSize {
   if (value === "small" || value === "medium" || value === "large") {
@@ -76,28 +67,13 @@ export function shouldBlockHelpTextsLayout(params: {
 
 export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPageProps) {
   const { toast } = useToast();
-  const { settingsByKey, setSetting } = useSettings();
-  const viewModeKey = "helptexts";
-  const settingsViewModeKey = `${viewModeKey}.viewMode`;
-  const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
   const helpTextPreviewSize = parseHelpTextPreviewSize(useSetting("helpTextPreviewSize"));
   const previewClass = resolvePreviewClass(helpTextPreviewSize);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(resolvedViewMode);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<HelpTextSortKey>("helpKey");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [importExportDialogOpen, setImportExportDialogOpen] = useState(false);
-
-  const extractApiCode = (error: unknown): string | null => {
-    if (!(error instanceof Error)) return null;
-    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
-    return match?.[1] ?? null;
-  };
-
-  useEffect(() => {
-    setViewMode(resolvedViewMode);
-  }, [resolvedViewMode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -147,53 +123,6 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
     });
     return data;
   }, [helpTexts, sortDirection, sortKey]);
-
-  const deleteMutation = useMutation({
-    mutationFn: async ({ id, version }: { id: number; version: number }) => {
-      return apiRequest("DELETE", `/api/help-texts/${id}`, { version });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
-      toast({ title: "Hilfetext geloescht" });
-    },
-    onError: (error: Error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Loeschen nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
-          variant: "destructive",
-        });
-      }
-    },
-  });
-
-  const handleDelete = (helpText: HelpText) => {
-    if (window.confirm(`Wollen Sie den Hilfetext ${helpText.title} wirklich loeschen?`)) {
-      deleteMutation.mutate({ id: helpText.id, version: helpText.version });
-    }
-  };
-
-  const handleViewModeChange = (next: string) => {
-    if (next !== "board" && next !== "table") return;
-    if (next === viewMode) return;
-
-    const nextMode = next as ViewMode;
-    setViewMode(nextMode);
-
-    void setSetting({
-      key: settingsViewModeKey,
-      scopeType: "USER",
-      value: nextMode,
-    }).catch((error: unknown) => {
-      setViewMode(resolvedViewMode);
-      toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Ansichtsmodus konnte nicht gespeichert werden.",
-        variant: "destructive",
-      });
-    });
-  };
 
   const handleSortToggle = (key: HelpTextSortKey) => {
     if (sortKey === key) {
@@ -284,7 +213,6 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
       </div>
     </div>
   );
-  const layoutFooter = viewMode === "board" ? tableFooter : undefined;
   const blockLayoutWhileLoading = shouldBlockHelpTextsLayout({
     isLoading,
     searchQuery,
@@ -296,7 +224,6 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
       <ListLayout
         title="Hilfetexte"
         icon={<HelpCircle className="w-5 h-5" />}
-        viewModeKey={viewModeKey}
         isLoading={blockLayoutWhileLoading}
         filterSlot={(
           <HelpTextsFilterPanel
@@ -304,89 +231,28 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
             onSearchQueryChange={setSearchQuery}
           />
         )}
-        viewModeToggle={
-          <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={handleViewModeChange}
-            variant="outline"
-            size="sm"
-            data-testid="toggle-helptexts-view-mode"
-          >
-            <ToggleGroupItem value="board" aria-label="Board-Ansicht" data-testid="toggle-helptexts-board">
-              <LayoutGrid className="w-4 h-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="table" aria-label="Tabellen-Ansicht" data-testid="toggle-helptexts-table">
-              <Table2 className="w-4 h-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
-        }
-        footerSlot={layoutFooter}
         contentSlot={
-          viewMode === "board" ? (
-            <BoardView
-              gridTestId="list-helptexts"
-              dynamicMinCols={3}
-              isEmpty={helpTexts.length === 0}
-              emptyState={emptyState}
-            >
-              {helpTexts.map((helpText) => (
-                <EntityCard
-                  key={helpText.id}
-                  testId={`helptext-card-${helpText.id}`}
-                  title={helpText.title}
-                  icon={<HelpCircle className="w-4 h-4" />}
-                  className={!helpText.isActive ? "opacity-60" : ""}
-                  onDelete={() => handleDelete(helpText)}
-                  isDeleting={deleteMutation.isPending}
-                  onDoubleClick={() => onEditHelpText(helpText.id)}
-                >
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground" data-testid={`text-helptext-key-${helpText.id}`}>
-                      Key: {helpText.helpKey}
-                    </p>
-                    <p className="font-medium text-sm" data-testid={`text-helptext-title-${helpText.id}`}>
-                      {helpText.title}
-                    </p>
-                    {helpText.body && (
-                      <div
-                        className="text-sm text-slate-600 line-clamp-2"
-                        dangerouslySetInnerHTML={{ __html: helpText.body }}
-                        data-testid={`text-helptext-body-${helpText.id}`}
-                      />
-                    )}
-                    {!helpText.isActive ? (
-                      <div className="pt-1">
-                        <Badge variant="secondary" className="text-xs">Inaktiv</Badge>
-                      </div>
-                    ) : null}
-                  </div>
-                </EntityCard>
-              ))}
-            </BoardView>
-          ) : (
-            <TableView
-              testId="table-helptexts"
-              columns={tableColumns}
-              rows={sortedHelpTexts}
-              rowKey={(row) => row.id}
-              onRowDoubleClick={(row) => onEditHelpText(row.id)}
-              rowPreviewRenderer={(row) => (
-                <div className={previewClass.shell}>
-                  <p className="font-semibold text-sm">{row.title}</p>
-                  <p className="text-xs text-muted-foreground">{row.helpKey}</p>
-                  {row.body.trim().length > 0 ? (
-                    <div className={previewClass.content} dangerouslySetInnerHTML={{ __html: row.body }} />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Kein Inhalt vorhanden.</p>
-                  )}
-                </div>
-              )}
-              emptyState={emptyState}
-              footerSlot={tableFooter}
-              stickyHeader
-            />
-          )
+          <TableView
+            testId="table-helptexts"
+            columns={tableColumns}
+            rows={sortedHelpTexts}
+            rowKey={(row) => row.id}
+            onRowDoubleClick={(row) => onEditHelpText(row.id)}
+            rowPreviewRenderer={(row) => (
+              <div className={previewClass.shell}>
+                <p className="font-semibold text-sm">{row.title}</p>
+                <p className="text-xs text-muted-foreground">{row.helpKey}</p>
+                {row.body.trim().length > 0 ? (
+                  <div className={previewClass.content} dangerouslySetInnerHTML={{ __html: row.body }} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Kein Inhalt vorhanden.</p>
+                )}
+              </div>
+            )}
+            emptyState={emptyState}
+            footerSlot={tableFooter}
+            stickyHeader
+          />
         }
       />
 

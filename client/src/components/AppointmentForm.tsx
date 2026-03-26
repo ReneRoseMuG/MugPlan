@@ -2,7 +2,7 @@
 import { ArrowLeft, Calendar, Clock, FolderKanban, Users, X } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
-import type { Customer, Employee, Product, Project, Tag, Team, Tour } from "@shared/schema";
+import type { Customer, Employee, Project, Tag, Team, Tour } from "@shared/schema";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,7 @@ import {
   getBerlinTodayDateString,
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
-import type { Component, ComponentCategory, Note } from "@shared/schema";
+import type { Note } from "@shared/schema";
 
 interface AppointmentFormProps {
   onCancel?: () => void;
@@ -340,10 +340,6 @@ export function AppointmentForm({
   const isAdmin = userRole === "ADMIN";
   const canManageAppointmentTags = isAdmin || userRole === "DISPATCHER";
   const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
-  const masterDataScope = isAdmin ? "all" : "active";
-  const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
-  const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
-  const componentsUrl = `/api/admin/master-data/components?active=${masterDataScope}`;
   const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
   const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {
     if (projectId) {
@@ -384,21 +380,6 @@ export function AppointmentForm({
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
     queryFn: () => fetchJson<Customer[]>("/api/customers"),
-  });
-  const { data: products = [] } = useQuery<Product[]>({
-    queryKey: [productsUrl],
-    queryFn: () => fetchJson<Product[]>(productsUrl),
-    staleTime: 0,
-  });
-  const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
-    queryKey: [componentCategoriesUrl],
-    queryFn: () => fetchJson<ComponentCategory[]>(componentCategoriesUrl),
-    staleTime: 0,
-  });
-  const { data: components = [] } = useQuery<Component[]>({
-    queryKey: [componentsUrl],
-    queryFn: () => fetchJson<Component[]>(componentsUrl),
-    staleTime: 0,
   });
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({

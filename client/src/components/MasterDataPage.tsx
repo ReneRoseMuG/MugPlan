@@ -1,18 +1,25 @@
 ﻿import { useMemo } from "react";
-import { Boxes, DatabaseZap, FileText, Package, Tags } from "lucide-react";
+import { Boxes, DatabaseZap, FileText, HelpCircle, Package, Tags } from "lucide-react";
 import { EntityFormWithTabsLayout } from "@/components/ui/entity-form-with-tabs-layout";
 import { ProductManagementPage } from "@/components/ProductManagementPage";
 import { TagManagementPage } from "@/components/TagManagementPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { MasterDataSeedPage } from "@/components/MasterDataSeedPage";
+import { HelpTextsPage } from "@/components/HelpTextsPage";
 
-export type MasterDataTabId = "products" | "tags" | "note-templates" | "seed";
+export type MasterDataTabId = "products" | "tags" | "help-texts" | "note-templates" | "seed";
 
 interface MasterDataPageProps {
   initialTabId?: MasterDataTabId;
+  onCreateHelpText?: () => void;
+  onEditHelpText?: (id: number) => void;
 }
 
-export function MasterDataPage({ initialTabId = "products" }: MasterDataPageProps) {
+export function MasterDataPage({
+  initialTabId = "products",
+  onCreateHelpText = () => undefined,
+  onEditHelpText = () => undefined,
+}: MasterDataPageProps) {
   const tabs = useMemo(
     () => [
       {
@@ -28,6 +35,12 @@ export function MasterDataPage({ initialTabId = "products" }: MasterDataPageProp
         content: <TagManagementPage />,
       },
       {
+        id: "help-texts",
+        label: "Hilfetexte",
+        icon: <HelpCircle className="h-4 w-4" />,
+        content: <HelpTextsPage onCreateHelpText={onCreateHelpText} onEditHelpText={onEditHelpText} />,
+      },
+      {
         id: "note-templates",
         label: "Notiz Vorlagen",
         icon: <FileText className="h-4 w-4" />,
@@ -40,7 +53,7 @@ export function MasterDataPage({ initialTabId = "products" }: MasterDataPageProp
         content: <MasterDataSeedPage />,
       },
     ],
-    [],
+    [onCreateHelpText, onEditHelpText],
   );
 
   return (

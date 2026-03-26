@@ -12,7 +12,6 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { AppointmentsListPage } from "@/components/AppointmentsListPage";
-import { HelpTextsPage } from "@/components/HelpTextsPage";
 import { HelpTextForm } from "@/components/HelpTextForm";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
@@ -322,11 +321,31 @@ export default function Home({ onLogout }: HomeProps) {
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView("projectList"); setView("project"); }}
             />
           ) : view === "noteTemplates" && isAdmin ? (
-            <MasterDataPage initialTabId="note-templates" />
+            <MasterDataPage
+              initialTabId="note-templates"
+              onCreateHelpText={() => {
+                setSelectedHelpTextId(null);
+                setView("helpTextForm");
+              }}
+              onEditHelpText={(id) => {
+                setSelectedHelpTextId(id);
+                setView("helpTextForm");
+              }}
+            />
           ) : view === "projectStatus" && isAdmin ? (
-            <MasterDataPage />
+            <MasterDataPage
+              onCreateHelpText={() => {
+                setSelectedHelpTextId(null);
+                setView("helpTextForm");
+              }}
+              onEditHelpText={(id) => {
+                setSelectedHelpTextId(id);
+                setView("helpTextForm");
+              }}
+            />
           ) : view === "helpTexts" && isAdmin ? (
-            <HelpTextsPage
+            <MasterDataPage
+              initialTabId="help-texts"
               onCreateHelpText={() => {
                 setSelectedHelpTextId(null);
                 setView("helpTextForm");
@@ -353,7 +372,17 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === "demoData" && isAdmin ? (
             <DemoDataPage />
           ) : view === "masterData" && isAdmin ? (
-            <MasterDataPage initialTabId="products" />
+            <MasterDataPage
+              initialTabId="products"
+              onCreateHelpText={() => {
+                setSelectedHelpTextId(null);
+                setView("helpTextForm");
+              }}
+              onEditHelpText={(id) => {
+                setSelectedHelpTextId(id);
+                setView("helpTextForm");
+              }}
+            />
           ) : view === "users" && isAdmin ? (
             <UsersPage />
           ) : view === "reports" && canAccessReports ? (
