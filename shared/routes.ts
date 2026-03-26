@@ -3852,6 +3852,69 @@ export const api = {
       },
     },
   },
+  dumps: {
+    create: {
+      method: "POST" as const,
+      path: "/api/admin/dumps/create",
+      responses: {
+        200: z.object({
+          filename: z.string(),
+          sizeBytes: z.number().int().min(0),
+          createdAt: z.string(),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        500: z.object({ code: z.literal("INTERNAL_ERROR") }),
+      },
+    },
+    list: {
+      method: "GET" as const,
+      path: "/api/admin/dumps",
+      responses: {
+        200: z.array(
+          z.object({
+            filename: z.string(),
+            sizeBytes: z.number().int().min(0),
+            createdAt: z.string(),
+          }),
+        ),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    download: {
+      method: "GET" as const,
+      path: "/api/admin/dumps/:filename/download",
+      responses: {
+        200: z.any(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    import: {
+      method: "POST" as const,
+      path: "/api/admin/dumps/import",
+      responses: {
+        200: z.object({
+          tablesRestored: z.number().int().min(0),
+          uploadsRestored: z.boolean(),
+          durationMs: z.number().int().min(0),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        500: z.object({ code: z.literal("INTERNAL_ERROR") }),
+      },
+    },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/admin/dumps/:filename",
+      responses: {
+        200: z.object({ ok: z.literal(true) }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   reports: {
     vorlaufliste: {
       list: {

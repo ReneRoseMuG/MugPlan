@@ -41,6 +41,12 @@ type BackupLogRow = {
   filePath: string | null;
 };
 
+type DumpListRow = {
+  filename: string;
+  sizeBytes: number;
+  createdAt: string;
+};
+
 function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; pdfPath?: string } {
   if (!filePathRaw) return {};
   try {
@@ -84,6 +90,15 @@ export function SettingsPage() {
         const text = await response.text();
         throw new Error(text || "Backups konnten nicht geladen werden");
       }
+      return response.json();
+    },
+  });
+
+  const dumpsQuery = useQuery<DumpListRow[]>({
+    queryKey: [api.dumps.list.path],
+    queryFn: async () => {
+      const response = await fetch(api.dumps.list.path, { credentials: "include" });
+      if (!response.ok) throw new Error("Dump-Liste konnte nicht geladen werden");
       return response.json();
     },
   });
@@ -216,6 +231,15 @@ export function SettingsPage() {
   const [isRunningBackupNow, setIsRunningBackupNow] = useState(false);
   const [backupRunInfo, setBackupRunInfo] = useState<string | null>(null);
   const [backupRunError, setBackupRunError] = useState<string | null>(null);
+
+  const [isDumpCreating, setIsDumpCreating] = useState(false);
+  const [dumpCreateError, setDumpCreateError] = useState<string | null>(null);
+  const [dumpCreateResult, setDumpCreateResult] = useState<DumpListRow | null>(null);
+  const [selectedDumpFile, setSelectedDumpFile] = useState<File | null>(null);
+  const [isDumpImporting, setIsDumpImporting] = useState(false);
+  const [dumpImportResult, setDumpImportResult] = useState<{ tablesRestored: number; uploadsRestored: boolean } | null>(null);
+  const [dumpImportError, setDumpImportError] = useState<string | null>(null);
+  const [isDumpDeleting, setIsDumpDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     setPreviewValue(resolvedPreviewValue);
@@ -546,6 +570,69 @@ export function SettingsPage() {
       setBackupRunError(error instanceof Error ? error.message : "Backup-Lauf fehlgeschlagen");
     } finally {
       setIsRunningBackupNow(false);
+    }
+  };
+
+  const handleCreateDump = async () => {
+    setDumpCreateError(null);
+    setDumpCreateResult(null);
+    setIsDumpCreating(true);
+    try {
+      const response = await fetch(api.dumps.create.path, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Dump konnte nicht erstellt werden");
+      const payload = await response.json() as DumpListRow;
+      setDumpCreateResult(payload);
+      await dumpsQuery.refetch();
+    } catch (error) {
+      setDumpCreateError(error instanceof Error ? error.message : "Unbekannter Fehler");
+    } finally {
+      setIsDumpCreating(false);
+    }
+  };
+
+  const handleDeleteDump = async (filename: string) => {
+    setIsDumpDeleting(filename);
+    try {
+      const response = await fetch(`/api/admin/dumps/${encodeURIComponent(filename)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Dump konnte nicht gelöscht werden");
+      await dumpsQuery.refetch();
+    } catch {
+      // silently ignore — list will still show the file
+    } finally {
+      setIsDumpDeleting(null);
+    }
+  };
+
+  const handleImportDump = async () => {
+    if (!selectedDumpFile) return;
+    setDumpImportError(null);
+    setDumpImportResult(null);
+    setIsDumpImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedDumpFile);
+      const response = await fetch(api.dumps.import.path, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Import fehlgeschlagen");
+      }
+      const payload = await response.json() as { tablesRestored: number; uploadsRestored: boolean };
+      setDumpImportResult(payload);
+      await dumpsQuery.refetch();
+    } catch (error) {
+      setDumpImportError(error instanceof Error ? error.message : "Unbekannter Fehler");
+    } finally {
+      setIsDumpImporting(false);
     }
   };
 
@@ -950,6 +1037,132 @@ export function SettingsPage() {
               </table>
             </div>
           )}
+            </div>
+          </section>
+
+          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-dumps">
+            <h4 className="font-bold text-slate-900">Dump &amp; Import</h4>
+            <p className="mt-1 text-xs text-slate-500">
+              Vollständiger Export und Import aller Anwendungsdaten inkl. Anhänge (außer Benutzer und Rollen).
+            </p>
+
+            <div className="mt-3 space-y-4">
+              {/* Dump erstellen */}
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="dump-create-section">
+                <p className="font-semibold text-slate-900">Dump erstellen</p>
+                <p className="mb-3 text-xs text-slate-500">
+                  Exportiert alle Tabellendaten und den Anhang-Ordner als ZIP-Datei.
+                </p>
+                <Button
+                  onClick={() => void handleCreateDump()}
+                  disabled={isDumpCreating}
+                  data-testid="button-dump-create"
+                >
+                  {isDumpCreating ? "Dump wird erstellt..." : "Dump erstellen"}
+                </Button>
+                {dumpCreateResult && (
+                  <p className="mt-2 text-xs text-emerald-700" data-testid="dump-create-success">
+                    Dump erstellt: {dumpCreateResult.filename} ({(dumpCreateResult.sizeBytes / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
+                {dumpCreateError && (
+                  <p className="mt-2 text-xs text-destructive" data-testid="dump-create-error">{dumpCreateError}</p>
+                )}
+              </div>
+
+              {/* Dump-Liste */}
+              <div className="rounded-md border border-slate-200 bg-white p-4" data-testid="dump-list-section">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="font-semibold text-slate-900">Vorhandene Dumps</p>
+                  <Button variant="outline" size="sm" onClick={() => void dumpsQuery.refetch()} data-testid="button-dumps-refresh">
+                    Aktualisieren
+                  </Button>
+                </div>
+                {dumpsQuery.isLoading ? (
+                  <p className="text-sm text-slate-500">Dumps werden geladen...</p>
+                ) : dumpsQuery.isError ? (
+                  <p className="text-sm text-destructive">Dumps konnten nicht geladen werden.</p>
+                ) : (dumpsQuery.data ?? []).length === 0 ? (
+                  <p className="text-sm text-slate-500">Noch keine Dumps vorhanden.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm" data-testid="table-dump-list">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-left">
+                          <th className="px-2 py-2">Erstellt</th>
+                          <th className="px-2 py-2">Größe</th>
+                          <th className="px-2 py-2">Download</th>
+                          <th className="px-2 py-2">Löschen</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(dumpsQuery.data ?? []).map((row) => (
+                          <tr key={row.filename} className="border-b border-slate-100" data-testid={`dump-row-${row.filename}`}>
+                            <td className="px-2 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
+                            <td className="px-2 py-2">{(row.sizeBytes / 1024 / 1024).toFixed(2)} MB</td>
+                            <td className="px-2 py-2">
+                              <a
+                                href={`/api/admin/dumps/${encodeURIComponent(row.filename)}/download`}
+                                className="underline text-primary"
+                                data-testid={`dump-download-${row.filename}`}
+                              >
+                                ZIP
+                              </a>
+                            </td>
+                            <td className="px-2 py-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void handleDeleteDump(row.filename)}
+                                disabled={isDumpDeleting === row.filename}
+                                data-testid={`dump-delete-${row.filename}`}
+                              >
+                                {isDumpDeleting === row.filename ? "..." : "Löschen"}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Import */}
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="dump-import-section">
+                <p className="font-semibold text-slate-900">Import</p>
+                <p className="mb-1 text-xs text-slate-500">
+                  ZIP-Dump hochladen und alle Anwendungsdaten wiederherstellen.
+                </p>
+                <p className="mb-3 text-xs text-amber-700 font-medium" data-testid="dump-import-warning">
+                  Achtung: Der Import überschreibt alle vorhandenen Daten (außer Benutzer und Rollen) unwiderruflich.
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept=".zip"
+                    onChange={(e) => setSelectedDumpFile(e.target.files?.[0] ?? null)}
+                    data-testid="input-dump-import-file"
+                    className="text-sm"
+                  />
+                  <Button
+                    onClick={() => void handleImportDump()}
+                    disabled={!selectedDumpFile || isDumpImporting}
+                    data-testid="button-dump-import"
+                  >
+                    {isDumpImporting ? "Import läuft..." : "Import ausführen"}
+                  </Button>
+                </div>
+                {dumpImportResult && (
+                  <p className="mt-2 text-xs text-emerald-700" data-testid="dump-import-success">
+                    Import abgeschlossen. Tabellen wiederhergestellt: {dumpImportResult.tablesRestored}.
+                    Anhänge: {dumpImportResult.uploadsRestored ? "wiederhergestellt" : "nicht enthalten"}.
+                  </p>
+                )}
+                {dumpImportError && (
+                  <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
+                )}
+              </div>
             </div>
           </section>
         </div>
