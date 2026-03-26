@@ -4,10 +4,12 @@
  * Abgedeckte Regeln:
  * - TeamEditForm erhaelt im Bearbeitungsmodus einen Admin-Delete-Flow.
  * - Das Speichern eines bestehenden Teams sendet PATCH mit aktueller Version und die Batch-Zuweisung mit employee-version.
+ * - Beim Speichern eines bestehenden Teams werden entfernte Mitglieder ueber die Remove-API geloest.
  * - VERSION_CONFLICT aus dem Speichern wird als sichtbarer Konflikt-Toast gemeldet.
  *
  * Fehlerfaelle:
  * - Versionsdaten gehen in Update- oder Zuweisungspayloads verloren.
+ * - Entfernte Team-Mitglieder bleiben serverseitig haengen.
  * - Admin-Delete verschwindet aus dem Teamdialog.
  * - Konflikte bleiben fuer den Nutzer ohne Rueckmeldung.
  *
@@ -162,6 +164,16 @@ describe("FT06 TeamManagement behavior", () => {
     isActive: true,
   };
 
+  const removedEmployee = {
+    id: 102,
+    firstName: "Ria",
+    lastName: "Alt",
+    fullName: "Ria Alt",
+    teamId: null,
+    version: 5,
+    isActive: true,
+  };
+
   beforeEach(() => {
     teamEditFormCalls.length = 0;
     apiRequestMock.mockReset();
@@ -171,7 +183,7 @@ describe("FT06 TeamManagement behavior", () => {
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (key === "/api/teams") return { data: [team], isLoading: false };
-      if (key === "/api/employees") return { data: [employee], isLoading: false };
+      if (key === "/api/employees") return { data: [employee, removedEmployee], isLoading: false };
       return { data: [], isLoading: false };
     });
 
@@ -207,6 +219,36 @@ describe("FT06 TeamManagement behavior", () => {
 
     expect(apiRequestMock).toHaveBeenNthCalledWith(1, "PATCH", "/api/teams/7", { color: "#114488", version: 4 });
     expect(apiRequestMock).toHaveBeenNthCalledWith(2, "POST", "/api/teams/7/employees", {
+      items: [{ employeeId: 101, version: 9 }],
+    });
+  });
+
+  it("removes deselected team members before reassigning the remaining selection", async () => {
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/teams") return { data: [team], isLoading: false };
+      if (key === "/api/employees") return { data: [employee, { ...removedEmployee, teamId: 7 }], isLoading: false };
+      return { data: [], isLoading: false };
+    });
+
+    apiRequestMock.mockImplementation(async (method: string, url: string) => ({
+      ok: true,
+      json: async () => ({ method, url }),
+    }));
+
+    const { TeamManagement } = await loadTeamManagement({
+      editingTeam: { ...team, members: [employee, removedEmployee] },
+      isCreating: false,
+    });
+
+    renderToStaticMarkup(<TeamManagement />);
+
+    const onSubmit = teamEditFormCalls[0].onSubmit as (teamId: number | null, employeeIds: number[], color: string) => Promise<void>;
+    await onSubmit(7, [101], "#114488");
+
+    expect(apiRequestMock).toHaveBeenNthCalledWith(1, "PATCH", "/api/teams/7", { color: "#114488", version: 4 });
+    expect(apiRequestMock).toHaveBeenNthCalledWith(2, "DELETE", "/api/teams/7/employees/102", { version: 5 });
+    expect(apiRequestMock).toHaveBeenNthCalledWith(3, "POST", "/api/teams/7/employees", {
       items: [{ employeeId: 101, version: 9 }],
     });
   });
