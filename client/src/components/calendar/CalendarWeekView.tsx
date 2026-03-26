@@ -643,7 +643,7 @@ export function CalendarWeekView({
 
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
+      <div className="relative z-30 flex items-center justify-between border-b border-border/40 bg-muted/30 px-6 py-4">
         <div className="flex items-center gap-3">
           <span className="text-lg font-bold text-primary">KW {getISOWeek(baseWeekStart)}</span>
           <span className="text-sm text-muted-foreground">
@@ -679,7 +679,7 @@ export function CalendarWeekView({
        * Der key setzt den Scrollcontainer deterministisch neu auf den linken Rand (0),
        * ohne Scrollwerte zu lesen oder zu speichern.
        */}
-      <div key={scrollResetKey} ref={horizontalScrollContainerRef} className="flex-1 overflow-x-auto overflow-y-hidden">
+      <div key={scrollResetKey} ref={horizontalScrollContainerRef} className="relative z-0 flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full">
           {weekStarts.map((weekStart, weekIndex) => {
             const weekKey = format(weekStart, "yyyy-MM-dd");
@@ -713,7 +713,7 @@ export function CalendarWeekView({
                 className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
                 <div className="h-full flex flex-col overflow-y-auto">
-                  <div className="sticky top-0 z-10 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: weekDayGridTemplate }}>
+                  <div className="sticky top-0 z-20 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: weekDayGridTemplate }}>
                     {days.map((day, dayIdx) => {
                       const isTodayDate = isToday(day);
                       const isWeekend = dayIdx >= 5;

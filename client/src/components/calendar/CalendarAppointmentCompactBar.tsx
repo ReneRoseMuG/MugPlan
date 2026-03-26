@@ -4,6 +4,12 @@ import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, getAppointmentEndDate } from "@/lib/calendar-utils";
 import { CalendarDays, Clock3 } from "lucide-react";
 
+const MONTH_APPOINTMENT_PREVIEW_OPEN_DELAY_MS = 650;
+const MONTH_APPOINTMENT_PREVIEW_CURSOR_OFFSET_X = 24;
+const MONTH_APPOINTMENT_PREVIEW_CURSOR_OFFSET_Y = 20;
+const MONTH_APPOINTMENT_PREVIEW_MAX_HEIGHT_PX = 520;
+const MONTH_APPOINTMENT_PREVIEW_VIEWPORT_PADDING_PX = 20;
+
 type CompactBarProps = {
   appointment: CalendarAppointment;
   isFirstDay: boolean;
@@ -126,12 +132,13 @@ export function CalendarAppointmentCompactBar({
     <HoverPreview
       preview={preview.content}
       mode="cursor"
-      openDelay={preview.options?.openDelayMs}
+      openDelay={Math.max(preview.options?.openDelayMs ?? 0, MONTH_APPOINTMENT_PREVIEW_OPEN_DELAY_MS)}
       maxWidth={preview.options?.maxWidth}
-      maxHeight={preview.options?.maxHeight}
-      cursorOffsetX={12}
-      cursorOffsetY={10}
-      className="z-[9999]"
+      maxHeight={preview.options?.maxHeight ?? MONTH_APPOINTMENT_PREVIEW_MAX_HEIGHT_PX}
+      cursorOffsetX={MONTH_APPOINTMENT_PREVIEW_CURSOR_OFFSET_X}
+      cursorOffsetY={MONTH_APPOINTMENT_PREVIEW_CURSOR_OFFSET_Y}
+      viewportPadding={MONTH_APPOINTMENT_PREVIEW_VIEWPORT_PADDING_PX}
+      className="z-[9999] overflow-y-auto"
     >
       {barBody}
     </HoverPreview>

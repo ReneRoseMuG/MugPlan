@@ -64,6 +64,24 @@ type MonthRenderData = {
 
 const logPrefix = "[calendar-month]";
 const MONTH_SLOT_BAR_HORIZONTAL_INSET_PX = 4;
+const MONTH_SLOT_BACKGROUND_ALPHA = 0.14;
+
+function toTransparentTourColor(color: string | null | undefined, alpha: number): string {
+  if (typeof color !== "string") {
+    return "transparent";
+  }
+
+  const normalized = color.trim();
+  const hex = normalized.startsWith("#") ? normalized.slice(1) : normalized;
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return "transparent";
+  }
+
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
 
 export function CalendarMonthView({
   currentDate,
@@ -496,7 +514,10 @@ export function CalendarMonthView({
                                       return (
                                         <div
                                           key={slot.tourId ?? "unassigned"}
-                                          style={{ height: `${slotHeightPx}px` }}
+                                          style={{
+                                            height: `${slotHeightPx}px`,
+                                            backgroundColor: toTransparentTourColor(slot.color, MONTH_SLOT_BACKGROUND_ALPHA),
+                                          }}
                                           className="relative w-full"
                                           onDragOver={(event) => event.preventDefault()}
                                           onDrop={(event) => {
@@ -504,14 +525,7 @@ export function CalendarMonthView({
                                             void handleDrop(event, day, slot.tourId);
                                           }}
                                         >
-                                          <div
-                                            style={{
-                                              height: `${MONTH_SLOT_SEPARATOR_HEIGHT_PX}px`,
-                                              backgroundColor: slot.color ?? "transparent",
-                                              opacity: slot.color ? 0.35 : 0,
-                                            }}
-                                            className="w-full"
-                                          />
+                                          <div style={{ height: `${MONTH_SLOT_SEPARATOR_HEIGHT_PX}px` }} className="w-full" />
                                         </div>
                                       );
                                     })}

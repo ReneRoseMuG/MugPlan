@@ -223,14 +223,24 @@ export function HoverPreview({
 
     const preferredLeft = cursorPos.x + cursorOffsetX;
     const preferredTop = cursorPos.y + cursorOffsetY;
+    const fallbackLeft = cursorPos.x - maxWidth - cursorOffsetX;
+    const fallbackTop = resolvedMaxHeight == null
+      ? viewportPadding
+      : cursorPos.y - resolvedMaxHeight - cursorOffsetY;
     const maxLeft = window.innerWidth - maxWidth - viewportPadding;
     const maxTop = resolvedMaxHeight == null
       ? window.innerHeight - viewportPadding
       : window.innerHeight - Math.max(0, resolvedMaxHeight) - viewportPadding;
+    const resolvedLeft = preferredLeft <= maxLeft
+      ? preferredLeft
+      : Math.max(viewportPadding, fallbackLeft);
+    const resolvedTop = preferredTop <= maxTop
+      ? preferredTop
+      : Math.max(viewportPadding, fallbackTop);
 
     return {
-      left: Math.max(viewportPadding, Math.min(preferredLeft, maxLeft)),
-      top: Math.max(viewportPadding, Math.min(preferredTop, maxTop)),
+      left: Math.max(viewportPadding, Math.min(resolvedLeft, maxLeft)),
+      top: Math.max(viewportPadding, Math.min(resolvedTop, maxTop)),
     };
   })();
 
