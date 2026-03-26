@@ -99,24 +99,41 @@ export function buildWeekLaneRenderData(
     .filter((appointment): appointment is CalendarAppointment => Boolean(appointment))
     .sort(compareAppointmentsForWeekLane);
 
-  const spanningAppointments = distinctAppointments
-    .filter((appointment) => getAppointmentDurationDays(appointment) > 0)
-    .map((appointment, rowIndex) => ({
+  const occupiedCells = new Set<string>();
+  const spanningAppointments: WeekLaneRenderData["spanningAppointments"] = [];
+
+  const spanningCandidates = distinctAppointments.filter((appointment) => getAppointmentDurationDays(appointment) > 0);
+
+  for (const appointment of spanningCandidates) {
+    const occupiedDayIndices = tourLane.dayBuckets
+      .filter((dayBucket) => dayBucket.appointments.includes(appointment.id))
+      .map((dayBucket) => dayBucket.dayIndex);
+    if (occupiedDayIndices.length === 0) {
+      continue;
+    }
+
+    let rowIndex = 0;
+    while (occupiedDayIndices.some((dayIndex) => occupiedCells.has(`${rowIndex}-${dayIndex}`))) {
+      rowIndex += 1;
+    }
+
+    occupiedDayIndices.forEach((dayIndex) => {
+      occupiedCells.add(`${rowIndex}-${dayIndex}`);
+    });
+
+    spanningAppointments.push({
       appointmentId: appointment.id,
       rowIndex,
-    }));
+    });
+  }
 
   const hasSingleDayAppointments = distinctAppointments.some((appointment) => getAppointmentDurationDays(appointment) === 0);
-  const tileRowCount = spanningAppointments.length > 0 ? spanningAppointments.length : hasSingleDayAppointments ? 1 : 0;
-  const occupiedCells = new Set<string>();
-
-  for (const { appointmentId, rowIndex } of spanningAppointments) {
-    for (const dayBucket of tourLane.dayBuckets) {
-      if (dayBucket.appointments.includes(appointmentId)) {
-        occupiedCells.add(`${rowIndex}-${dayBucket.dayIndex}`);
-      }
-    }
-  }
+  const tileRowCount =
+    spanningAppointments.length > 0
+      ? Math.max(...spanningAppointments.map((appointment) => appointment.rowIndex)) + 1
+      : hasSingleDayAppointments
+        ? 1
+        : 0;
 
   const singleDayGridItems: WeekLaneRenderData["singleDayGridItems"] = [];
   const singleDayOverflowByBucket = tourLane.dayBuckets.map((bucket) =>
