@@ -67,8 +67,8 @@ vi.mock("@/components/ui/select", () => ({
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
-vi.mock("@/components/CalendarGrid", () => ({
-  CalendarGrid: () => <div>month-grid</div>,
+vi.mock("@/components/MonthSheetGrid", () => ({
+  MonthSheetGrid: () => <div>month-sheet-grid</div>,
 }));
 
 vi.mock("@/components/WeekGrid", () => ({

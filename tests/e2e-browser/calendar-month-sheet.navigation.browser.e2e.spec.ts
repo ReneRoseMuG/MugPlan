@@ -2,19 +2,19 @@
  * Test Scope:
  *
  * Bereich:
- * - Neue globale Monatsblatt-Navigation
+ * - Neue globale Monatsübersicht-Navigation
  *
  * Abgedeckte Regeln:
- * - Die Sidebar bietet Monatsuebersicht und Monatsblatt parallel an.
- * - Das Monatsblatt rendert genau ein sichtbares Blatt und verschiebt es per Vor/Zurueck deterministisch um genau einen Monat.
- * - Das Monatsblatt bleibt als eigene Ansicht parallel zur Monatsuebersicht erreichbar.
+ * - Die Sidebar bietet die Monatsübersicht als einzigen monatlichen Einstieg an.
+ * - Die Monatsübersicht rendert genau ein sichtbares Blatt und verschiebt es per Vor/Zurueck deterministisch um genau einen Monat.
+ * - Die Monatsübersicht laesst sich verlassen, ohne auf einen separaten Alt-Monatskalender zurueckzufallen.
  *
  * Fehlerfaelle:
- * - Die neue Ansicht ist nicht separat erreichbar oder ersetzt versehentlich die alte Monatsuebersicht.
+ * - Die neue Ansicht ist nicht separat erreichbar oder faellt versehentlich in den entfernten Alt-Monatspfad zurueck.
  * - Mehrfaches Navigieren fuehrt zu driftenden Monatswechseln.
  *
  * Ziel:
- * Die neue Monatsblatt-Ansicht im Browser auf Erreichbarkeit und driftfreie Einzelblatt-Navigation absichern.
+ * Die neue Monatsübersicht im Browser auf Erreichbarkeit und driftfreie Einzelblatt-Navigation absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
 
@@ -32,13 +32,12 @@ async function getRenderedMonthKeys(page: Page) {
   );
 }
 
-test("opens the isolated month sheet and keeps the single-month navigation deterministic", async ({ page }) => {
+test("opens the isolated month overview and keeps the single-month navigation deterministic", async ({ page }) => {
   await loginAsAdmin(page);
 
   await expect(page.getByTestId("nav-monatsuebersicht")).toBeVisible();
-  await expect(page.getByTestId("nav-monatsblatt")).toBeVisible();
 
-  await page.getByTestId("nav-monatsblatt").click();
+  await page.getByTestId("nav-monatsuebersicht").click();
   await expect(page.getByTestId("month-sheet-container")).toBeVisible();
   await expect(page.locator('[data-testid^="month-sheet-week-number-"]').first()).toBeVisible();
 
@@ -54,7 +53,7 @@ test("opens the isolated month sheet and keeps the single-month navigation deter
   const afterReturn = await getRenderedMonthKeys(page);
   expect(afterReturn).toEqual(initialMonths);
 
-  await page.getByTestId("nav-monatsuebersicht").click();
-  await expect(page.getByTestId("nav-monatsuebersicht")).toBeVisible();
+  await page.getByTestId("nav-wochenuebersicht").click();
+  await expect(page.getByTestId("nav-wochenuebersicht")).toBeVisible();
   await expect(page.getByTestId("month-sheet-container")).toHaveCount(0);
 });

@@ -45,7 +45,7 @@ Ziel dieses Dokuments ist nicht die Rueckschau auf alle Details, sondern eine um
 - Risiko: Hoch
 - Betroffene Dateien:
   - `client/src/components/calendar/CalendarWeekView.tsx`
-  - `client/src/components/calendar/CalendarMonthView.tsx`
+  - `client/src/components/calendar/CalendarMonthSheetView.tsx`
   - `server/services/appointmentsService.ts`
 - Grund:
   - Die UI reicht jetzt konkrete `VALIDATION_ERROR`-Meldungen durch.

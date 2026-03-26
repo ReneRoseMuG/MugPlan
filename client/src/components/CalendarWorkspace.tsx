@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { addMonths, addWeeks, subMonths, subWeeks } from "date-fns";
-import { CalendarGrid } from "@/components/CalendarGrid";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
@@ -100,43 +99,21 @@ export function CalendarWorkspace({
       );
     }
 
-    if (activeView === "month") {
-      return (
-        <CalendarGrid
-          currentDate={currentDate}
-          employeeFilterId={employeeFilterId}
-          onNewAppointment={(date) => {
-            onOpenAppointmentForm({
-              initialDate: date,
-              projectId,
-              returnView: "month",
-            });
-          }}
-          onOpenAppointment={(appointmentId) => {
-            onOpenAppointmentForm({
-              appointmentId,
-              returnView: "month",
-            });
-          }}
-        />
-      );
-    }
-
     return (
-        <MonthSheetGrid
-          currentDate={currentDate}
-          employeeFilterId={employeeFilterId}
-          onNewAppointment={(date) => {
-            onOpenAppointmentForm({
-              initialDate: date,
-              projectId,
-              returnView: "monthSheet",
-            });
-          }}
-          onOpenAppointment={(appointmentId) => {
-            onOpenAppointmentForm({
-              appointmentId,
-              returnView: "monthSheet",
+      <MonthSheetGrid
+        currentDate={currentDate}
+        employeeFilterId={employeeFilterId}
+        onNewAppointment={(date) => {
+          onOpenAppointmentForm({
+            initialDate: date,
+            projectId,
+            returnView: activeView,
+          });
+        }}
+        onOpenAppointment={(appointmentId) => {
+          onOpenAppointmentForm({
+            appointmentId,
+            returnView: activeView,
           });
         }}
       />

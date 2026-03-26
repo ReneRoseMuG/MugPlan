@@ -5,7 +5,7 @@
  *
  * Abgedeckte Regeln:
  * - Dispatcher sehen Reports und Monitoring inkl. Zaehlbadge.
- * - Die globale Kalendernavigation enthaelt Monatsuebersicht und Monatsblatt parallel.
+ * - Die globale Kalendernavigation bietet eine Wochenübersicht und die neue Monatsübersicht als monatliche Hauptansicht.
  * - Reader sehen keine Reports-/Monitoring-Navigation.
  * - Backup-Disablement bleibt als sichtbare Seitenmarkierung erhalten.
  *
@@ -45,8 +45,9 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
 
     expect(html).toContain("Reports");
     expect(html).toContain("Monitoring");
-    expect(html).toContain("Monatsuebersicht");
-    expect(html).toContain("Monatsblatt");
+    expect(html).toContain("Wochenübersicht");
+    expect(html).toContain("Monatsübersicht");
+    expect(html).toContain("nav-monatsuebersicht");
     expect(html).toContain("nav-monitoring-count");
     expect(html).toContain(">3<");
     expect(html).toContain("border-2 border-red-600");
@@ -63,8 +64,8 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
       />,
     );
 
-    expect(html).toContain("Monatsuebersicht");
-    expect(html).toContain("Monatsblatt");
+    expect(html).toContain("Wochenübersicht");
+    expect(html).toContain("Monatsübersicht");
     expect(html).not.toContain("Reports");
     expect(html).not.toContain("Monitoring");
     expect(html).not.toContain("nav-monitoring");

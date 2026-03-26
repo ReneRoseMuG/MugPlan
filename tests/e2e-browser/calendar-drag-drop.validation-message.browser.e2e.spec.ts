@@ -5,7 +5,7 @@
  * - Sichtbare Kalender-Fehlermeldungen beim Drag-and-drop
  *
  * Abgedeckte Regeln:
- * - Drag & Drop in der Monatsansicht zeigt die konkrete VALIDATION_ERROR-Message des Servers.
+ * - Drag & Drop in der Monatsübersicht zeigt die konkrete VALIDATION_ERROR-Message des Servers.
  * - Der Fehler erscheint fuer ein reales Verschieben auf heute mit vergangener Startzeit als sichtbarer Toast.
  *
  * Fehlerfaelle:
@@ -40,14 +40,14 @@ test("shows the concrete server validation message after dragging an appointment
   const today = getRelativeBerlinDate(0);
 
   await loginAsAdmin(page);
-  await page.getByRole("button", { name: /Monats/i }).click();
+  await page.getByTestId("nav-monatsuebersicht").click();
 
   const appointmentBar = page.getByTestId(`appointment-bar-${appointment.id}`).first();
   await expect(appointmentBar).toBeVisible();
 
-  const todayCalendarDay = page.getByTestId(`calendar-day-${today}`).first();
+  const todayCalendarDay = page.getByTestId(`month-sheet-day-${today}`).first();
   await appointmentBar.dragTo(todayCalendarDay);
 
-  await expect(page.getByText("Fehler beim Verschieben")).toBeVisible();
+  await expect(page.getByText("Fehler beim Verschieben", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Startzeit liegt in der Vergangenheit", { exact: true }).first()).toBeVisible();
 });

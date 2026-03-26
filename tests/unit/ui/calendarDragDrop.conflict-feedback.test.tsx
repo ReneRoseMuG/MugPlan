@@ -5,7 +5,7 @@
  * - Kalender-Drag-and-drop fuer stornierte Termine
  *
  * Abgedeckte Regeln:
- * - Monatsansicht markiert stornierte Termine als gesperrt und bietet keinen Drag-Start mehr an.
+ * - Monatsblatt markiert stornierte Termine als gesperrt und bietet keinen Drag-Start mehr an.
  * - Wochenansicht markiert stornierte Termine als gesperrt und bietet keinen Drag-Start mehr an.
  * - Nicht stornierte Vergleichstermine bleiben weiterhin drag-faehig.
  *
@@ -14,7 +14,7 @@
  * - Die Sperre blockiert versehentlich auch regulaere Termine.
  *
  * Ziel:
- * Das beobachtbare Laufzeitverhalten fuer die Drag-Sperre stornierter Termine in Woche und Monat ohne Quelltext-Assertions absichern.
+ * Das beobachtbare Laufzeitverhalten fuer die Drag-Sperre stornierter Termine in Woche und Monatsblatt ohne Quelltext-Assertions absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -178,14 +178,14 @@ describe("calendar drag and drop conflict feedback", () => {
     });
   });
 
-  it("blocks cancelled appointments from being dragged in the month view while regular appointments stay draggable", async () => {
+  it("blocks cancelled appointments from being dragged in the month sheet while regular appointments stay draggable", async () => {
     configureDefaults([
       createAppointment({ id: 11, startDate: "2099-07-01", isCancelled: true }),
       createAppointment({ id: 12, startDate: "2099-07-02", isCancelled: false }),
     ]);
 
-    const { CalendarMonthView } = await import("../../../client/src/components/calendar/CalendarMonthView");
-    renderToStaticMarkup(<CalendarMonthView currentDate={new Date("2099-07-01T00:00:00Z")} />);
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    renderToStaticMarkup(<CalendarMonthSheetView currentDate={new Date("2099-07-01T00:00:00Z")} />);
 
     const cancelled = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 11);
     const regular = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 12);

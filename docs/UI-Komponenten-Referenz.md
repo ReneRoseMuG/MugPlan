@@ -361,7 +361,7 @@ FT28-Ergaenzung:
 | Detailformular | EntityFormLayout (AppointmentForm) |
 | Badge in Panels/Listen | TerminInfoBadge → AppointmentWeeklyPanelPreview |
 | Sidebar-Kompaktpanel (Projekt, Kunde) | AllAppointmentsPanel (Basiskomponente, Gruppierung aktuell/historisch) |
-| Kalenderansichten | WeekGrid, CalendarGrid (separate Logik, kein ListLayout) |
+| Kalenderansichten | WeekGrid, MonthSheetGrid (separate Logik, kein ListLayout) |
 | Tour-Druckvorschau | CalendarTourPrintPreviewDialog + CalendarTourPrintSummaryPage + CalendarTourPrintWeekPage + CalendarTourPrintDayColumn + CalendarTourPrintAppointmentCard + CalendarTourPrintNoteBlock |
 
 ---
