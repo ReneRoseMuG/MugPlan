@@ -7,7 +7,7 @@ import { getTableColumns, getTableName } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import { db, pool } from "../db";
 import { getAttachmentStoragePath, getBackupBasePath } from "../config/storagePaths";
-import { logError } from "../lib/logger";
+import { logError, logInfo } from "../lib/logger";
 
 export class DumpServiceError extends Error {
   status: number;
@@ -285,7 +285,10 @@ export async function importDump(
     // Insert in forward order
     for (const entry of DUMP_TABLE_ENTRIES) {
       const rows = tableData[entry.key];
-      if (!Array.isArray(rows) || rows.length === 0) continue;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        logInfo("importDump: Tabelle übersprungen", { key: entry.key, reason: !Array.isArray(rows) ? "kein Array" : "leer" });
+        continue;
+      }
 
       // Restore Date objects lost during JSON serialization
       const coercedRows = coerceRowDates(entry.table, rows);
@@ -297,6 +300,7 @@ export async function importDump(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await connDb.insert(entry.table as AnyTable).values(batch as any[]);
       }
+      logInfo("importDump: Tabelle eingespielt", { key: entry.key, rows: coercedRows.length });
       tablesRestored++;
     }
 
