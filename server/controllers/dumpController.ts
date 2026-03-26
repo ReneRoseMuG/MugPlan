@@ -100,7 +100,7 @@ export async function importDump(req: Request, res: Response, next: NextFunction
     res.json(payload);
   } catch (error) {
     if (dumpService.isDumpServiceError(error)) {
-      res.status(error.status).json({ code: error.code });
+      res.status(error.status).json({ code: error.code, message: error.message });
       return;
     }
     next(error);

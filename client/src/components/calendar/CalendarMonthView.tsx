@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import {
   addDays,
   addMonths,
-  differenceInCalendarDays,
   endOfMonth,
   endOfWeek,
   format,
@@ -15,24 +14,32 @@ import {
   startOfWeek,
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
-import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { useCalendarAppointments, type CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
-import {
-  buildDayGridTemplate,
-  getDayWeights,
-  normalizeWeekendColumnPercent,
-} from "@/lib/calendar-layout";
+import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
   compareAppointmentsByTourIndexThenTime,
   getAppointmentDurationDays,
   getAppointmentEndDate,
 } from "@/lib/calendar-utils";
 import { CalendarAppointmentCompactBar } from "./CalendarAppointmentCompactBar";
+import {
+  buildMonthSlotBarsForDay,
+  buildMonthTourSlots,
+  buildMonthWeekRowLayout,
+  MONTH_DAY_HEADER_HEIGHT_PX,
+  MONTH_SLOT_BAR_GAP_PX,
+  MONTH_SLOT_BAR_HEIGHT_PX,
+  MONTH_SLOT_PADDING_BOTTOM_PX,
+  MONTH_SLOT_SEPARATOR_HEIGHT_PX,
+  type MonthWeekRowLayout,
+} from "./monthLaneState";
 import type { CalendarNavCommand } from "@/pages/Home";
+import type { Tour } from "@shared/schema";
 
 type CalendarMonthViewProps = {
   currentDate: Date;
@@ -43,19 +50,20 @@ type CalendarMonthViewProps = {
   onOpenAppointment?: (appointmentId: number) => void;
 };
 
-type MonthRenderData = {
-  monthStart: Date;
-  weeks: Date[][];
+type MonthRenderWeek = {
+  days: Date[];
+  weekAppointments: CalendarAppointment[];
+  rowLayout: MonthWeekRowLayout;
+  slotTopPxByTourId: Map<number | null, number>;
 };
 
-type WeekLaneItem = {
-  appointmentId: number;
-  startIndex: number;
-  endIndex: number;
+type MonthRenderData = {
+  monthStart: Date;
+  weeks: MonthRenderWeek[];
 };
 
 const logPrefix = "[calendar-month]";
-const MONTH_LANE_BAR_HORIZONTAL_INSET_PX = 4;
+const MONTH_SLOT_BAR_HORIZONTAL_INSET_PX = 4;
 
 export function CalendarMonthView({
   currentDate,
@@ -80,7 +88,9 @@ export function CalendarMonthView({
   const isAdmin = userRole === "ADMIN";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const extraMonthCount =
-    typeof monthScrollRangeSetting === "number" && Number.isInteger(monthScrollRangeSetting) && monthScrollRangeSetting >= 0
+    typeof monthScrollRangeSetting === "number" &&
+    Number.isInteger(monthScrollRangeSetting) &&
+    monthScrollRangeSetting >= 0
       ? Math.min(monthScrollRangeSetting, 12)
       : 3;
 
@@ -110,18 +120,22 @@ export function CalendarMonthView({
     detail: "full",
     userRole,
   });
+  const { data: tours = [] } = useQuery<Tour[]>({
+    queryKey: ["/api/tours"],
+  });
 
   const appointmentsById = useMemo(
     () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
     [appointments],
   );
+  const tourSlots = useMemo(() => buildMonthTourSlots(tours), [tours]);
 
-  const getLaneItemPosition = (startIndex: number, endIndex: number) => {
+  const getSlotBarPosition = (startIndex: number, endIndex: number) => {
     const startWeight = dayWeights.slice(0, startIndex).reduce((sum, weight) => sum + weight, 0);
     const spanWeight = dayWeights.slice(startIndex, endIndex + 1).reduce((sum, weight) => sum + weight, 0);
     return {
-      left: `calc(${(startWeight / totalDayWeight) * 100}% + ${MONTH_LANE_BAR_HORIZONTAL_INSET_PX}px)`,
-      width: `calc(${(spanWeight / totalDayWeight) * 100}% - ${MONTH_LANE_BAR_HORIZONTAL_INSET_PX * 2}px)`,
+      left: `calc(${(startWeight / totalDayWeight) * 100}% + ${MONTH_SLOT_BAR_HORIZONTAL_INSET_PX}px)`,
+      width: `calc(${(spanWeight / totalDayWeight) * 100}% - ${MONTH_SLOT_BAR_HORIZONTAL_INSET_PX * 2}px)`,
     };
   };
 
@@ -138,9 +152,38 @@ export function CalendarMonthView({
         cursor = addDays(cursor, 1);
       }
 
-      const weeks: Date[][] = [];
-      for (let i = 0; i < days.length; i += 7) {
-        weeks.push(days.slice(i, i + 7));
+      const weeks: MonthRenderWeek[] = [];
+      for (let dayIndex = 0; dayIndex < days.length; dayIndex += 7) {
+        const weekDays = days.slice(dayIndex, dayIndex + 7);
+        const weekStart = weekDays[0];
+        const weekEnd = weekDays[6];
+        const weekAppointments = appointments
+          .filter((appointment) => {
+            const start = parseISO(appointment.startDate);
+            const end = parseISO(getAppointmentEndDate(appointment));
+            return start <= weekEnd && end >= weekStart;
+          })
+          .sort(compareAppointmentsByTourIndexThenTime);
+        const rowLayout = buildMonthWeekRowLayout(weekDays, tourSlots, weekAppointments);
+
+        let currentTopPx = MONTH_DAY_HEADER_HEIGHT_PX;
+        const slotTopPxByTourId = new Map<number | null, number>();
+        for (const slot of rowLayout.slots) {
+          slotTopPxByTourId.set(slot.tourId, currentTopPx);
+          const subRows = rowLayout.subRowCountByTourId.get(slot.tourId) ?? 1;
+          currentTopPx +=
+            MONTH_SLOT_SEPARATOR_HEIGHT_PX +
+            subRows * MONTH_SLOT_BAR_HEIGHT_PX +
+            (subRows - 1) * MONTH_SLOT_BAR_GAP_PX +
+            MONTH_SLOT_PADDING_BOTTOM_PX;
+        }
+
+        weeks.push({
+          days: weekDays,
+          weekAppointments,
+          rowLayout,
+          slotTopPxByTourId,
+        });
       }
 
       return {
@@ -148,7 +191,7 @@ export function CalendarMonthView({
         weeks,
       };
     });
-  }, [appointments, monthStarts]);
+  }, [appointments, monthStarts, tourSlots]);
 
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointmentsById.get(appointmentId);
@@ -212,7 +255,7 @@ export function CalendarMonthView({
     if (!response.ok) {
       const error = await response.json().catch(() => null);
       if (error?.code === "VERSION_CONFLICT") {
-        throw new Error("Termin wurde zwischenzeitlich geaendert. Bitte neu laden.");
+        throw new Error("Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
       }
       if (error?.code === "VALIDATION_ERROR") {
         throw new Error(error?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");
@@ -227,9 +270,8 @@ export function CalendarMonthView({
     console.info(`${logPrefix} drop success`, { appointmentId });
     return true;
   };
-  void persistDropMutation;
 
-  const handleDrop = async (event: React.DragEvent, targetDate: Date) => {
+  const handleDrop = async (event: React.DragEvent, targetDate: Date, targetTourId?: number | null) => {
     event.preventDefault();
     const appointmentId = Number(event.dataTransfer.getData("text/plain"));
     if (!appointmentId) return;
@@ -253,7 +295,10 @@ export function CalendarMonthView({
     }
 
     if (targetDate < today) {
-      console.info(`${logPrefix} drop blocked: past target`, { appointmentId, targetDate: format(targetDate, "yyyy-MM-dd") });
+      console.info(`${logPrefix} drop blocked: past target`, {
+        appointmentId,
+        targetDate: format(targetDate, "yyyy-MM-dd"),
+      });
       toast({
         title: "Verschieben nicht erlaubt",
         description: "Ein Termin kann nicht in die Vergangenheit verschoben werden.",
@@ -267,7 +312,7 @@ export function CalendarMonthView({
       console.info(`${logPrefix} drop blocked: cancelled appointment`, { appointmentId });
       toast({
         title: "Termin ist storniert",
-        description: "Stornierte Termine koennen nicht verschoben werden.",
+        description: "Stornierte Termine können nicht verschoben werden.",
         variant: "destructive",
       });
       setDraggedAppointmentId(null);
@@ -293,42 +338,21 @@ export function CalendarMonthView({
       fromDate: appointment.startDate,
       toDate: newStartDate,
       durationDays,
+      targetTourId: targetTourId ?? null,
     });
 
     try {
-      const response = await fetch(`/api/appointments/${appointmentId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          version: appointment.version,
-          projectId: appointment.projectId,
-          customerId: appointment.customer.id,
-          tourId: appointment.tourId ?? null,
-          startDate: newStartDate,
-          endDate: newEndDate,
-          startTime: appointment.startTime ?? null,
-          employeeIds: appointment.employees.map((employee) => employee.id),
-        }),
+      await persistDropMutation({
+        appointmentId,
+        version: appointment.version,
+        projectId: appointment.projectId,
+        customerId: appointment.customer.id,
+        tourId: targetTourId !== undefined ? targetTourId : appointment.tourId ?? null,
+        startDate: newStartDate,
+        endDate: newEndDate,
+        startTime: appointment.startTime ?? null,
+        employeeIds: appointment.employees.map((employee) => employee.id),
       });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        if (error?.code === "VERSION_CONFLICT") {
-          throw new Error("Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
-        }
-        if (error?.code === "VALIDATION_ERROR") {
-          throw new Error(error?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");
-        }
-        throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
-      }
-
-      await queryClient.invalidateQueries({
-        queryKey: ["calendarAppointments"],
-      });
-      await refreshMonitoringWithNotification(toast);
-      console.info(`${logPrefix} drop success`, { appointmentId });
     } catch (err) {
       console.error(`${logPrefix} drop error`, err);
       toast({
@@ -344,8 +368,8 @@ export function CalendarMonthView({
   const weekDays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-border/40 bg-muted/30 px-6 py-4">
         <div className="flex items-center gap-3">
           <span className="text-lg font-bold text-primary">{format(baseMonthStart, "MMMM yyyy", { locale: de })}</span>
         </div>
@@ -368,17 +392,17 @@ export function CalendarMonthView({
             return (
               <section
                 key={monthKey}
-                className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
+                className="h-full min-w-full w-full border-r border-border/30 last:border-r-0"
               >
-                <div className="h-full flex flex-col">
+                <div className="flex h-full flex-col">
                   <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
-                    <div className="py-4 text-center text-sm font-semibold text-muted-foreground tracking-wider border-r border-border/30">
+                    <div className="border-r border-border/30 py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground">
                       KW
                     </div>
                     {weekDays.map((day, dayIdx) => (
                       <div
                         key={`${monthKey}-${day}`}
-                        className={`py-4 text-center text-sm font-semibold text-muted-foreground tracking-wider ${dayIdx >= 5 ? "bg-slate-200/70" : ""}`}
+                        className={`py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground ${dayIdx >= 5 ? "bg-slate-200/70" : ""}`}
                       >
                         {day}
                       </div>
@@ -387,53 +411,24 @@ export function CalendarMonthView({
 
                   <div
                     className="flex-1 grid overflow-hidden"
-                    style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}
+                    style={{
+                      gridTemplateRows: weeks.map((week) => `${week.rowLayout.rowHeightPx}px`).join(" "),
+                    }}
                   >
-                    {weeks.map((week, weekIdx) => {
-                      const weekStart = week[0];
-                      const weekEnd = week[6];
-                      const weekAppointments = appointments
-                        .filter((appointment) => {
-                          const start = parseISO(appointment.startDate);
-                          const end = parseISO(getAppointmentEndDate(appointment));
-                          return start <= weekEnd && end >= weekStart;
-                        })
-                        .sort(compareAppointmentsByTourIndexThenTime);
-
-                      const laneGroups: WeekLaneItem[][] = [];
-                      weekAppointments.forEach((appointment) => {
-                        const startIndex = Math.max(0, differenceInCalendarDays(parseISO(appointment.startDate), weekStart));
-                        const endIndex = Math.min(6, differenceInCalendarDays(parseISO(getAppointmentEndDate(appointment)), weekStart));
-
-                        let laneIndex = laneGroups.findIndex((lane) =>
-                          lane.every((item) => endIndex < item.startIndex || startIndex > item.endIndex),
-                        );
-
-                        if (laneIndex === -1) {
-                          laneIndex = laneGroups.length;
-                          laneGroups.push([]);
-                        }
-
-                        laneGroups[laneIndex].push({
-                          appointmentId: appointment.id,
-                          startIndex,
-                          endIndex,
-                        });
-                      });
-
-                      laneGroups.forEach((lane) => lane.sort((a, b) => a.startIndex - b.startIndex));
+                    {weeks.map(({ days, weekAppointments, rowLayout, slotTopPxByTourId }, weekIdx) => {
+                      const weekStart = days[0];
 
                       return (
                         <div
                           key={`${monthKey}-${weekIdx}`}
-                          className="grid h-full min-h-0 relative"
+                          className="relative grid h-full min-h-0"
                           style={{ gridTemplateColumns: monthRowTemplate }}
                         >
-                          <div className="h-full min-h-0 flex items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
-                            {getISOWeek(week[0])}
+                          <div className="flex h-full min-h-0 items-center justify-center border-r border-b border-border/30 bg-muted/20 text-sm font-bold text-primary">
+                            {getISOWeek(weekStart)}
                           </div>
-                          <div className="col-span-7 h-full min-h-0 relative grid" style={{ gridTemplateColumns: dayGridTemplate }}>
-                            {week.map((day, dayIdx) => {
+                          <div className="relative col-span-7 grid h-full min-h-0" style={{ gridTemplateColumns: dayGridTemplate }}>
+                            {days.map((day, dayIdx) => {
                               const isCurrentMonth = isSameMonth(day, monthStart);
                               const isTodayDate = isToday(day);
                               const isWeekend = dayIdx >= 5;
@@ -443,7 +438,7 @@ export function CalendarMonthView({
                                 <div
                                   key={dayKey}
                                   className={`
-                                    relative h-full min-h-0 border-r border-b border-border/30 p-1 min-h-[72px]
+                                    relative h-full min-h-0 border-r border-b border-border/30 px-1
                                     transition-colors duration-200
                                     ${!isCurrentMonth ? (isWeekend ? "bg-slate-300/30 text-muted-foreground/40" : "bg-muted/10 text-muted-foreground/40") : isWeekend ? "bg-slate-200/40 text-foreground hover:bg-slate-200/60" : "bg-white text-foreground hover:bg-slate-50"}
                                     ${dayIdx === 6 ? "border-r-0" : ""}
@@ -455,7 +450,8 @@ export function CalendarMonthView({
                                   data-testid={`calendar-day-${dayKey}`}
                                 >
                                   <div
-                                    className={`mb-2 flex items-center justify-between rounded-md px-1.5 py-1 ${
+                                    style={{ height: `${MONTH_DAY_HEADER_HEIGHT_PX}px` }}
+                                    className={`flex items-center justify-between rounded-md px-1.5 ${
                                       isTodayDate
                                         ? "bg-primary/10"
                                         : isCurrentMonth
@@ -469,7 +465,7 @@ export function CalendarMonthView({
                                   >
                                     <span
                                       className={`
-                                        flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
+                                        flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium
                                         ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground/70"}
                                       `}
                                     >
@@ -478,64 +474,110 @@ export function CalendarMonthView({
                                     {dayKey >= berlinToday ? (
                                       <button
                                         onClick={() => onNewAppointment?.(dayKey)}
-                                        className="w-5 h-5 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                                        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-primary/10 hover:text-primary"
                                         data-testid={`button-new-appointment-${dayKey}`}
                                       >
                                         <span className="text-sm font-bold">+</span>
                                       </button>
                                     ) : (
-                                      <span className="w-5 h-5" aria-hidden="true" />
+                                      <span className="h-5 w-5" aria-hidden="true" />
                                     )}
+                                  </div>
+
+                                  <div className="flex w-full flex-col">
+                                    {rowLayout.slots.map((slot) => {
+                                      const subRows = rowLayout.subRowCountByTourId.get(slot.tourId) ?? 1;
+                                      const slotHeightPx =
+                                        MONTH_SLOT_SEPARATOR_HEIGHT_PX +
+                                        subRows * MONTH_SLOT_BAR_HEIGHT_PX +
+                                        (subRows - 1) * MONTH_SLOT_BAR_GAP_PX +
+                                        MONTH_SLOT_PADDING_BOTTOM_PX;
+
+                                      return (
+                                        <div
+                                          key={slot.tourId ?? "unassigned"}
+                                          style={{ height: `${slotHeightPx}px` }}
+                                          className="relative w-full"
+                                          onDragOver={(event) => event.preventDefault()}
+                                          onDrop={(event) => {
+                                            event.stopPropagation();
+                                            void handleDrop(event, day, slot.tourId);
+                                          }}
+                                        >
+                                          <div
+                                            style={{
+                                              height: `${MONTH_SLOT_SEPARATOR_HEIGHT_PX}px`,
+                                              backgroundColor: slot.color ?? "transparent",
+                                              opacity: slot.color ? 0.35 : 0,
+                                            }}
+                                            className="w-full"
+                                          />
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               );
                             })}
 
-                            <div className="absolute inset-x-1 top-9 bottom-1 pointer-events-none">
-                              {laneGroups.map((lane, laneIndex) => (
-                                <div
-                                  key={`${monthKey}-${weekIdx}-lane-${laneIndex}`}
-                                  className="absolute inset-x-0"
-                                  style={{ top: `${laneIndex * 26}px` }}
-                                >
-                                  {lane.map((item) => {
-                                    const appointment = appointmentsById.get(item.appointmentId);
-                                    if (!appointment) {
-                                      return null;
-                                    }
+                            <div className="pointer-events-none absolute inset-x-1 bottom-0 top-0">
+                              {rowLayout.slots.map((slot) => {
+                                const slotTopPx = slotTopPxByTourId.get(slot.tourId);
+                                if (typeof slotTopPx !== "number") {
+                                  return null;
+                                }
 
-                                    const appointmentStart = parseISO(appointment.startDate);
-                                    const appointmentEnd = parseISO(getAppointmentEndDate(appointment));
-                                    const segmentStart = addDays(weekStart, item.startIndex);
-                                    const segmentEnd = addDays(weekStart, item.endIndex);
-                                    const position = getLaneItemPosition(item.startIndex, item.endIndex);
-                                    const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
-                                    const isHistoricalSource = appointment.startDate < berlinToday;
-                                    const canDrag = !isLocked && !isHistoricalSource;
+                                const bars = days.flatMap((_, dayIdx) =>
+                                  buildMonthSlotBarsForDay(dayIdx, slot, days, weekAppointments).filter(
+                                    (bar) => bar.startDayIndex === dayIdx,
+                                  ),
+                                );
 
-                                    return (
-                                      <div
-                                        key={`${monthKey}-${weekIdx}-${appointment.id}-${item.startIndex}-${item.endIndex}`}
-                                        className="absolute pointer-events-auto"
-                                        style={position}
-                                      >
-                                        <CalendarAppointmentCompactBar
-                                          appointment={appointment}
-                                          isFirstDay={isSameDay(segmentStart, appointmentStart)}
-                                          isLastDay={isSameDay(segmentEnd, appointmentEnd)}
-                                          hideOrderNumber={true}
-                                          showPopover={true}
-                                          isLocked={isLocked}
-                                          isDragging={draggedAppointmentId === appointment.id}
-                                          onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                          onDragStart={canDrag ? (event) => handleDragStart(event, appointment.id) : undefined}
-                                          onDragEnd={canDrag ? handleDragEnd : undefined}
-                                        />
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ))}
+                                return bars.map((bar) => {
+                                  const appointment = appointmentsById.get(bar.appointmentId);
+                                  if (!appointment) {
+                                    return null;
+                                  }
+
+                                  const appointmentStart = parseISO(appointment.startDate);
+                                  const appointmentEnd = parseISO(getAppointmentEndDate(appointment));
+                                  const segmentStart = addDays(weekStart, bar.startDayIndex);
+                                  const segmentEnd = addDays(weekStart, bar.endDayIndex);
+                                  const topPx =
+                                    slotTopPx +
+                                    MONTH_SLOT_SEPARATOR_HEIGHT_PX +
+                                    bar.subRowIndex * (MONTH_SLOT_BAR_HEIGHT_PX + MONTH_SLOT_BAR_GAP_PX);
+                                  const position = getSlotBarPosition(bar.startDayIndex, bar.endDayIndex);
+                                  const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
+                                  const isHistoricalSource = appointment.startDate < berlinToday;
+                                  const canDrag = !isLocked && !isHistoricalSource;
+
+                                  return (
+                                    <div
+                                      key={`${monthKey}-${weekIdx}-${slot.tourId ?? "unassigned"}-${appointment.id}-${bar.startDayIndex}-${bar.endDayIndex}`}
+                                      className="pointer-events-auto absolute px-0.5"
+                                      style={{
+                                        ...position,
+                                        top: `${topPx}px`,
+                                        height: `${MONTH_SLOT_BAR_HEIGHT_PX}px`,
+                                      }}
+                                    >
+                                      <CalendarAppointmentCompactBar
+                                        appointment={appointment}
+                                        isFirstDay={isSameDay(segmentStart, appointmentStart)}
+                                        isLastDay={isSameDay(segmentEnd, appointmentEnd)}
+                                        hideOrderNumber={true}
+                                        showPopover={true}
+                                        isLocked={isLocked}
+                                        isDragging={draggedAppointmentId === appointment.id}
+                                        onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                        onDragStart={canDrag ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                        onDragEnd={canDrag ? handleDragEnd : undefined}
+                                      />
+                                    </div>
+                                  );
+                                });
+                              })}
                             </div>
                           </div>
                         </div>
