@@ -190,26 +190,32 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
     />
   );
   const tableFooter = (
-    <div className="flex justify-between items-center">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setImportExportDialogOpen(true)}
-          className="flex items-center gap-2"
-          data-testid="button-helptexts-import-export"
-        >
-          <Upload className="w-4 h-4" />
-          Import/Export
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onCreateHelpText}
-          className="flex items-center gap-2"
-          data-testid="button-new-helptext"
-        >
-          <Plus className="w-4 h-4" />
-          Neuer Hilfetext
-        </Button>
+    <div className="flex flex-col gap-4">
+      <HelpTextsFilterPanel
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+      />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setImportExportDialogOpen(true)}
+            className="flex items-center gap-2"
+            data-testid="button-helptexts-import-export"
+          >
+            <Upload className="w-4 h-4" />
+            Import/Export
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onCreateHelpText}
+            className="flex items-center gap-2"
+            data-testid="button-new-helptext"
+          >
+            <Plus className="w-4 h-4" />
+            Neuer Hilfetext
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -225,12 +231,6 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
         title="Hilfetexte"
         icon={<HelpCircle className="w-5 h-5" />}
         isLoading={blockLayoutWhileLoading}
-        filterSlot={(
-          <HelpTextsFilterPanel
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-          />
-        )}
         contentSlot={
           <TableView
             testId="table-helptexts"
@@ -250,10 +250,10 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
               </div>
             )}
             emptyState={emptyState}
-            footerSlot={tableFooter}
             stickyHeader
           />
         }
+        footerSlot={tableFooter}
       />
 
       <HelpTextsImportExportDialog

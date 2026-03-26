@@ -105,6 +105,7 @@ export function EntityFormWithTabsLayout({
       cancelLabel={cancelLabel}
       testIdPrefix={testIdPrefix}
       footerActions={footerActions}
+      contentScrollMode="contained"
     >
       {visibleTabs.length === 0 ? (
         <div
@@ -114,8 +115,12 @@ export function EntityFormWithTabsLayout({
           Kein Tab verfuegbar
         </div>
       ) : (
-        <Tabs value={currentActiveTabId ?? undefined} onValueChange={handleTabChange} className="space-y-4">
-          <TabsList>
+        <Tabs
+          value={currentActiveTabId ?? undefined}
+          onValueChange={handleTabChange}
+          className="flex h-full min-h-0 flex-col gap-4"
+        >
+          <TabsList className="flex-shrink-0 self-start">
             {visibleTabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
@@ -135,6 +140,7 @@ export function EntityFormWithTabsLayout({
             <TabsContent
               key={tab.id}
               value={tab.id}
+              className="mt-0 min-h-0 flex-1 overflow-hidden"
               {...(keepMounted ? { forceMount: true as const } : {})}
               data-testid={tab.contentTestId ?? `tab-content-${tab.id}`}
             >
