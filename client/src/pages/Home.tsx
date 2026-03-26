@@ -28,6 +28,7 @@ import { useEffect } from "react";
 
 export type ViewType =
   | "month"
+  | "monthSheet"
   | "week"
   | "year"
   | "calendarContextual"
@@ -150,8 +151,10 @@ export default function Home({ onLogout }: HomeProps) {
   }, [canAccessMonitoring, refetchMonitoring, view]);
 
   const handleWeekScrollRestoreApplied = useCallback(() => {
-    setPendingWeekScrollRestore(null);
-  }, []);
+    if (view === "week") {
+      setPendingWeekScrollRestore(null);
+    }
+  }, [view]);
 
   const applyReturnContext = useCallback((context: ReturnContext) => {
     if (typeof context.projectId === "number") {
@@ -229,7 +232,7 @@ export default function Home({ onLogout }: HomeProps) {
     setView(newView);
   };
 
-  const isGlobalCalendarView = view === "month" || view === "week" || view === "year";
+  const isGlobalCalendarView = view === "month" || view === "monthSheet" || view === "week" || view === "year";
   const isContextualCalendarView = view === "calendarContextual" && calendarContext !== null;
   const isSidebarHidden =
     view === "customer" ||
@@ -408,6 +411,9 @@ export default function Home({ onLogout }: HomeProps) {
               employeeFilterId={calendarFilters.employeeId}
               onEmployeeFilterChange={(employeeId) => setCalendarFilter("employeeId", employeeId)}
               onViewChange={(activeView) => {
+                if (activeView === "monthSheet") {
+                  return;
+                }
                 setCalendarContext((prev) => (prev ? { ...prev, activeView } : prev));
               }}
               onDateChange={(date) => {
@@ -433,7 +439,7 @@ export default function Home({ onLogout }: HomeProps) {
               projectId={calendarContext.projectId}
               hideMainNavigation
             />
-          ) : isGlobalCalendarView && (view === "week" || view === "month") ? (
+          ) : isGlobalCalendarView && (view === "week" || view === "month" || view === "monthSheet") ? (
             <CalendarWorkspace
               mode="global"
               activeView={view}
@@ -456,7 +462,7 @@ export default function Home({ onLogout }: HomeProps) {
                 });
                 setView("appointment");
               }}
-              restoreScrollLeft={pendingWeekScrollRestore}
+              restoreScrollLeft={view === "week" ? pendingWeekScrollRestore : null}
               onScrollRestoreApplied={handleWeekScrollRestoreApplied}
             />
           ) : isGlobalCalendarView && view === "year" ? (

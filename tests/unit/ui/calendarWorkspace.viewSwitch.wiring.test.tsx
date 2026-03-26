@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - CalendarWorkspace rendert im Wochenmodus sichtbar das WeekGrid.
  * - CalendarWorkspace rendert im Monatsmodus sichtbar das CalendarGrid.
+ * - CalendarWorkspace rendert die neue Monatsblatt-Ansicht separat ueber MonthSheetGrid.
  * - New/Open-Callbacks werden mit dem passenden Rueckkehrkontext weitergereicht.
  *
  * Fehlerfaelle:
@@ -19,6 +20,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const weekGridCalls: Array<Record<string, unknown>> = [];
 const monthGridCalls: Array<Record<string, unknown>> = [];
+const monthSheetGridCalls: Array<Record<string, unknown>> = [];
 const openAppointmentFormMock = vi.fn();
 
 vi.mock("@/components/WeekGrid", () => ({
@@ -32,6 +34,13 @@ vi.mock("@/components/CalendarGrid", () => ({
   CalendarGrid: (props: Record<string, unknown>) => {
     monthGridCalls.push(props);
     return <div data-testid="month-grid-marker">month-grid</div>;
+  },
+}));
+
+vi.mock("@/components/MonthSheetGrid", () => ({
+  MonthSheetGrid: (props: Record<string, unknown>) => {
+    monthSheetGridCalls.push(props);
+    return <div data-testid="month-sheet-grid-marker">month-sheet-grid</div>;
   },
 }));
 
@@ -61,6 +70,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
   beforeEach(() => {
     weekGridCalls.length = 0;
     monthGridCalls.length = 0;
+    monthSheetGridCalls.length = 0;
     openAppointmentFormMock.mockReset();
     vi.stubGlobal("React", React);
   });
@@ -84,6 +94,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
 
     expect(markup).toContain("week-grid-marker");
     expect(markup).not.toContain("month-grid-marker");
+    expect(markup).not.toContain("month-sheet-grid-marker");
 
     const props = weekGridCalls.at(-1);
     expect(props?.employeeFilterId).toBe(17);
@@ -125,6 +136,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
 
     expect(markup).toContain("month-grid-marker");
     expect(markup).not.toContain("week-grid-marker");
+    expect(markup).not.toContain("month-sheet-grid-marker");
 
     const props = monthGridCalls.at(-1);
     (props?.onNewAppointment as (date: string) => void)("2099-01-12");
@@ -138,6 +150,48 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(openAppointmentFormMock).toHaveBeenNthCalledWith(2, {
       appointmentId: 601,
       returnView: "month",
+    });
+  });
+
+  it("renders the month sheet grid in monthSheet mode and forwards the monthSheet return context", () => {
+    const markup = renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="monthSheet"
+        currentDate={new Date("2099-01-07")}
+        employeeFilterId={11}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={openAppointmentFormMock}
+        projectId={99}
+      />,
+    );
+
+    expect(markup).toContain("month-sheet-grid-marker");
+    expect(markup).not.toContain("week-grid-marker");
+    expect(markup).not.toContain("month-grid-marker");
+
+    const props = monthSheetGridCalls.at(-1);
+    expect(props?.employeeFilterId).toBe(11);
+
+    (props?.onNewAppointment as (date: string, options?: { scrollLeft?: number | null }) => void)(
+      "2099-01-20",
+      { scrollLeft: 444 },
+    );
+    (props?.onOpenAppointment as (appointmentId: number, options?: { scrollLeft?: number | null }) => void)(
+      701,
+      { scrollLeft: 555 },
+    );
+
+    expect(openAppointmentFormMock).toHaveBeenNthCalledWith(1, {
+      initialDate: "2099-01-20",
+      projectId: 99,
+      returnView: "monthSheet",
+    });
+    expect(openAppointmentFormMock).toHaveBeenNthCalledWith(2, {
+      appointmentId: 701,
+      returnView: "monthSheet",
     });
   });
 });

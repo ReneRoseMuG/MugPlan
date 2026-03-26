@@ -326,4 +326,5 @@ describe("PKG-08 home behavior wiring", () => {
     });
     expect(calendarWorkspaceCalls[0].onScrollRestoreApplied).toEqual(expect.any(Function));
   });
+
 });
