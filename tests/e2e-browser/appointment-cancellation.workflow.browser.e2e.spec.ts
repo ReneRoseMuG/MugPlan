@@ -222,7 +222,9 @@ test("runs the browser cancellation flow from regular future appointment to canc
   const vorlauflisteTable = page.getByTestId("table-reports-vorlaufliste");
   await expect(vorlauflisteTable).toBeVisible();
   await expect(vorlauflisteTable).toContainText(customer.fullName ?? "");
-  await expect(vorlauflisteTable).toContainText("Storniert");
+  await expect(
+    vorlauflisteTable.getByRole("row").filter({ hasText: customer.fullName ?? "" }).first(),
+  ).toHaveAttribute("aria-label", "Storniert");
   await expect(vorlauflisteTable).toContainText(/0,00\s*€/);
 
   await page.getByTestId("button-reports-back").click();

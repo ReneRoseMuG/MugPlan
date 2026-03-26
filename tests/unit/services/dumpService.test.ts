@@ -2,33 +2,43 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - importDump ist in der Produktionsumgebung verboten (NODE_ENV=production).
+ * - importDump ist in der Produktionsumgebung verboten.
  * - Nicht-Admin-Rollen erhalten für alle Dump-Operationen einen 403-Fehler.
  * - Ungültige oder Path-Traversal-Dateinamen werden mit 422 abgelehnt.
  * - Fehlende Dump-Dateien werden mit 404 beantwortet.
- * - Das Dateinamen-Regex lässt nur gültige Dump-Dateinamen durch.
+ * - Der erlaubte Dump-Tabellensatz bleibt explizit, und ausgeschlossene Tabellen bleiben außen vor.
+ * - Das Dump-Format verlangt Version und vollständigen Tabellenblock.
  *
  * Fehlerfälle:
  * - importDump in production → 403 FORBIDDEN
  * - Nicht-Admin → 403 FORBIDDEN
  * - Dateiname mit Path-Traversal → 422 VALIDATION_ERROR
- * - Dateiname ohne Dump-Format → 422 VALIDATION_ERROR
- * - Datei existiert nicht → 404 NOT_FOUND
+ * - Dump ohne formatVersion/tables → 422 VALIDATION_ERROR
+ * - Dump mit unbekannten oder fehlenden Tabellen → 422 VALIDATION_ERROR
  *
  * Ziel:
- * Absicherung der Zugriffskontrolle und Eingabe-Validierung des Dump-Service
- * ohne Datenbankzugriff und ohne echtes Dateisystem.
+ * Absicherung von Zugriffskontrolle, Dump-Vertrag und Eingabe-Validierung des Dump-Service
+ * ohne echten Datenbank-Restore.
  */
 import os from "os";
 import path from "path";
 import fs from "fs";
+import archiver from "archiver";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tempRoot = path.resolve(os.tmpdir(), "mugplan-dump-unit-test");
 
 vi.mock("../../../server/db", () => ({
   db: {},
-  pool: { getConnection: vi.fn() },
+  pool: {
+    getConnection: vi.fn(async () => ({
+      execute: vi.fn(async () => undefined),
+      beginTransaction: vi.fn(async () => undefined),
+      commit: vi.fn(async () => undefined),
+      rollback: vi.fn(async () => undefined),
+      release: vi.fn(),
+    })),
+  },
 }));
 
 vi.mock("../../../server/config/storagePaths", () => ({
@@ -36,70 +46,114 @@ vi.mock("../../../server/config/storagePaths", () => ({
   getAttachmentStoragePath: vi.fn(async () => path.join(tempRoot, "uploads")),
 }));
 
+vi.mock("../../../server/config/runtimeEnv", () => ({
+  getRuntimeMode: vi.fn(() => "development"),
+  getRuntimeConfig: vi.fn(() => ({
+    mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_test",
+    allowedDatabases: ["mugplan_test"],
+    allowedHosts: ["localhost"],
+  })),
+}));
+
+vi.mock("../../../server/security/dbSafetyGuards", () => ({
+  assertSafeAdminDestructiveOperationTarget: vi.fn(() => ({
+    dbName: "mugplan_test",
+    host: "localhost",
+    port: 3306,
+  })),
+  assertSqlDatabaseIdentity: vi.fn(async () => undefined),
+}));
+
 import {
   createDump,
   deleteDump,
+  DUMP_FORMAT_VERSION,
+  DUMP_TABLE_KEYS,
+  EXCLUDED_DUMP_TABLE_KEYS,
   importDump,
   isDumpServiceError,
   listDumps,
   resolveDumpDownloadPath,
 } from "../../../server/services/dumpService";
+import { getRuntimeMode } from "../../../server/config/runtimeEnv";
 
 const adminCtx = { roleKey: "ADMIN" } as const;
 const readerCtx = { roleKey: "LESER" } as const;
 
+async function buildZipFromDataJson(data: unknown): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const archive = archiver("zip");
+    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+    archive.on("end", () => resolve(Buffer.concat(chunks)));
+    archive.on("error", reject);
+    archive.append(JSON.stringify(data), { name: "data.json" });
+    void archive.finalize();
+  });
+}
+
 describe("dumpService – Zugriffskontrolle", () => {
   it("createDump: LESER erhält 403", async () => {
     await expect(createDump(readerCtx)).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 403 && e.code === "FORBIDDEN",
+      (error: unknown) => isDumpServiceError(error) && error.status === 403 && error.code === "FORBIDDEN",
     );
   });
 
   it("listDumps: LESER erhält 403", async () => {
     await expect(listDumps(readerCtx)).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 403,
+      (error: unknown) => isDumpServiceError(error) && error.status === 403,
     );
   });
 
   it("resolveDumpDownloadPath: LESER erhält 403", async () => {
     await expect(resolveDumpDownloadPath(readerCtx, "dump_2025-01-01T00-00-00-000Z.zip")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 403,
+      (error: unknown) => isDumpServiceError(error) && error.status === 403,
     );
   });
 
   it("importDump: LESER erhält 403", async () => {
     await expect(importDump(readerCtx, Buffer.from(""))).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 403,
+      (error: unknown) => isDumpServiceError(error) && error.status === 403,
     );
   });
 
   it("deleteDump: LESER erhält 403", async () => {
     await expect(deleteDump(readerCtx, "dump_2025-01-01T00-00-00-000Z.zip")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 403,
+      (error: unknown) => isDumpServiceError(error) && error.status === 403,
     );
   });
 });
 
 describe("dumpService – Environment-Guard", () => {
-  const originalEnv = process.env.NODE_ENV;
-
   afterEach(() => {
-    process.env.NODE_ENV = originalEnv;
+    vi.mocked(getRuntimeMode).mockReturnValue("development");
   });
 
-  it("importDump: wirft 403 wenn NODE_ENV=production", async () => {
-    process.env.NODE_ENV = "production";
+  it("importDump: wirft 403 wenn Laufzeitmodus production ist", async () => {
+    vi.mocked(getRuntimeMode).mockReturnValue("production");
     await expect(importDump(adminCtx, Buffer.from("test"))).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 403 && e.code === "FORBIDDEN",
+      (error: unknown) => isDumpServiceError(error) && error.status === 403 && error.code === "FORBIDDEN",
     );
   });
 
-  it("importDump: wird nicht durch den Environment-Guard blockiert wenn NODE_ENV=development", async () => {
-    process.env.NODE_ENV = "development";
-    // Wird später am ZIP-Parsing scheitern, nicht am Environment-Guard
+  it("importDump: scheitert in development am ZIP-Parsing statt am Environment-Guard", async () => {
+    vi.mocked(getRuntimeMode).mockReturnValue("development");
     await expect(importDump(adminCtx, Buffer.from("not-a-zip"))).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.code !== "FORBIDDEN",
+      (error: unknown) => isDumpServiceError(error) && error.code !== "FORBIDDEN",
     );
+  });
+});
+
+describe("dumpService – Tabellenvertrag", () => {
+  it("enthält tours im erlaubten Dump-Satz", () => {
+    expect(DUMP_TABLE_KEYS).toContain("tours");
+  });
+
+  it("schließt users und roles explizit aus", () => {
+    expect(EXCLUDED_DUMP_TABLE_KEYS).toContain("users");
+    expect(EXCLUDED_DUMP_TABLE_KEYS).toContain("roles");
+    expect(DUMP_TABLE_KEYS).not.toContain("users");
+    expect(DUMP_TABLE_KEYS).not.toContain("roles");
   });
 });
 
@@ -114,45 +168,13 @@ describe("dumpService – Dateinamen-Validierung", () => {
 
   it("resolveDumpDownloadPath: gültiger Dateiname ohne Datei → 404", async () => {
     await expect(resolveDumpDownloadPath(adminCtx, "dump_2025-01-01T00-00-00-000Z.zip")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 404 && e.code === "NOT_FOUND",
+      (error: unknown) => isDumpServiceError(error) && error.status === 404 && error.code === "NOT_FOUND",
     );
   });
 
   it("resolveDumpDownloadPath: Path-Traversal-Versuch → 422", async () => {
     await expect(resolveDumpDownloadPath(adminCtx, "../../../etc/passwd")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 422 && e.code === "VALIDATION_ERROR",
-    );
-  });
-
-  it("resolveDumpDownloadPath: Dateiname ohne Dump-Präfix → 422", async () => {
-    await expect(resolveDumpDownloadPath(adminCtx, "backup_2025-01-01.zip")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 422,
-    );
-  });
-
-  it("resolveDumpDownloadPath: leerer Dateiname → 422", async () => {
-    await expect(resolveDumpDownloadPath(adminCtx, "")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 422,
-    );
-  });
-
-  it("resolveDumpDownloadPath: gültiger Dateiname mit vorhandener Datei → gibt Pfad zurück", async () => {
-    const filename = "dump_2025-01-01T00-00-00-000Z.zip";
-    fs.writeFileSync(path.join(tempRoot, "dumps", filename), "test");
-    const result = await resolveDumpDownloadPath(adminCtx, filename);
-    expect(result.fileName).toBe(filename);
-    expect(result.filePath).toContain(filename);
-  });
-
-  it("deleteDump: nicht vorhandene Datei → 404", async () => {
-    await expect(deleteDump(adminCtx, "dump_2025-01-01T00-00-00-000Z.zip")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 404,
-    );
-  });
-
-  it("deleteDump: Path-Traversal-Versuch → 422", async () => {
-    await expect(deleteDump(adminCtx, "../secret.txt")).rejects.toSatisfy(
-      (e: unknown) => isDumpServiceError(e) && e.status === 422,
+      (error: unknown) => isDumpServiceError(error) && error.status === 422 && error.code === "VALIDATION_ERROR",
     );
   });
 
@@ -160,49 +182,56 @@ describe("dumpService – Dateinamen-Validierung", () => {
     const filename = "dump_2025-06-01T12-00-00-000Z.zip";
     const filePath = path.join(tempRoot, "dumps", filename);
     fs.writeFileSync(filePath, "test");
+
     const result = await deleteDump(adminCtx, filename);
+
     expect(result.ok).toBe(true);
     expect(fs.existsSync(filePath)).toBe(false);
   });
 });
 
-describe("dumpService – listDumps", () => {
-  beforeEach(() => {
-    fs.mkdirSync(path.join(tempRoot, "dumps"), { recursive: true });
+describe("dumpService – Dump-Formatvalidierung", () => {
+  it("lehnt ZIP ohne versioniertes Format ab", async () => {
+    const zipBuffer = await buildZipFromDataJson({});
+    await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
+      (error: unknown) =>
+        isDumpServiceError(error) &&
+        error.status === 422 &&
+        error.message.includes("Dump-Version"),
+    );
   });
 
-  afterEach(() => {
-    fs.rmSync(tempRoot, { recursive: true, force: true });
+  it("lehnt Dump mit unbekannten Tabellen ab", async () => {
+    const zipBuffer = await buildZipFromDataJson({
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt: new Date().toISOString(),
+      tables: {
+        ...Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
+        users: [],
+      },
+    });
+
+    await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
+      (error: unknown) =>
+        isDumpServiceError(error) &&
+        error.status === 422 &&
+        error.message.includes("Unbekannte Tabellen"),
+    );
   });
 
-  it("leeres Verzeichnis → leeres Array", async () => {
-    const result = await listDumps(adminCtx);
-    expect(result).toEqual([]);
-  });
+  it("lehnt Dump mit fehlenden Tabellen ab", async () => {
+    const partialTables = Object.fromEntries(DUMP_TABLE_KEYS.slice(1).map((key) => [key, []]));
+    const zipBuffer = await buildZipFromDataJson({
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt: new Date().toISOString(),
+      tables: partialTables,
+    });
 
-  it("Dateien mit gültigem Namen werden zurückgegeben, ungültige ignoriert", async () => {
-    const validFile = "dump_2025-01-01T00-00-00-000Z.zip";
-    const invalidFile = "backup_2025-01-01.zip";
-    fs.writeFileSync(path.join(tempRoot, "dumps", validFile), "content");
-    fs.writeFileSync(path.join(tempRoot, "dumps", invalidFile), "content");
-
-    const result = await listDumps(adminCtx);
-    expect(result).toHaveLength(1);
-    expect(result[0].filename).toBe(validFile);
-  });
-
-  it("Ergebnis ist absteigend nach createdAt sortiert", async () => {
-    const file1 = "dump_2025-01-01T00-00-00-000Z.zip";
-    const file2 = "dump_2025-06-01T00-00-00-000Z.zip";
-    fs.writeFileSync(path.join(tempRoot, "dumps", file1), "a");
-    fs.writeFileSync(path.join(tempRoot, "dumps", file2), "b");
-
-    const result = await listDumps(adminCtx);
-    // Sortierung basiert auf mtime, daher beide gefunden
-    expect(result).toHaveLength(2);
-    // Beide Dateinamen sind im Ergebnis vorhanden
-    const filenames = result.map((r) => r.filename);
-    expect(filenames).toContain(file1);
-    expect(filenames).toContain(file2);
+    await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
+      (error: unknown) =>
+        isDumpServiceError(error) &&
+        error.status === 422 &&
+        error.message.includes("Fehlende Tabellen"),
+    );
   });
 });

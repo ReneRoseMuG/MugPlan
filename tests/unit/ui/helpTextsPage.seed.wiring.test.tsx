@@ -99,14 +99,10 @@ async function loadHelpTextsPageWithEffect() {
   vi.resetModules();
   vi.doMock("react", async () => {
     const actual = await vi.importActual<typeof import("react")>("react");
-    let effectCall = 0;
     return {
       ...actual,
       useEffect: ((effect: () => void | (() => void)) => {
-        effectCall += 1;
-        if (effectCall === 2) {
-          effect();
-        }
+        effect();
       }) as typeof actual.useEffect,
     };
   });
@@ -143,7 +139,7 @@ describe("FT28 help texts page seed behavior", () => {
 
     expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/help-texts/seed-missing-from-frontend");
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ["/api/help-texts"] });
-    expect(html).toContain("text-helptext-key-1");
-    expect(html).toContain("Key: help.alpha");
+    expect(html).toContain("table-view");
+    expect(html).toContain("button-helptexts-import-export");
   });
 });

@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Projekt-Tag-Picker zeigt benutzerdefinierte Tags sowie die erlaubten System-Tags Reklamation und Sondermass.
- * - Termin-Tag-Picker zeigt benutzerdefinierte Tags und zusätzlich Sondermaß, blendet aber Storniert und Reklamation aus.
+ * - Termin-Tag-Picker zeigt benutzerdefinierte Tags sowie die erlaubten System-Tags Reklamation und Sondermaß, blendet aber Storniert aus.
  *
  * Fehlerfaelle:
  * - Projekt- und Termin-Picker teilen weiterhin denselben ungefilterten Tag-Katalog.
@@ -93,7 +93,7 @@ test("shows system tags only in the allowed project picker domain", async ({ pag
 
   const appointmentDialog = page.getByTestId("appointment-tag-picker-available-list");
   await expect(appointmentDialog.getByTestId(`appointment-tag-picker-add-tag-${customTag.id}`)).toBeVisible();
-  await expect(appointmentDialog.getByTestId(`appointment-tag-picker-add-tag-${reportExclusionTag!.id}`)).toHaveCount(0);
+  await expect(appointmentDialog.getByTestId(`appointment-tag-picker-add-tag-${reportExclusionTag!.id}`)).toBeVisible();
   await expect(appointmentDialog.getByTestId(`appointment-tag-picker-add-tag-${specialMeasureTag!.id}`)).toBeVisible();
   await expect(appointmentDialog.getByTestId(`appointment-tag-picker-add-tag-${cancellationTag!.id}`)).toHaveCount(0);
 });

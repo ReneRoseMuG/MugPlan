@@ -47,7 +47,12 @@ async function createLinkedFixture(prefix: string) {
 async function setNoteCardColor(page: Page, hex: string) {
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByTestId("button-note-card-color-picker")).toBeVisible();
-  await dialog.getByTestId("button-note-card-color-picker-hex").fill(hex);
+  await dialog.getByTestId("button-note-card-color-picker-input").evaluate((element, value) => {
+    const input = element as HTMLInputElement;
+    input.value = value as string;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }, hex);
   await expect(dialog.getByTestId("button-note-card-color-picker-preview")).toHaveCSS("background-color", hexToRgb(hex));
 }
 

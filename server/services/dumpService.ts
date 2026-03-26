@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import archiver from "archiver";
 import unzipper from "unzipper";
@@ -6,8 +7,13 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import { db, pool } from "../db";
+import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
 import { getAttachmentStoragePath, getBackupBasePath } from "../config/storagePaths";
-import { logError, logInfo } from "../lib/logger";
+import { logError } from "../lib/logger";
+import {
+  assertSafeAdminDestructiveOperationTarget,
+  assertSqlDatabaseIdentity,
+} from "../security/dbSafetyGuards";
 
 export class DumpServiceError extends Error {
   status: number;
@@ -39,6 +45,7 @@ function requireAdmin(context: RequestContext): void {
 }
 
 const DUMP_FILENAME_REGEX = /^dump_\d{4}-\d{2}-\d{2}T[\d-]+Z\.zip$/;
+export const DUMP_FORMAT_VERSION = 2 as const;
 
 function validateFilename(filename: string): void {
   if (!DUMP_FILENAME_REGEX.test(filename)) {
@@ -53,9 +60,6 @@ async function getDumpsDir(): Promise<string> {
   return dumpsDir;
 }
 
-// Tables included in the dump, in FK dependency order (parents before children).
-// Excluded: users, roles, projectStatus, componentSpecifications, productComponent,
-//           projectProjectStatus, employeeAbsences, seedRuns, seedRunEntities
 const DUMP_TABLE_ENTRIES = [
   { key: "tags", table: schema.tags },
   { key: "tours", table: schema.tours },
@@ -91,13 +95,99 @@ const DUMP_TABLE_ENTRIES = [
   { key: "backupLog", table: schema.backupLog },
 ] as const;
 
+export const DUMP_TABLE_KEYS = DUMP_TABLE_ENTRIES.map((entry) => entry.key);
+export const EXCLUDED_DUMP_TABLE_KEYS = [
+  "users",
+  "roles",
+  "projectStatus",
+  "componentSpecifications",
+  "productComponent",
+  "projectProjectStatus",
+  "employeeAbsences",
+  "seedRuns",
+  "seedRunEntities",
+] as const;
+
+type DumpTableKey = (typeof DUMP_TABLE_KEYS)[number];
+
+type DumpPayload = {
+  formatVersion: typeof DUMP_FORMAT_VERSION;
+  exportedAt: string;
+  tables: Record<DumpTableKey, unknown[]>;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTable = any;
 
+function buildArchive(zipPath: string): { archive: archiver.Archiver; finalize: () => Promise<void> } {
+  const output = fs.createWriteStream(zipPath);
+  const archive = archiver("zip", { zlib: { level: 6 } });
+  archive.pipe(output);
+
+  const finalize = (): Promise<void> =>
+    new Promise((resolve, reject) => {
+      output.on("close", resolve);
+      output.on("error", reject);
+      archive.on("error", reject);
+      void archive.finalize();
+    });
+
+  return { archive, finalize };
+}
+
+function buildDumpPayload(tableRows: Record<DumpTableKey, unknown[]>): DumpPayload {
+  return {
+    formatVersion: DUMP_FORMAT_VERSION,
+    exportedAt: new Date().toISOString(),
+    tables: tableRows,
+  };
+}
+
+function parseDumpPayload(raw: unknown): DumpPayload {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new DumpServiceError("data.json hat kein gültiges Format", 422, "VALIDATION_ERROR");
+  }
+
+  const candidate = raw as Partial<DumpPayload> & { tables?: Record<string, unknown> };
+  if (candidate.formatVersion !== DUMP_FORMAT_VERSION) {
+    throw new DumpServiceError("Nicht unterstützte Dump-Version", 422, "VALIDATION_ERROR");
+  }
+  if (typeof candidate.exportedAt !== "string" || candidate.exportedAt.trim().length === 0) {
+    throw new DumpServiceError("Dump-Metadaten fehlen", 422, "VALIDATION_ERROR");
+  }
+  if (!candidate.tables || typeof candidate.tables !== "object" || Array.isArray(candidate.tables)) {
+    throw new DumpServiceError("Dump-Tabellen fehlen", 422, "VALIDATION_ERROR");
+  }
+
+  const tableKeys = Object.keys(candidate.tables);
+  const unknownKeys = tableKeys.filter((key) => !DUMP_TABLE_KEYS.includes(key as DumpTableKey));
+  const missingKeys = DUMP_TABLE_KEYS.filter((key) => !(key in candidate.tables!));
+  if (unknownKeys.length > 0) {
+    throw new DumpServiceError(`Unbekannte Tabellen im Dump: ${unknownKeys.join(", ")}`, 422, "VALIDATION_ERROR");
+  }
+  if (missingKeys.length > 0) {
+    throw new DumpServiceError(`Fehlende Tabellen im Dump: ${missingKeys.join(", ")}`, 422, "VALIDATION_ERROR");
+  }
+
+  const tables = {} as Record<DumpTableKey, unknown[]>;
+  for (const key of DUMP_TABLE_KEYS) {
+    const rows = candidate.tables[key];
+    if (!Array.isArray(rows)) {
+      throw new DumpServiceError(`Tabelle '${key}' hat kein gültiges Array-Format`, 422, "VALIDATION_ERROR");
+    }
+    tables[key] = rows;
+  }
+
+  return {
+    formatVersion: DUMP_FORMAT_VERSION,
+    exportedAt: candidate.exportedAt,
+    tables,
+  };
+}
+
 /**
  * Converts ISO date strings back to Date objects for columns that Drizzle maps as Date
- * (MySqlTimestamp and MySqlDate without mode:"string"). Required because JSON roundtrip
- * serializes Date → string, and Drizzle's mysql2 driver calls .toISOString() on insert.
+ * (MySqlTimestamp and MySqlDate without mode:"string").
  */
 function coerceRowDates(table: AnyTable, rows: unknown[]): unknown[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,32 +206,92 @@ function coerceRowDates(table: AnyTable, rows: unknown[]): unknown[] {
 
   const dateKeyList = Array.from(dateKeys);
   return rows.map((row) => {
-    const r = { ...(row as Record<string, unknown>) };
+    const input = row as Record<string, unknown>;
+    const result = { ...input };
     for (const key of dateKeyList) {
-      const val = r[key];
-      if (typeof val === "string" && val.length > 0) {
-        const d = new Date(val);
-        if (!isNaN(d.getTime())) r[key] = d;
+      const value = result[key];
+      if (typeof value === "string" && value.length > 0) {
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) {
+          result[key] = parsed;
+        }
       }
     }
-    return r;
+    return result;
   });
 }
 
-function buildArchive(zipPath: string): { archive: archiver.Archiver; finalize: () => Promise<void> } {
-  const output = fs.createWriteStream(zipPath);
-  const archive = archiver("zip", { zlib: { level: 6 } });
-  archive.pipe(output);
+function buildUploadsStageDir(): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), "mugplan-dump-import-"));
+}
 
-  const finalize = (): Promise<void> =>
-    new Promise((resolve, reject) => {
-      output.on("close", resolve);
-      output.on("error", reject);
-      archive.on("error", reject);
-      void archive.finalize();
-    });
+async function stageUploads(directory: unzipper.CentralDirectory): Promise<{ stageDir: string | null; hasUploads: boolean }> {
+  const uploadFiles = directory.files.filter((file) => file.path.startsWith("uploads/") && !file.path.endsWith("/"));
+  if (uploadFiles.length === 0) {
+    return { stageDir: null, hasUploads: false };
+  }
 
-  return { archive, finalize };
+  const stageDir = buildUploadsStageDir();
+  for (const file of uploadFiles) {
+    const relativePath = file.path.slice("uploads/".length);
+    if (!relativePath || relativePath.includes("..")) {
+      throw new DumpServiceError("Ungültiger Upload-Pfad im Dump", 422, "VALIDATION_ERROR");
+    }
+    const targetPath = path.join(stageDir, relativePath);
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    const content = await file.buffer();
+    fs.writeFileSync(targetPath, content);
+  }
+
+  return { stageDir, hasUploads: true };
+}
+
+function cleanupStageDir(stageDir: string | null): void {
+  if (!stageDir) return;
+  fs.rmSync(stageDir, { recursive: true, force: true });
+}
+
+async function restoreUploadsFromStage(stageDir: string | null): Promise<boolean> {
+  if (!stageDir) return false;
+
+  const uploadsPath = await getAttachmentStoragePath();
+  const backupPath = `${uploadsPath}.dump-restore-backup`;
+  fs.rmSync(backupPath, { recursive: true, force: true });
+
+  const uploadsExists = fs.existsSync(uploadsPath);
+  if (uploadsExists) {
+    fs.renameSync(uploadsPath, backupPath);
+  }
+
+  try {
+    fs.mkdirSync(path.dirname(uploadsPath), { recursive: true });
+    fs.renameSync(stageDir, uploadsPath);
+    fs.rmSync(backupPath, { recursive: true, force: true });
+    return true;
+  } catch (error) {
+    fs.rmSync(uploadsPath, { recursive: true, force: true });
+    if (fs.existsSync(backupPath)) {
+      fs.renameSync(backupPath, uploadsPath);
+    }
+    throw error;
+  }
+}
+
+async function assertSafeImportTarget(): Promise<void> {
+  const mode = getRuntimeMode();
+  const runtimeConfig = getRuntimeConfig();
+  const expectedTarget = assertSafeAdminDestructiveOperationTarget({
+    mode,
+    databaseUrl: runtimeConfig.mysqlDatabaseUrl,
+    allowedDatabases: runtimeConfig.allowedDatabases,
+    allowedHosts: runtimeConfig.allowedHosts,
+  });
+  const conn = await pool.getConnection();
+  try {
+    await assertSqlDatabaseIdentity(conn, expectedTarget.dbName);
+  } finally {
+    conn.release();
+  }
 }
 
 export async function createDump(context: RequestContext): Promise<{
@@ -155,19 +305,15 @@ export async function createDump(context: RequestContext): Promise<{
   const isoTimestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const filename = `dump_${isoTimestamp}.zip`;
   const zipPath = path.join(dumpsDir, filename);
-
   const { archive, finalize } = buildArchive(zipPath);
 
-  // Export all table data via Drizzle (returns camelCase keys — consistent with import)
-  const data: Record<string, unknown[]> = {};
+  const tableRows = {} as Record<DumpTableKey, unknown[]>;
   for (const entry of DUMP_TABLE_ENTRIES) {
-    const rows = await db.select().from(entry.table as AnyTable);
-    data[entry.key] = rows;
+    tableRows[entry.key] = await db.select().from(entry.table as AnyTable);
   }
 
-  archive.append(JSON.stringify(data, null, 0), { name: "data.json" });
+  archive.append(JSON.stringify(buildDumpPayload(tableRows)), { name: "data.json" });
 
-  // Include uploads directory
   const uploadsPath = await getAttachmentStoragePath();
   if (fs.existsSync(uploadsPath)) {
     archive.directory(uploadsPath, "uploads");
@@ -176,9 +322,11 @@ export async function createDump(context: RequestContext): Promise<{
   await finalize();
 
   const stat = fs.statSync(zipPath);
-  const createdAt = stat.mtime.toISOString();
-
-  return { filename, sizeBytes: stat.size, createdAt };
+  return {
+    filename,
+    sizeBytes: stat.size,
+    createdAt: stat.mtime.toISOString(),
+  };
 }
 
 export async function listDumps(context: RequestContext): Promise<
@@ -187,7 +335,6 @@ export async function listDumps(context: RequestContext): Promise<
   requireAdmin(context);
 
   const dumpsDir = await getDumpsDir();
-
   let files: string[];
   try {
     files = fs.readdirSync(dumpsDir);
@@ -195,19 +342,17 @@ export async function listDumps(context: RequestContext): Promise<
     return [];
   }
 
-  const result = files
-    .filter((f) => DUMP_FILENAME_REGEX.test(f))
-    .map((f) => {
-      const stat = fs.statSync(path.join(dumpsDir, f));
+  return files
+    .filter((filename) => DUMP_FILENAME_REGEX.test(filename))
+    .map((filename) => {
+      const stat = fs.statSync(path.join(dumpsDir, filename));
       return {
-        filename: f,
+        filename,
         sizeBytes: stat.size,
         createdAt: stat.mtime.toISOString(),
       };
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-  return result;
 }
 
 export async function resolveDumpDownloadPath(
@@ -219,7 +364,6 @@ export async function resolveDumpDownloadPath(
 
   const dumpsDir = await getDumpsDir();
   const filePath = path.join(dumpsDir, filename);
-
   if (!fs.existsSync(filePath)) {
     throw new DumpServiceError("Dump-Datei nicht gefunden", 404, "NOT_FOUND");
   }
@@ -233,13 +377,12 @@ export async function importDump(
 ): Promise<{ tablesRestored: number; uploadsRestored: boolean; durationMs: number }> {
   requireAdmin(context);
 
-  if (process.env.NODE_ENV === "production") {
+  const mode = getRuntimeMode();
+  if (mode === "production") {
     throw new DumpServiceError("Import ist in der Produktionsumgebung nicht erlaubt", 403, "FORBIDDEN");
   }
 
   const startMs = Date.now();
-
-  // Step 1: Validate ZIP and extract data.json before touching the DB
   let directory: unzipper.CentralDirectory;
   try {
     directory = await unzipper.Open.buffer(fileBuffer);
@@ -247,106 +390,88 @@ export async function importDump(
     throw new DumpServiceError("Ungültige oder beschädigte ZIP-Datei", 422, "VALIDATION_ERROR");
   }
 
-  const dataFile = directory.files.find((f) => f.path === "data.json");
+  const dataFile = directory.files.find((file) => file.path === "data.json");
   if (!dataFile) {
     throw new DumpServiceError("ZIP enthält keine data.json", 422, "VALIDATION_ERROR");
   }
 
-  let tableData: Record<string, unknown[]>;
+  let payload: DumpPayload;
   try {
-    const content = await dataFile.buffer();
-    const parsed = JSON.parse(content.toString("utf-8")) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error("data.json hat kein gültiges Format");
-    }
-    tableData = parsed as Record<string, unknown[]>;
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Ungültiges JSON in data.json";
+    const parsed = JSON.parse((await dataFile.buffer()).toString("utf-8")) as unknown;
+    payload = parseDumpPayload(parsed);
+  } catch (error) {
+    if (isDumpServiceError(error)) throw error;
+    const message = error instanceof Error ? error.message : "Ungültiges JSON in data.json";
     throw new DumpServiceError(message, 422, "VALIDATION_ERROR");
   }
 
-  // Step 2: Run DB restore on a dedicated connection with FK checks disabled
+  const { stageDir, hasUploads } = await stageUploads(directory);
+  await assertSafeImportTarget();
+
   const conn = await pool.getConnection();
   let tablesRestored = 0;
-
   try {
     await conn.execute("SET FOREIGN_KEY_CHECKS=0");
     await conn.beginTransaction();
+    await assertSqlDatabaseIdentity(conn, assertSafeAdminDestructiveOperationTarget({
+      mode,
+      databaseUrl: getRuntimeConfig().mysqlDatabaseUrl,
+      allowedDatabases: getRuntimeConfig().allowedDatabases,
+      allowedHosts: getRuntimeConfig().allowedHosts,
+    }).dbName);
 
-    // Create a Drizzle instance scoped to this connection
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const connDb = drizzle(conn as any, { schema, mode: "default" });
 
-    // Truncate in reverse order to respect FK dependencies
     for (const entry of [...DUMP_TABLE_ENTRIES].reverse()) {
-      await conn.execute(`TRUNCATE TABLE \`${getTableName(entry.table)}\``);
+      await conn.execute(`DELETE FROM \`${getTableName(entry.table)}\``);
     }
 
-    // Insert in forward order
     for (const entry of DUMP_TABLE_ENTRIES) {
-      const rows = tableData[entry.key];
-      if (!Array.isArray(rows) || rows.length === 0) {
-        logInfo("importDump: Tabelle übersprungen", { key: entry.key, reason: !Array.isArray(rows) ? "kein Array" : "leer" });
+      const rows = payload.tables[entry.key];
+      if (rows.length === 0) {
         continue;
       }
 
-      // Restore Date objects lost during JSON serialization
       const coercedRows = coerceRowDates(entry.table, rows);
-
-      // Insert in batches of 500
-      const BATCH_SIZE = 500;
-      for (let i = 0; i < coercedRows.length; i += BATCH_SIZE) {
-        const batch = coercedRows.slice(i, i + BATCH_SIZE);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const batchSize = 500;
+      for (let index = 0; index < coercedRows.length; index += batchSize) {
+        const batch = coercedRows.slice(index, index + batchSize);
         await connDb.insert(entry.table as AnyTable).values(batch as any[]);
       }
-      logInfo("importDump: Tabelle eingespielt", { key: entry.key, rows: coercedRows.length });
-      tablesRestored++;
+      tablesRestored += 1;
     }
 
     await conn.commit();
-  } catch (e) {
+  } catch (error) {
     await conn.rollback();
-    const detail = e instanceof Error ? e.message : String(e);
-    logError("importDump: Datenbankfehler", { detail, stack: e instanceof Error ? e.stack : undefined });
-    throw new DumpServiceError(
-      `Datenbankfehler beim Import: ${detail}`,
-      500,
-      "INTERNAL_ERROR",
-    );
+    const detail = error instanceof Error ? error.message : String(error);
+    logError("importDump: Datenbankfehler", {
+      detail,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw new DumpServiceError(`Datenbankfehler beim Import: ${detail}`, 500, "INTERNAL_ERROR");
   } finally {
     await conn.execute("SET FOREIGN_KEY_CHECKS=1");
     conn.release();
   }
 
-  // Step 3: Restore uploads directory
-  let uploadsRestored = false;
   try {
-    const uploadsPath = await getAttachmentStoragePath();
-    const uploadsFiles = directory.files.filter(
-      (f) => f.path.startsWith("uploads/") && !f.path.endsWith("/"),
-    );
-
-    if (uploadsFiles.length > 0) {
-      // Clear existing uploads
-      fs.rmSync(uploadsPath, { recursive: true, force: true });
-      fs.mkdirSync(uploadsPath, { recursive: true });
-
-      for (const file of uploadsFiles) {
-        const relativePath = file.path.slice("uploads/".length);
-        const targetPath = path.join(uploadsPath, relativePath);
-        fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-        const content = await file.buffer();
-        fs.writeFileSync(targetPath, content);
-      }
-      uploadsRestored = true;
+    const uploadsRestored = await restoreUploadsFromStage(stageDir);
+    return {
+      tablesRestored,
+      uploadsRestored,
+      durationMs: Date.now() - startMs,
+    };
+  } catch (error) {
+    cleanupStageDir(stageDir);
+    const detail = error instanceof Error ? error.message : String(error);
+    logError("importDump: Upload-Wiederherstellung fehlgeschlagen", { detail });
+    throw new DumpServiceError(`Upload-Wiederherstellung fehlgeschlagen: ${detail}`, 500, "INTERNAL_ERROR");
+  } finally {
+    if (!hasUploads) {
+      cleanupStageDir(stageDir);
     }
-  } catch {
-    // Uploads restore failure is non-fatal
-    uploadsRestored = false;
   }
-
-  return { tablesRestored, uploadsRestored, durationMs: Date.now() - startMs };
 }
 
 export async function deleteDump(context: RequestContext, filename: string): Promise<{ ok: true }> {
@@ -355,7 +480,6 @@ export async function deleteDump(context: RequestContext, filename: string): Pro
 
   const dumpsDir = await getDumpsDir();
   const filePath = path.join(dumpsDir, filename);
-
   if (!fs.existsSync(filePath)) {
     throw new DumpServiceError("Dump-Datei nicht gefunden", 404, "NOT_FOUND");
   }

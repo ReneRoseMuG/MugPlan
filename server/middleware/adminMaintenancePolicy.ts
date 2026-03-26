@@ -12,6 +12,9 @@ function classifyAdminEndpoint(method: string, path: string): AdminEndpointCateg
   if (method === "POST" && path === "/admin/reset-database") {
     return "destructive";
   }
+  if (method === "POST" && path === "/admin/dumps/import") {
+    return "destructive";
+  }
   if (method === "POST" && path === "/admin/demo-seed-runs") {
     return "destructive";
   }

@@ -23,7 +23,6 @@ const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const useSettingMock = vi.fn();
 const useSettingsMock = vi.fn();
-const entityCardCalls: Array<Record<string, unknown>> = [];
 const tableViewCalls: Array<Record<string, unknown>> = [];
 const listEmptyStateCalls: Array<Record<string, unknown>> = [];
 
@@ -54,13 +53,6 @@ vi.mock("@/components/ui/button", () => ({
 
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
-}));
-
-vi.mock("@/components/ui/entity-card", () => ({
-  EntityCard: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
-    entityCardCalls.push(props);
-    return <article data-testid={String(props.testId ?? "")}>{props.children}</article>;
-  },
 }));
 
 vi.mock("@/components/ui/list-layout", () => ({
@@ -120,7 +112,6 @@ import { HelpTextsPage, shouldBlockHelpTextsLayout } from "../../../client/src/c
 describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
-    entityCardCalls.length = 0;
     tableViewCalls.length = 0;
     listEmptyStateCalls.length = 0;
     useSettingMock.mockReset();
@@ -138,11 +129,13 @@ describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
     });
   });
 
-  it("shows the help key on board cards and routes card double clicks into editing", () => {
+  it("shows the help key in the table preview and routes row double clicks into editing", () => {
     const onEditHelpText = vi.fn();
     useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
-      const firstKey = options.queryKey?.[0];
-      if (firstKey === "/api/help-texts") {
+      const queryKey = options.queryKey ?? [];
+      const firstKey = queryKey[0];
+      const searchKey = queryKey[1];
+      if (firstKey === "/api/help-texts" && searchKey === "") {
         return {
           data: [{ id: 7, helpKey: "alpha.help", title: "Alpha", body: "<p>Body</p>", isActive: true, version: 1 }],
           isLoading: false,
@@ -156,9 +149,19 @@ describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
     );
 
     expect(html).toContain("button-new-helptext");
-    expect(html).toContain("Key: alpha.help");
+    expect(tableViewCalls).toHaveLength(1);
+    const previewHtml = renderToStaticMarkup(
+      <>
+        {(tableViewCalls[0].rowPreviewRenderer as (row: { title: string; helpKey: string; body: string }) => React.ReactNode)({
+          title: "Alpha",
+          helpKey: "alpha.help",
+          body: "<p>Body</p>",
+        })}
+      </>,
+    );
+    expect(previewHtml).toContain("alpha.help");
 
-    (entityCardCalls[0].onDoubleClick as (() => void) | undefined)?.();
+    (tableViewCalls[0].onRowDoubleClick as ((row: { id: number }) => void) | undefined)?.({ id: 7 });
     expect(onEditHelpText).toHaveBeenCalledWith(7);
   });
 
@@ -189,11 +192,14 @@ describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
       <HelpTextsPage onCreateHelpText={vi.fn()} onEditHelpText={vi.fn()} />,
     );
 
+    expect(tableViewCalls).toHaveLength(1);
+    const emptyStateHtml = renderToStaticMarkup(<>{tableViewCalls[0].emptyState as React.ReactNode}</>);
     expect(listEmptyStateCalls[0]).toMatchObject({
       helpKey: "helptexts.empty",
       fallbackTitle: "Keine Hilfetexte vorhanden.",
     });
-    expect(html).toContain("empty-helptexts.empty");
+    expect(emptyStateHtml).toContain("empty-helptexts.empty");
+    expect(html).toContain("table-helptexts");
   });
 
   it("forwards table row double clicks and renders the preview fallback for empty bodies", () => {
@@ -203,8 +209,10 @@ describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
-      const firstKey = options.queryKey?.[0];
-      if (firstKey === "/api/help-texts") {
+      const queryKey = options.queryKey ?? [];
+      const firstKey = queryKey[0];
+      const searchKey = queryKey[1];
+      if (firstKey === "/api/help-texts" && searchKey === "") {
         return {
           data: [{ id: 9, helpKey: "beta.help", title: "Beta", body: "   ", isActive: true, version: 1 }],
           isLoading: false,

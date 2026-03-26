@@ -23,6 +23,7 @@ const tableViewCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  keepPreviousData: Symbol("keepPreviousData"),
 }));
 
 vi.mock("@/hooks/useSettings", () => ({

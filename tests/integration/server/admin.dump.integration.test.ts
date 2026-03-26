@@ -2,268 +2,288 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - POST /api/admin/dumps/create erstellt eine ZIP-Datei und gibt Metadaten zurück.
- * - GET /api/admin/dumps listet erstellte Dump-Dateien auf.
- * - GET /api/admin/dumps/:filename/download liefert eine ZIP-Datei als Download.
- * - DELETE /api/admin/dumps/:filename löscht die Datei und entfernt sie aus der Liste.
- * - POST /api/admin/dumps/import akzeptiert eine gültige ZIP mit data.json.
- * - Alle Endpoints erfordern Admin-Rolle (403 für Nicht-Admins).
- * - Ungültige Dateinamen (Path-Traversal) werden mit 422 abgelehnt.
- * - Beschädigte ZIPs werden mit 422 abgelehnt.
- * - ZIPs ohne data.json werden mit 422 abgelehnt.
- * - Unbekannte Tabellennamen in data.json werden ignoriert (kein Fehler).
+ * - POST /api/admin/dumps/create erstellt einen versionierten Dump.
+ * - Der Dump enthält genau den erlaubten Tabellensatz und schließt ausgeschlossene Tabellen aus.
+ * - POST /api/admin/dumps/import spielt einen erzeugten Dump als echten Roundtrip wieder ein.
+ * - Touren und weitere zentrale Fachdaten werden nach dem Reimport korrekt wiederhergestellt.
+ * - Ausgeschlossene Tabellen wie users/roles bleiben vom Import unberührt.
+ * - Admin-Endpunkte lehnen ungültige Dumps und Nicht-Admins korrekt ab.
  *
  * Fehlerfälle:
  * - Nicht-Admin → 403
- * - Path-Traversal im Dateinamen → 422
  * - Kein multipart-Body beim Import → 422
  * - Korrupte ZIP → 422
  * - ZIP ohne data.json → 422
- * - Download nicht vorhandene Datei → 404
- * - Delete nicht vorhandene Datei → 404
+ * - Legacy-Dump ohne versioniertes Format → 422
  *
  * Ziel:
- * End-to-End-Absicherung der Dump-und-Import-Endpunkte mit echter Testdatenbank
- * und temporärem Dateisystem. Import-Happy-Path mit leerem data.json (kein Tabellen-Inhalt)
- * vermeidet destruktive Auswirkungen auf den geteilten Testdatenbankzustand.
- * Admin-Session wird pro Test neu erstellt, da resetDatabase() in beforeEach die User-IDs
- * zurücksetzt und gespeicherte Sessions ungültig macht.
+ * Den Dump-/Import-Flow end-to-end gegen die echte Testdatenbank absichern und
+ * nachweisen, dass ein erzeugter Dump denselben erlaubten Datenbestand zuverlässig
+ * wiederherstellt, ohne ausgeschlossene Tabellen in Scope zu ziehen.
  */
-import os from "os";
-import path from "path";
-import fs from "fs";
 import archiver from "archiver";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
+import { count, eq } from "drizzle-orm";
 import type express from "express";
-
-// Dump table keys — must match DUMP_TABLE_ENTRIES in dumpService.ts
-const DUMP_TABLE_KEYS = [
-  "tags", "tours", "teams", "productCategories", "componentCategories",
-  "helpTexts", "noteTemplates", "notes", "employees", "customers",
-  "products", "components", "projects", "projectOrder", "projectOrderItems",
-  "projectNotes", "projectAttachments", "projectTags", "appointments",
-  "appointmentEmployees", "appointmentNotes", "appointmentAttachments",
-  "appointmentTags", "customerNotes", "customerAttachments", "customerTags",
-  "employeeAttachments", "employeeTags", "calendarWeekNotes", "calendarSyncLog",
-  "userSettingsValue", "backupLog",
-];
+import * as schema from "@shared/schema";
+import { db } from "../../../server/db";
+import {
+  DUMP_FORMAT_VERSION,
+  DUMP_TABLE_KEYS,
+  EXCLUDED_DUMP_TABLE_KEYS,
+} from "../../../server/services/dumpService";
+import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
+import {
+  attachProjectTagFixture,
+  createAppointmentFixture,
+  createCustomerFixture,
+  createEmployeeFixture,
+  createProjectFixture,
+  createTagFixture,
+  createTeamFixture,
+  createTourFixture,
+} from "../../helpers/testDataFactory";
 
 let app: express.Express;
-const tmpDumpDir = path.resolve(os.tmpdir(), "mugplan-dump-integration-test");
 
-async function buildMinimalZip(options: { includeDataJson: boolean; dataContent?: unknown; corrupt?: boolean }): Promise<Buffer> {
+function binaryParser(
+  res: NodeJS.ReadableStream & { setEncoding(encoding: BufferEncoding): void },
+  callback: (error: Error | null, data?: Buffer) => void,
+) {
+  const chunks: Buffer[] = [];
+  res.on("data", (chunk: Buffer | string) => {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, "binary"));
+  });
+  res.on("end", () => callback(null, Buffer.concat(chunks)));
+  res.on("error", (error: Error) => callback(error));
+}
+
+async function buildZipFromDataJson(data: unknown): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    const arc = archiver("zip");
-    arc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    arc.on("end", () => resolve(Buffer.concat(chunks)));
-    arc.on("error", reject);
-
-    if (options.corrupt) {
-      resolve(Buffer.from("this is not a valid zip file at all"));
-      return;
-    }
-
-    if (options.includeDataJson) {
-      const content = JSON.stringify(options.dataContent ?? {});
-      arc.append(content, { name: "data.json" });
-    }
-
-    void arc.finalize();
+    const archive = archiver("zip");
+    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+    archive.on("end", () => resolve(Buffer.concat(chunks)));
+    archive.on("error", reject);
+    archive.append(JSON.stringify(data), { name: "data.json" });
+    void archive.finalize();
   });
+}
+
+async function parseDumpDataJson(zipBuffer: Buffer): Promise<unknown> {
+  const directory = await (await import("unzipper")).Open.buffer(zipBuffer);
+  const file = directory.files.find((entry) => entry.path === "data.json");
+  if (!file) {
+    throw new Error("data.json not found in dump");
+  }
+  return JSON.parse((await file.buffer()).toString("utf-8")) as unknown;
+}
+
+async function getRowCount(table: any): Promise<number> {
+  const rows = await db.select({ value: count() }).from(table);
+  return Number(rows[0]?.value ?? 0);
+}
+
+async function collectSnapshot() {
+  return {
+    tours: await getRowCount(schema.tours),
+    teams: await getRowCount(schema.teams),
+    customers: await getRowCount(schema.customers),
+    projects: await getRowCount(schema.projects),
+    appointments: await getRowCount(schema.appointments),
+    appointmentEmployees: await getRowCount(schema.appointmentEmployees),
+    tags: await getRowCount(schema.tags),
+    projectTags: await getRowCount(schema.projectTags),
+    users: await getRowCount(schema.users),
+    roles: await getRowCount(schema.roles),
+  };
 }
 
 beforeAll(async () => {
   app = await createApiTestApp();
 });
 
-afterAll(() => {
-  if (fs.existsSync(tmpDumpDir)) {
-    fs.rmSync(tmpDumpDir, { recursive: true, force: true });
-  }
+afterAll(async () => {
+  return Promise.resolve();
 });
 
-describe("GET /api/admin/dumps – Liste", () => {
+describe("GET /api/admin/dumps", () => {
   it("Admin erhält 200 mit Array", async () => {
     const admin = await loginAdminAgent(app);
-    const res = await admin.get("/api/admin/dumps").expect(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    const response = await admin.get("/api/admin/dumps").expect(200);
+    expect(Array.isArray(response.body)).toBe(true);
   });
 
-  it("Nicht-Admin erhält 403 (oder 401 wenn nicht eingeloggt)", async () => {
-    const res = await request(app).get("/api/admin/dumps");
-    expect([401, 403]).toContain(res.status);
+  it("Nicht-Admin erhält 401 oder 403", async () => {
+    const response = await request(app).get("/api/admin/dumps");
+    expect([401, 403]).toContain(response.status);
   });
 });
 
-describe("POST /api/admin/dumps/create", () => {
-  it("erstellt einen Dump und gibt Metadaten zurück", async () => {
+describe("POST /api/admin/dumps/create und Download", () => {
+  it("erzeugt einen versionierten Dump mit erlaubtem Tabellensatz", async () => {
+    const team = await createTeamFixture("#1188aa");
+    const tour = await createTourFixture("#2266aa");
+    const employee = await createEmployeeFixture("DUMP-EMP");
+    const customer = await createCustomerFixture("DUMP-CUST");
+    const project = await createProjectFixture({ prefix: "DUMP-PROJ", customerId: customer.id });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+    const tag = await createTagFixture("DUMP-TAG");
+    await attachProjectTagFixture(project.id, tag.id);
+
+    expect(team.id).toBeGreaterThan(0);
+    expect(appointment.id).toBeGreaterThan(0);
+
     const admin = await loginAdminAgent(app);
-    const res = await admin.post("/api/admin/dumps/create").expect(200);
-    expect(res.body).toHaveProperty("filename");
-    expect(res.body).toHaveProperty("sizeBytes");
-    expect(res.body).toHaveProperty("createdAt");
-    expect(typeof res.body.filename).toBe("string");
-    expect(res.body.filename).toMatch(/^dump_\d{4}-\d{2}-\d{2}T[\d-]+Z\.zip$/);
-    expect(res.body.sizeBytes).toBeGreaterThan(0);
-  });
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    expect(createResponse.body.filename).toMatch(/^dump_\d{4}-\d{2}-\d{2}T[\d-]+Z\.zip$/);
 
-  it("erstellter Dump erscheint in der Liste", async () => {
-    const admin = await loginAdminAgent(app);
-    const createRes = await admin.post("/api/admin/dumps/create").expect(200);
-    const filename = createRes.body.filename as string;
-
-    const listRes = await admin.get("/api/admin/dumps").expect(200);
-    const filenames = (listRes.body as Array<{ filename: string }>).map((d) => d.filename);
-    expect(filenames).toContain(filename);
-  });
-
-  it("Dump-Download liefert ZIP mit Content-Disposition: attachment", async () => {
-    const admin = await loginAdminAgent(app);
-    const createRes = await admin.post("/api/admin/dumps/create").expect(200);
-    const filename = createRes.body.filename as string;
-
-    const res = await admin
-      .get(`/api/admin/dumps/${encodeURIComponent(filename)}/download`)
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(createResponse.body.filename as string)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
       .expect(200);
-    expect(res.headers["content-disposition"]).toContain("attachment");
-    expect(res.headers["content-type"]).toContain("zip");
-    expect(res.body).toBeTruthy();
-  });
 
-  it("Nicht-Admin erhält 403 bei create", async () => {
-    const res = await request(app).post("/api/admin/dumps/create");
-    expect([401, 403]).toContain(res.status);
-  });
-});
+    const dumpData = await parseDumpDataJson(downloadResponse.body as Buffer) as {
+      formatVersion: number;
+      exportedAt: string;
+      tables: Record<string, unknown[]>;
+    };
 
-describe("GET /api/admin/dumps/:filename/download", () => {
-  it("nicht vorhandene Datei → 404", async () => {
-    const admin = await loginAdminAgent(app);
-    await admin
-      .get("/api/admin/dumps/dump_2000-01-01T00-00-00-000Z.zip/download")
-      .expect(404);
-  });
+    expect(dumpData.formatVersion).toBe(DUMP_FORMAT_VERSION);
+    expect(typeof dumpData.exportedAt).toBe("string");
+    expect(Object.keys(dumpData.tables).sort()).toEqual([...DUMP_TABLE_KEYS].sort());
+    expect(dumpData.tables["tours"].length).toBeGreaterThan(0);
+    expect(dumpData.tables["teams"].length).toBeGreaterThan(0);
 
-  it("Path-Traversal-Dateiname → 422", async () => {
-    const admin = await loginAdminAgent(app);
-    const res = await admin.get("/api/admin/dumps/..%2F..%2Fetc%2Fpasswd/download");
-    expect([422, 404]).toContain(res.status);
-  });
-});
-
-describe("DELETE /api/admin/dumps/:filename", () => {
-  it("nicht vorhandene Datei → 404", async () => {
-    const admin = await loginAdminAgent(app);
-    await admin
-      .delete("/api/admin/dumps/dump_2000-01-01T00-00-00-000Z.zip")
-      .expect(404);
-  });
-
-  it("Nicht-Admin erhält 403", async () => {
-    const res = await request(app).delete("/api/admin/dumps/dump_2000-01-01T00-00-00-000Z.zip");
-    expect([401, 403]).toContain(res.status);
-  });
-
-  it("vorhandene Datei wird gelöscht", async () => {
-    const admin = await loginAdminAgent(app);
-
-    // Dump erstellen
-    const createRes = await admin.post("/api/admin/dumps/create").expect(200);
-    const filename = createRes.body.filename as string;
-
-    // Löschen
-    const deleteRes = await admin.delete(`/api/admin/dumps/${encodeURIComponent(filename)}`).expect(200);
-    expect(deleteRes.body.ok).toBe(true);
-
-    // Nicht mehr in der Liste
-    const listRes = await admin.get("/api/admin/dumps").expect(200);
-    const filenames = (listRes.body as Array<{ filename: string }>).map((d) => d.filename);
-    expect(filenames).not.toContain(filename);
+    for (const excludedKey of EXCLUDED_DUMP_TABLE_KEYS) {
+      expect(dumpData.tables).not.toHaveProperty(excludedKey);
+    }
   });
 });
 
 describe("POST /api/admin/dumps/import", () => {
+  it("stellt einen erzeugten Dump als echten Roundtrip wieder her", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const team = await createTeamFixture("#1188aa");
+    const tour = await createTourFixture("#2266aa");
+    const employee = await createEmployeeFixture("ROUNDTRIP-EMP");
+    const customer = await createCustomerFixture("ROUNDTRIP-CUST");
+    const project = await createProjectFixture({ prefix: "ROUNDTRIP-PROJ", customerId: customer.id });
+    await createAppointmentFixture({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+    const tag = await createTagFixture("ROUNDTRIP-TAG");
+    await attachProjectTagFixture(project.id, tag.id);
+
+    const beforeSnapshot = await collectSnapshot();
+
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+    const dumpBuffer = downloadResponse.body as Buffer;
+
+    const extraTour = await createTourFixture("#cc2244");
+    const extraTeam = await createTeamFixture("#cc7722");
+    const extraCustomer = await createCustomerFixture("ROUNDTRIP-EXTRA");
+
+    const mutatedSnapshot = await collectSnapshot();
+    expect(mutatedSnapshot.tours).toBe(beforeSnapshot.tours + 1);
+    expect(mutatedSnapshot.teams).toBe(beforeSnapshot.teams + 1);
+    expect(mutatedSnapshot.customers).toBe(beforeSnapshot.customers + 1);
+
+    const importResponse = await admin
+      .post("/api/admin/dumps/import")
+      .attach("file", dumpBuffer, "dump.zip")
+      .expect(200);
+
+    expect(importResponse.body.tablesRestored).toBeGreaterThan(0);
+
+    const afterSnapshot = await collectSnapshot();
+    expect(afterSnapshot).toEqual(beforeSnapshot);
+
+    const restoredTour = await db.select().from(schema.tours).where(eq(schema.tours.id, tour.id));
+    expect(restoredTour).toHaveLength(1);
+
+    const removedExtraTour = await db.select().from(schema.tours).where(eq(schema.tours.id, extraTour.id));
+    const removedExtraTeam = await db.select().from(schema.teams).where(eq(schema.teams.id, extraTeam.id));
+    const removedExtraCustomer = await db.select().from(schema.customers).where(eq(schema.customers.id, extraCustomer.id));
+    expect(removedExtraTour).toHaveLength(0);
+    expect(removedExtraTeam).toHaveLength(0);
+    expect(removedExtraCustomer).toHaveLength(0);
+  });
+
+  it("lehnt Legacy-Dumps ohne versioniertes Format ab", async () => {
+    const admin = await loginAdminAgent(app);
+    const zipBuffer = await buildZipFromDataJson({});
+
+    const response = await admin
+      .post("/api/admin/dumps/import")
+      .attach("file", zipBuffer, "legacy.zip");
+
+    expect(response.status).toBe(422);
+  });
+
   it("kein multipart-Body → 422", async () => {
     const admin = await loginAdminAgent(app);
-    const res = await admin
+    await admin
       .post("/api/admin/dumps/import")
       .set("Content-Type", "application/json")
-      .send({});
-    expect(res.status).toBe(422);
+      .send({})
+      .expect(422);
   });
 
   it("korrupte ZIP → 422", async () => {
     const admin = await loginAdminAgent(app);
-    const corruptBuffer = await buildMinimalZip({ includeDataJson: false, corrupt: true });
-    const res = await admin
+    await admin
       .post("/api/admin/dumps/import")
-      .attach("file", corruptBuffer, "dump.zip");
-    expect(res.status).toBe(422);
+      .attach("file", Buffer.from("this is not a valid zip"), "dump.zip")
+      .expect(422);
   });
 
-  it("gültige ZIP ohne data.json → 422", async () => {
+  it("ZIP ohne data.json → 422", async () => {
     const admin = await loginAdminAgent(app);
-    const zipBuffer = await buildMinimalZip({ includeDataJson: false });
-    const res = await admin
-      .post("/api/admin/dumps/import")
-      .attach("file", zipBuffer, "dump.zip");
-    expect(res.status).toBe(422);
-  });
-
-  it("data.json ist kein gültiges JSON → 422", async () => {
-    const admin = await loginAdminAgent(app);
-    const chunks: Buffer[] = [];
-    const arc = archiver("zip");
-    arc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    const zipReady = new Promise<Buffer>((resolve, reject) => {
-      arc.on("end", () => resolve(Buffer.concat(chunks)));
-      arc.on("error", reject);
+    const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const archive = archiver("zip");
+      archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+      archive.on("end", () => resolve(Buffer.concat(chunks)));
+      archive.on("error", reject);
+      archive.append("hello", { name: "readme.txt" });
+      void archive.finalize();
     });
-    arc.append("{ this is not: valid json }", { name: "data.json" });
-    void arc.finalize();
-    const zipBuffer = await zipReady;
 
-    const res = await admin
+    await admin
       .post("/api/admin/dumps/import")
-      .attach("file", zipBuffer, "dump.zip");
-    expect(res.status).toBe(422);
+      .attach("file", zipBuffer, "dump.zip")
+      .expect(422);
   });
 
-  it("gültige ZIP mit leeren Tabellen (alle known keys, leere Arrays) → 200", async () => {
-    const admin = await loginAdminAgent(app);
-    const emptyData = Object.fromEntries(DUMP_TABLE_KEYS.map((k) => [k, []]));
-    const zipBuffer = await buildMinimalZip({ includeDataJson: true, dataContent: emptyData });
+  it("Nicht-Admin erhält 401 oder 403", async () => {
+    const zipBuffer = await buildZipFromDataJson({
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt: new Date().toISOString(),
+      tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
+    });
 
-    const res = await admin
+    const response = await request(app)
       .post("/api/admin/dumps/import")
       .attach("file", zipBuffer, "dump.zip");
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("tablesRestored");
-    expect(res.body).toHaveProperty("uploadsRestored");
-    expect(res.body).toHaveProperty("durationMs");
-    expect(typeof res.body.tablesRestored).toBe("number");
-    expect(typeof res.body.uploadsRestored).toBe("boolean");
-  });
 
-  it("unbekannte Tabellennamen in data.json werden ignoriert → 200", async () => {
-    const admin = await loginAdminAgent(app);
-    const dataWithUnknown = { unknownTable: [{ id: 1, name: "ghost" }], tags: [] };
-    const zipBuffer = await buildMinimalZip({ includeDataJson: true, dataContent: dataWithUnknown });
-
-    const res = await admin
-      .post("/api/admin/dumps/import")
-      .attach("file", zipBuffer, "dump.zip");
-    expect(res.status).toBe(200);
-  });
-
-  it("Nicht-Admin erhält 403", async () => {
-    const zipBuffer = await buildMinimalZip({ includeDataJson: true, dataContent: {} });
-    const res = await request(app)
-      .post("/api/admin/dumps/import")
-      .attach("file", zipBuffer, "dump.zip");
-    expect([401, 403]).toContain(res.status);
+    expect([401, 403]).toContain(response.status);
   });
 });

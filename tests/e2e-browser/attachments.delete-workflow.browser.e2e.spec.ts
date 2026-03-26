@@ -1,24 +1,24 @@
 /**
  * Test Scope:
  *
- * Feature: FT19 – Attachment Lösch-Workflow im Browser
- * Use Case: Vollständiger Lösch-Workflow (Soft, Hard, Abbruch, historischer Termin)
+ * Feature: FT19 - Attachment Loesch-Workflow im Browser
+ * Use Case: Vollstaendiger Loesch-Workflow (Soft, Hard, Abbruch, historischer Termin)
  *
  * Abgedeckte Regeln:
  * - Soft-Delete entfernt Anhang aus der Liste und dekrementiert den Counter ohne Seitenreload.
  * - Hard-Delete entfernt Anhang aus der Liste und dekrementiert den Counter.
- * - Abbrechen im Dialog lässt Anhang und Counter unverändert.
- * - Historischer Termin: kein Action-Button sichtbar bei Attachments.
- * - Die Hover-Preview auf der Wochenkarten enthält das gelöschte Attachment nicht mehr.
+ * - Abbrechen im Dialog laesst Anhang und Counter unveraendert.
+ * - Historischer Termin: Anhaenge bleiben sichtbar, Mutationsaktionen bleiben unsichtbar.
+ * - Die Hover-Preview auf der Wochenkarte enthaelt das geloeschte Attachment nicht mehr.
  *
  * Fehlerfaelle:
- * - Counter oder Hover-Preview zeigen nach Löschung veraltete Daten (Stale State).
+ * - Counter oder Hover-Preview zeigen nach Loeschung veraltete Daten.
  * - Dialog erscheint nicht oder zeigt falschen Parent-Typ.
- * - Attachment bleibt nach Bestätigung weiterhin in der Liste sichtbar.
+ * - Attachment bleibt nach Bestaetigung weiterhin in der Liste sichtbar.
  *
  * Ziel:
- * Browser-seitige Ende-zu-Ende-Absicherung des Lösch-Workflows für Projekt (repräsentativ)
- * sowie Sonderregel für historische Termine.
+ * Browser-seitige Ende-zu-Ende-Absicherung des Loesch-Workflows fuer Projekt
+ * sowie der Readonly-Sonderregel fuer historische Termine.
  */
 import { expect, test, type Page } from "@playwright/test";
 import * as projectAttachmentsService from "../../server/services/projectAttachmentsService";
@@ -63,7 +63,7 @@ async function openProjectForm(page: Page, projectId: number, scope: "all" | "no
   await expect(page.getByTestId("button-save-project")).toBeVisible({ timeout: 10_000 });
 }
 
-test("Soft-Delete – Projekt: Anhang aus Liste entfernen, Counter und Hover-Preview aktualisieren", async ({ page }) => {
+test("Soft-Delete - Projekt: Anhang aus Liste entfernen, Counter und Hover-Preview aktualisieren", async ({ page }) => {
   const customer = await createCustomerFixture("FT19-DEL-SOFT-PROJ-CUST");
   const project = await createProjectFixture({
     prefix: "FT19-DEL-SOFT-PROJ",
@@ -82,22 +82,17 @@ test("Soft-Delete – Projekt: Anhang aus Liste entfernen, Counter und Hover-Pre
 
   await loginAsAdmin(page);
 
-  // Schritt 1: Anhang-Counter auf der Wochenkarte ablesen (Ausgangszustand)
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment?.id}`);
   await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
   const hoverTrigger = appointmentPanel.getByTestId("week-appointment-attachments-hover-trigger");
   await expect(hoverTrigger).toContainText("1");
 
-  // Schritt 2: Projektformular öffnen, Anhang im Dokumentenpanel finden
   await openProjectForm(page, project.id);
   const attachmentBadge = page.getByTestId(`attachment-badge-project-${attachment.id}`);
   await expect(attachmentBadge).toBeVisible({ timeout: 5_000 });
   await expect(attachmentBadge).toContainText(attachmentPayload.originalName);
-
-  // Counter im Panel: "Dokumente (1)"
   await expect(page.getByText("Dokumente (1)")).toBeVisible();
 
-  // Schritt 3: Action-Button klicken → Dialog erscheint mit Parent-Typ "Projekt"
   const deleteTrigger = page.getByTestId(`attachment-delete-trigger-${attachment.id}`);
   await expect(deleteTrigger).toBeVisible();
   await deleteTrigger.click();
@@ -108,17 +103,12 @@ test("Soft-Delete – Projekt: Anhang aus Liste entfernen, Counter und Hover-Pre
   await expect(panel.getByRole("button", { name: "Nur Verknüpfung entfernen" })).toBeVisible();
   await expect(panel.getByRole("button", { name: "Datei vollständig löschen" })).toBeVisible();
 
-  // Schritt 4: "Nur Verknüpfung entfernen" wählen
   await panel.getByRole("button", { name: "Nur Verknüpfung entfernen" }).click();
 
-  // Schritt 5: Attachmentliste aktualisiert sich ohne Seitenreload
   await expect(attachmentBadge).not.toBeVisible({ timeout: 5_000 });
   await expect(page.getByText(attachmentPayload.originalName)).not.toBeVisible();
-
-  // Counter zeigt aktualisierten Wert: "Dokumente (0)"
   await expect(page.getByText("Dokumente (0)")).toBeVisible();
 
-  // Schritt 6: Wochenkarte zeigt aktualisierten Counter (kein Hover-Trigger mehr)
   await page.getByTestId("button-cancel-project").click();
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
   await page.getByRole("button", { name: "Wochenuebersicht" }).click();
@@ -129,7 +119,7 @@ test("Soft-Delete – Projekt: Anhang aus Liste entfernen, Counter und Hover-Pre
   ).toHaveCount(0);
 });
 
-test("Hard-Delete – Projekt: Anhang aus Liste und Counter entfernen", async ({ page }) => {
+test("Hard-Delete - Projekt: Anhang aus Liste und Counter entfernen", async ({ page }) => {
   const customer = await createCustomerFixture("FT19-DEL-HARD-PROJ-CUST");
   const project = await createProjectFixture({
     prefix: "FT19-DEL-HARD-PROJ",
@@ -152,20 +142,16 @@ test("Hard-Delete – Projekt: Anhang aus Liste und Counter entfernen", async ({
   const attachmentBadge = page.getByTestId(`attachment-badge-project-${attachment.id}`);
   await expect(attachmentBadge).toBeVisible({ timeout: 5_000 });
 
-  // Action-Button → Bestaetigungspanel → "Datei vollständig löschen"
   await page.getByTestId(`attachment-delete-trigger-${attachment.id}`).click();
   const panel = page.getByTestId(`attachment-delete-panel-${attachment.id}`);
   await expect(panel).toBeVisible({ timeout: 3_000 });
   await panel.getByRole("button", { name: "Datei vollständig löschen" }).click();
 
-  // Anhang verschwindet aus der Liste
   await expect(attachmentBadge).not.toBeVisible({ timeout: 5_000 });
-
-  // Counter aktualisiert sich
   await expect(page.getByText("Dokumente (0)")).toBeVisible();
 });
 
-test("Abbruch – Dialog schließen ohne Löschung", async ({ page }) => {
+test("Abbruch - Dialog schliessen ohne Loeschung", async ({ page }) => {
   const customer = await createCustomerFixture("FT19-DEL-CANCEL-CUST");
   const project = await createProjectFixture({
     prefix: "FT19-DEL-CANCEL-PROJ",
@@ -185,24 +171,18 @@ test("Abbruch – Dialog schließen ohne Löschung", async ({ page }) => {
   await expect(attachmentBadge).toBeVisible({ timeout: 5_000 });
   await expect(page.getByText("Dokumente (1)")).toBeVisible();
 
-  // Action-Button → Bestaetigungspanel öffnet sich
   await page.getByTestId(`attachment-delete-trigger-${attachment.id}`).click();
   const panel = page.getByTestId(`attachment-delete-panel-${attachment.id}`);
   await expect(panel).toBeVisible({ timeout: 3_000 });
-
-  // Abbrechen wählen
   await panel.getByRole("button", { name: "Abbrechen" }).click();
 
-  // Panel geschlossen
   await expect(panel).not.toBeVisible();
-
-  // Anhang ist noch vorhanden, Counter unverändert
   await expect(attachmentBadge).toBeVisible();
   await expect(page.getByText(attachmentPayload.originalName)).toBeVisible();
   await expect(page.getByText("Dokumente (1)")).toBeVisible();
 });
 
-test("Historischer Termin: kein Action-Button für Anhänge sichtbar", async ({ page }) => {
+test("Historischer Termin: nur Readonly-Ansicht und kein Action-Button fuer Anhaenge sichtbar", async ({ page }) => {
   const customer = await createCustomerFixture("FT19-DEL-HIST-CUST");
   const project = await createProjectFixture({
     prefix: "FT19-DEL-HIST-PROJ",
@@ -211,7 +191,7 @@ test("Historischer Termin: kein Action-Button für Anhänge sichtbar", async ({ 
   });
   const appointmentId = await createRawAppointmentFixture({
     projectId: project.id,
-    startDate: "2020-03-15", // Vergangenes Datum → historischer Termin
+    startDate: "2020-03-15",
     title: "FT19 Historischer Termin",
   });
   const attachmentPayload = buildAttachmentPayload("hist-appt", "historisch-test");
@@ -222,17 +202,16 @@ test("Historischer Termin: kein Action-Button für Anhänge sichtbar", async ({ 
 
   await loginAsAdmin(page);
 
-  // Termin via Appointments-Liste öffnen
   await page.getByTestId("nav-termine").click();
   await page.getByRole("switch", { name: "Alle Termine" }).click();
   const appointmentRow = page.getByRole("row").filter({ hasText: "FT19 Historischer Termin" }).first();
   await expect(appointmentRow).toBeVisible({ timeout: 10_000 });
   await appointmentRow.dblclick();
-  await expect(page.getByTestId("button-save-appointment")).toBeVisible({ timeout: 10_000 });
 
-  // Anhang ist in der Liste sichtbar (Anzeige erlaubt)
+  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Schließen" })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Historische Termine können nicht verändert werden.")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText(attachmentPayload.originalName)).toBeVisible({ timeout: 5_000 });
-
-  // Kein Action-Button sichtbar (historischer Termin → nur Lesen)
   await expect(page.getByTestId(/^attachment-delete-trigger-/)).toHaveCount(0);
+  await expect(page.getByTestId("button-add-appointment-attachment")).toHaveCount(0);
 });

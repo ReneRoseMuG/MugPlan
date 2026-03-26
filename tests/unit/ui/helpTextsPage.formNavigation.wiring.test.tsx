@@ -19,7 +19,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
-const entityCardCalls: Array<Record<string, unknown>> = [];
 const tableViewCalls: Array<Record<string, unknown>> = [];
 const buttonCalls: Array<Record<string, unknown>> = [];
 
@@ -51,13 +50,6 @@ vi.mock("@/components/ui/button", () => ({
 
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
-}));
-
-vi.mock("@/components/ui/entity-card", () => ({
-  EntityCard: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
-    entityCardCalls.push(props);
-    return <article>{props.children}</article>;
-  },
 }));
 
 vi.mock("@/components/ui/list-layout", () => ({
@@ -125,7 +117,6 @@ async function loadHelpTextsPageWithState(viewMode: "board" | "table") {
 describe("FT16 help texts page navigation behavior", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
-    entityCardCalls.length = 0;
     tableViewCalls.length = 0;
     buttonCalls.length = 0;
     useQueryMock.mockReset();
@@ -154,8 +145,8 @@ describe("FT16 help texts page navigation behavior", () => {
     const createButton = buttonCalls.find((call) => call["data-testid"] === "button-new-helptext");
     expect(createButton?.onClick).toBe(onCreateHelpText);
 
-    const onDoubleClick = entityCardCalls[0].onDoubleClick as () => void;
-    onDoubleClick();
+    const onRowDoubleClick = tableViewCalls[0].onRowDoubleClick as (row: { id: number }) => void;
+    onRowDoubleClick({ id: 5 });
     expect(onEditHelpText).toHaveBeenCalledWith(5);
   });
 
