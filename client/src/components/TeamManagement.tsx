@@ -158,7 +158,21 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
       if (!team || !Number.isInteger(team.version) || team.version < 1) {
         throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing team version"}');
       }
+      const currentMemberIds = new Set(
+        employees
+          .filter((employee) => employee.teamId === teamId)
+          .map((employee) => employee.id),
+      );
+      const nextMemberIds = new Set(employeeIds);
+      const removedMembers = employees.filter((employee) => currentMemberIds.has(employee.id) && !nextMemberIds.has(employee.id));
+
       await updateMutation.mutateAsync({ id: teamId, color, version: team.version });
+      for (const employee of removedMembers) {
+        if (!Number.isInteger(employee.version) || employee.version < 1) {
+          throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing employee version"}');
+        }
+        await apiRequest("DELETE", `/api/teams/${teamId}/employees/${employee.id}`, { version: employee.version });
+      }
       await assignMembersMutation.mutateAsync({ teamId, employeeIds });
     }
 
