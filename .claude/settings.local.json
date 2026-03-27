@@ -5,7 +5,8 @@
       "Read(//c/Users/r.rose/repos/Plan/shared/**)",
       "Bash(ls c:/Users/r.rose/repos/Plan/releases/work/vitest*)",
       "Bash(node -e \"require\\(''''./server/config/runtimeEnv''''\\)\")",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(grep -l \"EntityFormShell\\\\|entity-form-shell\\\\|create.*calendar\\\\|calendar.*create\\\\|Termin.*anleg\\\\|anleg.*Termin\" tests/e2e-browser/*.spec.ts)"
     ]
   }
 }
