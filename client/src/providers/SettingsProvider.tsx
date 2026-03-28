@@ -64,6 +64,55 @@ export function isVersionConflictError(error: unknown): boolean {
   return false;
 }
 
+function applyOptimisticSettingUpdate(
+  settings: UserSettingsResolvedResponse | undefined,
+  input: SetSettingInput,
+): UserSettingsResolvedResponse {
+  if (!settings) return [];
+
+  return settings.map((entry) => {
+    if (entry.key !== input.key) {
+      return entry;
+    }
+
+    const nextVersion = resolveSettingVersion(settings, input) ?? 1;
+    const nextEntry = {
+      ...entry,
+    };
+
+    if (input.scopeType === "USER") {
+      nextEntry.userValue = input.value;
+      nextEntry.userVersion = nextVersion;
+    } else if (input.scopeType === "ROLE") {
+      nextEntry.roleValue = input.value;
+      nextEntry.roleVersion = nextVersion;
+    } else {
+      nextEntry.globalValue = input.value;
+      nextEntry.globalVersion = nextVersion;
+    }
+
+    if (nextEntry.userValue !== undefined) {
+      nextEntry.resolvedValue = nextEntry.userValue;
+      nextEntry.resolvedVersion = nextEntry.userVersion;
+      nextEntry.resolvedScope = "USER";
+    } else if (nextEntry.roleValue !== undefined) {
+      nextEntry.resolvedValue = nextEntry.roleValue;
+      nextEntry.resolvedVersion = nextEntry.roleVersion;
+      nextEntry.resolvedScope = "ROLE";
+    } else if (nextEntry.globalValue !== undefined) {
+      nextEntry.resolvedValue = nextEntry.globalValue;
+      nextEntry.resolvedVersion = nextEntry.globalVersion;
+      nextEntry.resolvedScope = "GLOBAL";
+    } else {
+      nextEntry.resolvedValue = nextEntry.defaultValue;
+      nextEntry.resolvedVersion = undefined;
+      nextEntry.resolvedScope = "DEFAULT";
+    }
+
+    return nextEntry;
+  });
+}
+
 export async function setSettingWithVersionRetry(params: {
   input: SetSettingInput;
   currentSettings: UserSettingsResolvedResponse | undefined;
@@ -130,19 +179,29 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       isSaving: setMutation.isPending,
       retry: query.refetch,
       setSetting: async (input: SetSettingInput) => {
-        await setSettingWithVersionRetry({
-          input,
-          currentSettings: query.data,
-          mutate: async (request) => {
-            await setMutation.mutateAsync(request);
-          },
-          refetchSettings: async () => {
-            const refreshed = await query.refetch();
-            return refreshed.data
-              ?? queryClient.getQueryData<UserSettingsResolvedResponse>(userSettingsResolvedQueryKey)
-              ?? [];
-          },
-        });
+        const previousSettings = queryClient.getQueryData<UserSettingsResolvedResponse>(userSettingsResolvedQueryKey) ?? query.data ?? [];
+        const optimisticSettings = applyOptimisticSettingUpdate(previousSettings, input);
+
+        queryClient.setQueryData(userSettingsResolvedQueryKey, optimisticSettings);
+
+        try {
+          await setSettingWithVersionRetry({
+            input,
+            currentSettings: previousSettings,
+            mutate: async (request) => {
+              await setMutation.mutateAsync(request);
+            },
+            refetchSettings: async () => {
+              const refreshed = await query.refetch();
+              return refreshed.data
+                ?? queryClient.getQueryData<UserSettingsResolvedResponse>(userSettingsResolvedQueryKey)
+                ?? [];
+            },
+          });
+        } catch (error) {
+          queryClient.setQueryData(userSettingsResolvedQueryKey, previousSettings);
+          throw error;
+        }
       },
     };
   }, [query.error, query.isError, query.isLoading, query.refetch, setMutation, settings]);
