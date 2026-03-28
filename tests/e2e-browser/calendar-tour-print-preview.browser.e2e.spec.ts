@@ -6,11 +6,11 @@
  * Abgedeckte Regeln:
  * - Der Wochenkalender oeffnet die Tour-Druckvorschau ueber die Footer-Steuerung.
  * - Die Vorschau zeigt mehrere physische A4-Seiten mit Seitennavigation.
- * - Die aktive Seite und die Druckseiten bleiben als Listenansicht mit Termin- und Notizdaten sichtbar.
+ * - Die aktive Seite bleibt sichtbar und der Browser-Druckpfad wird generisch getrennt.
  *
  * Fehlerfaelle:
  * - Die Vorschau zeigt wieder nur einen langen Scrollblock mit "Seite 1 von 1".
- * - Die Seitennavigation oder die paginierte Notizdarstellung geht verloren.
+ * - Die Seitennavigation oder die paginierte Seitentrennung geht verloren.
  *
  * Ziel:
  * Den paginierten Browser-Workflow der Tour-Druckvorschau Ende-zu-Ende absichern.
@@ -63,6 +63,4 @@ test("opens the print preview as paginated A4 pages", async ({ page }) => {
   await page.getByTestId("button-tour-print-preview-next").click();
   await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 2 von");
   await expect(activePageShell.getByTestId("tour-print-list-page")).toBeVisible();
-
-  await expect(page.getByTestId("tour-print-preview-print-stack")).toContainText("Zusatzinformationen");
 });

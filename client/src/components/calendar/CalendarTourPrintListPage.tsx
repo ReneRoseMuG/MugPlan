@@ -2,10 +2,9 @@ import React from "react";
 import { format, getISOWeek, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { PrintPageHeader } from "@/components/print/PrintPageHeader";
+import { PrintPageShell } from "@/components/print/PrintPageShell";
+import { PrintSectionHeader } from "@/components/print/PrintSectionHeader";
 import {
-  TOUR_PRINT_PAGE_HEIGHT_MM,
-  TOUR_PRINT_PAGE_PADDING_MM,
-  TOUR_PRINT_PAGE_WIDTH_MM,
   formatTourPrintDate,
   getTourPrintKwRange,
   type TourPrintPreviewPage,
@@ -26,17 +25,7 @@ export function CalendarTourPrintListPage({ page }: Props) {
   const kwRange = getTourPrintKwRange(page.weeks, page.fromDate, page.toDate);
 
   return (
-    <section
-      className="mx-auto flex flex-col bg-white text-slate-900 shadow-lg print:shadow-none"
-      data-testid="tour-print-list-page"
-      style={{
-        width: `${TOUR_PRINT_PAGE_WIDTH_MM}mm`,
-        minHeight: `${TOUR_PRINT_PAGE_HEIGHT_MM}mm`,
-        padding: `${TOUR_PRINT_PAGE_PADDING_MM}mm`,
-        boxSizing: "border-box",
-        border: "1px solid #cbd5e1",
-      }}
-    >
+    <PrintPageShell orientation="landscape" testId="tour-print-list-page">
         <PrintPageHeader
           eyebrow="Tourplan"
           headline={page.tourName}
@@ -58,9 +47,7 @@ export function CalendarTourPrintListPage({ page }: Props) {
             >
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    {`KW ${getISOWeek(parseISO(week.weekStart))}`}
-                  </h3>
+                  <PrintSectionHeader label={`KW ${getISOWeek(parseISO(week.weekStart))}`} className="tracking-widest" />
                   {week.continuedFromPrevious ? (
                     <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-slate-500">
                       Fortsetzung
@@ -89,6 +76,6 @@ export function CalendarTourPrintListPage({ page }: Props) {
             continued={page.additionalInfoContinued}
           />
         </div>
-    </section>
+    </PrintPageShell>
   );
 }
