@@ -97,6 +97,8 @@ describe("generisches Print-System", () => {
     );
 
     expect(html).toContain("print-document-root");
+    expect(html).toContain("@page");
+    expect(html).toContain("A4 landscape");
     expect(html.match(/print-document-page/g)?.length).toBe(2);
     expect(html).toContain(">a<");
     expect(html).toContain(">b<");

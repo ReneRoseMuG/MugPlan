@@ -16,16 +16,28 @@ export function PrintDocumentRoot<TPage>({
   if (!portalTarget || pages.length === 0) return null;
 
   return createPortal(
-    <div className="hidden" data-testid="print-document-root">
-      {pages.map((page, index) => (
-        <div
-          key={getPageKey ? getPageKey(page, index) : index}
-          data-testid="print-document-page"
-        >
-          {renderPage(page, index)}
-        </div>
-      ))}
-    </div>,
+    <>
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 0;
+            }
+          }
+        `}
+      </style>
+      <div className="hidden" data-testid="print-document-root">
+        {pages.map((page, index) => (
+          <div
+            key={getPageKey ? getPageKey(page, index) : index}
+            data-testid="print-document-page"
+          >
+            {renderPage(page, index)}
+          </div>
+        ))}
+      </div>
+    </>,
     portalTarget,
   );
 }
