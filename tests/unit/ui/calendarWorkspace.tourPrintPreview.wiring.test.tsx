@@ -164,13 +164,13 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
     expect(weekDialogProps).toMatchObject({
       tourId: null,
       weekCount: 1,
-      fromDate: "2099-02-01",
+      fromDate: "2099-01-26",
       weekendColumnPercent: 33,
     });
     expect(monthDialogProps).toMatchObject({
       tourId: null,
       weekCount: 1,
-      fromDate: "2099-02-01",
+      fromDate: "2099-01-26",
       weekendColumnPercent: 33,
     });
   });

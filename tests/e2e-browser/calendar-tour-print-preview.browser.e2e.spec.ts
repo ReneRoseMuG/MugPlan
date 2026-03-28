@@ -5,15 +5,15 @@
  *
  * Abgedeckte Regeln:
  * - Der Wochenkalender oeffnet die Tour-Druckvorschau ueber die Footer-Steuerung.
- * - Die Vorschau blaettert zwischen Summary-Seite und Wochenblaettern mit Randnavigation.
- * - Wochenseiten zeigen Projektname, Kundendaten und druckbare Notizen mit Farbakzent.
+ * - Die Vorschau zeigt mehrere physische A4-Seiten mit Seitennavigation.
+ * - Die aktive Seite und die Druckseiten bleiben als Listenansicht mit Termin- und Notizdaten sichtbar.
  *
  * Fehlerfaelle:
- * - Die Vorschau zeigt wieder nur die erste Seite abgeschnitten ohne Navigation.
- * - Druckblaetter verlieren Notizinhalte oder druckrelevante Kartendarstellung.
+ * - Die Vorschau zeigt wieder nur einen langen Scrollblock mit "Seite 1 von 1".
+ * - Die Seitennavigation oder die paginierte Notizdarstellung geht verloren.
  *
  * Ziel:
- * Die wesentlichen Browser-Workflows der Tour-Druckvorschau Ende-zu-Ende absichern.
+ * Den paginierten Browser-Workflow der Tour-Druckvorschau Ende-zu-Ende absichern.
  */
 import { expect, test } from "@playwright/test";
 import * as appointmentNotesService from "../../server/services/appointmentNotesService";
@@ -26,22 +26,25 @@ test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
 
-test("opens the print preview and navigates from summary to weekly pages", async ({ page }) => {
+test("opens the print preview as paginated A4 pages", async ({ page }) => {
   const tour = await createTourFixture("#2266aa");
   const project = await createProjectFixture({ prefix: "FT31-BROWSER", name: "Print Browser Projekt" });
-  const appointment = await createAppointmentFixture({
-    projectId: project.id,
-    startDate: getRelativeBerlinDate(1),
-    endDate: getRelativeBerlinDate(2),
-    tourId: tour.id,
-  });
 
-  await appointmentNotesService.createAppointmentNote(appointment!.id, {
-    title: "Druckhinweis",
-    body: "<p>Nur fuer Druck sichtbar</p>",
-    print: true,
-    cardColor: "#ffcc66",
-  });
+  for (let index = 0; index < 14; index += 1) {
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(1),
+      endDate: getRelativeBerlinDate(2),
+      tourId: tour.id,
+    });
+
+    await appointmentNotesService.createAppointmentNote(appointment!.id, {
+      title: `Druckhinweis ${index + 1}`,
+      body: "<p>Nur fuer Druck sichtbar</p>",
+      print: true,
+      cardColor: "#ffcc66",
+    });
+  }
 
   await loginAsAdmin(page);
   await page.getByRole("button", { name: /Woche/i }).click();
@@ -53,26 +56,13 @@ test("opens the print preview and navigates from summary to weekly pages", async
 
   const activePageShell = page.getByTestId("tour-print-preview-active-page-shell");
   await expect(page.getByTestId("dialog-tour-print-preview")).toBeVisible();
-  await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 1 von 3");
-  await expect(activePageShell.getByTestId("tour-print-summary-page")).toBeVisible();
-  await expect(activePageShell.getByTestId("tour-print-summary-page").locator("h2").first()).toContainText(tour.name);
+  await expect(page.getByTestId("tour-print-preview-page-indicator")).not.toContainText("Seite 1 von 1");
+  await expect(activePageShell.getByTestId("tour-print-list-page")).toBeVisible();
+  await expect(activePageShell).toContainText("Print Browser Projekt");
 
   await page.getByTestId("button-tour-print-preview-next").click();
-  await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 2 von 3");
-  await expect(activePageShell.getByTestId("tour-print-week-page-1")).toBeVisible();
-  await expect(activePageShell.getByTestId(`tour-print-appointment-card-${appointment!.id}`).first()).toContainText("Print Browser Projekt");
-  await expect(activePageShell.getByTestId(`tour-print-note-${appointment!.id}-0`).first()).toContainText("Nur fuer Druck sichtbar");
+  await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 2 von");
+  await expect(activePageShell.getByTestId("tour-print-list-page")).toBeVisible();
 
-  const noteStyles = await activePageShell.getByTestId(`tour-print-note-${appointment!.id}-0`).first().evaluate((element) => ({
-    borderColor: window.getComputedStyle(element).borderColor,
-    backgroundColor: window.getComputedStyle(element).backgroundColor,
-  }));
-  expect(noteStyles.borderColor).not.toBe("rgba(0, 0, 0, 0)");
-  expect(noteStyles.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
-
-  await page.getByTestId("button-tour-print-preview-next").click();
-  await expect(page.getByTestId("tour-print-preview-page-indicator")).toContainText("Seite 3 von 3");
-  await expect(activePageShell.getByTestId("tour-print-week-page-2")).toBeVisible();
-
-  await expect(page.getByTestId("button-tour-print-preview-next")).toBeDisabled();
+  await expect(page.getByTestId("tour-print-preview-print-stack")).toContainText("Zusatzinformationen");
 });

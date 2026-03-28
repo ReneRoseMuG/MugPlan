@@ -2,16 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Druckvorschau zeigt genau eine aktive Seite und einen separaten Print-Stack.
- * - Navigation links/rechts ist sichtbar und an den Seitenraendern deaktiviert.
- * - Der Seitenzaehler basiert auf dem flachen Seitenmodell.
+ * - Die Druckvorschau zeigt mehrere paginierte A4-Seiten.
+ * - Seitenzähler und Navigation reagieren auf die physische Seitenliste.
+ * - Die aktive Vorschauseite bleibt vom dedizierten Druckpfad getrennt.
  *
- * Fehlerfaelle:
- * - Der Dialog rendert wieder nur einen Scrollblock ohne aktive Seite.
- * - Navigationsflaechen reagieren nicht mehr auf die Seitenanzahl.
+ * Fehlerfälle:
+ * - Seitenzähler zeigt falsche Gesamtseitenanzahl.
+ * - Die Seitennavigation bleibt trotz mehrerer Seiten deaktiviert.
+ * - Der Dialog rendert wieder einen versteckten Print-Stack im Screen-Baum.
  *
  * Ziel:
- * Sichtbares Shell-Verhalten der Tour-Druckvorschau ohne Source-Assertions absichern.
+ * Sichtbares Shell-Verhalten der paginierten Tour-Druckvorschau regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -38,21 +39,42 @@ vi.mock("lucide-react", () => ({
 vi.mock("@/lib/tour-print-preview", () => ({
   normalizeTourPrintWeekCount: (value: number) => value,
   buildTourPrintPages: () => [
-    { kind: "summary", pageNumber: 1, title: "Summary" },
-    { kind: "week", pageNumber: 2, title: "Woche 1" },
-    { kind: "week", pageNumber: 3, title: "Woche 2" },
+    {
+      kind: "list",
+      pageIndex: 0,
+      pageNumber: 1,
+      title: "Tour 1 - Seite 1",
+      orientation: "landscape",
+      weeks: [],
+      tourName: "Tour 1",
+      fromDate: "2099-06-15",
+      toDate: "2099-06-28",
+      rangeLabel: "",
+      additionalInfoCards: [],
+      showAdditionalInfoHeading: false,
+      additionalInfoContinued: false,
+    },
+    {
+      kind: "list",
+      pageIndex: 1,
+      pageNumber: 2,
+      title: "Tour 1 - Seite 2",
+      orientation: "landscape",
+      weeks: [],
+      tourName: "Tour 1",
+      fromDate: "2099-06-15",
+      toDate: "2099-06-28",
+      rangeLabel: "",
+      additionalInfoCards: [],
+      showAdditionalInfoHeading: false,
+      additionalInfoContinued: false,
+    },
   ],
 }));
 
-vi.mock("../../../client/src/components/calendar/CalendarTourPrintSummaryPage", () => ({
-  CalendarTourPrintSummaryPage: ({ page }: { page: { pageNumber: number } }) => (
-    <div data-testid="tour-print-summary-page">{`summary-${page.pageNumber}`}</div>
-  ),
-}));
-
-vi.mock("../../../client/src/components/calendar/CalendarTourPrintWeekPage", () => ({
-  CalendarTourPrintWeekPage: ({ page }: { page: { pageNumber: number } }) => (
-    <div data-testid={`tour-print-week-page-${page.pageNumber - 1}`}>{`week-${page.pageNumber}`}</div>
+vi.mock("../../../client/src/components/calendar/CalendarTourPrintListPage", () => ({
+  CalendarTourPrintListPage: ({ page }: { page: { pageNumber: number } }) => (
+    <div data-testid="tour-print-list-page">{`list-${page.pageNumber}`}</div>
   ),
 }));
 
@@ -61,11 +83,8 @@ import { CalendarTourPrintPreviewDialog } from "../../../client/src/components/c
 const fixture = {
   fromDate: "2099-06-15",
   toDate: "2099-06-28",
-  weeks: [
-    { weekStart: "2099-06-15", weekEnd: "2099-06-21" },
-    { weekStart: "2099-06-22", weekEnd: "2099-06-28" },
-  ],
-  tour: { id: 7, name: "Alpha", color: "#225588" },
+  weeks: [{ weekStart: "2099-06-15", weekEnd: "2099-06-21", weekNotes: [] }],
+  tour: { id: 7, name: "Tour 1", color: "#225588" },
   members: [],
   appointments: [],
 };
@@ -81,7 +100,7 @@ describe("FT31 UI: calendar tour print preview dialog navigation", () => {
     });
   });
 
-  it("renders a single active summary page with page indicator and boundary button states", () => {
+  it("zeigt Seite 1 von 2 und rendert die aktive A4-Seite mit Seitennavigation", () => {
     const html = renderToStaticMarkup(
       <CalendarTourPrintPreviewDialog
         open
@@ -93,17 +112,14 @@ describe("FT31 UI: calendar tour print preview dialog navigation", () => {
       />,
     );
 
-    expect(html).toContain("tour-print-preview-page-indicator");
-    expect(html).toContain("Seite 1 von 3");
-    expect(html).toContain("tour-print-summary-page");
+    expect(html).toContain("Seite 1 von 2");
     expect(html).toContain("button-tour-print-preview-prev");
     expect(html).toContain("button-tour-print-preview-next");
-    expect(html).toContain("disabled");
-    expect(html).toContain("tour-print-preview-print-stack");
     expect(html).toContain("tour-print-preview-active-page-shell");
+    expect(html).toContain("list-1");
   });
 
-  it("renders loading and error surfaces when no active pages are available", () => {
+  it("rendert Lade- und Fehlerzustände wenn keine Seiten verfügbar sind", () => {
     useQueryMock.mockReturnValueOnce({
       data: undefined,
       isLoading: true,
@@ -114,7 +130,7 @@ describe("FT31 UI: calendar tour print preview dialog navigation", () => {
         open
         onOpenChange={() => undefined}
         tourId={7}
-        weekCount={2}
+        weekCount={1}
         fromDate="2099-06-15"
         weekendColumnPercent={33}
       />,
@@ -130,7 +146,7 @@ describe("FT31 UI: calendar tour print preview dialog navigation", () => {
         open
         onOpenChange={() => undefined}
         tourId={7}
-        weekCount={2}
+        weekCount={1}
         fromDate="2099-06-15"
         weekendColumnPercent={33}
       />,

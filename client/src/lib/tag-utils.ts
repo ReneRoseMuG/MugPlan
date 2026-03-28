@@ -1,3 +1,7 @@
+import {
+  isManagedReportExclusionTagName,
+  isManagedSpecialMeasureTagName,
+} from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
 
 function normalizeTagSegment(value: string): string {
@@ -38,4 +42,15 @@ export function mergeUniqueTags(...collections: Array<readonly Tag[] | null | un
     }
   }
   return Array.from(tagsById.values());
+}
+
+export function filterTourPrintTags(tags: readonly Tag[]): Tag[] {
+  return tags.filter((tag) => (
+    isManagedReportExclusionTagName(tag.name)
+    || isManagedSpecialMeasureTagName(tag.name)
+  ));
+}
+
+export function mergeTourPrintTags(...collections: Array<readonly Tag[] | null | undefined>): Tag[] {
+  return filterTourPrintTags(mergeUniqueTags(...collections));
 }

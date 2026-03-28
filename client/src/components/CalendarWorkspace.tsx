@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addMonths, addWeeks, subMonths, subWeeks } from "date-fns";
+import { addMonths, addWeeks, format, startOfISOWeek, subMonths, subWeeks } from "date-fns";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
@@ -53,8 +53,12 @@ export function CalendarWorkspace({
   const [selectedPrintTourId, setSelectedPrintTourId] = useState<number | null>(null);
   const [printWeekCount, setPrintWeekCount] = useState(1);
   const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
+  const [printStartNextWeek, setPrintStartNextWeek] = useState(false);
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
-  const printFromDate = getBerlinTodayDateString();
+  const printFromDate = format(
+    addWeeks(startOfISOWeek(new Date(getBerlinTodayDateString())), printStartNextWeek ? 1 : 0),
+    "yyyy-MM-dd",
+  );
 
   const next = () => {
     if (activeView === "month" || activeView === "monthSheet") {
@@ -194,6 +198,8 @@ export function CalendarWorkspace({
             printWeekCount={printWeekCount}
             onPrintWeekCountChange={(value) => setPrintWeekCount(normalizeTourPrintWeekCount(value))}
             onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
+            printStartNextWeek={printStartNextWeek}
+            onPrintStartNextWeekChange={setPrintStartNextWeek}
           />
         </div>
       )}

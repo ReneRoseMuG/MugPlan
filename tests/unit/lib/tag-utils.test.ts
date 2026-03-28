@@ -5,20 +5,22 @@
  * Use Case: UC Kurzlabel und deduplizierte Tag-Sammlungen
  *
  * Abgedeckte Regeln:
- * - Einwort-Tags werden auf maximal vier Zeichen mit initialer Grossschreibung verkuerzt und erhalten nur bei echter Kuerzung einen Punkt.
- * - Mehrwort-Tags werden ueber bis zu drei Anfangsbuchstaben zusammengezogen.
- * - Tag-Sammlungen aus Termin/Kunde/Projekt werden stabil ueber die Tag-ID dedupliziert.
+ * - Einwort-Tags werden auf maximal vier Zeichen mit initialer Großschreibung verkürzt und erhalten nur bei echter Kürzung einen Punkt.
+ * - Mehrwort-Tags werden über bis zu drei Anfangsbuchstaben zusammengezogen.
+ * - Tag-Sammlungen aus Termin/Kunde/Projekt werden stabil über die Tag-ID dedupliziert.
+ * - Druckrelevante Tour-Tags beschränken sich auf Sondermaß und Reklamation.
  *
- * Fehlerfaelle:
- * - Mehrdeutige oder zu lange Badge-Labels fuer Tags.
+ * Fehlerfälle:
+ * - Mehrdeutige oder zu lange Badge-Labels für Tags.
  * - Doppelte Tags aus mehreren Quellen erscheinen mehrfach in Karten/Previews.
+ * - Irrelevante Tags wie "Fix" werden in der Tour-Druckausgabe mitgeschleppt.
  *
  * Ziel:
- * Die fachliche Kernlogik fuer Tag-Badges und aggregierte Termin-Tags regressionssicher absichern.
+ * Die fachliche Kernlogik für Tag-Badges und aggregierte Termin-Tags regressionssicher absichern.
  */
 import { describe, expect, it } from "vitest";
 import type { Tag } from "../../../shared/schema";
-import { mergeUniqueTags, trimTagLabel } from "../../../client/src/lib/tag-utils";
+import { mergeTourPrintTags, mergeUniqueTags, trimTagLabel } from "../../../client/src/lib/tag-utils";
 
 function buildTag(input: Partial<Tag>): Tag {
   return {
@@ -62,5 +64,19 @@ describe("FT28 tag utils", () => {
 
     expect(result.map((tag) => tag.id)).toEqual([1, 2, 3]);
     expect(result[1].name).toBe("Kunde");
+  });
+
+  it("keeps only Sondermaß and Reklamation for the tour print info pills", () => {
+    const specialMeasureTag = buildTag({ id: 1, name: "Sondermaß" });
+    const reportExclusionTag = buildTag({ id: 2, name: "Reklamation" });
+    const irrelevantTag = buildTag({ id: 3, name: "Fix" });
+
+    const result = mergeTourPrintTags(
+      [irrelevantTag, specialMeasureTag],
+      [reportExclusionTag],
+      [buildTag({ id: 4, name: "Montage" })],
+    );
+
+    expect(result.map((tag) => tag.name)).toEqual(["Sondermaß", "Reklamation"]);
   });
 });

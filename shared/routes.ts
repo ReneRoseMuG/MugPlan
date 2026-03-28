@@ -455,6 +455,9 @@ const tourPrintPreviewAppointmentSchema = z.object({
     }),
   ),
   printNotes: z.array(tourPrintPreviewNoteSchema),
+  appointmentTags: z.array(tagSchema),
+  customerTags: z.array(tagSchema),
+  projectTags: z.array(tagSchema),
 });
 
 const tourPrintPreviewResponseSchema = z.object({

@@ -1,3 +1,6 @@
+import React from "react";
+import { addWeeks, format, startOfWeek } from "date-fns";
+import { de } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import type { Tour } from "@shared/schema";
 import { CalendarEmployeeFilter } from "@/components/calendar/CalendarEmployeeFilter";
@@ -6,6 +9,7 @@ import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +22,15 @@ interface CalendarFilterPanelProps {
   printWeekCount?: number;
   onPrintWeekCountChange?: (weekCount: number) => void;
   onOpenPrintPreview?: () => void;
+  printStartNextWeek?: boolean;
+  onPrintStartNextWeekChange?: (value: boolean) => void;
+}
+
+function buildStartDateLabel(nextWeek: boolean): string {
+  const today = new Date();
+  const currentMonday = startOfWeek(today, { weekStartsOn: 1 });
+  const targetMonday = nextWeek ? addWeeks(currentMonday, 1) : currentMonday;
+  return `Startet ab ${format(targetMonday, "EE. dd.MM.yyyy", { locale: de })}`;
 }
 
 export function CalendarFilterPanel({
@@ -29,6 +42,8 @@ export function CalendarFilterPanel({
   printWeekCount,
   onPrintWeekCountChange,
   onOpenPrintPreview,
+  printStartNextWeek = false,
+  onPrintStartNextWeekChange,
 }: CalendarFilterPanelProps) {
   const { toast } = useToast();
   const { setSetting } = useSettings();
@@ -36,7 +51,9 @@ export function CalendarFilterPanel({
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
-  const userRole = window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER";
+  const userRole = typeof window === "undefined"
+    ? "DISPATCHER"
+    : window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER";
   const canEditWeekDisplayMode = userRole === "ADMIN" || userRole === "DISPATCHER";
   const showWeekPrintControls =
     showWeekDisplayMode &&
@@ -44,6 +61,8 @@ export function CalendarFilterPanel({
     typeof onPrintWeekCountChange === "function" &&
     typeof onOpenPrintPreview === "function" &&
     typeof printWeekCount === "number";
+
+  const startDateLabel = buildStartDateLabel(printStartNextWeek);
 
   if (showWeekDisplayMode && showWeekPrintControls) {
     return (
@@ -120,6 +139,19 @@ export function CalendarFilterPanel({
                   data-testid="input-tour-print-week-count"
                 />
               </div>
+
+              {typeof onPrintStartNextWeekChange === "function" ? (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={printStartNextWeek}
+                    onCheckedChange={onPrintStartNextWeekChange}
+                    data-testid="switch-print-start-next-week"
+                  />
+                  <Label className="cursor-pointer text-xs" data-testid="label-print-start-date">
+                    {startDateLabel}
+                  </Label>
+                </div>
+              ) : null}
 
               <Button
                 type="button"
@@ -210,6 +242,18 @@ export function CalendarFilterPanel({
             onChange={(event) => onPrintWeekCountChange(Number(event.target.value))}
             data-testid="input-tour-print-week-count"
           />
+        </div>
+      ) : null}
+      {showWeekPrintControls && typeof onPrintStartNextWeekChange === "function" ? (
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={printStartNextWeek}
+            onCheckedChange={onPrintStartNextWeekChange}
+            data-testid="switch-print-start-next-week"
+          />
+          <Label className="cursor-pointer text-xs" data-testid="label-print-start-date">
+            {startDateLabel}
+          </Label>
         </div>
       ) : null}
       {showWeekPrintControls ? (

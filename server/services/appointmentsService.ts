@@ -751,12 +751,18 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
     customerPrintNotesByCustomer,
     projectPrintNotesByProject,
     appointmentPrintNotesByAppointment,
+    appointmentTagsByAppointmentId,
+    customerTagsByCustomerId,
+    projectTagsByProjectId,
   ] = await Promise.all([
     buildEmployeesByAppointment(appointmentIds),
     buildProjectArticleItemsByProject(projectIds),
     appointmentsRepository.getCustomerPrintNotesByCustomerIds(customerIds),
     appointmentsRepository.getProjectPrintNotesByProjectIds(projectIds),
     appointmentsRepository.getAppointmentPrintNotesByAppointmentIds(appointmentIds),
+    appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds),
+    appointmentsRepository.getCustomerTagsByCustomerIds(customerIds),
+    appointmentsRepository.getProjectTagsByProjectIds(projectIds),
   ]);
 
   const weekRanges = Array.from({ length: normalizedWeekCount }, (_, index) => {
@@ -805,7 +811,7 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
     return {
       id: row.appointment.id,
       projectId,
-      projectName: row.project?.name ?? "Ohne Projekt",
+      projectName: row.project?.name ?? "",
       startDate: normalizedStartDate,
       endDate: normalizedEndDate,
       startTime: row.appointment.startTime ?? null,
@@ -825,6 +831,9 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
       },
       employees: employeesByAppointment.get(row.appointment.id) ?? [],
       printNotes,
+      appointmentTags: appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+      customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
+      projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
     };
   });
 

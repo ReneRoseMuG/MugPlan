@@ -4,10 +4,13 @@
  * Abgedeckte Regeln:
  * - Der Druckvorschau-Endpoint liefert Zeitraum, Tour, Mitglieder und Termine fuer den angeforderten Wochenblock.
  * - Saunamodell und druckbare Notizen werden aus den bestehenden Aggregationsquellen fuer die Vorschau aufgeloest.
+ * - Tags aus Termin, Kunde und Projekt werden je Termin korrekt in die Response gemappt.
+ * - Termin ohne Projekt liefert leeren projectName statt "Ohne Projekt".
  *
  * Fehlerfaelle:
  * - Nicht druckbare Notizen gelangen in die Vorschauantwort.
  * - Nicht existierende Touren liefern keinen sauberen 404-Pfad.
+ * - Tags werden in das falsche Array gemappt.
  *
  * Ziel:
  * Den serverseitigen Aggregationsvertrag der Tour-Druckvorschau end-to-end absichern.
@@ -27,6 +30,13 @@ import * as employeesService from "../../../server/services/employeesService";
 import * as projectNotesService from "../../../server/services/projectNotesService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as tourEmployeesService from "../../../server/services/tourEmployeesService";
+import {
+  createExactTagFixture,
+  attachAppointmentTagFixture,
+  attachProjectTagFixture,
+} from "../../helpers/testDataFactory";
+import { db } from "../../../server/db";
+import { customerTags } from "@shared/schema";
 
 let app: express.Express;
 let counter = 1;
@@ -234,6 +244,192 @@ describe("FT31 integration: tour print preview", () => {
         const ids = res.body.appointments.map((a: { id: number }) => a.id);
         expect(ids).toContain(appointmentWithoutTour!.id);
         expect(ids).not.toContain(tourWithId.body.id);
+      });
+  });
+
+  it("liefert appointmentTag korrekt in appointmentTags der Response", async () => {
+    const admin = await loginAdminAgent();
+    const seq = nextSeq();
+    const tourRes = await admin.post("/api/tours").send({ color: "#aabbcc" }).expect(201);
+    const customer = await customersService.createCustomer({
+      customerNumber: `TAG-APT-${Date.now()}-${seq}`,
+      firstName: "Tag", lastName: `Apt-${seq}`, fullName: `Apt-${seq}, Tag`,
+      company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
+      postalCode: "10000", city: "Berlin", version: 1,
+    });
+    const project = await projectsService.createProject({
+      name: `Tag-Appt-Projekt-${seq}`, customerId: customer.id,
+      orderNumber: `TA-${seq}`, descriptionMd: null, version: 1,
+    });
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id, startDate: "2099-08-04", endDate: "2099-08-04",
+      tourId: tourRes.body.id, employeeIds: [],
+    });
+    const tag = await createExactTagFixture(`Reklamation-${seq}`);
+    await attachAppointmentTagFixture(appointment!.id, tag.id);
+
+    await admin
+      .get(`/api/tours/${tourRes.body.id}/print-preview?fromDate=2099-08-04&weekCount=1`)
+      .expect(200)
+      .expect((res) => {
+        const appt = res.body.appointments[0];
+        expect(appt.appointmentTags).toEqual(expect.arrayContaining([expect.objectContaining({ id: tag.id })]));
+        expect(appt.customerTags).toEqual([]);
+        expect(appt.projectTags).toEqual([]);
+      });
+  });
+
+  it("liefert customerTag korrekt in customerTags der Response", async () => {
+    const admin = await loginAdminAgent();
+    const seq = nextSeq();
+    const tourRes = await admin.post("/api/tours").send({ color: "#ccbbaa" }).expect(201);
+    const customer = await customersService.createCustomer({
+      customerNumber: `TAG-CST-${Date.now()}-${seq}`,
+      firstName: "Tag", lastName: `Cst-${seq}`, fullName: `Cst-${seq}, Tag`,
+      company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
+      postalCode: "20000", city: "Hamburg", version: 1,
+    });
+    const project = await projectsService.createProject({
+      name: `Tag-Cust-Projekt-${seq}`, customerId: customer.id,
+      orderNumber: `TC-${seq}`, descriptionMd: null, version: 1,
+    });
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id, startDate: "2099-08-11", endDate: "2099-08-11",
+      tourId: tourRes.body.id, employeeIds: [],
+    });
+    const tag = await createExactTagFixture(`Sondermaß-${seq}`);
+    await db.insert(customerTags).values({ customerId: customer.id, tagId: tag.id, version: 1 });
+
+    await admin
+      .get(`/api/tours/${tourRes.body.id}/print-preview?fromDate=2099-08-11&weekCount=1`)
+      .expect(200)
+      .expect((res) => {
+        const appt = res.body.appointments[0];
+        expect(appt.customerTags).toEqual(expect.arrayContaining([expect.objectContaining({ id: tag.id })]));
+        expect(appt.appointmentTags).toEqual([]);
+      });
+  });
+
+  it("liefert projectTag korrekt in projectTags der Response", async () => {
+    const admin = await loginAdminAgent();
+    const seq = nextSeq();
+    const tourRes = await admin.post("/api/tours").send({ color: "#112233" }).expect(201);
+    const customer = await customersService.createCustomer({
+      customerNumber: `TAG-PRJ-${Date.now()}-${seq}`,
+      firstName: "Tag", lastName: `Prj-${seq}`, fullName: `Prj-${seq}, Tag`,
+      company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
+      postalCode: "30000", city: "Köln", version: 1,
+    });
+    const project = await projectsService.createProject({
+      name: `Tag-Proj-Projekt-${seq}`, customerId: customer.id,
+      orderNumber: `TP-${seq}`, descriptionMd: null, version: 1,
+    });
+    await appointmentsService.createAppointment({
+      projectId: project.id, startDate: "2099-08-18", endDate: "2099-08-18",
+      tourId: tourRes.body.id, employeeIds: [],
+    });
+    const tag = await createExactTagFixture(`ProjTag-${seq}`);
+    await attachProjectTagFixture(project.id, tag.id);
+
+    await admin
+      .get(`/api/tours/${tourRes.body.id}/print-preview?fromDate=2099-08-18&weekCount=1`)
+      .expect(200)
+      .expect((res) => {
+        const appt = res.body.appointments[0];
+        expect(appt.projectTags).toEqual(expect.arrayContaining([expect.objectContaining({ id: tag.id })]));
+        expect(appt.appointmentTags).toEqual([]);
+        expect(appt.customerTags).toEqual([]);
+      });
+  });
+
+  it("liefert leere Tag-Arrays wenn Termin keine Tags hat", async () => {
+    const admin = await loginAdminAgent();
+    const seq = nextSeq();
+    const tourRes = await admin.post("/api/tours").send({ color: "#445566" }).expect(201);
+    const customer = await customersService.createCustomer({
+      customerNumber: `TAG-NONE-${Date.now()}-${seq}`,
+      firstName: "Tag", lastName: `None-${seq}`, fullName: `None-${seq}, Tag`,
+      company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
+      postalCode: "40000", city: "München", version: 1,
+    });
+    const project = await projectsService.createProject({
+      name: `NoTag-Projekt-${seq}`, customerId: customer.id,
+      orderNumber: `NT-${seq}`, descriptionMd: null, version: 1,
+    });
+    await appointmentsService.createAppointment({
+      projectId: project.id, startDate: "2099-09-01", endDate: "2099-09-01",
+      tourId: tourRes.body.id, employeeIds: [],
+    });
+
+    await admin
+      .get(`/api/tours/${tourRes.body.id}/print-preview?fromDate=2099-09-01&weekCount=1`)
+      .expect(200)
+      .expect((res) => {
+        const appt = res.body.appointments[0];
+        expect(appt.appointmentTags).toEqual([]);
+        expect(appt.customerTags).toEqual([]);
+        expect(appt.projectTags).toEqual([]);
+      });
+  });
+
+  it("liefert Tags aus zwei Quellen korrekt in die richtigen Arrays", async () => {
+    const admin = await loginAdminAgent();
+    const seq = nextSeq();
+    const tourRes = await admin.post("/api/tours").send({ color: "#667788" }).expect(201);
+    const customer = await customersService.createCustomer({
+      customerNumber: `TAG-TWO-${Date.now()}-${seq}`,
+      firstName: "Tag", lastName: `Two-${seq}`, fullName: `Two-${seq}, Tag`,
+      company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
+      postalCode: "50000", city: "Frankfurt", version: 1,
+    });
+    const project = await projectsService.createProject({
+      name: `TwoTag-Projekt-${seq}`, customerId: customer.id,
+      orderNumber: `TT-${seq}`, descriptionMd: null, version: 1,
+    });
+    const appointment = await appointmentsService.createAppointment({
+      projectId: project.id, startDate: "2099-09-08", endDate: "2099-09-08",
+      tourId: tourRes.body.id, employeeIds: [],
+    });
+    const aptTag = await createExactTagFixture(`AptTag-${seq}`);
+    const cstTag = await createExactTagFixture(`CstTag-${seq}`);
+    await attachAppointmentTagFixture(appointment!.id, aptTag.id);
+    await db.insert(customerTags).values({ customerId: customer.id, tagId: cstTag.id, version: 1 });
+
+    await admin
+      .get(`/api/tours/${tourRes.body.id}/print-preview?fromDate=2099-09-08&weekCount=1`)
+      .expect(200)
+      .expect((res) => {
+        const appt = res.body.appointments[0];
+        expect(appt.appointmentTags).toEqual(expect.arrayContaining([expect.objectContaining({ id: aptTag.id })]));
+        expect(appt.customerTags).toEqual(expect.arrayContaining([expect.objectContaining({ id: cstTag.id })]));
+        expect(appt.appointmentTags.map((t: { id: number }) => t.id)).not.toContain(cstTag.id);
+        expect(appt.customerTags.map((t: { id: number }) => t.id)).not.toContain(aptTag.id);
+      });
+  });
+
+  it("liefert leeren projectName wenn Termin ohne Projekt angelegt ist", async () => {
+    const admin = await loginAdminAgent();
+    const seq = nextSeq();
+    const tourRes = await admin.post("/api/tours").send({ color: "#778899" }).expect(201);
+    const customer = await customersService.createCustomer({
+      customerNumber: `TAG-NOPROJ-${Date.now()}-${seq}`,
+      firstName: "Ohne", lastName: `Projekt-${seq}`, fullName: `Projekt-${seq}, Ohne`,
+      company: null, email: null, phone: null, addressLine1: null, addressLine2: null,
+      postalCode: "60000", city: "Stuttgart", version: 1,
+    });
+    await appointmentsService.createAppointment({
+      projectId: null, startDate: "2099-09-15", endDate: "2099-09-15",
+      tourId: tourRes.body.id, employeeIds: [],
+      customerId: customer.id,
+    });
+
+    await admin
+      .get(`/api/tours/${tourRes.body.id}/print-preview?fromDate=2099-09-15&weekCount=1`)
+      .expect(200)
+      .expect((res) => {
+        const appt = res.body.appointments[0];
+        expect(appt.projectName).toBe("");
+        expect(appt.projectId).toBeNull();
       });
   });
 });

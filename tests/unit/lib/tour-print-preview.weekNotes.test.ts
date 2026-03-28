@@ -2,16 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - weekNotes werden aus den Wochendaten in die Wochenseiten übernommen.
+ * - weekNotes werden von der API-Response in die List-Seite übertragen.
  * - Wochen ohne Notizen erhalten ein leeres weekNotes-Array.
- * - weekNotes sind im TourPrintPreviewPage-Modell korrekt zugänglich.
  *
  * Fehlerfälle:
- * - weekNotes fehlen in den generierten Wochenseiten.
  * - weekNotes der falschen Woche werden zugeordnet.
  *
  * Ziel:
- * Absicherung, dass weekNotes korrekt von der API-Response in die Druckseiten übertragen werden.
+ * Absicherung, dass weekNotes korrekt von der API-Response in die List-Seite übertragen werden.
+ * (Detailtests in tour-print-preview.model.test.ts)
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -40,22 +39,16 @@ const fixture: TourPrintPreviewResponse = {
   appointments: [],
 };
 
-describe("tour-print-preview: weekNotes in Wochenseiten", () => {
-  it("überträgt weekNotes der ersten Woche korrekt in die erste Wochenseite", () => {
-    const pages = buildTourPrintPages(fixture);
-    const week1 = pages.find((p) => p.kind === "week" && p.weekIndex === 0);
-    expect(week1).toBeDefined();
-    if (week1?.kind !== "week") throw new Error("wrong kind");
-    expect(week1.weekNotes).toHaveLength(1);
-    expect(week1.weekNotes[0].id).toBe(42);
-    expect(week1.weekNotes[0].title).toBe("Wochen-Hinweis");
+describe("tour-print-preview: weekNotes in List-Seite", () => {
+  it("überträgt weekNotes der ersten Woche korrekt in die List-Seite", () => {
+    const [page] = buildTourPrintPages(fixture);
+    expect(page.kind).toBe("list");
+    expect(page.weeks[0].weekNotes).toHaveLength(1);
+    expect(page.weeks[0].weekNotes[0].id).toBe(42);
   });
 
   it("gibt leeres weekNotes-Array für Wochen ohne Notizen zurück", () => {
-    const pages = buildTourPrintPages(fixture);
-    const week2 = pages.find((p) => p.kind === "week" && p.weekIndex === 1);
-    expect(week2).toBeDefined();
-    if (week2?.kind !== "week") throw new Error("wrong kind");
-    expect(week2.weekNotes).toEqual([]);
+    const [page] = buildTourPrintPages(fixture);
+    expect(page.weeks[1].weekNotes).toEqual([]);
   });
 });
