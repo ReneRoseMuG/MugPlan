@@ -2,25 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProjectFilterPanel } from "@/components/ui/filter-panels/project-filter-panel";
-import { CustomerInfoPanel } from "@/components/ui/customer-info-panel";
-import { ProjectInfoPanel, canOpenProjectInfoPreview } from "@/components/ui/project-info-panel";
-import { ProjectAttachmentsHover } from "@/components/ui/ProjectAttachmentsHover";
-import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
-import { defaultHeaderColor } from "@/lib/colors";
+import { ProjectEntityCard } from "@/components/ui/entity-preview-cards";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
-import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
-import { HoverPreview } from "@/components/ui/hover-preview";
-import { EntityAppointmentsHoverPreview } from "@/components/ui/entity-appointments-hover-preview";
 import type { Project, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { domainIcons } from "@/lib/domain-icons";
@@ -28,8 +19,6 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
-
-const PANEL_PREVIEW_CURSOR_OFFSET_PX = 20;
 
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
@@ -421,115 +410,13 @@ export function ProjectsPage({
             >
               {projects.map((project) => {
                 const handleSelect = () => onSelectProject?.(project.id);
-                const canOpenProjectPreview = canOpenProjectInfoPreview(
-                  project.name,
-                  project.projectArticleItems,
-                  project.descriptionMd ?? null,
-                );
 
                 return (
-                  <EntityCard
+                  <ProjectEntityCard
                     key={project.id}
-                    title={project.name}
-                    icon={<ProjectsIcon className="w-4 h-4" />}
-                    headerMeta={<span>{`A-Nr. ${project.orderNumber?.trim() || "-"}`}</span>}
-                    headerColor={defaultHeaderColor}
-                    testId={`project-card-${project.id}`}
+                    project={project}
                     onDoubleClick={handleSelect}
-                    footer={(
-                      <div className="flex w-full flex-col gap-1.5">
-                        <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
-                          <EntityAppointmentsHoverPreview
-                            source={{ type: "project", id: project.id, count: project.plannedAppointmentsCount }}
-                            triggerTestId={`text-project-planned-appointments-${project.id}`}
-                          />
-                          <EntityNotesHoverPreview
-                            sourceMode="single-parent"
-                            sources={{ type: "project", id: project.id, count: project.notesCount ?? 0 }}
-                            triggerTestId={`text-project-notes-count-${project.id}`}
-                          />
-                          <ProjectAttachmentsHover
-                            projectId={project.id}
-                            totalAttachmentsCount={project.attachmentsCount}
-                          />
-                        </div>
-                        <EntityTagFooterRow tags={project.tags} testId={`project-card-tags-${project.id}`} />
-                      </div>
-                    )}
-                    footerVisibility="visible"
-                  >
-                    <div className="-mb-3 -mt-3 -mx-3 flex flex-col gap-1 overflow-hidden">
-                      <CustomerInfoPanel
-                        mode="collapsed"
-                        fullName={project.customer.fullName}
-                        customerNumber={project.customer.customerNumber}
-                        addressLine1={project.customer.addressLine1}
-                        postalCode={project.customer.postalCode}
-                        city={project.customer.city}
-                        phone={project.customer.phone}
-                        email={project.customer.email}
-                        testId={`project-card-customer-${project.id}`}
-                      />
-                      {canOpenProjectPreview ? (
-                        <HoverPreview
-                          preview={(
-                            <ProjectInfoPanel
-                              mode="expanded"
-                              hideHeader={true}
-                              projectName={project.name}
-                              projectOrderNumber={project.orderNumber ?? null}
-                              projectArticleItems={project.projectArticleItems}
-                              projectDescription={project.descriptionMd ?? null}
-                            />
-                          )}
-                          mode="cursor"
-                          side="right"
-                          align="start"
-                          cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
-                          cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
-                          maxWidth={420}
-                          maxHeight={400}
-                          openDelay={300}
-                          className="w-[420px] p-2"
-                        >
-                          <div
-                            className="shrink-0 overflow-hidden cursor-pointer"
-                            data-testid={`project-card-project-${project.id}`}
-                          >
-                            <ProjectInfoPanel
-                              mode="expanded"
-                              hideHeader={true}
-                              compact
-                              projectName={project.name}
-                              projectOrderNumber={project.orderNumber ?? null}
-                              projectArticleItems={project.projectArticleItems}
-                              projectDescription={project.descriptionMd ?? null}
-                            />
-                          </div>
-                        </HoverPreview>
-                      ) : (
-                        <div
-                          className="shrink-0 overflow-hidden"
-                          data-testid={`project-card-project-${project.id}`}
-                        >
-                          <ProjectInfoPanel
-                            mode="expanded"
-                            hideHeader={true}
-                            compact
-                            projectName={project.name}
-                            projectOrderNumber={project.orderNumber ?? null}
-                            projectArticleItems={project.projectArticleItems}
-                            projectDescription={project.descriptionMd ?? null}
-                          />
-                        </div>
-                      )}
-                      {!project.isActive ? (
-                        <Badge variant="secondary" className="text-xs">
-                          Inaktiv
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </EntityCard>
+                  />
                 );
               })}
             </BoardView>
@@ -542,32 +429,12 @@ export function ProjectsPage({
               onRowDoubleClick={(row) => onSelectProject?.(row.project.id)}
               rowPreviewRenderer={(row) => (
                 <ProjectTableHoverPreview
-                  header={{
-                    orderNumber: row.project.orderNumber?.trim() || null,
-                    name: row.project.name,
-                  }}
-                  customer={{
-                    id: row.customer.id,
-                    number: row.customer.customerNumber,
-                    name: row.customer.fullName,
-                    addressLine1: row.customer.addressLine1,
-                    postalCode: row.customer.postalCode,
-                    city: row.customer.city,
-                    phone: row.customer.phone,
-                    email: row.customer.email,
-                  }}
                   project={{
-                    id: row.project.id,
-                    articleItems: row.project.projectArticleItems,
-                    description: row.project.descriptionMd ?? null,
+                    ...row.project,
+                    orderNumber: row.project.orderNumber?.trim() || null,
+                    tags: [...(row.project.tags ?? [])],
                   }}
-                  plannedAppointmentsCount={row.project.plannedAppointmentsCount}
-                  attachmentsCount={row.project.attachmentsCount}
-                  notes={[
-                    { type: "customer", id: row.customer.id, count: 0 },
-                    { type: "project", id: row.project.id, count: row.project.notesCount },
-                  ]}
-                  tags={[...(row.project.tags ?? [])]}
+                  onDoubleClick={() => onSelectProject?.(row.project.id)}
                 />
               )}
               emptyState={emptyState}

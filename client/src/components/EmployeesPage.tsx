@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Users,
-  Phone,
-  Mail,
   Plus,
   Upload,
   LayoutGrid,
@@ -15,16 +13,13 @@ import {
   PowerOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EmployeeFilterPanel } from "@/components/ui/filter-panels/employee-filter-panel";
-import { TeamInfoBadge } from "@/components/ui/team-info-badge";
-import { TourInfoBadge } from "@/components/ui/tour-info-badge";
-import { EntityCard } from "@/components/ui/entity-card";
+import { EmployeeEntityCard } from "@/components/ui/entity-preview-cards";
 import { EmployeeForm } from "@/components/EmployeeForm";
 import { EmployeeImportPanel } from "@/components/ImportExportPage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -36,10 +31,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
-import { EntityAppointmentsHoverPreview } from "@/components/ui/entity-appointments-hover-preview";
-import { EmployeeAttachmentsHover } from "@/components/ui/EmployeeAttachmentsHover";
-import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
-import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { EmployeeTableHoverPreview } from "@/components/ui/table-hover-previews";
 import type { Employee, Tag, Team, Tour } from "@shared/schema";
 
@@ -548,12 +539,21 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
               const currentAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
 
               return (
-                <EntityCard
+                <EmployeeEntityCard
                   key={employee.id}
-                  testId={`employee-card-${employee.id}`}
-                  title={employee.fullName}
-                  icon={<Users className="w-4 h-4" />}
-                  className={!employee.isActive ? "opacity-60" : ""}
+                  employee={{
+                    id: employee.id,
+                    fullName: employee.fullName,
+                    phone: employee.phone,
+                    email: employee.email,
+                    isActive: employee.isActive,
+                    notesCount: employee.notesCount ?? 0,
+                    attachmentsCount: employee.attachmentsCount ?? 0,
+                    tags: employee.tags ?? [],
+                    plannedAppointmentsCount: currentAppointmentsCount,
+                  }}
+                  team={teamInfo ? { ...teamInfo, members: teamMembersById.get(teamInfo.id) ?? [] } : null}
+                  tour={tourInfo ? { ...tourInfo, members: tourMembersById.get(tourInfo.id) ?? [] } : null}
                   onDoubleClick={() => handleOpenDetail(employee)}
                   actions={
                     <Button
@@ -574,73 +574,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                       )}
                     </Button>
                   }
-                  footer={
-                    <div className="flex w-full flex-col gap-1.5">
-                      <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
-                        <EntityAppointmentsHoverPreview
-                          source={{ type: "employee", id: employee.id, count: currentAppointmentsCount }}
-                          triggerTestId={`text-employee-current-appointments-${employee.id}`}
-                        />
-                        <EntityNotesHoverPreview
-                          sourceMode="single-parent"
-                          sources={{ type: "employee", id: employee.id, count: employee.notesCount ?? 0 }}
-                          triggerTestId={`text-employee-notes-count-${employee.id}`}
-                        />
-                        <EmployeeAttachmentsHover
-                          employeeId={employee.id}
-                          totalAttachmentsCount={employee.attachmentsCount ?? 0}
-                          triggerTestId={`text-employee-attachments-count-${employee.id}`}
-                        />
-                      </div>
-                      <EntityTagFooterRow tags={employee.tags ?? []} testId={`employee-card-tags-${employee.id}`} />
-                    </div>
-                  }
-                  footerVisibility="visible"
-                >
-                  <div className="space-y-2 text-sm">
-                    {employee.phone && (
-                      <div className="flex items-center gap-1 text-slate-600" data-testid={`text-employee-phone-${employee.id}`}>
-                        <Phone className="w-3 h-3" />
-                        {employee.phone}
-                      </div>
-                    )}
-                    {employee.email && (
-                      <div className="flex items-center gap-1 text-slate-600" data-testid={`text-employee-email-${employee.id}`}>
-                        <Mail className="w-3 h-3" />
-                        {employee.email}
-                      </div>
-                    )}
-                    {(tourInfo || teamInfo || !employee.isActive) && (
-                      <div className="flex items-center gap-2 flex-wrap pt-1">
-                        {tourInfo && (
-                          <TourInfoBadge
-                            id={tourInfo.id}
-                            name={tourInfo.name}
-                            color={tourInfo.color}
-                            members={tourMembersById.get(tourInfo.id) ?? []}
-                            size="sm"
-                            testId={`badge-employee-tour-${employee.id}`}
-                          />
-                        )}
-                        {teamInfo && (
-                          <TeamInfoBadge
-                            id={teamInfo.id}
-                            name={teamInfo.name}
-                            color={teamInfo.color}
-                            members={teamMembersById.get(teamInfo.id) ?? []}
-                            size="sm"
-                            testId={`badge-employee-team-${employee.id}`}
-                          />
-                        )}
-                        {!employee.isActive && (
-                          <Badge variant="secondary" className="text-xs">
-                            Inaktiv
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </EntityCard>
+                />
               );
             })}
           </BoardView>
@@ -659,14 +593,14 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     phone: row.employee.phone,
                     email: row.employee.email,
                     isActive: row.employee.isActive,
+                    notesCount: row.employee.notesCount ?? 0,
+                    attachmentsCount: row.employee.attachmentsCount ?? 0,
+                    tags: row.employee.tags ?? [],
+                    plannedAppointmentsCount: row.plannedAppointmentsCount,
                   }}
-                  teamName={row.team?.name ?? null}
-                  tourName={row.tour?.name ?? null}
-                  plannedAppointmentsCount={row.plannedAppointmentsCount}
-                  notesCount={row.employee.notesCount ?? 0}
-                  attachmentsCount={row.employee.attachmentsCount ?? 0}
-                  tags={row.employee.tags ?? []}
-                  relevantAppointment={row.relevantAppointment}
+                  team={row.team ? { ...row.team, members: teamMembersById.get(row.team.id) ?? [] } : null}
+                  tour={row.tour ? { ...row.tour, members: tourMembersById.get(row.tour.id) ?? [] } : null}
+                  onDoubleClick={() => handleOpenDetail(row.employee)}
                 />
               )}
               emptyState={emptyState}

@@ -2,27 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CustomerFilterPanel } from "@/components/ui/filter-panels/customer-filter-panel";
-import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
-import { defaultHeaderColor } from "@/lib/colors";
+import { CustomerEntityCard } from "@/components/ui/entity-preview-cards";
 import { defaultCustomerFilters } from "@/lib/customer-filters";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
-import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
-import { EntityAppointmentsHoverPreview } from "@/components/ui/entity-appointments-hover-preview";
 import type { Customer, Tag } from "@shared/schema";
 import { domainIcons } from "@/lib/domain-icons";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { CustomerTableHoverPreview } from "@/components/ui/table-hover-previews";
-import { CustomerInfoPanel } from "@/components/ui/customer-info-panel";
-import { CustomerAttachmentsHover } from "@/components/ui/CustomerAttachmentsHover";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type ViewMode = "board" | "table";
@@ -408,51 +402,11 @@ export function CustomersPage({
                 const handleSelect = () => onSelectCustomer?.(customer.id);
 
                 return (
-                  <EntityCard
+                  <CustomerEntityCard
                     key={customer.id}
-                    title={customer.fullName ?? "Ohne Name"}
-                    icon={<CustomersIcon className="w-4 h-4" />}
-                    headerMeta={<span>{`K-Nr. ${customer.customerNumber?.trim() || "-"}`}</span>}
-                    headerColor={defaultHeaderColor}
-                    testId={`customer-card-${customer.id}`}
+                    customer={customer}
                     onDoubleClick={handleSelect}
-                    footer={(
-                      <div className="flex w-full flex-col gap-1.5">
-                        <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
-                          <EntityAppointmentsHoverPreview
-                            source={{ type: "customer", id: customer.id, count: customer.plannedAppointmentsCount }}
-                            triggerTestId={`text-customer-planned-appointments-${customer.id}`}
-                          />
-                          <EntityNotesHoverPreview
-                            sourceMode="single-parent"
-                            sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
-                            triggerTestId={`text-customer-notes-count-${customer.id}`}
-                          />
-                          <CustomerAttachmentsHover
-                            customerId={customer.id}
-                            totalAttachmentsCount={customer.attachmentsCount}
-                          />
-                        </div>
-                        <EntityTagFooterRow tags={customer.tags} testId={`customer-card-tags-${customer.id}`} />
-                      </div>
-                    )}
-                    footerVisibility="visible"
-                  >
-                    <div className="-mb-3 -mt-3 -mx-3">
-                      <CustomerInfoPanel
-                        mode="expanded"
-                        hideHeader={true}
-                        fullName={customer.fullName}
-                        customerNumber={customer.customerNumber}
-                        addressLine1={customer.addressLine1}
-                        postalCode={customer.postalCode}
-                        city={customer.city}
-                        phone={customer.phone}
-                        email={customer.email}
-                        testId={`customer-card-info-${customer.id}`}
-                      />
-                    </div>
-                  </EntityCard>
+                  />
                 );
               })}
             </BoardView>
@@ -466,20 +420,10 @@ export function CustomersPage({
               rowPreviewRenderer={(row) => (
                 <CustomerTableHoverPreview
                   customer={{
-                    id: row.customer.id,
-                    fullName: row.customer.fullName,
-                    customerNumber: row.customer.customerNumber,
-                    addressLine1: row.customer.addressLine1,
-                    postalCode: row.customer.postalCode,
-                    city: row.customer.city,
-                    phone: row.customer.phone,
-                    email: row.customer.email,
+                    ...row.customer,
+                    tags: row.customer.tags ?? [],
                   }}
-                  notesCount={row.customer.notesCount}
-                  plannedAppointmentsCount={row.customer.plannedAppointmentsCount}
-                  attachmentsCount={row.customer.attachmentsCount}
-                  nextAppointment={row.relevantAppointment}
-                  tags={row.customer.tags ?? []}
+                  onDoubleClick={() => onSelectCustomer?.(row.customer.id)}
                 />
               )}
               emptyState={emptyState}

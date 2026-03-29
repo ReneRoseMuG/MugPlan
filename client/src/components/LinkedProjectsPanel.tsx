@@ -1,9 +1,10 @@
+import React from "react";
 import { FolderKanban } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import type { Project } from "@shared/schema";
-import { LinkedProjectCard } from "@/components/LinkedProjectCard";
-import { buildLatestAppointmentByProjectId, sortAppointmentsByDateDesc } from "@/lib/entity-appointments";
+import { ProjectEntityCard, TABLE_ENTITY_CARD_PREVIEW_WIDTH_CLASS } from "@/components/ui/entity-preview-cards";
+import type { Tag } from "@shared/schema";
+import type { ProjectArticleItem } from "@shared/projectArticleList";
 
 interface LinkedProjectsPanelProps {
   customerId?: number | null;
@@ -11,52 +12,93 @@ interface LinkedProjectsPanelProps {
   onOpenProject?: (id: number) => void;
 }
 
-type CustomerAppointmentProjectSummary = {
+type LinkedProjectListItem = {
   id: number;
-  projectId: number;
-  startDate: string;
-  startTimeHour: number | null;
+  customerId: number;
+  name: string;
+  orderNumber: string | null;
+  amount: string | number | null;
+  descriptionMd: string | null;
+  isActive: boolean;
+  version: number;
+  notesCount: number;
+  plannedAppointmentsCount: number;
+  nextAppointmentStartDate: string | null;
+  nextAppointmentStartTimeHour: number | null;
+  projectArticleItems: ProjectArticleItem[];
+  tags: Tag[];
+  attachmentsCount: number;
+  customer: {
+    id: number;
+    customerNumber: string;
+    fullName: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+    phone: string | null;
+    email: string | null;
+  };
 };
 
+type LinkedProjectListResponse = {
+  page: number;
+  totalPages: number;
+  items: LinkedProjectListItem[];
+};
+
+function toAppointmentSortKey(project: LinkedProjectListItem): string | null {
+  if (!project.nextAppointmentStartDate) return null;
+  return `${project.nextAppointmentStartDate}|${String(project.nextAppointmentStartTimeHour ?? 99).padStart(2, "0")}`;
+}
+
 export function LinkedProjectsPanel({ customerId, customerNumber, onOpenProject }: LinkedProjectsPanelProps) {
-  const projectsQueryUrl = customerId
-    ? `/api/projects?customerId=${customerId}&filter=active&scope=all`
-    : null;
-  const customerAppointmentsQueryUrl = customerId
-    ? `/api/customers/${customerId}/appointments?scope=all`
-    : null;
+  const { data: projects = [], isLoading, isError } = useQuery<LinkedProjectListItem[]>({
+    queryKey: ["/api/projects/list", customerId ?? null, "linked-projects-panel"],
+    enabled: Boolean(customerId),
+    queryFn: async () => {
+      if (!customerId) return [];
 
-  const { data: projects = [], isLoading: isLoadingProjects, isError: isProjectsError } = useQuery<Project[]>({
-    queryKey: [projectsQueryUrl ?? ""],
-    enabled: !!projectsQueryUrl,
-  });
+      const pageSize = 100;
+      const items: LinkedProjectListItem[] = [];
+      let page = 1;
+      let totalPages = 1;
 
-  const {
-    data: customerAppointments = [],
-    isLoading: isLoadingAppointments,
-    isError: isAppointmentsError,
-  } = useQuery<CustomerAppointmentProjectSummary[]>({
-    queryKey: [customerAppointmentsQueryUrl ?? ""],
-    enabled: !!customerAppointmentsQueryUrl,
+      do {
+        const params = new URLSearchParams({
+          customerId: String(customerId),
+          scope: "all",
+          page: String(page),
+          pageSize: String(pageSize),
+        });
+
+        const response = await fetch(`/api/projects/list?${params.toString()}`, {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          throw new Error("Projekte konnten nicht geladen werden");
+        }
+
+        const payload = await response.json() as LinkedProjectListResponse;
+        items.push(...payload.items);
+        totalPages = payload.totalPages;
+        page += 1;
+      } while (page <= totalPages);
+
+      return items.filter((project) => project.isActive);
+    },
   });
 
   const sortedProjects = useMemo(() => {
-    const latestAppointmentByProjectId = buildLatestAppointmentByProjectId(customerAppointments);
     return [...projects].sort((a, b) => {
-      const latestA = latestAppointmentByProjectId.get(a.id);
-      const latestB = latestAppointmentByProjectId.get(b.id);
+      const leftDate = toAppointmentSortKey(a);
+      const rightDate = toAppointmentSortKey(b);
 
-      if (latestA && latestB) {
-        return sortAppointmentsByDateDesc(latestA, latestB);
-      }
-      if (latestA && !latestB) return -1;
-      if (!latestA && latestB) return 1;
+      if (leftDate && rightDate) return rightDate.localeCompare(leftDate, "de");
+      if (leftDate && !rightDate) return -1;
+      if (!leftDate && rightDate) return 1;
       return b.id - a.id;
     });
-  }, [projects, customerAppointments]);
-
-  const isLoading = isLoadingProjects || isLoadingAppointments;
-  const isError = isProjectsError || isAppointmentsError;
+  }, [projects]);
 
   return (
     <div className="sub-panel space-y-3">
@@ -87,11 +129,25 @@ export function LinkedProjectsPanel({ customerId, customerNumber, onOpenProject 
           </p>
         ) : (
           sortedProjects.map((project) => (
-            <LinkedProjectCard
+            <ProjectEntityCard
               key={project.id}
-              project={project}
-              customerNumber={customerNumber ?? null}
-              onOpenProject={onOpenProject}
+              project={{
+                ...project,
+                customer: {
+                  ...project.customer,
+                  customerNumber: project.customer.customerNumber || customerNumber || "-",
+                },
+              }}
+              className={TABLE_ENTITY_CARD_PREVIEW_WIDTH_CLASS}
+              onDoubleClick={() => onOpenProject?.(project.id)}
+              testIds={{
+                card: `linked-project-card-${project.id}`,
+                customerPanel: `linked-project-customer-${project.id}`,
+                projectPanel: `linked-project-project-${project.id}`,
+                appointments: `linked-project-appointments-${project.id}`,
+                notes: `linked-project-notes-${project.id}`,
+                tags: `linked-project-tags-${project.id}`,
+              }}
             />
           ))
         )}

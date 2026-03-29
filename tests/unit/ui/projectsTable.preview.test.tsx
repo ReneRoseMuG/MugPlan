@@ -56,8 +56,20 @@ vi.mock("@/components/ui/toggle-group", () => ({
 }));
 
 vi.mock("@/components/ui/entity-card", () => ({
-  EntityCard: ({ children, footer }: { children?: React.ReactNode; footer?: React.ReactNode }) => (
+  EntityCard: ({
+    title,
+    headerMeta,
+    children,
+    footer,
+  }: {
+    title?: React.ReactNode;
+    headerMeta?: React.ReactNode;
+    children?: React.ReactNode;
+    footer?: React.ReactNode;
+  }) => (
     <article>
+      <div>{title}</div>
+      <div>{headerMeta}</div>
       {children}
       {footer}
     </article>
