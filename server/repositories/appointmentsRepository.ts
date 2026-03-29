@@ -944,7 +944,7 @@ export async function listAppointmentsForList(
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(whereClause)
-    .orderBy(desc(appointments.startDate), desc(appointments.startTime), desc(appointments.id))
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id))
     .limit(paging.pageSize)
     .offset(offset);
 

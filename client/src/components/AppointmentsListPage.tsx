@@ -145,7 +145,7 @@ export function AppointmentsListPage({
   const todayBerlin = getBerlinTodayDateString();
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>("date");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [hasLoadedAtLeastOnce, setHasLoadedAtLeastOnce] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -249,7 +249,7 @@ export function AppointmentsListPage({
       return;
     }
     setSortKey(key);
-    setSortDirection(key === "date" ? "desc" : "asc");
+    setSortDirection("asc");
   };
 
   const renderSortHeader = (label: string, key: SortKey) => (

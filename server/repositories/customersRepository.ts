@@ -29,6 +29,7 @@ export type CustomerBoardListItem = CustomerListItem & {
     orderNumber: string | null;
     projectName: string;
   }>;
+  attachmentsCount: number;
 };
 
 export type CustomerBoardListResult = {
@@ -227,11 +228,24 @@ export async function getCustomersPaged(params: {
     );
 
   const notesCountByCustomerId = new Map(noteCountRows.map((row) => [row.customerId, Number(row.count)] as const));
+
+  const attachmentCountRows = await db
+    .select({
+      customerId: customerAttachments.customerId,
+      count: sql<number>`count(*)`,
+    })
+    .from(customerAttachments)
+    .where(inArray(customerAttachments.customerId, customerIds))
+    .groupBy(customerAttachments.customerId);
+
+  const attachmentsCountByCustomerId = new Map(attachmentCountRows.map((row) => [row.customerId, Number(row.count)] as const));
+
   const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
   const appointmentSummaryByCustomerId = new Map<number, {
     plannedAppointmentsCount: number;
     nextAppointmentStartDate: string | null;
     nextAppointmentStartTimeHour: number | null;
+    nextAppointmentId: number | null;
   }>();
   const historicalAppointmentsByCustomerId = new Map<number, CustomerBoardListItem["historicalAppointments"]>();
 
@@ -242,6 +256,7 @@ export async function getCustomersPaged(params: {
         plannedAppointmentsCount: 1,
         nextAppointmentStartDate: normalizeAppointmentDate(row.startDate),
         nextAppointmentStartTimeHour: normalizeStartTimeHour(row.startTime),
+        nextAppointmentId: row.id,
       });
       continue;
     }
@@ -272,7 +287,9 @@ export async function getCustomersPaged(params: {
         plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
+        nextAppointmentId: appointmentSummary?.nextAppointmentId ?? null,
         historicalAppointments: historicalAppointmentsByCustomerId.get(row.id) ?? [],
+        attachmentsCount: attachmentsCountByCustomerId.get(row.id) ?? 0,
       };
     }),
     page: params.page,

@@ -240,10 +240,16 @@ export type ProjectBoardListItem = ProjectListItem & {
     customerNumber: string;
     fullName: string | null;
     lastName: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+    phone: string | null;
+    email: string | null;
   };
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
+  attachmentsCount: number;
 };
 
 export type ProjectBoardListResult = {
@@ -413,6 +419,18 @@ export async function getProjectsPaged(params: {
     );
 
   const notesCountByProjectId = new Map(noteCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+
+  const attachmentCountRows = await db
+    .select({
+      projectId: projectAttachments.projectId,
+      count: sql<number>`count(*)`,
+    })
+    .from(projectAttachments)
+    .where(inArray(projectAttachments.projectId, projectIds))
+    .groupBy(projectAttachments.projectId);
+
+  const attachmentsCountByProjectId = new Map(attachmentCountRows.map((row) => [row.projectId, Number(row.count)] as const));
+
   const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   const appointmentSummaryByProjectId = new Map<number, {
     plannedAppointmentsCount: number;
@@ -450,7 +468,13 @@ export async function getProjectsPaged(params: {
           customerNumber: row.customer.customerNumber,
           fullName: row.customer.fullName,
           lastName: row.customer.lastName,
+          addressLine1: row.customer.addressLine1 ?? null,
+          postalCode: row.customer.postalCode ?? null,
+          city: row.customer.city ?? null,
+          phone: row.customer.phone ?? null,
+          email: row.customer.email ?? null,
         },
+        attachmentsCount: attachmentsCountByProjectId.get(row.project.id) ?? 0,
       };
     }),
     page: params.page,

@@ -1,0 +1,119 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - collapsed-Modus rendert Projektname und Auftragsnummer und ist in HoverPreview eingebettet.
+ * - expanded-Modus rendert den Artikel-Renderer und optionalen Header.
+ * - hideHeader in expanded blendet den h5-Projektnamen aus.
+ * - Fehlende Auftragsnummer wird als "-" dargestellt.
+ *
+ * Fehlerfaelle:
+ * - collapsed rendert keinen HoverPreview-Wrapper mehr.
+ * - hideHeader hat keinen Effekt in expanded.
+ *
+ * Ziel:
+ * Renderverhalten der ProjectInfoPanel-Komponente in beiden Modi absichern.
+ */
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/ui/hover-preview", () => ({
+  HoverPreview: ({
+    children,
+    preview,
+  }: {
+    children?: React.ReactNode;
+    preview?: React.ReactNode;
+  }) => (
+    <div data-testid="hover-preview-wrapper">
+      <div data-testid="hover-preview-trigger">{children}</div>
+      <div data-testid="hover-preview-content">{preview}</div>
+    </div>
+  ),
+}));
+
+vi.mock("@/lib/domain-icons", () => ({
+  domainIcons: {
+    customers: () => <span data-testid="customer-icon" />,
+    projects: () => <span data-testid="project-icon" />,
+  },
+}));
+
+vi.mock("@/components/ui/project-article-description-renderer", () => ({
+  ProjectArticleDescriptionRenderer: ({
+    articleItems,
+  }: {
+    articleItems: Array<{ label: string; value: string }>;
+  }) => (
+    <div data-testid="article-renderer">
+      {articleItems.map((item) => (
+        <span key={item.label}>{item.value}</span>
+      ))}
+    </div>
+  ),
+}));
+
+import { ProjectInfoPanel } from "../../../client/src/components/ui/project-info-panel";
+
+describe("ProjectInfoPanel render", () => {
+  const baseProps = {
+    projectName: "Saunabau Nord",
+    projectOrderNumber: "ORD-99",
+    projectArticleItems: [{ label: "Modell", value: "Classic 200" }],
+    projectDescription: null,
+  };
+
+  it("collapsed: rendert Projektname und Auftragsnummer im Trigger und HoverPreview-Wrapper im DOM", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel {...baseProps} mode="collapsed" />,
+    );
+
+    expect(markup).toContain("hover-preview-wrapper");
+    expect(markup).toContain("Saunabau Nord");
+    expect(markup).toContain("ORD-99");
+  });
+
+  it("collapsed: Preview-Content enthaelt Artikel-Renderer", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel {...baseProps} mode="collapsed" />,
+    );
+
+    expect(markup).toContain("hover-preview-content");
+    expect(markup).toContain("article-renderer");
+    expect(markup).toContain("Classic 200");
+  });
+
+  it("expanded: rendert Artikel-Renderer und Header", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel {...baseProps} mode="expanded" />,
+    );
+
+    expect(markup).not.toContain("hover-preview-wrapper");
+    expect(markup).toContain("article-renderer");
+    expect(markup).toContain("Saunabau Nord");
+    expect(markup).toContain("ORD-99");
+  });
+
+  it("expanded mit hideHeader: kein h5-Projektname im Output", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel {...baseProps} mode="expanded" hideHeader />,
+    );
+
+    expect(markup).not.toContain("<h5");
+    expect(markup).not.toContain("Saunabau Nord");
+    expect(markup).toContain("article-renderer");
+  });
+
+  it("fehlende Auftragsnummer wird als Strich dargestellt", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel
+        {...baseProps}
+        projectOrderNumber={null}
+        mode="collapsed"
+      />,
+    );
+
+    expect(markup).toContain("- -");
+  });
+});

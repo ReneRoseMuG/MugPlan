@@ -32,6 +32,7 @@ type EntityNotesHoverPreviewProps =
       triggerTestId?: string;
       maxWidth?: number;
       maxHeight?: number;
+      fullWidth?: boolean;
     }
   | {
       sourceMode: "single-parent";
@@ -40,6 +41,7 @@ type EntityNotesHoverPreviewProps =
       triggerTestId?: string;
       maxWidth?: number;
       maxHeight?: number;
+      fullWidth?: boolean;
     };
 
 function normalizeCount(count: number): number {
@@ -137,6 +139,7 @@ export function EntityNotesHoverPreview({
   triggerTestId,
   maxWidth = 360,
   maxHeight = 340,
+  fullWidth = false,
 }: EntityNotesHoverPreviewProps) {
   const [shouldLoadPreview, setShouldLoadPreview] = useState(false);
 
@@ -236,7 +239,7 @@ export function EntityNotesHoverPreview({
       className="z-[9999] w-[360px]"
     >
       <div
-        className="mt-1 cursor-pointer rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
+        className={`mt-1 cursor-pointer rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100${fullWidth ? " block w-full" : ""}`}
         data-testid={triggerTestId}
         onMouseEnter={() => setShouldLoadPreview(true)}
       >

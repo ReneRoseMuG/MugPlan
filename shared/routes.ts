@@ -208,6 +208,8 @@ const entityAppointmentItemSchema = z.object({
     id: z.number(),
     customerNumber: z.string(),
     fullName: z.string().nullable(),
+    phone: z.string().nullable(),
+    email: z.string().nullable(),
     addressLine1: z.string().nullable(),
     addressLine2: z.string().nullable(),
     postalCode: z.string().nullable(),
@@ -281,6 +283,7 @@ const customerBoardListItemSchema = z.object({
   plannedAppointmentsCount: z.number().int().min(0),
   nextAppointmentStartDate: z.string().nullable(),
   nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
+  nextAppointmentId: z.number().int().nullable(),
   tags: z.array(tagSchema),
   historicalAppointments: z.array(z.object({
     id: z.number(),
@@ -289,6 +292,7 @@ const customerBoardListItemSchema = z.object({
     orderNumber: z.string().nullable(),
     projectName: z.string(),
   })),
+  attachmentsCount: z.number().int().min(0),
 });
 
 const projectBoardStatusSchema = z.object({
@@ -321,8 +325,14 @@ const projectBoardListItemSchema = z.object({
     customerNumber: z.string(),
     fullName: z.string().nullable(),
     lastName: z.string().nullable(),
+    addressLine1: z.string().nullable(),
+    postalCode: z.string().nullable(),
+    city: z.string().nullable(),
+    phone: z.string().nullable(),
+    email: z.string().nullable(),
   }),
   statuses: z.array(projectBoardStatusSchema),
+  attachmentsCount: z.number().int().min(0),
 });
 
 const customerBoardListResponseSchema = pagedListMetaSchema.extend({

@@ -7,6 +7,7 @@
  * - Die Listenaggregation liefert Termin- und Artikellistenfelder fuer die Kartenansicht.
  * - Der ungepaginierte `/api/projects`-Pfad liefert `projectArticleItems` konsistent fuer Slot- und Detailnutzer.
  * - Der Detailpfad `/api/projects/:id` liefert `projectArticleItems` fuer Terminformular-Fallbacks stabil mit.
+ * - Die Listenaggregation liefert `attachmentsCount` als korrekte Anzahl vorhandener Projektanhaenge.
  *
  * Fehlerfaelle:
  * - Paging liefert Vollmengen oder falsche Seiten.
@@ -14,6 +15,7 @@
  * - Terminaggregation oder Projekt-Artikelliste fehlt in der Listenantwort.
  * - Der Detailpfad `/api/projects/:id` verliert `projectArticleItems` oder liefert leere Listen nicht als `[]`.
  * - `/api/projects` verliert `projectArticleItems`, liefert `null` statt `[]` oder veraendert die Slot-Reihenfolge.
+ * - `attachmentsCount` fehlt oder wird nicht pro Projekt aggregiert.
  *
  * Ziel:
  * Den API-Vertrag der paginierten und ungepaginierte Projektliste inklusive Kartenaggregation regressionssicher absichern.
@@ -32,6 +34,8 @@ import {
   createProjectFixture,
   createProjectOrderItemFixture,
 } from "../../helpers/testDataFactory";
+import { db } from "../../../server/db";
+import { projectAttachments } from "../../../shared/schema";
 let app: express.Express;
 
 beforeAll(async () => {
@@ -226,5 +230,38 @@ describe("FT30 integration: paged projects list", () => {
       id: project.id,
       projectArticleItems: [],
     });
+  });
+
+  it("returns correct attachmentsCount per project in paged list", async () => {
+    const agent = await loginAdminAgent(app);
+    const projectWithAttachment = await createProjectFixture({
+      prefix: "FT30-ATTACH-WITH",
+      name: "FT30 Projekt Mit Anhang",
+    });
+    const projectWithoutAttachment = await createProjectFixture({
+      prefix: "FT30-ATTACH-WITHOUT",
+      name: "FT30 Projekt Ohne Anhang",
+    });
+    await createAppointmentFixture({ projectId: projectWithAttachment.id, startDate: "2099-09-01" });
+    await createAppointmentFixture({ projectId: projectWithoutAttachment.id, startDate: "2099-09-02" });
+
+    await db.insert(projectAttachments).values({
+      projectId: projectWithAttachment.id,
+      filename: "ft30-test.pdf",
+      originalName: "FT30 Test Anhang.pdf",
+      mimeType: "application/pdf",
+      fileSize: 1024,
+      storagePath: "/tmp/ft30-test.pdf",
+    });
+
+    const response = await agent
+      .get("/api/projects/list?scope=upcoming&title=FT30+Projekt&page=1&pageSize=50")
+      .expect(200);
+
+    const withItem = response.body.items.find((item: { id: number }) => item.id === projectWithAttachment.id);
+    const withoutItem = response.body.items.find((item: { id: number }) => item.id === projectWithoutAttachment.id);
+
+    expect(withItem?.attachmentsCount).toBe(1);
+    expect(withoutItem?.attachmentsCount).toBe(0);
   });
 });

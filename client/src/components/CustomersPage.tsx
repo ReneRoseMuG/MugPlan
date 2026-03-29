@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Phone, MapPin, Building2, Mail, Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityCard } from "@/components/ui/entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
@@ -12,7 +12,6 @@ import { CustomerFilterPanel } from "@/components/ui/filter-panels/customer-filt
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { defaultHeaderColor } from "@/lib/colors";
 import { defaultCustomerFilters } from "@/lib/customer-filters";
-import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
@@ -22,6 +21,8 @@ import { domainIcons } from "@/lib/domain-icons";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { CustomerTableHoverPreview } from "@/components/ui/table-hover-previews";
+import { CustomerInfoPanel } from "@/components/ui/customer-info-panel";
+import { CustomerAttachmentsHover } from "@/components/ui/CustomerAttachmentsHover";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type ViewMode = "board" | "table";
@@ -33,6 +34,7 @@ type CustomerListItem = Customer & {
   plannedAppointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
+  nextAppointmentId: number | null;
   tags: Tag[];
   historicalAppointments: Array<{
     id: number;
@@ -41,6 +43,7 @@ type CustomerListItem = Customer & {
     orderNumber: string | null;
     projectName: string;
   }>;
+  attachmentsCount: number;
 };
 
 type CustomerListResponse = {
@@ -134,6 +137,7 @@ export function CustomersPage({
       if (!response.ok) throw new Error("Kunden konnten nicht geladen werden");
       return (await response.json()) as CustomerListResponse;
     },
+    placeholderData: keepPreviousData,
   });
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: getTagCatalogQueryKey("customer"),
@@ -158,6 +162,7 @@ export function CustomersPage({
       customer,
       relevantAppointment: customer.nextAppointmentStartDate
         ? {
+            id: customer.nextAppointmentId,
             startDate: customer.nextAppointmentStartDate,
             startTimeHour: customer.nextAppointmentStartTimeHour,
           }
@@ -350,7 +355,7 @@ export function CustomersPage({
         icon={<CustomersIcon className="w-5 h-5" />}
         viewModeKey={viewModeKey}
         helpKey="customers"
-        isLoading={customersLoading}
+        isLoading={customersLoading && data === undefined}
         onClose={onCancel}
         showCloseButton={showCloseButton}
         closeTestId="button-close-customers"
@@ -413,52 +418,41 @@ export function CustomersPage({
                     onDoubleClick={handleSelect}
                     footer={(
                       <div className="flex w-full flex-col gap-2">
-                        <div className="grid w-full grid-cols-[2fr_1fr] gap-2">
-                          <AppointmentCountBadge
-                            count={customer.plannedAppointmentsCount}
-                            testId={`text-customer-planned-appointments-${customer.id}`}
+                        <AppointmentCountBadge
+                          count={customer.plannedAppointmentsCount}
+                          testId={`text-customer-planned-appointments-${customer.id}`}
+                          fullWidth
+                        />
+                        {customer.notesCount > 0 ? (
+                          <EntityNotesHoverPreview
+                            sourceMode="single-parent"
+                            sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
+                            triggerTestId={`text-customer-notes-count-${customer.id}`}
                             fullWidth
                           />
-                          {customer.notesCount > 0 ? (
-                            <div
-                              className="flex min-h-[32px] items-center justify-end px-1 text-[10px] font-semibold text-slate-700"
-                              data-testid={`text-customer-notes-count-${customer.id}`}
-                            >
-                              <EntityNotesHoverPreview
-                                sourceMode="single-parent"
-                                sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
-                                triggerTestId={`text-customer-notes-count-${customer.id}`}
-                              />
-                            </div>
-                          ) : null}
-                        </div>
+                        ) : null}
+                        <CustomerAttachmentsHover
+                          customerId={customer.id}
+                          totalAttachmentsCount={customer.attachmentsCount}
+                          fullWidth
+                        />
                         <EntityTagFooterRow tags={customer.tags} testId={`customer-card-tags-${customer.id}`} />
                       </div>
                     )}
                     footerVisibility="visible"
                   >
-                    <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                      {customer.company ? (
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-3 h-3 text-slate-400" />
-                          <span className="font-medium">{customer.company}</span>
-                        </div>
-                      ) : null}
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        <span>{customer.phone}</span>
-                      </div>
-                      {customer.email ? (
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-3 h-3 text-slate-400" />
-                          <span>{customer.email}</span>
-                        </div>
-                      ) : null}
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3 h-3 text-slate-400" />
-                        <span>{customer.postalCode} {customer.city}</span>
-                      </div>
-                    </div>
+                    <CustomerInfoPanel
+                      mode="expanded"
+                      hideHeader={true}
+                      fullName={customer.fullName}
+                      customerNumber={customer.customerNumber}
+                      addressLine1={customer.addressLine1}
+                      postalCode={customer.postalCode}
+                      city={customer.city}
+                      phone={customer.phone}
+                      email={customer.email}
+                      testId={`customer-card-info-${customer.id}`}
+                    />
                   </EntityCard>
                 );
               })}
@@ -470,66 +464,24 @@ export function CustomersPage({
               rows={sortedCustomerRows}
               rowKey={(row) => row.customer.id}
               onRowDoubleClick={(row) => onSelectCustomer?.(row.customer.id)}
-              rowPreviewRenderer={(row) => {
-                if (row.relevantAppointment) {
-                  return createAppointmentWeeklyPanelPreview({
+              rowPreviewRenderer={(row) => (
+                <CustomerTableHoverPreview
+                  customer={{
                     id: row.customer.id,
-                    startDate: row.relevantAppointment.startDate,
-                    endDate: null,
-                    startTime: row.relevantAppointment.startTimeHour == null ? null : `${String(row.relevantAppointment.startTimeHour).padStart(2, "0")}:00:00`,
-                    projectId: null,
-                    projectName: row.customer.fullName ?? "Kunde",
-                    projectVersion: row.customer.version,
-                    projectOrderNumber: null,
-                    projectArticleItems: [],
-                    projectDescription: null,
-                    tourId: null,
-                    tourName: null,
-                    tourColor: null,
-                    customer: {
-                      id: row.customer.id,
-                      customerNumber: row.customer.customerNumber,
-                      fullName: row.customer.fullName,
-                      addressLine1: row.customer.addressLine1,
-                      addressLine2: row.customer.addressLine2,
-                      postalCode: row.customer.postalCode,
-                      city: row.customer.city,
-                    },
-                    employees: [],
-                    customerNotesCount: row.customer.notesCount,
-                    projectNotesCount: 0,
-                    appointmentNotesCount: 0,
-                    customerAttachmentsCount: 0,
-                    projectAttachmentsCount: 0,
-                    appointmentAttachmentsCount: 0,
-                    totalAttachmentsCount: 0,
-                    appointmentTags: [],
-                    customerTags: row.customer.tags,
-                    projectTags: [],
-                    displayMode: "compact",
-                    isLocked: false,
-                    isCancelled: false,
-                    version: row.customer.version,
-                  }, { sizeProfile: "sidebarTable" });
-                }
-
-                return (
-                  <CustomerTableHoverPreview
-                    customer={{
-                      id: row.customer.id,
-                      fullName: row.customer.fullName ?? "Ohne Name",
-                      customerNumber: row.customer.customerNumber,
-                      company: row.customer.company ?? "-",
-                      phone: row.customer.phone ?? "-",
-                      email: row.customer.email ?? "-",
-                      city: [row.customer.postalCode, row.customer.city].filter(Boolean).join(" ") || "-",
-                    }}
-                    notesCount={row.customer.notesCount}
-                    tags={row.customer.tags}
-                    historicalAppointments={row.customer.historicalAppointments}
-                  />
-                );
-              }}
+                    fullName: row.customer.fullName,
+                    customerNumber: row.customer.customerNumber,
+                    addressLine1: row.customer.addressLine1,
+                    postalCode: row.customer.postalCode,
+                    city: row.customer.city,
+                    phone: row.customer.phone,
+                    email: row.customer.email,
+                  }}
+                  notesCount={row.customer.notesCount}
+                  plannedAppointmentsCount={row.customer.plannedAppointmentsCount}
+                  attachmentsCount={row.customer.attachmentsCount}
+                  nextAppointment={row.relevantAppointment}
+                />
+              )}
               emptyState={emptyState}
               stickyHeader
             />

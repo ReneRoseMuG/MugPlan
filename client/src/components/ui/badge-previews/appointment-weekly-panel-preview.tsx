@@ -38,7 +38,6 @@ export function AppointmentWeeklyPanelPreview({ appointment, widthPx }: Appointm
         appointment={appointment}
         interactive={false}
         context="week-calendar"
-        showPreviewTourNameLine
       />
     </div>
   );

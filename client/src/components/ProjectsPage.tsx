@@ -10,14 +10,16 @@ import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProjectFilterPanel } from "@/components/ui/filter-panels/project-filter-panel";
-import { HoverPreview } from "@/components/ui/hover-preview";
-import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
+import { CustomerInfoPanel } from "@/components/ui/customer-info-panel";
+import { ProjectInfoPanel } from "@/components/ui/project-info-panel";
+import { ProjectAttachmentsHover } from "@/components/ui/ProjectAttachmentsHover";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { defaultHeaderColor } from "@/lib/colors";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
+import { HoverPreview } from "@/components/ui/hover-preview";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { Project, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
@@ -43,7 +45,13 @@ type ProjectListItem = Project & {
     customerNumber: string;
     fullName: string | null;
     lastName: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+    phone: string | null;
+    email: string | null;
   };
+  attachmentsCount: number;
 };
 
 type ProjectListResponse = {
@@ -79,21 +87,6 @@ function formatProjectAmount(amount: unknown): string {
   }).format(normalized);
 }
 
-function hasVisibleProjectCardContent(
-  articleItems: ProjectArticleItem[] | null | undefined,
-  descriptionHtml: string | null | undefined,
-): boolean {
-  if ((articleItems ?? []).length > 0) return true;
-  if (!descriptionHtml) return false;
-
-  const normalized = descriptionHtml
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return normalized.length > 0;
-}
 
 function SortIcon({ direction }: { direction: SortDirection | null }) {
   if (direction === "asc") return <ArrowUp className="w-3.5 h-3.5" />;
@@ -427,8 +420,6 @@ export function ProjectsPage({
             >
               {projects.map((project) => {
                 const handleSelect = () => onSelectProject?.(project.id);
-                const hasProjectCardContent = hasVisibleProjectCardContent(project.projectArticleItems, project.descriptionMd);
-                const resolvedProjectPreviewHeader = [`A-Nr. ${project.orderNumber?.trim() || "-"}`, project.name].join(" - ");
 
                 return (
                   <EntityCard
@@ -441,71 +432,74 @@ export function ProjectsPage({
                     onDoubleClick={handleSelect}
                     footer={(
                       <div className="flex w-full flex-col gap-2">
-                        <div className="grid w-full grid-cols-[max-content_1fr] gap-2">
-                          <AppointmentCountBadge
-                            count={project.plannedAppointmentsCount}
-                            testId={`text-project-planned-appointments-${project.id}`}
+                        <AppointmentCountBadge
+                          count={project.plannedAppointmentsCount}
+                          testId={`text-project-planned-appointments-${project.id}`}
+                          fullWidth
+                        />
+                        {project.notesCount > 0 ? (
+                          <EntityNotesHoverPreview
+                            sourceMode="single-parent"
+                            sources={{ type: "project", id: project.id, count: project.notesCount ?? 0 }}
+                            triggerTestId={`text-project-notes-count-${project.id}`}
+                            fullWidth
                           />
-                          {project.notesCount > 0 ? (
-                            <div
-                              className="flex min-h-[32px] items-center justify-end px-1 text-[10px] font-semibold text-slate-700"
-                              data-testid={`text-project-notes-count-${project.id}`}
-                            >
-                              <EntityNotesHoverPreview
-                                sourceMode="single-parent"
-                                sources={{ type: "project", id: project.id, count: project.notesCount ?? 0 }}
-                                triggerTestId={`text-project-notes-count-${project.id}`}
-                              />
-                            </div>
-                          ) : null}
-                        </div>
+                        ) : null}
+                        <ProjectAttachmentsHover
+                          projectId={project.id}
+                          totalAttachmentsCount={project.attachmentsCount}
+                          fullWidth
+                        />
                         <EntityTagFooterRow tags={project.tags} testId={`project-card-tags-${project.id}`} />
                       </div>
                     )}
                     footerVisibility="visible"
                   >
-                    <div className="flex h-full flex-col gap-2">
-                      {hasProjectCardContent ? (
-                        <HoverPreview
-                          preview={(
-                            <div className="rounded-lg bg-white p-2">
-                              <div className="mb-2 text-xs font-semibold text-slate-800">{resolvedProjectPreviewHeader}</div>
-                              <ProjectArticleDescriptionRenderer
-                                articleItems={project.projectArticleItems}
-                                descriptionHtml={project.descriptionMd}
-                                showSectionTitles
-                                testIdPrefix={`project-card-preview-renderer-${project.id}`}
-                              />
-                            </div>
-                          )}
-                          closeDelay={80}
-                          side="right"
-                          align="start"
-                          maxWidth={420}
-                          maxHeight={320}
-                          className="z-[9999] w-[420px]"
-                        >
-                          <div
-                            className="max-h-[6.5rem] overflow-hidden pt-1"
-                            data-testid={`project-card-description-hover-trigger-${project.id}`}
-                          >
-                            <ProjectArticleDescriptionRenderer
-                              articleItems={project.projectArticleItems}
-                              descriptionHtml={project.descriptionMd}
-                              showSectionTitles={false}
-                              testIdPrefix={`project-card-renderer-${project.id}`}
+                    <div className="flex h-full flex-col gap-2 overflow-hidden">
+                      <CustomerInfoPanel
+                        mode="collapsed"
+                        fullName={project.customer.fullName}
+                        customerNumber={project.customer.customerNumber}
+                        addressLine1={project.customer.addressLine1}
+                        postalCode={project.customer.postalCode}
+                        city={project.customer.city}
+                        phone={project.customer.phone}
+                        email={project.customer.email}
+                        testId={`project-card-customer-${project.id}`}
+                      />
+                      <HoverPreview
+                        preview={(
+                          <div className="w-[400px] rounded-lg bg-white p-2">
+                            <ProjectInfoPanel
+                              mode="expanded"
+                              hideHeader={true}
+                              projectName={project.name}
+                              projectOrderNumber={project.orderNumber ?? null}
+                              projectArticleItems={project.projectArticleItems}
+                              projectDescription={project.descriptionMd ?? null}
                             />
                           </div>
-                        </HoverPreview>
-                      ) : null}
-
-                      <div className="mt-auto flex items-center gap-3 text-sm text-slate-600">
-                        <span className="inline-flex items-center gap-1">
-                          <CustomersIcon className="w-3 h-3 text-slate-400" />
-                          <span className="font-medium">{project.customer.fullName ?? "-"}</span>
-                        </span>
-                      </div>
-
+                        )}
+                        side="right"
+                        align="start"
+                        maxWidth={420}
+                        maxHeight={400}
+                        openDelay={300}
+                      >
+                        <div
+                          className="max-h-[5rem] overflow-hidden cursor-pointer"
+                          data-testid={`project-card-project-${project.id}`}
+                        >
+                          <ProjectInfoPanel
+                            mode="expanded"
+                            hideHeader={true}
+                            projectName={project.name}
+                            projectOrderNumber={project.orderNumber ?? null}
+                            projectArticleItems={project.projectArticleItems}
+                            projectDescription={project.descriptionMd ?? null}
+                          />
+                        </div>
+                      </HoverPreview>
                       {!project.isActive ? (
                         <Badge variant="secondary" className="text-xs">
                           Inaktiv
@@ -526,21 +520,26 @@ export function ProjectsPage({
               rowPreviewRenderer={(row) => (
                 <ProjectTableHoverPreview
                   header={{
-                    orderNumber: row.project.orderNumber?.trim() || "-",
+                    orderNumber: row.project.orderNumber?.trim() || null,
                     name: row.project.name,
                   }}
                   customer={{
+                    id: row.customer.id,
                     number: row.customer.customerNumber,
-                    name: row.customer.fullName ?? "-",
+                    name: row.customer.fullName,
+                    addressLine1: row.customer.addressLine1,
+                    postalCode: row.customer.postalCode,
+                    city: row.customer.city,
+                    phone: row.customer.phone,
+                    email: row.customer.email,
                   }}
                   project={{
-                    description: row.project.descriptionMd?.replace(/<[^>]+>/g, " ").trim() || "-",
-                    amount: formatProjectAmount(row.project.amount),
+                    id: row.project.id,
+                    articleItems: row.project.projectArticleItems,
+                    description: row.project.descriptionMd ?? null,
                   }}
-                  nextAppointmentLabel={formatListDateTime({
-                    startDate: row.project.nextAppointmentStartDate,
-                    startTimeHour: row.project.nextAppointmentStartTimeHour,
-                  })}
+                  plannedAppointmentsCount={row.project.plannedAppointmentsCount}
+                  attachmentsCount={row.project.attachmentsCount}
                   notes={[
                     { type: "customer", id: row.customer.id, count: 0 },
                     { type: "project", id: row.project.id, count: row.project.notesCount },

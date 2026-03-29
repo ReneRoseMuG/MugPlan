@@ -1032,6 +1032,7 @@ export async function listAppointmentsList(params: {
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds);
   const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
   const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
+  const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
 
   const items = rows.map((row) => {
     const projectId = row.project?.id ?? null;
@@ -1058,6 +1059,8 @@ export async function listAppointmentsList(params: {
         id: row.customer.id,
         customerNumber: row.customer.customerNumber,
         fullName: row.customer.fullName,
+        phone: row.customer.phone ?? null,
+        email: row.customer.email ?? null,
         addressLine1: row.customer.addressLine1 ?? null,
         addressLine2: row.customer.addressLine2 ?? null,
         postalCode: row.customer.postalCode ?? null,
@@ -1067,6 +1070,10 @@ export async function listAppointmentsList(params: {
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+      customerAttachmentsCount: 0,
+      projectAttachmentsCount: 0,
+      appointmentAttachmentsCount: appointmentAttachmentCounts.get(row.appointment.id) ?? 0,
+      totalAttachmentsCount: appointmentAttachmentCounts.get(row.appointment.id) ?? 0,
       appointmentTags: visibleTags,
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
