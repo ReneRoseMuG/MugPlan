@@ -9,8 +9,12 @@ import { CalendarWeekAppointmentAttachmentsHover } from "./CalendarWeekAppointme
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
+import {
+  getWeekAppointmentFooterStyle,
+  WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
+} from "./weekAppointmentCardStyles";
 
-export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = 28;
+export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
 
 type CalendarWeekSpanningTileProps = {
   appointment: CalendarAppointment;
@@ -94,6 +98,7 @@ export function CalendarWeekSpanningTile({
     appointment.customerTags,
     appointment.projectTags,
   );
+  const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
 
   const mainContentPanels = (
     <>
@@ -138,11 +143,17 @@ export function CalendarWeekSpanningTile({
   );
 
   const bodyContent = (
-    <div className="flex h-full min-h-0 flex-col bg-white/90 pb-1">
-      <div className="min-h-0 space-y-1 overflow-hidden">
-        {mainContentPanels}
+    <div className="flex h-full min-h-0 flex-col bg-white/90">
+      <div className="min-h-0 flex-1 px-1 pt-1" data-testid={`week-spanning-tile-content-${appointment.id}`}>
+        <div className="min-h-0 space-y-1 overflow-hidden">
+          {mainContentPanels}
+        </div>
       </div>
-      <div className="mt-auto shrink-0">
+      <div
+        className="mt-auto shrink-0 border-t px-1 py-2"
+        style={footerStyle}
+        data-testid={`week-spanning-tile-footer-${appointment.id}`}
+      >
         {footerContentPanels}
       </div>
     </div>
@@ -221,7 +232,7 @@ export function CalendarWeekSpanningTile({
       </div>
       {isFilledMode ? (
         <div
-          className="min-h-0 bg-white/90 p-1"
+          className="min-h-0 bg-white/90"
           style={{ gridColumn: `1 / span ${visibleColumns}`, gridRow: 2 }}
           data-testid={`week-spanning-tile-body-filled-${appointment.id}`}
         >
@@ -232,7 +243,7 @@ export function CalendarWeekSpanningTile({
           {headerDays.map((headerDay, dayIndex) => (
             <div
               key={`week-spanning-tile-body-split-${appointment.id}-${headerDay.key}`}
-              className="min-h-0 bg-white/90 p-1"
+              className="min-h-0 bg-white/90"
               style={{
                 gridColumn: `${dayIndex + 1} / span 1`,
                 gridRow: 2,
@@ -259,7 +270,7 @@ export function CalendarWeekSpanningTile({
             }}
             aria-hidden
           />
-          <div className="min-h-0 p-1" style={{ width: bodyColumnWidth }}>
+          <div className="min-h-0" style={{ width: bodyColumnWidth }}>
             {bodyContent}
           </div>
           <div
@@ -275,7 +286,7 @@ export function CalendarWeekSpanningTile({
       ) : (
         <>
           <div
-            className="min-h-0 p-1"
+            className="min-h-0"
             style={{ gridColumn: "1 / span 1", gridRow: 2 }}
             data-testid={`week-spanning-tile-body-standard-${appointment.id}`}
           >
