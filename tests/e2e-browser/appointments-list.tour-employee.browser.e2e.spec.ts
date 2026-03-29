@@ -5,7 +5,7 @@
  * Use Case: UC Sortierung/Spaltenstruktur/Scrollverhalten der Formular-Tabellen
  *
  * Abgedeckte Regeln:
- * - Datum startet abwaerts und bleibt nach "Alle Termine" erhalten.
+ * - Datum startet aufsteigend und bleibt nach "Alle Termine" erhalten.
  * - Umschaltung "Alle Termine" behaelt die gewaehlte Datumssortierung.
  * - Spalte "Ganztag" ist entfernt.
  * - Listenlayout zeigt die aktuell verdrahteten Zeit-, Auftrags- und Kunden-Spalten.
@@ -14,7 +14,7 @@
  * - Mitarbeiter-Terminliste scrollt vertikal innerhalb des Tabellenbereichs mit sticky Header.
  *
  * Fehlerfaelle:
- * - Sortierung springt nach "Alle Termine" auf Default zurueck.
+ * - Sortierung springt nach "Alle Termine" auf die Standardsortierung zurueck.
  * - Verbotene Spalten/Filter sind weiterhin sichtbar.
  * - Projektspalte zeigt weiterhin den gespeicherten Prefix "K: <Nr> - <Name>".
  * - Tabelle laeuft im Mitarbeiter-Formular nach unten aus.
@@ -72,17 +72,17 @@ test("tour form appointments table: date sorting persists after show-all and no 
 
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Near");
+  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Far");
+
+  await table.locator("thead").getByRole("button", { name: "Datum" }).click();
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
   await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
 
-  await table.locator("thead").getByRole("button", { name: "Datum" }).click();
-  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Near");
-  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Far");
-
   await page.getByRole("switch", { name: "Alle Termine" }).click();
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Near");
-  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Far");
+  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
+  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
 });
 
 test("employee form appointments table: structure, sorting persistence and vertical inner scroll", async ({ page }) => {
@@ -130,12 +130,12 @@ test("employee form appointments table: structure, sorting persistence and verti
   await expect(page.getByText("Alle Touren")).toHaveCount(0);
 
   const rows = table.locator("tbody tr");
-  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
-
+  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Near");
+  
   await table.locator("thead").getByRole("button", { name: "Datum" }).click();
-  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Near");
+  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
   await page.getByRole("switch", { name: "Alle Termine" }).click();
-  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Near");
+  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
 
   const scrollViewport = table.locator(":scope > div").first();
   const scrollMeta = await scrollViewport.evaluate((element) => ({

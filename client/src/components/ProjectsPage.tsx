@@ -414,7 +414,11 @@ export function ProjectsPage({
                 return (
                   <ProjectEntityCard
                     key={project.id}
-                    project={project}
+                    project={{
+                      ...project,
+                      orderNumber: project.orderNumber?.trim() || null,
+                      tags: [...(project.tags ?? [])],
+                    }}
                     onDoubleClick={handleSelect}
                   />
                 );

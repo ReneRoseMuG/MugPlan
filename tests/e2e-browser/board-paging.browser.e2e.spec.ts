@@ -35,17 +35,18 @@ test.describe("board paging under load", () => {
     await page.getByTestId("nav-kunden").click();
 
     const board = page.getByTestId("list-customers");
-    await expect(board.locator('[data-testid^="customer-card-"]')).toHaveCount(50);
+    const customerCards = board.locator(':scope > [data-testid^="customer-card-"]');
+    await expect(customerCards).toHaveCount(50);
     await expect(page.getByTestId("text-customers-page-state")).toContainText("Seite 1 von 2");
 
     await page.getByTestId("button-customers-page-next").click();
     await expect(page.getByTestId("text-customers-page-state")).toContainText("Seite 2 von 2");
-    await expect.poll(async () => board.locator('[data-testid^="customer-card-"]').count()).toBeGreaterThan(0);
-    await expect.poll(async () => board.locator('[data-testid^="customer-card-"]').count()).toBeLessThanOrEqual(10);
+    await expect.poll(async () => customerCards.count()).toBeGreaterThan(0);
+    await expect.poll(async () => customerCards.count()).toBeLessThanOrEqual(10);
 
     await page.locator("#customer-filter-last-name").fill("FT30-BROWSER-CUST-054");
     await expect(page.getByTestId("text-customers-page-state")).toContainText("Seite 1 von 1");
-    await expect(board.locator('[data-testid^="customer-card-"]')).toHaveCount(1);
+    await expect(customerCards).toHaveCount(1);
   });
 
   test("projects board paginates large result sets and resets on filter", async ({ page }) => {
@@ -64,16 +65,17 @@ test.describe("board paging under load", () => {
     await page.getByTestId("nav-projekte").click();
 
     const board = page.getByTestId("list-projects");
-    await expect(board.locator('[data-testid^="project-card-"]')).toHaveCount(50);
+    const projectCards = board.locator(':scope > [data-testid^="project-card-"]');
+    await expect(projectCards).toHaveCount(50);
     await expect(page.getByTestId("text-projects-page-state")).toContainText("Seite 1 von 2");
 
     await page.getByTestId("button-projects-page-next").click();
     await expect(page.getByTestId("text-projects-page-state")).toContainText("Seite 2 von 2");
-    await expect.poll(async () => board.locator('[data-testid^="project-card-"]').count()).toBeGreaterThan(0);
-    await expect.poll(async () => board.locator('[data-testid^="project-card-"]').count()).toBeLessThanOrEqual(10);
+    await expect.poll(async () => projectCards.count()).toBeGreaterThan(0);
+    await expect.poll(async () => projectCards.count()).toBeLessThanOrEqual(10);
 
     await page.locator("#project-filter-title").fill("Project 054");
     await expect(page.getByTestId("text-projects-page-state")).toContainText("Seite 1 von 1");
-    await expect(board.locator('[data-testid^="project-card-"]')).toHaveCount(1);
+    await expect(projectCards).toHaveCount(1);
   });
 });

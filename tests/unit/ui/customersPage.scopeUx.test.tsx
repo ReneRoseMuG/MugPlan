@@ -25,10 +25,12 @@ const booleanToggleCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  keepPreviousData: Symbol("keepPreviousData"),
 }));
 
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
+  useSetting: () => undefined,
 }));
 
 vi.mock("@/hooks/useListFilters", () => ({

@@ -3,7 +3,7 @@ import { de } from "date-fns/locale";
 import { isManagedReportExclusionTagName } from "@shared/appointmentCancellation";
 import type { z } from "zod";
 import { api } from "@shared/routes";
-import { mergeTourPrintTags, mergeUniqueTags } from "./tag-utils";
+import { mergeTourPrintTags } from "./tag-utils";
 
 export const TOUR_PRINT_PAGE_WIDTH_MM = 297;
 export const TOUR_PRINT_PAGE_HEIGHT_MM = 210;
@@ -292,7 +292,7 @@ function paginateWeeks(meta: TourPrintDocumentMeta, weeks: TourPrintWeek[]): Wor
       const page = ensurePageWithSpace(pages, meta, minimumRequiredHeight);
       const chunkAppointments: TourPrintPreviewAppointment[] = [];
       let chunkHeight = WEEK_HEADER_HEIGHT + TABLE_HEADER_HEIGHT + (continuedFromPrevious ? WEEK_CONTINUATION_BADGE_HEIGHT : 0);
-      let showWeekNotes = !continuedFromPrevious;
+      const showWeekNotes = !continuedFromPrevious;
 
       if (showWeekNotes) {
         chunkHeight += weekNoteHeight;

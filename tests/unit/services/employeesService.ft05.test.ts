@@ -21,29 +21,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
-  getEmployeesMock,
+  getEmployeeListItemsMock,
   getEmployeeMock,
   createEmployeeRepoMock,
   updateEmployeeWithVersionMock,
   toggleEmployeeActiveWithVersionMock,
+  getEmployeeTagsByEmployeeIdsMock,
   getTeamMock,
   getTourMock,
 } = vi.hoisted(() => ({
-  getEmployeesMock: vi.fn(),
+  getEmployeeListItemsMock: vi.fn(),
   getEmployeeMock: vi.fn(),
   createEmployeeRepoMock: vi.fn(),
   updateEmployeeWithVersionMock: vi.fn(),
   toggleEmployeeActiveWithVersionMock: vi.fn(),
+  getEmployeeTagsByEmployeeIdsMock: vi.fn(),
   getTeamMock: vi.fn(),
   getTourMock: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/employeesRepository", () => ({
-  getEmployees: getEmployeesMock,
+  getEmployeeListItems: getEmployeeListItemsMock,
   getEmployee: getEmployeeMock,
   createEmployee: createEmployeeRepoMock,
   updateEmployeeWithVersion: updateEmployeeWithVersionMock,
   toggleEmployeeActiveWithVersion: toggleEmployeeActiveWithVersionMock,
+}));
+
+vi.mock("../../../server/repositories/tagRelationsRepository", () => ({
+  getEmployeeTagsByEmployeeIds: getEmployeeTagsByEmployeeIdsMock,
 }));
 
 vi.mock("../../../server/repositories/teamsRepository", () => ({
@@ -66,6 +72,7 @@ import {
 describe("FT05 unit: employeesService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getEmployeeTagsByEmployeeIdsMock.mockResolvedValue(new Map());
   });
 
   it("createEmployee builds fullName and returns repository employee", async () => {
@@ -101,13 +108,13 @@ describe("FT05 unit: employeesService", () => {
   });
 
   it("listEmployees enforces active scope for non-admin and respects requested scope for admin", async () => {
-    getEmployeesMock.mockResolvedValue([]);
+    getEmployeeListItemsMock.mockResolvedValue([]);
 
     await listEmployees("DISPONENT", "inactive");
-    expect(getEmployeesMock).toHaveBeenLastCalledWith("active");
+    expect(getEmployeeListItemsMock).toHaveBeenLastCalledWith("active");
 
     await listEmployees("ADMIN", "inactive");
-    expect(getEmployeesMock).toHaveBeenLastCalledWith("inactive");
+    expect(getEmployeeListItemsMock).toHaveBeenLastCalledWith("inactive");
   });
 
   it("getEmployeeWithRelations returns null for non-admin when employee is inactive", async () => {

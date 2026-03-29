@@ -51,19 +51,18 @@ test("zeigt Telefonnummer im Kundendaten-Hover-Preview wenn am Kunden hinterlegt
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
 
-  const hoverTrigger = appointmentPanel.getByTestId("week-customer-hover-trigger");
+  const hoverTrigger = appointmentPanel.getByTestId("week-customer-panel");
   await hoverTrigger.hover();
 
-  const phoneField = page.getByTestId("week-customer-preview-phone");
-  await expect(phoneField).toBeVisible({ timeout: 5_000 });
-  await expect(phoneField).toContainText("0175-9988776");
-  await expect(phoneField).not.toContainText("nicht hinterlegt");
+  await expect(page.getByText("0175-9988776")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("nicht hinterlegt")).toHaveCount(0);
 });
 
-test("zeigt 'nicht hinterlegt' im Kundendaten-Hover-Preview wenn keine Telefonnummer hinterlegt", async ({ page }) => {
+test("laesst den Kundendaten-Hover-Preview ohne Telefonzeile offen wenn keine Telefonnummer hinterlegt ist", async ({ page }) => {
   const customer = await customersService.createCustomer({
     ...buildCustomerPayload("FT03-PHONE-WITHOUT"),
     phone: null,
+    addressLine1: "Telefonloser Platz 7",
   });
   const project = await createProjectFixture({
     prefix: "FT03-PHONE-WITHOUT",
@@ -80,10 +79,9 @@ test("zeigt 'nicht hinterlegt' im Kundendaten-Hover-Preview wenn keine Telefonnu
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
 
-  const hoverTrigger = appointmentPanel.getByTestId("week-customer-hover-trigger");
+  const hoverTrigger = appointmentPanel.getByTestId("week-customer-panel");
   await hoverTrigger.hover();
 
-  const phoneField = page.getByTestId("week-customer-preview-phone");
-  await expect(phoneField).toBeVisible({ timeout: 5_000 });
-  await expect(phoneField).toContainText("nicht hinterlegt");
+  await expect(page.getByText("Telefonloser Platz 7")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("nicht hinterlegt")).toHaveCount(0);
 });

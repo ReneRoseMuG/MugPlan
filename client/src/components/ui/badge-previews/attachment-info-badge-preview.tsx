@@ -7,6 +7,9 @@ import { useSetting } from "@/hooks/useSettings";
 import type { InfoBadgePreview } from "@/components/ui/info-badge";
 import type { ReactNode } from "react";
 
+export const ATTACHMENT_PREVIEW_CLOSE_ALL_EVENT = "mugplan:attachment-preview-close-all";
+export const ATTACHMENT_PREVIEW_SUSPEND_EVENT = "mugplan:attachment-preview-suspend";
+
 export type AttachmentPreviewSize = "small" | "medium" | "large";
 
 type AttachmentPreviewDimensions = {
@@ -343,6 +346,7 @@ export function AttachmentPreviewTrigger({
   const previewId = openUrl ?? testId ?? originalName ?? "attachment-preview";
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isPreviewSuspended, setIsPreviewSuspended] = useState(false);
   const [dragPhase, setDragPhase] = useState<DragPhase>("idle");
   const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
 
@@ -367,6 +371,39 @@ export function AttachmentPreviewTrigger({
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleCloseAllPreviews = () => {
+      clearOpenTimer();
+      clearCloseTimer();
+      setIsPreviewOpen(false);
+      setDragPhase("idle");
+      keeper?.unregister(previewId);
+    };
+
+    const handlePreviewSuspend = (event: Event) => {
+      const nextSuspended = event instanceof CustomEvent && typeof event.detail === "boolean"
+        ? event.detail
+        : true;
+      setIsPreviewSuspended(nextSuspended);
+      if (nextSuspended) {
+        clearOpenTimer();
+        clearCloseTimer();
+        setIsPreviewOpen(false);
+        setDragPhase("idle");
+        keeper?.unregister(previewId);
+      }
+    };
+
+    window.addEventListener(ATTACHMENT_PREVIEW_CLOSE_ALL_EVENT, handleCloseAllPreviews);
+    window.addEventListener(ATTACHMENT_PREVIEW_SUSPEND_EVENT, handlePreviewSuspend);
+    return () => {
+      window.removeEventListener(ATTACHMENT_PREVIEW_CLOSE_ALL_EVENT, handleCloseAllPreviews);
+      window.removeEventListener(ATTACHMENT_PREVIEW_SUSPEND_EVENT, handlePreviewSuspend);
+    };
+  }, [keeper, previewId]);
 
   useClientLayoutEffect(() => {
     if (!isPreviewOpen || dragPhase !== "idle") return;
@@ -463,6 +500,7 @@ export function AttachmentPreviewTrigger({
   };
 
   const scheduleOpen = () => {
+    if (isPreviewSuspended) return;
     if (dragPhaseRef.current !== "idle") return;
     clearCloseTimer();
     clearOpenTimer();

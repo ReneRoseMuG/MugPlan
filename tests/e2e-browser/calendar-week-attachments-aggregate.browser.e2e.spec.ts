@@ -8,10 +8,12 @@
  * - Der Attachment-Badge der Wochenkarte erscheint bereits bei rein akkumulierten Kunden- oder Projektdokumenten.
  * - Der Badge zeigt den Gesamtzaehler ueber Kunde, Projekt und Termin.
  * - Das Hover listet die Dokumente mit Herkunftskennzeichnung Kunde, Projekt und Termin.
+ * - Der Badge bleibt auch ohne Dokumente sichtbar und zeigt dann den Zaehler 0 mit leerem Hover-Zustand.
  *
  * Fehlerfaelle:
  * - Nur direkte Terminanhaenge machen den Badge sichtbar.
  * - Gesamtzaehler und Hover-Inhalt laufen auseinander.
+ * - Der Leerzustand verschwindet komplett statt als sichtbarer 0-Badge dargestellt zu werden.
  *
  * Ziel:
  * Sicherstellen, dass die Wochenkarte dieselbe fachliche Dokumentensicht wie das Termin-Dokumentenpanel widerspiegelt.
@@ -93,7 +95,7 @@ test("zeigt aggregierten Attachment-Badge und Herkunftslabels fuer Kunde, Projek
   await expect(page.getByText(appointmentAttachment.originalName)).toBeVisible();
 });
 
-test("blendet den Attachment-Bereich aus wenn keine akkumulierten Dokumente vorhanden sind", async ({ page }) => {
+test("zeigt bei fehlenden akkumulierten Dokumenten einen sichtbaren 0-Badge mit leerem Hover-Zustand", async ({ page }) => {
   const customer = await createCustomerFixture("FT24-BROWSER-ATT-EMPTY-CUST");
   const project = await createProjectFixture({
     prefix: "FT24-BROWSER-ATT-EMPTY-PROJ",
@@ -109,5 +111,9 @@ test("blendet den Attachment-Bereich aus wenn keine akkumulierten Dokumente vorh
 
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   await expect(appointmentPanel).toBeVisible({ timeout: 10_000 });
-  await expect(appointmentPanel.getByTestId("week-appointment-attachments-hover-trigger")).toHaveCount(0);
+  const hoverTrigger = appointmentPanel.getByTestId("week-appointment-attachments-hover-trigger");
+  await expect(hoverTrigger).toBeVisible();
+  await expect(hoverTrigger).toContainText("0");
+  await hoverTrigger.hover();
+  await expect(page.getByText("Keine Anhänge vorhanden.")).toBeVisible({ timeout: 5_000 });
 });

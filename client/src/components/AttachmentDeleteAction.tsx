@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Minus, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import {
+  ATTACHMENT_PREVIEW_CLOSE_ALL_EVENT,
+  ATTACHMENT_PREVIEW_SUSPEND_EVENT,
+} from "@/components/ui/badge-previews/attachment-info-badge-preview";
 import { invalidateAttachmentProjectionQueries } from "@/lib/attachment-invalidation";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +45,11 @@ export function AttachmentDeleteAction({
   const [confirmed, setConfirmed] = useState(false);
   const { toast } = useToast();
 
+  const setPreviewSuspended = (value: boolean) => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent(ATTACHMENT_PREVIEW_SUSPEND_EVENT, { detail: value }));
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (mode: "soft" | "hard") => {
       const baseUrl = deleteUrlByType[parentType](attachmentId);
@@ -64,10 +73,12 @@ export function AttachmentDeleteAction({
       } else {
         await invalidateAttachmentProjectionQueries();
       }
+      setPreviewSuspended(false);
       setConfirmed(false);
       toast({ title: "Anhang gelöscht" });
     },
     onError: (error) => {
+      setPreviewSuspended(false);
       const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
     },
@@ -79,7 +90,7 @@ export function AttachmentDeleteAction({
 
   return (
     <div
-      className="relative"
+      className={confirmed ? "relative z-[70]" : "relative"}
       onClick={(e) => e.stopPropagation()}
       data-testid={`attachment-delete-action-${attachmentId}`}
     >
@@ -89,7 +100,15 @@ export function AttachmentDeleteAction({
         variant="ghost"
         className="h-5 w-5"
         data-testid={`attachment-delete-trigger-${attachmentId}`}
-        onClick={() => setConfirmed((v) => !v)}
+        onClick={() => {
+          if (!confirmed && typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent(ATTACHMENT_PREVIEW_CLOSE_ALL_EVENT));
+            setPreviewSuspended(true);
+          } else {
+            setPreviewSuspended(false);
+          }
+          setConfirmed((v) => !v);
+        }}
         aria-expanded={confirmed}
       >
         <Minus className="w-3 h-3" />
@@ -97,7 +116,7 @@ export function AttachmentDeleteAction({
 
       {/* Confirmation panel — always in the tree, visibility controlled via CSS */}
       <div
-        className={`absolute right-0 top-full z-50 flex w-56 flex-col gap-1 rounded border bg-popover p-2 text-sm shadow${confirmed ? "" : " hidden"}`}
+        className={`absolute right-0 top-full z-[70] flex w-56 flex-col gap-1 rounded border bg-popover p-2 text-sm shadow${confirmed ? "" : " hidden"}`}
         data-testid={`attachment-delete-panel-${attachmentId}`}
         aria-hidden={!confirmed}
       >
@@ -126,7 +145,10 @@ export function AttachmentDeleteAction({
           size="sm"
           variant="ghost"
           disabled={deleteMutation.isPending}
-          onClick={() => setConfirmed(false)}
+          onClick={() => {
+            setPreviewSuspended(false);
+            setConfirmed(false);
+          }}
         >
           <X className="h-3 w-3" />
           Abbrechen

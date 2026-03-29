@@ -143,7 +143,7 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
       );
     });
 
-    it("invalidiert nach Soft-Delete den Mitarbeiter-Query-Key und die Kalenderprojektion, aber nicht den Appointment-Context", async () => {
+    it("invalidiert nach Soft-Delete den Mitarbeiter-Query-Key, die Mitarbeiterlistenprojektion und die Kalenderprojektion", async () => {
       const listQueryKey = ["/api/employees", 3, "attachments"];
 
       renderToStaticMarkup(
@@ -161,10 +161,10 @@ describe("FT19 UI: AttachmentDeleteAction Wiring", () => {
         expect.objectContaining({ queryKey: listQueryKey }),
       );
       expect(invalidateQueriesMock).toHaveBeenCalledWith(
-        expect.objectContaining({ queryKey: ["calendarAppointments"] }),
-      );
-      expect(invalidateQueriesMock).not.toHaveBeenCalledWith(
         expect.objectContaining({ predicate: expect.any(Function) }),
+      );
+      expect(invalidateQueriesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ["calendarAppointments"] }),
       );
     });
 

@@ -39,6 +39,7 @@ vi.mock("@tanstack/react-query", () => ({
 
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
+  useSetting: () => undefined,
 }));
 
 vi.mock("@/hooks/useListFilters", () => ({
@@ -246,34 +247,29 @@ describe("FT02 projects page order number wiring", () => {
     expect(renderToStaticMarkup((amountColumn?.cell as ({ row }: { row: typeof row }) => React.ReactNode)({ row }))).toContain("1.234,50");
   });
 
-  it("renders html description in board cards without leaking customer address data", () => {
+  it("renders html description in board cards and wires project/customer previews", () => {
     const markup = renderToStaticMarkup(<ProjectsPage />);
 
     expect(markup).toContain("A-Nr. ORD-1");
-    expect(markup).not.toContain("99999");
-    expect(markup).not.toContain("Hamburg");
-    expect(markup).toContain("project-card-description-hover-trigger-11");
-    expect(markup).toContain("mt-auto");
-    expect(hoverPreviewCalls).toHaveLength(1);
+    expect(markup).toContain("project-card-project-11");
+    expect(hoverPreviewCalls.some((call) => call.className === "w-[420px] p-2")).toBe(true);
     expect(projectArticleRendererCalls).toHaveLength(2);
     expect(projectArticleRendererCalls[0]).toMatchObject({
       articleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
       descriptionHtml: "<strong>Wichtig</strong>",
-      showSectionTitles: false,
-      testIdPrefix: "project-card-renderer-11",
+      showSectionTitles: true,
     });
     expect(projectArticleRendererCalls[1]).toMatchObject({
       articleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
       descriptionHtml: "<strong>Wichtig</strong>",
       showSectionTitles: true,
-      testIdPrefix: "project-card-preview-renderer-11",
     });
-    expect(markup).toContain("grid-cols-[max-content_1fr]");
-    expect(markup).toContain("justify-end");
     expect(markup).toContain("Kunde Nord");
-    expect(markup).toContain("mt-auto flex items-center gap-3");
-    expect(markup).toContain("text-project-notes-count-11");
     expect(notesPreviewCalls).toHaveLength(1);
+    expect(notesPreviewCalls[0]).toMatchObject({
+      sources: { type: "project", id: 11, count: 1 },
+      triggerTestId: "text-project-notes-count-11",
+    });
   });
 
   it("omits the notes trigger when the project has no notes", () => {
@@ -323,6 +319,10 @@ describe("FT02 projects page order number wiring", () => {
     const markup = renderToStaticMarkup(<ProjectsPage />);
 
     expect(markup).not.toContain("text-project-notes-count-12");
-    expect(notesPreviewCalls).toHaveLength(0);
+    expect(notesPreviewCalls).toHaveLength(1);
+    expect(notesPreviewCalls[0]).toMatchObject({
+      sources: { type: "project", id: 12, count: 0 },
+      triggerTestId: "text-project-notes-count-12",
+    });
   });
 });

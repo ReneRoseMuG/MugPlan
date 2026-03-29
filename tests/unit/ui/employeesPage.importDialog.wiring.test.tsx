@@ -145,6 +145,15 @@ vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () =>
 
 vi.mock("lucide-react", () => ({
   Users: () => <span>users</span>,
+  FolderKanban: () => <span>folder-kanban</span>,
+  UsersRound: () => <span>users-round</span>,
+  UserRound: () => <span>user-round</span>,
+  MapPin: () => <span>map-pin</span>,
+  Layers: () => <span>layers</span>,
+  CalendarRange: () => <span>calendar-range</span>,
+  ShieldAlert: () => <span>shield-alert</span>,
+  FileText: () => <span>file-text</span>,
+  Settings: () => <span>settings</span>,
   Phone: () => <span>phone</span>,
   Mail: () => <span>mail</span>,
   Plus: () => <span>plus</span>,

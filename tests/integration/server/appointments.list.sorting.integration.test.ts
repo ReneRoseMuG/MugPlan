@@ -2,15 +2,15 @@
  * Test Scope:
  *
  * Feature: FT28 – Terminliste Sortierung in Tour-/Mitarbeiter-Formular
- * Use Case: UC Terminliste standardmaessig abwaerts nach Datum
+ * Use Case: UC Terminliste standardmaessig aufsteigend nach Datum
  *
  * Abgedeckte Regeln:
- * - /api/appointments/list liefert im Tour-Kontext standardmaessig abwaerts nach Datum/Zeit/ID.
- * - /api/appointments/list liefert im Mitarbeiter-Kontext standardmaessig abwaerts nach Datum.
+ * - /api/appointments/list liefert im Tour-Kontext standardmaessig aufsteigend nach Datum/Zeit/ID.
+ * - /api/appointments/list liefert im Mitarbeiter-Kontext standardmaessig aufsteigend nach Datum.
  * - /api/appointments/list filtert optional ueber Auftragsnummer per Teiltreffer.
  *
  * Fehlerfaelle:
- * - Liste wird nicht abwaerts ausgeliefert.
+ * - Liste wird nicht aufsteigend ausgeliefert.
  * - Filterkontext (tourId/employeeId) liefert Fremdtermine.
  * - Auftragsnummer-Filter schliesst gueltige Teiltreffer aus.
  *
@@ -49,7 +49,7 @@ beforeEach(() => {
 });
 
 describe("FT28 integration: appointments list default sorting", () => {
-  it("returns tour-filtered list descending by date/time/id", async () => {
+  it("returns tour-filtered list ascending by date/time/id", async () => {
     const agent = await loginAdminAgent(app);
     const tour = await createTourFixture("#0099aa");
     const { project } = await createProjectFixture("FT28-TOUR-A");
@@ -90,11 +90,11 @@ describe("FT28 integration: appointments list default sorting", () => {
       .expect(200);
 
     const items = response.body.items as Array<{ id: number; tourId: number | null }>;
-    expect(items.map((entry) => entry.id)).toEqual([sameDateLater.id, sameDateEarlier.id, older.id]);
+    expect(items.map((entry) => entry.id)).toEqual([older.id, sameDateEarlier.id, sameDateLater.id]);
     expect(items.every((entry) => entry.tourId === tour.id)).toBe(true);
   });
 
-  it("returns employee-filtered list descending by date", async () => {
+  it("returns employee-filtered list ascending by date", async () => {
     const agent = await loginAdminAgent(app);
     const employee = await createEmployeeFixture("FT28-EMP");
     const { project } = await createProjectFixture("FT28-EMP-A");
@@ -131,7 +131,7 @@ describe("FT28 integration: appointments list default sorting", () => {
       .expect(200);
 
     const items = response.body.items as Array<{ id: number; employees: Array<{ id: number }> }>;
-    expect(items.map((entry) => entry.id)).toEqual([newest.id, middle.id, oldest.id]);
+    expect(items.map((entry) => entry.id)).toEqual([oldest.id, middle.id, newest.id]);
     expect(items.every((entry) => entry.employees.some((assigned) => assigned.id === employee.id))).toBe(true);
   });
 

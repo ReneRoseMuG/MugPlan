@@ -48,8 +48,6 @@ export function CalendarTourPrintPreviewDialog({
   });
 
   const pages = useMemo(() => (data ? buildTourPrintPages(data) : []), [data]);
-  const activePage = pages[activePageIndex] ?? null;
-
   useEffect(() => {
     if (!open) {
       setActivePageIndex(0);

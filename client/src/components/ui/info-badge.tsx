@@ -116,7 +116,7 @@ export function InfoBadge({
         <span className={usesSolidSurface ? "text-current" : "text-muted-foreground"}>{icon}</span>
         <div className={`min-w-0 ${isFooterStyle ? "shrink-0" : "flex-1"} ${usesSolidSurface ? "font-semibold text-current" : `font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}`}>{label}</div>
       </div>
-      <div className={`flex items-center justify-end shrink-0 overflow-hidden ${actionColumnClass}`}>
+      <div className={`flex items-center justify-end shrink-0 ${customAction ? "overflow-visible" : "overflow-hidden"} ${actionColumnClass}`}>
         {customAction ?? null}
         {!customAction && resolvedAction === "add" && (
           <PlusActionButton

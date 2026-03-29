@@ -113,10 +113,11 @@ test("Soft-Delete - Projekt: Anhang aus Liste entfernen, Counter und Hover-Previ
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
   await page.getByRole("button", { name: "Wochenübersicht" }).click();
   await expect(page.getByTestId(`week-appointment-panel-${appointment?.id}`)).toBeVisible({ timeout: 10_000 });
-  await expect(
-    page.getByTestId(`week-appointment-panel-${appointment?.id}`)
-      .getByTestId("week-appointment-attachments-hover-trigger"),
-  ).toHaveCount(0);
+  const updatedHoverTrigger = page
+    .getByTestId(`week-appointment-panel-${appointment?.id}`)
+    .getByTestId("week-appointment-attachments-hover-trigger");
+  await expect(updatedHoverTrigger).toBeVisible();
+  await expect(updatedHoverTrigger).toContainText("0");
 });
 
 test("Hard-Delete - Projekt: Anhang aus Liste und Counter entfernen", async ({ page }) => {
