@@ -24,6 +24,7 @@ const entityCardCalls: Array<Record<string, unknown>> = [];
 const appointmentPreviewCalls: Array<Record<string, unknown>> = [];
 const notesPreviewCalls: Array<Record<string, unknown>> = [];
 const attachmentPreviewCalls: Array<Record<string, unknown>> = [];
+const hoverPreviewCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -113,16 +114,20 @@ vi.mock("@/components/ui/hover-preview", () => ({
     children,
     preview,
     className,
+    ...props
   }: {
     children?: React.ReactNode;
     preview?: React.ReactNode;
     className?: string;
-  }) => (
-    <div data-testid="hover-preview-wrapper" className={className}>
-      <div data-testid="hover-preview-trigger">{children}</div>
-      <div data-testid="hover-preview-content">{preview}</div>
-    </div>
-  ),
+  }) => {
+    hoverPreviewCalls.push({ className, ...props });
+    return (
+      <div data-testid="hover-preview-wrapper" className={className}>
+        <div data-testid="hover-preview-trigger">{children}</div>
+        <div data-testid="hover-preview-content">{preview}</div>
+      </div>
+    );
+  },
 }));
 
 vi.mock("@/components/ui/project-article-description-renderer", () => ({
@@ -138,6 +143,7 @@ describe("FT02 projects page footer badge wiring", () => {
     appointmentPreviewCalls.length = 0;
     notesPreviewCalls.length = 0;
     attachmentPreviewCalls.length = 0;
+    hoverPreviewCalls.length = 0;
 
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map(),
@@ -242,6 +248,12 @@ describe("FT02 projects page footer badge wiring", () => {
       totalAttachmentsCount: 3,
     });
     expect(renderToStaticMarkup(entityCardCalls[0].headerMeta as React.ReactElement)).toContain("A-Nr. AUF-88");
+    expect(hoverPreviewCalls[1]).toMatchObject({
+      className: "w-[420px] p-2",
+      mode: "cursor",
+      cursorOffsetX: 20,
+      cursorOffsetY: 20,
+    });
   });
 
   it("keeps the notes badge visible with count 0", () => {

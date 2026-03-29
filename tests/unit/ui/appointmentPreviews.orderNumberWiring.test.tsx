@@ -17,6 +17,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const hoverPreviewCalls: Array<Record<string, unknown>> = [];
+
 vi.mock("@/components/ui/project-article-description-renderer", () => ({
   ProjectArticleDescriptionRenderer: ({ testIdPrefix }: { testIdPrefix: string }) => <div>{testIdPrefix}</div>,
 }));
@@ -25,15 +27,19 @@ vi.mock("@/components/ui/hover-preview", () => ({
   HoverPreview: ({
     children,
     preview,
+    ...props
   }: {
     children: React.ReactNode;
     preview: React.ReactNode;
-  }) => (
-    <div>
-      <div>{children}</div>
-      <div>{preview}</div>
-    </div>
-  ),
+  }) => {
+    hoverPreviewCalls.push(props);
+    return (
+      <div>
+        <div>{children}</div>
+        <div>{preview}</div>
+      </div>
+    );
+  },
 }));
 
 import { CalendarWeekAppointmentPanelProject } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanelProject";
@@ -41,6 +47,7 @@ import { CalendarWeekAppointmentPanelProject } from "../../../client/src/compone
 describe("FT03 appointment weekly panel wiring", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
+    hoverPreviewCalls.length = 0;
   });
 
   it("renders a visible project header with order number and project name", () => {
@@ -79,6 +86,11 @@ describe("FT03 appointment weekly panel wiring", () => {
 
     expect(withPreview).toContain("week-project-description-hover-trigger");
     expect(withPreview).toContain("week-project-hover-renderer");
+    expect(hoverPreviewCalls[0]).toMatchObject({
+      mode: "cursor",
+      cursorOffsetX: 20,
+      cursorOffsetY: 20,
+    });
     expect(withoutContent).not.toContain("week-project-renderer");
     expect(withoutContent).not.toContain("week-project-description-hover-trigger");
   });

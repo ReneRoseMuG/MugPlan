@@ -5,6 +5,8 @@ import { domainIcons } from "@/lib/domain-icons";
 import { cn } from "@/lib/utils";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 
+const PANEL_PREVIEW_CURSOR_OFFSET_PX = 20;
+
 type ProjectInfoPanelProps = {
   mode: "collapsed" | "expanded";
   hideHeader?: boolean;
@@ -128,8 +130,11 @@ export function ProjectInfoPanel({
           </div>
         )}
         closeDelay={80}
+        mode="cursor"
         side="right"
         align="start"
+        cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+        cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
         maxWidth={420}
         maxHeight={320}
       >

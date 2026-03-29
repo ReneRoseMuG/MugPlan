@@ -3,6 +3,8 @@ import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
 import { resolveProjectDisplayName } from "@/components/ui/project-info-panel";
 
+const PANEL_PREVIEW_CURSOR_OFFSET_PX = 20;
+
 export function CalendarWeekAppointmentPanelProject({
   projectName,
   projectOrderNumber,
@@ -61,8 +63,11 @@ export function CalendarWeekAppointmentPanelProject({
             </div>
           )}
           closeDelay={80}
+          mode="cursor"
           side="right"
           align="start"
+          cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+          cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
           maxWidth={420}
           maxHeight={320}
           className="z-[9999] w-[420px]"

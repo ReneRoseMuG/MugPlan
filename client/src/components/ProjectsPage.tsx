@@ -29,6 +29,8 @@ import { formatListDateTime } from "@/lib/list-display-format";
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
+const PANEL_PREVIEW_CURSOR_OFFSET_PX = 20;
+
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
 type ProjectSortKey = "title" | "customer" | "customerNumber" | "orderNumber";
@@ -480,8 +482,11 @@ export function ProjectsPage({
                               projectDescription={project.descriptionMd ?? null}
                             />
                           )}
+                          mode="cursor"
                           side="right"
                           align="start"
+                          cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+                          cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
                           maxWidth={420}
                           maxHeight={400}
                           openDelay={300}

@@ -20,19 +20,25 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+const hoverPreviewCalls: Array<Record<string, unknown>> = [];
+
 vi.mock("@/components/ui/hover-preview", () => ({
   HoverPreview: ({
     children,
     preview,
+    ...props
   }: {
     children?: React.ReactNode;
     preview?: React.ReactNode;
-  }) => (
-    <div data-testid="hover-preview-wrapper">
-      <div data-testid="hover-preview-trigger">{children}</div>
-      <div data-testid="hover-preview-content">{preview}</div>
-    </div>
-  ),
+  }) => {
+    hoverPreviewCalls.push(props);
+    return (
+      <div data-testid="hover-preview-wrapper">
+        <div data-testid="hover-preview-trigger">{children}</div>
+        <div data-testid="hover-preview-content">{preview}</div>
+      </div>
+    );
+  },
 }));
 
 vi.mock("@/lib/domain-icons", () => ({
@@ -56,6 +62,7 @@ describe("CustomerInfoPanel render", () => {
   };
 
   it("collapsed: rendert Name und Nummer im Trigger und HoverPreview-Wrapper im DOM", () => {
+    hoverPreviewCalls.length = 0;
     const markup = renderToStaticMarkup(
       <CustomerInfoPanel {...baseProps} mode="collapsed" />,
     );
@@ -63,6 +70,11 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("hover-preview-wrapper");
     expect(markup).toContain("Max Mustermann");
     expect(markup).toContain("K-42");
+    expect(hoverPreviewCalls[0]).toMatchObject({
+      mode: "cursor",
+      cursorOffsetX: 20,
+      cursorOffsetY: 20,
+    });
   });
 
   it("collapsed: Preview-Content enthaelt erweiterte Informationen", () => {

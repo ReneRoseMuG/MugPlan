@@ -3,6 +3,8 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import { domainIcons } from "@/lib/domain-icons";
 import { cn } from "@/lib/utils";
 
+const PANEL_PREVIEW_CURSOR_OFFSET_PX = 20;
+
 type CustomerInfoPanelProps = {
   mode: "collapsed" | "semiexpanded" | "expanded";
   hideHeader?: boolean;
@@ -139,8 +141,11 @@ export function CustomerInfoPanel({
           </div>
         )}
         closeDelay={80}
+        mode="cursor"
         side="right"
         align="start"
+        cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+        cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
         maxWidth={360}
       >
         <div
