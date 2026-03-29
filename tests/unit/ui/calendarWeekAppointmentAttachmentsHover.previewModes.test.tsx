@@ -124,6 +124,6 @@ describe("FT19/FT24 calendar week attachment hover preview modes", () => {
     expect(hoverCalls).toHaveLength(1);
     expect(hoverCalls[0]?.minWidth).toBeUndefined();
     expect(String(hoverCalls[0]?.className)).toContain("w-auto");
-    expect(markup).toContain("Anhaenge");
+    expect(markup).toContain("Anhänge");
   });
 });

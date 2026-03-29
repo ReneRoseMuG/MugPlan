@@ -11,7 +11,7 @@ import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProjectFilterPanel } from "@/components/ui/filter-panels/project-filter-panel";
 import { CustomerInfoPanel } from "@/components/ui/customer-info-panel";
-import { ProjectInfoPanel } from "@/components/ui/project-info-panel";
+import { ProjectInfoPanel, canOpenProjectInfoPreview } from "@/components/ui/project-info-panel";
 import { ProjectAttachmentsHover } from "@/components/ui/ProjectAttachmentsHover";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { defaultHeaderColor } from "@/lib/colors";
@@ -20,7 +20,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { HoverPreview } from "@/components/ui/hover-preview";
-import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
+import { EntityAppointmentsHoverPreview } from "@/components/ui/entity-appointments-hover-preview";
 import type { Project, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { domainIcons } from "@/lib/domain-icons";
@@ -323,7 +323,6 @@ export function ProjectsPage({
   );
 
   const ProjectsIcon = domainIcons.projects;
-  const CustomersIcon = domainIcons.customers;
   const tableFooter = (
     <ListPagingFooter
       summaryText={`${data?.total ?? 0} Einträge`}
@@ -420,6 +419,11 @@ export function ProjectsPage({
             >
               {projects.map((project) => {
                 const handleSelect = () => onSelectProject?.(project.id);
+                const canOpenProjectPreview = canOpenProjectInfoPreview(
+                  project.name,
+                  project.projectArticleItems,
+                  project.descriptionMd ?? null,
+                );
 
                 return (
                   <EntityCard
@@ -431,31 +435,28 @@ export function ProjectsPage({
                     testId={`project-card-${project.id}`}
                     onDoubleClick={handleSelect}
                     footer={(
-                      <div className="flex w-full flex-col gap-2">
-                        <AppointmentCountBadge
-                          count={project.plannedAppointmentsCount}
-                          testId={`text-project-planned-appointments-${project.id}`}
-                          fullWidth
-                        />
-                        {project.notesCount > 0 ? (
+                      <div className="flex w-full flex-col gap-1.5">
+                        <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+                          <EntityAppointmentsHoverPreview
+                            source={{ type: "project", id: project.id, count: project.plannedAppointmentsCount }}
+                            triggerTestId={`text-project-planned-appointments-${project.id}`}
+                          />
                           <EntityNotesHoverPreview
                             sourceMode="single-parent"
                             sources={{ type: "project", id: project.id, count: project.notesCount ?? 0 }}
                             triggerTestId={`text-project-notes-count-${project.id}`}
-                            fullWidth
                           />
-                        ) : null}
-                        <ProjectAttachmentsHover
-                          projectId={project.id}
-                          totalAttachmentsCount={project.attachmentsCount}
-                          fullWidth
-                        />
+                          <ProjectAttachmentsHover
+                            projectId={project.id}
+                            totalAttachmentsCount={project.attachmentsCount}
+                          />
+                        </div>
                         <EntityTagFooterRow tags={project.tags} testId={`project-card-tags-${project.id}`} />
                       </div>
                     )}
                     footerVisibility="visible"
                   >
-                    <div className="flex h-full flex-col gap-2 overflow-hidden">
+                    <div className="-mb-3 -mt-3 -mx-3 flex flex-col gap-1 overflow-hidden">
                       <CustomerInfoPanel
                         mode="collapsed"
                         fullName={project.customer.fullName}
@@ -467,9 +468,9 @@ export function ProjectsPage({
                         email={project.customer.email}
                         testId={`project-card-customer-${project.id}`}
                       />
-                      <HoverPreview
-                        preview={(
-                          <div className="w-[400px] rounded-lg bg-white p-2">
+                      {canOpenProjectPreview ? (
+                        <HoverPreview
+                          preview={(
                             <ProjectInfoPanel
                               mode="expanded"
                               hideHeader={true}
@@ -478,28 +479,45 @@ export function ProjectsPage({
                               projectArticleItems={project.projectArticleItems}
                               projectDescription={project.descriptionMd ?? null}
                             />
+                          )}
+                          side="right"
+                          align="start"
+                          maxWidth={420}
+                          maxHeight={400}
+                          openDelay={300}
+                          className="w-[420px] p-2"
+                        >
+                          <div
+                            className="shrink-0 overflow-hidden cursor-pointer"
+                            data-testid={`project-card-project-${project.id}`}
+                          >
+                            <ProjectInfoPanel
+                              mode="expanded"
+                              hideHeader={true}
+                              compact
+                              projectName={project.name}
+                              projectOrderNumber={project.orderNumber ?? null}
+                              projectArticleItems={project.projectArticleItems}
+                              projectDescription={project.descriptionMd ?? null}
+                            />
                           </div>
-                        )}
-                        side="right"
-                        align="start"
-                        maxWidth={420}
-                        maxHeight={400}
-                        openDelay={300}
-                      >
+                        </HoverPreview>
+                      ) : (
                         <div
-                          className="max-h-[5rem] overflow-hidden cursor-pointer"
+                          className="shrink-0 overflow-hidden"
                           data-testid={`project-card-project-${project.id}`}
                         >
                           <ProjectInfoPanel
                             mode="expanded"
                             hideHeader={true}
+                            compact
                             projectName={project.name}
                             projectOrderNumber={project.orderNumber ?? null}
                             projectArticleItems={project.projectArticleItems}
                             projectDescription={project.descriptionMd ?? null}
                           />
                         </div>
-                      </HoverPreview>
+                      )}
                       {!project.isActive ? (
                         <Badge variant="secondary" className="text-xs">
                           Inaktiv

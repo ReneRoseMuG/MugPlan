@@ -86,7 +86,7 @@ export function EntityCard({
       </div>
       <div className="p-4 flex-1">{children}</div>
       {footer && (
-        <div className={`${footerVisibility === "visible" ? "flex" : "hidden"} px-4 py-2 border-t border-border bg-slate-50 items-center justify-end gap-2`}>
+        <div className={`${footerVisibility === "visible" ? "flex" : "hidden"} px-1 py-2 border-t border-border bg-slate-50 items-center justify-end gap-2`}>
           {footer}
         </div>
       )}

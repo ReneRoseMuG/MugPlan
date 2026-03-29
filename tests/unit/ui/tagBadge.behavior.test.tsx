@@ -55,6 +55,8 @@ describe("FT28 UI: TagBadge behavior", () => {
     expect(badgeCalls[0]).toMatchObject({
       label: "Syst.",
       color: "#112233",
+      foregroundColor: "#ffffff",
+      visualStyle: "default",
       action: "remove",
       onAdd,
       onRemove,

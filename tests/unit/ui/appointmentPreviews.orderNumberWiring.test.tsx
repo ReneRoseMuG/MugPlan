@@ -82,4 +82,20 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(withoutContent).not.toContain("week-project-renderer");
     expect(withoutContent).not.toContain("week-project-description-hover-trigger");
   });
+
+  it("renders den Projekt-Fallback ohne Hover-Trigger, wenn kein Projekt zugeordnet ist", () => {
+    const markup = renderToStaticMarkup(
+      <CalendarWeekAppointmentPanelProject
+        projectName=""
+        projectOrderNumber={null}
+        projectArticleItems={[]}
+        projectDescription={null}
+        enableFullDescriptionPreview
+      />,
+    );
+
+    expect(markup).toContain("Kein Auftrag hinterlegt");
+    expect(markup).not.toContain("week-project-description-hover-trigger");
+    expect(markup).not.toContain("week-project-hover-renderer");
+  });
 });

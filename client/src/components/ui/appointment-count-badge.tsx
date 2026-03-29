@@ -1,12 +1,19 @@
+import React from "react";
 import { Calendar } from "lucide-react";
 
 interface AppointmentCountBadgeProps {
   count: number;
   testId?: string;
   fullWidth?: boolean;
+  label?: string;
 }
 
-export function AppointmentCountBadge({ count, testId, fullWidth = false }: AppointmentCountBadgeProps) {
+export function AppointmentCountBadge({
+  count,
+  testId,
+  fullWidth = false,
+  label = "Geplante Termine",
+}: AppointmentCountBadgeProps) {
   return (
     <div
       className={`mt-1 rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 ${fullWidth ? "block w-full self-stretch" : ""}`}
@@ -15,7 +22,7 @@ export function AppointmentCountBadge({ count, testId, fullWidth = false }: Appo
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1">
           <Calendar className="h-3 w-3" />
-          Geplante Termine
+          {label}
         </span>
         <span>{count}</span>
       </div>

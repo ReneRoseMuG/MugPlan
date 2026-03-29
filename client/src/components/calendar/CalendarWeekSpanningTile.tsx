@@ -117,27 +117,29 @@ export function CalendarWeekSpanningTile({
   );
 
   const footerContentPanels = (
-    <div className="space-y-1.5">
-      <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-      <CalendarWeekAppointmentNotesHover
-        appointmentId={appointment.id}
-        customerId={appointment.customer.id}
-        projectId={appointment.projectId}
-        customerNotesCount={appointment.customerNotesCount ?? 0}
-        projectNotesCount={appointment.projectNotesCount ?? 0}
-        appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
-      />
-      <CalendarWeekAppointmentAttachmentsHover
-        appointmentId={appointment.id}
-        totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
-      />
+    <div className="space-y-1">
+      <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+        <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+        <CalendarWeekAppointmentNotesHover
+          appointmentId={appointment.id}
+          customerId={appointment.customer.id}
+          projectId={appointment.projectId}
+          customerNotesCount={appointment.customerNotesCount ?? 0}
+          projectNotesCount={appointment.projectNotesCount ?? 0}
+          appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+        />
+        <CalendarWeekAppointmentAttachmentsHover
+          appointmentId={appointment.id}
+          totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
+        />
+      </div>
       <EntityTagFooterRow tags={mergedTags} testId={`week-spanning-tile-tags-${appointment.id}`} />
     </div>
   );
 
   const bodyContent = (
-    <div className="flex h-full min-h-0 flex-col bg-white/90 pb-1.5">
-      <div className="min-h-0 space-y-1.5 overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col bg-white/90 pb-1">
+      <div className="min-h-0 space-y-1 overflow-hidden">
         {mainContentPanels}
       </div>
       <div className="mt-auto shrink-0">
@@ -219,7 +221,7 @@ export function CalendarWeekSpanningTile({
       </div>
       {isFilledMode ? (
         <div
-          className="min-h-0 bg-white/90 p-1.5"
+          className="min-h-0 bg-white/90 p-1"
           style={{ gridColumn: `1 / span ${visibleColumns}`, gridRow: 2 }}
           data-testid={`week-spanning-tile-body-filled-${appointment.id}`}
         >
@@ -230,7 +232,7 @@ export function CalendarWeekSpanningTile({
           {headerDays.map((headerDay, dayIndex) => (
             <div
               key={`week-spanning-tile-body-split-${appointment.id}-${headerDay.key}`}
-              className="min-h-0 bg-white/90 p-1.5"
+              className="min-h-0 bg-white/90 p-1"
               style={{
                 gridColumn: `${dayIndex + 1} / span 1`,
                 gridRow: 2,
@@ -257,7 +259,7 @@ export function CalendarWeekSpanningTile({
             }}
             aria-hidden
           />
-          <div className="min-h-0 p-1.5" style={{ width: bodyColumnWidth }}>
+          <div className="min-h-0 p-1" style={{ width: bodyColumnWidth }}>
             {bodyContent}
           </div>
           <div
@@ -273,7 +275,7 @@ export function CalendarWeekSpanningTile({
       ) : (
         <>
           <div
-            className="min-h-0 p-1.5"
+            className="min-h-0 p-1"
             style={{ gridColumn: "1 / span 1", gridRow: 2 }}
             data-testid={`week-spanning-tile-body-standard-${appointment.id}`}
           >

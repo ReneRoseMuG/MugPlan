@@ -57,6 +57,9 @@ export function EmployeeAttachmentsPanel({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "attachments"] });
+      void queryClient.invalidateQueries({
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/employees",
+      });
       toast({ title: "Dokument hochgeladen" });
     },
     onError: (error) => {

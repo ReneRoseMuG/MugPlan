@@ -1,6 +1,7 @@
 import { HoverPreview } from "@/components/ui/hover-preview";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
+import { resolveProjectDisplayName } from "@/components/ui/project-info-panel";
 
 export function CalendarWeekAppointmentPanelProject({
   projectName,
@@ -19,19 +20,24 @@ export function CalendarWeekAppointmentPanelProject({
 }) {
   const compactContentClassName = "max-h-24 overflow-hidden";
   const fullDescriptionClassName = "max-h-[280px] overflow-y-auto text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5";
-  const resolvedProjectHeader = [projectOrderNumber?.trim() || "-", projectName].join(" - ");
+  const resolvedProjectName = resolveProjectDisplayName(projectName);
+  const hasProjectReference = resolvedProjectName !== "Kein Auftrag hinterlegt";
+  const resolvedProjectHeader = hasProjectReference
+    ? [projectOrderNumber?.trim() || "-", resolvedProjectName].join(" - ")
+    : resolvedProjectName;
   const normalizedDescriptionText = (projectDescription ?? "")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .trim();
   const hasProjectContent = projectArticleItems.some((item) => item.label.trim().length > 0 && item.value.trim().length > 0)
     || normalizedDescriptionText.length > 0;
+  const canOpenDescriptionPreview = hasProjectReference && hasProjectContent && enableFullDescriptionPreview;
 
   return (
     <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
       {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
       <div className="text-xs font-semibold text-slate-800" data-testid="week-project-header">{resolvedProjectHeader}</div>
-      {!enableFullDescriptionPreview && hasProjectContent && (
+      {!canOpenDescriptionPreview && hasProjectContent && (
         <div className={compactContentClassName}>
           <ProjectArticleDescriptionRenderer
             articleItems={projectArticleItems}
@@ -40,7 +46,7 @@ export function CalendarWeekAppointmentPanelProject({
           />
         </div>
       )}
-      {enableFullDescriptionPreview && hasProjectContent && (
+      {canOpenDescriptionPreview && (
         <HoverPreview
           preview={(
             <div className="rounded-lg bg-white p-2">

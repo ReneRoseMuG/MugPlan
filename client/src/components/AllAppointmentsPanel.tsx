@@ -31,12 +31,14 @@ interface AllAppointmentsPanelProps {
   title: string;
   icon: ReactNode;
   items: AllAppointmentsPanelItem[];
+  totalCount?: number;
   todayBerlin: string;
   compact?: boolean;
   isLoading?: boolean;
   helpKey?: string;
   addAction?: AllAppointmentsPanelAction;
   emptyStateLabel?: string;
+  footerHint?: ReactNode;
   className?: string;
   readOnly?: boolean;
 }
@@ -45,12 +47,14 @@ export function AllAppointmentsPanel({
   title,
   icon,
   items,
+  totalCount,
   todayBerlin,
   compact = false,
   isLoading = false,
   helpKey,
   addAction,
   emptyStateLabel,
+  footerHint,
   className,
   readOnly = false,
 }: AllAppointmentsPanelProps) {
@@ -61,7 +65,7 @@ export function AllAppointmentsPanel({
 
   return (
     <SidebarChildPanel
-      title={`${title} (${items.length})`}
+      title={`${title} (${totalCount ?? items.length})`}
       icon={icon}
       helpKey={helpKey}
       addAction={addAction}
@@ -96,6 +100,10 @@ export function AllAppointmentsPanel({
                 />
               ))}
             </div>
+
+            {footerHint ? (
+              <p className="px-1 text-[11px] text-slate-500">{footerHint}</p>
+            ) : null}
 
             {hasHistoricalItems ? (
               <>

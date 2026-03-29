@@ -24,12 +24,14 @@ export function TagBadge({
   testId,
 }: TagBadgeProps) {
   const iconClassName = size === "sm" ? "h-3 w-3" : "h-4 w-4";
+  const visualStyle = size === "sm" ? "footer" : "default";
 
   return (
     <ColoredInfoBadge
       icon={<TagIcon className={iconClassName} />}
       label={trimTagLabel(tag.name)}
       color={tag.color}
+      foregroundColor="#ffffff"
       action={action}
       onAdd={onAdd}
       onRemove={onRemove}
@@ -37,6 +39,7 @@ export function TagBadge({
       fullWidth={fullWidth}
       testId={testId}
       preview={createTagBadgePreview(tag.name)}
+      visualStyle={visualStyle}
     />
   );
 }

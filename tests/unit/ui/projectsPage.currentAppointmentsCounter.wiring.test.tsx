@@ -2,17 +2,16 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Projektkarte zeigt den Footer-Baustein fuer geplante Termine mit dem gelieferten Zaehlerwert.
- * - Die Projektkarte bindet fuer Notizen den wiederverwendbaren EntityNotesHoverPreview-Trigger.
- * - Die Projektkarte teilt die Footer-Zeile 2:1 fuer Termine und Notizen auf.
+ * - Die Projektkarte bindet die gemeinsame Footer-Badge-Zeile für Termine, Notizen und Anhänge.
+ * - Notiz-Badges bleiben auch bei `0` sichtbar.
  * - Der Kartenfooter bleibt explizit sichtbar.
  *
- * Fehlerfaelle:
- * - Footer-Counter oder Notiz-Trigger gehen bei Refactorings verloren.
- * - Der Footer wird nicht mehr sichtbar an EntityCard uebergeben.
+ * Fehlerfälle:
+ * - Footer-Badges gehen bei Refactorings verloren.
+ * - Projekt-Notizen werden bei `0` weiterhin ausgeblendet.
  *
  * Ziel:
- * Den Projektkarten-Footer ueber gerenderte Komponenten-Props statt ueber Quelltext-Strings absichern.
+ * Den Projektkarten-Footer über gerenderte Komponenten-Props statt über Quelltext-Strings absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -22,8 +21,9 @@ const useQueryMock = vi.fn();
 const useSettingsMock = vi.fn();
 const useListFiltersMock = vi.fn();
 const entityCardCalls: Array<Record<string, unknown>> = [];
-const appointmentBadgeCalls: Array<Record<string, unknown>> = [];
+const appointmentPreviewCalls: Array<Record<string, unknown>> = [];
 const notesPreviewCalls: Array<Record<string, unknown>> = [];
+const attachmentPreviewCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -85,23 +85,12 @@ vi.mock("@/components/ui/entity-card", () => ({
   },
 }));
 
-vi.mock("@/components/ui/appointment-count-badge", () => ({
-  AppointmentCountBadge: (props: Record<string, unknown>) => {
-    appointmentBadgeCalls.push(props);
-    return (
-      <div data-testid={String(props.testId)}>
-        Geplante Termine:{String(props.count)}
-      </div>
-    );
+vi.mock("@/components/ui/entity-appointments-hover-preview", () => ({
+  EntityAppointmentsHoverPreview: (props: Record<string, unknown>) => {
+    appointmentPreviewCalls.push(props);
+    const source = props.source as { count?: number } | undefined;
+    return <span>Termine:{String(source?.count ?? 0)}</span>;
   },
-}));
-
-vi.mock("@/components/ui/hover-preview", () => ({
-  HoverPreview: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-}));
-
-vi.mock("@/components/ui/project-article-description-renderer", () => ({
-  ProjectArticleDescriptionRenderer: () => <div>project-article-renderer</div>,
 }));
 
 vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
@@ -112,18 +101,43 @@ vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
   },
 }));
 
-vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
-  createAppointmentWeeklyPanelPreview: vi.fn(() => <div>preview</div>),
+vi.mock("@/components/ui/ProjectAttachmentsHover", () => ({
+  ProjectAttachmentsHover: (props: Record<string, unknown>) => {
+    attachmentPreviewCalls.push(props);
+    return <span>Anhänge:{String(props.totalAttachmentsCount ?? 0)}</span>;
+  },
+}));
+
+vi.mock("@/components/ui/hover-preview", () => ({
+  HoverPreview: ({
+    children,
+    preview,
+    className,
+  }: {
+    children?: React.ReactNode;
+    preview?: React.ReactNode;
+    className?: string;
+  }) => (
+    <div data-testid="hover-preview-wrapper" className={className}>
+      <div data-testid="hover-preview-trigger">{children}</div>
+      <div data-testid="hover-preview-content">{preview}</div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ui/project-article-description-renderer", () => ({
+  ProjectArticleDescriptionRenderer: () => <div>project-article-renderer</div>,
 }));
 
 import { ProjectsPage } from "../../../client/src/components/ProjectsPage";
 
-describe("FT02 projects page current appointments counter wiring", () => {
+describe("FT02 projects page footer badge wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     entityCardCalls.length = 0;
-    appointmentBadgeCalls.length = 0;
+    appointmentPreviewCalls.length = 0;
     notesPreviewCalls.length = 0;
+    attachmentPreviewCalls.length = 0;
 
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map(),
@@ -135,6 +149,25 @@ describe("FT02 projects page current appointments counter wiring", () => {
       page: 1,
       setPage: vi.fn(),
     });
+
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        localStorage: {
+          getItem: vi.fn(() => "DISPATCHER"),
+        },
+      },
+      configurable: true,
+    });
+  });
+
+  function mockProjects(
+    notesCount: number,
+    overrides: Partial<{
+      name: string;
+      descriptionMd: string | null;
+      projectArticleItems: Array<{ label: string; value: string }>;
+    }> = {},
+  ) {
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (key === "/api/projects/list") {
@@ -148,18 +181,19 @@ describe("FT02 projects page current appointments counter wiring", () => {
               {
                 id: 8,
                 customerId: 17,
-                name: "Projekt Sonne",
+                name: overrides.name ?? "Projekt Sonne",
                 orderNumber: "AUF-88",
                 amount: "4999.95",
-                descriptionMd: null,
+                descriptionMd: overrides.descriptionMd ?? null,
                 isActive: true,
                 version: 5,
-                projectArticleItems: [],
+                projectArticleItems: overrides.projectArticleItems ?? [],
                 tags: [],
-                notesCount: 3,
+                notesCount,
                 plannedAppointmentsCount: 6,
                 nextAppointmentStartDate: "2099-06-01",
                 nextAppointmentStartTimeHour: 10,
+                attachmentsCount: 3,
                 customer: {
                   id: 17,
                   customerNumber: "K-17",
@@ -177,88 +211,69 @@ describe("FT02 projects page current appointments counter wiring", () => {
       }
       return { data: undefined, isLoading: false };
     });
-  });
+  }
 
-  it("renders planned appointments and notes in the project card footer", () => {
+  it("renders appointments, notes and attachments in the project card footer", () => {
+    mockProjects(3, {
+      projectArticleItems: [{ label: "Modell", value: "Classic 200" }],
+    });
+
     const markup = renderToStaticMarkup(<ProjectsPage />);
 
-    expect(markup).toContain("Geplante Termine:6");
+    expect(markup).toContain("h-[6.5rem]");
+    expect(markup).toContain("gap-1");
+    expect(markup).toContain("-mt-3");
+    expect(markup).toContain("w-[420px] p-2");
+    expect(markup).not.toContain("w-[400px] rounded-lg bg-white p-2");
+    expect(markup).toContain("Termine:6");
     expect(markup).toContain("Notizen:3");
-    expect(markup).toContain("grid-cols-[max-content_1fr]");
-    expect(appointmentBadgeCalls).toHaveLength(1);
-    expect(appointmentBadgeCalls[0]).toMatchObject({
-      count: 6,
-      testId: "text-project-planned-appointments-8",
+    expect(markup).toContain("Anhänge:3");
+    expect(appointmentPreviewCalls[0]).toMatchObject({
+      triggerTestId: "text-project-planned-appointments-8",
+      source: { type: "project", id: 8, count: 6 },
     });
-    expect(notesPreviewCalls).toHaveLength(1);
     expect(notesPreviewCalls[0]).toMatchObject({
       sourceMode: "single-parent",
       triggerTestId: "text-project-notes-count-8",
       sources: { type: "project", id: 8, count: 3 },
     });
-    expect(markup).toContain("grid-cols-[max-content_1fr]");
-    expect(markup).toContain("justify-end");
+    expect(attachmentPreviewCalls[0]).toMatchObject({
+      projectId: 8,
+      totalAttachmentsCount: 3,
+    });
     expect(renderToStaticMarkup(entityCardCalls[0].headerMeta as React.ReactElement)).toContain("A-Nr. AUF-88");
   });
 
-  it("omits the notes slot when the project has no notes", () => {
-    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
-      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
-      if (key === "/api/projects/list") {
-        return {
-          data: {
-            page: 1,
-            pageSize: 50,
-            total: 1,
-            totalPages: 1,
-            items: [
-              {
-                id: 8,
-                customerId: 17,
-                name: "Projekt Sonne",
-                orderNumber: "AUF-88",
-                amount: "4999.95",
-                descriptionMd: null,
-                isActive: true,
-                version: 5,
-                projectArticleItems: [],
-                tags: [],
-                notesCount: 0,
-                plannedAppointmentsCount: 6,
-                nextAppointmentStartDate: "2099-06-01",
-                nextAppointmentStartTimeHour: 10,
-                customer: {
-                  id: 17,
-                  customerNumber: "K-17",
-                  fullName: "Mina Muster",
-                  lastName: "Muster",
-                },
-              },
-            ],
-          },
-          isLoading: false,
-        };
-      }
-      if (key === "/api/tags") {
-        return { data: [], isLoading: false };
-      }
-      return { data: undefined, isLoading: false };
-    });
+  it("keeps the notes badge visible with count 0", () => {
+    mockProjects(0);
 
     const markup = renderToStaticMarkup(<ProjectsPage />);
 
-    expect(markup).toContain("Geplante Termine:6");
-    expect(markup).not.toContain("Notizen:");
-    expect(markup).not.toContain("text-project-notes-count-8");
+    expect(markup).toContain("Notizen:0");
+    expect(notesPreviewCalls[0]).toMatchObject({
+      sources: { type: "project", id: 8, count: 0 },
+    });
   });
 
   it("keeps the entity card footer explicitly visible", () => {
+    mockProjects(1);
     renderToStaticMarkup(<ProjectsPage />);
 
-    expect(entityCardCalls).toHaveLength(1);
     expect(entityCardCalls[0]).toMatchObject({
       testId: "project-card-8",
       footerVisibility: "visible",
     });
+  });
+
+  it("shows the fallback text and disables the project hover preview when no project content exists", () => {
+    mockProjects(1, {
+      descriptionMd: null,
+      projectArticleItems: [],
+    });
+
+    const markup = renderToStaticMarkup(<ProjectsPage />);
+
+    expect(markup).toContain("Kein Auftrag hinterlegt");
+    expect(markup.match(/hover-preview-wrapper/g)).toHaveLength(1);
   });
 });

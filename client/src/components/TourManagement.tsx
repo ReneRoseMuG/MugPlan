@@ -583,6 +583,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                     <div className="flex w-full">
                       <AppointmentCountBadge
                         count={appointmentCountsByTourId.get(tour.id) ?? 0}
+                        label="Termine"
                         testId={`text-tour-appointment-count-${tour.id}`}
                         fullWidth
                       />

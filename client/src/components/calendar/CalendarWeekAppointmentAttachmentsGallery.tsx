@@ -9,7 +9,7 @@ type AppointmentAttachmentItem = {
   id: number;
   originalName: string;
   mimeType: string | null;
-  sourceType: "customer" | "project" | "appointment";
+  sourceType: "customer" | "project" | "appointment" | "employee";
   sourceLabel: string;
   openUrl: string;
   downloadUrl: string;

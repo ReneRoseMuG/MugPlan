@@ -99,7 +99,7 @@ export function CalendarWeekAppointmentPanel({
       }}
     >
       {!isContinuation && (
-        <div className="flex h-full min-h-0 flex-col gap-1.5 pb-1.5">
+        <div className="flex h-full min-h-0 flex-col gap-1 pb-1">
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}
@@ -126,7 +126,7 @@ export function CalendarWeekAppointmentPanel({
           </div>
           {!isCompact ? (
             <>
-              <div className="min-h-0 space-y-1.5 overflow-hidden">
+              <div className="min-h-0 space-y-1 overflow-hidden">
                 <CalendarWeekAppointmentPanelCustomer
                   fullName={appointment.customer.fullName ?? ""}
                   customerNumber={appointment.customer.customerNumber}
@@ -144,9 +144,9 @@ export function CalendarWeekAppointmentPanel({
                   enableFullDescriptionPreview={context === "week-calendar"}
                 />
               </div>
-              <div className="mt-auto shrink-0 space-y-1.5">
+              <div className="mt-auto shrink-0 space-y-1">
                 {context === "week-calendar" ? (
-                  <>
+                  <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
                     <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
                     <CalendarWeekAppointmentNotesHover
                       appointmentId={appointment.id}
@@ -160,7 +160,7 @@ export function CalendarWeekAppointmentPanel({
                       appointmentId={appointment.id}
                       totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
                     />
-                  </>
+                  </div>
                 ) : (
                   <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
                 )}
@@ -168,7 +168,22 @@ export function CalendarWeekAppointmentPanel({
               </div>
             </>
           ) : (
-            <div className="mt-auto shrink-0">
+            <div className="mt-auto shrink-0 space-y-1">
+              <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+                <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+                <CalendarWeekAppointmentNotesHover
+                  appointmentId={appointment.id}
+                  customerId={appointment.customer.id}
+                  projectId={appointment.projectId}
+                  customerNotesCount={appointment.customerNotesCount ?? 0}
+                  projectNotesCount={appointment.projectNotesCount ?? 0}
+                  appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+                />
+                <CalendarWeekAppointmentAttachmentsHover
+                  appointmentId={appointment.id}
+                  totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
+                />
+              </div>
               <EntityTagFooterRow tags={mergedTags} testId={`week-appointment-tags-${appointment.id}`} />
             </div>
           )}

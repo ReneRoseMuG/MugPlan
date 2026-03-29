@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StickyNote } from "lucide-react";
 import { HoverPreview } from "@/components/ui/hover-preview";
+import { FooterChildCollectionBadge } from "@/components/ui/footer-child-collection-badge";
 import type { Note } from "@shared/schema";
 
-type NotesSourceType = "customer" | "project" | "appointment";
+type NotesSourceType = "customer" | "project" | "appointment" | "employee";
 
 type NotesSource = {
   type: NotesSourceType;
@@ -51,12 +52,14 @@ function normalizeCount(count: number): number {
 function resolveTitle(type: NotesSourceType): string {
   if (type === "customer") return "Kunde";
   if (type === "project") return "Projekt";
+  if (type === "employee") return "Mitarbeiter";
   return "Termin";
 }
 
 function resolveEndpoint(type: NotesSourceType, id: number): string {
   if (type === "customer") return `/api/customers/${id}/notes`;
   if (type === "project") return `/api/projects/${id}/notes`;
+  if (type === "employee") return `/api/employees/${id}/notes`;
   return `/api/appointments/${id}/notes`;
 }
 
@@ -197,38 +200,63 @@ export function EntityNotesHoverPreview({
     },
   });
 
-  if (totalNotesCount <= 0) return null;
+  const employeeSource = sourceEntries.find((entry) => entry.type === "employee");
+  const employeeEnabled = shouldLoadPreview && Boolean(employeeSource);
+
+  const employeeQuery = useQuery<Note[]>({
+    queryKey: ["/api/notes-preview", "employee", employeeSource?.id ?? null],
+    enabled: employeeEnabled,
+    queryFn: async () => {
+      if (!employeeSource) return [];
+      const response = await fetch(resolveEndpoint("employee", employeeSource.id), { credentials: "include" });
+      if (!response.ok) throw new Error("Mitarbeiternotizen konnten nicht geladen werden");
+      const payload = (await response.json()) as unknown;
+      return Array.isArray(payload) ? (payload as Note[]) : [];
+    },
+  });
 
   return (
     <HoverPreview
       preview={(
         <div className="rounded-lg bg-white p-2">
-          <div className="max-h-[320px] space-y-2 overflow-y-auto">
-            {customerSource ? (
-              <NotesSection
-                title={resolveTitle("customer")}
-                notes={customerQuery.data ?? []}
-                isLoading={customerQuery.isLoading}
-                isError={customerQuery.isError}
-              />
-            ) : null}
-            {projectSource ? (
-              <NotesSection
-                title={resolveTitle("project")}
-                notes={projectQuery.data ?? []}
-                isLoading={projectQuery.isLoading}
-                isError={projectQuery.isError}
-              />
-            ) : null}
-            {appointmentSource ? (
-              <NotesSection
-                title={resolveTitle("appointment")}
-                notes={appointmentQuery.data ?? []}
-                isLoading={appointmentQuery.isLoading}
-                isError={appointmentQuery.isError}
-              />
-            ) : null}
-          </div>
+          {sourceEntries.length === 0 ? (
+            <div className="text-xs text-slate-500">Keine Notizen vorhanden.</div>
+          ) : (
+            <div className="max-h-[320px] space-y-2 overflow-y-auto">
+              {customerSource ? (
+                <NotesSection
+                  title={resolveTitle("customer")}
+                  notes={customerQuery.data ?? []}
+                  isLoading={customerQuery.isLoading}
+                  isError={customerQuery.isError}
+                />
+              ) : null}
+              {projectSource ? (
+                <NotesSection
+                  title={resolveTitle("project")}
+                  notes={projectQuery.data ?? []}
+                  isLoading={projectQuery.isLoading}
+                  isError={projectQuery.isError}
+                />
+              ) : null}
+              {employeeSource ? (
+                <NotesSection
+                  title={resolveTitle("employee")}
+                  notes={employeeQuery.data ?? []}
+                  isLoading={employeeQuery.isLoading}
+                  isError={employeeQuery.isError}
+                />
+              ) : null}
+              {appointmentSource ? (
+                <NotesSection
+                  title={resolveTitle("appointment")}
+                  notes={appointmentQuery.data ?? []}
+                  isLoading={appointmentQuery.isLoading}
+                  isError={appointmentQuery.isError}
+                />
+              ) : null}
+            </div>
+          )}
         </div>
       )}
       closeDelay={80}
@@ -238,19 +266,15 @@ export function EntityNotesHoverPreview({
       maxHeight={maxHeight}
       className="z-[9999] w-[360px]"
     >
-      <div
-        className={`mt-1 cursor-pointer rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100${fullWidth ? " block w-full" : ""}`}
-        data-testid={triggerTestId}
-        onMouseEnter={() => setShouldLoadPreview(true)}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1">
-            <StickyNote className="h-3 w-3" />
-            {triggerLabel}
-          </span>
-          <span>{totalNotesCount}</span>
-        </div>
-      </div>
+      <FooterChildCollectionBadge
+        icon={<StickyNote className="h-3 w-3" />}
+        label={triggerLabel}
+        count={totalNotesCount}
+        testId={triggerTestId}
+        onHoverStart={() => setShouldLoadPreview(true)}
+        fullWidth={fullWidth}
+        inactive={totalNotesCount <= 0}
+      />
     </HoverPreview>
   );
 }

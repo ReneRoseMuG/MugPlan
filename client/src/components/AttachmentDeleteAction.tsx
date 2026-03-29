@@ -57,6 +57,9 @@ export function AttachmentDeleteAction({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: listQueryKey });
       if (parentType === "employee") {
+        await queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/employees",
+        });
         await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
       } else {
         await invalidateAttachmentProjectionQueries();

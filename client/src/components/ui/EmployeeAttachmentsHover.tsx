@@ -11,28 +11,26 @@ import {
 import { FooterChildCollectionBadge } from "@/components/ui/footer-child-collection-badge";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { useSetting } from "@/hooks/useSettings";
+import type { EmployeeAttachment } from "@shared/schema";
 
-type ProjectAttachmentItem = {
-  id: number;
-  originalName: string;
-  mimeType: string | null;
-};
-
-type PreviewAttachmentItem = ProjectAttachmentItem & {
-  sourceType: "project";
+type PreviewAttachmentItem = Pick<EmployeeAttachment, "id" | "originalName" | "mimeType"> & {
+  sourceType: "employee";
   sourceLabel: string;
   openUrl: string;
   downloadUrl: string;
 };
 
-function buildPreviewAttachments(items: ProjectAttachmentItem[] | undefined): PreviewAttachmentItem[] {
+function buildPreviewAttachments(items: EmployeeAttachment[] | undefined): PreviewAttachmentItem[] {
   if (!items) return [];
+
   return items.map((attachment) => ({
-    ...attachment,
-    sourceType: "project" as const,
-    sourceLabel: "Projekt",
-    openUrl: `/api/project-attachments/${attachment.id}/download`,
-    downloadUrl: `/api/project-attachments/${attachment.id}/download?download=1`,
+    id: attachment.id,
+    originalName: attachment.originalName,
+    mimeType: attachment.mimeType,
+    sourceType: "employee" as const,
+    sourceLabel: "Mitarbeiter",
+    openUrl: `/api/employee-attachments/${attachment.id}/download`,
+    downloadUrl: `/api/employee-attachments/${attachment.id}/download?download=1`,
   }));
 }
 
@@ -54,17 +52,20 @@ function AttachmentGalleryPreviewContent({
   if (attachments.length === 0) {
     return <div className="text-xs text-slate-500">Keine Anhänge vorhanden.</div>;
   }
+
   return <CalendarWeekAppointmentAttachmentsGallery attachments={attachments} />;
 }
 
-export function ProjectAttachmentsHover({
-  projectId,
+export function EmployeeAttachmentsHover({
+  employeeId,
   totalAttachmentsCount,
   fullWidth = false,
+  triggerTestId,
 }: {
-  projectId: number;
+  employeeId: number;
   totalAttachmentsCount: number;
   fullWidth?: boolean;
+  triggerTestId?: string;
 }) {
   const [shouldLoadPreview, setShouldLoadPreview] = useState(false);
   const attachmentPreviewSize = parseAttachmentPreviewSize(useSetting("attachmentPreviewSize"));
@@ -73,20 +74,20 @@ export function ProjectAttachmentsHover({
     ? Math.max(0, totalAttachmentsCount)
     : 0;
 
-  const attachmentsQuery = useQuery<ProjectAttachmentItem[]>({
-    queryKey: ["/api/projects", projectId, "attachments"],
+  const attachmentsQuery = useQuery<EmployeeAttachment[]>({
+    queryKey: ["/api/employees", employeeId, "attachments"],
     enabled: shouldLoadPreview && normalizedCount > 0,
   });
 
   const attachments = buildPreviewAttachments(attachmentsQuery.data);
   const singleAttachment = normalizedCount === 1 ? (attachments[0] ?? null) : null;
 
-  const triggerContent = (
+  const badge = (
     <FooterChildCollectionBadge
       icon={<Paperclip className="h-3 w-3" />}
       label="Anhänge"
       count={normalizedCount}
-      testId={`project-attachments-hover-trigger-${projectId}`}
+      testId={triggerTestId ?? `employee-attachments-hover-trigger-${employeeId}`}
       onHoverStart={() => setShouldLoadPreview(true)}
       fullWidth={fullWidth}
       inactive={normalizedCount <= 0}
@@ -103,7 +104,7 @@ export function ProjectAttachmentsHover({
         maxWidth={260}
         className="z-[9999] w-[260px]"
       >
-        {triggerContent}
+        {badge}
       </HoverPreview>
     );
   }
@@ -113,9 +114,10 @@ export function ProjectAttachmentsHover({
       <AttachmentPreviewTrigger
         originalName={singleAttachment?.originalName ?? "Anhang"}
         mimeType={singleAttachment?.mimeType ?? null}
-        openUrl={singleAttachment?.openUrl ?? `#project-${projectId}-attachment-preview`}
-        downloadUrl={singleAttachment?.downloadUrl ?? `#project-${projectId}-attachment-download`}
+        openUrl={singleAttachment?.openUrl ?? `#employee-${employeeId}-attachment-preview`}
+        downloadUrl={singleAttachment?.downloadUrl ?? `#employee-${employeeId}-attachment-download`}
         previewSize={attachmentPreviewSize}
+        testId={triggerTestId ?? `employee-attachments-hover-trigger-${employeeId}`}
         renderPreviewContent={({ onClose, onDragHandleMouseDown }) => {
           if (attachmentsQuery.isError) {
             return <div className="text-xs text-red-600">Anhang konnte nicht geladen werden.</div>;
@@ -140,7 +142,7 @@ export function ProjectAttachmentsHover({
           );
         }}
       >
-        {triggerContent}
+        {badge}
       </AttachmentPreviewTrigger>
     );
   }
@@ -163,7 +165,7 @@ export function ProjectAttachmentsHover({
       className="z-[9999] w-auto"
       contentClassName="w-fit space-y-2"
     >
-      {triggerContent}
+      {badge}
     </HoverPreview>
   );
 }

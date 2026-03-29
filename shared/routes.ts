@@ -1621,7 +1621,11 @@ export const api = {
         appointmentDate: z.string().optional(),
       }).strict(),
       responses: {
-        200: z.array(z.custom<typeof employees.$inferSelect & { tags: typeof tags.$inferSelect[] }>()),
+        200: z.array(z.custom<typeof employees.$inferSelect & {
+          tags: typeof tags.$inferSelect[];
+          notesCount: number;
+          attachmentsCount: number;
+        }>()),
       },
     },
     get: {

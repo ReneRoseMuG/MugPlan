@@ -1,3 +1,4 @@
+import React from "react";
 import { TagBadge } from "@/components/ui/tag-badge";
 import type { Tag } from "@shared/schema";
 
@@ -7,11 +8,11 @@ interface EntityTagFooterRowProps {
 }
 
 export function EntityTagFooterRow({ tags, testId }: EntityTagFooterRowProps) {
-  if (tags.length === 0) return null;
-
   return (
-    <div className="flex w-full flex-wrap items-center gap-1" data-testid={testId}>
-      {tags.map((tag) => (
+    <div className="flex min-h-7 w-full flex-wrap items-center gap-1" data-testid={testId}>
+      {tags.length === 0 ? (
+        <span className="text-[10px] font-medium text-slate-400">Keine Tags</span>
+      ) : tags.map((tag) => (
         <TagBadge
           key={tag.id}
           tag={tag}

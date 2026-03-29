@@ -6,6 +6,7 @@ interface ColoredInfoBadgeProps {
   icon: ReactNode;
   label: ReactNode;
   color?: string | null;
+  foregroundColor?: string;
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
@@ -13,12 +14,14 @@ interface ColoredInfoBadgeProps {
   size?: "default" | "sm";
   fullWidth?: boolean;
   preview?: InfoBadgePreview;
+  visualStyle?: "default" | "footer";
 }
 
 export function ColoredInfoBadge({ 
   icon, 
   label, 
   color,
+  foregroundColor,
   action,
   onAdd,
   onRemove,
@@ -26,12 +29,15 @@ export function ColoredInfoBadge({
   size = "default",
   fullWidth = false,
   preview,
+  visualStyle = "default",
 }: ColoredInfoBadgeProps) {
   return (
     <InfoBadge
       icon={icon}
       label={label}
-      borderColor={color || undefined}
+      borderColor={visualStyle === "footer" ? undefined : color || undefined}
+      surfaceColor={visualStyle === "footer" ? color || undefined : undefined}
+      foregroundColor={visualStyle === "footer" ? foregroundColor : undefined}
       action={action}
       onAdd={onAdd}
       onRemove={onRemove}
@@ -39,6 +45,7 @@ export function ColoredInfoBadge({
       size={size}
       fullWidth={fullWidth}
       preview={preview}
+      visualStyle={visualStyle}
     />
   );
 }

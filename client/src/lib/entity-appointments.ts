@@ -20,6 +20,22 @@ export function sortAppointmentsByDateDesc<T extends AppointmentSortInput>(a: T,
   return b.id - a.id;
 }
 
+export function sortAppointmentsByDateAsc<T extends AppointmentSortInput>(a: T, b: T): number {
+  if (a.startDate !== b.startDate) {
+    return a.startDate < b.startDate ? -1 : 1;
+  }
+
+  const aHour = a.startTimeHour ?? null;
+  const bHour = b.startTimeHour ?? null;
+  if (aHour == null && bHour != null) return 1;
+  if (aHour != null && bHour == null) return -1;
+  if (aHour != null && bHour != null && aHour !== bHour) {
+    return aHour - bHour;
+  }
+
+  return a.id - b.id;
+}
+
 export function buildLatestAppointmentByProjectId(
   appointments: ReadonlyArray<{
     projectId: number | null;

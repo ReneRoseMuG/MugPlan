@@ -54,5 +54,6 @@ describe("FT17 UI: EntityCard global layout", () => {
     expect(html).toContain(">Titel<");
     expect(html).toContain(">Sichtbarer Footer<");
     expect(html).toContain("flex");
+    expect(html).toContain("px-1");
   });
 });

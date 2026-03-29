@@ -1,4 +1,5 @@
 import { Users } from "lucide-react";
+import { FooterChildCollectionBadge } from "@/components/ui/footer-child-collection-badge";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
 
@@ -14,35 +15,15 @@ export function CalendarWeekAppointmentEmployeesHover({
 }) {
   const hasEmployees = employees.length > 0;
 
-  const trigger = (
-    <div
-      className={`mt-1 rounded-md border px-2 py-1 text-[10px] font-semibold ${
-        hasEmployees
-          ? "cursor-pointer border-slate-200/90 bg-slate-50 text-slate-700 hover:bg-slate-100"
-          : "cursor-not-allowed border-slate-200/70 bg-slate-100/70 text-slate-400"
-      }`}
-      data-testid="week-appointment-employees-hover-trigger"
-      aria-disabled={!hasEmployees}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1">
-          <Users className="h-3 w-3" />
-          {hasEmployees ? "Mitarbeiter" : "Keine Mitarbeiter"}
-        </span>
-        <span>{hasEmployees ? employees.length : 0}</span>
-      </div>
-    </div>
-  );
-
-  if (!hasEmployees) {
-    return trigger;
-  }
-
   return (
     <HoverPreview
       preview={(
         <div className="rounded-lg bg-white p-1">
-          <CalendarWeekAppointmentPanelEmployee employees={employees} showSectionTitle />
+          {hasEmployees ? (
+            <CalendarWeekAppointmentPanelEmployee employees={employees} showSectionTitle />
+          ) : (
+            <div className="px-2 py-1 text-xs text-slate-500">Keine Mitarbeiter vorhanden.</div>
+          )}
         </div>
       )}
       closeDelay={80}
@@ -52,7 +33,13 @@ export function CalendarWeekAppointmentEmployeesHover({
       maxHeight={220}
       className="z-[9999] w-[300px]"
     >
-      {trigger}
+      <FooterChildCollectionBadge
+        icon={<Users className="h-3 w-3" />}
+        label="Mitarbeiter"
+        count={hasEmployees ? employees.length : 0}
+        testId="week-appointment-employees-hover-trigger"
+        inactive={!hasEmployees}
+      />
     </HoverPreview>
   );
 }

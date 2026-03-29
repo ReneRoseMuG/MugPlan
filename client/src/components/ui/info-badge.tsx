@@ -23,6 +23,8 @@ interface InfoBadgeProps {
   icon: ReactNode;
   label: ReactNode;
   borderColor?: string;
+  surfaceColor?: string;
+  foregroundColor?: string;
   action?: "add" | "remove" | "none";
   onAdd?: () => void;
   onRemove?: () => void;
@@ -33,6 +35,7 @@ interface InfoBadgeProps {
   fullWidth?: boolean;
   onDoubleClick?: () => void;
   preview?: InfoBadgePreview;
+  visualStyle?: "default" | "footer";
 }
 
 const defaultPreviewOptions: InfoBadgePreviewOptions = {
@@ -48,6 +51,8 @@ export function InfoBadge({
   icon,
   label,
   borderColor,
+  surfaceColor,
+  foregroundColor,
   action,
   onAdd,
   onRemove,
@@ -58,19 +63,27 @@ export function InfoBadge({
   fullWidth = false,
   onDoubleClick,
   preview,
+  visualStyle = "default",
 }: InfoBadgeProps) {
-  const sizeClasses = size === "sm" 
-    ? "px-2 py-0.5 text-xs gap-1" 
-    : "px-3 py-2 gap-2";
+  const sizeClasses = visualStyle === "footer"
+    ? "h-7 px-2 text-[10px] gap-1 font-semibold"
+    : size === "sm"
+      ? "px-2 py-0.5 text-xs gap-1"
+      : "px-3 py-2 gap-2";
   
   const widthClass = fullWidth ? "w-full" : "inline-flex";
   const resolvedAction = action ?? (onRemove ? "remove" : "none");
-  const actionColumnClass = resolvedAction === "add" ? "w-7" : (size === "sm" ? "w-5" : "w-6");
+  const actionColumnClass = customAction || resolvedAction !== "none"
+    ? (resolvedAction === "add" ? "w-7" : (size === "sm" ? "w-5" : "w-6"))
+    : "w-0";
   const previewContent = preview?.content ?? null;
   const previewOptions = {
     ...defaultPreviewOptions,
     ...preview?.options,
   };
+
+  const usesSolidSurface = visualStyle === "footer" && Boolean(surfaceColor);
+  const isFooterStyle = visualStyle === "footer";
 
   const handleActionClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -84,16 +97,26 @@ export function InfoBadge({
   
   const badgeBody = (
     <div 
-      className={`info-badge group flex items-center justify-between border border-border bg-muted/50 rounded ${sizeClasses} ${widthClass}`}
-      style={borderColor ? { borderLeftWidth: '5px', borderLeftColor: borderColor } : undefined}
+      className={`info-badge group flex items-center ${isFooterStyle ? "justify-start" : "justify-between"} border ${isFooterStyle ? "rounded-md" : "rounded"} ${usesSolidSurface ? "" : "border-border bg-muted/50"} ${sizeClasses} ${widthClass}`}
+      style={
+        usesSolidSurface
+          ? {
+              backgroundColor: surfaceColor,
+              borderColor: surfaceColor,
+              color: foregroundColor ?? "#ffffff",
+            }
+          : borderColor
+            ? { borderLeftWidth: '5px', borderLeftColor: borderColor }
+            : undefined
+      }
       data-testid={testId}
       onDoubleClick={onDoubleClick}
     >
-      <div className={`flex items-center flex-1 min-w-0 ${size === "sm" ? "gap-1" : "gap-2"}`}>
-        <span className="text-muted-foreground">{icon}</span>
-        <div className={`min-w-0 flex-1 font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}>{label}</div>
+      <div className={`flex items-center min-w-0 ${isFooterStyle ? "gap-1" : size === "sm" ? "gap-1 flex-1" : "gap-2 flex-1"}`}>
+        <span className={usesSolidSurface ? "text-current" : "text-muted-foreground"}>{icon}</span>
+        <div className={`min-w-0 ${isFooterStyle ? "shrink-0" : "flex-1"} ${usesSolidSurface ? "font-semibold text-current" : `font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}`}>{label}</div>
       </div>
-      <div className={`flex items-center justify-end shrink-0 ${actionColumnClass}`}>
+      <div className={`flex items-center justify-end shrink-0 overflow-hidden ${actionColumnClass}`}>
         {customAction ?? null}
         {!customAction && resolvedAction === "add" && (
           <PlusActionButton

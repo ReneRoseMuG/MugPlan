@@ -5,13 +5,13 @@
  * - collapsed-Modus rendert Kunden-Name und Kundennummer und ist in HoverPreview eingebettet.
  * - semiexpanded-Modus rendert Header und Adressblock, kein HoverPreview-Wrapper.
  * - expanded-Modus rendert Header, Adresse, Telefon (wenn vorhanden) und E-Mail (wenn vorhanden).
- * - hideHeader in expanded blendet den h5-Namen aus.
- * - Telefon und E-Mail erscheinen nur, wenn sie befuellt sind.
+ * - hideHeader in expanded blendet den h5-Namen aus und fuellt fehlende Zeilen sichtbar auf.
+ * - Telefon und E-Mail erscheinen nur, wenn sie befuellt sind oder als Platzhalterzeile aufgefuellt werden.
  *
  * Fehlerfaelle:
  * - collapsed rendert keinen HoverPreview-Wrapper mehr.
  * - hideHeader hat keinen Effekt mehr.
- * - Leere Felder werden trotzdem gerendert.
+ * - Leere Felder werden im headerlosen Expanded-Modus nicht mehr auf feste Zeilen aufgefuellt.
  *
  * Ziel:
  * Renderverhalten der CustomerInfoPanel-Komponente in allen drei Modi absichern.
@@ -103,7 +103,7 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("max@example.com");
   });
 
-  it("expanded mit hideHeader: kein h5-Name im Output", () => {
+  it("expanded mit hideHeader: kein h5-Name im Output und feste Informationszeilen", () => {
     const markup = renderToStaticMarkup(
       <CustomerInfoPanel {...baseProps} mode="expanded" hideHeader />,
     );
@@ -111,9 +111,31 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).not.toContain("<h5");
     expect(markup).not.toContain("Max Mustermann");
     expect(markup).toContain("Musterstraße 1");
+    expect(markup).toContain("customer-info-line-address");
+    expect(markup).toContain("customer-info-line-city");
+    expect(markup).toContain("customer-info-line-phone");
+    expect(markup).toContain("customer-info-line-email");
   });
 
-  it("phone und email fehlen im Output wenn nicht befuellt", () => {
+  it("expanded mit hideHeader fuellt fehlende Zeilen mit Platzhaltern auf", () => {
+    const markup = renderToStaticMarkup(
+      <CustomerInfoPanel
+        fullName="Anna Beispiel"
+        customerNumber="K-7"
+        mode="expanded"
+        hideHeader
+      />,
+    );
+
+    expect(markup).not.toContain("Anna Beispiel");
+    expect(markup).toContain("customer-info-line-address");
+    expect(markup).toContain("customer-info-line-city");
+    expect(markup).toContain("customer-info-line-phone");
+    expect(markup).toContain("customer-info-line-email");
+    expect(markup).toContain("text-transparent");
+  });
+
+  it("phone und email fehlen im Output wenn nicht befuellt und der Header sichtbar bleibt", () => {
     const markup = renderToStaticMarkup(
       <CustomerInfoPanel
         fullName="Anna Beispiel"

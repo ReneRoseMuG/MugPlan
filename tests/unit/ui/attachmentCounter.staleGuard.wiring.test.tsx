@@ -1,26 +1,23 @@
 /**
  * Test Scope:
  *
- * Feature: FT19 – Attachment Lösch-Workflow
+ * Feature: FT19 - Attachment-Lösch-Workflow
  * Use Case: Counter- und Preview-Konsistenz nach Löschung
  *
  * Abgedeckte Regeln:
- * - Nach Soft-Delete zeigt der Counter auf der Wochenkarte den aktualisierten (reduzierten) Wert.
+ * - Nach Soft-Delete zeigt der Counter auf der Wochenkarte den aktualisierten Wert.
  * - Nach Hard-Delete zeigt der Counter den aktualisierten Wert.
- * - War das gelöschte Attachment das letzte, zeigt der Counter 0 (nicht 1 oder undefined).
- * - Die Hover-Preview listet das gelöschte Attachment nicht mehr auf.
- * - Die Hover-Preview zeigt bei 0 Anhaengen keinen veralteten Zustand.
- * - Der Query-Key für Counter und Preview ist identisch mit dem der Attachment-Context-Query,
- *   sodass eine einzige Invalidierung Counter und Preview synchron hält.
+ * - War das gelöschte Attachment das letzte, bleibt der `0`-Counter sichtbar und zeigt einen leeren Preview-Zustand.
+ * - Die Hover-Preview listet gelöschte Attachments nicht mehr auf.
+ * - Counter und Preview verwenden denselben Attachment-Context-Query-Key.
  *
- * Fehlerfaelle:
- * - Counter bleibt nach Löschung auf altem Wert (Stale State).
- * - Hover-Preview zeigt nach Löschung noch das gelöschte Attachment.
- * - Counter zeigt 1 statt 0 nach Löschung des letzten Attachments.
+ * Fehlerfälle:
+ * - Counter bleibt nach Löschung auf einem alten Wert stehen.
+ * - Die Wochenkarten-Preview zeigt nach Löschung veraltete Dateinamen.
+ * - `0`-Counter verschwinden trotz des vereinheitlichten Footer-Badge-Verhaltens.
  *
  * Ziel:
- * Sicherstellen, dass CalendarWeekAppointmentAttachmentsHover keine veralteten Daten
- * nach einer Löschoperation anzeigt.
+ * Sicherstellen, dass CalendarWeekAppointmentAttachmentsHover nach Löschoperationen konsistent auf frische Daten reagiert.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -103,8 +100,8 @@ vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsGallery", () =>
     attachments: Array<{ originalName: string }>;
   }) => (
     <div data-testid="gallery">
-      {attachments.map((a) => (
-        <span key={a.originalName}>{a.originalName}</span>
+      {attachments.map((attachment) => (
+        <span key={attachment.originalName}>{attachment.originalName}</span>
       ))}
     </div>
   ),
@@ -112,7 +109,7 @@ vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsGallery", () =>
 
 import { CalendarWeekAppointmentAttachmentsHover } from "../../../client/src/components/calendar/CalendarWeekAppointmentAttachmentsHover";
 
-describe("FT19 UI: attachmentCounter.staleGuard – Counter und Preview nach Löschung", () => {
+describe("FT19 UI: attachmentCounter.staleGuard - Counter und Preview nach Löschung", () => {
   beforeEach(() => {
     mockAttachmentContext = undefined;
     vi.stubGlobal("React", React);
@@ -123,46 +120,44 @@ describe("FT19 UI: attachmentCounter.staleGuard – Counter und Preview nach Lö
   });
 
   describe("Counter-Wert nach Löschung", () => {
-    it("zeigt den aktualisierten Counter nach Soft-Delete (3 → 2)", () => {
-      // Vor der Löschung: Counter war 3
-      // Nach der Löschung und Invalidierung liefert der Kalender totalAttachmentsCount=2
+    it("zeigt den aktualisierten Counter nach Soft-Delete (3 -> 2)", () => {
       const markup = renderToStaticMarkup(
         <CalendarWeekAppointmentAttachmentsHover appointmentId={10} totalAttachmentsCount={2} />,
       );
 
-      expect(markup).toContain("2");
+      expect(markup).toContain(">2<");
       expect(markup).not.toContain(">3<");
     });
 
-    it("zeigt den aktualisierten Counter nach Hard-Delete (2 → 1)", () => {
+    it("zeigt den aktualisierten Counter nach Hard-Delete (2 -> 1)", () => {
       const markup = renderToStaticMarkup(
         <CalendarWeekAppointmentAttachmentsHover appointmentId={10} totalAttachmentsCount={1} />,
       );
 
-      expect(markup).toContain("1");
+      expect(markup).toContain(">1<");
     });
 
-    it("rendert null (kein Counter) wenn das letzte Attachment gelöscht wurde (totalAttachmentsCount=0)", () => {
+    it("zeigt einen sichtbaren `0`-Counter mit leerem Preview, wenn das letzte Attachment gelöscht wurde", () => {
       const markup = renderToStaticMarkup(
         <CalendarWeekAppointmentAttachmentsHover appointmentId={10} totalAttachmentsCount={0} />,
       );
 
-      // Keine Hover-Trigger-Anzeige mehr nach Löschung des letzten Anhangs
-      expect(markup).toBe("");
+      expect(markup).toContain(">0<");
+      expect(markup).toContain("Keine Anhänge vorhanden.");
     });
 
-    it("normalisiert negative totalAttachmentsCount auf 0 (kein Counter)", () => {
+    it("normalisiert negative totalAttachmentsCount auf 0 und zeigt denselben leeren Preview-Zustand", () => {
       const markup = renderToStaticMarkup(
         <CalendarWeekAppointmentAttachmentsHover appointmentId={10} totalAttachmentsCount={-1} />,
       );
 
-      expect(markup).toBe("");
+      expect(markup).toContain(">0<");
+      expect(markup).toContain("Keine Anhänge vorhanden.");
     });
   });
 
   describe("Hover-Preview nach Löschung", () => {
     it("listet das gelöschte Attachment nach Soft-Delete nicht mehr auf", () => {
-      // Attachment-Context nach Soft-Delete: gelöschtes PDF ist nicht mehr enthalten
       mockAttachmentContext = {
         appointmentId: 10,
         project: { id: 1, name: "Proj", orderNumber: null },
@@ -171,7 +166,6 @@ describe("FT19 UI: attachmentCounter.staleGuard – Counter und Preview nach Lö
         customerAttachments: [],
         appointmentAttachments: [
           { id: 201, originalName: "verbleibend.pdf", mimeType: "application/pdf" },
-          // geloescht.pdf ist nicht mehr vorhanden
         ],
       };
 
@@ -183,8 +177,7 @@ describe("FT19 UI: attachmentCounter.staleGuard – Counter und Preview nach Lö
       expect(markup).not.toContain("geloescht.pdf");
     });
 
-    it("zeigt keinen veralteten Thumbnail/Dateinamen nach Löschung des letzten Attachments", () => {
-      // Nach Löschung des letzten Anhangs ist der Context leer
+    it("zeigt keinen veralteten Dateinamen nach Löschung des letzten Attachments", () => {
       mockAttachmentContext = {
         appointmentId: 10,
         project: null,
@@ -194,16 +187,15 @@ describe("FT19 UI: attachmentCounter.staleGuard – Counter und Preview nach Lö
         appointmentAttachments: [],
       };
 
-      // totalAttachmentsCount=0 → Komponente rendert gar nicht → kein veraltetes Thumbnail
       const markup = renderToStaticMarkup(
         <CalendarWeekAppointmentAttachmentsHover appointmentId={10} totalAttachmentsCount={0} />,
       );
 
-      expect(markup).toBe("");
+      expect(markup).toContain("Keine Anhänge vorhanden.");
       expect(markup).not.toContain("letztes.pdf");
     });
 
-    it("zeigt nach Hard-Delete nur noch die verbleibenden Anhaenge in der Hover-Preview", () => {
+    it("zeigt nach Hard-Delete nur noch die verbleibenden Anhänge in der Hover-Preview", () => {
       mockAttachmentContext = {
         appointmentId: 10,
         project: { id: 2, name: "Proj", orderNumber: null },
@@ -225,14 +217,6 @@ describe("FT19 UI: attachmentCounter.staleGuard – Counter und Preview nach Lö
 
   describe("Query-Key-Konsistenz", () => {
     it("nutzt den Query-Key '/api/appointments/:id/attachment-context' für Counter und Preview", () => {
-      // Dieser Test stellt sicher, dass die Komponente den korrekten Query-Key nutzt,
-      // damit eine einzige invalidateQueries({ queryKey: ['/api/appointments', id, 'attachment-context'] })
-      // sowohl Counter (indirekt via totalAttachmentsCount aus dem Kalender-Query) als auch
-      // Preview synchron hält.
-      //
-      // Der useQuery-Mock liefert Daten nur für den key ["/api/appointments", 10, "attachment-context"].
-      // Wenn die Komponente einen anderen Key nutzen würde, wäre data=undefined und
-      // die Gallery würde keine Attachments anzeigen.
       mockAttachmentContext = {
         appointmentId: 10,
         project: null,
@@ -248,21 +232,16 @@ describe("FT19 UI: attachmentCounter.staleGuard – Counter und Preview nach Lö
         <CalendarWeekAppointmentAttachmentsHover appointmentId={10} totalAttachmentsCount={1} />,
       );
 
-      // Wenn der Query-Key korrekt ist, werden die Daten geladen und das Attachment angezeigt
       expect(markup).toContain("query-key-proof.pdf");
     });
 
-    it("zeigt 'Keine Anhaenge' wenn Query-Daten nicht vorhanden sind (undefined context)", () => {
-      // mockAttachmentContext bleibt undefined (kein Attachment-Context verfügbar)
+    it("zeigt 'Keine Anhänge vorhanden.' wenn Query-Daten nicht vorhanden sind", () => {
       const markup = renderToStaticMarkup(
         <CalendarWeekAppointmentAttachmentsHover appointmentId={99} totalAttachmentsCount={1} />,
       );
 
-      // Zähler ist > 0, also wird der Trigger angezeigt
-      expect(markup).toContain("1");
-      // aber der Preview-Content zeigt leer/loading-Zustand
-      // (keine Daten → buildPreviewAttachments gibt [] zurück → "Keine Anhaenge vorhanden")
-      expect(markup).toContain("Keine Anhaenge vorhanden");
+      expect(markup).toContain(">1<");
+      expect(markup).toContain("Keine Anhänge vorhanden.");
     });
   });
 });

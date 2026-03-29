@@ -2,15 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Projekte-Tabelle verwendet die standardisierte Weekly-Preview im Sidebar-/Tabellenprofil.
- * - Der Fallback fuer fehlende Termine bleibt in der Tabellenvorschau sichtbar.
+ * - Die Projekte-Tabelle verwendet die gemeinsame Tabellen-Preview mit Footer-Badges.
+ * - Die Preview zeigt Termine, Notizen, Anhänge und Tag-Zeile über denselben Renderer.
  *
- * Fehlerfaelle:
- * - Tabellenpreview ruft den gemeinsamen Preview-Builder nicht mehr auf.
- * - Fehlende Termine rendern keinen stabilen Fallback mehr.
+ * Fehlerfälle:
+ * - Der Tabellen-Preview-Footer fällt auf Legacy-Badges zurück.
+ * - Die Preview verliert Footer-Badges oder Tag-Zeile.
  *
  * Ziel:
- * Die Projekt-Tabellenpreview ueber den tatsaechlichen rowPreviewRenderer statt ueber Quelltext-Strings absichern.
+ * Die Projekt-Tabellenpreview über den tatsächlichen rowPreviewRenderer statt über Quelltext-Strings absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -64,16 +64,48 @@ vi.mock("@/components/ui/entity-card", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/appointment-count-badge", () => ({
-  AppointmentCountBadge: ({ count }: { count: number }) => <div>{count}</div>,
+vi.mock("@/components/ui/entity-appointments-hover-preview", () => ({
+  EntityAppointmentsHoverPreview: ({ source, triggerTestId }: { source: { count: number }; triggerTestId?: string }) => (
+    <div data-testid={triggerTestId}>Termine:{source.count}</div>
+  ),
 }));
 
 vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
-  EntityNotesHoverPreview: () => <div>notes-preview</div>,
+  EntityNotesHoverPreview: ({
+    sources,
+    triggerTestId,
+  }: {
+    sources:
+      | { count: number }
+      | {
+          customer?: { count: number };
+          project?: { count: number };
+        };
+    triggerTestId?: string;
+  }) => {
+    const count = "count" in sources
+      ? sources.count
+      : (sources.customer?.count ?? 0) + (sources.project?.count ?? 0);
+    return <div data-testid={triggerTestId}>Notizen:{count}</div>;
+  },
+}));
+
+vi.mock("@/components/ui/ProjectAttachmentsHover", () => ({
+  ProjectAttachmentsHover: ({ totalAttachmentsCount }: { totalAttachmentsCount: number }) => <div>Anhänge:{totalAttachmentsCount}</div>,
 }));
 
 vi.mock("@/components/ui/filter-panels/project-filter-panel", () => ({
   ProjectFilterPanel: () => <div>project-filter-panel</div>,
+}));
+
+vi.mock("@/components/ui/entity-tag-footer-row", () => ({
+  EntityTagFooterRow: ({ tags, testId }: { tags: Array<{ name: string }>; testId?: string }) => (
+    <div data-testid={testId}>{tags.map((tag) => tag.name).join(",")}</div>
+  ),
+}));
+
+vi.mock("@/components/ui/hover-preview", () => ({
+  HoverPreview: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ui/table-view", () => ({
@@ -91,7 +123,7 @@ describe("FT03 projects table preview wiring", () => {
     tableViewCalls.length = 0;
 
     useSettingsMock.mockReturnValue({
-      settingsByKey: new Map(),
+      settingsByKey: new Map([["projects.viewMode", { resolvedValue: "table" }]]),
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
@@ -107,49 +139,30 @@ describe("FT03 projects table preview wiring", () => {
           data: {
             page: 1,
             pageSize: 50,
-            total: 2,
+            total: 1,
             totalPages: 1,
             items: [
               {
                 id: 31,
                 customerId: 4,
-                name: "Projekt Mit Termin",
+                name: "Projekt Mit Footer",
                 orderNumber: "ORD-31",
                 amount: null,
                 descriptionMd: null,
                 isActive: true,
                 version: 9,
                 projectArticleItems: [{ label: "Saunamodell", value: "Modell Table" }],
+                tags: [{ id: 3, name: "Tag A", color: "#123456", isDefault: false, version: 1 }],
                 notesCount: 5,
                 plannedAppointmentsCount: 1,
                 nextAppointmentStartDate: "2099-08-09",
                 nextAppointmentStartTimeHour: 14,
+                attachmentsCount: 2,
                 customer: {
                   id: 4,
                   customerNumber: "C-4",
                   fullName: "Kunde Vier",
                   lastName: "Vier",
-                },
-              },
-              {
-                id: 32,
-                customerId: 5,
-                name: "Projekt Ohne Termin",
-                orderNumber: "ORD-32",
-                amount: null,
-                descriptionMd: null,
-                isActive: true,
-                version: 10,
-                projectArticleItems: [],
-                notesCount: 0,
-                plannedAppointmentsCount: 0,
-                nextAppointmentStartDate: null,
-                nextAppointmentStartTimeHour: null,
-                customer: {
-                  id: 5,
-                  customerNumber: "C-5",
-                  fullName: "Kunde Fuenf",
-                  lastName: "Fuenf",
                 },
               },
             ],
@@ -164,27 +177,18 @@ describe("FT03 projects table preview wiring", () => {
     });
   });
 
-  it("renders the shared project table hover preview with project and appointment data", () => {
-    renderToStaticMarkup(<ProjectsPage tableOnly />);
+  it("renders the shared project table hover preview with footer badges and tags", () => {
+    renderToStaticMarkup(<ProjectsPage />);
 
     const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
     const markup = renderToStaticMarkup(rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[0]));
 
     expect(markup).toContain("ORD-31");
-    expect(markup).toContain("Projekt Mit Termin");
+    expect(markup).toContain("Projekt Mit Footer");
     expect(markup).toContain("Kunde Vier");
-    expect(markup).toContain("14:00 - 09.08.99");
-  });
-
-  it("keeps the stable no-appointment preview state without a date label", () => {
-    renderToStaticMarkup(<ProjectsPage tableOnly />);
-
-    const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
-    const markup = renderToStaticMarkup(rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[1]));
-
-    expect(markup).toContain("ORD-32");
-    expect(markup).toContain("Projekt Ohne Termin");
-    expect(markup).toContain("Kunde Fuenf");
-    expect(markup).toContain(">0</span>");
+    expect(markup).toContain("Termine:1");
+    expect(markup).toContain("Notizen:5");
+    expect(markup).toContain("Anhänge:2");
+    expect(markup).toContain("Tag A");
   });
 });

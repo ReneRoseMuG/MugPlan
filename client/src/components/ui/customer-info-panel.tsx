@@ -1,5 +1,7 @@
+import React from "react";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { domainIcons } from "@/lib/domain-icons";
+import { cn } from "@/lib/utils";
 
 type CustomerInfoPanelProps = {
   mode: "collapsed" | "semiexpanded" | "expanded";
@@ -12,6 +14,7 @@ type CustomerInfoPanelProps = {
   phone?: string | null;
   email?: string | null;
   testId?: string;
+  className?: string;
 };
 
 function CustomerHeader({ fullName, customerNumber }: { fullName: string | null; customerNumber: string }) {
@@ -47,6 +50,27 @@ function AddressBlock({
   );
 }
 
+function CustomerInfoLine({
+  value,
+  testId,
+}: {
+  value?: string | null;
+  testId?: string;
+}) {
+  const trimmedValue = value?.trim() ?? "";
+  const hasValue = trimmedValue.length > 0;
+
+  return (
+    <div
+      className={cn("min-h-[14px] text-[11px] leading-tight", hasValue ? "text-slate-600" : "select-none text-transparent")}
+      data-testid={testId}
+      aria-hidden={hasValue ? undefined : true}
+    >
+      {hasValue ? trimmedValue : "\u00A0"}
+    </div>
+  );
+}
+
 function ExpandedContent({
   hideHeader,
   fullName,
@@ -57,9 +81,22 @@ function ExpandedContent({
   phone,
   email,
 }: Omit<CustomerInfoPanelProps, "mode" | "testId">) {
+  const cityLine = [postalCode, city].filter(Boolean).join(" ");
+
+  if (hideHeader) {
+    return (
+      <div className="space-y-0.5">
+        <CustomerInfoLine value={addressLine1} testId="customer-info-line-address" />
+        <CustomerInfoLine value={cityLine} testId="customer-info-line-city" />
+        <CustomerInfoLine value={phone} testId="customer-info-line-phone" />
+        <CustomerInfoLine value={email} testId="customer-info-line-email" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-0.5">
-      {!hideHeader && <CustomerHeader fullName={fullName} customerNumber={customerNumber} />}
+      <CustomerHeader fullName={fullName} customerNumber={customerNumber} />
       <AddressBlock addressLine1={addressLine1} postalCode={postalCode} city={city} />
       {phone?.trim() && (
         <div className="text-[11px] leading-tight text-slate-600">{phone}</div>
@@ -82,6 +119,7 @@ export function CustomerInfoPanel({
   phone,
   email,
   testId,
+  className,
 }: CustomerInfoPanelProps) {
   if (mode === "collapsed") {
     return (
@@ -106,7 +144,7 @@ export function CustomerInfoPanel({
         maxWidth={360}
       >
         <div
-          className="cursor-pointer rounded-md border border-slate-200/90 px-2 py-1.5"
+          className={cn("cursor-pointer rounded-md border border-slate-200/90 bg-white px-1.5 py-1", className)}
           data-testid={testId ?? "customer-info-panel-collapsed"}
         >
           <CustomerHeader fullName={fullName} customerNumber={customerNumber} />
@@ -118,7 +156,7 @@ export function CustomerInfoPanel({
   if (mode === "semiexpanded") {
     return (
       <div
-        className="rounded-md border border-slate-200/90 px-2 py-1.5"
+        className={cn("rounded-md border border-slate-200/90 bg-white px-1.5 py-1", className)}
         data-testid={testId ?? "customer-info-panel-semiexpanded"}
       >
         <CustomerHeader fullName={fullName} customerNumber={customerNumber} />
@@ -129,7 +167,7 @@ export function CustomerInfoPanel({
 
   return (
     <div
-      className="rounded-md border border-slate-200/90 px-2 py-1.5"
+      className={cn("rounded-md border border-slate-200/90 bg-white px-1.5 py-1", className)}
       data-testid={testId ?? "customer-info-panel-expanded"}
     >
       <ExpandedContent

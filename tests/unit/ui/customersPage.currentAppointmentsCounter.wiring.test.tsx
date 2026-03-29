@@ -2,17 +2,16 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Kundenkarte zeigt den Footer-Baustein fuer geplante Termine mit dem gelieferten Zaehlerwert.
- * - Die Kundenkarte bindet fuer Notizen den wiederverwendbaren EntityNotesHoverPreview-Trigger.
- * - Die Kundenkarte teilt die Footer-Zeile 2:1 fuer Termine und Notizen auf.
+ * - Die Kundenkarte bindet die gemeinsame Footer-Badge-Zeile fuer Termine, Notizen und Anhänge.
+ * - Notizen bleiben auch bei `0` als Trigger im Footer sichtbar.
  * - Der Kartenfooter bleibt explizit sichtbar.
  *
- * Fehlerfaelle:
- * - Footer-Counter oder Notiz-Trigger gehen bei internen Refactorings verloren.
- * - Der Footer wird nicht mehr sichtbar an EntityCard uebergeben.
+ * Fehlerfälle:
+ * - Einzelne Footer-Badges gehen bei Refactorings verloren.
+ * - Notiz-Badges werden bei `0` weiterhin ausgeblendet.
  *
  * Ziel:
- * Den Kundenkarten-Footer ueber gerenderte Komponenten-Props statt ueber Quelltext-Strings absichern.
+ * Das Footer-Wiring der Kundenkarte über gerenderte Komponenten-Props regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -22,11 +21,13 @@ const useQueryMock = vi.fn();
 const useSettingsMock = vi.fn();
 const useListFiltersMock = vi.fn();
 const entityCardCalls: Array<Record<string, unknown>> = [];
-const appointmentBadgeCalls: Array<Record<string, unknown>> = [];
+const appointmentPreviewCalls: Array<Record<string, unknown>> = [];
 const notesPreviewCalls: Array<Record<string, unknown>> = [];
+const attachmentPreviewCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  keepPreviousData: Symbol("keepPreviousData"),
 }));
 
 vi.mock("@/hooks/useSettings", () => ({
@@ -84,14 +85,11 @@ vi.mock("@/components/ui/entity-card", () => ({
   },
 }));
 
-vi.mock("@/components/ui/appointment-count-badge", () => ({
-  AppointmentCountBadge: (props: Record<string, unknown>) => {
-    appointmentBadgeCalls.push(props);
-    return (
-      <div data-testid={String(props.testId)}>
-        Geplante Termine:{String(props.count)}
-      </div>
-    );
+vi.mock("@/components/ui/entity-appointments-hover-preview", () => ({
+  EntityAppointmentsHoverPreview: (props: Record<string, unknown>) => {
+    appointmentPreviewCalls.push(props);
+    const source = props.source as { count?: number } | undefined;
+    return <span>Termine:{String(source?.count ?? 0)}</span>;
   },
 }));
 
@@ -103,18 +101,22 @@ vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
   },
 }));
 
-vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
-  createAppointmentWeeklyPanelPreview: vi.fn(() => <div>preview</div>),
+vi.mock("@/components/ui/CustomerAttachmentsHover", () => ({
+  CustomerAttachmentsHover: (props: Record<string, unknown>) => {
+    attachmentPreviewCalls.push(props);
+    return <span>Anhänge:{String(props.totalAttachmentsCount ?? 0)}</span>;
+  },
 }));
 
 import { CustomersPage } from "../../../client/src/components/CustomersPage";
 
-describe("FT05+ customers page current appointments counter wiring", () => {
+describe("FT05+ customers page footer badge wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     entityCardCalls.length = 0;
-    appointmentBadgeCalls.length = 0;
+    appointmentPreviewCalls.length = 0;
     notesPreviewCalls.length = 0;
+    attachmentPreviewCalls.length = 0;
 
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map(),
@@ -125,47 +127,6 @@ describe("FT05+ customers page current appointments counter wiring", () => {
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),
-    });
-    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
-      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
-      if (key === "/api/customers/list") {
-        return {
-          data: {
-            page: 1,
-            pageSize: 50,
-            total: 1,
-            totalPages: 1,
-            items: [
-              {
-                id: 7,
-                customerNumber: "K-007",
-                fullName: "Mina Muster",
-                firstName: "Mina",
-                lastName: "Muster",
-                company: null,
-                phone: "01234",
-                email: null,
-                postalCode: "12345",
-                city: "Berlin",
-                addressLine1: null,
-                addressLine2: null,
-                isActive: true,
-                version: 3,
-                tags: [],
-                notesCount: 2,
-                plannedAppointmentsCount: 4,
-                nextAppointmentStartDate: "2099-05-20",
-                nextAppointmentStartTimeHour: 9,
-              },
-            ],
-          },
-          isLoading: false,
-        };
-      }
-      if (key === "/api/tags") {
-        return { data: [], isLoading: false };
-      }
-      return { data: undefined, isLoading: false };
     });
 
     Object.defineProperty(globalThis, "window", {
@@ -178,28 +139,7 @@ describe("FT05+ customers page current appointments counter wiring", () => {
     });
   });
 
-  it("renders planned appointments and notes in the customer card footer", () => {
-    const markup = renderToStaticMarkup(<CustomersPage />);
-
-    expect(markup).toContain("Geplante Termine:4");
-    expect(markup).toContain("Notizen:2");
-    expect(markup).toContain("grid-cols-[2fr_1fr]");
-    expect(appointmentBadgeCalls).toHaveLength(1);
-    expect(appointmentBadgeCalls[0]).toMatchObject({
-      count: 4,
-      testId: "text-customer-planned-appointments-7",
-      fullWidth: true,
-    });
-    expect(notesPreviewCalls).toHaveLength(1);
-    expect(notesPreviewCalls[0]).toMatchObject({
-      sourceMode: "single-parent",
-      triggerTestId: "text-customer-notes-count-7",
-      sources: { type: "customer", id: 7, count: 2 },
-    });
-    expect(renderToStaticMarkup(entityCardCalls[0].headerMeta as React.ReactElement)).toContain("K-Nr. K-007");
-  });
-
-  it("omits the notes slot when the customer has no notes", () => {
+  function mockCustomers(notesCount: number) {
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (key === "/api/customers/list") {
@@ -226,10 +166,13 @@ describe("FT05+ customers page current appointments counter wiring", () => {
                 isActive: true,
                 version: 3,
                 tags: [],
-                notesCount: 0,
+                notesCount,
                 plannedAppointmentsCount: 4,
                 nextAppointmentStartDate: "2099-05-20",
                 nextAppointmentStartTimeHour: 9,
+                nextAppointmentId: 70,
+                historicalAppointments: [],
+                attachmentsCount: 2,
               },
             ],
           },
@@ -241,18 +184,47 @@ describe("FT05+ customers page current appointments counter wiring", () => {
       }
       return { data: undefined, isLoading: false };
     });
+  }
+
+  it("renders appointments, notes and attachments in the visible customer card footer", () => {
+    mockCustomers(2);
 
     const markup = renderToStaticMarkup(<CustomersPage />);
 
-    expect(markup).toContain("Geplante Termine:4");
-    expect(markup).not.toContain("Notizen:");
-    expect(markup).not.toContain("text-customer-notes-count-7");
+    expect(markup).toContain("Termine:4");
+    expect(markup).toContain("Notizen:2");
+    expect(markup).toContain("Anhänge:2");
+    expect(appointmentPreviewCalls[0]).toMatchObject({
+      triggerTestId: "text-customer-planned-appointments-7",
+      source: { type: "customer", id: 7, count: 4 },
+    });
+    expect(notesPreviewCalls[0]).toMatchObject({
+      sourceMode: "single-parent",
+      triggerTestId: "text-customer-notes-count-7",
+      sources: { type: "customer", id: 7, count: 2 },
+    });
+    expect(attachmentPreviewCalls[0]).toMatchObject({
+      customerId: 7,
+      totalAttachmentsCount: 2,
+    });
+    expect(renderToStaticMarkup(entityCardCalls[0].headerMeta as React.ReactElement)).toContain("K-Nr. K-007");
+  });
+
+  it("keeps the notes badge visible with count 0", () => {
+    mockCustomers(0);
+
+    const markup = renderToStaticMarkup(<CustomersPage />);
+
+    expect(markup).toContain("Notizen:0");
+    expect(notesPreviewCalls[0]).toMatchObject({
+      sources: { type: "customer", id: 7, count: 0 },
+    });
   });
 
   it("keeps the entity card footer explicitly visible", () => {
+    mockCustomers(1);
     renderToStaticMarkup(<CustomersPage />);
 
-    expect(entityCardCalls).toHaveLength(1);
     expect(entityCardCalls[0]).toMatchObject({
       testId: "customer-card-7",
       footerVisibility: "visible",

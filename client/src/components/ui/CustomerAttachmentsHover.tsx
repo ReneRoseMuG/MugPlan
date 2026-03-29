@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Paperclip } from "lucide-react";
-import { HoverPreview } from "@/components/ui/hover-preview";
+import { CalendarWeekAppointmentAttachmentsGallery } from "@/components/calendar/CalendarWeekAppointmentAttachmentsGallery";
 import {
   AttachmentInfoBadgePreview,
   AttachmentPreviewTrigger,
   parseAttachmentPreviewSize,
   resolveAttachmentPreviewDimensions,
 } from "@/components/ui/badge-previews/attachment-info-badge-preview";
+import { FooterChildCollectionBadge } from "@/components/ui/footer-child-collection-badge";
+import { HoverPreview } from "@/components/ui/hover-preview";
 import { useSetting } from "@/hooks/useSettings";
-import { CalendarWeekAppointmentAttachmentsGallery } from "@/components/calendar/CalendarWeekAppointmentAttachmentsGallery";
 
 type CustomerAttachmentItem = {
   id: number;
@@ -81,23 +82,30 @@ export function CustomerAttachmentsHover({
   const singleAttachment = normalizedCount === 1 ? (attachments[0] ?? null) : null;
 
   const triggerContent = (
-    <div
-      className={`mt-1 cursor-pointer rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100${fullWidth ? " block w-full" : ""}`}
-      data-testid={`customer-attachments-hover-trigger-${customerId}`}
-      onMouseEnter={() => setShouldLoadPreview(true)}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1">
-          <Paperclip className="h-3 w-3" />
-          Anhänge
-        </span>
-        <span>{normalizedCount}</span>
-      </div>
-    </div>
+    <FooterChildCollectionBadge
+      icon={<Paperclip className="h-3 w-3" />}
+      label="Anhänge"
+      count={normalizedCount}
+      testId={`customer-attachments-hover-trigger-${customerId}`}
+      onHoverStart={() => setShouldLoadPreview(true)}
+      fullWidth={fullWidth}
+      inactive={normalizedCount <= 0}
+    />
   );
 
   if (normalizedCount <= 0) {
-    return null;
+    return (
+      <HoverPreview
+        preview={<div className="text-xs text-slate-500">Keine Anhänge vorhanden.</div>}
+        closeDelay={120}
+        side="right"
+        align="start"
+        maxWidth={260}
+        className="z-[9999] w-[260px]"
+      >
+        {triggerContent}
+      </HoverPreview>
+    );
   }
 
   if (normalizedCount === 1) {
@@ -118,6 +126,7 @@ export function CustomerAttachmentsHover({
           if (!singleAttachment) {
             return <div className="text-xs text-slate-500">Keine Anhänge vorhanden.</div>;
           }
+
           return (
             <AttachmentInfoBadgePreview
               originalName={singleAttachment.originalName}

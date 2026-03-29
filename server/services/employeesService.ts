@@ -64,12 +64,12 @@ function requireAdmin(roleKey: CanonicalRoleKey): void {
 }
 
 export async function listEmployees(roleKey: CanonicalRoleKey, scope: "active" | "inactive" = "active"): Promise<Employee[]> {
-  const employees = await employeesRepository.getEmployees(resolveScope(roleKey, scope));
+  const employees = await employeesRepository.getEmployeeListItems(resolveScope(roleKey, scope));
   const tagsByEmployeeId = await tagRelationsRepository.getEmployeeTagsByEmployeeIds(employees.map((employee) => employee.id));
   return employees.map((employee) => ({
     ...employee,
     tags: tagsByEmployeeId.get(employee.id) ?? [],
-  })) as Array<Employee & { tags: Tag[] }>;
+  })) as Array<Employee & { tags: Tag[]; notesCount: number; attachmentsCount: number }>;
 }
 
 export async function listEmployeesForAppointmentDate(
@@ -77,7 +77,12 @@ export async function listEmployeesForAppointmentDate(
   _appointmentDate: string,
   scope: "active" | "inactive" = "active",
 ): Promise<Employee[]> {
-  return employeesRepository.getEmployees(resolveScope(roleKey, scope));
+  const employees = await employeesRepository.getEmployeeListItems(resolveScope(roleKey, scope));
+  const tagsByEmployeeId = await tagRelationsRepository.getEmployeeTagsByEmployeeIds(employees.map((employee) => employee.id));
+  return employees.map((employee) => ({
+    ...employee,
+    tags: tagsByEmployeeId.get(employee.id) ?? [],
+  })) as Array<Employee & { tags: Tag[]; notesCount: number; attachmentsCount: number }>;
 }
 
 export async function getEmployeeWithRelations(

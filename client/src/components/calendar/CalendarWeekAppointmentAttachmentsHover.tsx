@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Paperclip } from "lucide-react";
-import { HoverPreview } from "@/components/ui/hover-preview";
 import {
   AttachmentInfoBadgePreview,
   AttachmentPreviewTrigger,
   parseAttachmentPreviewSize,
   resolveAttachmentPreviewDimensions,
 } from "@/components/ui/badge-previews/attachment-info-badge-preview";
+import { FooterChildCollectionBadge } from "@/components/ui/footer-child-collection-badge";
+import { HoverPreview } from "@/components/ui/hover-preview";
 import { useSetting } from "@/hooks/useSettings";
 import { CalendarWeekAppointmentAttachmentsGallery } from "./CalendarWeekAppointmentAttachmentsGallery";
 
@@ -79,15 +80,15 @@ function AttachmentGalleryPreviewContent({
   isError: boolean;
 }) {
   if (isError) {
-    return <div className="text-xs text-red-600">Anhaenge konnten nicht geladen werden.</div>;
+    return <div className="text-xs text-red-600">Anhänge konnten nicht geladen werden.</div>;
   }
 
   if (isLoading) {
-    return <div className="text-xs text-slate-500">Anhaenge werden geladen...</div>;
+    return <div className="text-xs text-slate-500">Anhänge werden geladen...</div>;
   }
 
   if (attachments.length === 0) {
-    return <div className="text-xs text-slate-500">Keine Anhaenge vorhanden.</div>;
+    return <div className="text-xs text-slate-500">Keine Anhänge vorhanden.</div>;
   }
 
   if (attachments.length <= 1) {
@@ -117,24 +118,31 @@ export function CalendarWeekAppointmentAttachmentsHover({
   });
   const attachments = buildPreviewAttachments(attachmentsQuery.data);
   const singleAttachment = normalizedCount === 1 ? (attachments[0] ?? null) : null;
+
   const triggerContent = (
-    <div
-      className="mt-1 cursor-pointer rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
-      data-testid="week-appointment-attachments-hover-trigger"
-      onMouseEnter={() => setShouldLoadPreview(true)}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1">
-          <Paperclip className="h-3 w-3" />
-          Anhaenge
-        </span>
-        <span>{normalizedCount}</span>
-      </div>
-    </div>
+    <FooterChildCollectionBadge
+      icon={<Paperclip className="h-3 w-3" />}
+      label="Anhänge"
+      count={normalizedCount}
+      testId="week-appointment-attachments-hover-trigger"
+      onHoverStart={() => setShouldLoadPreview(true)}
+      inactive={normalizedCount <= 0}
+    />
   );
 
   if (normalizedCount <= 0) {
-    return null;
+    return (
+      <HoverPreview
+        preview={<div className="text-xs text-slate-500">Keine Anhänge vorhanden.</div>}
+        closeDelay={120}
+        side="right"
+        align="start"
+        maxWidth={260}
+        className="z-[9999] w-[260px]"
+      >
+        {triggerContent}
+      </HoverPreview>
+    );
   }
 
   if (normalizedCount === 1) {
@@ -155,7 +163,7 @@ export function CalendarWeekAppointmentAttachmentsHover({
           }
 
           if (!singleAttachment) {
-            return <div className="text-xs text-slate-500">Keine Anhaenge vorhanden.</div>;
+            return <div className="text-xs text-slate-500">Keine Anhänge vorhanden.</div>;
           }
 
           return (

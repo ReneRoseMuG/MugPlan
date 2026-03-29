@@ -1,8 +1,9 @@
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
   employeeAttachments,
+  employeeNotes,
   employees,
   type Employee,
   type EmployeeAttachment,
@@ -13,12 +14,53 @@ import {
 
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export type EmployeeListItem = Employee & {
+  notesCount: number;
+  attachmentsCount: number;
+};
+
 export async function getEmployees(scope: "active" | "inactive" = "active"): Promise<Employee[]> {
   return db
     .select()
     .from(employees)
     .where(eq(employees.isActive, scope === "active"))
     .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
+}
+
+export async function getEmployeeListItems(scope: "active" | "inactive" = "active"): Promise<EmployeeListItem[]> {
+  const rows = await getEmployees(scope);
+  const employeeIds = rows.map((employee) => employee.id);
+
+  if (employeeIds.length === 0) {
+    return [];
+  }
+
+  const noteCountRows = await db
+    .select({
+      employeeId: employeeNotes.employeeId,
+      count: sql<number>`count(*)`,
+    })
+    .from(employeeNotes)
+    .where(inArray(employeeNotes.employeeId, employeeIds))
+    .groupBy(employeeNotes.employeeId);
+
+  const attachmentCountRows = await db
+    .select({
+      employeeId: employeeAttachments.employeeId,
+      count: sql<number>`count(*)`,
+    })
+    .from(employeeAttachments)
+    .where(inArray(employeeAttachments.employeeId, employeeIds))
+    .groupBy(employeeAttachments.employeeId);
+
+  const notesCountByEmployeeId = new Map(noteCountRows.map((row) => [row.employeeId, Number(row.count)] as const));
+  const attachmentsCountByEmployeeId = new Map(attachmentCountRows.map((row) => [row.employeeId, Number(row.count)] as const));
+
+  return rows.map((employee) => ({
+    ...employee,
+    notesCount: notesCountByEmployeeId.get(employee.id) ?? 0,
+    attachmentsCount: attachmentsCountByEmployeeId.get(employee.id) ?? 0,
+  }));
 }
 
 export async function getEmployeesAvailableOnDate(

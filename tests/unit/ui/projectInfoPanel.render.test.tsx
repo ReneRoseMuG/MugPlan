@@ -95,6 +95,23 @@ describe("ProjectInfoPanel render", () => {
     expect(markup).toContain("ORD-99");
   });
 
+  it("expanded: reicht zusaetzliche Klassen an die Panel-Huelle durch", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel {...baseProps} mode="expanded" className="h-full" />,
+    );
+
+    expect(markup).toContain("h-full");
+  });
+
+  it("expanded im kompakten Modus begrenzt das Panel wieder auf die feste Kartenhoehe", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel {...baseProps} mode="expanded" compact />,
+    );
+
+    expect(markup).toContain("h-[6.5rem]");
+    expect(markup).toContain("overflow-hidden");
+  });
+
   it("expanded mit hideHeader: kein h5-Projektname im Output", () => {
     const markup = renderToStaticMarkup(
       <ProjectInfoPanel {...baseProps} mode="expanded" hideHeader />,
@@ -103,6 +120,21 @@ describe("ProjectInfoPanel render", () => {
     expect(markup).not.toContain("<h5");
     expect(markup).not.toContain("Saunabau Nord");
     expect(markup).toContain("article-renderer");
+  });
+
+  it("expanded ohne Projektinhalt zeigt den Fallbacktext im Panel", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel
+        {...baseProps}
+        mode="expanded"
+        hideHeader
+        projectArticleItems={[]}
+        projectDescription={null}
+      />,
+    );
+
+    expect(markup).toContain("Kein Auftrag hinterlegt");
+    expect(markup).not.toContain("article-renderer");
   });
 
   it("fehlende Auftragsnummer wird als Strich dargestellt", () => {
@@ -115,5 +147,19 @@ describe("ProjectInfoPanel render", () => {
     );
 
     expect(markup).toContain("- -");
+  });
+
+  it("normalisiert den Fallbacktext '--Ohne Projekt' zu 'Kein Auftrag hinterlegt' und oeffnet dann kein Preview", () => {
+    const markup = renderToStaticMarkup(
+      <ProjectInfoPanel
+        {...baseProps}
+        projectName="--Ohne Projekt"
+        mode="collapsed"
+      />,
+    );
+
+    expect(markup).toContain("Kein Auftrag hinterlegt");
+    expect(markup).not.toContain("--Ohne Projekt");
+    expect(markup).not.toContain("hover-preview-wrapper");
   });
 });

@@ -30,15 +30,17 @@ import { EmployeeImportPanel } from "@/components/ImportExportPage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-filters";
 import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
-import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
+import { EntityAppointmentsHoverPreview } from "@/components/ui/entity-appointments-hover-preview";
+import { EmployeeAttachmentsHover } from "@/components/ui/EmployeeAttachmentsHover";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
+import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
+import { EmployeeTableHoverPreview } from "@/components/ui/table-hover-previews";
 import type { Employee, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeesPageProps {
@@ -53,7 +55,7 @@ type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
 type EmployeeSortKey = "lastName" | "firstName" | "tour" | "team";
 type EmployeeAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
-type EmployeeListItem = Employee & { tags: Tag[] };
+type EmployeeListItem = Employee & { tags: Tag[]; notesCount: number; attachmentsCount: number };
 
 function parseViewMode(value: unknown): ViewMode {
   return value === "table" ? "table" : "board";
@@ -573,12 +575,23 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     </Button>
                   }
                   footer={
-                    <div className="flex w-full flex-col gap-2">
-                      <AppointmentCountBadge
-                        count={currentAppointmentsCount}
-                        testId={`text-employee-current-appointments-${employee.id}`}
-                        fullWidth
-                      />
+                    <div className="flex w-full flex-col gap-1.5">
+                      <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+                        <EntityAppointmentsHoverPreview
+                          source={{ type: "employee", id: employee.id, count: currentAppointmentsCount }}
+                          triggerTestId={`text-employee-current-appointments-${employee.id}`}
+                        />
+                        <EntityNotesHoverPreview
+                          sourceMode="single-parent"
+                          sources={{ type: "employee", id: employee.id, count: employee.notesCount ?? 0 }}
+                          triggerTestId={`text-employee-notes-count-${employee.id}`}
+                        />
+                        <EmployeeAttachmentsHover
+                          employeeId={employee.id}
+                          totalAttachmentsCount={employee.attachmentsCount ?? 0}
+                          triggerTestId={`text-employee-attachments-count-${employee.id}`}
+                        />
+                      </div>
                       <EntityTagFooterRow tags={employee.tags ?? []} testId={`employee-card-tags-${employee.id}`} />
                     </div>
                   }
@@ -638,17 +651,24 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
               rows={sortedEmployeeRows}
               rowKey={(row) => row.employee.id}
               onRowDoubleClick={(row) => handleOpenDetail(row.employee)}
-              rowPreviewRenderer={(row) => {
-                if (!row.relevantAppointment) {
-                  return (
-                    <div className="rounded-md border border-border bg-card p-3">
-                      Keine Termine geplant
-                    </div>
-                  );
-                }
-
-                return createAppointmentWeeklyPanelPreview(row.relevantAppointment, { sizeProfile: "sidebarTable" });
-              }}
+              rowPreviewRenderer={(row) => (
+                <EmployeeTableHoverPreview
+                  employee={{
+                    id: row.employee.id,
+                    fullName: row.employee.fullName,
+                    phone: row.employee.phone,
+                    email: row.employee.email,
+                    isActive: row.employee.isActive,
+                  }}
+                  teamName={row.team?.name ?? null}
+                  tourName={row.tour?.name ?? null}
+                  plannedAppointmentsCount={row.plannedAppointmentsCount}
+                  notesCount={row.employee.notesCount ?? 0}
+                  attachmentsCount={row.employee.attachmentsCount ?? 0}
+                  tags={row.employee.tags ?? []}
+                  relevantAppointment={row.relevantAppointment}
+                />
+              )}
               emptyState={emptyState}
               footerSlot={tableFooter}
               stickyHeader

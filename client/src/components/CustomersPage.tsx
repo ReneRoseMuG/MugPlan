@@ -15,7 +15,7 @@ import { defaultCustomerFilters } from "@/lib/customer-filters";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
-import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
+import { EntityAppointmentsHoverPreview } from "@/components/ui/entity-appointments-hover-preview";
 import type { Customer, Tag } from "@shared/schema";
 import { domainIcons } from "@/lib/domain-icons";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
@@ -417,42 +417,41 @@ export function CustomersPage({
                     testId={`customer-card-${customer.id}`}
                     onDoubleClick={handleSelect}
                     footer={(
-                      <div className="flex w-full flex-col gap-2">
-                        <AppointmentCountBadge
-                          count={customer.plannedAppointmentsCount}
-                          testId={`text-customer-planned-appointments-${customer.id}`}
-                          fullWidth
-                        />
-                        {customer.notesCount > 0 ? (
+                      <div className="flex w-full flex-col gap-1.5">
+                        <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+                          <EntityAppointmentsHoverPreview
+                            source={{ type: "customer", id: customer.id, count: customer.plannedAppointmentsCount }}
+                            triggerTestId={`text-customer-planned-appointments-${customer.id}`}
+                          />
                           <EntityNotesHoverPreview
                             sourceMode="single-parent"
                             sources={{ type: "customer", id: customer.id, count: customer.notesCount ?? 0 }}
                             triggerTestId={`text-customer-notes-count-${customer.id}`}
-                            fullWidth
                           />
-                        ) : null}
-                        <CustomerAttachmentsHover
-                          customerId={customer.id}
-                          totalAttachmentsCount={customer.attachmentsCount}
-                          fullWidth
-                        />
+                          <CustomerAttachmentsHover
+                            customerId={customer.id}
+                            totalAttachmentsCount={customer.attachmentsCount}
+                          />
+                        </div>
                         <EntityTagFooterRow tags={customer.tags} testId={`customer-card-tags-${customer.id}`} />
                       </div>
                     )}
                     footerVisibility="visible"
                   >
-                    <CustomerInfoPanel
-                      mode="expanded"
-                      hideHeader={true}
-                      fullName={customer.fullName}
-                      customerNumber={customer.customerNumber}
-                      addressLine1={customer.addressLine1}
-                      postalCode={customer.postalCode}
-                      city={customer.city}
-                      phone={customer.phone}
-                      email={customer.email}
-                      testId={`customer-card-info-${customer.id}`}
-                    />
+                    <div className="-mb-3 -mt-3 -mx-3">
+                      <CustomerInfoPanel
+                        mode="expanded"
+                        hideHeader={true}
+                        fullName={customer.fullName}
+                        customerNumber={customer.customerNumber}
+                        addressLine1={customer.addressLine1}
+                        postalCode={customer.postalCode}
+                        city={customer.city}
+                        phone={customer.phone}
+                        email={customer.email}
+                        testId={`customer-card-info-${customer.id}`}
+                      />
+                    </div>
                   </EntityCard>
                 );
               })}
@@ -480,6 +479,7 @@ export function CustomersPage({
                   plannedAppointmentsCount={row.customer.plannedAppointmentsCount}
                   attachmentsCount={row.customer.attachmentsCount}
                   nextAppointment={row.relevantAppointment}
+                  tags={row.customer.tags ?? []}
                 />
               )}
               emptyState={emptyState}

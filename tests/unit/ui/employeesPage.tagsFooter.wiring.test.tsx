@@ -2,15 +2,16 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - EmployeesPage rendert in der Board-Karte den Footer mit Terminzaehler und Tag-Zeile.
- * - Die Mitarbeiterkarte uebergibt die serverseitig gelieferten Tags an EntityTagFooterRow.
+ * - EmployeesPage rendert in der Board-Karte die Footer-Badge-Zeile für Termine, Notizen und Anhänge.
+ * - Die Mitarbeiterkarte übergibt die serverseitig gelieferten Tags an EntityTagFooterRow.
+ * - Die neuen Mitarbeiter-Zähler stammen direkt aus der Listenprojektion.
  *
- * Fehlerfaelle:
- * - Mitarbeiter-Tags gehen im Kartenfooter verloren.
- * - Der Kartenfooter rendert nur noch den Terminzaehler ohne Tag-Zeile.
+ * Fehlerfälle:
+ * - Notiz- oder Anhang-Badges fehlen im Mitarbeiterkartenfooter.
+ * - Die Mitarbeiterliste liefert die neuen Count-Felder nicht bis in die Karte durch.
  *
  * Ziel:
- * Das Footer-Wiring der Mitarbeiterkarte fuer Tags ueber gerenderte Komponenten-Props absichern.
+ * Das Footer-Wiring der Mitarbeiterkarte für die vereinheitlichten Badges regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -20,7 +21,9 @@ const useQueryMock = vi.fn();
 const useSettingsMock = vi.fn();
 const useListFiltersMock = vi.fn();
 const entityCardCalls: Array<Record<string, unknown>> = [];
-const appointmentBadgeCalls: Array<Record<string, unknown>> = [];
+const appointmentPreviewCalls: Array<Record<string, unknown>> = [];
+const notesPreviewCalls: Array<Record<string, unknown>> = [];
+const attachmentPreviewCalls: Array<Record<string, unknown>> = [];
 const tagFooterCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
@@ -92,10 +95,26 @@ vi.mock("@/components/ui/entity-card", () => ({
   },
 }));
 
-vi.mock("@/components/ui/appointment-count-badge", () => ({
-  AppointmentCountBadge: (props: Record<string, unknown>) => {
-    appointmentBadgeCalls.push(props);
-    return <div data-testid={String(props.testId)}>Geplante Termine:{String(props.count)}</div>;
+vi.mock("@/components/ui/entity-appointments-hover-preview", () => ({
+  EntityAppointmentsHoverPreview: (props: Record<string, unknown>) => {
+    appointmentPreviewCalls.push(props);
+    const source = props.source as { count?: number } | undefined;
+    return <span>Termine:{String(source?.count ?? 0)}</span>;
+  },
+}));
+
+vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
+  EntityNotesHoverPreview: (props: Record<string, unknown>) => {
+    notesPreviewCalls.push(props);
+    const sources = props.sources as { count?: number } | undefined;
+    return <span>Notizen:{String(sources?.count ?? 0)}</span>;
+  },
+}));
+
+vi.mock("@/components/ui/EmployeeAttachmentsHover", () => ({
+  EmployeeAttachmentsHover: (props: Record<string, unknown>) => {
+    attachmentPreviewCalls.push(props);
+    return <span>Anhänge:{String(props.totalAttachmentsCount ?? 0)}</span>;
   },
 }));
 
@@ -129,17 +148,19 @@ vi.mock("@/components/ui/tour-info-badge", () => ({
   TourInfoBadge: () => <div>tour</div>,
 }));
 
-vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
-  createAppointmentWeeklyPanelPreview: vi.fn(() => <div>preview</div>),
+vi.mock("@/components/ui/table-hover-previews", () => ({
+  EmployeeTableHoverPreview: () => <div>employee-table-preview</div>,
 }));
 
 import { EmployeesPage } from "../../../client/src/components/EmployeesPage";
 
-describe("FT05+ employees page tags footer wiring", () => {
+describe("FT05+ employees page footer badge wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     entityCardCalls.length = 0;
-    appointmentBadgeCalls.length = 0;
+    appointmentPreviewCalls.length = 0;
+    notesPreviewCalls.length = 0;
+    attachmentPreviewCalls.length = 0;
     tagFooterCalls.length = 0;
 
     useSettingsMock.mockReturnValue({
@@ -169,6 +190,8 @@ describe("FT05+ employees page tags footer wiring", () => {
               tourId: null,
               isActive: true,
               version: 2,
+              notesCount: 3,
+              attachmentsCount: 2,
               tags: [
                 { id: 4, name: "Montage", color: "#112233", isDefault: false, version: 1 },
               ],
@@ -202,21 +225,29 @@ describe("FT05+ employees page tags footer wiring", () => {
     });
   });
 
-  it("renders employee tags in the visible entity card footer", () => {
+  it("renders the unified employee footer badges with list-projected counters", () => {
     const markup = renderToStaticMarkup(<EmployeesPage />);
 
-    expect(markup).toContain("Geplante Termine:1");
-    expect(entityCardCalls).toHaveLength(1);
+    expect(markup).toContain("Termine:1");
+    expect(markup).toContain("Notizen:3");
+    expect(markup).toContain("Anhänge:2");
     expect(entityCardCalls[0]).toMatchObject({
       testId: "employee-card-8",
       footerVisibility: "visible",
     });
-    expect(appointmentBadgeCalls[0]).toMatchObject({
-      count: 1,
-      testId: "text-employee-current-appointments-8",
-      fullWidth: true,
+    expect(appointmentPreviewCalls[0]).toMatchObject({
+      source: { type: "employee", id: 8, count: 1 },
+      triggerTestId: "text-employee-current-appointments-8",
     });
-    expect(tagFooterCalls).toHaveLength(1);
+    expect(notesPreviewCalls[0]).toMatchObject({
+      sources: { type: "employee", id: 8, count: 3 },
+      triggerTestId: "text-employee-notes-count-8",
+    });
+    expect(attachmentPreviewCalls[0]).toMatchObject({
+      employeeId: 8,
+      totalAttachmentsCount: 2,
+      triggerTestId: "text-employee-attachments-count-8",
+    });
     expect(tagFooterCalls[0]).toMatchObject({
       testId: "employee-card-tags-8",
       tags: [{ id: 4, name: "Montage" }],
