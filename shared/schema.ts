@@ -857,6 +857,16 @@ export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;
 
+export const employeeNotes = mysqlTable("employee_note", {
+  employeeId: bigint("employee_id", { mode: "number" }).notNull().references(() => employees.id, { onDelete: "cascade" }),
+  noteId: bigint("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),
+  version: int("version").notNull().default(1),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.employeeId, table.noteId] }),
+}));
+
+export type EmployeeNote = typeof employeeNotes.$inferSelect;
+
 export const employeeAbsenceTypeEnum = mysqlEnum("type", ["vacation", "sick"]);
 
 export const employeeAbsences = mysqlTable("employee_absence", {

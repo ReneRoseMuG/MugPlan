@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Phone, Route, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
+import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
@@ -16,7 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
-import type { Employee, Tag, Team, Tour } from "@shared/schema";
+import type { Employee, Note, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeeWithRelations {
   employee: Employee;
@@ -39,6 +40,7 @@ interface EmployeeFormProps {
 }
 
 type EmployeeTagDraftItem = TagRelationItem;
+type DraftEmployeeNote = Note & { templateId?: number };
 
 function extractApiCode(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
@@ -52,6 +54,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const canManageEmployeeTags = isAdmin || userRole === "DISPATCHER";
+  const canManageEmployeeNotes = isAdmin || userRole === "DISPATCHER";
   const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
   const [formData, setFormData] = useState<EmployeeFormData>({
     firstName: "",
@@ -60,7 +63,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     email: "",
   });
   const [draftEmployeeTags, setDraftEmployeeTags] = useState<EmployeeTagDraftItem[]>([]);
+  const [draftEmployeeNotes, setDraftEmployeeNotes] = useState<DraftEmployeeNote[]>([]);
   const [draftEmployeeAttachments, setDraftEmployeeAttachments] = useState<PendingEmployeeAttachmentItem[]>([]);
+  const draftEmployeeNoteIdRef = useRef(-1);
 
   const invalidateEmployees = () => {
     void queryClient.invalidateQueries({
@@ -78,6 +83,14 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
     }
     await invalidateTagProjectionQueries();
+  };
+
+  const invalidateEmployeeNotesQueries = async () => {
+    invalidateEmployees();
+    if (employeeId) {
+      await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "notes"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+    }
   };
 
   const { data: employeeDetails, isLoading: employeeDetailsLoading } = useQuery<EmployeeWithRelations>({
@@ -116,7 +129,12 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     queryKey: getTagCatalogQueryKey("employee"),
     queryFn: () => fetchTagCatalog("employee"),
   });
+  const { data: employeeNotes = [], isLoading: employeeNotesLoading } = useQuery<Note[]>({
+    queryKey: ["/api/employees", employeeId, "notes"],
+    enabled: isEditing && Boolean(employeeId),
+  });
   const visibleEmployeeTags = isEditing ? employeeTagRelations : draftEmployeeTags;
+  const visibleEmployeeNotes = isEditing ? employeeNotes : draftEmployeeNotes;
 
   useEffect(() => {
     if (!employeeDetails) return;
@@ -131,7 +149,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   useEffect(() => {
     if (!isEditing) {
       setDraftEmployeeTags([]);
+      setDraftEmployeeNotes([]);
       setDraftEmployeeAttachments([]);
+      draftEmployeeNoteIdRef.current = -1;
     }
   }, [isEditing]);
 
@@ -285,6 +305,110 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     },
   });
 
+  const createEmployeeNoteMutation = useMutation({
+    mutationFn: async ({
+      title,
+      body,
+      cardColor,
+      print,
+      templateId,
+    }: {
+      title: string;
+      body: string;
+      cardColor?: string | null;
+      print: boolean;
+      templateId?: number;
+    }) => {
+      const response = await apiRequest("POST", `/api/employees/${employeeId}/notes`, { title, body, cardColor, print, templateId });
+      return response.json();
+    },
+    onSuccess: async () => {
+      await invalidateEmployeeNotesQueries();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Notiz konnte nicht angelegt werden", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateEmployeeNoteMutation = useMutation({
+    mutationFn: async ({
+      noteId,
+      title,
+      body,
+      cardColor,
+      print,
+      version,
+    }: {
+      noteId: number;
+      title: string;
+      body: string;
+      cardColor?: string | null;
+      print: boolean;
+      version: number;
+    }) => {
+      const response = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
+      return response.json();
+    },
+    onSuccess: async () => {
+      await invalidateEmployeeNotesQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Notiz konnte nicht aktualisiert werden", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const toggleEmployeeNotePinMutation = useMutation({
+    mutationFn: async ({ noteId, isPinned, version }: { noteId: number; isPinned: boolean; version: number }) => {
+      const response = await apiRequest("PATCH", `/api/notes/${noteId}/pin`, { isPinned, version });
+      return response.json();
+    },
+    onSuccess: async () => {
+      await invalidateEmployeeNotesQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht aktualisiert werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Notiz konnte nicht aktualisiert werden", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteEmployeeNoteMutation = useMutation({
+    mutationFn: async ({ noteId, version }: { noteId: number; version: number }) => {
+      await apiRequest("DELETE", `/api/employees/${employeeId}/notes/${noteId}`, { version });
+    },
+    onSuccess: async () => {
+      await invalidateEmployeeNotesQueries();
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Notiz konnte nicht geloescht werden",
+          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Notiz konnte nicht geloescht werden", description: error.message, variant: "destructive" });
+    },
+  });
+
   const addDraftEmployeeTag = (tagId: number) => {
     const selectedTag = availableTags.find((tag) => tag.id === tagId);
     if (!selectedTag) return;
@@ -298,6 +422,68 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
   const removeDraftEmployeeTag = (item: TagRelationItem) => {
     setDraftEmployeeTags((current) => current.filter((entry) => entry.tag.id !== item.tag.id));
+  };
+
+  const addDraftEmployeeNote = ({
+    title,
+    body,
+    cardColor,
+    print,
+    templateId,
+  }: {
+    title: string;
+    body: string;
+    cardColor?: string | null;
+    print: boolean;
+    templateId?: number;
+  }) => {
+    const nextId = draftEmployeeNoteIdRef.current;
+    draftEmployeeNoteIdRef.current -= 1;
+    const timestamp = new Date();
+    setDraftEmployeeNotes((current) => [
+      ...current,
+      {
+        id: nextId,
+        title,
+        body,
+        cardColor: cardColor ?? null,
+        print,
+        cardColorLocked: false,
+        isPinned: false,
+        version: 1,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        templateId,
+      },
+    ]);
+  };
+
+  const updateDraftEmployeeNote = (
+    noteId: number,
+    data: { title: string; body: string; cardColor?: string | null; print: boolean },
+  ) => {
+    setDraftEmployeeNotes((current) =>
+      current.map((note) =>
+        note.id === noteId
+          ? {
+              ...note,
+              ...data,
+              cardColor: data.cardColor ?? null,
+              updatedAt: new Date(),
+            }
+          : note,
+      ),
+    );
+  };
+
+  const toggleDraftEmployeeNotePin = (noteId: number, isPinned: boolean) => {
+    setDraftEmployeeNotes((current) =>
+      current.map((note) => (note.id === noteId ? { ...note, isPinned, updatedAt: new Date() } : note)),
+    );
+  };
+
+  const deleteDraftEmployeeNote = (noteId: number) => {
+    setDraftEmployeeNotes((current) => current.filter((note) => note.id !== noteId));
   };
 
   const addDraftEmployeeAttachment = (file: File) => {
@@ -332,6 +518,18 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     }
   };
 
+  const persistDraftEmployeeNotes = async (targetEmployeeId: number) => {
+    for (const note of draftEmployeeNotes) {
+      await apiRequest("POST", `/api/employees/${targetEmployeeId}/notes`, {
+        title: note.title,
+        body: note.body,
+        cardColor: note.cardColor,
+        print: note.print,
+        templateId: note.templateId,
+      });
+    }
+  };
+
   const persistDraftEmployeeAttachments = async (targetEmployeeId: number) => {
     for (const attachment of draftEmployeeAttachments) {
       await uploadEmployeeAttachment(targetEmployeeId, attachment.file);
@@ -340,7 +538,16 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
   const persistCreateSidebarDrafts = async (targetEmployeeId: number) => {
     await persistDraftEmployeeTags(targetEmployeeId);
+    await persistDraftEmployeeNotes(targetEmployeeId);
     await persistDraftEmployeeAttachments(targetEmployeeId);
+  };
+
+  const getEmployeeNoteVersion = (noteId: number): number => {
+    const note = employeeNotes.find((entry) => entry.id === noteId);
+    if (!note || !Number.isInteger(note.version) || note.version < 1) {
+      throw new Error("422: {\"code\":\"VALIDATION_ERROR\"}");
+    }
+    return note.version;
   };
 
   const handleSubmit = async () => {
@@ -383,8 +590,10 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       try {
         await persistCreateSidebarDrafts(createdEmployee.id);
         await queryClient.invalidateQueries({ queryKey: ["/api/employees", createdEmployee.id, "tags"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/employees", createdEmployee.id, "notes"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/employees", createdEmployee.id, "attachments"] });
         setDraftEmployeeTags([]);
+        setDraftEmployeeNotes([]);
         setDraftEmployeeAttachments([]);
       } catch (error) {
         toast({
@@ -407,6 +616,55 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       isActive: checked,
       version: employeeDetails.employee.version,
     });
+  };
+
+  const handleAddNote = ({
+    title,
+    body,
+    cardColor,
+    print,
+    templateId,
+  }: {
+    title: string;
+    body: string;
+    cardColor?: string | null;
+    print: boolean;
+    templateId?: number;
+  }) => {
+    if (!isEditing) {
+      addDraftEmployeeNote({ title, body, cardColor, print, templateId });
+      return;
+    }
+    if (!employeeId) return;
+    createEmployeeNoteMutation.mutate({ title, body, cardColor, print, templateId });
+  };
+
+  const handleUpdateNote = (noteId: number, data: { title: string; body: string; cardColor?: string | null; print: boolean }) => {
+    if (!isEditing) {
+      updateDraftEmployeeNote(noteId, data);
+      return;
+    }
+    const version = getEmployeeNoteVersion(noteId);
+    updateEmployeeNoteMutation.mutate({ noteId, ...data, version });
+  };
+
+  const handleTogglePin = (noteId: number, isPinned: boolean) => {
+    if (!isEditing) {
+      toggleDraftEmployeeNotePin(noteId, isPinned);
+      return;
+    }
+    const version = getEmployeeNoteVersion(noteId);
+    toggleEmployeeNotePinMutation.mutate({ noteId, isPinned, version });
+  };
+
+  const handleDeleteNote = (noteId: number) => {
+    if (!isEditing) {
+      deleteDraftEmployeeNote(noteId);
+      return;
+    }
+    if (!employeeId) return;
+    const version = getEmployeeNoteVersion(noteId);
+    deleteEmployeeNoteMutation.mutate({ noteId, version });
   };
 
   const title = isEditing
@@ -474,6 +732,16 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                 removeDraftEmployeeTag(item);
               }}
               className="h-auto"
+            />
+
+            <NotesSection
+              notes={visibleEmployeeNotes}
+              isLoading={isEditing ? employeeNotesLoading : false}
+              onAdd={handleAddNote}
+              onUpdate={handleUpdateNote}
+              onTogglePin={handleTogglePin}
+              onDelete={handleDeleteNote}
+              readOnly={!canManageEmployeeNotes}
             />
 
             <div className="space-y-2">
