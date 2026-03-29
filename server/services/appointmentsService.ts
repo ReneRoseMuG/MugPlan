@@ -295,6 +295,9 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     customerNoteCounts,
     projectNoteCounts,
     appointmentNoteCounts,
+    customerAttachmentCounts,
+    projectAttachmentCounts,
+    appointmentAttachmentCounts,
     appointmentTagsByAppointmentId,
     customerTagsByCustomerId,
     projectTagsByProjectId,
@@ -304,6 +307,9 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds),
     appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds),
     appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds),
+    appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds),
+    appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds),
+    appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds),
     appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds),
     appointmentsRepository.getCustomerTagsByCustomerIds(customerIds),
     appointmentsRepository.getProjectTagsByProjectIds(projectIds),
@@ -314,6 +320,9 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
       appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
     );
+    const customerAttachmentsCount = customerAttachmentCounts.get(row.customer.id) ?? 0;
+    const projectAttachmentsCount = projectId ? (projectAttachmentCounts.get(projectId) ?? 0) : 0;
+    const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
     return {
       id: row.appointment.id,
       version: row.appointment.version,
@@ -334,6 +343,9 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
         id: row.customer.id,
         customerNumber: row.customer.customerNumber,
         fullName: row.customer.fullName,
+        company: row.customer.company ?? null,
+        phone: row.customer.phone ?? null,
+        email: row.customer.email ?? null,
         addressLine1: row.customer.addressLine1 ?? null,
         addressLine2: row.customer.addressLine2 ?? null,
         postalCode: row.customer.postalCode ?? null,
@@ -343,6 +355,10 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+      customerAttachmentsCount,
+      projectAttachmentsCount,
+      appointmentAttachmentsCount,
+      totalAttachmentsCount: customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount,
       appointmentTags: visibleTags,
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
@@ -1029,6 +1045,8 @@ export async function listAppointmentsList(params: {
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const customerAttachmentCounts = await appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds);
+  const projectAttachmentCounts = await appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds);
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds);
   const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
   const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
@@ -1040,6 +1058,9 @@ export async function listAppointmentsList(params: {
     const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
       appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
     );
+    const customerAttachmentsCount = customerAttachmentCounts.get(row.customer.id) ?? 0;
+    const projectAttachmentsCount = projectId ? (projectAttachmentCounts.get(projectId) ?? 0) : 0;
+    const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
     return {
       id: row.appointment.id,
       projectId,
@@ -1059,6 +1080,7 @@ export async function listAppointmentsList(params: {
         id: row.customer.id,
         customerNumber: row.customer.customerNumber,
         fullName: row.customer.fullName,
+        company: row.customer.company ?? null,
         phone: row.customer.phone ?? null,
         email: row.customer.email ?? null,
         addressLine1: row.customer.addressLine1 ?? null,
@@ -1070,10 +1092,10 @@ export async function listAppointmentsList(params: {
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
-      customerAttachmentsCount: 0,
-      projectAttachmentsCount: 0,
-      appointmentAttachmentsCount: appointmentAttachmentCounts.get(row.appointment.id) ?? 0,
-      totalAttachmentsCount: appointmentAttachmentCounts.get(row.appointment.id) ?? 0,
+      customerAttachmentsCount,
+      projectAttachmentsCount,
+      appointmentAttachmentsCount,
+      totalAttachmentsCount: customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount,
       appointmentTags: visibleTags,
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],

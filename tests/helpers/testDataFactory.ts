@@ -1,3 +1,6 @@
+import fs from "fs/promises";
+import os from "os";
+import path from "path";
 import { eq } from "drizzle-orm";
 import type { InsertCustomer } from "@shared/schema";
 import { appointmentTags, componentCategories, components, productCategories, products, projectTags, projects, tags } from "@shared/schema";
@@ -7,6 +10,7 @@ import * as employeeAbsencesService from "../../server/services/employeeAbsences
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
 import * as customersService from "../../server/services/customersService";
 import * as employeesService from "../../server/services/employeesService";
+import * as masterDataService from "../../server/services/masterDataService";
 import * as projectsService from "../../server/services/projectsService";
 import * as teamsService from "../../server/services/teamsService";
 import * as tourEmployeesService from "../../server/services/tourEmployeesService";
@@ -14,6 +18,19 @@ import * as toursService from "../../server/services/toursService";
 import { getBerlinTodayDateString } from "../../client/src/lib/project-appointments";
 
 let sequence = 1;
+
+export const ENTITY_CARD_COMPONENT_CATEGORY_NAMES = [
+  "Dachvarianten",
+  "Türen",
+  "Fenster",
+  "Öfen",
+  "Steuerungen",
+  "Inneneinrichtung",
+  "Vorderwände",
+  "Rückwände",
+] as const;
+
+export const ENTITY_CARD_PRODUCT_CATEGORY_NAME = "Fasssaunen";
 
 function nextToken(prefix: string): string {
   const current = sequence;
@@ -96,6 +113,14 @@ export async function createExactTagFixture(name: string, color = "#2563eb") {
   });
   const insertedId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
   return { id: insertedId, name };
+}
+
+export async function ensureSystemTagsFixture() {
+  const allTags = await masterDataService.listTags("ADMIN");
+  return {
+    allTags,
+    systemTags: allTags.filter((tag) => tag.isDefault),
+  };
 }
 
 export async function ensureComponentCategoryFixture(name: string) {
@@ -244,6 +269,14 @@ export async function attachProjectTagFixture(projectId: number, tagId: number) 
   });
 }
 
+export async function attachCustomerTagFixture(customerId: number, tagId: number) {
+  await customersService.addCustomerTag(customerId, tagId, "ADMIN");
+}
+
+export async function attachEmployeeTagFixture(employeeId: number, tagId: number) {
+  await employeesService.addEmployeeTag(employeeId, tagId, "ADMIN");
+}
+
 export async function attachAppointmentTagFixture(appointmentId: number, tagId: number) {
   await db.insert(appointmentTags).values({
     appointmentId,
@@ -257,24 +290,54 @@ export async function createProjectFixture(params?: {
   customerId?: number;
   name?: string;
 }) {
+  return createProjectFixtureWithOverrides(params);
+}
+
+export async function createProjectFixtureWithOverrides(params?: {
+  prefix?: string;
+  customerId?: number;
+  name?: string;
+  type?: number;
+  orderNumber?: string | null;
+  descriptionMd?: string | null;
+  amount?: string | null;
+  projectOrder?: {
+    amount?: string | null;
+    plannedDateText?: string | null;
+    plannedWeek?: string | null;
+  };
+}) {
   const customerId = params?.customerId ?? (await createCustomerFixture(`${params?.prefix ?? "PROJ"}-CUST`)).id;
   const token = nextToken(params?.prefix ?? "PROJ");
   return projectsService.createProject({
     customerId,
     name: params?.name ?? token,
-    type: 1,
-    orderNumber: `ORD-${token}`,
-    descriptionMd: null,
+    type: params?.type ?? 1,
+    orderNumber: params?.orderNumber ?? `ORD-${token}`,
+    descriptionMd: params?.descriptionMd ?? null,
+    amount: params?.amount ?? null,
+    projectOrder: params?.projectOrder,
   });
 }
 
 export async function createEmployeeFixture(prefix = "EMP") {
+  return createEmployeeFixtureWithOverrides({ prefix });
+}
+
+export async function createEmployeeFixtureWithOverrides(params?: {
+  prefix?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+  email?: string | null;
+}) {
+  const prefix = params?.prefix ?? "EMP";
   const token = nextToken(prefix);
   return employeesService.createEmployee({
-    firstName: "Fixture",
-    lastName: token,
-    phone: null,
-    email: null,
+    firstName: params?.firstName ?? "Fixture",
+    lastName: params?.lastName ?? token,
+    phone: params?.phone ?? null,
+    email: params?.email ?? null,
   });
 }
 
@@ -347,6 +410,125 @@ export async function createProjectOrderItemFixture(params: {
     specificationId: null,
     quantity: params.quantity ?? 1,
   });
+}
+
+export async function createEntityCardMasterDataFixture(params?: {
+  prefix?: string;
+  productCount?: number;
+  componentsPerCategory?: number;
+}) {
+  const prefix = params?.prefix ?? "ENTITY-CARD";
+  const productCount = Math.max(1, params?.productCount ?? 6);
+  const componentsPerCategory = Math.max(3, params?.componentsPerCategory ?? 3);
+
+  const productCategory = await ensureProductCategoryFixture(ENTITY_CARD_PRODUCT_CATEGORY_NAME);
+  const productsForCards = await Promise.all(
+    Array.from({ length: productCount }, async (_, index) => {
+      const token = nextToken(`${prefix}-PROD-${index + 1}`);
+      return createProductFixture({
+        categoryName: ENTITY_CARD_PRODUCT_CATEGORY_NAME,
+        name: `${prefix} Produkt ${index + 1} ${token}`,
+        description: `${prefix} Produktbeschreibung ${index + 1}`,
+        shortCode: `P${String(sequence + index).padStart(4, "0")}`,
+      });
+    }),
+  );
+
+  const componentGroups = await Promise.all(
+    ENTITY_CARD_COMPONENT_CATEGORY_NAMES.map(async (categoryName) => {
+      const category = await ensureComponentCategoryFixture(categoryName);
+      const items = await Promise.all(
+        Array.from({ length: componentsPerCategory }, async (_, index) => {
+          const token = nextToken(`${prefix}-${categoryName}-${index + 1}`);
+          return createComponentFixture({
+            categoryName,
+            name: `${categoryName} ${index + 1} ${token}`,
+            description: `${categoryName} Beschreibung ${index + 1}`,
+            shortCode: `K${String(sequence + index).padStart(4, "0")}`,
+          });
+        }),
+      );
+
+      return { category, items };
+    }),
+  );
+
+  return {
+    productCategory,
+    products: productsForCards,
+    componentGroups,
+  };
+}
+
+export async function createFilledProjectArticleListFixture(params: {
+  projectId: number;
+  orderNumber: string;
+  prefix?: string;
+}) {
+  const masterData = await createEntityCardMasterDataFixture({ prefix: params.prefix });
+  const createdItems = [];
+
+  createdItems.push(
+    await createProjectOrderItemFixture({
+      projectId: params.projectId,
+      orderNumber: params.orderNumber,
+      productId: masterData.products[0]?.id ?? null,
+      quantity: 1,
+    }),
+  );
+
+  for (const group of masterData.componentGroups) {
+    const component = group.items[0];
+    createdItems.push(
+      await createProjectOrderItemFixture({
+        projectId: params.projectId,
+        orderNumber: params.orderNumber,
+        componentId: component?.id ?? null,
+        quantity: 1,
+      }),
+    );
+  }
+
+  return {
+    masterData,
+    createdItems,
+  };
+}
+
+export async function createTemporaryAttachmentFilesFixture(prefix = "entity-card") {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), `mugplan-${prefix}-`));
+  const pdfPath = path.join(directory, `${prefix}.pdf`);
+  const docxPath = path.join(directory, `${prefix}.docx`);
+  const pngPath = path.join(directory, `${prefix}.png`);
+
+  await fs.writeFile(pdfPath, Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF", "utf8"));
+  await fs.writeFile(docxPath, Buffer.from("PK\u0003\u0004mugplan-docx-placeholder", "utf8"));
+  await fs.writeFile(
+    pngPath,
+    Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2d4AAAAASUVORK5CYII=",
+      "base64",
+    ),
+  );
+
+  return {
+    directory,
+    pdf: {
+      path: pdfPath,
+      name: path.basename(pdfPath),
+      mimeType: "application/pdf",
+    },
+    docx: {
+      path: docxPath,
+      name: path.basename(docxPath),
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    },
+    png: {
+      path: pngPath,
+      name: path.basename(pngPath),
+      mimeType: "image/png",
+    },
+  };
 }
 
 export async function createAppointmentBrowserFixture(params?: {
