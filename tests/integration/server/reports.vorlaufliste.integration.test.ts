@@ -559,4 +559,243 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(projectIds).not.toContain(mixedAppointmentProject.project.id);
     expect(projectIds).not.toContain(appointmentOnlyExcludedProject.project.id);
   });
+
+  it("keeps partial and empty article rows stable when all report categories are selected", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const partialProject = await createReportProjectFixture({
+      prefix: "FT26-PARTIAL",
+      appointmentDates: ["2100-02-11"],
+      plannedDateText: "11.02.2100",
+      plannedWeek: "KW 06",
+      customerFirstName: "Paula",
+      customerLastName: "Teilweise",
+      postalCode: "26135",
+      city: "Oldenburg",
+      articleValues: {
+        door: "Teilglas",
+        window: "Panorama",
+      },
+    });
+    const emptyProject = await createReportProjectFixture({
+      prefix: "FT26-EMPTY",
+      appointmentDates: ["2100-02-12"],
+      plannedDateText: "12.02.2100",
+      plannedWeek: "KW 06",
+      customerFirstName: "Erik",
+      customerLastName: "Leer",
+      postalCode: "26121",
+      city: "Oldenburg",
+    });
+
+    const lookupProduct = await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: "FT26 Lookup Sauna Vollsatz",
+    });
+    const lookupDoor = await createComponentFixture({
+      categoryName: "Tuer",
+      name: "FT26 Lookup Tuer Vollsatz",
+    });
+    const lookupWindow = await createComponentFixture({
+      categoryName: "Fenster",
+      name: "FT26 Lookup Fenster Vollsatz",
+    });
+    const lookupOven = await createComponentFixture({
+      categoryName: "Ofen",
+      name: "FT26 Lookup Ofen Vollsatz",
+    });
+    const lookupControl = await createComponentFixture({
+      categoryName: "Steuerung",
+      name: "FT26 Lookup Steuerung Vollsatz",
+    });
+    const lookupRoof = await createComponentFixture({
+      categoryName: "Dachvarianten",
+      name: "FT26 Lookup Dach Vollsatz",
+    });
+
+    const params = new URLSearchParams({
+      fromDate: "2100-02-01",
+      toDate: "2100-02-28",
+      page: "1",
+      pageSize: "100",
+    });
+    for (const categoryId of [
+      lookupProduct.categoryId,
+      lookupDoor.categoryId,
+      lookupWindow.categoryId,
+      lookupOven.categoryId,
+      lookupControl.categoryId,
+      lookupRoof.categoryId,
+    ]) {
+      if (categoryId === lookupProduct.categoryId) {
+        params.append("productCategoryIds", String(categoryId));
+      } else {
+        params.append("componentCategoryIds", String(categoryId));
+      }
+    }
+
+    const response = await admin
+      .get(`/api/reports/vorlaufliste?${params.toString()}`)
+      .expect(200);
+
+    type ArticleValue = { categoryId: number; value: string | null };
+    type ReportItem = {
+      projectId: number;
+      customerFullName: string | null;
+      postalCode: string | null;
+      city: string | null;
+      plannedDateText: string | null;
+      plannedWeek: string | null;
+      actualDate: string;
+      articleValues: ArticleValue[];
+    };
+
+    const partialRow = (response.body.items as ReportItem[]).find((item) => item.projectId === partialProject.project.id);
+    const emptyRow = (response.body.items as ReportItem[]).find((item) => item.projectId === emptyProject.project.id);
+
+    expect(partialRow).toMatchObject({
+      projectId: partialProject.project.id,
+      customerFullName: "Teilweise, Paula",
+      postalCode: "26135",
+      city: "Oldenburg",
+      plannedDateText: "11.02.2100",
+      plannedWeek: "KW 06",
+      actualDate: "2100-02-11",
+    });
+    expect(emptyRow).toMatchObject({
+      projectId: emptyProject.project.id,
+      customerFullName: "Leer, Erik",
+      postalCode: "26121",
+      city: "Oldenburg",
+      plannedDateText: "12.02.2100",
+      plannedWeek: "KW 06",
+      actualDate: "2100-02-12",
+    });
+
+    const partialValues = new Map(partialRow?.articleValues.map((entry) => [entry.categoryId, entry.value]));
+    const emptyValues = new Map(emptyRow?.articleValues.map((entry) => [entry.categoryId, entry.value]));
+
+    expect(partialValues.get(lookupProduct.categoryId)).toBeNull();
+    expect(partialValues.get(lookupDoor.categoryId)).toBe("Teilglas");
+    expect(partialValues.get(lookupWindow.categoryId)).toBe("Panorama");
+    expect(partialValues.get(lookupOven.categoryId)).toBeNull();
+    expect(partialValues.get(lookupControl.categoryId)).toBeNull();
+    expect(partialValues.get(lookupRoof.categoryId)).toBeNull();
+
+    expect(emptyValues.get(lookupProduct.categoryId)).toBeNull();
+    expect(emptyValues.get(lookupDoor.categoryId)).toBeNull();
+    expect(emptyValues.get(lookupWindow.categoryId)).toBeNull();
+    expect(emptyValues.get(lookupOven.categoryId)).toBeNull();
+    expect(emptyValues.get(lookupControl.categoryId)).toBeNull();
+    expect(emptyValues.get(lookupRoof.categoryId)).toBeNull();
+  });
+
+  it("excludes projects without appointments in the window and refreshes mutable fields on follow-up fetches", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const refreshProject = await createReportProjectFixture({
+      prefix: "FT26-REFRESH",
+      appointmentDates: ["2100-03-12"],
+      descriptionMd: "<p>Beschreibung Alt</p>",
+      customerFirstName: "Rita",
+      customerLastName: "Refresh",
+      postalCode: "26133",
+      city: "Oldenburg",
+      articleValues: {
+        window: "Fenster Alt",
+      },
+    });
+    const outOfWindowProject = await createReportProjectFixture({
+      prefix: "FT26-OUTSIDE",
+      appointmentDates: ["2100-05-12"],
+      descriptionMd: "<p>Ausserhalb</p>",
+      articleValues: {
+        window: "Fenster Ausserhalb",
+      },
+    });
+
+    const currentRefreshProject = await projectsService.getProject(refreshProject.project.id);
+    if (!currentRefreshProject) {
+      throw new Error("Expected refresh project fixture.");
+    }
+
+    const initialProject = await projectsService.updateProject(refreshProject.project.id, {
+      version: currentRefreshProject.version,
+      projectOrder: {
+        amount: "1000.00",
+      },
+    });
+    if (!initialProject) {
+      throw new Error("Expected initial project update.");
+    }
+
+    const lookupWindow = await createComponentFixture({
+      categoryName: "Fenster",
+      name: "FT26 Lookup Fenster Refresh",
+    });
+    const reportUrl = `/api/reports/vorlaufliste?${new URLSearchParams({
+      fromDate: "2100-03-01",
+      toDate: "2100-03-31",
+      page: "1",
+      pageSize: "100",
+      componentCategoryIds: String(lookupWindow.categoryId),
+    }).toString()}`;
+
+    type ReportItem = {
+      projectId: number;
+      amount: string | null;
+      projectDescription: string | null;
+      articleValues: Array<{ categoryId: number; value: string | null }>;
+    };
+
+    const firstResponse = await admin.get(reportUrl).expect(200);
+    const firstItems = firstResponse.body.items as ReportItem[];
+    const initialRow = firstItems.find((item) => item.projectId === refreshProject.project.id);
+    const initialWindowValue = initialRow?.articleValues.find((entry) => entry.categoryId === lookupWindow.categoryId)?.value;
+
+    expect(initialRow).toMatchObject({
+      projectId: refreshProject.project.id,
+      amount: "1000.00",
+      projectDescription: "Beschreibung Alt",
+    });
+    expect(initialWindowValue).toBe("Fenster Alt");
+    expect(firstItems.map((item) => item.projectId)).not.toContain(outOfWindowProject.project.id);
+
+    const latestProject = await projectsService.getProject(refreshProject.project.id);
+    if (!latestProject) {
+      throw new Error("Expected latest refresh project.");
+    }
+
+    const updatedProject = await projectsService.updateProject(refreshProject.project.id, {
+      version: latestProject.version,
+      descriptionMd: "<p>Beschreibung Neu</p>",
+      projectOrder: {
+        amount: "2222.00",
+      },
+    });
+    if (!updatedProject) {
+      throw new Error("Expected updated refresh project.");
+    }
+
+    const orderItems = await projectsService.listProjectOrderItems(refreshProject.project.id);
+    const windowOrderItem = orderItems.find((item) => item.componentId != null);
+    if (!windowOrderItem) {
+      throw new Error("Expected window order item.");
+    }
+
+    await projectsService.deleteProjectOrderItem(refreshProject.project.id, windowOrderItem.id, windowOrderItem.version);
+
+    const secondResponse = await admin.get(reportUrl).expect(200);
+    const secondItems = secondResponse.body.items as ReportItem[];
+    const refreshedRow = secondItems.find((item) => item.projectId === refreshProject.project.id);
+    const refreshedWindowValue = refreshedRow?.articleValues.find((entry) => entry.categoryId === lookupWindow.categoryId)?.value;
+
+    expect(refreshedRow).toMatchObject({
+      projectId: refreshProject.project.id,
+      amount: "2222.00",
+      projectDescription: "Beschreibung Neu",
+    });
+    expect(refreshedWindowValue).toBeNull();
+    expect(secondItems.map((item) => item.projectId)).not.toContain(outOfWindowProject.project.id);
+  });
 });

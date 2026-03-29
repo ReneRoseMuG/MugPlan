@@ -443,4 +443,88 @@ describe("FT26 integration: report product vorlauf", () => {
       }),
     ]);
   });
+
+  it("returns only product groups when only product categories are selected", async () => {
+    const admin = await loginAdminAgent(app);
+    await createProductVorlaufProjectFixture({
+      prefix: "FT26-PV-PRODUCT-ONLY",
+      appointmentDates: ["2100-02-10"],
+      productItems: [{ categoryName: "Fass Saunen", name: "Produkt Only Sauna", quantity: 2 }],
+      componentItems: [{ categoryName: "Fenster", name: "Produkt Only Fenster", quantity: 4 }],
+    });
+
+    const saunaCategoryId = (await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: "FT26 Lookup Produkt Only Sauna",
+    })).categoryId;
+
+    const response = await admin
+      .get(`/api/reports/product-vorlauf?fromDate=2100-02-01&toDate=2100-02-28&productCategoryIds=${saunaCategoryId}`)
+      .expect(200);
+
+    expect(response.body.productCategoryGroups).toEqual([
+      {
+        categoryId: saunaCategoryId,
+        categoryName: "Fass Saunen",
+        items: [{ itemName: "Produkt Only Sauna", totalQuantity: 2 }],
+      },
+    ]);
+    expect(response.body.componentCategoryGroups).toEqual([]);
+    expect(response.body.specialMeasureProjects).toEqual([]);
+  });
+
+  it("refreshes grouped totals after quantity changes and item removals between requests", async () => {
+    const admin = await loginAdminAgent(app);
+    const project = await createProductVorlaufProjectFixture({
+      prefix: "FT26-PV-REFRESH",
+      appointmentDates: ["2100-03-10"],
+      componentItems: [{ categoryName: "Tuer", name: "Refresh Tuer", quantity: 1 }],
+    });
+
+    const doorCategoryId = (await createComponentFixture({
+      categoryName: "Tuer",
+      name: "FT26 Lookup Produkt Refresh Tuer",
+    })).categoryId;
+    const reportUrl = `/api/reports/product-vorlauf?fromDate=2100-03-01&toDate=2100-03-31&componentCategoryIds=${doorCategoryId}`;
+
+    const firstResponse = await admin.get(reportUrl).expect(200);
+    expect(firstResponse.body.componentCategoryGroups).toEqual([
+      {
+        categoryId: doorCategoryId,
+        categoryName: "Tuer",
+        items: [{ itemName: "Refresh Tuer", totalQuantity: 1 }],
+      },
+    ]);
+
+    const initialItems = await projectsService.listProjectOrderItems(project.project.id);
+    const doorItem = initialItems.find((item) => item.componentId != null);
+    if (!doorItem) {
+      throw new Error("Expected door order item.");
+    }
+
+    await projectsService.updateProjectOrderItem(project.project.id, doorItem.id, {
+      version: doorItem.version,
+      quantity: 4,
+    });
+
+    const secondResponse = await admin.get(reportUrl).expect(200);
+    expect(secondResponse.body.componentCategoryGroups).toEqual([
+      {
+        categoryId: doorCategoryId,
+        categoryName: "Tuer",
+        items: [{ itemName: "Refresh Tuer", totalQuantity: 4 }],
+      },
+    ]);
+
+    const refreshedItems = await projectsService.listProjectOrderItems(project.project.id);
+    const refreshedDoorItem = refreshedItems.find((item) => item.componentId != null);
+    if (!refreshedDoorItem) {
+      throw new Error("Expected refreshed door order item.");
+    }
+
+    await projectsService.deleteProjectOrderItem(project.project.id, refreshedDoorItem.id, refreshedDoorItem.version);
+
+    const thirdResponse = await admin.get(reportUrl).expect(200);
+    expect(thirdResponse.body.componentCategoryGroups).toEqual([]);
+  });
 });
