@@ -3,14 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - EmployeeForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
- * - Die Sidebar behaelt in Create und Edit die Reihenfolge Attachments, Tags, Tour, Team.
- * - Create-Verdrahtung behaelt Draft-faehige Attachments und Tags.
+ * - Die Sidebar behaelt in Create und Edit die Reihenfolge Attachments, Tags, Notizen, Tour, Team.
+ * - Create-Verdrahtung behaelt Draft-faehige Attachments, Tags und Notizen.
  * - Footer-Aktionen bleiben im Shell-Layout mit Cancel links und Save rechts sichtbar.
  *
  * Fehlerfaelle:
  * - Das Mitarbeiterformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
- * - Die Create-Sidebar verliert ihre Draft-Verdrahtung fuer Tags oder Attachments.
+ * - Die Create-Sidebar verliert ihre Draft-Verdrahtung fuer Tags, Notizen oder Attachments.
  *
  * Ziel:
  * Das neue Shell-Layout des Mitarbeiterformulars ueber sichtbare Struktur und Child-Props regressionssicher absichern.
@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const employeeAttachmentsPanelCalls: Array<Record<string, unknown>> = [];
 const tagPickerPanelCalls: Array<Record<string, unknown>> = [];
+const notesSectionCalls: Array<Record<string, unknown>> = [];
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 
@@ -67,6 +68,13 @@ vi.mock("@/components/TagPickerPanel", () => ({
   TagPickerPanel: (props: Record<string, unknown>) => {
     tagPickerPanelCalls.push(props);
     return <section data-testid="employee-tag-picker-marker">tags</section>;
+  },
+}));
+
+vi.mock("@/components/NotesSection", () => ({
+  NotesSection: (props: Record<string, unknown>) => {
+    notesSectionCalls.push(props);
+    return <section data-testid="employee-notes-section-marker">notes</section>;
   },
 }));
 
@@ -161,6 +169,27 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
     };
   }
 
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "notes") {
+    return {
+      data: [
+        {
+          id: 41,
+          title: "Hinweis",
+          body: "<p>Bestehende Notiz</p>",
+          cardColor: null,
+          print: false,
+          cardColorLocked: false,
+          isPinned: false,
+          version: 2,
+          createdAt: new Date("2026-03-29T08:00:00.000Z"),
+          updatedAt: new Date("2026-03-29T08:00:00.000Z"),
+        },
+      ],
+      isLoading: false,
+      error: null,
+    };
+  }
+
   if (Array.isArray(queryKey) && queryKey[0] === "/api/tags") {
     return {
       data: [
@@ -209,6 +238,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     Object.assign(globalThis, { React });
     employeeAttachmentsPanelCalls.length = 0;
     tagPickerPanelCalls.length = 0;
+    notesSectionCalls.length = 0;
     useMutationMock.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(async () => ({ id: 17 })),
@@ -235,7 +265,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("button-save-employee");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
-    expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-tour-badge-marker"));
+    expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "employee-tour-badge-marker"));
     expect(getIndex(markup, "employee-tour-badge-marker")).toBeLessThan(getIndex(markup, "employee-team-badge-marker"));
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
@@ -245,6 +276,10 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(tagPickerPanelCalls[0]).toMatchObject({
       assignedTags: [{ tag: { id: 5, name: "Service" } }],
       canEdit: true,
+    });
+    expect(notesSectionCalls[0]).toMatchObject({
+      notes: [{ id: 41, title: "Hinweis" }],
+      readOnly: false,
     });
   });
 
@@ -258,7 +293,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("button-save-employee");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
-    expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "Keiner Tour zugewiesen"));
+    expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keiner Tour zugewiesen"));
     expect(getIndex(markup, "Keiner Tour zugewiesen")).toBeLessThan(getIndex(markup, "Keinem Team zugewiesen"));
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
@@ -271,6 +307,10 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
       assignedTags: [],
       availableTags: [{ id: 5, name: "Service" }, { id: 6, name: "Montage" }],
       canEdit: true,
+    });
+    expect(notesSectionCalls[0]).toMatchObject({
+      notes: [],
+      readOnly: false,
     });
   });
 });

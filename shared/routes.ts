@@ -1823,6 +1823,41 @@ export const api = {
       },
     },
   },
+  employeeNotes: {
+    list: {
+      method: "GET" as const,
+      path: "/api/employees/:employeeId/notes",
+      responses: {
+        200: z.array(z.custom<typeof notes.$inferSelect>()),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: "POST" as const,
+      path: "/api/employees/:employeeId/notes",
+      input: insertNoteSchema.extend({ templateId: z.number().optional() }),
+      responses: {
+        201: z.custom<typeof notes.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/employees/:employeeId/notes/:noteId",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   employeeTags: {
     list: {
       method: "GET" as const,

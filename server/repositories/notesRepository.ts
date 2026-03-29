@@ -1,6 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
-import { appointmentNotes, calendarWeekNotes, customerNotes, notes, projectNotes, type Note, type InsertNote, type UpdateNote } from "@shared/schema";
+import { appointmentNotes, calendarWeekNotes, customerNotes, employeeNotes, notes, projectNotes, type Note, type InsertNote, type UpdateNote } from "@shared/schema";
 
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -34,6 +34,16 @@ export async function getAppointmentNotes(appointmentId: number): Promise<Note[]
     .from(appointmentNotes)
     .innerJoin(notes, eq(appointmentNotes.noteId, notes.id))
     .where(eq(appointmentNotes.appointmentId, appointmentId))
+    .orderBy(desc(notes.isPinned), desc(notes.updatedAt));
+  return result.map((row) => row.note);
+}
+
+export async function getEmployeeNotes(employeeId: number): Promise<Note[]> {
+  const result = await db
+    .select({ note: notes })
+    .from(employeeNotes)
+    .innerJoin(notes, eq(employeeNotes.noteId, notes.id))
+    .where(eq(employeeNotes.employeeId, employeeId))
     .orderBy(desc(notes.isPinned), desc(notes.updatedAt));
   return result.map((row) => row.note);
 }
@@ -82,6 +92,10 @@ export async function addAppointmentNoteRelation(appointmentId: number, noteId: 
 
 export async function addAppointmentNoteRelationTx(tx: DbTx, appointmentId: number, noteId: number): Promise<void> {
   await tx.insert(appointmentNotes).values({ appointmentId, noteId });
+}
+
+export async function addEmployeeNoteRelationTx(tx: DbTx, employeeId: number, noteId: number): Promise<void> {
+  await tx.insert(employeeNotes).values({ employeeId, noteId });
 }
 
 export async function updateNoteWithVersion(
@@ -206,6 +220,7 @@ export async function deleteNoteWithVersion(
     await tx.delete(customerNotes).where(eq(customerNotes.noteId, noteId));
     await tx.delete(projectNotes).where(eq(projectNotes.noteId, noteId));
     await tx.delete(appointmentNotes).where(eq(appointmentNotes.noteId, noteId));
+    await tx.delete(employeeNotes).where(eq(employeeNotes.noteId, noteId));
     await tx.delete(calendarWeekNotes).where(eq(calendarWeekNotes.noteId, noteId));
     const result = await tx.execute(sql`
       delete from note
@@ -329,6 +344,41 @@ export async function deleteAppointmentScopedNoteWithVersion(
       .delete(appointmentNotes)
       .where(sql`${appointmentNotes.appointmentId} = ${appointmentId} and ${appointmentNotes.noteId} = ${noteId}`);
 
+    return { kind: "deleted" as const };
+  }).catch((error) => {
+    if (error instanceof Error && error.message === "VERSION_CONFLICT") {
+      return { kind: "version_conflict" as const };
+    }
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return { kind: "not_found" as const };
+    }
+    throw error;
+  });
+}
+
+export async function deleteEmployeeScopedNoteWithVersion(
+  employeeId: number,
+  noteId: number,
+  expectedVersion: number,
+): Promise<{ kind: "deleted" } | { kind: "version_conflict" } | { kind: "not_found" }> {
+  return db.transaction(async (tx) => {
+    const relationResult = await tx
+      .delete(employeeNotes)
+      .where(sql`${employeeNotes.employeeId} = ${employeeId} and ${employeeNotes.noteId} = ${noteId}`);
+    const relationAffectedRows = Number((relationResult as any)?.[0]?.affectedRows ?? (relationResult as any)?.affectedRows ?? 0);
+    if (relationAffectedRows === 0) {
+      throw new Error("NOT_FOUND");
+    }
+
+    const result = await tx.execute(sql`
+      delete from note
+      where id = ${noteId}
+        and version = ${expectedVersion}
+    `);
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    if (affectedRows === 0) {
+      throw new Error("VERSION_CONFLICT");
+    }
     return { kind: "deleted" as const };
   }).catch((error) => {
     if (error instanceof Error && error.message === "VERSION_CONFLICT") {

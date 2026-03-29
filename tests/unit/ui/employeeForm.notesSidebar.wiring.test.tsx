@@ -2,15 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - EmployeeForm rendert den TagPickerPanel im Shell-Layout in Edit und Create.
- * - Der TagPickerPanel erhaelt die geladenen Mitarbeiter-Tag-Relationen und den Tag-Katalog.
+ * - EmployeeForm verdrahtet die NotesSection in der Sidebar in Edit und Create.
+ * - Edit nutzt den Query-Key `/api/employees/:id/notes` und uebergibt geladene Notizen.
+ * - Create nutzt Draft-Notizen und laesst die Sidebar im editierbaren Zustand.
  *
  * Fehlerfaelle:
- * - Der Mitarbeiter-Tag-Picker fehlt trotz persistiertem oder neuem Mitarbeiterformular.
- * - Der Tag-Picker bekommt keine geladenen Tags oder keine Bearbeitungsrechte.
+ * - Die Mitarbeiter-NotesSection fehlt in der Sidebar.
+ * - Edit-Mode laedt keine bestehenden Notizen.
+ * - Create-Mode startet nicht mit einer leeren Draft-Notizliste.
  *
  * Ziel:
- * Die Sidebar-Verdrahtung fuer Mitarbeiter-Tags ueber gerenderte Props statt Quelltext absichern.
+ * Die Mitarbeiter-Notizverdrahtung ueber gerenderte Props statt Quelltext regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -18,7 +20,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
-const tagPickerCalls: Array<Record<string, unknown>> = [];
+const notesSectionCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -36,19 +38,19 @@ vi.mock("@/components/ui/entity-form-shell", () => ({
   ),
 }));
 
-vi.mock("@/components/TagPickerPanel", () => ({
-  TagPickerPanel: (props: Record<string, unknown>) => {
-    tagPickerCalls.push(props);
-    return <section data-testid="employee-tag-picker-marker">employee-tags</section>;
-  },
-}));
-
 vi.mock("@/components/NotesSection", () => ({
-  NotesSection: () => <section>notes</section>,
+  NotesSection: (props: Record<string, unknown>) => {
+    notesSectionCalls.push(props);
+    return <section data-testid="employee-notes-marker">employee-notes</section>;
+  },
 }));
 
 vi.mock("@/components/EmployeeAttachmentsPanel", () => ({
   EmployeeAttachmentsPanel: () => <section>attachments</section>,
+}));
+
+vi.mock("@/components/TagPickerPanel", () => ({
+  TagPickerPanel: () => <section>tags</section>,
 }));
 
 vi.mock("@/components/AppointmentsListPage", () => ({
@@ -82,6 +84,10 @@ vi.mock("@/components/ui/label", () => ({
   Label: ({ children }: { children?: React.ReactNode }) => <label>{children}</label>,
 }));
 
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
+}));
+
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
@@ -103,22 +109,7 @@ vi.mock("@/lib/tags", () => ({
 import { EmployeeForm } from "../../../client/src/components/EmployeeForm";
 
 function buildQueryResult(queryKey: unknown) {
-  const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
-
-  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "tags") {
-    return {
-      data: [
-        {
-          tag: { id: 5, name: "Service", color: "#112233", isDefault: false, version: 1 },
-          relationVersion: 2,
-        },
-      ],
-      isLoading: false,
-      error: null,
-    };
-  }
-
-  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[1] === 17) {
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[1] === 17 && queryKey.length === 2) {
     return {
       data: {
         employee: {
@@ -139,15 +130,29 @@ function buildQueryResult(queryKey: unknown) {
     };
   }
 
-  if (Array.isArray(queryKey) && queryKey[0] === "/api/tags" && queryKey[1] === "employee") {
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "notes") {
     return {
       data: [
-        { id: 5, name: "Service", color: "#112233", isDefault: false, version: 1 },
-        { id: 6, name: "Montage", color: "#334455", isDefault: false, version: 1 },
+        {
+          id: 41,
+          title: "Bestehende Notiz",
+          body: "<p>Hinweis</p>",
+          cardColor: null,
+          print: false,
+          cardColorLocked: false,
+          isPinned: false,
+          version: 2,
+          createdAt: new Date("2026-03-29T08:00:00.000Z"),
+          updatedAt: new Date("2026-03-29T08:00:00.000Z"),
+        },
       ],
       isLoading: false,
       error: null,
     };
+  }
+
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/tags") {
+    return { data: [], isLoading: false, error: null };
   }
 
   if (Array.isArray(queryKey) && queryKey[0] === "/api/employees") {
@@ -157,10 +162,10 @@ function buildQueryResult(queryKey: unknown) {
   return { data: [], isLoading: false, error: null };
 }
 
-describe("FT05+ employee form tags sidebar wiring", () => {
+describe("FT05+/FT13 employee form notes sidebar wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
-    tagPickerCalls.length = 0;
+    notesSectionCalls.length = 0;
     useMutationMock.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(),
@@ -172,47 +177,36 @@ describe("FT05+ employee form tags sidebar wiring", () => {
         localStorage: {
           getItem: vi.fn(() => "DISPATCHER"),
         },
+        confirm: vi.fn(() => true),
       },
       configurable: true,
     });
   });
 
-  it("renders the employee tag picker in edit mode with loaded relations and catalog", () => {
+  it("renders loaded employee notes in edit mode", () => {
     const markup = renderToStaticMarkup(<EmployeeForm employeeId={17} />);
 
-    expect(markup).toContain("employee-tag-picker-marker");
-    expect(tagPickerCalls).toHaveLength(1);
-    expect(tagPickerCalls[0]).toMatchObject({
-      title: "Tags",
-      canEdit: true,
-      testIdPrefix: "employee-tag-picker",
+    expect(markup).toContain("employee-notes-marker");
+    expect(notesSectionCalls).toHaveLength(1);
+    expect(notesSectionCalls[0]).toMatchObject({
+      notes: [{ id: 41, title: "Bestehende Notiz" }],
+      isLoading: false,
+      readOnly: false,
     });
-    expect(tagPickerCalls[0].assignedTags).toMatchObject([
-      { relationVersion: 2, tag: { id: 5, name: "Service" } },
-    ]);
-    expect(tagPickerCalls[0].availableTags).toMatchObject([
-      { id: 5, name: "Service" },
-      { id: 6, name: "Montage" },
-    ]);
     expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
-      queryKey: ["/api/tags", "employee"],
+      queryKey: ["/api/employees", 17, "notes"],
     }));
   });
 
-  it("renders the employee tag picker in create mode with empty draft tags", () => {
+  it("renders an editable empty draft notes section in create mode", () => {
     const markup = renderToStaticMarkup(<EmployeeForm />);
 
-    expect(markup).toContain("employee-tag-picker-marker");
-    expect(tagPickerCalls).toHaveLength(1);
-    expect(tagPickerCalls[0]).toMatchObject({
-      title: "Tags",
-      canEdit: true,
-      testIdPrefix: "employee-tag-picker",
-      assignedTags: [],
+    expect(markup).toContain("employee-notes-marker");
+    expect(notesSectionCalls).toHaveLength(1);
+    expect(notesSectionCalls[0]).toMatchObject({
+      notes: [],
+      isLoading: false,
+      readOnly: false,
     });
-    expect(tagPickerCalls[0].availableTags).toMatchObject([
-      { id: 5, name: "Service" },
-      { id: 6, name: "Montage" },
-    ]);
   });
 });
