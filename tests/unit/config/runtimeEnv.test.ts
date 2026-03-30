@@ -2,17 +2,17 @@
  * Test Scope:
  *
  * Feature: FT07 - Runtime Env Loading
- * Use Case: UC07 - Eindeutiges Laden der Env-Dateien aus shared
+ * Use Case: UC07 - Eindeutiges Laden der Env-Dateien aus dem Projekt-Root
  *
  * Abgedeckte Regeln:
- * - development laedt exakt ../../shared/.env.dev ausgehend von process.cwd().
- * - test laedt exakt ../../shared/.env.test ausgehend von process.cwd().
+ * - development laedt exakt .env.dev ausgehend von process.cwd().
+ * - test laedt exakt .env.test ausgehend von process.cwd().
  * - production laedt intern keine Datei und nutzt nur process.env.
  * - Fehlende erwartete Env-Dateien in development/test brechen fail-fast ab.
  *
  * Fehlerfaelle:
- * - Fehlende ../../shared/.env.dev Datei.
- * - Fehlende ../../shared/.env.test Datei.
+ * - Fehlende .env.dev Datei.
+ * - Fehlende .env.test Datei.
  *
  * Ziel:
  * Sicherstellen, dass die Runtime-Env-Logik strikt und ohne Fallbacks arbeitet.
@@ -36,27 +36,25 @@ function resetEnv(): void {
   delete process.env.DB_ALLOWED_HOSTS_PROD;
 }
 
-async function createReleaseLayout(prefix: string): Promise<{ releaseDir: string; sharedDir: string }> {
+async function createReleaseLayout(prefix: string): Promise<{ releaseDir: string }> {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
-  const releaseDir = path.join(tempRoot, "releases", "instance-a");
-  const sharedDir = path.join(tempRoot, "shared");
+  const releaseDir = path.join(tempRoot, "instance-a");
   await fs.mkdir(releaseDir, { recursive: true });
-  await fs.mkdir(sharedDir, { recursive: true });
-  return { releaseDir, sharedDir };
+  return { releaseDir };
 }
 
 async function importRuntimeEnvModule() {
   return import("../../../server/config/runtimeEnv");
 }
 
-function writeEnvFile(sharedDir: string, fileName: ".env.dev" | ".env.test", mysqlDb: string, modeSuffix: "DEV" | "TEST") {
+function writeEnvFile(releaseDir: string, fileName: ".env.dev" | ".env.test", mysqlDb: string, modeSuffix: "DEV" | "TEST") {
   const content = [
     `MYSQL_DATABASE_URL=mysql://user:pass@localhost:3306/${mysqlDb}`,
     `DB_ALLOWED_DATABASES_${modeSuffix}=${mysqlDb}`,
     `DB_ALLOWED_HOSTS_${modeSuffix}=localhost`,
     "",
   ].join("\n");
-  return fs.writeFile(path.join(sharedDir, fileName), content, "utf8");
+  return fs.writeFile(path.join(releaseDir, fileName), content, "utf8");
 }
 
 describe("FT07 unit: runtime env loading", () => {
@@ -71,9 +69,9 @@ describe("FT07 unit: runtime env loading", () => {
     resetEnv();
   });
 
-  it("loads development env exactly from ../../shared/.env.dev", async () => {
-    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-dev-");
-    await writeEnvFile(sharedDir, ".env.dev", "mugplan_dev", "DEV");
+  it("loads development env exactly from .env.dev", async () => {
+    const { releaseDir } = await createReleaseLayout("mugplan-runtime-dev-");
+    await writeEnvFile(releaseDir, ".env.dev", "mugplan_dev", "DEV");
     process.chdir(releaseDir);
     process.env.NODE_ENV = "development";
 
@@ -82,12 +80,12 @@ describe("FT07 unit: runtime env loading", () => {
 
     expect(runtime.mode).toBe("development");
     expect(runtime.envSource).toBe("dev_file");
-    expect(runtime.envFilePath).toBe(path.resolve(releaseDir, "../../shared/.env.dev"));
+    expect(runtime.envFilePath).toBe(path.resolve(releaseDir, ".env.dev"));
   });
 
-  it("loads test env exactly from ../../shared/.env.test", async () => {
-    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-");
-    await writeEnvFile(sharedDir, ".env.test", "mugplan_test", "TEST");
+  it("loads test env exactly from .env.test", async () => {
+    const { releaseDir } = await createReleaseLayout("mugplan-runtime-test-");
+    await writeEnvFile(releaseDir, ".env.test", "mugplan_test", "TEST");
     process.chdir(releaseDir);
     process.env.NODE_ENV = "test";
 
@@ -96,12 +94,12 @@ describe("FT07 unit: runtime env loading", () => {
 
     expect(runtime.mode).toBe("test");
     expect(runtime.envSource).toBe("test_file");
-    expect(runtime.envFilePath).toBe(path.resolve(releaseDir, "../../shared/.env.test"));
+    expect(runtime.envFilePath).toBe(path.resolve(releaseDir, ".env.test"));
   });
 
   it("accepts changed .env.test allowlist database names without code changes", async () => {
-    const { releaseDir, sharedDir } = await createReleaseLayout("mugplan-runtime-test-allowlist-");
-    await writeEnvFile(sharedDir, ".env.test", "tenant_test_blue_42", "TEST");
+    const { releaseDir } = await createReleaseLayout("mugplan-runtime-test-allowlist-");
+    await writeEnvFile(releaseDir, ".env.test", "tenant_test_blue_42", "TEST");
     process.chdir(releaseDir);
     process.env.NODE_ENV = "test";
 
@@ -119,7 +117,7 @@ describe("FT07 unit: runtime env loading", () => {
     process.env.NODE_ENV = "development";
 
     const { initializeRuntimeEnv } = await importRuntimeEnvModule();
-    const expectedPath = path.resolve(releaseDir, "../../shared/.env.dev");
+    const expectedPath = path.resolve(releaseDir, ".env.dev");
 
     expect(() => initializeRuntimeEnv()).toThrow(
       `Missing required env file for mode 'development'. cwd='${releaseDir}', expected='${expectedPath}'`,
@@ -132,7 +130,7 @@ describe("FT07 unit: runtime env loading", () => {
     process.env.NODE_ENV = "test";
 
     const { initializeRuntimeEnv } = await importRuntimeEnvModule();
-    const expectedPath = path.resolve(releaseDir, "../../shared/.env.test");
+    const expectedPath = path.resolve(releaseDir, ".env.test");
 
     expect(() => initializeRuntimeEnv()).toThrow(
       `Missing required env file for mode 'test'. cwd='${releaseDir}', expected='${expectedPath}'`,

@@ -49,14 +49,14 @@ describe("FT07 unit: storage paths resolution", () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "mugplan-storage-dev-"));
     process.chdir(tempRoot);
     process.env.NODE_ENV = "development";
-    process.env.ATTACHMENT_STORAGE_PATH = "shared/uploads";
-    process.env.BACKUP_BASE_PATH = "shared/backups";
+    process.env.ATTACHMENT_STORAGE_PATH = "./uploads";
+    process.env.BACKUP_BASE_PATH = "./backups";
 
     const { initStoragePathsFromEnv } = await loadStoragePathsModule();
     const resolved = await initStoragePathsFromEnv();
 
-    expect(resolved.attachmentStoragePath).toBe(path.resolve(tempRoot, "shared/uploads"));
-    expect(resolved.backupBasePath).toBe(path.resolve(tempRoot, "shared/backups"));
+    expect(resolved.attachmentStoragePath).toBe(path.resolve(tempRoot, "uploads"));
+    expect(resolved.backupBasePath).toBe(path.resolve(tempRoot, "backups"));
     await expect(fs.access(resolved.attachmentStoragePath)).resolves.toBeUndefined();
     await expect(fs.access(resolved.backupBasePath)).resolves.toBeUndefined();
   });
@@ -68,13 +68,13 @@ describe("FT07 unit: storage paths resolution", () => {
     for (const mode of ["test", "production"] as const) {
       vi.resetModules();
       process.env.NODE_ENV = mode;
-      process.env.ATTACHMENT_STORAGE_PATH = "shared/uploads";
-      process.env.BACKUP_BASE_PATH = "shared/backups";
+      process.env.ATTACHMENT_STORAGE_PATH = "./uploads";
+      process.env.BACKUP_BASE_PATH = "./backups";
 
       const { initStoragePathsFromEnv } = await loadStoragePathsModule();
       const resolved = await initStoragePathsFromEnv();
-      expect(resolved.attachmentStoragePath).toBe(path.resolve(tempRoot, "shared/uploads"));
-      expect(resolved.backupBasePath).toBe(path.resolve(tempRoot, "shared/backups"));
+      expect(resolved.attachmentStoragePath).toBe(path.resolve(tempRoot, "uploads"));
+      expect(resolved.backupBasePath).toBe(path.resolve(tempRoot, "backups"));
     }
   });
 
@@ -104,7 +104,7 @@ describe("FT07 unit: storage paths resolution", () => {
   it("fails on empty env value after trim", async () => {
     process.env.NODE_ENV = "development";
     process.env.ATTACHMENT_STORAGE_PATH = "   ";
-    process.env.BACKUP_BASE_PATH = "shared/backups";
+    process.env.BACKUP_BASE_PATH = "./backups";
 
     const { initStoragePathsFromEnv } = await loadStoragePathsModule();
     await expect(initStoragePathsFromEnv()).rejects.toThrow("Leere Env-Variable: ATTACHMENT_STORAGE_PATH");

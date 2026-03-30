@@ -22,6 +22,10 @@ server.log
 tests/coverage/
 plans/
 reports/
+uploads/*
+!uploads/.gitkeep
+backups/*
+!backups/.gitkeep
 shared/uploads
 shared/backups
 .codex

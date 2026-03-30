@@ -40,13 +40,13 @@ function resolveEnvFile(mode: RuntimeMode): { path: string; source: RuntimeEnvSo
 
   if (mode === "development") {
     return {
-      path: path.resolve(process.cwd(), "../../shared/.env.dev"),
+      path: path.resolve(process.cwd(), ".env.dev"),
       source: "dev_file",
     };
   }
 
   return {
-    path: path.resolve(process.cwd(), "../../shared/.env.test"),
+    path: path.resolve(process.cwd(), ".env.test"),
     source: "test_file",
   };
 }
