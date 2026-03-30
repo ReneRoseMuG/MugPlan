@@ -11,7 +11,7 @@
  * - Komponenten-Loeschkonflikte liefern Referenzdetails fuer Produktzuordnungen und Projektauftragspositionen.
  * - Auch Default-Kategorien bleiben loeschbar, solange keine direkte Nutzung mehr besteht.
  * - Die dateibasierte Produktverwaltung importiert Kategorien, Produkte und Komponenten idempotent und reaktiviert vorhandene inaktive Kategorien.
- * - Component-Product m:n-Relationen sind ersetzbar/listbar und versioniert.
+ * - Entfernte Legacy-Stammdatenrouten fuer Komponenten-Spezifikationen und Produktzuordnungen bleiben ungueltig.
  *
  * Fehlerfaelle:
  * - Nicht-Admin kann Stammdaten lesen/schreiben.
@@ -31,7 +31,7 @@ import { componentCategories, components, productCategories, products } from "@s
 import { db } from "../../../server/db";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
-import { ensureComponentCategoryFixture, ensureProductCategoryFixture } from "../../helpers/testDataFactory";
+import { createProjectFixture, ensureComponentCategoryFixture, ensureProductCategoryFixture } from "../../helpers/testDataFactory";
 import { getAttachmentStoragePath } from "../../../server/config/storagePaths";
 
 let app: express.Express;
@@ -554,175 +554,50 @@ describe("FT27 integration: master data admin API", () => {
       });
   });
 
-  it("replaces and lists component-product relations", async () => {
+  it("returns 404 for removed legacy component specification and component-product routes", async () => {
     const admin = await loginAdminAgent();
-
-    const productCategory = await admin
-      .post("/api/admin/master-data/product-categories")
-      .send({ name: "PK-FT27-MN", isActive: true, version: 1 })
-      .expect(201);
 
     const componentCategory = await admin
       .post("/api/admin/master-data/component-categories")
-      .send({ name: "CK-FT27-MN", isActive: true, version: 1 })
-      .expect(201);
-
-    const productA = await admin
-      .post("/api/admin/master-data/products")
-      .send({
-        name: "PRD-FT27-MN-A",
-        categoryId: productCategory.body.id,
-        description: null,
-        isActive: true,
-        version: 1,
-      })
-      .expect(201);
-
-    const productB = await admin
-      .post("/api/admin/master-data/products")
-      .send({
-        name: "PRD-FT27-MN-B",
-        categoryId: productCategory.body.id,
-        description: null,
-        isActive: true,
-        version: 1,
-      })
+      .send({ name: "CK-FT27-LEGACY-404", isActive: true, version: 1 })
       .expect(201);
 
     const component = await admin
       .post("/api/admin/master-data/components")
       .send({
-        name: "CMP-FT27-MN",
+        name: "CMP-FT27-LEGACY-404",
         categoryId: componentCategory.body.id,
         description: null,
         isActive: true,
         version: 1,
       })
       .expect(201);
-
-    const replaced = await admin
-      .put(`/api/admin/master-data/components/${component.body.id}/products`)
-      .send({ version: component.body.version, productIds: [productA.body.id, productB.body.id] })
-      .expect(200);
-
-    expect(replaced.body.id).toBe(component.body.id);
-    expect(replaced.body.version).toBe(component.body.version + 1);
 
     await admin
       .get("/api/admin/master-data/component-products")
-      .expect(200)
-      .expect((res) => {
-        const relatedRows = (res.body as Array<{ componentId: number; productId: number }>).filter(
-          (row) => row.componentId === component.body.id,
-        );
-        expect(relatedRows).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({ componentId: component.body.id, productId: productA.body.id }),
-            expect.objectContaining({ componentId: component.body.id, productId: productB.body.id }),
-          ]),
-        );
-      });
-  });
-
-  it("returns VERSION_CONFLICT for stale component-products replace version", async () => {
-    const admin = await loginAdminAgent();
-
-    const productCategory = await admin
-      .post("/api/admin/master-data/product-categories")
-      .send({ name: "PK-FT27-MN-STALE", isActive: true, version: 1 })
-      .expect(201);
-
-    const componentCategory = await admin
-      .post("/api/admin/master-data/component-categories")
-      .send({ name: "CK-FT27-MN-STALE", isActive: true, version: 1 })
-      .expect(201);
-
-    const product = await admin
-      .post("/api/admin/master-data/products")
-      .send({
-        name: "PRD-FT27-MN-STALE",
-        categoryId: productCategory.body.id,
-        description: null,
-        isActive: true,
-        version: 1,
-      })
-      .expect(201);
-
-    const component = await admin
-      .post("/api/admin/master-data/components")
-      .send({
-        name: "CMP-FT27-MN-STALE",
-        categoryId: componentCategory.body.id,
-        description: null,
-        isActive: true,
-        version: 1,
-      })
-      .expect(201);
+      .expect(404);
 
     await admin
       .put(`/api/admin/master-data/components/${component.body.id}/products`)
-      .send({ version: component.body.version, productIds: [product.body.id] })
-      .expect(200);
+      .send({ version: component.body.version, productIds: [123456] })
+      .expect(404);
 
     await admin
-      .put(`/api/admin/master-data/components/${component.body.id}/products`)
-      .send({ version: component.body.version, productIds: [product.body.id] })
-      .expect(409)
-      .expect((res) => {
-        expect(res.body.code).toBe("VERSION_CONFLICT");
-      });
-  });
-
-  it("returns BUSINESS_CONFLICT for invalid product reference in component-products replace", async () => {
-    const admin = await loginAdminAgent();
-
-    const componentCategory = await admin
-      .post("/api/admin/master-data/component-categories")
-      .send({ name: "CK-FT27-MN-FK", isActive: true, version: 1 })
-      .expect(201);
-
-    const component = await admin
-      .post("/api/admin/master-data/components")
-      .send({
-        name: "CMP-FT27-MN-FK",
-        categoryId: componentCategory.body.id,
-        description: null,
-        isActive: true,
-        version: 1,
-      })
-      .expect(201);
+      .get(`/api/admin/master-data/components/${component.body.id}/specifications`)
+      .expect(404);
 
     await admin
-      .put(`/api/admin/master-data/components/${component.body.id}/products`)
-      .send({ version: component.body.version, productIds: [99999999] })
-      .expect(409)
-      .expect((res) => {
-        expect(res.body.code).toBe("BUSINESS_CONFLICT");
-      });
+      .post(`/api/admin/master-data/components/${component.body.id}/specifications`)
+      .send({ specName: "Leistung", specValue: "9 kW" })
+      .expect(404);
   });
 
-  it("returns detailed BUSINESS_CONFLICT counts when deleting a product-assigned component", async () => {
+  it("returns detailed BUSINESS_CONFLICT counts when deleting a component used in project order items", async () => {
     const admin = await loginAdminAgent();
-
-    const productCategory = await admin
-      .post("/api/admin/master-data/product-categories")
-      .send({ name: "PK-FT27-CMP-DEL", isActive: true, version: 1 })
-      .expect(201);
-
+    const project = await createProjectFixture({ prefix: "FT27-CMP-DEL", name: "FT27-CMP-DEL-Project" });
     const componentCategory = await admin
       .post("/api/admin/master-data/component-categories")
       .send({ name: "CK-FT27-CMP-DEL", isActive: true, version: 1 })
-      .expect(201);
-
-    const product = await admin
-      .post("/api/admin/master-data/products")
-      .send({
-        name: "PRD-FT27-CMP-DEL",
-        categoryId: productCategory.body.id,
-        description: null,
-        isActive: true,
-        version: 1,
-      })
       .expect(201);
 
     const component = await admin
@@ -737,32 +612,26 @@ describe("FT27 integration: master data admin API", () => {
       .expect(201);
 
     await admin
-      .put(`/api/admin/master-data/components/${component.body.id}/products`)
-      .send({ version: component.body.version, productIds: [product.body.id] })
-      .expect(200);
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: null,
+        componentId: component.body.id,
+        quantity: 1,
+      })
+      .expect(201);
 
     await admin
       .delete(`/api/admin/master-data/components/${component.body.id}`)
-      .send({ version: component.body.version + 1 })
+      .send({ version: component.body.version })
       .expect(409)
       .expect((res) => {
         expect(res.body).toMatchObject({
           code: "BUSINESS_CONFLICT",
-          assignedProductCount: 1,
-          projectOrderItemCount: 0,
+          projectOrderItemCount: 1,
         });
       });
   });
 
-  it("returns FORBIDDEN for non-admin on component-products list endpoint", async () => {
-    const admin = await loginAdminAgent();
-    const reader = await createAndLoginReaderAgent(admin);
-
-    await reader
-      .get("/api/admin/master-data/component-products")
-      .expect(403)
-      .expect((res) => {
-        expect(res.body.code).toBe("FORBIDDEN");
-      });
-  });
 });

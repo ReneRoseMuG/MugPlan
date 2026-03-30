@@ -407,7 +407,6 @@ export async function createProjectOrderItemFixture(params: {
     orderNumber: params.orderNumber,
     productId: params.productId ?? null,
     componentId: params.componentId ?? null,
-    specificationId: null,
     quantity: params.quantity ?? 1,
   });
 }

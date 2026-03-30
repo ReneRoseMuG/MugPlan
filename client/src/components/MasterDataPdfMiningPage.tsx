@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Component, ComponentCategory, Product, ProductCategory, ProductComponent } from "@shared/schema";
+import type { Component, ComponentCategory, Product, ProductCategory } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -66,7 +66,6 @@ async function invalidateMasterDataQueries(activeScope: ActiveScope): Promise<vo
     `/api/admin/master-data/component-categories?active=${activeScope}`,
     `/api/admin/master-data/products?active=${activeScope}`,
     `/api/admin/master-data/components?active=${activeScope}`,
-    "/api/admin/master-data/component-products",
     "/api/admin/master-data/products?active=all",
     "/api/admin/master-data/components?active=all",
   ];
@@ -139,7 +138,6 @@ export function MasterDataPdfMiningPage() {
   const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${activeScope}`;
   const productsUrl = `/api/admin/master-data/products?active=${activeScope}`;
   const componentsUrl = `/api/admin/master-data/components?active=${activeScope}`;
-  const componentProductsUrl = "/api/admin/master-data/component-products";
   const miningLimitsUrl = "/api/admin/master-data/pdf-mining/limits";
 
   const productCategoriesQuery = useQuery<ProductCategory[]>({
@@ -158,10 +156,6 @@ export function MasterDataPdfMiningPage() {
     queryKey: [componentsUrl],
     queryFn: () => fetchJson(componentsUrl),
   });
-  const componentProductsQuery = useQuery<ProductComponent[]>({
-    queryKey: [componentProductsUrl],
-    queryFn: () => fetchJson(componentProductsUrl),
-  });
   const miningLimitsQuery = useQuery<MiningLimits>({
     queryKey: [miningLimitsUrl],
     queryFn: () => fetchJson(miningLimitsUrl),
@@ -171,7 +165,6 @@ export function MasterDataPdfMiningPage() {
   const componentCategories = componentCategoriesQuery.data ?? [];
   const products = productsQuery.data ?? [];
   const components = componentsQuery.data ?? [];
-  const componentProducts = componentProductsQuery.data ?? [];
   const miningLimits = miningLimitsQuery.data ?? result?.limits ?? null;
 
   useEffect(() => {
@@ -195,25 +188,9 @@ export function MasterDataPdfMiningPage() {
     }
   }, [result, selectedProductName]);
 
-  const componentsByProductId = useMemo(() => {
-    const componentIds = new Map<number, number[]>();
-    for (const relation of componentProducts) {
-      const current = componentIds.get(relation.productId);
-      if (current) {
-        current.push(relation.componentId);
-      } else {
-        componentIds.set(relation.productId, [relation.componentId]);
-      }
-    }
-    return componentIds;
-  }, [componentProducts]);
-
   const dbComponents = useMemo(() => {
-    const productId = Number(selectedDbProductId);
-    if (!Number.isFinite(productId) || productId <= 0) return [];
-    const componentIds = new Set(componentsByProductId.get(productId) ?? []);
-    return components.filter((component) => componentIds.has(component.id));
-  }, [components, componentsByProductId, selectedDbProductId]);
+    return components;
+  }, [components]);
 
   const fetchMiningLimits = async () => {
     return miningLimits ?? fetchJson<MiningLimits>(miningLimitsUrl);
@@ -361,8 +338,7 @@ export function MasterDataPdfMiningPage() {
   };
 
   const submitComponent = async () => {
-    const productId = Number(selectedDbProductId);
-    if (!Number.isFinite(productId) || productId <= 0 || !selectedExtractComponent) return;
+    if (!selectedExtractComponent) return;
     if (!componentDraft.name.trim() || !componentDraft.categoryId) return;
 
     setComponentSubmitting(true);
@@ -375,17 +351,13 @@ export function MasterDataPdfMiningPage() {
         isActive: true,
         version: 1,
       });
-      const createdComponent = await componentResponse.json() as Component;
-      await apiRequest("PUT", `/api/admin/master-data/components/${createdComponent.id}/products`, {
-        version: createdComponent.version,
-        productIds: [productId],
-      });
+      await componentResponse.json() as Component;
       await invalidateMasterDataQueries(activeScope);
       setComponentDialogOpen(false);
       toast({ title: "Komponente übernommen" });
     } catch (submitError) {
       const code = extractApiCode(submitError);
-      setError(code === "BUSINESS_CONFLICT" ? "Komponentenname existiert bereits oder Zuordnung ist ungueltig." : "Komponente konnte nicht angelegt werden.");
+      setError(code === "BUSINESS_CONFLICT" ? "Komponentenname existiert bereits." : "Komponente konnte nicht angelegt werden.");
     } finally {
       setComponentSubmitting(false);
     }
@@ -459,7 +431,6 @@ export function MasterDataPdfMiningPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => openComponentDialog(item)}
-                      disabled={!selectedDbProductId}
                       data-testid={`button-adopt-component-${index}`}
                     >
                       Komponente übernehmen
@@ -500,7 +471,7 @@ export function MasterDataPdfMiningPage() {
 
         <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-mining-database-panel">
           <div className="flex items-center justify-between gap-3">
-            <h4 className="font-bold text-slate-900">Produkte Datenbank</h4>
+            <h4 className="font-bold text-slate-900">Komponenten Datenbank</h4>
             <select
               value={selectedDbProductId}
               onChange={(event) => setSelectedDbProductId(event.target.value)}
@@ -516,7 +487,7 @@ export function MasterDataPdfMiningPage() {
           <div className="mt-4 min-h-0 flex-1 overflow-auto rounded border border-slate-100">
             <ul className="divide-y divide-slate-100">
               {dbComponents.length === 0 ? (
-                <li className="p-3 text-sm text-muted-foreground">Keine Komponenten zum gewählten Produkt.</li>
+                <li className="p-3 text-sm text-muted-foreground">Keine Komponenten vorhanden.</li>
               ) : (
                 dbComponents.map((component) => (
                   <li key={component.id} className="p-3">
@@ -607,7 +578,7 @@ export function MasterDataPdfMiningPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setComponentDialogOpen(false)}>Abbrechen</Button>
-            <Button onClick={() => void submitComponent()} disabled={componentSubmitting || !componentDraft.name.trim() || !componentDraft.categoryId || !selectedDbProductId}>
+            <Button onClick={() => void submitComponent()} disabled={componentSubmitting || !componentDraft.name.trim() || !componentDraft.categoryId}>
               {componentSubmitting ? "Übernehme..." : "Übernehmen"}
             </Button>
           </DialogFooter>

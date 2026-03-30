@@ -16,7 +16,6 @@ type CategoryImportResponse = { summary: { totalRows: number; createdRows: numbe
 type VersionedRow = { id: number; version: number; name: string; isDefault?: boolean };
 type ApiErrorPayload = {
   code?: string;
-  assignedProductCount?: number;
   projectOrderItemCount?: number;
   productCount?: number;
   componentCount?: number;
@@ -44,21 +43,12 @@ function resolveComponentDeleteError(error: unknown): string {
     return "Komponente konnte nicht geloescht werden.";
   }
 
-  const assignedProductCount = typeof payload.assignedProductCount === "number"
-    ? payload.assignedProductCount
-    : 0;
   const projectOrderItemCount = typeof payload.projectOrderItemCount === "number"
     ? payload.projectOrderItemCount
     : 0;
 
-  if (assignedProductCount > 0 && projectOrderItemCount > 0) {
-    return "Komponente ist noch Produkten zugeordnet und in Projektauftragspositionen verwendet.";
-  }
   if (projectOrderItemCount > 0) {
     return "Komponente wird noch in Projektauftragspositionen verwendet.";
-  }
-  if (assignedProductCount > 0) {
-    return "Komponente ist noch Produkten zugeordnet.";
   }
   return "Komponente wird noch verwendet.";
 }

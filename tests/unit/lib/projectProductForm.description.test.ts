@@ -87,9 +87,9 @@ describe("project product form helpers", () => {
   it("maps product and component order items into the article slots", () => {
     const selections = mapProjectOrderItemsToSelections(
       [
-        { id: 1, projectId: 1, orderNumber: "ORD-1", productId: 201, componentId: null, specificationId: null, quantity: 1, version: 1, createdAt: new Date(), updatedAt: new Date() },
-        { id: 2, projectId: 1, orderNumber: "ORD-1", productId: null, componentId: 101, specificationId: null, quantity: 1, version: 1, createdAt: new Date(), updatedAt: new Date() },
-        { id: 3, projectId: 1, orderNumber: "ORD-1", productId: null, componentId: 102, specificationId: null, quantity: 1, version: 1, createdAt: new Date(), updatedAt: new Date() },
+        { id: 1, projectId: 1, orderNumber: "ORD-1", productId: 201, componentId: null, quantity: 1, version: 1, createdAt: new Date(), updatedAt: new Date() },
+        { id: 2, projectId: 1, orderNumber: "ORD-1", productId: null, componentId: 101, quantity: 1, version: 1, createdAt: new Date(), updatedAt: new Date() },
+        { id: 3, projectId: 1, orderNumber: "ORD-1", productId: null, componentId: 102, quantity: 1, version: 1, createdAt: new Date(), updatedAt: new Date() },
       ],
       [
         { id: 201, name: "Modell A", categoryId: 1, description: null, isActive: true, version: 1, createdAt: new Date(), updatedAt: new Date() },

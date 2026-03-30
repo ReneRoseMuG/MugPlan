@@ -13,7 +13,6 @@ import {
   noteTemplates,
   notes,
   productCategories,
-  productComponent,
   products,
   projectAttachments,
   projectOrderItems,
@@ -45,7 +44,6 @@ export type ResetDomainDataCounts = {
   productCategories: number;
   components: number;
   componentCategories: number;
-  productComponentLinks: number;
   tags: number;
   projectTags: number;
   customerTags: number;
@@ -89,8 +87,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
     const deletedProjectTagLinks = affectedRows(await tx.delete(projectTags));
     const deletedCustomerTagLinks = affectedRows(await tx.delete(customerTags));
     const deletedEmployeeTagLinks = affectedRows(await tx.delete(employeeTags));
-    const deletedProductComponentLinks = affectedRows(await tx.delete(productComponent));
-
     const deletedProjects = affectedRows(await tx.delete(projects));
     const deletedCustomers = affectedRows(await tx.delete(customers));
 
@@ -120,7 +116,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
       productCategories: deletedProductCategories,
       components: deletedComponents,
       componentCategories: deletedComponentCategories,
-      productComponentLinks: deletedProductComponentLinks,
       tags: deletedTags,
       projectTags: deletedProjectTagLinks,
       customerTags: deletedCustomerTagLinks,

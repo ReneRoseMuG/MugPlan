@@ -133,7 +133,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: createdProduct.body.id,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -145,7 +144,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: createdComponent.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -206,7 +204,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: firstProduct.body.id,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -218,7 +215,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: secondProduct.body.id,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -272,7 +268,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: firstComponent.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -286,7 +281,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: secondComponent.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -373,7 +367,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: initialProduct.body.id,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -385,7 +378,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: initialComponent.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -397,7 +389,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: replacementProduct.body.id,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -409,7 +400,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: replacementComponent.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -461,7 +451,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: inactiveProduct.body.id,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(409)
@@ -498,7 +487,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: inactiveComponent.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(409)
@@ -544,11 +532,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
       })
       .expect(201);
 
-    const specification = await admin
-      .post(`/api/admin/master-data/components/${component.body.id}/specifications`)
-      .send({ specName: "Leistung", specValue: "9 kW" })
-      .expect(201);
-
     await admin
       .post(`/api/projects/${project.id}/order-items`)
       .send({
@@ -556,7 +539,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(422)
@@ -571,7 +553,6 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: product.body.id,
         componentId: component.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(422)
@@ -584,9 +565,22 @@ describe("FT02/FT27 integration: project order items endpoints", () => {
       .send({
         projectId: project.id,
         orderNumber: project.projectOrder!.orderNumber,
+        productId: null,
+        componentId: null,
+        quantity: 1,
+      })
+      .expect(422)
+      .expect((res) => {
+        expect(res.body.code).toBe("VALIDATION_ERROR");
+      });
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id + 1,
+        orderNumber: project.projectOrder!.orderNumber,
         productId: product.body.id,
         componentId: null,
-        specificationId: specification.body.id,
         quantity: 1,
       })
       .expect(422)

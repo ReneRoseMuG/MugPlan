@@ -46,7 +46,6 @@ import {
   noteTemplates,
   notes,
   productCategories,
-  productComponent,
   projectOrder,
   projectNotes,
   projectOrderItems,
@@ -96,14 +95,12 @@ async function readProductCatalogCounts() {
   const [componentCategoryCountRow] = await db.select({ count: sql<number>`count(*)` }).from(componentCategories);
   const [productCountRow] = await db.select({ count: sql<number>`count(*)` }).from(products);
   const [componentCountRow] = await db.select({ count: sql<number>`count(*)` }).from(components);
-  const [linkCountRow] = await db.select({ count: sql<number>`count(*)` }).from(productComponent);
 
   return {
     productCategories: Number(productCategoryCountRow?.count ?? 0),
     componentCategories: Number(componentCategoryCountRow?.count ?? 0),
     products: Number(productCountRow?.count ?? 0),
     components: Number(componentCountRow?.count ?? 0),
-    links: Number(linkCountRow?.count ?? 0),
   };
 }
 
@@ -199,7 +196,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       const componentCategoryRows = await db.select().from(componentCategories);
       const productRows = await db.select().from(products);
       const componentRows = await db.select().from(components);
-      const linkRows = await db.select().from(productComponent);
 
       expect(productCategoryRows.map((row) => row.name).sort()).toEqual(["DEMOSEED-Produkte", "Fass Saunen"]);
       expect(componentCategoryRows.map((row) => row.name)).toEqual(expect.arrayContaining([
@@ -214,7 +210,6 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
       expect(productRows.every((row) => Number.isFinite(Number(row.categoryId)) && Number(row.categoryId) > 0)).toBe(true);
       expect(componentRows.length).toBeGreaterThanOrEqual(16);
       expect(componentRows.every((row) => Number.isFinite(Number(row.categoryId)) && Number(row.categoryId) > 0)).toBe(true);
-      expect(linkRows.length).toBe(0);
 
       const countsAfterFirstBase = await readProductCatalogCounts();
       const tagCountsAfterFirstBase = await readDemoTagCounts();
