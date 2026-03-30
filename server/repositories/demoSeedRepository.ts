@@ -1,4 +1,4 @@
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointmentEmployees,
@@ -12,7 +12,6 @@ import {
   notes,
   projectAttachments,
   projectNotes,
-  projectProjectStatus,
   projects,
   seedRunEntities,
   seedRuns,
@@ -91,34 +90,6 @@ export async function getSeedRunEntities(seedRunId: string) {
     .where(eq(seedRunEntities.seedRunId, seedRunId));
 }
 
-export async function getProjectStatusRelationAnalysis(projectIds: number[]) {
-  if (projectIds.length === 0) {
-    return {
-      relationCount: 0,
-      projectsWithRelations: 0,
-      projectsWithoutRelations: 0,
-    };
-  }
-
-  const rows = await db
-    .select({
-      projectId: projectProjectStatus.projectId,
-      relationCount: sql<number>`count(*)`,
-    })
-    .from(projectProjectStatus)
-    .where(inArray(projectProjectStatus.projectId, projectIds))
-    .groupBy(projectProjectStatus.projectId);
-
-  const relationCount = rows.reduce((sum, row) => sum + Number(row.relationCount ?? 0), 0);
-  const projectsWithRelations = rows.length;
-
-  return {
-    relationCount,
-    projectsWithRelations,
-    projectsWithoutRelations: Math.max(0, projectIds.length - projectsWithRelations),
-  };
-}
-
 export async function getProjectAttachmentsByIds(ids: number[]) {
   if (ids.length === 0) return [];
   return db
@@ -181,14 +152,6 @@ export async function purgeSeedRun(seedRunId: string, idsByType: Record<string, 
       appointmentEmployeesDeleted = Number((result as any)[0]?.affectedRows ?? 0);
     }
 
-    let projectStatusRelationsDeleted = 0;
-    if (projectIds.length > 0) {
-      const result = await tx
-        .delete(projectProjectStatus)
-        .where(inArray(projectProjectStatus.projectId, projectIds));
-      projectStatusRelationsDeleted = Number((result as any)[0]?.affectedRows ?? 0);
-    }
-
     let customerNotesDeleted = 0;
     let projectNotesDeleted = 0;
     let appointmentNotesDeleted = 0;
@@ -231,7 +194,6 @@ export async function purgeSeedRun(seedRunId: string, idsByType: Record<string, 
       noteTemplatesDeleted,
       teamsDeleted,
       toursDeleted,
-      projectStatusRelationsDeleted,
       appointmentEmployeesDeleted,
       customerNotesDeleted,
       projectNotesDeleted,

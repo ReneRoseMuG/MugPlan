@@ -13,7 +13,6 @@ import {
   customerAttachments,
   employeeAttachments,
   appointmentAttachments,
-  insertProjectStatusSchema, updateProjectStatusSchema, projectStatus,
   insertEmployeeSchema, updateEmployeeSchema, employees,
   insertEmployeeAbsenceSchema, updateEmployeeAbsenceSchema, employeeAbsences,
   insertHelpTextSchema, updateHelpTextSchema, helpTexts,
@@ -300,12 +299,6 @@ const customerBoardListItemSchema = z.object({
   attachmentsCount: z.number().int().min(0),
 });
 
-const projectBoardStatusSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-  color: z.string(),
-});
-
 const projectBoardListItemSchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -336,7 +329,6 @@ const projectBoardListItemSchema = z.object({
     phone: z.string().nullable(),
     email: z.string().nullable(),
   }),
-  statuses: z.array(projectBoardStatusSchema),
   attachmentsCount: z.number().int().min(0),
 });
 
@@ -1557,69 +1549,6 @@ export const api = {
       }),
       responses: {
         204: z.void(),
-        404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-      },
-    },
-  },
-  projectStatus: {
-    list: {
-      method: 'GET' as const,
-      path: '/api/project-status',
-      responses: {
-        200: z.array(z.custom<typeof projectStatus.$inferSelect>()),
-        403: z.object({ code: z.literal("FORBIDDEN") }),
-      },
-    },
-    create: {
-      method: 'POST' as const,
-      path: '/api/project-status',
-      input: insertProjectStatusSchema,
-      responses: {
-        201: z.custom<typeof projectStatus.$inferSelect>(),
-        403: z.object({ code: z.literal("FORBIDDEN") }),
-        400: errorSchemas.validation,
-      },
-    },
-    update: {
-      method: 'PUT' as const,
-      path: '/api/project-status/:id',
-      input: updateProjectStatusSchema.extend({
-        version: z.number().int().min(1),
-      }),
-      responses: {
-        200: z.custom<typeof projectStatus.$inferSelect>(),
-        403: z.object({ code: z.literal("FORBIDDEN") }),
-        404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-      },
-    },
-    toggleActive: {
-      method: 'PATCH' as const,
-      path: '/api/project-status/:id/active',
-      input: z.object({
-        isActive: z.boolean(),
-        version: z.number().int().min(1),
-      }),
-      responses: {
-        200: z.custom<typeof projectStatus.$inferSelect>(),
-        403: z.object({ code: z.literal("FORBIDDEN") }),
-        404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-      },
-    },
-    delete: {
-      method: 'DELETE' as const,
-      path: '/api/project-status/:id',
-      input: z.object({
-        version: z.number().int().min(1),
-      }),
-      responses: {
-        204: z.void(),
-        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -3656,7 +3585,6 @@ export const api = {
             noteTemplates: z.number(),
             teams: z.number(),
             tours: z.number(),
-            projectStatusRelations: z.number(),
             appointmentEmployees: z.number(),
             customerNotes: z.number(),
             projectNotes: z.number(),
@@ -4175,10 +4103,6 @@ export type NoteResponse = z.infer<typeof api.notes.update.responses[200]>;
 export type NoteTemplateInput = z.infer<typeof api.noteTemplates.create.input>;
 export type NoteTemplateUpdateInput = z.infer<typeof api.noteTemplates.update.input>;
 export type NoteTemplateResponse = z.infer<typeof api.noteTemplates.create.responses[201]>;
-
-export type ProjectStatusInput = z.infer<typeof api.projectStatus.create.input>;
-export type ProjectStatusUpdateInput = z.infer<typeof api.projectStatus.update.input>;
-export type ProjectStatusResponse = z.infer<typeof api.projectStatus.create.responses[201]>;
 
 export type HelpTextInput = z.infer<typeof api.helpTexts.create.input>;
 export type HelpTextUpdateInput = z.infer<typeof api.helpTexts.update.input>;

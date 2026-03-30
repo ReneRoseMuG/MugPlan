@@ -127,6 +127,13 @@
       "when": 1774800000000,
       "tag": "0017_employee_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1775088000000,
+      "tag": "0018_remove_project_status",
+      "breakpoints": true
     }
   ]
 }

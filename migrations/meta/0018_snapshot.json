@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "16a1a6fe-bb41-4f93-a23d-9f4a31a57244",
+  "prevId": "1d0189ef-9da3-4831-91d7-936899efa00d",
+  "note": "Manual snapshot placeholder for 0018_remove_project_status. Authoritative migration logic lives in migrations/0018_remove_project_status.sql."
+}

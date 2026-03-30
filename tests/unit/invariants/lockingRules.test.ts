@@ -25,10 +25,6 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   deleteAppointmentWithVersionTx: vi.fn(),
 }));
 
-vi.mock("../../../server/repositories/projectStatusRepository", () => ({
-  getProjectStatusesByProjectIds: vi.fn(),
-}));
-
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
 import {
   deleteAppointment,

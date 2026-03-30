@@ -26,10 +26,6 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   getAppointmentWithEmployeesTx: vi.fn(),
 }));
 
-vi.mock("../../../server/repositories/projectStatusRepository", () => ({
-  getProjectStatusesByProjectIds: vi.fn(),
-}));
-
 vi.mock("../../../server/repositories/customersRepository", () => ({
   getCustomer: vi.fn(),
 }));

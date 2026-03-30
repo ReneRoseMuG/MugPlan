@@ -17,7 +17,6 @@ import {
   products,
   projectAttachments,
   projectOrderItems,
-  projectStatus,
   projectTags,
   projects,
   seedRunEntities,
@@ -52,7 +51,6 @@ export type ResetDomainDataCounts = {
   customerTags: number;
   employeeTags: number;
   customers: number;
-  projectStatuses: number;
   teams: number;
   tours: number;
   notes: number;
@@ -104,7 +102,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
 
     const deletedNotes = affectedRows(await tx.delete(notes));
     const deletedNoteTemplates = affectedRows(await tx.delete(noteTemplates));
-    const deletedProjectStatuses = affectedRows(await tx.delete(projectStatus));
     const deletedTeams = affectedRows(await tx.delete(teams));
     const deletedTours = affectedRows(await tx.delete(tours));
 
@@ -129,7 +126,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
       customerTags: deletedCustomerTagLinks,
       employeeTags: deletedEmployeeTagLinks,
       customers: deletedCustomers,
-      projectStatuses: deletedProjectStatuses,
       teams: deletedTeams,
       tours: deletedTours,
       notes: deletedNotes,

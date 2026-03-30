@@ -4,7 +4,6 @@ import {
   getAllExportAppointmentRows,
   getAppointmentEmployeesByIds,
   getExportAppointmentRows,
-  getProjectStatusesByIds,
   listAllCustomers,
   listAllEmployees,
   listAllProjects,
@@ -227,11 +226,7 @@ async function buildExcelBuffer(input: {
   }
 
   const appointmentIds = input.allAppointments.map((row) => row.appointmentId);
-  const projectIds = Array.from(
-    new Set(input.allAppointments.map((row) => row.projectId).filter((id): id is number => Number.isFinite(id))),
-  );
   const employeesByAppointment = groupBy(await getAppointmentEmployeesByIds(appointmentIds), (row) => row.appointmentId);
-  const statusesByProject = groupBy(await getProjectStatusesByIds(projectIds), (row) => row.projectId);
 
   detailSheet.columns = [
     { header: "Termin-ID", key: "appointmentId", width: 14 },
@@ -248,14 +243,10 @@ async function buildExcelBuffer(input: {
     { header: "Adresse", key: "address", width: 28 },
     { header: "Tour", key: "tour", width: 14 },
     { header: "Mitarbeiter", key: "employees", width: 28 },
-    { header: "Projektstatus", key: "statuses", width: 22 },
   ];
 
   for (const row of input.allAppointments) {
     const employeeList = (employeesByAppointment.get(row.appointmentId) ?? []).map((e) => e.employeeName).join(", ");
-    const statusList = row.projectId
-      ? (statusesByProject.get(row.projectId) ?? []).map((s) => s.statusTitle).join(", ")
-      : "";
     detailSheet.addRow({
       appointmentId: row.appointmentId,
       startDate: formatDateForDisplay(row.startDate),
@@ -271,7 +262,6 @@ async function buildExcelBuffer(input: {
       address: [row.addressLine1, row.addressLine2].filter(Boolean).join(" "),
       tour: row.tourName ?? "-",
       employees: employeeList || "-",
-      statuses: statusList || "-",
     });
   }
 

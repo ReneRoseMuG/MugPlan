@@ -42,7 +42,6 @@ export type ViewType =
   | "appointment"
   | "appointmentsList"
   | "noteTemplates"
-  | "projectStatus"
   | "helpTexts"
   | "helpTextForm"
   | "settings"
@@ -326,17 +325,6 @@ export default function Home({ onLogout }: HomeProps) {
           ) : view === "noteTemplates" && isAdmin ? (
             <MasterDataPage
               initialTabId="note-templates"
-              onCreateHelpText={() => {
-                setSelectedHelpTextId(null);
-                setView("helpTextForm");
-              }}
-              onEditHelpText={(id) => {
-                setSelectedHelpTextId(id);
-                setView("helpTextForm");
-              }}
-            />
-          ) : view === "projectStatus" && isAdmin ? (
-            <MasterDataPage
               onCreateHelpText={() => {
                 setSelectedHelpTextId(null);
                 setView("helpTextForm");

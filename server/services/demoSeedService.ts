@@ -141,7 +141,6 @@ type PurgeSummary = {
     noteTemplates: number;
     teams: number;
     tours: number;
-    projectStatusRelations: number;
     appointmentEmployees: number;
     customerNotes: number;
     projectNotes: number;
@@ -1942,7 +1941,6 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
         noteTemplates: 0,
         teams: 0,
         tours: 0,
-        projectStatusRelations: 0,
         appointmentEmployees: 0,
         customerNotes: 0,
         projectNotes: 0,
@@ -2020,7 +2018,6 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
       noteTemplates: deleted.noteTemplatesDeleted,
       teams: deleted.teamsDeleted,
       tours: deleted.toursDeleted,
-      projectStatusRelations: deleted.projectStatusRelationsDeleted,
       appointmentEmployees: deleted.appointmentEmployeesDeleted,
       customerNotes: deleted.customerNotesDeleted,
       projectNotes: deleted.projectNotesDeleted,
