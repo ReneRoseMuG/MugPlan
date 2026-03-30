@@ -126,7 +126,7 @@ Wenn eine Branch-Frage erforderlich ist und der Nutzer kein passendes Kurzkomman
 
 > „Soll für diesen Auftrag ein lokaler Branch von `work` abgezweigt werden?"
 
-- Bei **ja**: Branch-Namen erfragen, Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`).
+- Bei **ja**: Branch-Namen erfragen. Delegiert der Nutzer die Namenswahl ausdrücklich an Codex, wählt Codex selbst einen kurzen, auftragsbezogenen und beschreibenden Branchnamen. Danach Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`).
 - Bei **nein**: direkt mit der Planung fortfahren.
 
 Git-Aktionen dabei ausschließlich **seriell** ausführen (siehe Abschnitt 4.1).

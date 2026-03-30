@@ -40,7 +40,7 @@ import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import type { CalendarNavCommand } from "@/pages/Home";
-import type { Employee, Tour } from "@shared/schema";
+import type { Tour } from "@shared/schema";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -64,7 +64,6 @@ type WeekTourLane = {
   label: string;
   color: string | null;
   tourId: number | null;
-  members: { id: number; fullName: string }[];
   dayBuckets: WeekDayBucket[];
 };
 
@@ -277,41 +276,10 @@ export function CalendarWeekView({
     queryKey: ["/api/tours"],
   });
 
-  const { data: employees = [] } = useQuery<Employee[]>({
-    queryKey: ["/api/employees", { scope: "active" }],
-    queryFn: async () => {
-      const response = await fetch("/api/employees?scope=active", {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Mitarbeiter konnten nicht geladen werden");
-      }
-      const payload = (await response.json()) as unknown;
-      if (!Array.isArray(payload)) {
-        return [];
-      }
-      return payload as Employee[];
-    },
-  });
-
   const appointmentsById = useMemo(
     () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
     [appointments],
   );
-
-  const membersByTourId = useMemo(() => {
-    const map = new Map<number, { id: number; fullName: string }[]>();
-    for (const employee of employees) {
-      if (!employee.tourId) continue;
-      const current = map.get(employee.tourId) ?? [];
-      current.push({ id: employee.id, fullName: employee.fullName });
-      map.set(employee.tourId, current);
-    }
-    map.forEach((members) => {
-      members.sort((a, b) => a.fullName.localeCompare(b.fullName, "de", { sensitivity: "base" }));
-    });
-    return map;
-  }, [employees]);
 
   const lanesByWeekStart = useMemo(() => {
     const map = new Map<string, WeekTourLane[]>();
@@ -334,7 +302,6 @@ export function CalendarWeekView({
           label: tour.name,
           color: tour.color,
           tourId: tour.id,
-          members: membersByTourId.get(tour.id) ?? [],
           dayBuckets: Array.from({ length: 7 }, (_, dayIndex) => ({
             dayIndex,
             dateKey: format(addDays(weekStart, dayIndex), "yyyy-MM-dd"),
@@ -347,7 +314,6 @@ export function CalendarWeekView({
         label: "Ohne Tour",
         color: CALENDAR_UNASSIGNED_TOUR_COLOR,
         tourId: null,
-        members: [],
         dayBuckets: Array.from({ length: 7 }, (_, dayIndex) => ({
           dayIndex,
           dateKey: format(addDays(weekStart, dayIndex), "yyyy-MM-dd"),
@@ -388,7 +354,7 @@ export function CalendarWeekView({
     });
 
     return map;
-  }, [appointments, appointmentsById, membersByTourId, tours, weekStarts]);
+  }, [appointments, appointmentsById, tours, weekStarts]);
 
   const getLaneRenderData = (tourLane: WeekTourLane): WeekLaneRenderData =>
     buildWeekLaneRenderData(tourLane, appointmentsById);
@@ -819,7 +785,6 @@ export function CalendarWeekView({
                           <CalendarWeekTourLaneHeaderBar
                             label={tourLane.label}
                             color={tourLane.color}
-                            members={tourLane.members}
                             isExpanded={!isLaneCollapsed({
                               isCollapsedMode,
                               laneKey: tourLane.laneKey,

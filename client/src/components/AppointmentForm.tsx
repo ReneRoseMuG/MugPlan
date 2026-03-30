@@ -282,11 +282,6 @@ export function AppointmentForm({
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
-  const [tourConfirmOpen, setTourConfirmOpen] = useState(false);
-  const [pendingTourChange, setPendingTourChange] = useState<{
-    tourId: number | null;
-    employeeIds: number[];
-  } | null>(null);
   const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -590,21 +585,14 @@ export function AppointmentForm({
     if (isEditing) return;
     if (initialTourId === null || initialTourId === undefined) return;
     if (weekTourPrefillAppliedRef.current) return;
-    if (employeesLoading) return;
-
-    const tourEmployeeIds = employees
-      .filter((employee) => employee.tourId === initialTourId && employee.isActive)
-      .map((employee) => employee.id);
 
     setSelectedTourId(initialTourId);
-    setAssignedEmployeeIds(tourEmployeeIds);
     weekTourPrefillAppliedRef.current = true;
 
     console.info(`${logPrefix} week-prefill applied`, {
       tourId: initialTourId,
-      employeeCount: tourEmployeeIds.length,
     });
-  }, [employees, employeesLoading, initialTourId, isEditing]);
+  }, [initialTourId, isEditing]);
 
   useEffect(() => {
     if (!startDate) return;
@@ -727,27 +715,16 @@ export function AppointmentForm({
     addEmployees(teamEmployees);
   };
 
-  const applyTourChange = (tourId: number | null, employeeIds: number[]) => {
+  const applyTourChange = (tourId: number | null) => {
     setSelectedTourId(tourId);
-    setAssignedEmployeeIds(employeeIds);
-    console.info(`${logPrefix} tour reset applied`, {
+    console.info(`${logPrefix} tour change applied`, {
       tourId,
-      employeeCount: employeeIds.length,
     });
   };
 
   const handleTourChange = (tourId: number | null) => {
     if (tourId === selectedTourId) return;
-    const nextEmployeeIds = tourId
-      ? employees.filter((employee) => employee.tourId === tourId && employee.isActive).map((employee) => employee.id)
-      : [];
-    if (assignedEmployeeIds.length > 0) {
-      console.info(`${logPrefix} tour change requires confirmation`, { tourId });
-      setPendingTourChange({ tourId, employeeIds: nextEmployeeIds });
-      setTourConfirmOpen(true);
-      return;
-    }
-    applyTourChange(tourId, nextEmployeeIds);
+    applyTourChange(tourId);
   };
 
   const handleProjectSelect = (id: number) => {
@@ -2155,31 +2132,6 @@ export function AppointmentForm({
           />
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={tourConfirmOpen} onOpenChange={setTourConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Mitarbeiterliste zurücksetzen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Beim Ändern der Tour werden die bisherigen Mitarbeiter entfernt und durch die Tour-Mitarbeiter ersetzt.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingTourChange(null)}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingTourChange) {
-                  applyTourChange(pendingTourChange.tourId, pendingTourChange.employeeIds);
-                }
-                setPendingTourChange(null);
-                setTourConfirmOpen(false);
-              }}
-            >
-              Tour übernehmen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={employeeConfirmOpen} onOpenChange={setEmployeeConfirmOpen}>
         <AlertDialogContent>

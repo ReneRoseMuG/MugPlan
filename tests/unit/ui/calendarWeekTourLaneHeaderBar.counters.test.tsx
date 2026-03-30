@@ -34,7 +34,6 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
       React.createElement(CalendarWeekTourLaneHeaderBar, {
         label: "Tour Alpha",
         color: "#123456",
-        members: [],
         testId: "week-tour-lane-header-tour-1",
       }),
     );
@@ -54,7 +53,6 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
       React.createElement(CalendarWeekTourLaneHeaderBar, {
         label: "Tour Beta",
         color: "#654321",
-        members: [{ id: 1, fullName: "Max Mustermann" }],
         isExpanded: false,
         testId: "week-tour-lane-header-tour-2",
       }),
