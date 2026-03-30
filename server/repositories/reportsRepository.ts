@@ -21,6 +21,10 @@ import {
   isAppointmentCancellationTag,
   isManagedSpecialMeasureTag,
 } from "../lib/appointmentCancellation";
+import {
+  getProjectAttachmentCountsByProjectIds,
+  getProjectNoteCountsByProjectIds,
+} from "./appointmentsRepository";
 import { getAppointmentTagsByAppointmentIds, getProjectTagsByProjectIds } from "./tagRelationsRepository";
 
 export type VorlauflisteArticleValue = {
@@ -35,6 +39,10 @@ export type VorlauflisteCategory = {
 
 export type VorlauflisteRow = {
   projectId: number;
+  projectName: string;
+  orderNumber: string | null;
+  customerId: number;
+  customerNumber: string | null;
   tags: Tag[];
   highlightTag: Tag | null;
   amount: string | null;
@@ -46,6 +54,9 @@ export type VorlauflisteRow = {
   plannedWeek: string | null;
   actualDate: string;
   projectDescription: string | null;
+  notesCount: number;
+  plannedAppointmentsCount: number;
+  attachmentsCount: number;
   reportState: AppointmentCancellationReportState;
 };
 
@@ -99,6 +110,18 @@ type ProjectReportTagState = {
   cancellationTag: Tag | null;
   specialMeasureTag: Tag | null;
 };
+
+const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Berlin",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function getBerlinTodayDate(): Date {
+  const berlinToday = berlinFormatter.format(new Date());
+  return new Date(`${berlinToday}T00:00:00`);
+}
 
 function createEmptyBuckets(): ReportArticleBuckets {
   return new Map<number, Set<string>>();
@@ -345,6 +368,32 @@ export async function getVorlauflistePaged(params: {
     .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .where(inArray(projects.id, projectIds));
 
+  const [projectNoteCountsByProjectId, projectAttachmentsCountByProjectId] = await Promise.all([
+    getProjectNoteCountsByProjectIds(projectIds),
+    getProjectAttachmentCountsByProjectIds(projectIds),
+  ]);
+
+  const futureAppointmentRows = await db
+    .select({
+      projectId: appointments.projectId,
+    })
+    .from(appointments)
+    .where(and(
+      inArray(appointments.projectId, projectIds),
+      gte(appointments.startDate, getBerlinTodayDate()),
+    ));
+
+  const plannedAppointmentsCountByProjectId = new Map<number, number>();
+  for (const row of futureAppointmentRows) {
+    if (typeof row.projectId !== "number") {
+      continue;
+    }
+    plannedAppointmentsCountByProjectId.set(
+      row.projectId,
+      (plannedAppointmentsCountByProjectId.get(row.projectId) ?? 0) + 1,
+    );
+  }
+
   const orderItemRows = await db
     .select({
       item: projectOrderItems,
@@ -435,6 +484,10 @@ export async function getVorlauflistePaged(params: {
 
         return {
           projectId,
+          projectName: row.project.name,
+          orderNumber: row.order?.orderNumber ?? null,
+          customerId: row.customer.id,
+          customerNumber: row.customer.customerNumber || null,
           tags: projectTags,
           highlightTag: projectTagState.cancellationTag ?? projectTagState.specialMeasureTag,
           amount: row.order?.amount ?? null,
@@ -446,6 +499,9 @@ export async function getVorlauflistePaged(params: {
           plannedWeek: row.order?.plannedWeek ?? null,
           actualDate: appointmentMeta.actualDate,
           projectDescription: stripReportHtmlToText(row.project.descriptionMd),
+          notesCount: projectNoteCountsByProjectId.get(projectId) ?? 0,
+          plannedAppointmentsCount: plannedAppointmentsCountByProjectId.get(projectId) ?? 0,
+          attachmentsCount: projectAttachmentsCountByProjectId.get(projectId) ?? 0,
           reportState: appointmentMeta.reportState,
         };
       })

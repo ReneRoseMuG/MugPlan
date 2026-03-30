@@ -112,13 +112,13 @@ Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angeleg
 
 ### 4.1 Branch-Frage
 
-Claude fragt nur dann nach einem lokalen Branch von `work`, wenn der Auftrag voraussichtlich Änderungen an Produktivcode, Tests, Konfiguration oder Dokumentation erfordert (Klasse 4 oder 5).
+Claude fragt nur dann nach einem lokalen Branch von `work_version_2`, wenn der Auftrag voraussichtlich Änderungen an Produktivcode, Tests, Konfiguration oder Dokumentation erfordert (Klasse 4 oder 5).
 
 **Keine Branch-Frage bei:** reinen Leseaufträgen, Analyse-/Audit-/Test-Reports, Git-Operationen ohne inhaltliche Änderung, reinen Rückfragen oder Erklärungen.
 
 Wenn eine Branch-Frage erforderlich ist:
 
-> „Soll für diesen Auftrag ein lokaler Branch von `work` abgezweigt werden?"
+> „Soll für diesen Auftrag ein lokaler Branch von `work_version_2` abgezweigt werden?"
 
 - Bei **ja**: Branch-Namen erfragen, Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`). Git-Aktionen ausschließlich seriell (siehe Abschnitt 5.1).
 - Bei **nein**: direkt mit der Planung fortfahren.
@@ -164,7 +164,7 @@ Jeder Plan muss ausreichend Kontext enthalten, damit der Nutzer die Tragweite de
 ### 4.4 Kurzkommandos
 
 `branch <n>`
-Claude legt vor der weiteren Arbeit einen lokalen Branch von `work` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <n>`. Alle Git-Schritte werden seriell ausgeführt.
+Claude legt vor der weiteren Arbeit einen lokalen Branch von `work_version_2` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <n>`. Alle Git-Schritte werden seriell ausgeführt.
 
 `plan`
 Claude klassifiziert den Auftrag gemäß Abschnitt 0, führt die Analyse gemäß Abschnitt 3 aus und erstellt danach direkt den Plan im Format aus Abschnitt 4.2, ohne die Branch-Frage erneut zu stellen.
@@ -183,13 +183,13 @@ Claude prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-in
 
 `cleanup`
 Claude führt den Abschluss des aktuellen Arbeitsbranches ausschließlich seriell aus:
-0. Wenn sich Claude bereits auf einem Arbeitsbranch ungleich `work` befindet und dieser noch uncommittete, auftragsbezogene Änderungen enthält, darf Claude genau diese Änderungen vor dem eigentlichen Cleanup seriell stagen, committen und nach `origin` pushen, sofern dies nur der Herstellung eines cleanup-fähigen Zustands dient.
-1. Sicherstellen, dass der aktuelle Branch nicht `work` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
-2. Auf `work` wechseln.
-3. Sicherstellen, dass `work` keine uncommitteten Änderungen enthält und vollständig mit `origin/work` synchronisiert ist.
-4. Den Arbeitsbranch in `work` mergen.
-5. Das Ergebnis auf `work` prüfen.
-6. `work` pushen.
+0. Wenn sich Claude bereits auf einem Arbeitsbranch ungleich `work_version_2` befindet und dieser noch uncommittete, auftragsbezogene Änderungen enthält, darf Claude genau diese Änderungen vor dem eigentlichen Cleanup seriell stagen, committen und nach `origin` pushen, sofern dies nur der Herstellung eines cleanup-fähigen Zustands dient.
+1. Sicherstellen, dass der aktuelle Branch nicht `work_version_2` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
+2. Auf `work_version_2` wechseln.
+3. Sicherstellen, dass `work_version_2` keine uncommitteten Änderungen enthält und vollständig mit `origin/work_version_2` synchronisiert ist.
+4. Den Arbeitsbranch in `work_version_2` mergen.
+5. Das Ergebnis auf `work_version_2` prüfen.
+6. `work_version_2` pushen.
 7. Nur den lokalen Arbeitsbranch löschen. Der Remote-Branch wird nicht gelöscht.
 8. Unzulässig: zusätzliche inhaltliche Änderungen, Refactorings oder Dokumentationsarbeiten, die nicht bereits Teil des Arbeitsbranches sind.
 9. Bei uncommitteten Änderungen außerhalb des erlaubten Vorbereitungsfalls, fehlendem Push, Divergenzen, Merge-Konflikten oder anderen Blockern: kontrolliert abbrechen und den Grund dokumentieren.

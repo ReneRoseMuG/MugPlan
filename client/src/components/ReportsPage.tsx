@@ -15,6 +15,11 @@ import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { ListLayout } from "@/components/ui/list-layout";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 import { ReportConfigSurface } from "@/components/ui/report-config-surface";
+import {
+  buildVorlauflistePreviewProject,
+  VORLAUFLISTE_WRAPPED_TEXT_CLASSNAME,
+} from "@/components/reports/vorlauflistePreview";
+import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
@@ -30,6 +35,10 @@ type VorlauflisteCategory = {
 
 type VorlauflisteItem = {
   projectId: number;
+  projectName: string;
+  orderNumber: string | null;
+  customerId: number;
+  customerNumber: string | null;
   reportState: AppointmentCancellationReportState;
   tags: Tag[];
   highlightTag: Tag | null;
@@ -42,6 +51,9 @@ type VorlauflisteItem = {
   plannedWeek: string | null;
   actualDate: string;
   projectDescription: string | null;
+  notesCount: number;
+  plannedAppointmentsCount: number;
+  attachmentsCount: number;
 };
 
 type VorlauflisteResponse = {
@@ -458,7 +470,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     const componentCategories: VorlauflisteCategory[] = vorlauflisteData?.componentCategories ?? [];
     const wrapCellClassName = "align-top";
     const renderWrappedText = (value: string | null) => (
-      <span className="block whitespace-normal break-words [overflow-wrap:anywhere]">{resolveValue(value)}</span>
+      <span className={VORLAUFLISTE_WRAPPED_TEXT_CLASSNAME}>{resolveValue(value)}</span>
     );
 
     const columns: TableViewColumnDef<VorlauflisteItem>[] = [
@@ -752,6 +764,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                       rowKey={(row) => row.projectId}
                       rowStyle={(row) => resolveTagBackgroundStyle(row.highlightTag)}
                       rowTitle={(row) => row.highlightTag?.name}
+                      rowPreviewRenderer={(row) => (
+                        <ProjectTableHoverPreview
+                          project={buildVorlauflistePreviewProject(
+                            row,
+                            vorlauflisteData?.productCategories ?? [],
+                            vorlauflisteData?.componentCategories ?? [],
+                          )}
+                        />
+                      )}
                       onColumnResize={updateVorlauflisteColumnWidth}
                       onColumnResizeEnd={commitVorlauflisteColumnWidth}
                       tableClassName="table-fixed"

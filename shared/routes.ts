@@ -351,6 +351,10 @@ const reportVorlauflisteArticleValueSchema = z.object({
 
 const reportVorlauflisteItemSchema = z.object({
   projectId: z.number().int().positive(),
+  projectName: z.string(),
+  orderNumber: z.string().nullable(),
+  customerId: z.number().int().positive(),
+  customerNumber: z.string().nullable(),
   tags: z.array(tagSchema),
   highlightTag: tagSchema.nullable(),
   amount: z.string().nullable(),
@@ -362,6 +366,9 @@ const reportVorlauflisteItemSchema = z.object({
   plannedWeek: z.string().nullable(),
   actualDate: z.string(),
   projectDescription: z.string().nullable(),
+  notesCount: z.number().int().min(0),
+  plannedAppointmentsCount: z.number().int().min(0),
+  attachmentsCount: z.number().int().min(0),
   reportState: appointmentCancellationReportStateSchema,
 });
 

@@ -113,7 +113,7 @@ Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angeleg
 
 ### 3.1 Branch-Frage (nur wenn tatsächlich Änderungen durchgeführt werden sollen)
 
-Codex fragt nur dann nach einem lokalen Branch von `work`, wenn der Auftrag voraussichtlich Änderungen an Produktivcode, Tests, Konfiguration oder Dokumentation erfordert.
+Codex fragt nur dann nach einem lokalen Branch von `work_version_2`, wenn der Auftrag voraussichtlich Änderungen an Produktivcode, Tests, Konfiguration oder Dokumentation erfordert.
 
 **Keine Branch-Frage bei:**
 
@@ -124,7 +124,7 @@ Codex fragt nur dann nach einem lokalen Branch von `work`, wenn der Auftrag vora
 
 Wenn eine Branch-Frage erforderlich ist und der Nutzer kein passendes Kurzkommando verwendet hat, fragt Codex:
 
-> „Soll für diesen Auftrag ein lokaler Branch von `work` abgezweigt werden?"
+> „Soll für diesen Auftrag ein lokaler Branch von `work_version_2` abgezweigt werden?"
 
 - Bei **ja**: Branch-Namen erfragen. Delegiert der Nutzer die Namenswahl ausdrücklich an Codex, wählt Codex selbst einen kurzen, auftragsbezogenen und beschreibenden Branchnamen. Danach Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`).
 - Bei **nein**: direkt mit der Planung fortfahren.
@@ -191,7 +191,7 @@ Zur Reduktion von Dialog- und Kontextverbrauch darf der Nutzer kurze Kommandos v
 ### Zulässige Kurzkommandos
 
 `branch <name>`  
-Codex legt vor der weiteren Arbeit einen lokalen Branch von `work` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <name>`. Alle Git-Schritte werden seriell ausgeführt.
+Codex legt vor der weiteren Arbeit einen lokalen Branch von `work_version_2` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <name>`. Alle Git-Schritte werden seriell ausgeführt.
 
 `plan`  
 Codex klassifiziert den Auftrag gemäß Abschnitt 0, führt die Analyse gemäß Abschnitt 2 aus und erstellt danach direkt den Plan im Format aus Abschnitt 3.2 und 3.3, ohne die Branch-Frage erneut zu stellen.
@@ -210,13 +210,13 @@ Codex prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-ind
 
 `cleanup`  
 Codex führt den Abschluss des aktuellen Arbeitsbranches ausschließlich seriell aus:
-0. Wenn sich Codex bereits auf einem Arbeitsbranch ungleich `work` befindet und dieser noch uncommittete, auftragsbezogene Änderungen enthält, darf Codex genau diese Änderungen vor dem eigentlichen Cleanup seriell `stage`n, committen und nach `origin` pushen, sofern dies nur der Herstellung eines cleanup-fähigen Zustands dient.
-1. Codex stellt sicher, dass der aktuelle Branch nicht `work` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
-2. Codex wechselt auf `work`.
-3. Codex stellt sicher, dass `work` keine uncommitteten Änderungen enthält und vollständig mit `origin/work` synchronisiert ist.
-4. Codex merged den Arbeitsbranch in `work`.
-5. Codex prüft das Ergebnis auf `work`.
-6. Codex pusht `work`.
+0. Wenn sich Codex bereits auf einem Arbeitsbranch ungleich `work_version_2` befindet und dieser noch uncommittete, auftragsbezogene Änderungen enthält, darf Codex genau diese Änderungen vor dem eigentlichen Cleanup seriell `stage`n, committen und nach `origin` pushen, sofern dies nur der Herstellung eines cleanup-fähigen Zustands dient.
+1. Codex stellt sicher, dass der aktuelle Branch nicht `work_version_2` ist, keine uncommitteten Änderungen enthält und vollständig nach `origin` gepusht ist.
+2. Codex wechselt auf `work_version_2`.
+3. Codex stellt sicher, dass `work_version_2` keine uncommitteten Änderungen enthält und vollständig mit `origin/work_version_2` synchronisiert ist.
+4. Codex merged den Arbeitsbranch in `work_version_2`.
+5. Codex prüft das Ergebnis auf `work_version_2`.
+6. Codex pusht `work_version_2`.
 7. Codex löscht danach nur den lokalen Arbeitsbranch. Der Remote-Branch wird nicht gelöscht.
 8. Unzulässig bleiben dabei zusätzliche inhaltliche Änderungen, Refactorings oder Dokumentationsarbeiten, die nicht bereits Teil des Arbeitsbranches sind; erlaubt ist nur die Sicherung des vorhandenen Branch-Zustands für den Cleanup.
 9. Bei uncommitteten Änderungen außerhalb dieses erlaubten Vorbereitungsfalls, fehlendem Push, Divergenzen, Merge-Konflikten oder anderen Blockern bricht Codex kontrolliert ab und dokumentiert den Grund.
