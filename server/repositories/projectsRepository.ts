@@ -10,7 +10,6 @@ import {
   projectOrderItems,
   projectAttachments,
   projectNotes,
-  projectProjectStatus,
   projects,
   products,
   type Project,
@@ -819,7 +818,6 @@ export async function deleteProjectWithVersion(
     }
     await tx.delete(projectAttachments).where(eq(projectAttachments.projectId, id));
     await tx.delete(projectOrderItems).where(eq(projectOrderItems.projectId, id));
-    await tx.delete(projectProjectStatus).where(eq(projectProjectStatus.projectId, id));
 
     const result = await tx.execute(sql`
       delete from project

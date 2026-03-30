@@ -9,7 +9,6 @@ import type {
   InsertNoteTemplate,
   InsertProject,
   InsertProjectAttachment,
-  InsertProjectStatus,
   InsertTeam,
   InsertTour,
   Note,
@@ -17,7 +16,6 @@ import type {
   Project,
   ProjectAttachment,
   ProjectOrder,
-  ProjectStatus,
   Team,
   Tour,
   UpdateCustomer,
@@ -26,7 +24,6 @@ import type {
   UpdateNote,
   UpdateNoteTemplate,
   UpdateProject,
-  UpdateProjectStatus,
   UpdateTeam,
   UpdateTour,
 } from "@shared/schema";
@@ -40,7 +37,6 @@ import * as noteTemplatesService from "./services/noteTemplatesService";
 import * as notesService from "./services/notesService";
 import * as projectAttachmentsRepository from "./repositories/projectsRepository";
 import * as projectNotesService from "./services/projectNotesService";
-import * as projectStatusService from "./services/projectStatusService";
 import * as projectsService from "./services/projectsService";
 import * as teamEmployeesService from "./services/teamEmployeesService";
 import * as teamsService from "./services/teamsService";
@@ -70,16 +66,6 @@ export interface IStorage {
   createNoteTemplate(template: InsertNoteTemplate): Promise<NoteTemplate>;
   updateNoteTemplate(id: number, data: UpdateNoteTemplate & { version: number }): Promise<NoteTemplate | null>;
   deleteNoteTemplate(id: number, version: number): Promise<void>;
-  getProjectStatuses(filter?: "active" | "inactive" | "all"): Promise<ProjectStatus[]>;
-  getProjectStatus(id: number): Promise<ProjectStatus | null>;
-  createProjectStatus(status: InsertProjectStatus): Promise<ProjectStatus>;
-  updateProjectStatus(
-    id: number,
-    data: UpdateProjectStatus & { version: number },
-  ): Promise<{ status: ProjectStatus | null; error?: string }>;
-  toggleProjectStatusActive(id: number, isActive: boolean, version: number): Promise<ProjectStatus | null>;
-  deleteProjectStatus(id: number, version: number): Promise<{ success: boolean; error?: string }>;
-  isProjectStatusInUse(id: number): Promise<boolean>;
   getHelpTexts(query?: string): Promise<HelpText[]>;
   getHelpTextById(id: number): Promise<HelpText | null>;
   getHelpTextByKey(helpKey: string): Promise<HelpText | null>;
@@ -110,9 +96,6 @@ export interface IStorage {
   getProjectAttachments(projectId: number): Promise<ProjectAttachment[]>;
   getProjectAttachmentById(id: number): Promise<ProjectAttachment | null>;
   createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment>;
-  getProjectStatusesByProject(projectId: number): Promise<Array<{ status: ProjectStatus; relationVersion: number }>>;
-  addProjectStatus(projectId: number, statusId: number, expectedVersion: number): Promise<{ status: ProjectStatus; relationVersion: number }>;
-  removeProjectStatus(projectId: number, statusId: number, version: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -207,37 +190,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNoteTemplate(id: number, version: number): Promise<void> {
     await noteTemplatesService.deleteNoteTemplate(id, version);
-  }
-
-  async getProjectStatuses(filter: "active" | "inactive" | "all" = "active"): Promise<ProjectStatus[]> {
-    return projectStatusService.listProjectStatuses(filter, "ADMIN");
-  }
-
-  async getProjectStatus(id: number): Promise<ProjectStatus | null> {
-    return projectStatusService.getProjectStatus(id);
-  }
-
-  async createProjectStatus(status: InsertProjectStatus): Promise<ProjectStatus> {
-    return projectStatusService.createProjectStatus(status, "ADMIN");
-  }
-
-  async updateProjectStatus(
-    id: number,
-    data: UpdateProjectStatus & { version: number },
-  ): Promise<{ status: ProjectStatus | null; error?: string }> {
-    return projectStatusService.updateProjectStatus(id, data, "ADMIN");
-  }
-
-  async toggleProjectStatusActive(id: number, isActive: boolean, version: number): Promise<ProjectStatus | null> {
-    return projectStatusService.toggleProjectStatusActive(id, isActive, version, "ADMIN");
-  }
-
-  async deleteProjectStatus(id: number, version: number): Promise<{ success: boolean; error?: string }> {
-    return projectStatusService.deleteProjectStatus(id, version, "ADMIN");
-  }
-
-  async isProjectStatusInUse(id: number): Promise<boolean> {
-    return projectStatusService.isProjectStatusInUse(id);
   }
 
   async getHelpTexts(query?: string): Promise<HelpText[]> {
@@ -381,18 +333,6 @@ export class DatabaseStorage implements IStorage {
 
   async createProjectAttachment(data: InsertProjectAttachment): Promise<ProjectAttachment> {
     return projectAttachmentsRepository.createProjectAttachment(data);
-  }
-
-  async getProjectStatusesByProject(projectId: number): Promise<Array<{ status: ProjectStatus; relationVersion: number }>> {
-    return projectStatusService.listProjectStatusesByProject(projectId);
-  }
-
-  async addProjectStatus(projectId: number, statusId: number, expectedVersion: number): Promise<{ status: ProjectStatus; relationVersion: number }> {
-    return projectStatusService.addProjectStatus(projectId, statusId, expectedVersion, "DISPONENT");
-  }
-
-  async removeProjectStatus(projectId: number, statusId: number, version: number): Promise<void> {
-    await projectStatusService.removeProjectStatus(projectId, statusId, version, "DISPONENT");
   }
 }
 

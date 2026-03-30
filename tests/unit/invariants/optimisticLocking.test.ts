@@ -26,10 +26,6 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   deleteAppointmentWithVersionTx: vi.fn(),
 }));
 
-vi.mock("../../../server/repositories/projectStatusRepository", () => ({
-  getProjectStatusesByProjectIds: vi.fn(),
-}));
-
 vi.mock("../../../server/repositories/projectsRepository", () => ({
   updateProjectWithVersion: vi.fn(),
   deleteProjectWithVersion: vi.fn(),

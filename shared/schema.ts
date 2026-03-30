@@ -703,47 +703,6 @@ export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;
 
 // Project Status - Projektstatusverwaltung (FT 15)
-export const projectStatus = mysqlTable("project_status", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"),
-  color: varchar("color", { length: 255 }).notNull(),
-  sortOrder: int("sort_order").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  isDefault: boolean("is_default").notNull().default(false),
-  version: int("version").notNull().default(1),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-});
-
-export const insertProjectStatusSchema = createInsertSchema(projectStatus).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  isDefault: true,
-});
-
-export const updateProjectStatusSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().nullable().optional(),
-  color: z.string().optional(),
-  sortOrder: z.number().optional(),
-  isActive: z.boolean().optional(),
-});
-
-export type ProjectStatus = typeof projectStatus.$inferSelect;
-export type InsertProjectStatus = z.infer<typeof insertProjectStatusSchema>;
-export type UpdateProjectStatus = z.infer<typeof updateProjectStatusSchema>;
-
-// Project <-> Project Status Relation (FT 02/15)
-export const projectProjectStatus = mysqlTable("project_project_status", {
-  projectId: bigint("project_id", { mode: "number" }).notNull().references(() => projects.id, { onDelete: "cascade" }),
-  projectStatusId: bigint("project_status_id", { mode: "number" }).notNull().references(() => projectStatus.id, { onDelete: "restrict" }),
-  version: int("version").notNull().default(1),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.projectId, table.projectStatusId] }),
-}));
-
 // Tags - universelles Tagging (FT 28)
 export const tags = mysqlTable("tags", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),

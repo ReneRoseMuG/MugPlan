@@ -44,13 +44,8 @@ describe("FT20 settings registry: demoData.adminFormState", () => {
     });
 
     expect(setting.validate(validState)).toBe(true);
-    expect(setting.validate(JSON.stringify({
-      ...JSON.parse(validState),
-      baseProjectStatuses: [{ title: "Neu", color: "#2563eb", description: "" }],
-    }))).toBe(true);
     expect(setting.validate("{")).toBe(false);
     expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), baseCustomers: undefined }))).toBe(false);
     expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), reklShare: "0.33" }))).toBe(false);
-    expect(setting.validate(JSON.stringify({ ...JSON.parse(validState), baseProjectStatuses: [{}] }))).toBe(false);
   });
 });

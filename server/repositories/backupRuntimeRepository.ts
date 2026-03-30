@@ -6,8 +6,6 @@ import {
   customers,
   employees,
   projectOrder,
-  projectProjectStatus,
-  projectStatus,
   projects,
   tours,
 } from "@shared/schema";
@@ -189,19 +187,6 @@ export async function getAppointmentEmployeesByIds(appointmentIds: number[]) {
     .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
     .where(inArray(appointmentEmployees.appointmentId, appointmentIds))
     .orderBy(asc(appointmentEmployees.appointmentId), asc(employees.fullName));
-}
-
-export async function getProjectStatusesByIds(projectIds: number[]) {
-  if (projectIds.length === 0) return [];
-  return db
-    .select({
-      projectId: projectProjectStatus.projectId,
-      statusTitle: projectStatus.title,
-    })
-    .from(projectProjectStatus)
-    .innerJoin(projectStatus, eq(projectProjectStatus.projectStatusId, projectStatus.id))
-    .where(inArray(projectProjectStatus.projectId, projectIds))
-    .orderBy(asc(projectProjectStatus.projectId), asc(projectStatus.sortOrder), asc(projectStatus.title));
 }
 
 export async function listAllTours() {
