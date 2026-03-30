@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - READER sieht in TourManagement keine Neuanlageaktion.
  * - DISPONENT behaelt die sichtbare Neuanlageaktion.
+ * - Tour-Karten rendern ohne Mitgliederpanel im Kartenkontext.
  *
  * Fehlerfaelle:
  * - Der Readonly-Modus zeigt wieder Mutationsaktionen an.
@@ -134,6 +135,9 @@ describe("FT04 TourManagement readonly behavior", () => {
 
     expect(html).not.toContain("button-new-tour");
     expect(html).toContain("card-tour-5");
+    expect(html).not.toContain("members");
+    expect(html).not.toContain("text-tour-member-8");
+    expect(html).not.toContain("Keine Mitarbeiter zugewiesen");
   });
 
   it("keeps the create button visible for mutating roles", () => {
@@ -141,5 +145,6 @@ describe("FT04 TourManagement readonly behavior", () => {
 
     expect(html).toContain("button-new-tour");
     expect(html).toContain("Neue Tour");
+    expect(html).not.toContain("members");
   });
 });

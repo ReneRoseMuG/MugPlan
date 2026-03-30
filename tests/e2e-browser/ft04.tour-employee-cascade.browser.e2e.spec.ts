@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Neue Touren duerfen Mitarbeiter direkt ohne Kaskaden-Dialog speichern.
  * - Bestehende Touren fuehren Mitarbeiter-Hinzufuegen und -Abziehen nur ueber den selektiven Vorschau-Dialog aus.
+ * - Die Sammelbuttons starten aus leerer Auswahl und steuern die Kaskadenselektion sichtbar.
  *
  * Fehlerfaelle:
  * - Bestehende Touren mutieren Mitarbeiter weiter still ueber den normalen Save-Flow.
@@ -80,6 +81,13 @@ test("uses the cascade dialog for adding and removing members on existing tours"
   await expect(dialog).toContainText("FT04 Browser Projekt");
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${firstAppointment!.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${secondAppointment!.id}`)).toBeVisible();
+  await expect(dialog.getByTestId("button-tour-cascade-select-all")).toBeVisible();
+  await expect(dialog.getByTestId("button-tour-cascade-deselect-all")).toBeVisible();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).not.toBeChecked();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${secondAppointment!.id}`)).not.toBeChecked();
+  await dialog.getByTestId("button-tour-cascade-select-all").click();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).toBeChecked();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${secondAppointment!.id}`)).toBeChecked();
   await dialog.getByTestId(`tour-employee-cascade-checkbox-${secondAppointment!.id}`).click();
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
 
@@ -109,6 +117,11 @@ test("uses the cascade dialog for adding and removing members on existing tours"
   await expect(dialog).toContainText("Mitarbeiter von Tour-Terminen abziehen");
   await expect(dialog.getByTestId("text-tour-employee-cascade-range")).toContainText("Termine (1) - Termine im Zeitraum von");
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${firstAppointment!.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).not.toBeChecked();
+  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).not.toBeChecked();
+  await dialog.getByTestId("button-tour-cascade-select-all").click();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).toBeChecked();
   await expect(dialog.getByTestId("button-tour-employee-cascade-confirm")).toBeVisible();
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
 

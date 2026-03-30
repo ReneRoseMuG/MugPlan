@@ -168,6 +168,30 @@ export function TourEmployeeCascadeDialog({
               Zurücksetzen
             </Button>
           ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onSelectedAppointmentIdsChange(
+                filteredItems
+                  .filter((item) => item.eligible)
+                  .map((item) => item.appointmentId),
+              );
+            }}
+            disabled={isSubmitting}
+            data-testid="button-tour-cascade-select-all"
+          >
+            Alle wählen
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onSelectedAppointmentIdsChange([])}
+            disabled={isSubmitting}
+            data-testid="button-tour-cascade-deselect-all"
+          >
+            Alle abwählen
+          </Button>
         </div>
 
         <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
