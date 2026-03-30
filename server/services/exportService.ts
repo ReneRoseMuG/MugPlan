@@ -313,7 +313,6 @@ async function buildExcelBuffer(input: {
     { header: "Name", key: "fullName", width: 24 },
     { header: "Telefon", key: "phone", width: 16 },
     { header: "E-Mail", key: "email", width: 24 },
-    { header: "Tour-ID", key: "tourId", width: 10 },
     { header: "Aktiv", key: "isActive", width: 10 },
     { header: "Updated", key: "updatedAt", width: 24 },
   ];
@@ -323,7 +322,6 @@ async function buildExcelBuffer(input: {
       fullName: employee.fullName,
       phone: employee.phone ?? "-",
       email: employee.email ?? "-",
-      tourId: employee.tourId ?? "-",
       isActive: employee.isActive ? "ja" : "nein",
       updatedAt: String(employee.updatedAt ?? ""),
     });

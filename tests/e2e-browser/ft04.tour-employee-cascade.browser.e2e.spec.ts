@@ -2,16 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Neue Touren duerfen Mitarbeiter direkt ohne Kaskaden-Dialog speichern.
+ * - Neue Touren speichern ohne direkte Mitarbeitermitgliedschaft im Formular.
  * - Bestehende Touren fuehren Mitarbeiter-Hinzufuegen und -Abziehen nur ueber den selektiven Vorschau-Dialog aus.
  * - Die Sammelbuttons starten aus leerer Auswahl und steuern die Kaskadenselektion sichtbar.
  *
  * Fehlerfaelle:
+ * - Neue Touren suggerieren weiterhin eine direkte persistierte Mitarbeitermitgliedschaft.
  * - Bestehende Touren mutieren Mitarbeiter weiter still ueber den normalen Save-Flow.
  * - Die selektive Checkbox-Auswahl wird bei der Kaskade ignoriert.
  *
  * Ziel:
- * Die sichtbare FT04-UX fuer direkte Erstzuweisung und bestaetigungspflichtige Kaskaden browserseitig regressionssicher absichern.
+ * Die sichtbare FT04-UX fuer berechnete Tour-Mitarbeiter und bestaetigungspflichtige Kaskaden browserseitig regressionssicher absichern.
  */
 import { expect, test } from "@playwright/test";
 
@@ -30,24 +31,14 @@ test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
 
-test("creates a new tour with direct initial employee assignment and no cascade dialog", async ({ page }) => {
-  const employee = await createEmployeeFixture("FT04-BROWSER-CREATE");
-
+test("creates a new tour without a persisted members section in create mode", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByTestId("nav-touren").click();
   await page.getByTestId("button-new-tour").click();
-  await page.getByTestId("button-add-tour-member").click();
-  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
-
-  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+  await expect(page.getByTestId("button-add-tour-member")).toHaveCount(0);
+  await expect(page.getByText("Aktuelle Mitarbeitermenge")).toHaveCount(0);
   await page.getByTestId("button-save-tour").click();
   await expect(page.getByTestId("button-new-tour")).toBeVisible();
-
-  await expect.poll(async () => {
-    const response = await page.request.get(`/api/employees/${employee.id}`);
-    const payload = await response.json();
-    return payload.employee.tourId;
-  }).not.toBeNull();
 });
 
 test("uses the cascade dialog for adding and removing members on existing tours", async ({ page }) => {
@@ -103,10 +94,12 @@ test("uses the cascade dialog for adding and removing members on existing tours"
     return (payload.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b);
   }).toEqual([]);
 
+  await expect(page.getByText("mindestens einem aktuellen oder zukuenftigen Termin dieser Tour")).toBeVisible();
+
   await page.getByTestId("button-close-tour").click();
   await page.getByTestId("nav-mitarbeiter").click();
   const employeeCard = page.getByTestId(`employee-card-${candidate.id}`);
-  await expect(employeeCard.getByTestId(`badge-employee-tour-${candidate.id}`)).toContainText(tour.name);
+  await expect(employeeCard.getByTestId(`badge-employee-tour-${candidate.id}`)).toHaveCount(0);
   await expect(employeeCard.getByTestId(`text-employee-current-appointments-${candidate.id}`)).toContainText("1");
 
   await page.getByTestId("nav-touren").click();
@@ -126,10 +119,10 @@ test("uses the cascade dialog for adding and removing members on existing tours"
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
 
   await expect.poll(async () => {
-    const response = await page.request.get(`/api/employees/${candidate.id}`);
+    const response = await page.request.get(`/api/tours/${tour.id}/employees/active`);
     const payload = await response.json();
-    return payload.employee.tourId;
-  }).toBeNull();
+    return (payload as Array<{ id: number }>).map((entry) => entry.id);
+  }).toEqual([]);
 
   await page.getByTestId("button-close-tour").click();
   await page.getByTestId("nav-mitarbeiter").click();

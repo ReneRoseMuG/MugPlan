@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der Druckvorschau-Endpoint liefert Zeitraum, Tour, Mitglieder und Termine fuer den angeforderten Wochenblock.
+ * - Der Druckvorschau-Endpoint liefert Zeitraum, Tour und Termine fuer den angeforderten Wochenblock.
  * - Saunamodell und druckbare Notizen werden aus den bestehenden Aggregationsquellen fuer die Vorschau aufgeloest.
  * - Tags aus Termin, Kunde und Projekt werden je Termin korrekt in die Response gemappt.
  * - Termin ohne Projekt liefert leeren projectName statt "Ohne Projekt".
@@ -29,7 +29,6 @@ import * as customersService from "../../../server/services/customersService";
 import * as employeesService from "../../../server/services/employeesService";
 import * as projectNotesService from "../../../server/services/projectNotesService";
 import * as projectsService from "../../../server/services/projectsService";
-import * as tourEmployeesService from "../../../server/services/tourEmployeesService";
 import {
   createExactTagFixture,
   attachAppointmentTagFixture,
@@ -62,7 +61,7 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
 }
 
 describe("FT31 integration: tour print preview", () => {
-  it("aggregates members, sauna model and print-only notes for the preview payload", async () => {
+  it("aggregates sauna model and print-only notes for the preview payload", async () => {
     const admin = await loginAdminAgent();
     const seq = nextSeq();
     const tourResponse = await admin.post("/api/tours").send({ color: "#2266aa" }).expect(201);
@@ -74,7 +73,6 @@ describe("FT31 integration: tour print preview", () => {
       email: null,
       isActive: true,
     });
-    await tourEmployeesService.assignEmployeesToTour(tourResponse.body.id, [{ employeeId: employee.id, version: employee.version }]);
 
     const customer = await customersService.createCustomer({
       customerNumber: `TPP-${Date.now()}-${seq}`,
@@ -143,9 +141,7 @@ describe("FT31 integration: tour print preview", () => {
             tour: expect.objectContaining({ id: tourResponse.body.id }),
           }),
         );
-        expect(res.body.members).toEqual(
-          expect.arrayContaining([expect.objectContaining({ id: employee.id, fullName: employee.fullName })]),
-        );
+        expect(res.body.members).toBeUndefined();
         expect(res.body.weeks).toHaveLength(1);
         expect(res.body.appointments).toHaveLength(1);
 
@@ -159,6 +155,9 @@ describe("FT31 integration: tour print preview", () => {
             saunaModel: null,
             customer: expect.objectContaining({ postalCode: "12345" }),
           }),
+        );
+        expect(previewAppointment.employees).toEqual(
+          expect.arrayContaining([expect.objectContaining({ id: employee.id, fullName: employee.fullName })]),
         );
 
         const noteTitles = previewAppointment.printNotes.map((note: { title: string }) => note.title);
@@ -238,7 +237,7 @@ describe("FT31 integration: tour print preview", () => {
             tour: { id: 0, name: "Ohne Tour", color: null },
           }),
         );
-        expect(res.body.members).toEqual([]);
+        expect(res.body.members).toBeUndefined();
         expect(res.body.weeks).toHaveLength(1);
 
         const ids = res.body.appointments.map((a: { id: number }) => a.id);

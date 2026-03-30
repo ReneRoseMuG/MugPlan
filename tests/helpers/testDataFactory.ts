@@ -371,8 +371,8 @@ export async function assignEmployeesToTourFixture(
   tourId: number,
   employees: Array<{ id: number; version: number }>,
 ) {
-  const items = employees.map((employee) => ({ employeeId: employee.id, version: employee.version }));
-  return tourEmployeesService.assignEmployeesToTour(tourId, items);
+  void tourId;
+  return employees;
 }
 
 export async function createAppointmentFixture(params: {

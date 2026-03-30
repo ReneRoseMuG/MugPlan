@@ -32,7 +32,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeTableHoverPreview } from "@/components/ui/table-hover-previews";
-import type { Employee, Tag, Team, Tour } from "@shared/schema";
+import type { Employee, Tag, Team } from "@shared/schema";
 
 interface EmployeesPageProps {
   onClose?: () => void;
@@ -44,7 +44,7 @@ interface EmployeesPageProps {
 
 type ViewMode = "board" | "table";
 type SortDirection = "asc" | "desc";
-type EmployeeSortKey = "lastName" | "firstName" | "tour" | "team";
+type EmployeeSortKey = "lastName" | "firstName" | "team";
 type EmployeeAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
 type EmployeeListItem = Employee & { tags: Tag[]; notesCount: number; attachmentsCount: number };
 
@@ -147,10 +147,6 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
     enabled: isAdmin,
   });
 
-  const { data: tours = [] } = useQuery<Tour[]>({
-    queryKey: ["/api/tours"],
-  });
-
   const { data: teams = [] } = useQuery<Team[]>({
     queryKey: ["/api/teams"],
   });
@@ -212,23 +208,6 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
     return result;
   }, [allEmployees]);
 
-  const tourMembersById = useMemo(() => {
-    const result = new Map<number, { id: number; fullName: string }[]>();
-    for (const employee of allEmployees) {
-      if (!employee.tourId) continue;
-      const current = result.get(employee.tourId) ?? [];
-      current.push({ id: employee.id, fullName: employee.fullName });
-      result.set(employee.tourId, current);
-    }
-    return result;
-  }, [allEmployees]);
-
-  const getTourName = (tourId: number | null) => {
-    if (!tourId) return null;
-    const tour = tours.find((entry) => entry.id === tourId);
-    return tour ? { id: tour.id, name: tour.name, color: tour.color } : null;
-  };
-
   const getTeamName = (teamId: number | null) => {
     if (!teamId) return null;
     const team = teams.find((entry) => entry.id === teamId);
@@ -241,13 +220,12 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
       const plannedAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
       return {
         employee,
-        tour: getTourName(employee.tourId),
         team: getTeamName(employee.teamId),
         relevantAppointment: resolveRelevantAppointment(appointments, berlinToday),
         plannedAppointmentsCount,
       };
     });
-  }, [filteredEmployees, appointmentsByEmployeeId, berlinToday, tours, teams]);
+  }, [filteredEmployees, appointmentsByEmployeeId, berlinToday, teams]);
 
   const sortedEmployeeRows = useMemo(() => {
     const rows = [...employeeRows];
@@ -256,12 +234,6 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
     rows.sort((a, b) => {
       if (sortKey === "firstName") {
         return a.employee.firstName.localeCompare(b.employee.firstName, "de") * directionMultiplier;
-      }
-
-      if (sortKey === "tour") {
-        const left = a.tour?.name ?? "";
-        const right = b.tour?.name ?? "";
-        return left.localeCompare(right, "de") * directionMultiplier;
       }
 
       if (sortKey === "team") {
@@ -334,12 +306,6 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
         header: "Telefon",
         accessor: (row) => row.employee.phone ?? "",
         minWidth: 150,
-      },
-      {
-        id: "tour",
-        header: renderSortHeader("Tour", "tour"),
-        accessor: (row) => row.tour?.name ?? "",
-        minWidth: 140,
       },
       {
         id: "team",
@@ -533,7 +499,6 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
             emptyState={emptyState}
           >
             {filteredEmployees.map((employee) => {
-              const tourInfo = getTourName(employee.tourId);
               const teamInfo = getTeamName(employee.teamId);
               const appointments = appointmentsByEmployeeId.get(employee.id) ?? [];
               const currentAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
@@ -553,7 +518,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     plannedAppointmentsCount: currentAppointmentsCount,
                   }}
                   team={teamInfo ? { ...teamInfo, members: teamMembersById.get(teamInfo.id) ?? [] } : null}
-                  tour={tourInfo ? { ...tourInfo, members: tourMembersById.get(tourInfo.id) ?? [] } : null}
+                  tour={null}
                   onDoubleClick={() => handleOpenDetail(employee)}
                   actions={
                     <Button
@@ -599,7 +564,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     plannedAppointmentsCount: row.plannedAppointmentsCount,
                   }}
                   team={row.team ? { ...row.team, members: teamMembersById.get(row.team.id) ?? [] } : null}
-                  tour={row.tour ? { ...row.tour, members: tourMembersById.get(row.tour.id) ?? [] } : null}
+                  tour={null}
                   onDoubleClick={() => handleOpenDetail(row.employee)}
                 />
               )}

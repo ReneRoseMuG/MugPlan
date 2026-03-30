@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Route, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
@@ -14,12 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import type { Tour, Employee } from "@shared/schema";
 
-type TourWithMembers = Tour & {
-  members: Employee[];
-};
-
 interface TourEditFormProps {
-  tour: TourWithMembers | null;
+  tour: Tour | null;
   allEmployees: Employee[];
   onSubmit: (tourId: number | null, employeeIds: number[], name: string, color: string) => Promise<void>;
   onAddMember?: (employeeId: number) => Promise<void>;
@@ -53,15 +50,9 @@ export function TourEditForm({
   onCancel,
   onOpenAppointment,
 }: TourEditFormProps) {
-  const [selectedMembers, setSelectedMembers] = useState<number[]>(() => tour?.members.map((member) => member.id) ?? []);
   const [selectedName, setSelectedName] = useState<string>(() => tour?.name ?? defaultName);
   const [selectedColor, setSelectedColor] = useState<string>(() => tour?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
-  const memberIdsKey = (tour?.members ?? []).map((member) => member.id).join(",");
-
-  useEffect(() => {
-    setSelectedMembers(tour?.members.map((member) => member.id) ?? []);
-  }, [memberIdsKey, tour?.id]);
 
   useEffect(() => {
     setSelectedName(tour?.name ?? defaultName);
@@ -71,35 +62,36 @@ export function TourEditForm({
     setSelectedColor(tour?.color ?? defaultColor);
   }, [defaultColor, tour?.color, tour?.id]);
 
-  const assignedElsewhere = (employee: Employee) => {
-    if (tour?.id == null) return employee.tourId !== null;
-    return employee.tourId !== null && employee.tourId !== tour.id;
-  };
+  const { data: activeMembers = [], isLoading: activeMembersLoading } = useQuery<Employee[]>({
+    queryKey: [`/api/tours/${tour?.id}/employees/active`],
+    enabled: !isCreate && tour?.id != null,
+    queryFn: async () => {
+      const response = await fetch(`/api/tours/${tour?.id}/employees/active`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Mitarbeiterliste konnte nicht geladen werden");
+      }
+      return response.json() as Promise<Employee[]>;
+    },
+  });
+
+  const assignedEmployees = useMemo(
+    () => isCreate ? [] : activeMembers,
+    [activeMembers, isCreate],
+  );
 
   const availableEmployees = useMemo(
     () =>
       allEmployees.filter((employee) => {
         if (!employee.isActive) return false;
-        if (assignedElsewhere(employee)) return false;
-        if (isCreate) {
-          return !selectedMembers.includes(employee.id);
-        }
-        return !(tour?.members ?? []).some((member) => member.id === employee.id);
+        return !assignedEmployees.some((member) => member.id === employee.id);
       }),
-    [allEmployees, isCreate, selectedMembers, tour?.id, tour?.members],
-  );
-
-  const assignedEmployees = useMemo(
-    () => isCreate
-      ? selectedMembers
-        .map((memberId) => allEmployees.find((employee) => employee.id === memberId))
-        .filter((employee): employee is Employee => Boolean(employee))
-      : (tour?.members ?? []),
-    [allEmployees, isCreate, selectedMembers, tour?.members],
+    [allEmployees, assignedEmployees],
   );
 
   const title = isCreate ? defaultName : (tour?.name ?? "Tour bearbeiten");
-  const handleSubmit = async () => onSubmit(tour?.id ?? null, selectedMembers, selectedName, selectedColor);
+  const handleSubmit = async () => onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
@@ -210,48 +202,55 @@ export function TourEditForm({
               />
             </div>
 
-            <div
-              className="overflow-hidden border border-border bg-slate-50 border-l-4"
-              style={{ borderLeftColor: selectedColor }}
-            >
-              <MembersSectionHeader
-                className="border-b border-border bg-slate-50 px-3 py-1.5"
-                action={(
-                  <PlusActionButton
-                    onClick={() => setEmployeePickerOpen(true)}
-                    aria-label="Mitarbeiter hinzufuegen"
-                    data-testid="button-add-tour-member"
-                    disabled={isSaving || isMutatingMembers}
-                  />
-                )}
-              />
-              <div className="space-y-2 bg-slate-50 p-3">
-                {assignedEmployees.map((employee) => (
-                  <EmployeeInfoBadge
-                    key={employee.id}
-                    id={employee.id}
-                    firstName={employee.firstName}
-                    lastName={employee.lastName}
-                    action="remove"
-                    onRemove={() => {
-                      if (isCreate) {
-                        setSelectedMembers((prev) => prev.filter((id) => id !== employee.id));
-                        return;
-                      }
-                      void onRemoveMember?.(employee);
-                    }}
-                    size="sm"
-                    fullWidth
-                    testId={`badge-tour-member-${employee.id}`}
-                  />
-                ))}
-                {assignedEmployees.length === 0 ? (
-                  <div className="text-sm italic text-slate-400">
-                    Keine Mitarbeiter zugewiesen
-                  </div>
-                ) : null}
+            {!isCreate ? (
+              <div
+                className="overflow-hidden border border-border bg-slate-50 border-l-4"
+                style={{ borderLeftColor: selectedColor }}
+              >
+                <MembersSectionHeader
+                  className="border-b border-border bg-slate-50 px-3 py-1.5"
+                  action={(
+                    <PlusActionButton
+                      onClick={() => setEmployeePickerOpen(true)}
+                      aria-label="Mitarbeiter hinzufuegen"
+                      data-testid="button-add-tour-member"
+                      disabled={isSaving || isMutatingMembers}
+                    />
+                  )}
+                />
+                <div className="space-y-2 bg-slate-50 p-3">
+                  {activeMembersLoading ? (
+                    <div className="text-sm italic text-slate-400">
+                      Mitarbeiterliste wird geladen
+                    </div>
+                  ) : null}
+                  {assignedEmployees.map((employee) => (
+                    <EmployeeInfoBadge
+                      key={employee.id}
+                      id={employee.id}
+                      firstName={employee.firstName}
+                      lastName={employee.lastName}
+                      action="remove"
+                      onRemove={() => {
+                        void onRemoveMember?.(employee);
+                      }}
+                      size="sm"
+                      fullWidth
+                      testId={`badge-tour-member-${employee.id}`}
+                    />
+                  ))}
+                  {!activeMembersLoading && assignedEmployees.length === 0 ? (
+                    <div className="text-sm italic text-slate-400">
+                      Keine Mitarbeiter zugewiesen
+                    </div>
+                  ) : null}
+                  <p className="mt-2 text-xs italic text-slate-400">
+                    Diese Liste zeigt alle Mitarbeiter, die auf mindestens einem aktuellen oder zukuenftigen Termin dieser Tour eingeplant sind.
+                    Ein Eintrag bedeutet nicht, dass der Mitarbeiter auf allen Tour-Terminen gebucht ist.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </TabsContent>
 
@@ -276,11 +275,7 @@ export function TourEditForm({
             tours={[]}
             title="Mitarbeiter auswaehlen"
             onSelectEmployee={(employeeId) => {
-              if (isCreate) {
-                setSelectedMembers((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]));
-              } else {
-                void onAddMember?.(employeeId);
-              }
+              void onAddMember?.(employeeId);
               setEmployeePickerOpen(false);
             }}
             onClose={() => setEmployeePickerOpen(false)}

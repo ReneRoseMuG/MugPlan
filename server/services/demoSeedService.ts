@@ -122,6 +122,10 @@ type SeedSummary = {
   warnings: string[];
   meta?: {
     employeeIds?: number[];
+    employeeTourAssignments?: Array<{
+      employeeId: number;
+      tourId: number;
+    }>;
     projectContexts: Array<{
       projectId: number;
       modelName: string;
@@ -435,6 +439,27 @@ function extractMetaEmployeeIds(summaryJson: unknown): number[] {
   const employeeIds = (meta as Record<string, unknown>).employeeIds;
   if (!Array.isArray(employeeIds)) return [];
   return uniqueNumberList(employeeIds.filter((value): value is number => typeof value === "number"));
+}
+
+function extractMetaEmployeeTourAssignments(summaryJson: unknown): Array<{ employeeId: number; tourId: number }> {
+  if (!summaryJson || typeof summaryJson !== "object") return [];
+  const meta = (summaryJson as Record<string, unknown>).meta;
+  if (!meta || typeof meta !== "object") return [];
+  const employeeTourAssignments = (meta as Record<string, unknown>).employeeTourAssignments;
+  if (!Array.isArray(employeeTourAssignments)) return [];
+  const seen = new Set<string>();
+  const out: Array<{ employeeId: number; tourId: number }> = [];
+  for (const assignment of employeeTourAssignments) {
+    if (!assignment || typeof assignment !== "object") continue;
+    const employeeId = (assignment as Record<string, unknown>).employeeId;
+    const tourId = (assignment as Record<string, unknown>).tourId;
+    if (typeof employeeId !== "number" || typeof tourId !== "number") continue;
+    const key = `${employeeId}:${tourId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ employeeId, tourId });
+  }
+  return out;
 }
 
 function findDependentAppointmentRunIds(baseSeedRunId: string, runs: SeedRunLike[]) {
@@ -1157,6 +1182,14 @@ async function materializeAppointmentIntents(params: {
   const localRandom = new DeterministicRandom(hashInt(`${seedRunId}:materialize`));
 
   for (const intent of intents) {
+    if (enforceAppointmentsRules && !employees.some((employeeId) => employeeTourById.get(employeeId) === intent.tourId)) {
+      if (intent.kind === "rekl") {
+        reductions.reklSkippedConstraints += 1;
+      } else {
+        reductions.appointments += 1;
+      }
+      continue;
+    }
     const baseCandidates = buildCandidateDatesForIntent({
       seedRunId,
       intent,
@@ -1449,6 +1482,7 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         ...extractMetaEmployeeIds(baseRun.summaryJson),
         ...(idsByType.employee ?? []),
       ]);
+      const baseEmployeeTourAssignments = extractMetaEmployeeTourAssignments(baseRun.summaryJson);
       const baseTourIds = uniqueNumberList(idsByType.tour ?? []);
       if (baseProjectIds.length === 0) {
         throw createBadRequestError("Basis-Run enthaelt keine Projekte.");
@@ -1469,25 +1503,21 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
       for (const employeeId of baseEmployeeIds) {
         const employee = await employeesRepository.getEmployee(employeeId);
         if (!employee) continue;
-        if (!employee.tourId) continue;
-        const assignedTourId = Number(employee.tourId);
-        if (!baseTourIds.includes(assignedTourId)) continue;
         employees.push(Number(employee.id));
-        employeeTourById.set(Number(employee.id), assignedTourId);
       }
       if (employees.length === 0) {
         throw createBadRequestError("Keine gueltigen Mitarbeitenden aus dem Basis-Run verfuegbar.");
       }
-
-      const toursWithEmployees = new Set<number>(Array.from(employeeTourById.values()));
-      const filteredTours = tours.filter((tourId) => toursWithEmployees.has(tourId));
-      if (filteredTours.length === 0) {
-        throw createBadRequestError("Keine Touren mit zugewiesenen Mitarbeitenden verfuegbar.");
+      for (const assignment of baseEmployeeTourAssignments) {
+        if (!employees.includes(assignment.employeeId)) continue;
+        if (!tours.includes(assignment.tourId)) continue;
+        employeeTourById.set(assignment.employeeId, assignment.tourId);
       }
-      if (filteredTours.length !== tours.length) {
-        warnings.push("Touren ohne zugewiesene Mitarbeitende wurden fuer den Termine-Seed ausgeschlossen.");
+      if (employeeTourById.size === 0) {
+        throw createBadRequestError(
+          "Basis-Run enthaelt keine Mitarbeiter-Tour-Zuordnungen. Bitte Basisdaten-Run neu erzeugen.",
+        );
       }
-      tours.splice(0, tours.length, ...filteredTours);
 
       projectSeedContexts.push(
         ...(await buildProjectSeedContextsFromBaseRun(baseRun, baseProjectIds)),
@@ -1542,7 +1572,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
           const assignedTeam = teamAssignment.byEmployeeId.get(employeeId) ?? null;
           await employeesRepository.setEmployeeTeam(employeeId, assignedTeam);
           const assignedTour = tourAssignment.byEmployeeId.get(employeeId) ?? null;
-          await employeesRepository.setEmployeeTour(employeeId, assignedTour);
           if (assignedTour != null) {
             employeeTourById.set(employeeId, assignedTour);
           }
@@ -1551,7 +1580,6 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         for (const employeeId of employees) {
           await employeesRepository.setEmployeeTeam(employeeId, random.pick(teams));
           const assignedTour = random.pick(tours);
-          await employeesRepository.setEmployeeTour(employeeId, assignedTour);
           employeeTourById.set(employeeId, assignedTour);
         }
       }
@@ -1831,6 +1859,9 @@ export async function createSeedRun(inputConfig: SeedConfig): Promise<SeedSummar
         config.runType === "base"
           ? {
               employeeIds: employees,
+              employeeTourAssignments: Array.from(employeeTourById.entries())
+                .map(([employeeId, tourId]) => ({ employeeId, tourId }))
+                .sort((left, right) => left.employeeId - right.employeeId || left.tourId - right.tourId),
               projectContexts: projectSeedContexts.map((ctx) => ({
                 projectId: ctx.projectId,
                 modelName: ctx.modelName,

@@ -726,7 +726,6 @@ export const employees = mysqlTable("employee", {
   exitDate: date("exit_date", { mode: "string" }),
   isActive: boolean("is_active").notNull().default(true),
   teamId: int("team_id").references(() => teams.id, { onDelete: "set null" }),
-  tourId: int("tour_id").references(() => tours.id, { onDelete: "set null" }),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
@@ -745,7 +744,6 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   updatedAt: true,
   isActive: true,
   teamId: true,
-  tourId: true,
   fullName: true,
 });
 

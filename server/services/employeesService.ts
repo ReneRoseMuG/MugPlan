@@ -3,7 +3,6 @@ import * as employeesRepository from "../repositories/employeesRepository";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
 import * as tagRelationsService from "./tagRelationsService";
 import * as teamsRepository from "../repositories/teamsRepository";
-import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 
 export class EmployeesError extends Error {
@@ -94,17 +93,12 @@ export async function getEmployeeWithRelations(
   if (roleKey !== "ADMIN" && !employee.isActive) return null;
 
   let team: Team | null = null;
-  let tour: Tour | null = null;
 
   if (employee.teamId) {
     team = await teamsRepository.getTeam(employee.teamId);
   }
 
-  if (employee.tourId) {
-    tour = await toursRepository.getTour(employee.tourId);
-  }
-
-  return { employee, team, tour };
+  return { employee, team, tour: null };
 }
 
 export async function listEmployeeTagRelations(id: number, roleKey: CanonicalRoleKey) {

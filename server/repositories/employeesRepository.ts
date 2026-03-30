@@ -1,6 +1,7 @@
-import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  appointments,
   appointmentEmployees,
   employeeAttachments,
   employeeNotes,
@@ -191,11 +192,21 @@ export async function deleteEmployeeWithVersion(
   });
 }
 
-export async function getEmployeesByTour(tourId: number): Promise<Employee[]> {
+export async function getEmployeesByTourFromAppointments(tourId: number, fromDate: Date): Promise<Employee[]> {
+  const rows = await db
+    .selectDistinct({ employeeId: appointmentEmployees.employeeId })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .where(and(eq(appointments.tourId, tourId), gte(appointments.startDate, fromDate)));
+
+  if (rows.length === 0) {
+    return [];
+  }
+
   return db
     .select()
     .from(employees)
-    .where(eq(employees.tourId, tourId))
+    .where(inArray(employees.id, rows.map((row) => row.employeeId)))
     .orderBy(asc(employees.lastName), asc(employees.firstName));
 }
 
@@ -205,59 +216,6 @@ export async function getEmployeesByTeam(teamId: number): Promise<Employee[]> {
     .from(employees)
     .where(eq(employees.teamId, teamId))
     .orderBy(asc(employees.lastName), asc(employees.firstName));
-}
-
-export async function setEmployeeTourWithVersion(
-  employeeId: number,
-  expectedVersion: number,
-  tourId: number | null,
-): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
-  const result = await db.execute(sql`
-    update employee
-    set
-      tour_id = ${tourId},
-      updated_at = now(),
-      version = version + 1
-    where id = ${employeeId}
-      and version = ${expectedVersion}
-  `);
-  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
-  if (affectedRows === 0) return { kind: "version_conflict" };
-
-  const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
-  return { kind: "updated", employee };
-}
-
-export async function setEmployeeTourWithVersionTx(
-  tx: DbTx,
-  employeeId: number,
-  expectedVersion: number,
-  tourId: number | null,
-): Promise<{ kind: "updated"; employee: Employee } | { kind: "version_conflict" }> {
-  const result = await tx.execute(sql`
-    update employee
-    set
-      tour_id = ${tourId},
-      updated_at = now(),
-      version = version + 1
-    where id = ${employeeId}
-      and version = ${expectedVersion}
-  `);
-  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
-  if (affectedRows === 0) return { kind: "version_conflict" };
-
-  const [employee] = await tx.select().from(employees).where(eq(employees.id, employeeId));
-  return { kind: "updated", employee };
-}
-
-// Technical exception for demo-seed flow (excluded from hardening scope).
-export async function setEmployeeTour(employeeId: number, tourId: number | null): Promise<Employee | null> {
-  await db
-    .update(employees)
-    .set({ tourId, updatedAt: new Date() })
-    .where(eq(employees.id, employeeId));
-  const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
-  return employee || null;
 }
 
 export async function setEmployeeTeamWithVersion(

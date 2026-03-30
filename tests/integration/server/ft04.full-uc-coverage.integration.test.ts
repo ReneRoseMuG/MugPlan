@@ -1,20 +1,17 @@
 /**
  * Test Scope:
  *
- * Feature: FT04 - Tourenplanung
- * Use Case: UC 04/01 bis UC 04/10
- *
  * Abgedeckte Regeln:
- * - UC-nahe End-to-end-Absicherung von Tour-CRUD, Rollenlogik, Konflikten und Darstellungskonsistenz.
- * - Multi-User-Konflikte werden deterministisch ueber zwei Sessions validiert.
- * - Rollen- und Projektionserwartungen werden als verifizierbare Integrationskontrakte geprueft.
+ * - UC-nahe End-to-end-Absicherung von Tour-CRUD, Rollenlogik, Projektionen und der abgeleiteten aktiven Mitarbeitermenge.
+ * - Multi-User-Konflikte auf Tour-Update bleiben deterministisch.
+ * - Der neue FT04-Lesepfad fuer Tour-Mitarbeiter bleibt terminbasiert und dedupliziert.
  *
  * Fehlerfaelle:
- * - Fehlende Rollen-Guards fuer Tour-Mitarbeiter-Mutationen.
- * - Fehlende Readonly-Umsetzung in Wochenableitungs-Sollregeln.
+ * - Fehlende Rollen-Guards fuer Tour-Kaskaden oder aktive Mitarbeitermengen.
+ * - Kalender- oder Tour-Projektionen driften nach Rename oder Terminbezug auseinander.
  *
  * Ziel:
- * Vollstaendige FT04-UC-Abdeckung (UC 04/01-04/10) ohne Produktionscode-Aenderung.
+ * FT04-UC-Abdeckung auf den neuen Stand ohne direkte `employee.tourId`-Beziehung heben.
  */
 import type { Response, SuperAgentTest } from "supertest";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -25,9 +22,15 @@ import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import { createApiTestApp, loginAdminAgent as loginAdminAgentBase, loginAgent as loginAgentBase } from "../../helpers/apiTestHarness";
 import type express from "express";
+import {
+  createAppointmentFixture,
+  createEmployeeFixture,
+  createProjectFixture,
+  createTourFixture,
+  getRelativeBerlinDate,
+} from "../../helpers/testDataFactory";
 
 let app: express.Express;
-let employeeCounter = 1;
 let customerCounter = 1;
 let userCounter = 1;
 
@@ -36,7 +39,6 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  employeeCounter = 1;
   customerCounter = 1;
   userCounter = 1;
 });
@@ -63,17 +65,6 @@ async function createRoleAgent(roleCode: "READER" | "DISPATCHER"): Promise<Super
     roleCode,
   });
   return loginAgent(username, password);
-}
-
-async function createEmployee(agent: SuperAgentTest) {
-  const idx = employeeCounter++;
-  const response = await agent.post("/api/employees").send({
-    firstName: `Uc-${idx}`,
-    lastName: `Employee-${idx}`,
-    phone: null,
-    email: null,
-  }).expect(201);
-  return response.body as { id: number; version: number; tourId: number | null };
 }
 
 async function createTour(agent: SuperAgentTest, color: string) {
@@ -106,42 +97,27 @@ async function createProjectForAppointment() {
   });
 }
 
-function getSuccessAndConflict(
-  first: Response,
-  second: Response,
-): { success: Response; conflict: Response } {
+function getSuccessAndConflict(first: Response, second: Response): { success: Response; conflict: Response } {
   if (first.status === 200 && second.status === 409) return { success: first, conflict: second };
   if (first.status === 409 && second.status === 200) return { success: second, conflict: first };
   throw new Error(`Expected [200,409], received [${first.status},${second.status}]`);
 }
 
 describe("FT04 full UC coverage integration", () => {
-  it("UC 04/01 creates tour with generated name and optional employee assignment", async () => {
+  it("UC 04/01 creates a tour with generated name and no active employees", async () => {
     const admin = await loginAdminAgent();
-    const employee = await createEmployee(admin);
 
     const tour = await createTour(admin, "#114488");
     expect(tour.name).toMatch(/^Tour \d+$/);
 
-    await admin.post(`/api/tours/${tour.id}/employees`).send({
-      items: [{ employeeId: employee.id, version: employee.version }],
-    }).expect(200);
-
-    await admin.get(`/api/tours/${tour.id}/employees`).expect(200).expect((res) => {
-      expect(res.body.map((entry: { id: number }) => entry.id)).toContain(employee.id);
+    await admin.get(`/api/tours/${tour.id}/employees/active`).expect(200).expect((res) => {
+      expect(res.body).toEqual([]);
     });
   });
 
-  it("UC 04/02 updates tour name, color and member list", async () => {
+  it("UC 04/02 updates tour name and color", async () => {
     const admin = await loginAdminAgent();
-    const employeeA = await createEmployee(admin);
-    const employeeB = await createEmployee(admin);
     const created = await createTour(admin, "#222222");
-
-    const firstAssign = await admin.post(`/api/tours/${created.id}/employees`).send({
-      items: [{ employeeId: employeeA.id, version: employeeA.version }],
-    }).expect(200);
-    const versionA = Number(firstAssign.body[0].version);
 
     const updated = await admin.patch(`/api/tours/${created.id}`).send({
       name: "Nordtour",
@@ -149,76 +125,75 @@ describe("FT04 full UC coverage integration", () => {
       version: created.version,
     }).expect(200);
 
-    await admin.post(`/api/tours/${created.id}/employees`).send({
-      items: [
-        { employeeId: employeeA.id, version: versionA },
-        { employeeId: employeeB.id, version: employeeB.version },
-      ],
-    }).expect(200);
-
     expect(updated.body.color).toBe("#333333");
     expect(updated.body.name).toBe("Nordtour");
-    await admin.get(`/api/tours/${created.id}/employees`).expect(200).expect((res) => {
-      const ids = res.body.map((entry: { id: number }) => entry.id).sort((l: number, r: number) => l - r);
-      expect(ids).toEqual([employeeA.id, employeeB.id].sort((l, r) => l - r));
-    });
   });
 
-  it("UC 04/03 enforces single-tour membership when assigning/removing employees", async () => {
+  it("UC 04/03 derives active employees from future tour appointments", async () => {
     const admin = await loginAdminAgent();
-    const tourA = await createTour(admin, "#441100");
-    const tourB = await createTour(admin, "#005522");
-    const employee = await createEmployee(admin);
+    const tour = await createTourFixture("#441100");
+    const project = await createProjectFixture({ prefix: "FT04-UC03" });
+    const employeeA = await createEmployeeFixture("FT04-UC03-A");
+    const employeeB = await createEmployeeFixture("FT04-UC03-B");
 
-    const assignedToA = await admin.post(`/api/tours/${tourA.id}/employees`).send({
-      items: [{ employeeId: employee.id, version: employee.version }],
-    }).expect(200);
-
-    await admin.post(`/api/tours/${tourB.id}/employees`).send({
-      items: [{ employeeId: employee.id, version: assignedToA.body[0].version }],
-    }).expect(200);
-
-    await admin.get(`/api/tours/${tourA.id}/employees`).expect(200).expect((res) => {
-      expect(res.body.map((entry: { id: number }) => entry.id)).not.toContain(employee.id);
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(1),
+      tourId: tour.id,
+      employeeIds: [employeeA.id, employeeB.id],
     });
-    await admin.get(`/api/tours/${tourB.id}/employees`).expect(200).expect((res) => {
-      expect(res.body.map((entry: { id: number }) => entry.id)).toContain(employee.id);
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(2),
+      tourId: tour.id,
+      employeeIds: [employeeA.id],
+    });
+
+    await admin.get(`/api/tours/${tour.id}/employees/active`).expect(200).expect((res) => {
+      const ids = (res.body as Array<{ id: number }>).map((entry) => entry.id).sort((left, right) => left - right);
+      expect(ids).toEqual([employeeA.id, employeeB.id].sort((left, right) => left - right));
     });
   });
 
-  it("UC 04/04 deletes tour only without appointments and resets employee references", async () => {
+  it("UC 04/04 deletes a tour only when no appointments still reference it", async () => {
     const admin = await loginAdminAgent();
-    const tour = await createTour(admin, "#773355");
-    const employee = await createEmployee(admin);
-    const assigned = await admin.post(`/api/tours/${tour.id}/employees`).send({
-      items: [{ employeeId: employee.id, version: employee.version }],
-    }).expect(200);
+    const deleteableTour = await createTour(admin, "#773355");
+    const blockedTour = await createTour(admin, "#885566");
+    const project = await createProjectForAppointment();
 
-    await admin.delete(`/api/tours/${tour.id}/employees/${employee.id}`).send({
-      version: assigned.body[0].version,
-    }).expect(200);
+    await admin.delete(`/api/tours/${deleteableTour.id}`).send({ version: deleteableTour.version }).expect(204);
 
-    await admin.delete(`/api/tours/${tour.id}`).send({ version: tour.version }).expect(204);
-    await admin.get("/api/tours").expect(200).expect((res) => {
-      expect(res.body.some((entry: { id: number }) => entry.id === tour.id)).toBe(false);
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-07-01",
+      tourId: blockedTour.id,
+      employeeIds: [],
     });
-    await admin.get(`/api/employees/${employee.id}`).expect(200).expect((res) => {
-      expect(res.body.employee.tourId).toBeNull();
+
+    await admin.delete(`/api/tours/${blockedTour.id}`).send({ version: blockedTour.version }).expect(409).expect((res) => {
+      expect(res.body.code).toBe("BUSINESS_CONFLICT");
     });
   });
 
-  it("UC 04/05 blocks READER mutation on tour-employee endpoints", async () => {
+  it("UC 04/05 blocks READER mutation on tour-employee cascade endpoints", async () => {
     const admin = await loginAdminAgent();
     const reader = await createRoleAgent("READER");
     const tour = await createTour(admin, "#5511aa");
-    const employee = await createEmployee(admin);
+    const employee = await createEmployeeFixture("FT04-UC05");
+    const project = await createProjectFixture({ prefix: "FT04-UC05" });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(1),
+      tourId: tour.id,
+    });
 
-    const response = await reader.post(`/api/tours/${tour.id}/employees`).send({
-      items: [{ employeeId: employee.id, version: employee.version }],
+    const response = await reader.post(`/api/tours/${tour.id}/employees/cascade-add`).send({
+      employeeId: employee.id,
+      selectedAppointmentIds: [appointment!.id],
     });
     if (response.status !== 403 || response.body?.code !== "FORBIDDEN") {
       throw new Error(
-        `UC 04/05 contract mismatch: READER/Monteur darf Tour-Mitarbeiter-Mutationen nicht ausfuehren (erwartet 403/FORBIDDEN, erhalten ${response.status}/${response.body?.code ?? "n/a"})`,
+        `UC 04/05 contract mismatch: READER darf Tour-Kaskaden nicht ausfuehren (erwartet 403/FORBIDDEN, erhalten ${response.status}/${response.body?.code ?? "n/a"})`,
       );
     }
   });
@@ -258,84 +233,31 @@ describe("FT04 full UC coverage integration", () => {
     });
   });
 
-  it("UC 04/07 derives week overview from current tour-employee assignments", async () => {
+  it("UC 04/07 current-appointments endpoint returns only appointments of the requested tour", async () => {
     const admin = await loginAdminAgent();
-    const tour = await createTour(admin, "#2a6fbb");
-    const employeeA = await createEmployee(admin);
-    const employeeB = await createEmployee(admin);
-    const employeeC = await createEmployee(admin);
+    const project = await createProjectForAppointment();
+    const tourA = await createTour(admin, "#2a6fbb");
+    const tourB = await createTour(admin, "#bb6f2a");
 
-    const assignInitial = await admin
-      .post(`/api/tours/${tour.id}/employees`)
-      .send({
-        items: [
-          { employeeId: employeeA.id, version: employeeA.version },
-          { employeeId: employeeB.id, version: employeeB.version },
-        ],
-      })
-      .expect(200);
-
-    const versionB = Number(
-      (assignInitial.body as Array<{ id: number; version: number }>).find((entry) => entry.id === employeeB.id)?.version,
-    );
-    if (!Number.isInteger(versionB) || versionB < 1) {
-      throw new Error("Expected valid employee version for employeeB after assignment");
-    }
-
-    await admin
-      .delete(`/api/tours/${tour.id}/employees/${employeeB.id}`)
-      .send({ version: versionB })
-      .expect(200);
-
-    await admin
-      .post(`/api/tours/${tour.id}/employees`)
-      .send({
-        items: [{ employeeId: employeeC.id, version: employeeC.version }],
-      })
-      .expect(200);
-
-    await admin.get("/api/employees?scope=active").expect(200).expect((res) => {
-      const rows = res.body as Array<{ id: number; tourId: number | null }>;
-      const byId = new Map(rows.map((row) => [row.id, row] as const));
-      expect(byId.get(employeeA.id)?.tourId).toBe(tour.id);
-      expect(byId.get(employeeB.id)?.tourId ?? null).toBeNull();
-      expect(byId.get(employeeC.id)?.tourId).toBe(tour.id);
+    const appointmentA = await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-08-01",
+      tourId: tourA.id,
+      employeeIds: [],
+    });
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: "2099-08-02",
+      tourId: tourB.id,
+      employeeIds: [],
     });
 
-    await admin.get(`/api/tours/${tour.id}/employees`).expect(200).expect((res) => {
-      const ids = (res.body as Array<{ id: number }>).map((entry) => entry.id).sort((l, r) => l - r);
-      expect(ids).toEqual([employeeA.id, employeeC.id].sort((l, r) => l - r));
-      expect(ids).not.toContain(employeeB.id);
+    await admin.get(`/api/tours/${tourA.id}/current-appointments?fromDate=2099-08-01`).expect(200).expect((res) => {
+      expect(res.body.map((entry: { id: number }) => entry.id)).toEqual([(appointmentA as { id: number }).id]);
     });
   });
 
-  it("UC 04/08 prevents parallel assignment of same employee to different tours", async () => {
-    const sessionA = await loginAdminAgent();
-    const sessionB = await loginAdminAgent();
-    const tourA = await createTour(sessionA, "#118811");
-    const tourB = await createTour(sessionA, "#881111");
-    const employee = await createEmployee(sessionA);
-
-    const [resA, resB] = await Promise.all([
-      sessionA.post(`/api/tours/${tourA.id}/employees`).send({ items: [{ employeeId: employee.id, version: employee.version }] }),
-      sessionB.post(`/api/tours/${tourB.id}/employees`).send({ items: [{ employeeId: employee.id, version: employee.version }] }),
-    ]);
-
-    const { success, conflict } = getSuccessAndConflict(resA, resB);
-    expect(conflict.body.code).toBe("VERSION_CONFLICT");
-
-    const winningTourId = Number(success.req.path.match(/\/api\/tours\/(\d+)\/employees/)?.[1]);
-    const losingTourId = winningTourId === tourA.id ? tourB.id : tourA.id;
-
-    await sessionA.get(`/api/tours/${winningTourId}/employees`).expect(200).expect((res) => {
-      expect(res.body.map((entry: { id: number }) => entry.id)).toContain(employee.id);
-    });
-    await sessionA.get(`/api/tours/${losingTourId}/employees`).expect(200).expect((res) => {
-      expect(res.body.map((entry: { id: number }) => entry.id)).not.toContain(employee.id);
-    });
-  });
-
-  it("UC 04/09 prevents silent overwrite on parallel tour edit", async () => {
+  it("UC 04/08 prevents silent overwrite on parallel tour edit", async () => {
     const sessionA = await loginAdminAgent();
     const sessionB = await loginAdminAgent();
     const tour = await createTour(sessionA, "#101010");
@@ -355,7 +277,19 @@ describe("FT04 full UC coverage integration", () => {
     });
   });
 
-  it("UC 04/10 blocks delete when appointment assignment appears before delete commit", async () => {
+  it("UC 04/09 allows DISPATCHER to mutate tours but keeps delete reserved for ADMIN", async () => {
+    const dispatcher = await createRoleAgent("DISPATCHER");
+    const created = await dispatcher.post("/api/tours").send({ color: "#557799" }).expect(201);
+    const updated = await dispatcher.patch(`/api/tours/${created.body.id}`).send({
+      name: "Dispatcher Tour",
+      color: "#779955",
+      version: created.body.version,
+    }).expect(200);
+
+    await dispatcher.delete(`/api/tours/${created.body.id}`).send({ version: updated.body.version }).expect(403);
+  });
+
+  it("UC 04/10 blocks delete when appointment assignment exists before delete commit", async () => {
     const sessionA = await loginAdminAgent();
     const sessionB = await loginAdminAgent();
     const tour = await createTour(sessionA, "#557799");

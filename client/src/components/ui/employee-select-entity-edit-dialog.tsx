@@ -29,11 +29,8 @@ export function EmployeeSelectEntityEditDialog({
   const [selectionDialogOpen, setSelectionDialogOpen] = useState(false);
 
   const getIsAssignedElsewhere = (employee: Employee) => {
-    if (entityType === 'tour') {
-      return employee.tourId !== null && employee.tourId !== entityId;
-    } else {
-      return employee.teamId !== null && employee.teamId !== entityId;
-    }
+    if (entityType === 'tour') return false;
+    return employee.teamId !== null && employee.teamId !== entityId;
   };
 
   const availableEmployees = allEmployees.filter((employee) => {
@@ -108,5 +105,4 @@ export function EmployeeSelectEntityEditDialog({
     </ColorSelectEntityEditDialog>
   );
 }
-
 

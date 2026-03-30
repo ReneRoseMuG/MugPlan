@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - TourEditForm bindet die eingebettete Terminliste mit Tour-Kontext und dem tour-spezifischen helpKey an.
- * - Im Neuanlagezustand bleibt der leere Hinweistext im EntityFormShell-Hauptbereich sichtbar.
+ * - Die terminbasierte Mitarbeiterabfrage blockiert die Terminlisten-Verdrahtung nicht.
  * - Das Tourformular rendert im neuen Shell-Layout bewusst keine Sidebar.
  * - Veraltete Legacy-Props werden nicht mehr an die Terminliste weitergereicht.
  *
@@ -22,6 +22,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const entityFormShellCalls: Array<Record<string, unknown>> = [];
 const appointmentsListPageCalls: Array<Record<string, unknown>> = [];
+const useQueryMock = vi.fn();
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: (options: unknown) => useQueryMock(options),
+}));
 
 vi.mock("@/components/ui/entity-form-shell", () => ({
   EntityFormShell: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
@@ -100,6 +105,31 @@ describe("FT04 TourEditForm appointments list behavior", () => {
     vi.stubGlobal("React", React);
     entityFormShellCalls.length = 0;
     appointmentsListPageCalls.length = 0;
+    useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
+      if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/employees/active") {
+        return {
+          data: [
+            {
+              id: 21,
+              firstName: "Mia",
+              lastName: "Muster",
+              fullName: "Muster, Mia",
+              email: null,
+              phone: null,
+              isActive: true,
+              teamId: null,
+              version: 1,
+            },
+          ],
+          isLoading: false,
+        };
+      }
+
+      return {
+        data: [],
+        isLoading: false,
+      };
+    });
   });
 
   it("passes the tour context, help key and empty state into the embedded appointments list", () => {
@@ -145,7 +175,6 @@ describe("FT04 TourEditForm appointments list behavior", () => {
           name: "Nordtour",
           color: "#335577",
           version: 4,
-          members: [],
         }}
         allEmployees={[]}
         onSubmit={noop}

@@ -151,7 +151,6 @@ const tourEmployeeCascadePreviewInputSchema = z.object({
 
 const tourEmployeeCascadeExecuteInputSchema = z.object({
   employeeId: z.number().int().positive(),
-  employeeVersion: z.number().int().min(1),
   selectedAppointmentIds: z.array(z.number().int().positive()),
 });
 
@@ -164,7 +163,7 @@ const tourEmployeeCascadeExecuteResponseSchema = z.object({
 });
 
 const tourEmployeeCascadeConflictResponseSchema = z.object({
-  code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]),
+  code: z.literal("BUSINESS_CONFLICT"),
   conflictEmployees: z.array(tourEmployeeCascadeAppointmentEmployeeSchema).optional(),
 }).passthrough();
 
@@ -480,12 +479,6 @@ const tourPrintPreviewResponseSchema = z.object({
     name: z.string(),
     color: z.string(),
   }),
-  members: z.array(
-    z.object({
-      id: z.number().int().positive(),
-      fullName: z.string(),
-    }),
-  ),
   appointments: z.array(tourPrintPreviewAppointmentSchema),
 });
 
@@ -2454,41 +2447,11 @@ export const api = {
   },
   // Tour employees (for Tour/Team management)
   tourEmployees: {
-    list: {
-      method: 'GET' as const,
-      path: '/api/tours/:tourId/employees',
+    active: {
+      method: "GET" as const,
+      path: "/api/tours/:tourId/employees/active",
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
-      },
-    },
-    remove: {
-      method: 'DELETE' as const,
-      path: '/api/tours/:tourId/employees/:employeeId',
-      input: z.object({
-        version: z.number().int().min(1),
-      }),
-      responses: {
-        200: z.custom<typeof employees.$inferSelect>(),
-        404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-      },
-    },
-    assign: {
-      method: 'POST' as const,
-      path: '/api/tours/:tourId/employees',
-      input: z.object({
-        items: z.array(
-          z.object({
-            employeeId: z.number().int().positive(),
-            version: z.number().int().min(1),
-          }),
-        ),
-      }),
-      responses: {
-        200: z.array(z.custom<typeof employees.$inferSelect>()),
-        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     addPreview: {

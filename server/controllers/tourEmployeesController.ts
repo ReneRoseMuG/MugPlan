@@ -7,62 +7,12 @@ function canMutateTourEmployees(req: Request): boolean {
   return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
 }
 
-export async function listTourEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function listActiveTourEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tourId = Number(req.params.tourId);
-    const employees = await tourEmployeesService.listEmployeesByTour(tourId);
+    const employees = await tourEmployeesService.listActiveEmployeesByTour(tourId);
     res.json(employees);
   } catch (err) {
-    next(err);
-  }
-}
-
-export async function removeTourEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    if (!canMutateTourEmployees(req)) {
-      res.status(403).json({ code: "FORBIDDEN" });
-      return;
-    }
-    const input = api.tourEmployees.remove.input.parse(req.body);
-    const employeeId = Number(req.params.employeeId);
-    const employee = await tourEmployeesService.removeEmployeeFromTour(employeeId, input.version);
-    if (!employee) {
-      res.status(404).json({ code: "NOT_FOUND" });
-      return;
-    }
-    res.json(employee);
-  } catch (err) {
-    if (err instanceof ZodError) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (err instanceof tourEmployeesService.TourEmployeesError) {
-      res.status(err.status).json({ code: err.code });
-      return;
-    }
-    next(err);
-  }
-}
-
-export async function assignTourEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    if (!canMutateTourEmployees(req)) {
-      res.status(403).json({ code: "FORBIDDEN" });
-      return;
-    }
-    const tourId = Number(req.params.tourId);
-    const input = api.tourEmployees.assign.input.parse(req.body);
-    const results = await tourEmployeesService.assignEmployeesToTour(tourId, input.items);
-    res.json(results);
-  } catch (err) {
-    if (err instanceof ZodError) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (err instanceof tourEmployeesService.TourEmployeesError) {
-      res.status(err.status).json({ code: err.code });
-      return;
-    }
     next(err);
   }
 }
