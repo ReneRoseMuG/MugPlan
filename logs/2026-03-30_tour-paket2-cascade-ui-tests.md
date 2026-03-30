@@ -23,6 +23,8 @@ Geändert wurden ausschließlich bestehende Client-Komponenten, zugehörige Unit
 - `tests/unit/ui/tourManagement.versioning.test.tsx`
 - `tests/e2e-browser/ft04.tour-employee-cascade.browser.e2e.spec.ts`
 - `tests/e2e-browser/employee-appointment-mutation-tracking.browser.e2e.spec.ts`
+- `tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts`
+- `tests/e2e-browser/appointment-multiday-edit.browser.e2e.spec.ts`
 - `docs/TEST_MATRIX.md`
 
 Nicht im Scope:
@@ -59,6 +61,10 @@ Nicht im Scope:
   Prüft die neue Leerauswahl und die Sammelbuttons im Add-/Remove-Dialog im Browser.
 - `tests/e2e-browser/employee-appointment-mutation-tracking.browser.e2e.spec.ts`
   Prüft die gefilterte Wirkung der Sammelbuttons in realen Mitarbeiter-Mutationsflüssen.
+- `tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts`
+  Prüft den Single-Day-Tour-Lane-Create/Edit-Flow jetzt gegen das neue Verhalten ohne automatische Mitarbeiterzuweisung und bestätigt den Save-Dialog für leere Mitarbeiterlisten.
+- `tests/e2e-browser/appointment-multiday-edit.browser.e2e.spec.ts`
+  Prüft den Multi-Day-Tour-Lane-Create/Edit-Flow jetzt ebenfalls ohne automatische Mitarbeiterzuweisung und bestätigt denselben Save-Dialog.
 - `docs/TEST_MATRIX.md`
   Dokumentiert die bereinigten und erweiterten Tests.
 
@@ -147,6 +153,11 @@ Fehlgeschlagen:
 - `npm run test:integration -- --reporter=verbose` war grün: 93 Testdateien, 498 Tests erfolgreich, 5 Tests bewusst übersprungen.
 - `npm run test:e2e` war grün: 3 von 3 Tests erfolgreich.
 - Im Browser-Gesamtlauf waren 80 Tests erfolgreich; 5 weitere Tests wurden nach den roten Fällen nicht mehr ausgeführt.
+- Die für dieses Paket direkt relevanten Browser-Spezifikationen blieben grün:
+- Nach dem Volltest wurden zusätzlich die beiden zuvor roten Tour-Lane-Formflows gezielt an den Tour-Rückbau angepasst. Sie prüfen jetzt eine gesetzte Tour mit leerer Mitarbeiterliste und bestätigen den Dialog `Ohne Mitarbeiter speichern?` vor dem eigentlichen Create-Request.
+- Die gezielten Re-Runs danach waren grün:
+  - `tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts` mit dem Test `creates a relation-complete single-day appointment from a tour lane and reloads the same values in edit mode`
+  - `tests/e2e-browser/appointment-multiday-edit.browser.e2e.spec.ts` mit dem Test `creates a multi-day appointment from a tour lane and keeps start and end dates stable on reopen`
 - Die für dieses Paket direkt relevanten Browser-Spezifikationen blieben grün:
   - `tests/e2e-browser/ft04.tour-employee-cascade.browser.e2e.spec.ts`
   - `tests/e2e-browser/employee-appointment-mutation-tracking.browser.e2e.spec.ts`
