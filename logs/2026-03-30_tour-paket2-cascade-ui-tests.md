@@ -161,3 +161,14 @@ Fehlgeschlagen:
 - Die für dieses Paket direkt relevanten Browser-Spezifikationen blieben grün:
   - `tests/e2e-browser/ft04.tour-employee-cascade.browser.e2e.spec.ts`
   - `tests/e2e-browser/employee-appointment-mutation-tracking.browser.e2e.spec.ts`
+
+## Nachträglicher Abschlussstand
+
+Nach dem ursprünglichen Paketabschluss wurden noch folgende repo-lokale Anschlussarbeiten umgesetzt:
+
+- ESLint wurde von der veralteten `.eslintrc.cjs`-Konfiguration auf `eslint.config.mjs` migriert.
+- `package.json` nutzt für `npm run lint` jetzt den nativen ESLint-9-Flat-Config-Aufruf ohne `ESLINT_USE_FLAT_CONFIG=false`.
+- Die beiden verbliebenen Lint-Warnungen in `server/services/dumpService.ts` wurden durch das Entfernen ungenutzter `eslint-disable`-Direktiven bereinigt.
+- `npm run lint` läuft damit jetzt ohne Deprecation-Hinweis, Warnungen oder Fehler.
+- Der offene Browser-Test `tests/e2e-browser/calendar-tour-print-preview.browser.e2e.spec.ts` wurde entlang des echten UI-Request-Pfads gehärtet, ist aber wegen hoher Laufzeit noch nicht mit einem final grünen Abschlussbericht bestätigt.
+- In der manuellen Sichtprüfung funktionierte die Tour-Druckvorschau grundsätzlich; zusätzlich fiel ein Seitenformat-Thema auf, das bewusst vertagt und in diesem Auftrag nicht umgesetzt wurde.
