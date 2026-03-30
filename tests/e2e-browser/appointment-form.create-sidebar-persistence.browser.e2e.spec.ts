@@ -29,11 +29,13 @@
 import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  createAppointmentFixture,
   createAppointmentBrowserFixture,
   createCustomerFixture,
   createProductFixture,
   createProjectFixture,
   createTagFixture,
+  createTourFixture,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
@@ -433,6 +435,14 @@ test("opens an existing project overlay for duplicate order numbers and links it
     name: "FT24 Bestehendes Terminprojekt",
     orderNumber: "AO-FT24-EXISTING-001",
   });
+  const tour = await createTourFixture("#3377aa");
+  await createAppointmentFixture({
+    projectId: existingProject.id,
+    customerId: customer.id,
+    startDate: "2099-05-04",
+    startTime: "09:00:00",
+    tourId: tour.id,
+  });
   const extractionFileName = "ft24-existing-project-overlay.pdf";
 
   await mockAppointmentDocumentExtraction(page, customer.customerNumber, {
@@ -447,6 +457,10 @@ test("opens an existing project overlay for duplicate order numbers and links it
   await page.mouse.click(10, 10);
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
   await page.getByTestId("button-doc-extract-apply-data").click();
+  await expect(page.getByTestId("project-duplicate-resolution-dialog")).toBeVisible();
+  await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText("09:00 - 04.05.99");
+  await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText(tour.name);
+  await page.getByTestId("button-project-duplicate-confirm").click();
 
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
   await expect(page.getByTestId("appointment-project-overlay")).toBeVisible();

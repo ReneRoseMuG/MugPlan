@@ -40,6 +40,11 @@ import {
   type ExtractionCustomerDraft,
   type ExtractionDialogData,
 } from "@/components/DocumentExtractionDialog";
+import {
+  ProjectDuplicateResolutionDialog,
+  type ProjectDuplicateLatestAppointment,
+  type ProjectDuplicateResolution,
+} from "@/components/ProjectDuplicateResolutionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -121,6 +126,13 @@ type ExtractedProjectDraft =
       projectId: number;
       documentFile: File | null;
     };
+
+type ProjectOrderNumberResolutionResponse = {
+  resolution: "none" | "single" | "multiple";
+  count: number;
+  project: Project | null;
+  latestAppointment: ProjectDuplicateLatestAppointment | null;
+};
 
 type DraftAppointmentNote = Note & {
   templateId?: number;
@@ -267,6 +279,7 @@ export function AppointmentForm({
   const createDefaultDate = initialDate ?? getBerlinTodayDateString();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(projectId ?? null);
   const [pendingProjectDraft, setPendingProjectDraft] = useState<ExtractedProjectDraft | null>(null);
+  const [projectDuplicateResolution, setProjectDuplicateResolution] = useState<ProjectDuplicateResolution | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedTourId, setSelectedTourId] = useState<number | null>(null);
   const [assignedEmployeeIds, setAssignedEmployeeIds] = useState<number[]>([]);
@@ -983,7 +996,22 @@ export function AppointmentForm({
       const payload = await response.json().catch(() => null);
       throw new Error(payload?.message ?? "Auftragsnummer konnte nicht aufgelöst werden");
     }
-    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; project: Project | null };
+    return (await response.json()) as ProjectOrderNumberResolutionResponse;
+  };
+
+  const confirmExistingProjectDuplicate = () => {
+    if (!projectDuplicateResolution) return;
+    setPendingProjectDraft({
+      mode: "existing",
+      projectId: projectDuplicateResolution.project.id,
+      documentFile: documentExtractionFile,
+    });
+    setProjectDuplicateResolution(null);
+    setDocumentExtractionOpen(false);
+    toast({
+      title: "Vorhandenes Projekt geöffnet",
+      description: "Projekt mit dieser Auftragsnummer existiert bereits.",
+    });
   };
 
   const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
@@ -1111,15 +1139,9 @@ export function AppointmentForm({
           if (!projectResolution.project) {
             throw new Error("Dateninkonsistenz: Vorhandenes Projekt konnte nicht geladen werden.");
           }
-          setPendingProjectDraft({
-            mode: "existing",
-            projectId: projectResolution.project.id,
-            documentFile: documentExtractionFile,
-          });
-          setDocumentExtractionOpen(false);
-          toast({
-            title: "Vorhandenes Projekt geöffnet",
-            description: "Projekt mit dieser Auftragsnummer existiert bereits.",
+          setProjectDuplicateResolution({
+            project: projectResolution.project,
+            latestAppointment: projectResolution.latestAppointment,
           });
           return;
         }
@@ -2024,12 +2046,28 @@ export function AppointmentForm({
 
       <DocumentExtractionDialog
         open={documentExtractionOpen}
-        onOpenChange={setDocumentExtractionOpen}
+        onOpenChange={(open) => {
+          setDocumentExtractionOpen(open);
+          if (!open) {
+            setProjectDuplicateResolution(null);
+          }
+        }}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
         disableProjectApply={Boolean(selectedProjectId)}
         dataApplyLabel="Daten übernehmen"
         onApplyData={applyExtractedProject}
+      />
+
+      <ProjectDuplicateResolutionDialog
+        open={projectDuplicateResolution !== null}
+        resolution={projectDuplicateResolution}
+        onOpenChange={(open) => {
+          if (!open) {
+            setProjectDuplicateResolution(null);
+          }
+        }}
+        onConfirm={confirmExistingProjectDuplicate}
       />
 
       {pendingProjectDraft ? (

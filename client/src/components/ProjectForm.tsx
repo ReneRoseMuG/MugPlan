@@ -14,6 +14,11 @@ import {
   type ExtractionDialogData,
   type ExtractionCustomerDraft,
 } from "@/components/DocumentExtractionDialog";
+import {
+  ProjectDuplicateResolutionDialog,
+  type ProjectDuplicateLatestAppointment,
+  type ProjectDuplicateResolution,
+} from "@/components/ProjectDuplicateResolutionDialog";
 import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
@@ -91,6 +96,13 @@ type DraftProjectNote = Note & {
   templateId?: number;
 };
 
+type ProjectOrderNumberResolutionResponse = {
+  resolution: "none" | "single" | "multiple";
+  count: number;
+  project: Project | null;
+  latestAppointment: ProjectDuplicateLatestAppointment | null;
+};
+
 
 export function ProjectForm({
   projectId,
@@ -104,6 +116,7 @@ export function ProjectForm({
 }: ProjectFormProps) {
   const { toast } = useToast();
   const [resolvedExistingProjectId, setResolvedExistingProjectId] = useState<number | null>(null);
+  const [projectDuplicateResolution, setProjectDuplicateResolution] = useState<ProjectDuplicateResolution | null>(null);
   const effectiveProjectId = projectId ?? resolvedExistingProjectId;
   const isEditing = effectiveProjectId != null;
   const invalidateAppointmentProjectionQueries = async () => {
@@ -571,7 +584,18 @@ export function ProjectForm({
       const payload = await response.json().catch(() => null);
       throw new Error(payload?.message ?? "Auftragsnummer konnte nicht aufgelöst werden");
     }
-    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; project: Project | null };
+    return (await response.json()) as ProjectOrderNumberResolutionResponse;
+  };
+
+  const confirmExistingProjectDuplicate = () => {
+    if (!projectDuplicateResolution) return;
+    setResolvedExistingProjectId(projectDuplicateResolution.project.id);
+    setProjectDuplicateResolution(null);
+    setDocumentExtractionOpen(false);
+    toast({
+      title: "Vorhandenes Projekt geöffnet",
+      description: "Projekt mit dieser Auftragsnummer existiert bereits.",
+    });
   };
 
   const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
@@ -1508,11 +1532,9 @@ export function ProjectForm({
           if (!projectResolution.project) {
             throw new Error("Dateninkonsistenz: Vorhandenes Projekt konnte nicht geladen werden.");
           }
-          setResolvedExistingProjectId(projectResolution.project.id);
-          setDocumentExtractionOpen(false);
-          toast({
-            title: "Vorhandenes Projekt geöffnet",
-            description: "Projekt mit dieser Auftragsnummer existiert bereits.",
+          setProjectDuplicateResolution({
+            project: projectResolution.project,
+            latestAppointment: projectResolution.latestAppointment,
           });
           return;
         }
@@ -1833,11 +1855,27 @@ export function ProjectForm({
 
       <DocumentExtractionDialog
         open={documentExtractionOpen}
-        onOpenChange={setDocumentExtractionOpen}
+        onOpenChange={(open) => {
+          setDocumentExtractionOpen(open);
+          if (!open) {
+            setProjectDuplicateResolution(null);
+          }
+        }}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
         dataApplyLabel="Daten übernehmen"
         onApplyData={applyExtractedData}
+      />
+
+      <ProjectDuplicateResolutionDialog
+        open={projectDuplicateResolution !== null}
+        resolution={projectDuplicateResolution}
+        onOpenChange={(open) => {
+          if (!open) {
+            setProjectDuplicateResolution(null);
+          }
+        }}
+        onConfirm={confirmExistingProjectDuplicate}
       />
 
       {/* Customer Selection Dialog */}
