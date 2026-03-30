@@ -52,8 +52,6 @@ DROP TABLE IF EXISTS `note_template`;
 DROP TABLE IF EXISTS `note`;
 DROP TABLE IF EXISTS `project_attachment`;
 DROP TABLE IF EXISTS `project_note`;
-DROP TABLE IF EXISTS `project_project_status`;
-DROP TABLE IF EXISTS `project_status`;
 DROP TABLE IF EXISTS `project`;
 DROP TABLE IF EXISTS `roles`;
 DROP TABLE IF EXISTS `seed_run_entity`;
@@ -236,27 +234,6 @@ CREATE TABLE `project_note` (
   CONSTRAINT `project_note_project_id_note_id_pk` PRIMARY KEY(`project_id`,`note_id`)
 );
 
-CREATE TABLE `project_project_status` (
-  `project_id` bigint NOT NULL,
-  `project_status_id` bigint NOT NULL,
-  `version` int NOT NULL DEFAULT 1,
-  CONSTRAINT `project_project_status_project_id_project_status_id_pk` PRIMARY KEY(`project_id`,`project_status_id`)
-);
-
-CREATE TABLE `project_status` (
-  `id` bigint AUTO_INCREMENT NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text,
-  `color` varchar(255) NOT NULL,
-  `sort_order` int NOT NULL DEFAULT 0,
-  `is_active` boolean NOT NULL DEFAULT true,
-  `is_default` boolean NOT NULL DEFAULT false,
-  `version` int NOT NULL DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT (now()),
-  `updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT `project_status_id` PRIMARY KEY(`id`)
-);
-
 CREATE TABLE `project` (
   `id` bigint AUTO_INCREMENT NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -366,8 +343,6 @@ ALTER TABLE `employee` ADD CONSTRAINT `employee_tour_id_tours_id_fk` FOREIGN KEY
 ALTER TABLE `project_attachment` ADD CONSTRAINT `project_attachment_project_id_project_id_fk` FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `project_note` ADD CONSTRAINT `project_note_project_id_project_id_fk` FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `project_note` ADD CONSTRAINT `project_note_note_id_note_id_fk` FOREIGN KEY (`note_id`) REFERENCES `note`(`id`) ON DELETE cascade ON UPDATE no action;
-ALTER TABLE `project_project_status` ADD CONSTRAINT `project_project_status_project_id_project_id_fk` FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON DELETE cascade ON UPDATE no action;
-ALTER TABLE `project_project_status` ADD CONSTRAINT `project_project_status_project_status_id_project_status_id_fk` FOREIGN KEY (`project_status_id`) REFERENCES `project_status`(`id`) ON DELETE restrict ON UPDATE no action;
 ALTER TABLE `project` ADD CONSTRAINT `project_customer_id_customer_id_fk` FOREIGN KEY (`customer_id`) REFERENCES `customer`(`id`) ON DELETE restrict ON UPDATE no action;
 ALTER TABLE `seed_run_entity` ADD CONSTRAINT `seed_run_entity_seed_run_id_seed_run_id_fk` FOREIGN KEY (`seed_run_id`) REFERENCES `seed_run`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `users` ADD CONSTRAINT `users_role_id_roles_id_fk` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE restrict ON UPDATE no action;
@@ -416,8 +391,6 @@ WHERE t.table_schema = DATABASE()
     'project',
     'project_attachment',
     'project_note',
-    'project_project_status',
-    'project_status',
     'roles',
     'seed_run',
     'seed_run_entity',

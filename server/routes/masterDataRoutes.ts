@@ -54,17 +54,10 @@ router.get(api.masterData.components.list.path, masterDataController.listCompone
 router.post(api.masterData.components.create.path, masterDataController.createComponent);
 router.put(api.masterData.components.update.path, masterDataController.updateComponent);
 router.delete(api.masterData.components.delete.path, masterDataController.deleteComponent);
-router.get(api.masterData.componentSpecifications.listByComponent.path, masterDataController.listComponentSpecifications);
-router.post(api.masterData.componentSpecifications.create.path, masterDataController.createComponentSpecification);
-router.put(api.masterData.componentSpecifications.update.path, masterDataController.updateComponentSpecification);
-router.delete(api.masterData.componentSpecifications.delete.path, masterDataController.deleteComponentSpecification);
 
 router.get(api.masterData.tags.list.path, masterDataController.listTags);
 router.post(api.masterData.tags.create.path, masterDataController.createTag);
 router.put(api.masterData.tags.update.path, masterDataController.updateTag);
 router.delete(api.masterData.tags.delete.path, masterDataController.deleteTag);
-
-router.get(api.masterData.componentProducts.list.path, masterDataController.listComponentProducts);
-router.put(api.masterData.componentProducts.replaceByComponent.path, masterDataController.replaceComponentProducts);
 
 export default router;

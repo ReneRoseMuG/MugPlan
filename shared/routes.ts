@@ -21,8 +21,6 @@ import {
   insertComponentCategorySchema, updateComponentCategorySchema, componentCategories,
   insertProductSchema, updateProductSchema, products,
   insertComponentSchema, updateComponentSchema, components,
-  insertComponentSpecificationSchema, updateComponentSpecificationSchema, componentSpecifications,
-  productComponent,
 } from './schema';
 import type { Project, ProjectOrder } from "./schema";
 import type { ProjectArticleItem } from "./projectArticleList";
@@ -2175,61 +2173,9 @@ export const api = {
             z.object({ code: z.literal("VERSION_CONFLICT") }),
             z.object({
               code: z.literal("BUSINESS_CONFLICT"),
-              assignedProductCount: z.number().int().nonnegative().optional(),
               projectOrderItemCount: z.number().int().nonnegative().optional(),
             }),
           ]),
-          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-        },
-      },
-    },
-    componentSpecifications: {
-      listByComponent: {
-        method: "GET" as const,
-        path: "/api/admin/master-data/components/:id/specifications",
-        responses: {
-          200: z.array(z.custom<typeof componentSpecifications.$inferSelect>()),
-          403: z.object({ code: z.literal("FORBIDDEN") }),
-          404: z.object({ code: z.literal("NOT_FOUND") }),
-        },
-      },
-      create: {
-        method: "POST" as const,
-        path: "/api/admin/master-data/components/:id/specifications",
-        input: insertComponentSpecificationSchema,
-        responses: {
-          201: z.custom<typeof componentSpecifications.$inferSelect>(),
-          403: z.object({ code: z.literal("FORBIDDEN") }),
-          404: z.object({ code: z.literal("NOT_FOUND") }),
-          409: z.object({ code: z.literal("BUSINESS_CONFLICT") }),
-          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-        },
-      },
-      update: {
-        method: "PUT" as const,
-        path: "/api/admin/master-data/components/:id/specifications/:specificationId",
-        input: updateComponentSpecificationSchema.extend({
-          version: z.number().int().min(1),
-        }).strict(),
-        responses: {
-          200: z.custom<typeof componentSpecifications.$inferSelect>(),
-          403: z.object({ code: z.literal("FORBIDDEN") }),
-          404: z.object({ code: z.literal("NOT_FOUND") }),
-          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
-          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-        },
-      },
-      delete: {
-        method: "DELETE" as const,
-        path: "/api/admin/master-data/components/:id/specifications/:specificationId",
-        input: z.object({
-          version: z.number().int().min(1),
-        }).strict(),
-        responses: {
-          204: z.void(),
-          403: z.object({ code: z.literal("FORBIDDEN") }),
-          404: z.object({ code: z.literal("NOT_FOUND") }),
-          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },
@@ -2281,31 +2227,6 @@ export const api = {
         }).strict(),
         responses: {
           204: z.void(),
-          403: z.object({ code: z.literal("FORBIDDEN") }),
-          404: z.object({ code: z.literal("NOT_FOUND") }),
-          409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
-          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
-        },
-      },
-    },
-    componentProducts: {
-      list: {
-        method: "GET" as const,
-        path: "/api/admin/master-data/component-products",
-        responses: {
-          200: z.array(z.custom<typeof productComponent.$inferSelect>()),
-          403: z.object({ code: z.literal("FORBIDDEN") }),
-        },
-      },
-      replaceByComponent: {
-        method: "PUT" as const,
-        path: "/api/admin/master-data/components/:id/products",
-        input: z.object({
-          version: z.number().int().min(1),
-          productIds: z.array(z.number().int().positive()),
-        }).strict(),
-        responses: {
-          200: z.custom<typeof components.$inferSelect>(),
           403: z.object({ code: z.literal("FORBIDDEN") }),
           404: z.object({ code: z.literal("NOT_FOUND") }),
           409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
@@ -3627,7 +3548,6 @@ export const api = {
             productCategories: z.number(),
             components: z.number(),
             componentCategories: z.number(),
-            productComponentLinks: z.number(),
             tags: z.number(),
             projectTags: z.number(),
             customerTags: z.number(),

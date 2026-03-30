@@ -10,7 +10,6 @@
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
  * - Produkt- und Komponentenkategorien sind loeschbar, solange sie nicht mehr verwendet werden.
  * - Komponenten-Loeschkonflikte liefern differenzierte Referenzdetails fuer Produkte und Projektauftragspositionen.
- * - Component-Product m:n-Operationen folgen derselben Fehlersemantik.
  * - Ohne Filter wird serverseitig auf active normalisiert.
  *
  * Fehlerfaelle:
@@ -36,7 +35,6 @@ const repositoryMocks = vi.hoisted(() => ({
   getComponentById: vi.fn(),
   getComponentDeleteRelationCounts: vi.fn(),
   getComponentByNormalizedName: vi.fn(),
-  getProductsByIds: vi.fn(),
   updateProductCategoryWithVersion: vi.fn(),
   updateComponentCategoryWithVersion: vi.fn(),
   updateProductWithVersion: vi.fn(),
@@ -46,8 +44,6 @@ const repositoryMocks = vi.hoisted(() => ({
   deleteComponentWithVersion: vi.fn(),
   createProduct: vi.fn(),
   createComponentCategory: vi.fn(),
-  listComponentProducts: vi.fn(),
-  replaceComponentProductsWithVersion: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
@@ -64,7 +60,6 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   getComponentById: repositoryMocks.getComponentById,
   getComponentDeleteRelationCounts: repositoryMocks.getComponentDeleteRelationCounts,
   getComponentByNormalizedName: repositoryMocks.getComponentByNormalizedName,
-  getProductsByIds: repositoryMocks.getProductsByIds,
   updateProductCategoryWithVersion: repositoryMocks.updateProductCategoryWithVersion,
   updateComponentCategoryWithVersion: repositoryMocks.updateComponentCategoryWithVersion,
   updateProductWithVersion: repositoryMocks.updateProductWithVersion,
@@ -74,8 +69,6 @@ vi.mock("../../../server/repositories/masterDataRepository", () => ({
   deleteComponentWithVersion: repositoryMocks.deleteComponentWithVersion,
   createProduct: repositoryMocks.createProduct,
   createComponentCategory: repositoryMocks.createComponentCategory,
-  listComponentProducts: repositoryMocks.listComponentProducts,
-  replaceComponentProductsWithVersion: repositoryMocks.replaceComponentProductsWithVersion,
 }));
 
 import {
@@ -87,10 +80,8 @@ import {
   deleteProductCategory,
   importComponentsForCategory,
   importProductsForCategory,
-  listComponentProducts,
   listProductCategories,
   MasterDataError,
-  replaceComponentProducts,
   updateProduct,
 } from "../../../server/services/masterDataService";
 
@@ -216,18 +207,16 @@ describe("FT27 unit: masterDataService", () => {
     expect(repositoryMocks.deleteComponentCategoryWithVersion).not.toHaveBeenCalled();
   });
 
-  it("returns detailed BUSINESS_CONFLICT metadata when deleting a component assigned to products", async () => {
+  it("returns detailed BUSINESS_CONFLICT metadata when deleting a component used in project order items", async () => {
     repositoryMocks.getComponentDeleteRelationCounts.mockResolvedValueOnce({
-      assignedProductCount: 2,
-      projectOrderItemCount: 0,
+      projectOrderItemCount: 2,
     });
 
     await expect(deleteComponent(17, 3, "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
       status: 409,
       code: "BUSINESS_CONFLICT",
       details: {
-        assignedProductCount: 2,
-        projectOrderItemCount: 0,
+        projectOrderItemCount: 2,
       },
     });
     expect(repositoryMocks.deleteComponentWithVersion).not.toHaveBeenCalled();
@@ -285,41 +274,6 @@ describe("FT27 unit: masterDataService", () => {
 
     expect(repositoryMocks.createProduct).toHaveBeenCalledWith(expect.objectContaining({ shortCode: "PX" }));
     expect(repositoryMocks.createComponent).toHaveBeenCalledWith(expect.objectContaining({ shortCode: null }));
-  });
-
-  it("maps non-admin access for component-products list to FORBIDDEN", async () => {
-    await expect(listComponentProducts("LESER")).rejects.toMatchObject<Partial<MasterDataError>>({
-      status: 403,
-      code: "FORBIDDEN",
-    });
-    expect(repositoryMocks.listComponentProducts).not.toHaveBeenCalled();
-  });
-
-  it("maps component-products version conflict to VERSION_CONFLICT", async () => {
-    repositoryMocks.getComponentById.mockResolvedValueOnce({ id: 5, isActive: true });
-    repositoryMocks.getProductsByIds.mockResolvedValueOnce([{ id: 1, isActive: true }, { id: 2, isActive: true }]);
-    repositoryMocks.replaceComponentProductsWithVersion.mockResolvedValueOnce({
-      kind: "version_conflict",
-    });
-
-    await expect(replaceComponentProducts(5, 2, [1, 2], "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
-      status: 409,
-      code: "VERSION_CONFLICT",
-    });
-  });
-
-  it("maps component-products missing FK to BUSINESS_CONFLICT", async () => {
-    repositoryMocks.getComponentById.mockResolvedValueOnce({ id: 5, isActive: true });
-    repositoryMocks.getProductsByIds.mockResolvedValueOnce([{ id: 999999, isActive: true }]);
-    repositoryMocks.replaceComponentProductsWithVersion.mockRejectedValueOnce({
-      code: "ER_NO_REFERENCED_ROW_2",
-      errno: 1452,
-    });
-
-    await expect(replaceComponentProducts(5, 2, [999999], "ADMIN")).rejects.toMatchObject<Partial<MasterDataError>>({
-      status: 409,
-      code: "BUSINESS_CONFLICT",
-    });
   });
 
   it("imports products for a category with create update reactivate and defaults", async () => {

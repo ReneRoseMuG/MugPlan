@@ -993,7 +993,6 @@ export async function updateProjectOrderItemWithVersion(
         project_id = if(${input.projectId === undefined}, project_id, ${input.projectId ?? null}),
         product_id = if(${input.productId === undefined}, product_id, ${input.productId ?? null}),
         component_id = if(${input.componentId === undefined}, component_id, ${input.componentId ?? null}),
-        specification_id = if(${input.specificationId === undefined}, specification_id, ${input.specificationId ?? null}),
         quantity = if(${input.quantity === undefined}, quantity, ${input.quantity ?? null}),
         updated_at = now(),
         version = version + 1

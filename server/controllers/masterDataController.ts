@@ -576,92 +576,6 @@ export async function deleteComponentsByCategory(req: Request, res: Response, ne
   }
 }
 
-export async function listComponentSpecifications(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const componentId = parseId(req.params.id);
-    const roleKey = ensureRoleKey(req);
-    if (!Number.isFinite(componentId) || componentId <= 0) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
-      return;
-    }
-    const rows = await masterDataService.listComponentSpecifications(componentId, roleKey);
-    res.json(rows);
-  } catch (error) {
-    if (handleServiceError(error, res)) return;
-    next(error);
-  }
-}
-
-export async function createComponentSpecification(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const componentId = parseId(req.params.id);
-    const roleKey = ensureRoleKey(req);
-    if (!Number.isFinite(componentId) || componentId <= 0) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
-      return;
-    }
-    const input = api.masterData.componentSpecifications.create.input.parse({
-      ...req.body,
-      componentId,
-    });
-    const row = await masterDataService.createComponentSpecification(input, roleKey);
-    res.status(201).json(row);
-  } catch (error) {
-    if (handleServiceError(error, res)) return;
-    next(error);
-  }
-}
-
-export async function updateComponentSpecification(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const specificationId = parseId(req.params.specificationId);
-    const roleKey = ensureRoleKey(req);
-    if (!Number.isFinite(specificationId) || specificationId <= 0) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
-      return;
-    }
-    const input = api.masterData.componentSpecifications.update.input.parse(req.body);
-    const row = await masterDataService.updateComponentSpecification(specificationId, input.version, input, roleKey);
-    res.json(row);
-  } catch (error) {
-    if (handleServiceError(error, res)) return;
-    next(error);
-  }
-}
-
-export async function deleteComponentSpecification(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const specificationId = parseId(req.params.specificationId);
-    const roleKey = ensureRoleKey(req);
-    if (!Number.isFinite(specificationId) || specificationId <= 0) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
-      return;
-    }
-    const input = api.masterData.componentSpecifications.delete.input.parse(req.body);
-    await masterDataService.deleteComponentSpecification(specificationId, input.version, roleKey);
-    res.status(204).send();
-  } catch (error) {
-    if (handleServiceError(error, res)) return;
-    next(error);
-  }
-}
-
 export async function listTags(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = ensureRoleKey(req);
@@ -729,42 +643,6 @@ export async function deleteTag(req: Request, res: Response, next: NextFunction)
     const input = api.masterData.tags.delete.input.parse(req.body);
     await masterDataService.deleteTag(id, input.version, roleKey);
     res.status(204).send();
-  } catch (error) {
-    if (handleServiceError(error, res)) return;
-    next(error);
-  }
-}
-
-export async function listComponentProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const roleKey = ensureRoleKey(req);
-    if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
-      return;
-    }
-    const rows = await masterDataService.listComponentProducts(roleKey);
-    res.json(rows);
-  } catch (error) {
-    if (handleServiceError(error, res)) return;
-    next(error);
-  }
-}
-
-export async function replaceComponentProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const componentId = parseId(req.params.id);
-    const roleKey = ensureRoleKey(req);
-    if (!Number.isFinite(componentId) || componentId <= 0) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-    if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
-      return;
-    }
-    const input = api.masterData.componentProducts.replaceByComponent.input.parse(req.body);
-    const row = await masterDataService.replaceComponentProducts(componentId, input.version, input.productIds, roleKey);
-    res.json(row);
   } catch (error) {
     if (handleServiceError(error, res)) return;
     next(error);

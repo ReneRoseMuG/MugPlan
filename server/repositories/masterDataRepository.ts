@@ -2,16 +2,13 @@
 import type {
   Component,
   ComponentCategory,
-  ComponentSpecification,
   InsertComponent,
   InsertComponentCategory,
-  InsertComponentSpecification,
   InsertProduct,
   InsertProductCategory,
   Tag,
   Product,
   ProductCategory,
-  UpdateComponentSpecification,
   UpdateComponent,
   UpdateComponentCategory,
   UpdateProduct,
@@ -20,12 +17,10 @@ import type {
 import {
   appointmentTags,
   componentCategories,
-  componentSpecifications,
   components,
   customerTags,
   employeeTags,
   productCategories,
-  productComponent,
   projectOrderItems,
   projectTags,
   products,
@@ -255,13 +250,6 @@ export async function getProductByNormalizedName(name: string): Promise<Product 
   return row;
 }
 
-export async function getProductsByIds(ids: number[]): Promise<Product[]> {
-  const uniqueIds = Array.from(new Set(ids.filter((value) => Number.isFinite(value) && value > 0)));
-  if (uniqueIds.length === 0) return [];
-  const idList = sql.join(uniqueIds.map((value) => sql`${value}`), sql`, `);
-  return db.select().from(products).where(sql`${products.id} in (${idList})`);
-}
-
 export async function updateProductWithVersion(
   id: number,
   expectedVersion: number,
@@ -332,20 +320,14 @@ export async function listComponentsByCategoryId(categoryId: number): Promise<Co
 }
 
 export async function getComponentDeleteRelationCounts(componentId: number): Promise<{
-  assignedProductCount: number;
   projectOrderItemCount: number;
 }> {
-  const [assignedProductCountRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(productComponent)
-    .where(eq(productComponent.componentId, componentId));
   const [projectOrderItemCountRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(projectOrderItems)
     .where(eq(projectOrderItems.componentId, componentId));
 
   return {
-    assignedProductCount: Number(assignedProductCountRow?.count ?? 0),
     projectOrderItemCount: Number(projectOrderItemCountRow?.count ?? 0),
   };
 }
@@ -395,58 +377,6 @@ export async function deleteComponentWithVersion(id: number, expectedVersion: nu
   `);
 
   const outcome = await classifyVersionedMutation("components", id, toAffectedRows(result));
-  if (outcome === "not_found") return { kind: "not_found" };
-  if (outcome === "version_conflict") return { kind: "version_conflict" };
-  return { kind: "deleted" };
-}
-
-export async function listComponentSpecifications(componentId: number): Promise<ComponentSpecification[]> {
-  return db
-    .select()
-    .from(componentSpecifications)
-    .where(eq(componentSpecifications.componentId, componentId))
-    .orderBy(asc(componentSpecifications.specName), asc(componentSpecifications.id));
-}
-
-export async function createComponentSpecification(input: InsertComponentSpecification): Promise<ComponentSpecification> {
-  const result = await db.insert(componentSpecifications).values(input);
-  const id = toInsertId(result);
-  const [row] = await db.select().from(componentSpecifications).where(eq(componentSpecifications.id, id));
-  return row;
-}
-
-export async function updateComponentSpecificationWithVersion(
-  id: number,
-  expectedVersion: number,
-  input: UpdateComponentSpecification,
-): Promise<VersionedUpdateResult<ComponentSpecification>> {
-  const result = await db.execute(sql`
-    update component_specifications
-    set
-      spec_name = if(${input.specName === undefined}, spec_name, ${input.specName ?? null}),
-      spec_value = if(${input.specValue === undefined}, spec_value, ${input.specValue ?? null}),
-      updated_at = now(),
-      version = version + 1
-    where id = ${id}
-      and version = ${expectedVersion}
-  `);
-
-  const outcome = await classifyVersionedMutation("component_specifications", id, toAffectedRows(result));
-  if (outcome === "not_found") return { kind: "not_found" };
-  if (outcome === "version_conflict") return { kind: "version_conflict" };
-
-  const [row] = await db.select().from(componentSpecifications).where(eq(componentSpecifications.id, id));
-  return { kind: "updated", row };
-}
-
-export async function deleteComponentSpecificationWithVersion(id: number, expectedVersion: number): Promise<VersionedDeleteResult> {
-  const result = await db.execute(sql`
-    delete from component_specifications
-    where id = ${id}
-      and version = ${expectedVersion}
-  `);
-
-  const outcome = await classifyVersionedMutation("component_specifications", id, toAffectedRows(result));
   if (outcome === "not_found") return { kind: "not_found" };
   if (outcome === "version_conflict") return { kind: "version_conflict" };
   return { kind: "deleted" };
@@ -626,51 +556,4 @@ export async function getTagRelationCounts(tagId: number): Promise<{
     employeeCount: Number(employeeCountRow?.count ?? 0),
     appointmentCount: Number(appointmentCountRow?.count ?? 0),
   };
-}
-
-export async function listComponentProducts() {
-  return db
-    .select()
-    .from(productComponent)
-    .orderBy(asc(productComponent.componentId), asc(productComponent.productId));
-}
-
-export async function replaceComponentProductsWithVersion(
-  componentId: number,
-  expectedVersion: number,
-  productIds: number[],
-): Promise<VersionedUpdateResult<Component>> {
-  const uniqueProductIds = Array.from(new Set(productIds.filter((value) => Number.isFinite(value) && value > 0)));
-
-  return db.transaction(async (tx) => {
-    const versionUpdate = await tx.execute(sql`
-      update components
-      set
-        updated_at = now(),
-        version = version + 1
-      where id = ${componentId}
-        and version = ${expectedVersion}
-    `);
-
-    const affectedRows = Number((versionUpdate as any)?.[0]?.affectedRows ?? (versionUpdate as any)?.affectedRows ?? 0);
-    if (affectedRows === 0) {
-      const [existing] = await tx.select({ id: components.id }).from(components).where(eq(components.id, componentId)).limit(1);
-      return existing ? { kind: "version_conflict" as const } : { kind: "not_found" as const };
-    }
-
-    await tx.delete(productComponent).where(eq(productComponent.componentId, componentId));
-
-    if (uniqueProductIds.length > 0) {
-      await tx.insert(productComponent).values(
-        uniqueProductIds.map((productId) => ({
-          componentId,
-          productId,
-          version: 1,
-        })),
-      );
-    }
-
-    const [updatedComponent] = await tx.select().from(components).where(eq(components.id, componentId));
-    return { kind: "updated" as const, row: updatedComponent };
-  });
 }

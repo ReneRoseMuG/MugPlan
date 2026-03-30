@@ -105,7 +105,6 @@ describe("calendar project article items integration", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: product.body.id,
         componentId: null,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);
@@ -117,7 +116,6 @@ describe("calendar project article items integration", () => {
         orderNumber: project.projectOrder!.orderNumber,
         productId: null,
         componentId: component.body.id,
-        specificationId: null,
         quantity: 1,
       })
       .expect(201);

@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "8d5c7166-4a22-4fb4-baae-301c4f889f40",
+  "prevId": "16a1a6fe-bb41-4f93-a23d-9f4a31a57244",
+  "note": "Manual snapshot placeholder for 0019_drop_legacy_masterdata_structures. Authoritative migration logic lives in migrations/0019_drop_legacy_masterdata_structures.sql."
+}

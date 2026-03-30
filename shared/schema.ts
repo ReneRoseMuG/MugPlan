@@ -496,56 +496,6 @@ export type Component = typeof components.$inferSelect;
 export type InsertComponent = z.infer<typeof insertComponentSchema>;
 export type UpdateComponent = z.infer<typeof updateComponentSchema>;
 
-// Product <-> Component Relation (FT 27)
-export const productComponent = mysqlTable("product_component", {
-  productId: bigint("product_id", { mode: "number" })
-    .notNull()
-    .references(() => products.id, { onDelete: "restrict" }),
-  componentId: bigint("component_id", { mode: "number" })
-    .notNull()
-    .references(() => components.id, { onDelete: "restrict" }),
-  version: int("version").notNull().default(1),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.productId, table.componentId] }),
-  byComponentProduct: index("idx_pc_component_product").on(table.componentId, table.productId),
-}));
-
-export const insertProductComponentSchema = createInsertSchema(productComponent);
-
-export type ProductComponent = typeof productComponent.$inferSelect;
-export type InsertProductComponent = z.infer<typeof insertProductComponentSchema>;
-
-export const componentSpecifications = mysqlTable("component_specifications", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  componentId: bigint("component_id", { mode: "number" })
-    .notNull()
-    .references(() => components.id, { onDelete: "cascade" }),
-  specName: varchar("spec_name", { length: 255 }).notNull(),
-  specValue: text("spec_value").notNull(),
-  version: int("version").notNull().default(1),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-}, (table) => ({
-  uniqueComponentSpec: uniqueIndex("uq_component_specifications_value").on(table.componentId, table.specName, table.specValue),
-  byComponent: index("idx_component_specifications_component").on(table.componentId),
-}));
-
-export const insertComponentSpecificationSchema = createInsertSchema(componentSpecifications).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateComponentSpecificationSchema = z.object({
-  specName: z.string().trim().min(1).optional(),
-  specValue: z.string().trim().min(1).optional(),
-  version: z.number().int().optional(),
-}).partial();
-
-export type ComponentSpecification = typeof componentSpecifications.$inferSelect;
-export type InsertComponentSpecification = z.infer<typeof insertComponentSpecificationSchema>;
-export type UpdateComponentSpecification = z.infer<typeof updateComponentSpecificationSchema>;
-
 // Project Order Items - Auftragspositionen je Projekt (FT 27)
 export const projectOrderItems = mysqlTable("project_order_items", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
@@ -559,8 +509,6 @@ export const projectOrderItems = mysqlTable("project_order_items", {
     .references(() => products.id, { onDelete: "restrict" }),
   componentId: bigint("component_id", { mode: "number" })
     .references(() => components.id, { onDelete: "restrict" }),
-  specificationId: bigint("specification_id", { mode: "number" })
-    .references(() => componentSpecifications.id, { onDelete: "restrict" }),
   quantity: int("quantity").notNull().default(1),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -576,7 +524,6 @@ export const projectOrderItems = mysqlTable("project_order_items", {
         (${table.productId} IS NOT NULL AND ${table.componentId} IS NULL)
         OR (${table.productId} IS NULL AND ${table.componentId} IS NOT NULL)
       )
-      AND (${table.specificationId} IS NULL OR ${table.componentId} IS NOT NULL)
     )`,
   ),
 }));
@@ -597,7 +544,6 @@ export const updateProjectOrderItemSchema = z.object({
   projectId: z.number().int().optional(),
   productId: z.number().int().nullable().optional(),
   componentId: z.number().int().nullable().optional(),
-  specificationId: z.number().int().nullable().optional(),
   quantity: z.number().int().positive().optional(),
   version: z.number().int().optional(),
 }).partial();

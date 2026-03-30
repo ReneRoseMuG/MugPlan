@@ -728,7 +728,6 @@ export function ProjectForm({
         orderNumber: createdOrderNumber,
         productId: field.source === "product" ? selection.productId : null,
         componentId: field.source === "component" ? selection.componentId : null,
-        specificationId: null,
         quantity: 1,
       });
     }
@@ -742,7 +741,6 @@ export function ProjectForm({
         orderNumber: createdOrderNumber,
         productId: slot.source === "product" ? selection.productId : null,
         componentId: slot.source === "component" ? selection.componentId : null,
-        specificationId: null,
         quantity: 1,
       });
     }
@@ -767,7 +765,6 @@ export function ProjectForm({
         orderNumber: projectData.project.orderNumber,
         productId,
         componentId,
-        specificationId: null,
         quantity: 1,
       });
       const savedItem = await savedItemResponse.json() as ProjectOrderItem;
@@ -804,7 +801,6 @@ export function ProjectForm({
         orderNumber: projectData.project.orderNumber,
         productId,
         componentId,
-        specificationId: null,
         quantity: 1,
       });
       const savedItem = await savedItemResponse.json() as ProjectOrderItem;
@@ -1263,7 +1259,6 @@ export function ProjectForm({
           orderNumber,
           productId: sel.productId,
           componentId: null,
-          specificationId: null,
           quantity: 1,
         });
       }
@@ -1273,7 +1268,6 @@ export function ProjectForm({
           orderNumber,
           productId: null,
           componentId: sel.componentId,
-          specificationId: null,
           quantity: 1,
         });
       }
@@ -1288,7 +1282,6 @@ export function ProjectForm({
           orderNumber,
           productId: sel.productId,
           componentId: null,
-          specificationId: null,
           quantity: 1,
         });
       }
@@ -1298,7 +1291,6 @@ export function ProjectForm({
           orderNumber,
           productId: null,
           componentId: sel.componentId,
-          specificationId: null,
           quantity: 1,
         });
       }

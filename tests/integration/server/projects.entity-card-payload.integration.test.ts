@@ -255,7 +255,6 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
           orderNumber: "PROJ-NEU-44",
           productId: freshMasterData.products[1]?.id ?? freshMasterData.products[0]?.id ?? null,
           componentId: null,
-          specificationId: null,
           quantity: 1,
         },
         ...freshMasterData.componentGroups.map((group) => ({
@@ -263,7 +262,6 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
           orderNumber: "PROJ-NEU-44",
           productId: null,
           componentId: group.items[1]?.id ?? group.items[0]?.id ?? null,
-          specificationId: null,
           quantity: 1,
         })),
       ],

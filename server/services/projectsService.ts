@@ -270,16 +270,11 @@ async function ensureActiveOrderItemReferences(input: {
 function assertValidOrderItemRelationState(input: {
   productId?: number | null;
   componentId?: number | null;
-  specificationId?: number | null;
 }): void {
   const hasProduct = input.productId != null;
   const hasComponent = input.componentId != null;
 
   if (hasProduct === hasComponent) {
-    throw new ProjectsError(422, "VALIDATION_ERROR");
-  }
-
-  if (input.specificationId != null && !hasComponent) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
 }
@@ -320,7 +315,6 @@ export async function updateProjectOrderItem(
   assertValidOrderItemRelationState({
     productId: input.productId === undefined ? currentItem.productId : input.productId,
     componentId: input.componentId === undefined ? currentItem.componentId : input.componentId,
-    specificationId: input.specificationId === undefined ? currentItem.specificationId : input.specificationId,
   });
   await ensureActiveOrderItemReferences(input);
   const result = await projectsRepository.updateProjectOrderItemWithVersion(projectId, itemId, input.version, input);

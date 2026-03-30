@@ -298,7 +298,6 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
           orderNumber: "FRESH-ORD-9",
           productId: freshOrderData.products[1]?.id ?? freshOrderData.products[0]?.id ?? null,
           componentId: null,
-          specificationId: null,
           quantity: 1,
         },
         ...freshOrderData.componentGroups.map((group) => ({
@@ -306,7 +305,6 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
           orderNumber: "FRESH-ORD-9",
           productId: null,
           componentId: group.items[1]?.id ?? group.items[0]?.id ?? null,
-          specificationId: null,
           quantity: 1,
         })),
       ].map((item) => ({
@@ -314,7 +312,6 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
         orderNumber: "FRESH-ORD-9",
         productId: item.productId ?? null,
         componentId: item.componentId ?? null,
-        specificationId: null,
         quantity: item.quantity ?? 1,
       })),
     );

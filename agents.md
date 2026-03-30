@@ -329,6 +329,16 @@ Pflichtfelder in der jeweiligen Env-Datei: `DB_ALLOWED_DATABASES_DEV|TEST|PROD` 
 - Commits bei Schemaänderungen müssen immer `shared/schema.ts`, neue Migrationsdatei und `migrations/meta/*` gemeinsam enthalten
 - Bereits versionierte Migrationsdateien dürfen nicht umgeschrieben werden — Korrekturen über neue Folge-Migrationen
 
+### Pflichtablauf bei DB-Änderungen
+
+1. Schemaänderung analysieren
+2. Migration erzeugen
+3. Migration auf Dev-DB ausführen
+4. Migration auf Test-DB ausführen
+5. Prüfen, ob DB-Schema zum Code passt
+6. Erst jetzt Tests starten
+7. Bei Schemafehlern nicht weiterrefactoren, sondern Migrationsstand korrigieren
+
 ---
 
 ## 11. Teststrategie

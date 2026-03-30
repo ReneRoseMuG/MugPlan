@@ -1,10 +1,8 @@
 ﻿import type {
   Component,
   ComponentCategory,
-  ComponentSpecification,
   InsertComponent,
   InsertComponentCategory,
-  InsertComponentSpecification,
   InsertProduct,
   InsertProductCategory,
   Tag,
@@ -12,7 +10,6 @@
   ProductCategory,
   UpdateComponent,
   UpdateComponentCategory,
-  UpdateComponentSpecification,
   UpdateProduct,
   UpdateProductCategory,
 } from "@shared/schema";
@@ -183,10 +180,9 @@ function normalizeComponentUpdate(input: UpdateComponent): UpdateComponent {
 }
 
 function hasComponentDeleteConflictDetails(details: {
-  assignedProductCount: number;
   projectOrderItemCount: number;
 }): boolean {
-  return details.assignedProductCount > 0 || details.projectOrderItemCount > 0;
+  return details.projectOrderItemCount > 0;
 }
 
 function toLines(content: string) {
@@ -838,64 +834,6 @@ export async function deleteComponentsByCategory(
   return { deletedCount, skippedCount };
 }
 
-export async function listComponentSpecifications(componentId: number, roleKey: CanonicalRoleKey): Promise<ComponentSpecification[]> {
-  requireAdmin(roleKey);
-  return masterDataRepository.listComponentSpecifications(componentId);
-}
-
-export async function createComponentSpecification(
-  input: InsertComponentSpecification,
-  roleKey: CanonicalRoleKey,
-): Promise<ComponentSpecification> {
-  requireAdmin(roleKey);
-  try {
-    return await masterDataRepository.createComponentSpecification(input);
-  } catch (error) {
-    if (isDuplicateKeyError(error) || isMissingReferenceError(error)) {
-      throw new MasterDataError(409, "BUSINESS_CONFLICT");
-    }
-    throw error;
-  }
-}
-
-export async function updateComponentSpecification(
-  id: number,
-  expectedVersion: number,
-  input: UpdateComponentSpecification,
-  roleKey: CanonicalRoleKey,
-): Promise<ComponentSpecification> {
-  requireAdmin(roleKey);
-  try {
-    const result = await masterDataRepository.updateComponentSpecificationWithVersion(id, expectedVersion, input);
-    if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
-    if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
-    return result.row;
-  } catch (error) {
-    if (isDuplicateKeyError(error)) {
-      throw new MasterDataError(409, "BUSINESS_CONFLICT");
-    }
-    throw error;
-  }
-}
-
-export async function deleteComponentSpecification(
-  id: number,
-  expectedVersion: number,
-  roleKey: CanonicalRoleKey,
-): Promise<void> {
-  requireAdmin(roleKey);
-  try {
-    const result = await masterDataRepository.deleteComponentSpecificationWithVersion(id, expectedVersion);
-    if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
-    if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
-  } catch (error) {
-    if (isRowReferencedError(error)) {
-      throw new MasterDataError(409, "BUSINESS_CONFLICT");
-    }
-    throw error;
-  }
-}
-
 export async function listTags(roleKey: CanonicalRoleKey): Promise<Tag[]> {
   requireAdmin(roleKey);
   await ensureProtectedTagDefaults();
@@ -966,45 +904,6 @@ export async function deleteTag(
   const result = await masterDataRepository.deleteTagWithVersion(id, expectedVersion);
   if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
   if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
-}
-
-export async function listComponentProducts(roleKey: CanonicalRoleKey) {
-  requireAdmin(roleKey);
-  return masterDataRepository.listComponentProducts();
-}
-
-export async function replaceComponentProducts(
-  componentId: number,
-  expectedVersion: number,
-  productIds: number[],
-  roleKey: CanonicalRoleKey,
-): Promise<Component> {
-  requireAdmin(roleKey);
-  const component = await masterDataRepository.getComponentById(componentId);
-  if (!component) {
-    throw new MasterDataError(404, "NOT_FOUND");
-  }
-  if (!component.isActive) {
-    throw new MasterDataError(409, "BUSINESS_CONFLICT");
-  }
-
-  const uniqueProductIds = Array.from(new Set(productIds.filter((value) => Number.isFinite(value) && value > 0)));
-  const referencedProducts = await masterDataRepository.getProductsByIds(uniqueProductIds);
-  if (referencedProducts.length !== uniqueProductIds.length || referencedProducts.some((product) => !product.isActive)) {
-    throw new MasterDataError(409, "BUSINESS_CONFLICT");
-  }
-
-  try {
-    const result = await masterDataRepository.replaceComponentProductsWithVersion(componentId, expectedVersion, productIds);
-    if (result.kind === "not_found") throw new MasterDataError(404, "NOT_FOUND");
-    if (result.kind === "version_conflict") throw new MasterDataError(409, "VERSION_CONFLICT");
-    return result.row;
-  } catch (error) {
-    if (isDuplicateKeyError(error) || isRowReferencedError(error) || isMissingReferenceError(error)) {
-      throw new MasterDataError(409, "BUSINESS_CONFLICT");
-    }
-    throw error;
-  }
 }
 
 export function isMasterDataError(error: unknown): error is MasterDataError {
