@@ -7,14 +7,16 @@
  * - Ungültige oder Path-Traversal-Dateinamen werden mit 422 abgelehnt.
  * - Fehlende Dump-Dateien werden mit 404 beantwortet.
  * - Der erlaubte Dump-Tabellensatz bleibt explizit, und ausgeschlossene Tabellen bleiben außen vor.
- * - Das Dump-Format verlangt Version und vollständigen Tabellenblock.
+ * - Das Dump-Format verlangt Version und gültige Arrays je bekannter Tabelle.
+ * - Fehlende bekannte Tabellen werden beim Import tolerant als leer behandelt.
+ * - Unbekannte Tabellen werden ignoriert und geloggt.
  *
  * Fehlerfälle:
  * - importDump in production → 403 FORBIDDEN
  * - Nicht-Admin → 403 FORBIDDEN
  * - Dateiname mit Path-Traversal → 422 VALIDATION_ERROR
  * - Dump ohne formatVersion/tables → 422 VALIDATION_ERROR
- * - Dump mit unbekannten oder fehlenden Tabellen → 422 VALIDATION_ERROR
+ * - Bekannte Tabelle mit ungültigem Datentyp → 422 VALIDATION_ERROR
  *
  * Ziel:
  * Absicherung von Zugriffskontrolle, Dump-Vertrag und Eingabe-Validierung des Dump-Service
@@ -64,6 +66,10 @@ vi.mock("../../../server/security/dbSafetyGuards", () => ({
   assertSqlDatabaseIdentity: vi.fn(async () => undefined),
 }));
 
+vi.mock("../../../server/lib/logger", () => ({
+  logError: vi.fn(),
+}));
+
 import {
   createDump,
   deleteDump,
@@ -76,6 +82,7 @@ import {
   resolveDumpDownloadPath,
 } from "../../../server/services/dumpService";
 import { getRuntimeMode } from "../../../server/config/runtimeEnv";
+import { logError } from "../../../server/lib/logger";
 
 const adminCtx = { roleKey: "ADMIN" } as const;
 const readerCtx = { roleKey: "LESER" } as const;
@@ -191,6 +198,10 @@ describe("dumpService – Dateinamen-Validierung", () => {
 });
 
 describe("dumpService – Dump-Formatvalidierung", () => {
+  beforeEach(() => {
+    vi.mocked(logError).mockReset();
+  });
+
   it("lehnt ZIP ohne versioniertes Format ab", async () => {
     const zipBuffer = await buildZipFromDataJson({});
     await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
@@ -201,7 +212,7 @@ describe("dumpService – Dump-Formatvalidierung", () => {
     );
   });
 
-  it("lehnt Dump mit unbekannten Tabellen ab", async () => {
+  it("ignoriert unbekannte Tabellen und loggt sie einmal", async () => {
     const zipBuffer = await buildZipFromDataJson({
       formatVersion: DUMP_FORMAT_VERSION,
       exportedAt: new Date().toISOString(),
@@ -211,15 +222,20 @@ describe("dumpService – Dump-Formatvalidierung", () => {
       },
     });
 
-    await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
-      (error: unknown) =>
-        isDumpServiceError(error) &&
-        error.status === 422 &&
-        error.message.includes("Unbekannte Tabellen"),
+    await expect(importDump(adminCtx, zipBuffer)).resolves.toMatchObject({
+      tablesRestored: 0,
+      uploadsRestored: false,
+    });
+    expect(logError).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith(
+      "parseDumpPayload: unbekannte Tabellen im Dump ignoriert",
+      expect.objectContaining({
+        unknownKeys: ["users"],
+      }),
     );
   });
 
-  it("lehnt Dump mit fehlenden Tabellen ab", async () => {
+  it("füllt fehlende bekannte Tabellen tolerant mit leeren Arrays auf", async () => {
     const partialTables = Object.fromEntries(DUMP_TABLE_KEYS.slice(1).map((key) => [key, []]));
     const zipBuffer = await buildZipFromDataJson({
       formatVersion: DUMP_FORMAT_VERSION,
@@ -227,11 +243,28 @@ describe("dumpService – Dump-Formatvalidierung", () => {
       tables: partialTables,
     });
 
+    await expect(importDump(adminCtx, zipBuffer)).resolves.toMatchObject({
+      tablesRestored: 0,
+      uploadsRestored: false,
+    });
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  it("lehnt bekannte Tabellen mit ungültigem Datentyp weiter ab", async () => {
+    const zipBuffer = await buildZipFromDataJson({
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt: new Date().toISOString(),
+      tables: {
+        ...Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
+        tours: {},
+      },
+    });
+
     await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
       (error: unknown) =>
         isDumpServiceError(error) &&
         error.status === 422 &&
-        error.message.includes("Fehlende Tabellen"),
+        error.message.includes("Tabelle 'tours'"),
     );
   });
 });

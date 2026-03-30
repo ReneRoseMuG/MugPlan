@@ -5,6 +5,7 @@
  * - POST /api/admin/dumps/create erstellt einen versionierten Dump.
  * - Der Dump enthält genau den erlaubten Tabellensatz und schließt ausgeschlossene Tabellen aus.
  * - POST /api/admin/dumps/import spielt einen erzeugten Dump als echten Roundtrip wieder ein.
+ * - Ein älterer Dump mit fehlenden neuen Tabellen kann weiterhin importiert werden.
  * - Touren und weitere zentrale Fachdaten werden nach dem Reimport korrekt wiederhergestellt.
  * - Ausgeschlossene Tabellen wie users/roles bleiben vom Import unberührt.
  * - Admin-Endpunkte lehnen ungültige Dumps und Nicht-Admins korrekt ab.
@@ -95,6 +96,10 @@ async function collectSnapshot() {
     appointmentEmployees: await getRowCount(schema.appointmentEmployees),
     tags: await getRowCount(schema.tags),
     projectTags: await getRowCount(schema.projectTags),
+    employeeNotes: await getRowCount(schema.employeeNotes),
+    employeeAttachments: await getRowCount(schema.employeeAttachments),
+    employeeTags: await getRowCount(schema.employeeTags),
+    calendarWeekNotes: await getRowCount(schema.calendarWeekNotes),
     users: await getRowCount(schema.users),
     roles: await getRowCount(schema.roles),
   };
@@ -224,6 +229,71 @@ describe("POST /api/admin/dumps/import", () => {
     const removedExtraCustomer = await db.select().from(schema.customers).where(eq(schema.customers.id, extraCustomer.id));
     expect(removedExtraTour).toHaveLength(0);
     expect(removedExtraTeam).toHaveLength(0);
+    expect(removedExtraCustomer).toHaveLength(0);
+  });
+
+  it("akzeptiert Alt-Dumps mit fehlenden neuen Tabellen und ignoriert unbekannte Tabellen", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const team = await createTeamFixture("#4477aa");
+    const tour = await createTourFixture("#3399aa");
+    const employee = await createEmployeeFixture("LEGACY-EMP");
+    const customer = await createCustomerFixture("LEGACY-CUST");
+    const project = await createProjectFixture({ prefix: "LEGACY-PROJ", customerId: customer.id });
+    await createAppointmentFixture({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+
+    const beforeSnapshot = await collectSnapshot();
+
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+
+    const dumpData = await parseDumpDataJson(downloadResponse.body as Buffer) as {
+      formatVersion: number;
+      exportedAt: string;
+      tables: Record<string, unknown[]>;
+    };
+
+    delete dumpData.tables["calendarWeekNotes"];
+    delete dumpData.tables["employeeNotes"];
+    delete dumpData.tables["employeeAttachments"];
+    delete dumpData.tables["employeeTags"];
+    dumpData.tables["users"] = [];
+
+    const legacyZipBuffer = await buildZipFromDataJson(dumpData);
+
+    const extraTour = await createTourFixture("#aa3344");
+    const extraCustomer = await createCustomerFixture("LEGACY-EXTRA");
+
+    const mutatedSnapshot = await collectSnapshot();
+    expect(mutatedSnapshot.tours).toBe(beforeSnapshot.tours + 1);
+    expect(mutatedSnapshot.customers).toBe(beforeSnapshot.customers + 1);
+
+    const importResponse = await admin
+      .post("/api/admin/dumps/import")
+      .attach("file", legacyZipBuffer, "legacy-dump.zip")
+      .expect(200);
+
+    expect(importResponse.body.tablesRestored).toBeGreaterThan(0);
+
+    const afterSnapshot = await collectSnapshot();
+    expect(afterSnapshot).toEqual(beforeSnapshot);
+
+    const restoredTour = await db.select().from(schema.tours).where(eq(schema.tours.id, tour.id));
+    expect(restoredTour).toHaveLength(1);
+
+    const removedExtraTour = await db.select().from(schema.tours).where(eq(schema.tours.id, extraTour.id));
+    const removedExtraCustomer = await db.select().from(schema.customers).where(eq(schema.customers.id, extraCustomer.id));
+    expect(removedExtraTour).toHaveLength(0);
     expect(removedExtraCustomer).toHaveLength(0);
   });
 

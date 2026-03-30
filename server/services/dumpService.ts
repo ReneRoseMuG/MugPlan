@@ -157,17 +157,15 @@ function parseDumpPayload(raw: unknown): DumpPayload {
 
   const tableKeys = Object.keys(candidate.tables);
   const unknownKeys = tableKeys.filter((key) => !DUMP_TABLE_KEYS.includes(key as DumpTableKey));
-  const missingKeys = DUMP_TABLE_KEYS.filter((key) => !(key in candidate.tables!));
   if (unknownKeys.length > 0) {
-    throw new DumpServiceError(`Unbekannte Tabellen im Dump: ${unknownKeys.join(", ")}`, 422, "VALIDATION_ERROR");
-  }
-  if (missingKeys.length > 0) {
-    throw new DumpServiceError(`Fehlende Tabellen im Dump: ${missingKeys.join(", ")}`, 422, "VALIDATION_ERROR");
+    logError("parseDumpPayload: unbekannte Tabellen im Dump ignoriert", {
+      unknownKeys,
+    });
   }
 
   const tables = {} as Record<DumpTableKey, unknown[]>;
   for (const key of DUMP_TABLE_KEYS) {
-    const rows = candidate.tables[key];
+    const rows = key in candidate.tables ? candidate.tables[key] : [];
     if (!Array.isArray(rows)) {
       throw new DumpServiceError(`Tabelle '${key}' hat kein gültiges Array-Format`, 422, "VALIDATION_ERROR");
     }
