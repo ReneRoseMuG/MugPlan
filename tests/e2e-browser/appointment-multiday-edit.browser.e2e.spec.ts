@@ -2,15 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Ein neuer Zweitagestermin kann im Browser aus dem Tour-Kontext mit vollstaendigen Relationen angelegt werden.
+ * - Ein neuer Zweitagestermin kann im Browser aus dem Tour-Kontext mit Projekt-, Kunden- und Tourrelation angelegt werden.
  * - Das Terminformular rendert in Create und Edit innerhalb der EntityFormShell mit sichtbarer Sidebar.
  * - Nach dem Speichern rendert der Wochenkalender den Termin als sichtbare Mehrtageskachel mit stabilem `Tag 2`-Indikator.
- * - Beim erneuten Oeffnen bleiben Start- und Enddatum sowie Projekt-, Kunden-, Tour- und Mitarbeiterrelationen korrekt geladen.
+ * - Beim erneuten Oeffnen bleiben Start- und Enddatum sowie Projekt-, Kunden- und Tourrelationen korrekt geladen.
+ * - Eine gesetzte Tour weist keine Mitarbeiter automatisch zu; die Mitarbeiterliste bleibt leer, bis Nutzer aktiv zuweisen.
  *
  * Fehlerfaelle:
  * - Mehrtagestermine zeigen nach Save keine belastbare Spanning-Tile-Darstellung fuer beide Tage.
  * - Create/Edit verlieren Shell-Struktur oder geladene Relationswerte.
  * - Edit-Formulare verlieren oder verfaelschen das gespeicherte Enddatum.
+ * - Das Formular weist durch eine gesetzte Tour unerwartet Mitarbeiter automatisch zu.
  *
  * Ziel:
  * Den kompletten Create/Edit-Flow eines Mehrtagestermins im Wochenkalender gegen Datums- und Relationsverlust sowie gegen Render-Regressions absichern.
@@ -97,8 +99,9 @@ async function assertAppointmentFormLoaded(page: Page, fixture: AppointmentBrows
   await expect(page.getByTestId("badge-tour")).toBeVisible();
   await expect(page.getByTestId("badge-tour-remove")).toBeVisible();
   await expect(page.locator('[data-testid="section-tour-picker"]')).toHaveCount(0);
+  await expect(page.getByText("Keine Mitarbeiter zugewiesen")).toBeVisible();
   for (const employee of fixture.employees) {
-    await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
+    await expect(page.getByTestId(`badge-employee-${employee.id}`)).toHaveCount(0);
   }
   if (params.relationsLoaded === false) {
     await expect(page.getByTestId("slot-project-relation")).toContainText("Kein Projekt ausgewählt");
@@ -120,6 +123,10 @@ async function saveAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
+  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
+  if (await confirmSaveButton.isVisible().catch(() => false)) {
+    await confirmSaveButton.click();
+  }
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as { id: number };
@@ -154,7 +161,7 @@ test("creates a multi-day appointment from a tour lane and keeps start and end d
   await expect(spanningTile.getByTestId("week-project-header")).toContainText(fixture.project.name);
   await expect(spanningTile).toContainText(`K: ${fixture.customer.customerNumber}`);
   await expect(spanningTile).toContainText(`PLZ: ${fixture.customer.postalCode}`);
-  await expect(spanningTile.getByTestId("week-appointment-employees-hover-trigger")).toContainText(String(fixture.employees.length));
+  await expect(spanningTile.getByTestId("week-appointment-employees-hover-trigger")).toContainText("0");
 
   await openWeekAppointment(page, appointmentId, "spanning");
   await assertAppointmentFormLoaded(page, fixture, {

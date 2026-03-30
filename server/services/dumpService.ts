@@ -113,7 +113,6 @@ type DumpPayload = {
   tables: Record<DumpTableKey, unknown[]>;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTable = any;
 
 function buildArchive(zipPath: string): { archive: archiver.Archiver; finalize: () => Promise<void> } {
@@ -187,7 +186,6 @@ function parseDumpPayload(raw: unknown): DumpPayload {
  * (MySqlTimestamp and MySqlDate without mode:"string").
  */
 function coerceRowDates(table: AnyTable, rows: unknown[]): unknown[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cols = getTableColumns(table as any) as Record<string, any>;
   const dateKeys = new Set<string>();
 

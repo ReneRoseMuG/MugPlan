@@ -5,6 +5,7 @@
  * - Ohne aktive Filter bleiben beide Date-Inputs sichtbar und der Reset-Button ausgeblendet.
  * - Mit aktivem Datumsfilter erscheinen nur passende Vorschauzeilen und der Reset-Button wird sichtbar.
  * - Die Summenzeile bleibt auf allen Vorschauterminen und nicht nur auf den gefilterten Treffern bezogen.
+ * - Die Sammelbuttons bleiben auch mit und ohne aktiven Filter sichtbar.
  *
  * Fehlerfaelle:
  * - Die Filter-UI verliert ihre sichtbaren Eingabefelder.
@@ -120,6 +121,8 @@ describe("FT04 TourEmployeeCascadeDialog date filter behavior", () => {
     expect(html).toContain("input-tour-cascade-date-from");
     expect(html).toContain("input-tour-cascade-date-to");
     expect(html).not.toContain("button-tour-cascade-date-filter-reset");
+    expect(html).toContain("button-tour-cascade-select-all");
+    expect(html).toContain("button-tour-cascade-deselect-all");
     expect(html).toContain("tour-employee-cascade-row-51");
     expect(html).toContain("tour-employee-cascade-row-52");
   });
@@ -141,6 +144,8 @@ describe("FT04 TourEmployeeCascadeDialog date filter behavior", () => {
     );
 
     expect(html).toContain("button-tour-cascade-date-filter-reset");
+    expect(html).toContain("button-tour-cascade-select-all");
+    expect(html).toContain("button-tour-cascade-deselect-all");
     expect(html).not.toContain("tour-employee-cascade-row-51");
     expect(html).toContain("tour-employee-cascade-row-52");
     expect(html).toContain("Termine (2) - Termine im Zeitraum von 03.02.99 bis 20.02.99");
@@ -163,6 +168,8 @@ describe("FT04 TourEmployeeCascadeDialog date filter behavior", () => {
     );
 
     expect(html).toContain("button-tour-cascade-date-filter-reset");
+    expect(html).toContain("button-tour-cascade-select-all");
+    expect(html).toContain("button-tour-cascade-deselect-all");
     expect(html).toContain("Keine zuk");
     expect(html).not.toContain("tour-employee-cascade-row-51");
     expect(html).not.toContain("tour-employee-cascade-row-52");

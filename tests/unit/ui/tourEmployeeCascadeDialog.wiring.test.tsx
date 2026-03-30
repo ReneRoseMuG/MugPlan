@@ -5,6 +5,7 @@
  * - Der Kaskadendialog zeigt fuer Hinzufuegen und Abziehen unterschiedliche sichtbare Texte.
  * - Der Header zeigt Terminanzahl und Zeitraum aller Vorschautermine.
  * - Vorschauzeilen zeigen Kurzdatum, Projektkontext, optionalen Kundenkontext und Konflikthinweise.
+ * - Die Sammelaktionen "Alle waehlen" und "Alle abwaehlen" sind sichtbar verdrahtet.
  *
  * Fehlerfaelle:
  * - Der Dialog faellt auf generische Copy zurueck.
@@ -105,6 +106,8 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("Projekt Sued");
     expect(html).toContain("Ueberschneidung mit bestehendem Termin");
     expect(html).toContain("button-tour-employee-cascade-confirm");
+    expect(html).toContain("button-tour-cascade-select-all");
+    expect(html).toContain("button-tour-cascade-deselect-all");
   });
 
   it("renders remove mode with the dedicated removal copy", () => {
@@ -125,5 +128,7 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("Mitarbeiter von Tour-Terminen abziehen");
     expect(html).toContain("von denen Mia Muster abgezogen werden soll");
     expect(html).toContain("Termine (1) - Termine im Zeitraum von 03.02.99 bis 05.02.99");
+    expect(html).toContain("button-tour-cascade-select-all");
+    expect(html).toContain("button-tour-cascade-deselect-all");
   });
 });

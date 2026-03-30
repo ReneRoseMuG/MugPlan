@@ -7,8 +7,6 @@ import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TourEditForm } from "@/components/TourEditForm";
-import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
-import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
@@ -67,9 +65,7 @@ function buildCascadeDialogState(params: Omit<CascadeDialogState, "selectedAppoi
   return {
     ...params,
     open: true,
-    selectedAppointmentIds: params.previewItems
-      .filter((item) => item.eligible)
-      .map((item) => item.appointmentId),
+    selectedAppointmentIds: [],
   };
 }
 
@@ -88,14 +84,26 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
+    enabled: !!editingTour || isCreating,
   });
 
-  const isLoading = toursLoading || employeesLoading;
+  const isFormActive = !!editingTour || isCreating;
+  const isLoading = toursLoading || (isFormActive && employeesLoading);
   const today = getBerlinTodayDateString();
+  const tourMembersById = new Map<number, Employee[]>();
+
+  if (isFormActive) {
+    employees.forEach((employee) => {
+      if (employee.tourId == null) return;
+      const members = tourMembersById.get(employee.tourId) ?? [];
+      members.push(employee);
+      tourMembersById.set(employee.tourId, members);
+    });
+  }
 
   const toursWithMembers: TourWithMembers[] = tours.map((tour) => ({
     ...tour,
-    members: employees.filter((employee) => employee.tourId === tour.id),
+    members: tourMembersById.get(tour.id) ?? [],
   }));
 
   const { data: appointmentCountsByTourId = new Map<number, number>() } = useQuery({
@@ -591,27 +599,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                   )}
                   footerVisibility="visible"
                 >
-                  <MembersSectionHeader className="mb-1 border-b border-border px-0 py-1" />
-                  <div className="space-y-2">
-                    {tour.members.map((member) => (
-                      <EmployeeInfoBadge
-                        key={member.id}
-                        id={member.id}
-                        firstName={member.firstName}
-                        lastName={member.lastName}
-                        action="none"
-                        showPreview={false}
-                        size="sm"
-                        fullWidth
-                        testId={`text-tour-member-${member.id}`}
-                      />
-                    ))}
-                    {tour.members.length === 0 ? (
-                      <div className="text-sm italic text-slate-400">
-                        Keine Mitarbeiter zugewiesen
-                      </div>
-                    ) : null}
-                  </div>
+                  <div className="min-h-2" />
                 </ColoredEntityCard>
               ))}
             </BoardView>

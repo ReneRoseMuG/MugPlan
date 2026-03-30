@@ -4,10 +4,11 @@
  * Feature: FT01/FT04/FT13/FT24 - Neuer Termin mit Create/Edit-Workflow
  *
  * Abgedeckte Regeln:
- * - Ein neuer Eintagestermin kann im Browser aus dem Tour-Kontext mit vollstaendigen Relationen angelegt werden.
+ * - Ein neuer Eintagestermin kann im Browser aus dem Tour-Kontext mit Projekt-, Kunden- und Tourrelation angelegt werden.
  * - Das Terminformular rendert in Create und Edit innerhalb der EntityFormShell mit sichtbarer Sidebar.
- * - Nach Save zeigt der Wochenkalender die stabil sichtbaren Projekt-, Kunden- und Mitarbeiterwerte des angelegten Termins.
- * - Beim erneuten Oeffnen bleiben Startdatum, Projekt, Kunde, Tour und Tour-Mitarbeiter im Edit-Formular korrekt geladen.
+ * - Nach Save zeigt der Wochenkalender die stabil sichtbaren Projekt-, Kunden- und Tourwerte des angelegten Termins.
+ * - Beim erneuten Oeffnen bleiben Startdatum, Projekt, Kunde und Tour im Edit-Formular korrekt geladen.
+ * - Eine gesetzte Tour weist keine Mitarbeiter automatisch zu; die Mitarbeiterliste bleibt leer, bis Nutzer aktiv zuweisen.
  * - Tags, Notizen und Terminanhaenge lassen sich im Neuer-Termin-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Terminanhang dem erzeugten Termin korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei wandert nach erfolgreicher Projektanlage in die Projektdokumente und nicht zusaetzlich in Terminanhaenge.
@@ -18,7 +19,7 @@
  * Fehlerfaelle:
  * - Die Create/Edit-Shell verliert Header-, Main-, Sidebar- oder Footer-Bereich.
  * - Ein aus der Tour-Lane gestarteter Termin verliert vor oder nach dem Save Projekt-, Kunden- oder Tour-Relationen.
- * - Tour-Mitarbeiter werden trotz initialTourId nicht vorbefuellt.
+ * - Das Formular weist durch eine gesetzte Tour unerwartet Mitarbeiter automatisch zu.
  * - Draft-Tags, Draft-Notizen oder pending Terminanhaenge gehen beim ersten Save verloren.
  * - Der Projektslot faellt nach dem Overlay-Rueckweg auf `nicht hinterlegt` zurueck, obwohl Order-Items gespeichert wurden.
  *
@@ -162,8 +163,9 @@ async function assertAppointmentFormLoaded(page: Page, fixture: AppointmentBrows
   await expect(page.locator('[data-testid="section-tour-picker"]')).toHaveCount(0);
   await expect(page.getByTestId("slot-appointment-employees")).toBeVisible();
   await expect(page.getByTestId("button-add-employee")).toBeVisible();
+  await expect(page.getByText("Keine Mitarbeiter zugewiesen")).toBeVisible();
   for (const employee of fixture.employees) {
-    await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
+    await expect(page.getByTestId(`badge-employee-${employee.id}`)).toHaveCount(0);
   }
   if (params.relationsLoaded === false) {
     await expect(page.getByTestId("slot-project-relation")).toContainText("Kein Projekt ausgewählt");
@@ -205,6 +207,10 @@ async function saveNewAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
+  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
+  if (await confirmSaveButton.isVisible().catch(() => false)) {
+    await confirmSaveButton.click();
+  }
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as { id: number };
@@ -230,7 +236,7 @@ test("creates a relation-complete single-day appointment from a tour lane and re
   await expect(appointmentPanel).toContainText(fixture.customer.fullName ?? "");
   await expect(appointmentPanel).toContainText(`K: ${fixture.customer.customerNumber}`);
   await expect(appointmentPanel).toContainText(`PLZ: ${fixture.customer.postalCode}`);
-  await expect(appointmentPanel.getByTestId("week-appointment-employees-hover-trigger")).toContainText(String(fixture.employees.length));
+  await expect(appointmentPanel.getByTestId("week-appointment-employees-hover-trigger")).toContainText("0");
 
   await appointmentPanel.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
