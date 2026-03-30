@@ -2,15 +2,12 @@ import type { Employee } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
 import * as toursRepository from "../repositories/toursRepository";
-import { db } from "../db";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 
 type CascadeConflictCode =
-  | "VERSION_CONFLICT"
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
-  | "BUSINESS_CONFLICT"
-  | "EMPLOYEE_OVERLAP_CONFLICT";
+  | "BUSINESS_CONFLICT";
 
 type CascadeConflictReason =
   | "EMPLOYEE_OVERLAP"
@@ -109,20 +106,8 @@ async function requireEmployee(employeeId: number) {
   return employee;
 }
 
-function assertCascadeEmployeeForAdd(employee: Employee, tourId: number) {
+function assertCascadeEmployeeForAdd(employee: Employee) {
   if (!employee.isActive) {
-    throw new TourEmployeesError(409, "BUSINESS_CONFLICT");
-  }
-  if (employee.tourId !== null && employee.tourId !== tourId) {
-    throw new TourEmployeesError(409, "BUSINESS_CONFLICT");
-  }
-  if (employee.tourId === tourId) {
-    throw new TourEmployeesError(409, "BUSINESS_CONFLICT");
-  }
-}
-
-function assertCascadeEmployeeForRemove(employee: Employee, tourId: number) {
-  if (employee.tourId !== tourId) {
     throw new TourEmployeesError(409, "BUSINESS_CONFLICT");
   }
 }
@@ -166,55 +151,16 @@ async function resolveAddPreviewConflictReason(
   return conflictEmployees.length > 0 ? "EMPLOYEE_OVERLAP" : null;
 }
 
-export async function listEmployeesByTour(tourId: number): Promise<Employee[]> {
-  return employeesRepository.getEmployeesByTour(tourId);
-}
-
-export async function removeEmployeeFromTour(employeeId: number, version: number): Promise<Employee | null> {
-  if (!Number.isInteger(version) || version < 1) {
-    throw new TourEmployeesError(422, "VALIDATION_ERROR");
-  }
-  const result = await employeesRepository.setEmployeeTourWithVersion(employeeId, version, null);
-  if (result.kind === "version_conflict") {
-    const exists = await employeesRepository.getEmployee(employeeId);
-    if (!exists) return null;
-    throw new TourEmployeesError(409, "VERSION_CONFLICT");
-  }
-  return result.employee;
-}
-
-export async function assignEmployeesToTour(
-  tourId: number,
-  items: Array<{ employeeId: number; version: number }>,
-): Promise<Employee[]> {
-  for (const item of items) {
-    if (!Number.isInteger(item.version) || item.version < 1) {
-      throw new TourEmployeesError(422, "VALIDATION_ERROR");
-    }
-  }
-
-  return db.transaction(async () => {
-    const results: Employee[] = [];
-    for (const item of items) {
-      const updated = await employeesRepository.setEmployeeTourWithVersion(item.employeeId, item.version, tourId);
-      if (updated.kind === "version_conflict") {
-        const exists = await employeesRepository.getEmployee(item.employeeId);
-        if (!exists) {
-          throw new TourEmployeesError(404, "NOT_FOUND");
-        }
-        throw new TourEmployeesError(409, "VERSION_CONFLICT");
-      }
-      results.push(updated.employee);
-    }
-    return results;
-  });
+export async function listActiveEmployeesByTour(tourId: number): Promise<Employee[]> {
+  const today = parseDateOnly(getBerlinTodayDateString());
+  return employeesRepository.getEmployeesByTourFromAppointments(tourId, today);
 }
 
 export async function previewAddEmployeeCascade(tourId: number, employeeId: number): Promise<CascadePreviewItem[]> {
   const todayBerlin = getBerlinTodayDateString();
   await requireTour(tourId);
   const employee = await requireEmployee(employeeId);
-  assertCascadeEmployeeForAdd(employee, tourId);
+  assertCascadeEmployeeForAdd(employee);
 
   const appointmentRows = await listFutureTourAppointments(tourId, todayBerlin);
   const appointmentIds = appointmentRows.map((row) => Number(row.appointment.id));
@@ -247,8 +193,7 @@ export async function previewAddEmployeeCascade(tourId: number, employeeId: numb
 export async function previewRemoveEmployeeCascade(tourId: number, employeeId: number): Promise<CascadePreviewItem[]> {
   const todayBerlin = getBerlinTodayDateString();
   await requireTour(tourId);
-  const employee = await requireEmployee(employeeId);
-  assertCascadeEmployeeForRemove(employee, tourId);
+  await requireEmployee(employeeId);
 
   const appointmentRows = await listFutureTourAppointments(tourId, todayBerlin);
   const appointmentIds = appointmentRows.map((row) => Number(row.appointment.id));
@@ -274,30 +219,16 @@ export async function previewRemoveEmployeeCascade(tourId: number, employeeId: n
 
 export async function executeAddEmployeeCascade(
   tourId: number,
-  params: { employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] },
+  params: { employeeId: number; selectedAppointmentIds: number[] },
 ): Promise<CascadeExecuteResult> {
-  if (!Number.isInteger(params.employeeVersion) || params.employeeVersion < 1) {
-    throw new TourEmployeesError(422, "VALIDATION_ERROR");
-  }
-
   await requireTour(tourId);
   const employee = await requireEmployee(params.employeeId);
-  assertCascadeEmployeeForAdd(employee, tourId);
+  assertCascadeEmployeeForAdd(employee);
   const appointmentIds = normalizeAppointmentIds(params.selectedAppointmentIds);
   const todayBerlin = getBerlinTodayDateString();
   const changedAppointmentIds: number[] = [];
 
   const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
-    const updateResult = await employeesRepository.setEmployeeTourWithVersionTx(
-      tx,
-      params.employeeId,
-      params.employeeVersion,
-      tourId,
-    );
-    if (updateResult.kind === "version_conflict") {
-      throw new TourEmployeesError(409, "VERSION_CONFLICT");
-    }
-
     const skipped: Array<{ appointmentId: number; reason: CascadeSkipReason }> = [];
 
     for (const appointmentId of appointmentIds) {
@@ -353,30 +284,15 @@ export async function executeAddEmployeeCascade(
 
 export async function executeRemoveEmployeeCascade(
   tourId: number,
-  params: { employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] },
+  params: { employeeId: number; selectedAppointmentIds: number[] },
 ): Promise<CascadeExecuteResult> {
-  if (!Number.isInteger(params.employeeVersion) || params.employeeVersion < 1) {
-    throw new TourEmployeesError(422, "VALIDATION_ERROR");
-  }
-
   await requireTour(tourId);
-  const employee = await requireEmployee(params.employeeId);
-  assertCascadeEmployeeForRemove(employee, tourId);
+  await requireEmployee(params.employeeId);
   const appointmentIds = normalizeAppointmentIds(params.selectedAppointmentIds);
   const todayBerlin = getBerlinTodayDateString();
   const changedAppointmentIds: number[] = [];
 
   const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
-    const updateResult = await employeesRepository.setEmployeeTourWithVersionTx(
-      tx,
-      params.employeeId,
-      params.employeeVersion,
-      null,
-    );
-    if (updateResult.kind === "version_conflict") {
-      throw new TourEmployeesError(409, "VERSION_CONFLICT");
-    }
-
     const skipped: Array<{ appointmentId: number; reason: CascadeSkipReason }> = [];
 
     for (const appointmentId of appointmentIds) {

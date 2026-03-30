@@ -6,7 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Basis-Seed nutzt vorhandene aktive Mitarbeitende aus der Datenbank statt CSV-Import oder freie Generierung.
- * - Mitarbeitende bleiben auf ihrer zugewiesenen Tour; Seed-Termine leihen keine Fremd-Tour-Mitarbeitenden.
+ * - Mitarbeitende bleiben auf ihrer seed-intern zugewiesenen Tour; Seed-Termine leihen keine Fremd-Tour-Mitarbeitenden.
  * - Pro Tour und Kalendertag entstehen hoechstens zwei Termine.
  * - Verbotene Tageskombinationen auf einer Tour werden verhindert (kein 2x Ganztag, keine identische Intraday-Startzeit doppelt).
  * - Touren ohne Mitarbeitende werden im appointments-Run nicht beplant.
@@ -56,6 +56,13 @@ import {
   tags,
 } from "../../../shared/schema";
 import { createComponentFixture, createEmployeeFixture, createProductFixture } from "../../helpers/testDataFactory";
+
+function readEmployeeTourAssignments(summary: {
+  meta?: { employeeTourAssignments?: Array<{ employeeId: number; tourId: number }> };
+}) {
+  const assignments = summary.meta?.employeeTourAssignments ?? [];
+  return new Map(assignments.map((assignment) => [assignment.employeeId, assignment.tourId]));
+}
 
 function toDateKey(date: Date) {
   const y = date.getFullYear();
@@ -622,32 +629,27 @@ describe("FT20 integration: appointments-seed tour/day constraints", () => {
           appointmentId: appointments.id,
           appointmentTourId: appointments.tourId,
           employeeId: employees.id,
-          employeeTourId: employees.tourId,
         })
         .from(appointmentEmployees)
         .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
         .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
         .where(inArray(appointments.id, appointmentIds));
 
+      const employeeTourAssignments = readEmployeeTourAssignments(baseSummary);
+      expect(employeeTourAssignments.size).toBeGreaterThan(0);
+
       for (const row of assignmentRows) {
-        expect(Number(row.employeeTourId)).toBe(Number(row.appointmentTourId));
+        expect(employeeTourAssignments.get(Number(row.employeeId))).toBe(Number(row.appointmentTourId));
       }
 
       const baseEmployeeIds = baseSummary.meta?.employeeIds ?? [];
       expect(baseEmployeeIds.length).toBeGreaterThan(0);
 
-      const baseEmployeeRows = await db
-        .select({
-          employeeId: employees.id,
-          tourId: employees.tourId,
-        })
-        .from(employees)
-        .where(inArray(employees.id, baseEmployeeIds));
-
       const nonEmptyTourIds = new Set<number>();
-      for (const row of baseEmployeeRows) {
-        if (row.tourId != null) {
-          nonEmptyTourIds.add(Number(row.tourId));
+      for (const employeeId of baseEmployeeIds) {
+        const tourId = employeeTourAssignments.get(employeeId);
+        if (tourId != null) {
+          nonEmptyTourIds.add(Number(tourId));
         }
       }
       expect(nonEmptyTourIds.size).toBeGreaterThan(0);

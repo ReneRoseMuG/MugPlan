@@ -81,7 +81,6 @@ export interface IStorage {
   toggleEmployeeActive(id: number, isActive: boolean, version: number): Promise<Employee | null>;
   getEmployeesByTour(tourId: number): Promise<Employee[]>;
   getEmployeesByTeam(teamId: number): Promise<Employee[]>;
-  setEmployeeTour(employeeId: number, tourId: number | null, version: number): Promise<Employee | null>;
   setEmployeeTeam(employeeId: number, teamId: number | null, version: number): Promise<Employee | null>;
   getProjects(filter?: "active" | "inactive" | "all"): Promise<Project[]>;
   getProject(id: number): Promise<Project | null>;
@@ -258,21 +257,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmployeesByTour(tourId: number): Promise<Employee[]> {
-    return tourEmployeesService.listEmployeesByTour(tourId);
+    return tourEmployeesService.listActiveEmployeesByTour(tourId);
   }
 
   async getEmployeesByTeam(teamId: number): Promise<Employee[]> {
     return teamEmployeesService.listEmployeesByTeam(teamId);
-  }
-
-  async setEmployeeTour(employeeId: number, tourId: number | null, version: number): Promise<Employee | null> {
-    const result = await employeesRepository.setEmployeeTourWithVersion(employeeId, version, tourId);
-    if (result.kind === "version_conflict") {
-      const exists = await employeesRepository.getEmployee(employeeId);
-      if (!exists) return null;
-      throw new Error("VERSION_CONFLICT");
-    }
-    return result.employee;
   }
 
   async setEmployeeTeam(employeeId: number, teamId: number | null, version: number): Promise<Employee | null> {

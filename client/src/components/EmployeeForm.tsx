@@ -7,7 +7,6 @@ import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
-import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -169,13 +168,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       .filter((employee) => employee.teamId === employeeDetails.team?.id)
       .map((employee) => ({ id: employee.id, fullName: employee.fullName }));
   }, [allEmployees, employeeDetails?.team?.id]);
-
-  const tourMembers = useMemo(() => {
-    if (!employeeDetails?.tour?.id) return [];
-    return allEmployees
-      .filter((employee) => employee.tourId === employeeDetails.tour?.id)
-      .map((employee) => ({ id: employee.id, fullName: employee.fullName }));
-  }, [allEmployees, employeeDetails?.tour?.id]);
 
   const createMutation = useMutation({
     mutationFn: async (data: { firstName: string; lastName: string; phone?: string; email?: string }) => {
@@ -749,21 +741,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                 <Route className="w-4 h-4" />
                 Tour
               </h4>
-              {isEditing && employeeDetails?.tour ? (
-                <TourInfoBadge
-                  id={employeeDetails.tour.id}
-                  name={employeeDetails.tour.name}
-                  color={employeeDetails.tour.color}
-                  members={tourMembers}
-                  action="none"
-                  fullWidth
-                  testId="badge-employee-tour"
-                />
-              ) : (
-                <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                  <p className="text-sm text-slate-400 italic">Keiner Tour zugewiesen</p>
-                </div>
-              )}
+              <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
+                <p className="text-sm text-slate-400 italic">Keine direkte Tourzugehoerigkeit</p>
+              </div>
             </div>
 
             <div className="space-y-2">

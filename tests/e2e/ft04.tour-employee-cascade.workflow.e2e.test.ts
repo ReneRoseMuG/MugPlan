@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - FT04 bildet einen kompletten API-Workflow fuer Add-Preview, selektive Add-Execute, Remove-Preview und Remove-Execute.
- * - Der Mitarbeiterzustand und die betroffenen Terminzuordnungen bleiben ueber den gesamten Workflow konsistent.
+ * - Die betroffenen Terminzuordnungen und die abgeleitete aktive Mitarbeitermenge bleiben ueber den gesamten Workflow konsistent.
  *
  * Fehlerfaelle:
  * - Add- und Remove-Kaskade verlieren zwischen den Schritten den fachlichen Zustand.
@@ -59,7 +59,6 @@ describe("FT04 e2e: tour employee cascade workflow", () => {
       .post(`/api/tours/${tour.id}/employees/cascade-add`)
       .send({
         employeeId: employee.id,
-        employeeVersion: employee.version,
         selectedAppointmentIds: [firstAppointment!.id],
       })
       .expect(200);
@@ -67,29 +66,27 @@ describe("FT04 e2e: tour employee cascade workflow", () => {
     expect(await getAppointmentEmployeeIds(firstAppointment!.id)).toEqual([employee.id]);
     expect(await getAppointmentEmployeeIds(secondAppointment!.id)).toEqual([]);
 
-    const refreshedEmployee = (await admin.get(`/api/employees/${employee.id}`).expect(200)).body.employee as {
-      version: number;
-    };
-
     const removePreview = await admin
       .post(`/api/tours/${tour.id}/employees/cascade-remove/preview`)
       .send({ employeeId: employee.id })
       .expect(200);
     expect(removePreview.body.map((row: { appointmentId: number }) => row.appointmentId)).toEqual([firstAppointment!.id]);
 
+    await admin.get(`/api/tours/${tour.id}/employees/active`).expect(200).expect((res) => {
+      expect(res.body.map((row: { id: number }) => row.id)).toEqual([employee.id]);
+    });
+
     await admin
       .post(`/api/tours/${tour.id}/employees/cascade-remove`)
       .send({
         employeeId: employee.id,
-        employeeVersion: refreshedEmployee.version,
         selectedAppointmentIds: [firstAppointment!.id],
       })
       .expect(200);
 
     expect(await getAppointmentEmployeeIds(firstAppointment!.id)).toEqual([]);
-    const finalEmployee = (await admin.get(`/api/employees/${employee.id}`).expect(200)).body.employee as {
-      tourId: number | null;
-    };
-    expect(finalEmployee.tourId).toBeNull();
+    await admin.get(`/api/tours/${tour.id}/employees/active`).expect(200).expect((res) => {
+      expect(res.body).toEqual([]);
+    });
   });
 });

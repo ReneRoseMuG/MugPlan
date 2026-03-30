@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Mail, Phone, Route, Users } from "lucide-react";
+import { Mail, Phone, Users } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
@@ -21,7 +21,7 @@ interface EmployeePickerDialogListProps {
 export function EmployeePickerDialogList({
   employees,
   teams,
-  tours,
+  tours: _tours,
   selectedEmployeeId = null,
   isLoading = false,
   title = "Mitarbeiter auswaehlen",
@@ -77,7 +77,6 @@ export function EmployeePickerDialogList({
         >
           {rows.map((employee) => {
             const teamName = teams.find((team) => team.id === employee.teamId)?.name ?? null;
-            const tourName = tours.find((tour) => tour.id === employee.tourId)?.name ?? null;
 
             return (
               <EntityCard
@@ -97,14 +96,8 @@ export function EmployeePickerDialogList({
                     </div>
                   )}
 
-                  {(tourName || teamName) && (
+                  {teamName && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      {tourName && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Route className="w-3 h-3 mr-1" />
-                          {tourName}
-                        </Badge>
-                      )}
                       {teamName && (
                         <Badge variant="secondary" className="text-xs">
                           <Users className="w-3 h-3 mr-1" />

@@ -16,7 +16,6 @@
  * Den paginierten Browser-Workflow der Tour-Druckvorschau Ende-zu-Ende absichern.
  */
 import { expect, test } from "@playwright/test";
-import { buildTourPrintPages, type TourPrintPreviewResponse } from "../../client/src/lib/tour-print-preview";
 import * as appointmentNotesService from "../../server/services/appointmentNotesService";
 import { createAppointmentFixture, createProjectFixture, createTourFixture, getRelativeBerlinDate } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -28,8 +27,6 @@ test.beforeAll(async () => {
 });
 
 test("opens the print preview as paginated A4 pages", async ({ page }) => {
-  test.slow();
-
   const tour = await createTourFixture("#2266aa");
   const project = await createProjectFixture({ prefix: "FT31-BROWSER", name: "Print Browser Projekt" });
 
@@ -54,23 +51,30 @@ test("opens the print preview as paginated A4 pages", async ({ page }) => {
 
   const printTourSelect = page.getByTestId("select-tour-print-preview");
   const openPreviewButton = page.getByTestId("button-open-tour-print-preview");
+  const previewDialog = page.getByTestId("dialog-tour-print-preview");
+  const pageIndicator = page.getByTestId("tour-print-preview-page-indicator");
+  const pageTitle = page.getByTestId("tour-print-preview-page-title");
+  const nextPageButton = page.getByTestId("button-tour-print-preview-next");
+  const prevPageButton = page.getByTestId("button-tour-print-preview-prev");
 
   await printTourSelect.click();
   await page.getByRole("option", { name: tour.name }).click();
   await expect(printTourSelect).toContainText(tour.name);
   await expect(openPreviewButton).toBeEnabled();
   await page.getByTestId("input-tour-print-week-count").fill("2");
-  const previewResponsePromise = page.waitForResponse(
-    (response) => response.url().includes(`/api/tours/${tour.id}/print-preview`) && response.request().method() === "GET",
-  );
-  await openPreviewButton.click({ noWaitAfter: true });
-  const previewResponse = await previewResponsePromise;
-  await expect(previewResponse.ok()).toBeTruthy();
-  const previewPayload = await previewResponse.json() as TourPrintPreviewResponse;
-  const pages = buildTourPrintPages(previewPayload);
 
-  expect(pages.length).toBeGreaterThan(1);
-  expect(pages[0]?.tourName).toBe(tour.name);
-  expect(pages.some((page) => page.weeks.some((week) => week.weekStart === getRelativeBerlinDate(1)))).toBe(true);
-  expect(previewPayload.appointments.some((appointment) => appointment.projectName === "Print Browser Projekt")).toBe(true);
+  await openPreviewButton.click();
+  await expect(previewDialog).toBeVisible();
+  await expect(pageIndicator).toContainText(/Seite 1 von [2-9]\d*/, { timeout: 30_000 });
+  await expect(pageTitle).toContainText(tour.name);
+  await expect(page.getByTestId("tour-print-preview-active-page-shell")).toContainText("Print Browser Projekt");
+  await expect(nextPageButton).toBeEnabled();
+  await expect(prevPageButton).toBeDisabled();
+
+  await nextPageButton.click();
+  await expect(pageIndicator).toContainText(/Seite 2 von [2-9]\d*/);
+  await expect(pageTitle).toContainText("Seite 2");
+  await expect(prevPageButton).toBeEnabled();
+  await expect(previewDialog).toContainText("Zusatzinformationen");
+  await expect(previewDialog).toContainText("Druckhinweis 1");
 });

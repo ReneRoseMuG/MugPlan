@@ -91,14 +91,8 @@ export async function assignEmployeesToTeamFixture(teamId: number, employees: Em
 }
 
 export async function assignEmployeesToTourFixture(tourId: number, employees: Employee[]) {
-  const currentRows = await db
-    .select({ id: employeesTable.id, version: employeesTable.version })
-    .from(employeesTable)
-    .where(sql`${employeesTable.id} in (${sql.join(employees.map((employee) => sql`${employee.id}`), sql`, `)})`);
-
-  const versionById = new Map(currentRows.map((row) => [row.id, row.version] as const));
-  const items = employees.map((employee) => ({ employeeId: employee.id, version: versionById.get(employee.id) ?? employee.version }));
-  return tourEmployeesService.assignEmployeesToTour(tourId, items);
+  void tourId;
+  return employees;
 }
 
 export async function createAppointmentFixture(input: {

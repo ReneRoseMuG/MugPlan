@@ -9,6 +9,7 @@
  * - updateEmployee erzwingt gueltige Versionen und mappt stale Version auf VERSION_CONFLICT.
  * - toggleEmployeeActive ist Admin-only und erzwingt gueltige Versionen.
  * - Nicht-Admin sieht inaktive Mitarbeiter weder im Detail noch per inactive-Scope.
+ * - Mitarbeiterdetails liefern Teamdaten, aber keine direkte Tourzugehoerigkeit mehr.
  *
  * Fehlerfaelle:
  * - Version < 1 liefert VALIDATION_ERROR.
@@ -28,7 +29,6 @@ const {
   toggleEmployeeActiveWithVersionMock,
   getEmployeeTagsByEmployeeIdsMock,
   getTeamMock,
-  getTourMock,
 } = vi.hoisted(() => ({
   getEmployeeListItemsMock: vi.fn(),
   getEmployeeMock: vi.fn(),
@@ -37,7 +37,6 @@ const {
   toggleEmployeeActiveWithVersionMock: vi.fn(),
   getEmployeeTagsByEmployeeIdsMock: vi.fn(),
   getTeamMock: vi.fn(),
-  getTourMock: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/employeesRepository", () => ({
@@ -56,10 +55,6 @@ vi.mock("../../../server/repositories/teamsRepository", () => ({
   getTeam: getTeamMock,
 }));
 
-vi.mock("../../../server/repositories/toursRepository", () => ({
-  getTour: getTourMock,
-}));
-
 import {
   EmployeesError,
   createEmployee,
@@ -71,7 +66,13 @@ import {
 
 describe("FT05 unit: employeesService", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    getEmployeeListItemsMock.mockReset();
+    getEmployeeMock.mockReset();
+    createEmployeeRepoMock.mockReset();
+    updateEmployeeWithVersionMock.mockReset();
+    toggleEmployeeActiveWithVersionMock.mockReset();
+    getEmployeeTagsByEmployeeIdsMock.mockReset();
+    getTeamMock.mockReset();
     getEmployeeTagsByEmployeeIdsMock.mockResolvedValue(new Map());
   });
 
@@ -136,7 +137,7 @@ describe("FT05 unit: employeesService", () => {
     expect(result).toBeNull();
   });
 
-  it("getEmployeeWithRelations returns employee with team/tour for admin", async () => {
+  it("getEmployeeWithRelations returns employee with team but without direct tour for admin", async () => {
     getEmployeeMock.mockResolvedValueOnce({
       id: 9,
       firstName: "Tom",
@@ -150,13 +151,12 @@ describe("FT05 unit: employeesService", () => {
       version: 3,
     });
     getTeamMock.mockResolvedValueOnce({ id: 11, name: "T-1", color: "#111", version: 1 });
-    getTourMock.mockResolvedValueOnce({ id: 12, name: "R-1", color: "#222", version: 1 });
 
     const result = await getEmployeeWithRelations(9, "ADMIN");
 
     expect(result?.employee.id).toBe(9);
     expect(result?.team?.id).toBe(11);
-    expect(result?.tour?.id).toBe(12);
+    expect(result?.tour).toBeNull();
   });
 
   it("updateEmployee rejects version < 1", async () => {

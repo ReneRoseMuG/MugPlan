@@ -5,6 +5,7 @@
  * - EmployeeForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Attachments, Tags, Notizen, Tour, Team.
  * - Create-Verdrahtung behaelt Draft-faehige Attachments, Tags und Notizen.
+ * - Die Tour-Sektion zeigt nur noch den statischen Hinweis ohne direkte Tour-Badge.
  * - Footer-Aktionen bleiben im Shell-Layout mit Cancel links und Save rechts sichtbar.
  *
  * Fehlerfaelle:
@@ -78,10 +79,6 @@ vi.mock("@/components/NotesSection", () => ({
   },
 }));
 
-vi.mock("@/components/ui/tour-info-badge", () => ({
-  TourInfoBadge: () => <section data-testid="employee-tour-badge-marker">tour-badge</section>,
-}));
-
 vi.mock("@/components/ui/team-info-badge", () => ({
   TeamInfoBadge: () => <section data-testid="employee-team-badge-marker">team-badge</section>,
 }));
@@ -146,10 +143,9 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
           isActive: true,
           version: 3,
           teamId: 4,
-          tourId: 8,
         },
         team: { id: 4, name: "Team Nord", color: "#112233" },
-        tour: { id: 8, name: "Tour Blau", color: "#445566" },
+        tour: null,
       },
       isLoading: false,
       error: null,
@@ -214,7 +210,6 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
           isActive: true,
           version: 3,
           teamId: 4,
-          tourId: 8,
         },
       ],
       isLoading: false,
@@ -266,8 +261,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
-    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "employee-tour-badge-marker"));
-    expect(getIndex(markup, "employee-tour-badge-marker")).toBeLessThan(getIndex(markup, "employee-team-badge-marker"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehoerigkeit"));
+    expect(getIndex(markup, "Keine direkte Tourzugehoerigkeit")).toBeLessThan(getIndex(markup, "employee-team-badge-marker"));
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
       employeeId: 17,
@@ -294,8 +289,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
-    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keiner Tour zugewiesen"));
-    expect(getIndex(markup, "Keiner Tour zugewiesen")).toBeLessThan(getIndex(markup, "Keinem Team zugewiesen"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehoerigkeit"));
+    expect(getIndex(markup, "Keine direkte Tourzugehoerigkeit")).toBeLessThan(getIndex(markup, "Keinem Team zugewiesen"));
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
       employeeId: undefined,

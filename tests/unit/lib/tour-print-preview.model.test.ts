@@ -200,6 +200,30 @@ describe("buildTourPrintPages", () => {
     expect(pages[0].additionalInfoCards[1].appointment.id).toBe(2);
   });
 
+  it("verschiebt Zusatzinformationen auf eine neue Seite wenn die Resthoehe der aktuellen Seite nicht mehr ausreicht", () => {
+    const pages = buildTourPrintPages({
+      ...baseFixture,
+      weeks: [{ weekStart: "2099-06-15", weekEnd: "2099-06-21", weekNotes: [] }],
+      appointments: Array.from({ length: 14 }, (_, index) => makeAppointment({
+        id: index + 1,
+        startDate: "2099-06-16",
+        endDate: "2099-06-17",
+        printNotes: [{
+          id: index + 1,
+          sourceType: "appointment",
+          title: `Hinweis ${index + 1}`,
+          body: `<p>${"Zusatzinformation ".repeat(40)}</p>`,
+          cardColor: null,
+          updatedAt: "",
+        }],
+      })),
+    });
+
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.some((page) => page.additionalInfoCards.length > 0)).toBe(true);
+    expect(pages.flatMap((page) => page.additionalInfoCards).length).toBe(14);
+  });
+
   it("übernimmt weekNotes in die erste Chunk-Seite einer Woche", () => {
     const pages = buildTourPrintPages({
       ...baseFixture,

@@ -365,6 +365,11 @@ function paginateAdditionalInfo(
       const fits = page.remainingHeight >= nextCardHeight;
 
       if (!fits && page.additionalInfoCards.length > 0) {
+        const overflowPage = createWorkingPage(meta, targetPages.length);
+        overflowPage.showAdditionalInfoHeading = true;
+        overflowPage.additionalInfoContinued = true;
+        overflowPage.remainingHeight -= ADDITIONAL_INFO_HEADING_HEIGHT;
+        targetPages.push(overflowPage);
         break;
       }
 

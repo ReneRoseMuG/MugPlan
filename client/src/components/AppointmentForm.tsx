@@ -655,16 +655,7 @@ export function AppointmentForm({
     return result;
   }, [employees]);
 
-  const tourMembersById = useMemo(() => {
-    const result = new Map<number, { id: number; fullName: string }[]>();
-    for (const employee of employees) {
-      if (!employee.tourId) continue;
-      const current = result.get(employee.tourId) ?? [];
-      current.push({ id: employee.id, fullName: employee.fullName });
-      result.set(employee.tourId, current);
-    }
-    return result;
-  }, [employees]);
+  const tourMembersById = useMemo(() => new Map<number, { id: number; fullName: string }[]>(), []);
 
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate);

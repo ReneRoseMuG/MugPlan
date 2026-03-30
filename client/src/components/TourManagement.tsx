@@ -19,10 +19,6 @@ import type { Tour, Employee } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 
-interface TourWithMembers extends Tour {
-  members: Employee[];
-}
-
 type CascadePreviewItem = {
   appointmentId: number;
   startDate: string;
@@ -42,7 +38,6 @@ type CascadeDialogState = {
   mode: "add" | "remove";
   tourId: number;
   employeeId: number;
-  employeeVersion: number;
   employeeName: string;
   previewItems: CascadePreviewItem[];
   selectedAppointmentIds: number[];
@@ -71,7 +66,7 @@ function buildCascadeDialogState(params: Omit<CascadeDialogState, "selectedAppoi
 
 export function TourManagement({ onCancel, userRole, onOpenAppointment, initialTourId = null, onEditingChange }: TourManagementProps) {
   const { toast } = useToast();
-  const [editingTour, setEditingTour] = useState<TourWithMembers | null>(null);
+  const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [cascadeDialogState, setCascadeDialogState] = useState<CascadeDialogState | null>(null);
   const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
@@ -84,34 +79,18 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
-    enabled: !!editingTour || isCreating,
+    enabled: !!editingTour,
   });
 
-  const isFormActive = !!editingTour || isCreating;
-  const isLoading = toursLoading || (isFormActive && employeesLoading);
+  const isLoading = toursLoading || (!!editingTour && employeesLoading);
   const today = getBerlinTodayDateString();
-  const tourMembersById = new Map<number, Employee[]>();
-
-  if (isFormActive) {
-    employees.forEach((employee) => {
-      if (employee.tourId == null) return;
-      const members = tourMembersById.get(employee.tourId) ?? [];
-      members.push(employee);
-      tourMembersById.set(employee.tourId, members);
-    });
-  }
-
-  const toursWithMembers: TourWithMembers[] = tours.map((tour) => ({
-    ...tour,
-    members: tourMembersById.get(tour.id) ?? [],
-  }));
 
   const { data: appointmentCountsByTourId = new Map<number, number>() } = useQuery({
-    queryKey: ["tour-management-appointments-count", today, toursWithMembers.map((tour) => tour.id).join("-")],
-    enabled: toursWithMembers.length > 0,
+    queryKey: ["tour-management-appointments-count", today, tours.map((tour) => tour.id).join("-")],
+    enabled: tours.length > 0,
     queryFn: async () => {
       const responses = await Promise.all(
-        toursWithMembers.map(async (tour) => {
+        tours.map(async (tour) => {
           const response = await fetch(`/api/tours/${tour.id}/current-appointments?fromDate=${today}`, {
             credentials: "include",
           });
@@ -172,6 +151,15 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const refreshCascadeDependentViews = async () => {
     invalidateEmployees();
     invalidateAppointmentViews();
+    void queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key)
+          && typeof key[0] === "string"
+          && key[0].startsWith("/api/tours/")
+          && key[0].endsWith("/employees/active");
+      },
+    });
     await invalidateTagProjectionQueries();
     await queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
   };
@@ -250,31 +238,6 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     },
   });
 
-  const assignMembersMutation = useMutation({
-    mutationFn: async ({ tourId, employeeIds }: { tourId: number; employeeIds: number[] }) => {
-      const items = employeeIds.map((employeeId) => {
-        const employee = employees.find((entry) => entry.id === employeeId);
-        if (!employee || !Number.isInteger(employee.version) || employee.version < 1) {
-          throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing employee version"}');
-        }
-        return { employeeId, version: employee.version };
-      });
-      return apiRequest("POST", `/api/tours/${tourId}/employees`, { items });
-    },
-    onSuccess: () => {
-      invalidateEmployees();
-    },
-    onError: (error) => {
-      if (extractApiCode(error) === "VERSION_CONFLICT") {
-        toast({
-          title: "Zuweisung nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
-          variant: "destructive",
-        });
-      }
-    },
-  });
-
   const previewAddCascadeMutation = useMutation({
     mutationFn: async ({ tourId, employeeId }: { tourId: number; employeeId: number }) => {
       const response = await apiRequest("POST", `/api/tours/${tourId}/employees/cascade-add/preview`, { employeeId });
@@ -290,10 +253,9 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   });
 
   const executeAddCascadeMutation = useMutation({
-    mutationFn: async (params: { tourId: number; employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] }) => {
+    mutationFn: async (params: { tourId: number; employeeId: number; selectedAppointmentIds: number[] }) => {
       const response = await apiRequest("POST", `/api/tours/${params.tourId}/employees/cascade-add`, {
         employeeId: params.employeeId,
-        employeeVersion: params.employeeVersion,
         selectedAppointmentIds: params.selectedAppointmentIds,
       });
       return response.json() as Promise<CascadeExecuteResult>;
@@ -305,10 +267,9 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   });
 
   const executeRemoveCascadeMutation = useMutation({
-    mutationFn: async (params: { tourId: number; employeeId: number; employeeVersion: number; selectedAppointmentIds: number[] }) => {
+    mutationFn: async (params: { tourId: number; employeeId: number; selectedAppointmentIds: number[] }) => {
       const response = await apiRequest("POST", `/api/tours/${params.tourId}/employees/cascade-remove`, {
         employeeId: params.employeeId,
-        employeeVersion: params.employeeVersion,
         selectedAppointmentIds: params.selectedAppointmentIds,
       });
       return response.json() as Promise<CascadeExecuteResult>;
@@ -329,7 +290,6 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       mode,
       tourId,
       employeeId: employee.id,
-      employeeVersion: employee.version,
       employeeName: employee.fullName,
       previewItems,
     }));
@@ -352,16 +312,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     });
   };
 
-  const handleExecuteCascadeError = (error: unknown, mode: "add" | "remove") => {
-    const code = extractApiCode(error);
-    if (code === "VERSION_CONFLICT") {
-      toast({
-        title: "Speichern nicht moeglich",
-        description: "Der Mitarbeiter wurde zwischenzeitlich geaendert. Bitte neu laden.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleExecuteCascadeError = (_error: unknown, mode: "add" | "remove") => {
     toast({
       title: mode === "add" ? "Mitarbeiter konnte nicht hinzugefuegt werden" : "Mitarbeiter konnte nicht abgezogen werden",
       description: "Bitte versuchen Sie es erneut.",
@@ -396,11 +347,10 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     setIsCreating(true);
   };
 
-  const handleSubmitTour = async (tourId: number | null, employeeIds: number[], name: string, color: string) => {
+  const handleSubmitTour = async (tourId: number | null, _employeeIds: number[], name: string, color: string) => {
     if (tourId === null) {
       const response = await createMutation.mutateAsync({ color });
-      const newTour = await response.json();
-      await assignMembersMutation.mutateAsync({ tourId: newTour.id, employeeIds });
+      await response.json();
       handleCloseDialog();
       return;
     }
@@ -419,13 +369,13 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     setCascadeDialogState(null);
   };
 
-  const handleOpenEdit = (tour: TourWithMembers) => {
+  const handleOpenEdit = (tour: Tour) => {
     setEditingTour(tour);
     setIsCreating(false);
   };
 
   const handleOpenEditById = (tourId: number | string) => {
-    const target = toursWithMembers.find((tour) => String(tour.id) === String(tourId));
+    const target = tours.find((tour) => String(tour.id) === String(tourId));
     if (!target) return;
     setEditingTour(target);
     setIsCreating(false);
@@ -452,14 +402,12 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         result = await executeAddCascadeMutation.mutateAsync({
           tourId: cascadeDialogState.tourId,
           employeeId: cascadeDialogState.employeeId,
-          employeeVersion: cascadeDialogState.employeeVersion,
           selectedAppointmentIds: cascadeDialogState.selectedAppointmentIds,
         });
       } else {
         result = await executeRemoveCascadeMutation.mutateAsync({
           tourId: cascadeDialogState.tourId,
           employeeId: cascadeDialogState.employeeId,
-          employeeVersion: cascadeDialogState.employeeVersion,
           selectedAppointmentIds: cascadeDialogState.selectedAppointmentIds,
         });
       }
@@ -477,17 +425,17 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   };
 
   const activeTour = editingTour
-    ? (toursWithMembers.find((tour) => tour.id === editingTour.id) ?? editingTour)
+    ? (tours.find((tour) => tour.id === editingTour.id) ?? editingTour)
     : null;
 
   useEffect(() => {
     if (isCreating) return;
     if (editingTour) return;
     if (typeof initialTourId !== "number") return;
-    const initialTour = toursWithMembers.find((tour) => tour.id === initialTourId);
+    const initialTour = tours.find((tour) => tour.id === initialTourId);
     if (!initialTour) return;
     setEditingTour(initialTour);
-  }, [initialTourId, isCreating, editingTour, toursWithMembers]);
+  }, [initialTourId, isCreating, editingTour, tours]);
 
   useEffect(() => {
     onEditingChange?.(!!editingTour || isCreating);
@@ -510,7 +458,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           onDelete={handleDeleteFromDialog}
           canDelete={isAdmin}
           isDeleting={deleteMutation.isPending}
-          isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
+          isSaving={createMutation.isPending || updateMutation.isPending}
           isMutatingMembers={isMutatingMembers}
           isCreate={isCreating}
           defaultName={getNextTourName()}
@@ -572,14 +520,14 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
             <BoardView
               gridTestId="list-tours"
               gridCols="3"
-              isEmpty={toursWithMembers.length === 0}
+              isEmpty={tours.length === 0}
               emptyState={(
                 <p className="col-span-full py-8 text-center text-sm text-slate-400">
                   Keine Touren vorhanden
                 </p>
               )}
             >
-              {toursWithMembers.map((tour) => (
+              {tours.map((tour) => (
                 <ColoredEntityCard
                   key={tour.id}
                   title={tour.name}

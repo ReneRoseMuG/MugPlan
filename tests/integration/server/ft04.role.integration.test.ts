@@ -1,19 +1,16 @@
 /**
  * Test Scope:
  *
- * Feature: FT04 - Tourenverwaltung
- * Use Case: UC Rollenbasierte Tour-Operationen
- *
  * Abgedeckte Regeln:
- * - READER darf laut Soll keine Touren anlegen, bearbeiten oder loeschen.
- * - DISPATCHER darf Touren anlegen/bearbeiten, aber nicht loeschen.
- * - ADMIN darf Tour-CRUD und Tour-Mitarbeiteroperationen ausfuehren.
+ * - READER darf laut Soll keine Touren anlegen, bearbeiten, loeschen oder Kaskaden mutieren.
+ * - DISPATCHER darf Touren anlegen/bearbeiten und Kaskaden ausfuehren, aber nicht loeschen.
+ * - ADMIN darf Tour-CRUD und Kaskadenoperationen ausfuehren.
  *
  * Fehlerfaelle:
  * - Fehlende serverseitige 403-Guards werden als fehlschlagende Solltests sichtbar.
  *
  * Ziel:
- * Rollenverhalten fuer FT04 als Ist-Zustand erfassen und serverseitige 403-Pruefung explizit testen.
+ * Rollenverhalten fuer FT04 nach Wegfall der direkten Tour-Mitarbeiter-Endpunkte serverseitig absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -23,10 +20,16 @@ import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
+import {
+  createAppointmentFixture,
+  createEmployeeFixture,
+  createProjectFixture,
+  createTourFixture,
+  getRelativeBerlinDate,
+} from "../../helpers/testDataFactory";
 
 let app: express.Express;
 let userCounter = 1;
-let employeeCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -39,7 +42,6 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   userCounter = 1;
-  employeeCounter = 1;
 });
 
 async function loginAgent(username: string, password: string): Promise<SuperAgentTest> {
@@ -70,13 +72,17 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
   return loginAgent("test-admin", "test-admin-password");
 }
 
-async function createEmployee(agent: SuperAgentTest) {
-  const idx = employeeCounter++;
-  const response = await agent
-    .post("/api/employees")
-    .send({ firstName: `Role-${idx}`, lastName: `Emp-${idx}`, phone: null, email: null })
-    .expect(201);
-  return response.body as { id: number; version: number };
+async function createCascadeFixture() {
+  const tour = await createTourFixture("#334455");
+  const candidate = await createEmployeeFixture("FT04-ROLE");
+  const project = await createProjectFixture({ prefix: "FT04-ROLE" });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: getRelativeBerlinDate(1),
+    tourId: tour.id,
+  });
+
+  return { tour, candidate, appointment };
 }
 
 describe("FT04 integration: RoleTests", () => {
@@ -84,48 +90,78 @@ describe("FT04 integration: RoleTests", () => {
     const reader = await createRoleAgent("READER");
 
     await reader.post("/api/tours").send({ color: "#aa0000" }).expect(403);
-
-    const createForUpdate = await reader.post("/api/tours").send({ color: "#00aa00" });
-    const id = createForUpdate.body?.id ?? 1;
-    const version = createForUpdate.body?.version ?? 1;
-
-    await reader.patch(`/api/tours/${id}`).send({ name: "Reader Tour", color: "#0000aa", version }).expect(403);
-    await reader.delete(`/api/tours/${id}`).send({ version }).expect(403);
+    await reader.patch("/api/tours/1").send({ name: "Reader Tour", color: "#0000aa", version: 1 }).expect(403);
+    await reader.delete("/api/tours/1").send({ version: 1 }).expect(403);
   });
 
-  it("allows DISPATCHER to create/update tours but blocks delete", async () => {
-    const dispatcher = await createRoleAgent("DISPATCHER");
+  it("blocks READER on cascade preview and execute endpoints", async () => {
+    const reader = await createRoleAgent("READER");
+    const { tour, candidate, appointment } = await createCascadeFixture();
 
+    await reader
+      .post(`/api/tours/${tour.id}/employees/cascade-add/preview`)
+      .send({ employeeId: candidate.id })
+      .expect(403);
+
+    await reader
+      .post(`/api/tours/${tour.id}/employees/cascade-add`)
+      .send({ employeeId: candidate.id, selectedAppointmentIds: [appointment!.id] })
+      .expect(403);
+  });
+
+  it("allows DISPATCHER to create/update tours and execute cascade add but blocks delete", async () => {
+    const dispatcher = await createRoleAgent("DISPATCHER");
     const created = await dispatcher.post("/api/tours").send({ color: "#1111aa" }).expect(201);
     const updated = await dispatcher
       .patch(`/api/tours/${created.body.id}`)
       .send({ name: "Dispatcher Tour", color: "#22aa22", version: created.body.version })
       .expect(200);
 
+    const candidate = await createEmployeeFixture("FT04-DISPATCHER");
+    const project = await createProjectFixture({ prefix: "FT04-DISPATCHER" });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(1),
+      tourId: created.body.id,
+    });
+
+    await dispatcher
+      .post(`/api/tours/${created.body.id}/employees/cascade-add`)
+      .send({ employeeId: candidate.id, selectedAppointmentIds: [appointment!.id] })
+      .expect(200);
+
     await dispatcher.delete(`/api/tours/${created.body.id}`).send({ version: updated.body.version }).expect(403);
   });
 
-  it("allows ADMIN to perform tour CRUD and tour-employee operations", async () => {
+  it("allows ADMIN to perform tour CRUD and cascade operations", async () => {
     const admin = await loginAdminAgent();
 
-    const created = await admin.post("/api/tours").send({ color: "#334455" }).expect(201);
-    const updated = await admin
-      .patch(`/api/tours/${created.body.id}`)
-      .send({ name: "Admin Tour", color: "#445566", version: created.body.version })
+    const crudTour = await admin.post("/api/tours").send({ color: "#334455" }).expect(201);
+    const updatedCrudTour = await admin
+      .patch(`/api/tours/${crudTour.body.id}`)
+      .send({ name: "Admin Tour", color: "#445566", version: crudTour.body.version })
       .expect(200);
+    const cascadeTour = await admin.post("/api/tours").send({ color: "#556677" }).expect(201);
 
-    const employee = await createEmployee(admin);
+    const candidate = await createEmployeeFixture("FT04-ADMIN");
+    const project = await createProjectFixture({ prefix: "FT04-ADMIN" });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(1),
+      tourId: cascadeTour.body.id,
+      employeeIds: [candidate.id],
+    });
 
-    const assign = await admin
-      .post(`/api/tours/${created.body.id}/employees`)
-      .send({ items: [{ employeeId: employee.id, version: employee.version }] })
+    await admin
+      .post(`/api/tours/${cascadeTour.body.id}/employees/cascade-remove/preview`)
+      .send({ employeeId: candidate.id })
       .expect(200);
 
     await admin
-      .delete(`/api/tours/${created.body.id}/employees/${employee.id}`)
-      .send({ version: assign.body[0].version })
+      .post(`/api/tours/${cascadeTour.body.id}/employees/cascade-remove`)
+      .send({ employeeId: candidate.id, selectedAppointmentIds: [appointment!.id] })
       .expect(200);
 
-    await admin.delete(`/api/tours/${created.body.id}`).send({ version: updated.body.version }).expect(204);
+    await admin.delete(`/api/tours/${crudTour.body.id}`).send({ version: updatedCrudTour.body.version }).expect(204);
   });
 });

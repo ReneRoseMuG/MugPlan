@@ -10,7 +10,6 @@ import {
   type ProjectArticleItem,
 } from "@shared/projectArticleList";
 import * as customersRepository from "../repositories/customersRepository";
-import * as employeesRepository from "../repositories/employeesRepository";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
@@ -750,12 +749,7 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
   const lastWeekStart = addWeeks(firstWeekStart, normalizedWeekCount - 1);
   const finalToDate = endOfWeek(lastWeekStart, { weekStartsOn: 1 });
 
-  const [members, rows] = await Promise.all([
-    params.tourId === 0
-      ? Promise.resolve([] as { id: number; fullName: string }[])
-      : employeesRepository.getEmployeesByTour(params.tourId),
-    appointmentsRepository.listAppointmentsByTourForDateRange(params.tourId, firstWeekStart, finalToDate),
-  ]);
+  const rows = await appointmentsRepository.listAppointmentsByTourForDateRange(params.tourId, firstWeekStart, finalToDate);
 
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const projectIds = Array.from(new Set(rows.map((row) => row.project?.id).filter((id): id is number => Number.isFinite(id))));
@@ -862,10 +856,6 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
       name: tour.name,
       color: tour.color,
     },
-    members: members.map((member) => ({
-      id: member.id,
-      fullName: member.fullName,
-    })),
     appointments,
   };
 }

@@ -31,6 +31,7 @@ test.describe.configure({ mode: "serial" });
 
 let targetEmployee: Awaited<ReturnType<typeof createEmployeeFixture>>;
 let sideEmployee: Awaited<ReturnType<typeof createEmployeeFixture>>;
+let addCandidateEmployee: Awaited<ReturnType<typeof createEmployeeFixture>>;
 let tour: Awaited<ReturnType<typeof createTourFixture>>;
 let apptRemoveDialog: Awaited<ReturnType<typeof createAppointmentFixture>>;
 let apptAddDialog: Awaited<ReturnType<typeof createAppointmentFixture>>;
@@ -42,6 +43,7 @@ test.beforeAll(async () => {
   tour = await createTourFixture("#226688");
   targetEmployee = await createEmployeeFixture("APMT-TARGET");
   sideEmployee = await createEmployeeFixture("APMT-SIDE");
+  addCandidateEmployee = await createEmployeeFixture("APMT-ADD");
 
   const project = await createProjectFixture({ prefix: "APMT", name: "APMT Projekt" });
 
@@ -56,7 +58,7 @@ test.beforeAll(async () => {
     projectId: project.id,
     startDate: getRelativeBerlinDate(2),
     tourId: tour.id,
-    employeeIds: [sideEmployee.id],
+    employeeIds: [targetEmployee.id, sideEmployee.id],
   });
 
   apptMinusButton = await createAppointmentFixture({
@@ -73,19 +75,7 @@ test("Test 1: Entfernen ueber Kaskaden-Dialog mit Date-Range-Filter-Verifikation
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${tour.id}`).dblclick();
 
-  await page.getByTestId("button-add-tour-member").click();
-  await page.getByTestId(`employee-picker-card-${targetEmployee.id}`).dblclick();
-
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("hinzuf");
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${apptRemoveDialog.id}`)).not.toBeChecked();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${apptAddDialog.id}`)).not.toBeChecked();
-  await dialog.getByTestId("button-tour-cascade-select-all").click();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${apptAddDialog.id}`)).toBeChecked();
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
-  await expect(dialog).toHaveCount(0);
-
   await page.getByTestId(`badge-tour-member-${targetEmployee.id}-remove`).click();
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("abziehen");
@@ -142,7 +132,7 @@ test("Test 2: Hinzufuegen ueber Kaskaden-Dialog mit Date-Range-Filter-Verifikati
   await page.getByTestId(`card-tour-${tour.id}`).dblclick();
 
   await page.getByTestId("button-add-tour-member").click();
-  await page.getByTestId(`employee-picker-card-${targetEmployee.id}`).dblclick();
+  await page.getByTestId(`employee-picker-card-${addCandidateEmployee.id}`).dblclick();
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
@@ -167,11 +157,11 @@ test("Test 2: Hinzufuegen ueber Kaskaden-Dialog mit Date-Range-Filter-Verifikati
     const response = await page.request.get(`/api/appointments/${apptRemoveDialog.id}`);
     const payload = await response.json();
     return (payload.employees as Array<{ id: number }>).map((entry) => entry.id);
-  }).toContain(targetEmployee.id);
+  }).toContain(addCandidateEmployee.id);
 
   await page.getByTestId("button-close-tour").click();
   await page.getByTestId("nav-mitarbeiter").click();
-  await page.getByTestId(`employee-card-${targetEmployee.id}`).dblclick();
+  await page.getByTestId(`employee-card-${addCandidateEmployee.id}`).dblclick();
   await page.getByTestId("tab-employee-termine").click();
   await expect(
     page.getByTestId("table-appointments-list").getByTestId(`button-remove-employee-from-appointment-${apptRemoveDialog.id}`),

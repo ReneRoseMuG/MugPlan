@@ -2,14 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TourCreate sendet den Create-Request und danach die Mitarbeiterzuweisung mit employee-version.
+ * - TourCreate sendet nur den Create-Request ohne direkte Mitarbeiterzuweisung.
  * - TourUpdate sendet Name, Farbe und Version als versionierten PATCH-Payload.
  * - Der Admin-Dialog behaelt den Delete-Flow mit versioniertem DELETE-Payload.
  * - Erfolgreiche Kaskaden bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
- * - Kaskadendialoge starten mit leerer Auswahl und Mitarbeiterdaten werden in der Listenansicht nicht unnoetig geladen.
+ * - Kaskadendialoge starten mit leerer Auswahl und Mitarbeiterdaten werden nur im Edit-Modus geladen.
  *
  * Fehlerfaelle:
- * - Versionsdaten fehlen in Tour- oder Mitarbeiter-Mutationen.
+ * - Versiondaten fehlen in Tour-Mutationen.
  * - Der Tourname wird im Update-Payload nicht mitgesendet.
  * - Der Admin-Delete-Flow driftet aus dem Dialog heraus.
  * - Erfolgreiche Kaskaden lassen Monitoring- und Query-Refresh aus.
@@ -195,7 +195,6 @@ describe("FT07 TourManagement behavior", () => {
     firstName: "Mia",
     lastName: "Tour",
     fullName: "Mia Tour",
-    tourId: 5,
     version: 8,
     isActive: true,
   };
@@ -229,7 +228,7 @@ describe("FT07 TourManagement behavior", () => {
     });
   });
 
-  it("creates a tour, assigns selected employees with their versions and closes the dialog", async () => {
+  it("creates a tour without direct employee assignment and closes the dialog", async () => {
     apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
       if (method === "POST" && url === "/api/tours") {
         return {
@@ -265,10 +264,8 @@ describe("FT07 TourManagement behavior", () => {
     ) => Promise<void>;
     await onSubmit(null, [11], "Tour 6", "#1188aa");
 
+    expect(apiRequestMock).toHaveBeenCalledTimes(1);
     expect(apiRequestMock).toHaveBeenNthCalledWith(1, "POST", "/api/tours", { color: "#1188aa" });
-    expect(apiRequestMock).toHaveBeenNthCalledWith(2, "POST", "/api/tours/77/employees", {
-      items: [{ employeeId: 11, version: 8 }],
-    });
     expect(setEditingTourMock).toHaveBeenCalledWith(null);
     expect(setIsCreatingMock).toHaveBeenCalledWith(false);
     expect(setCascadeDialogStateMock).toHaveBeenCalledWith(null);
@@ -281,7 +278,7 @@ describe("FT07 TourManagement behavior", () => {
     });
 
     const { TourManagement } = await loadTourManagement({
-      editingTour: { ...tour, members: [employee] },
+      editingTour: { ...tour },
       isCreating: false,
       cascadeDialogState: null,
     });
@@ -314,7 +311,7 @@ describe("FT07 TourManagement behavior", () => {
     });
 
     const { TourManagement } = await loadTourManagement({
-      editingTour: { ...tour, members: [employee] },
+      editingTour: { ...tour },
       isCreating: false,
       cascadeDialogState: null,
     });
@@ -382,7 +379,7 @@ describe("FT07 TourManagement behavior", () => {
     });
 
     const { TourManagement } = await loadTourManagement({
-      editingTour: { ...tour, members: [] },
+      editingTour: { ...tour },
       isCreating: false,
       cascadeDialogState: null,
     });
@@ -402,7 +399,7 @@ describe("FT07 TourManagement behavior", () => {
     }));
   });
 
-  it("disables the employees query in list view and enables it while the form is active", async () => {
+  it("disables the employees query in list and create view and enables it while editing", async () => {
     const { TourManagement: TourManagementList } = await loadTourManagement({
       editingTour: null,
       isCreating: false,
@@ -437,6 +434,26 @@ describe("FT07 TourManagement behavior", () => {
 
     expect(createEmployeesQuery).toMatchObject({
       queryKey: ["/api/employees"],
+      enabled: false,
+    });
+
+    useQueryMock.mockClear();
+    tourEditFormCalls.length = 0;
+
+    const { TourManagement: TourManagementEdit } = await loadTourManagement({
+      editingTour: { ...tour },
+      isCreating: false,
+      cascadeDialogState: null,
+    });
+
+    renderToStaticMarkup(<TourManagementEdit userRole="ADMIN" />);
+
+    const editEmployeesQuery = useQueryMock.mock.calls
+      .map(([options]) => options as { queryKey?: unknown; enabled?: boolean })
+      .find((options) => Array.isArray(options.queryKey) && options.queryKey[0] === "/api/employees");
+
+    expect(editEmployeesQuery).toMatchObject({
+      queryKey: ["/api/employees"],
       enabled: true,
     });
   });
@@ -459,14 +476,13 @@ describe("FT07 TourManagement behavior", () => {
     });
 
     const { TourManagement } = await loadTourManagement({
-      editingTour: { ...tour, members: [employee] },
+      editingTour: { ...tour },
       isCreating: false,
       cascadeDialogState: {
         open: true,
         mode: "add",
         tourId: 5,
         employeeId: 11,
-        employeeVersion: 8,
         employeeName: "Mia Tour",
         previewItems: [{
           appointmentId: 900,
@@ -496,9 +512,13 @@ describe("FT07 TourManagement behavior", () => {
 
     expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/employees/cascade-add", {
       employeeId: 11,
-      employeeVersion: 8,
       selectedAppointmentIds: [900],
     });
+    const activeMembersInvalidation = invalidateQueriesMock.mock.calls
+      .map(([options]) => options as { predicate?: (query: { queryKey: unknown[] }) => boolean })
+      .find((options) => typeof options.predicate === "function"
+        && options.predicate?.({ queryKey: ["/api/tours/5/employees/active"] }));
+    expect(activeMembersInvalidation).toBeTruthy();
     expect(invalidateTagProjectionQueriesMock).toHaveBeenCalledTimes(1);
     expect(invalidateQueriesMock).toHaveBeenCalledWith(expect.objectContaining({
       queryKey: ["/api/tours"],

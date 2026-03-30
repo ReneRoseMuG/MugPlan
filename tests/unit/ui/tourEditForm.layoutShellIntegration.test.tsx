@@ -3,8 +3,8 @@
  *
  * Abgedeckte Regeln:
  * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich und Footer ohne Sidebar.
- * - Im Create-Modus bleiben die erwarteten Bedienelemente fuer Tabs, Farbauswahl, Mitgliederbereich und Footer sichtbar.
- * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Mitglieder werden weiter sichtbar gerendert.
+ * - Im Create-Modus bleiben Tabs, Farbauswahl und Footer sichtbar, aber kein Mitgliederbereich.
+ * - Im Edit-Modus bleibt die Delete-Aktion erhalten und aktive Tourmitarbeiter werden ueber die Abfrage gerendert.
  * - Tabs und Stammdatenbereich bleiben im Hauptformular gleich breit.
  *
  * Fehlerfaelle:
@@ -18,7 +18,13 @@
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const useQueryMock = vi.fn();
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: (options: unknown) => useQueryMock(options),
+}));
 
 vi.mock("@/components/ui/entity-form-shell", () => ({
   EntityFormShell: ({
@@ -108,24 +114,38 @@ const tourFixture = {
   name: "Nordtour",
   color: "#335577",
   version: 4,
-  members: [
-    {
-      id: 21,
-      firstName: "Mia",
-      lastName: "Muster",
-      fullName: "Muster, Mia",
-      email: null,
-      phone: null,
-      isActive: true,
-      teamId: null,
-      tourId: 12,
-      version: 1,
-    },
-  ],
 };
 
 describe("FT04 tour form shell layout integration", () => {
   const noop = async (..._args: unknown[]) => undefined;
+
+  beforeEach(() => {
+    useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
+      if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/employees/active") {
+        return {
+          data: [
+            {
+              id: 21,
+              firstName: "Mia",
+              lastName: "Muster",
+              fullName: "Muster, Mia",
+              email: null,
+              phone: null,
+              isActive: true,
+              teamId: null,
+              version: 1,
+            },
+          ],
+          isLoading: false,
+        };
+      }
+
+      return {
+        data: [],
+        isLoading: false,
+      };
+    });
+  });
 
   it("renders the expected create elements in shell mode without a sidebar", () => {
     const markup = renderToStaticMarkup(
@@ -155,9 +175,9 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("text-tour-generated-name-hint");
     expect(markup).toContain("Neue Tour");
     expect(markup).toContain("button-tour-color-picker");
-    expect(markup).toContain("button-add-tour-member");
-    expect(markup).toContain("tour-members-section-header");
-    expect(markup).toContain("Keine Mitarbeiter zugewiesen");
+    expect(markup).not.toContain("button-add-tour-member");
+    expect(markup).not.toContain("tour-members-section-header");
+    expect(markup).not.toContain("Keine Mitarbeiter zugewiesen");
     expect(markup).toContain("tour-appointments-list-marker");
   });
 
@@ -165,7 +185,19 @@ describe("FT04 tour form shell layout integration", () => {
     const markup = renderToStaticMarkup(
       <TourEditForm
         tour={tourFixture}
-        allEmployees={tourFixture.members}
+        allEmployees={[
+          {
+            id: 21,
+            firstName: "Mia",
+            lastName: "Muster",
+            fullName: "Muster, Mia",
+            email: null,
+            phone: null,
+            isActive: true,
+            teamId: null,
+            version: 1,
+          },
+        ]}
         onSubmit={noop}
         onDelete={noop}
         canDelete
@@ -181,7 +213,10 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("Nordtour");
     expect(markup).not.toContain("text-tour-generated-name-hint");
     expect(markup).not.toContain("Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.");
+    expect(markup).toContain("button-add-tour-member");
+    expect(markup).toContain("tour-members-section-header");
     expect(markup).toContain("badge-tour-member-21");
+    expect(markup).toContain("Diese Liste zeigt alle Mitarbeiter, die auf mindestens einem aktuellen oder zukuenftigen Termin dieser Tour eingeplant sind.");
     expect(markup).toContain('data-testid="tour-form-main-column"');
     expect(markup).toContain('class="w-full"');
   });

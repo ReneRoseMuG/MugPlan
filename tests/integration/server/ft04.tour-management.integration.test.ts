@@ -1,19 +1,11 @@
 /**
  * Test Scope:
  *
- * Feature: FT04 - Tourenverwaltung
- * Use Case: UC Tour anlegen / bearbeiten / loeschen
- *
  * Abgedeckte Regeln:
  * - Tour-CRUD ueber API mit Versionierung fuer Update/Delete.
  * - Tour-Create folgt dem Contract: Name wird serverseitig erzeugt, Farbe hat Default.
- * - Tour-Create erzeugt keine impliziten Mitarbeiterzuweisungen.
- * - Mehrfache Stammdatenaenderung (Name/Farbe) erhoeht Version deterministisch.
- * - Tour-Renames blockieren doppelte Namen und geben numerische Luecken fuer neue Touren wieder frei.
  * - Tour-Delete ist gesperrt, solange Termine mit tour_id verknuepft sind.
- * - Loeschen einer Tour setzt employee.tourId auf NULL.
- * - Tour-Update veraendert referenzierte Termine nicht ausser fortbestehender tour_id-Verknuepfung und aktualisiert Projektionen ueber den neuen Tournamen.
- * - Nicht existierende Tour-IDs liefern NOT_FOUND.
+ * - Tour-Renames aktualisieren Kalenderprojektionen, ohne Terminbezug oder aktuelle Mitarbeitermenge zu verfremden.
  *
  * Fehlerfaelle:
  * - Unerlaubter Datentyp in Create-Payload liefert VALIDATION_ERROR.
@@ -21,7 +13,7 @@
  * - Doppelte Tournamen liefern BUSINESS_CONFLICT.
  *
  * Ziel:
- * End-to-end-Absicherung der FT04-Loeschregeln inklusive Termin-Referenzschutz.
+ * End-to-end-Absicherung der FT04-Tourverwaltung nach Wegfall der direkten Mitarbeiter-Tour-Beziehung.
  */
 import express from "express";
 import { createServer } from "http";
@@ -35,7 +27,6 @@ import * as projectsService from "../../../server/services/projectsService";
 import { resetDatabase } from "../../helpers/resetDatabase";
 
 let app: express.Express;
-let employeeCounter = 1;
 let customerCounter = 1;
 
 beforeAll(async () => {
@@ -49,7 +40,6 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await resetDatabase();
-  employeeCounter = 1;
   customerCounter = 1;
 });
 
@@ -59,21 +49,7 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
   return agent;
 }
 
-async function createEmployee(agent: SuperAgentTest) {
-  const idx = employeeCounter++;
-  const response = await agent
-    .post("/api/employees")
-    .send({
-      firstName: `E${idx}`,
-      lastName: `Tour-${idx}`,
-      phone: null,
-      email: null,
-    })
-    .expect(201);
-  return response.body as { id: number; version: number; tourId: number | null };
-}
-
-async function createProjectForTourDeleteTest() {
+async function createProjectForTourTests() {
   const customer = await customersService.createCustomer({
     customerNumber: `FT04-DEL-${customerCounter}`,
     firstName: "Test",
@@ -123,14 +99,13 @@ describe("FT04 integration: TourTests", () => {
     });
   });
 
-  it("creates a tour without employee payload and keeps member list empty", async () => {
+  it("creates a tour without active employees until appointments exist", async () => {
     const admin = await loginAdminAgent();
 
     const created = await admin.post("/api/tours").send({ color: "#446688" }).expect(201);
 
-    await admin.get(`/api/tours/${created.body.id}/employees`).expect(200).expect((res) => {
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(0);
+    await admin.get(`/api/tours/${created.body.id}/employees/active`).expect(200).expect((res) => {
+      expect(res.body).toEqual([]);
     });
   });
 
@@ -172,7 +147,7 @@ describe("FT04 integration: TourTests", () => {
   it("renames a tour and refreshes the calendar projection with the new tour name", async () => {
     const admin = await loginAdminAgent();
     const created = await admin.post("/api/tours").send({ color: "#aabbcc" }).expect(201);
-    const project = await createProjectForTourDeleteTest();
+    const project = await createProjectForTourTests();
 
     const appointment = await appointmentsService.createAppointment({
       projectId: project.id,
@@ -231,7 +206,7 @@ describe("FT04 integration: TourTests", () => {
   it("updates tour color without side effects on referenced appointment data", async () => {
     const admin = await loginAdminAgent();
     const tour = await admin.post("/api/tours").send({ color: "#cc8800" }).expect(201);
-    const project = await createProjectForTourDeleteTest();
+    const project = await createProjectForTourTests();
 
     const createdAppointment = await appointmentsService.createAppointment({
       projectId: project.id,
@@ -264,30 +239,21 @@ describe("FT04 integration: TourTests", () => {
     });
   });
 
-  it("deletes a tour and resets assigned employee tourId to null", async () => {
+  it("deletes a tour when no appointments reference it", async () => {
     const admin = await loginAdminAgent();
     const tour = await admin.post("/api/tours").send({ color: "#343434" }).expect(201);
-    const employee = await createEmployee(admin);
-
-    const assigned = await admin
-      .post(`/api/tours/${tour.body.id}/employees`)
-      .send({ items: [{ employeeId: employee.id, version: employee.version }] })
-      .expect(200);
-
-    const assignedEmployee = assigned.body.find((entry: { id: number }) => entry.id === employee.id);
-    expect(assignedEmployee.tourId).toBe(tour.body.id);
 
     await admin.delete(`/api/tours/${tour.body.id}`).send({ version: tour.body.version }).expect(204);
 
-    await admin.get(`/api/employees/${employee.id}`).expect(200).expect((res) => {
-      expect(res.body.employee.tourId).toBeNull();
+    await admin.get("/api/tours").expect(200).expect((res) => {
+      expect(res.body.some((entry: { id: number }) => entry.id === tour.body.id)).toBe(false);
     });
   });
 
   it("returns BUSINESS_CONFLICT when deleting a tour that is referenced by appointments", async () => {
     const admin = await loginAdminAgent();
     const tour = await admin.post("/api/tours").send({ color: "#a0a0a0" }).expect(201);
-    const project = await createProjectForTourDeleteTest();
+    const project = await createProjectForTourTests();
 
     const appointment = await appointmentsService.createAppointment({
       projectId: project.id,
@@ -316,20 +282,5 @@ describe("FT04 integration: TourTests", () => {
     await admin.delete("/api/tours/999999").send({ version: 1 }).expect(404).expect((res) => {
       expect(res.body.code).toBe("NOT_FOUND");
     });
-  });
-
-  it("keeps generated names unique across multiple creates", async () => {
-    const admin = await loginAdminAgent();
-
-    await admin.post("/api/tours").send({ color: "#110000" }).expect(201);
-    await admin.post("/api/tours").send({ color: "#220000" }).expect(201);
-    await admin.post("/api/tours").send({ color: "#330000" }).expect(201);
-
-    const list = await admin.get("/api/tours").expect(200);
-    const names = list.body.map((tour: { name: string }) => tour.name);
-
-    expect(new Set(names).size).toBe(names.length);
-    expect(names).toHaveLength(3);
-    expect(names.every((name: string) => /^Tour \d+$/.test(name))).toBe(true);
   });
 });

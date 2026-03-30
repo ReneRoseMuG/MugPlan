@@ -1,19 +1,17 @@
 /**
  * Test Scope:
  *
- * Feature: FT04 - Tourenverwaltung
- * Use Case: UC Gleichzeitige Bearbeitung in mehreren Sessions
- *
  * Abgedeckte Regeln:
  * - Optimistic Locking bei Tour-Update ueber Versionsnummer.
- * - Konkurrenz bei Mitarbeiter-Tour-Mutationen fuehrt zu einem Gewinner und Konflikt fuer den Verlierer.
- * - Loeschen waehrend paralleler Bearbeitung wird mit stale Version serverseitig deterministisch beantwortet.
+ * - Stale Edit nach Loeschen in anderer Session wird deterministisch abgewiesen.
+ * - Parallele Kaskaden-Add-Requests bleiben fuer dieselbe Terminzuordnung konfliktfrei dedupliziert.
  *
  * Fehlerfaelle:
  * - Parallelrequests mit identischer Version koennen VERSION_CONFLICT erzeugen.
+ * - Gleichzeitig ausgefuehrte Kaskaden erzeugen doppelte appointment_employee-Paare.
  *
  * Ziel:
- * Tatsaechtliches Multi-User-Verhalten fuer FT04 ohne Annahmen erfassen.
+ * Tatsaechliches Multi-User-Verhalten fuer FT04 nach dem neuen Kaskadenmodell erfassen.
  */
 import express from "express";
 import { createServer } from "http";
@@ -21,9 +19,16 @@ import request, { type SuperAgentTest } from "supertest";
 import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
+import {
+  createAppointmentFixture,
+  createEmployeeFixture,
+  createProjectFixture,
+  createTourFixture,
+  getRelativeBerlinDate,
+} from "../../helpers/testDataFactory";
+import { getAppointmentEmployeeIds } from "../../helpers/appointmentOverlapFixtures";
 
 let app: express.Express;
-let employeeCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -35,7 +40,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  employeeCounter = 1;
+    // no local counters required
 });
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
@@ -49,20 +54,6 @@ async function createTour(agent: SuperAgentTest, color: string) {
   return response.body as { id: number; name: string; version: number };
 }
 
-async function createEmployee(agent: SuperAgentTest) {
-  const idx = employeeCounter++;
-  const response = await agent
-    .post("/api/employees")
-    .send({
-      firstName: `Multi-${idx}`,
-      lastName: `User-${idx}`,
-      phone: null,
-      email: null,
-    })
-    .expect(201);
-  return response.body as { id: number; version: number };
-}
-
 describe("FT04 integration: MultiUserTests", () => {
   it("handles simultaneous updates on same tour with one success and one conflict", async () => {
     const sessionA = await loginAdminAgent();
@@ -74,32 +65,7 @@ describe("FT04 integration: MultiUserTests", () => {
       sessionB.patch(`/api/tours/${created.id}`).send({ name: "Suedtour", color: "#303030", version: created.version }),
     ]);
 
-    const statuses = [resA.status, resB.status].sort((l, r) => l - r);
-    expect(statuses).toEqual([200, 409]);
-  });
-
-  it("handles concurrent employee remove and reassign with version conflict", async () => {
-    const sessionA = await loginAdminAgent();
-    const sessionB = await loginAdminAgent();
-    const tourA = await createTour(sessionA, "#444444");
-    const tourB = await createTour(sessionA, "#555555");
-    const employee = await createEmployee(sessionA);
-
-    const assigned = await sessionA
-      .post(`/api/tours/${tourA.id}/employees`)
-      .send({ items: [{ employeeId: employee.id, version: employee.version }] })
-      .expect(200);
-
-    const currentVersion = assigned.body[0].version as number;
-
-    const [removeRes, assignRes] = await Promise.all([
-      sessionA.delete(`/api/tours/${tourA.id}/employees/${employee.id}`).send({ version: currentVersion }),
-      sessionB
-        .post(`/api/tours/${tourB.id}/employees`)
-        .send({ items: [{ employeeId: employee.id, version: currentVersion }] }),
-    ]);
-
-    const statuses = [removeRes.status, assignRes.status].sort((l, r) => l - r);
+    const statuses = [resA.status, resB.status].sort((left, right) => left - right);
     expect(statuses).toEqual([200, 409]);
   });
 
@@ -119,23 +85,29 @@ describe("FT04 integration: MultiUserTests", () => {
       });
   });
 
-  it("documents optimistic locking response for stale employee assignment version", async () => {
+  it("keeps concurrent cascade add requests deduplicated on the appointment", async () => {
     const sessionA = await loginAdminAgent();
     const sessionB = await loginAdminAgent();
-    const tour = await createTour(sessionA, "#888888");
-    const employee = await createEmployee(sessionA);
+    const tour = await createTourFixture("#888888");
+    const employee = await createEmployeeFixture("FT04-MULTI");
+    const project = await createProjectFixture({ prefix: "FT04-MULTI" });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(1),
+      tourId: tour.id,
+    });
 
-    await sessionA
-      .post(`/api/tours/${tour.id}/employees`)
-      .send({ items: [{ employeeId: employee.id, version: employee.version }] })
-      .expect(200);
+    const [resA, resB] = await Promise.all([
+      sessionA
+        .post(`/api/tours/${tour.id}/employees/cascade-add`)
+        .send({ employeeId: employee.id, selectedAppointmentIds: [appointment!.id] }),
+      sessionB
+        .post(`/api/tours/${tour.id}/employees/cascade-add`)
+        .send({ employeeId: employee.id, selectedAppointmentIds: [appointment!.id] }),
+    ]);
 
-    await sessionB
-      .post(`/api/tours/${tour.id}/employees`)
-      .send({ items: [{ employeeId: employee.id, version: employee.version }] })
-      .expect(409)
-      .expect((res) => {
-        expect(res.body.code).toBe("VERSION_CONFLICT");
-      });
+    const statuses = [resA.status, resB.status].sort((left, right) => left - right);
+    expect(statuses).toEqual([200, 200]);
+    expect(await getAppointmentEmployeeIds(appointment!.id)).toEqual([employee.id]);
   });
 });
