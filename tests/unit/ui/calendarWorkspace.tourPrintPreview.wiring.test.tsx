@@ -119,10 +119,15 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
         printWeekCount={2}
         onPrintWeekCountChange={() => undefined}
         onOpenPrintPreview={() => undefined}
+        printStartNextWeek={false}
+        onPrintStartNextWeekChange={() => undefined}
       />,
     );
 
     expect(html).toContain("Wochenplanung drucken");
+    expect(html).toContain("Tour");
+    expect(html).toContain("Anzahl Wochen");
+    expect(html).toContain("Start diese Woche");
     expect(html).toContain("select-tour-print-preview");
     expect(html).toContain("input-tour-print-week-count");
     expect(html).toContain("button-open-tour-print-preview");

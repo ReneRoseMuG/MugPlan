@@ -2,18 +2,18 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Switch rendert mit dynamischem Label "Startet ab Mo. TT.MM.JJJJ".
- * - Switch aus → Label zeigt Montag der laufenden Woche.
- * - Switch an → Label zeigt Montag der Folgewoche.
+ * - Switch rendert mit dynamischem Titel fuer aktuelle oder naechste Woche.
+ * - Switch aus → Titel zeigt "Start diese Woche" und Datum des Montags der laufenden Woche.
+ * - Switch an → Titel zeigt "Startet naechste Woche" und Datum des Montags der Folgewoche.
  * - Switch-Zustand ist initial false.
  * - Klick auf Switch ruft onPrintStartNextWeekChange mit true auf.
  *
  * Fehlerfälle:
- * - Label zeigt falsches Datum (z.B. heutiges Datum statt Montag).
+ * - Titel oder Datum zeigen einen falschen Wochenbezug.
  * - Switch-Callback wird nicht aufgerufen.
  *
  * Ziel:
- * Das Switch-Label und den Callback für die Druckstartdatum-Steuerung absichern.
+ * Titel, Datumsanzeige und Callback fuer die Druckstartdatum-Steuerung absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -30,13 +30,6 @@ vi.mock("@/components/calendar/CalendarEmployeeFilter", () => ({
 vi.mock("@/components/ui/filter-panels/filter-panel", () => ({
   FilterPanel: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
-vi.mock("@/hooks/useSettings", () => ({
-  useSetting: () => "standard",
-  useSettings: () => ({ setSetting: vi.fn() }),
-}));
-vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
-}));
 vi.mock("@/components/ui/switch", () => ({
   Switch: ({ checked, onCheckedChange, ...props }: { checked?: boolean; onCheckedChange?: (v: boolean) => void; [key: string]: unknown }) => (
     <button
@@ -50,11 +43,15 @@ vi.mock("@/components/ui/switch", () => ({
 
 import { CalendarFilterPanel } from "../../../client/src/components/ui/filter-panels/calendar-filter-panel";
 
-function getExpectedLabel(nextWeek: boolean): string {
+function getExpectedTitle(nextWeek: boolean): string {
+  return nextWeek ? "Startet nächste Woche" : "Start diese Woche";
+}
+
+function getExpectedDate(nextWeek: boolean): string {
   const today = new Date();
   const currentMonday = startOfWeek(today, { weekStartsOn: 1 });
   const targetMonday = nextWeek ? addWeeks(currentMonday, 1) : currentMonday;
-  return `Startet ab ${format(targetMonday, "EE. dd.MM.yyyy", { locale: de })}`;
+  return format(targetMonday, "EEE dd.MM.yyyy", { locale: de });
 }
 
 const baseProps = {
@@ -78,18 +75,21 @@ describe("CalendarFilterPanel – print switch", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel {...baseProps} printStartNextWeek={false} />,
     );
-    expect(html).toContain(getExpectedLabel(false));
+    expect(html).toContain(getExpectedTitle(false));
+    expect(html).toContain(getExpectedDate(false));
   });
 
   it("Switch an → Label zeigt Montag der Folgewoche", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel {...baseProps} printStartNextWeek={true} />,
     );
-    expect(html).toContain(getExpectedLabel(true));
+    expect(html).toContain(getExpectedTitle(true));
+    expect(html).toContain(getExpectedDate(true));
   });
 
   it("Label-Text der laufenden und der Folgewoche sind verschieden", () => {
-    expect(getExpectedLabel(false)).not.toBe(getExpectedLabel(true));
+    expect(getExpectedTitle(false)).not.toBe(getExpectedTitle(true));
+    expect(getExpectedDate(false)).not.toBe(getExpectedDate(true));
   });
 
   it("Switch rendert mit data-testid switch-print-start-next-week", () => {

@@ -29,6 +29,8 @@ import {
   getWeekAppointmentGridStartColumn,
 } from "@/lib/calendar-utils";
 import { storeWeeklyPreviewWidth } from "@/lib/preview-width";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CalendarWeekAppointmentPanel,
   DEFAULT_CONTINUATION_HEIGHT_PX,
@@ -213,6 +215,7 @@ export function CalendarWeekView({
       : 4;
   const isCollapsedMode = Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
+  const canEditWeekDisplayMode = userRole === "ADMIN" || userRole === "DISPATCHER";
 
   const dayWeights = useMemo(
     () => getDayWeights(weekendColumnPercent),
@@ -633,23 +636,60 @@ export function CalendarWeekView({
             {format(baseWeekStart, "d. MMMM", { locale: de })} - {format(baseWeekEnd, "d. MMMM yyyy", { locale: de })}
           </span>
         </div>
-        <button
-          type="button"
-          className="rounded-md border border-border/60 bg-white px-3 py-1 text-xs font-semibold text-foreground hover:bg-muted"
-          data-testid="button-week-lanes-collapse-toggle"
-          onClick={() => {
-            void handleToggleCollapsedMode().catch((error) => {
-              console.error(`${logPrefix} toggle collapsed mode failed`, error);
-              toast({
-                title: "Lane-Modus konnte nicht gespeichert werden",
-                description: "Bitte erneut versuchen.",
-                variant: "destructive",
-              });
-            });
-          }}
-        >
-          {isCollapsedMode ? "Alle Touren aufklappen" : "Touren zuklappen"}
-        </button>
+        <div className="flex items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">Darstellungsmodus</Label>
+            <Select
+              value={weekAppointmentDisplayMode ?? "standard"}
+              onValueChange={(value: "standard" | "compact" | "detail" | "split") => {
+                if (!canEditWeekDisplayMode) return;
+                void setSetting({
+                  key: "calendar.weekAppointmentDisplayMode",
+                  scopeType: "USER",
+                  value,
+                }).catch((error) => {
+                  console.error("[calendar-week-view] week display mode persist failed", error);
+                  toast({
+                    title: "Darstellungsmodus konnte nicht gespeichert werden",
+                    description: "Bitte erneut versuchen.",
+                    variant: "destructive",
+                  });
+                });
+              }}
+              disabled={!canEditWeekDisplayMode}
+            >
+              <SelectTrigger className="h-9 w-40 bg-white" data-testid="select-week-appointment-display-mode">
+                <SelectValue placeholder="Darstellungsmodus wählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="compact">Zentriert</SelectItem>
+                <SelectItem value="detail">Gefüllt</SelectItem>
+                <SelectItem value="split">Geteilt</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">Tour Sichtbarkeit</Label>
+            <button
+              type="button"
+              className="h-9 rounded-md border border-border/60 bg-white px-3 text-xs font-semibold text-foreground hover:bg-muted"
+              data-testid="button-week-lanes-collapse-toggle"
+              onClick={() => {
+                void handleToggleCollapsedMode().catch((error) => {
+                  console.error(`${logPrefix} toggle collapsed mode failed`, error);
+                  toast({
+                    title: "Lane-Modus konnte nicht gespeichert werden",
+                    description: "Bitte erneut versuchen.",
+                    variant: "destructive",
+                  });
+                });
+              }}
+            >
+              {isCollapsedMode ? "Touren aufklappen" : "Touren zuklappen"}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* FIX-RULE:

@@ -10,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useSetting, useSettings } from "@/hooks/useSettings";
-import { useToast } from "@/hooks/use-toast";
 
 interface CalendarFilterPanelProps {
   employeeId: number | null;
@@ -26,11 +24,15 @@ interface CalendarFilterPanelProps {
   onPrintStartNextWeekChange?: (value: boolean) => void;
 }
 
-function buildStartDateLabel(nextWeek: boolean): string {
+function buildStartDateTitle(nextWeek: boolean): string {
+  return nextWeek ? "Startet nächste Woche" : "Start diese Woche";
+}
+
+function buildStartDateValue(nextWeek: boolean): string {
   const today = new Date();
   const currentMonday = startOfWeek(today, { weekStartsOn: 1 });
   const targetMonday = nextWeek ? addWeeks(currentMonday, 1) : currentMonday;
-  return `Startet ab ${format(targetMonday, "EE. dd.MM.yyyy", { locale: de })}`;
+  return format(targetMonday, "EEE dd.MM.yyyy", { locale: de });
 }
 
 export function CalendarFilterPanel({
@@ -45,16 +47,9 @@ export function CalendarFilterPanel({
   printStartNextWeek = false,
   onPrintStartNextWeekChange,
 }: CalendarFilterPanelProps) {
-  const { toast } = useToast();
-  const { setSetting } = useSettings();
-  const weekDisplayMode = useSetting("calendar.weekAppointmentDisplayMode");
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
-  const userRole = typeof window === "undefined"
-    ? "DISPATCHER"
-    : window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER";
-  const canEditWeekDisplayMode = userRole === "ADMIN" || userRole === "DISPATCHER";
   const showWeekPrintControls =
     showWeekDisplayMode &&
     typeof onSelectedPrintTourIdChange === "function" &&
@@ -62,74 +57,46 @@ export function CalendarFilterPanel({
     typeof onOpenPrintPreview === "function" &&
     typeof printWeekCount === "number";
 
-  const startDateLabel = buildStartDateLabel(printStartNextWeek);
+  const startDateTitle = buildStartDateTitle(printStartNextWeek);
+  const startDateValue = buildStartDateValue(printStartNextWeek);
 
   if (showWeekDisplayMode && showWeekPrintControls) {
     return (
       <FilterPanel title="Kalenderfilter" layout="stack">
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-            <div className="flex min-w-0 flex-col gap-1">
-              <Label className="text-xs">Mitarbeiter</Label>
-              <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
-            </div>
-            <div className="flex min-w-0 flex-col gap-1">
-              <Label className="text-xs">Darstellungsmodus</Label>
-              <Select
-                value={weekDisplayMode ?? "standard"}
-                onValueChange={(value: "standard" | "compact" | "detail" | "split") => {
-                  if (!canEditWeekDisplayMode) return;
-                  void setSetting({
-                    key: "calendar.weekAppointmentDisplayMode",
-                    scopeType: "USER",
-                    value,
-                  }).catch((error) => {
-                    console.error("[calendar-filter-panel] week display mode persist failed", error);
-                    toast({
-                      title: "Darstellungsmodus konnte nicht gespeichert werden",
-                      description: "Bitte erneut versuchen.",
-                      variant: "destructive",
-                    });
-                  });
-                }}
-                disabled={!canEditWeekDisplayMode}
-              >
-                <SelectTrigger className="w-56 bg-white" data-testid="select-week-appointment-display-mode">
-                  <SelectValue placeholder="Darstellungsmodus wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="compact">Zentriert</SelectItem>
-                  <SelectItem value="detail">Gefüllt</SelectItem>
-                  <SelectItem value="split">Geteilt</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <Label className="text-xs">Mitarbeiter</Label>
+            <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
           </div>
 
-          <div className="flex min-w-0 flex-col gap-1 lg:justify-self-end">
-            <Label className="text-xs">Wochenplanung drucken</Label>
-            <div className="flex items-end gap-3">
-              <Select
-                value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
-                onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
-              >
-                <SelectTrigger className="w-[10ch] bg-white" data-testid="select-tour-print-preview">
-                  <SelectValue placeholder="Tour" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Tour</SelectItem>
-                  <SelectItem value="0">Ohne Tour</SelectItem>
-                  {tours.map((tour) => (
-                    <SelectItem key={tour.id} value={String(tour.id)}>
-                      {tour.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 shadow-sm lg:justify-self-end">
+            <div className="mb-3">
+              <Label className="text-xs font-semibold text-primary">Wochenplanung drucken</Label>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label className="text-xs">Tour</Label>
+                <Select
+                  value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
+                  onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
+                >
+                  <SelectTrigger className="w-[12ch] bg-white" data-testid="select-tour-print-preview">
+                    <SelectValue placeholder="Tour" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Tour</SelectItem>
+                    <SelectItem value="0">Ohne Tour</SelectItem>
+                    {tours.map((tour) => (
+                      <SelectItem key={tour.id} value={String(tour.id)}>
+                        {tour.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <div className="flex w-[10ch] flex-col gap-1">
-                <Label className="text-xs">Wochen</Label>
+              <div className="flex w-[14ch] flex-col gap-1">
+                <Label className="text-xs">Anzahl Wochen</Label>
                 <Input
                   type="number"
                   min={1}
@@ -141,15 +108,20 @@ export function CalendarFilterPanel({
               </div>
 
               {typeof onPrintStartNextWeekChange === "function" ? (
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={printStartNextWeek}
-                    onCheckedChange={onPrintStartNextWeekChange}
-                    data-testid="switch-print-start-next-week"
-                  />
-                  <Label className="cursor-pointer text-xs" data-testid="label-print-start-date">
-                    {startDateLabel}
+                <div className="flex min-w-0 flex-col gap-1">
+                  <Label className="text-xs" data-testid="label-print-start-title">
+                    {startDateTitle}
                   </Label>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={printStartNextWeek}
+                      onCheckedChange={onPrintStartNextWeekChange}
+                      data-testid="switch-print-start-next-week"
+                    />
+                    <span className="text-xs text-muted-foreground" data-testid="label-print-start-date">
+                      {startDateValue}
+                    </span>
+                  </div>
                 </div>
               ) : null}
 
@@ -175,97 +147,71 @@ export function CalendarFilterPanel({
         <Label className="text-xs">Mitarbeiter</Label>
         <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
       </div>
-      {showWeekDisplayMode ? (
-        <div className="flex min-w-[220px] flex-col gap-1">
-          <Label className="text-xs">Darstellungsmodus</Label>
-          <Select
-            value={weekDisplayMode ?? "standard"}
-            onValueChange={(value: "standard" | "compact" | "detail" | "split") => {
-              if (!canEditWeekDisplayMode) return;
-              void setSetting({
-                key: "calendar.weekAppointmentDisplayMode",
-                scopeType: "USER",
-                value,
-              }).catch((error) => {
-                console.error("[calendar-filter-panel] week display mode persist failed", error);
-                toast({
-                  title: "Darstellungsmodus konnte nicht gespeichert werden",
-                  description: "Bitte erneut versuchen.",
-                  variant: "destructive",
-                });
-              });
-            }}
-            disabled={!canEditWeekDisplayMode}
-          >
-            <SelectTrigger className="w-56 bg-white" data-testid="select-week-appointment-display-mode">
-              <SelectValue placeholder="Darstellungsmodus wählen" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="standard">Standard</SelectItem>
-              <SelectItem value="compact">Zentriert</SelectItem>
-              <SelectItem value="detail">Gefüllt</SelectItem>
-              <SelectItem value="split">Geteilt</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      ) : null}
       {showWeekPrintControls ? (
-        <div className="flex min-w-[220px] flex-col gap-1">
-          <Label className="text-xs">Wochenplanung drucken</Label>
-          <Select
-            value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
-            onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
-          >
-            <SelectTrigger className="w-[10ch] bg-white" data-testid="select-tour-print-preview">
-              <SelectValue placeholder="Tour" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Tour</SelectItem>
-              <SelectItem value="0">Ohne Tour</SelectItem>
-              {tours.map((tour) => (
-                <SelectItem key={tour.id} value={String(tour.id)}>
-                  {tour.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 shadow-sm">
+          <div className="mb-3">
+            <Label className="text-xs font-semibold text-primary">Wochenplanung drucken</Label>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex min-w-0 flex-col gap-1">
+              <Label className="text-xs">Tour</Label>
+              <Select
+                value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
+                onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
+              >
+                <SelectTrigger className="w-[12ch] bg-white" data-testid="select-tour-print-preview">
+                  <SelectValue placeholder="Tour" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Tour</SelectItem>
+                  <SelectItem value="0">Ohne Tour</SelectItem>
+                  {tours.map((tour) => (
+                    <SelectItem key={tour.id} value={String(tour.id)}>
+                      {tour.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex w-[14ch] flex-col gap-1">
+              <Label className="text-xs">Anzahl Wochen</Label>
+              <Input
+                type="number"
+                min={1}
+                max={12}
+                value={String(printWeekCount)}
+                onChange={(event) => onPrintWeekCountChange(Number(event.target.value))}
+                data-testid="input-tour-print-week-count"
+              />
+            </div>
+            {showWeekPrintControls && typeof onPrintStartNextWeekChange === "function" ? (
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label className="text-xs" data-testid="label-print-start-title">
+                  {startDateTitle}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={printStartNextWeek}
+                    onCheckedChange={onPrintStartNextWeekChange}
+                    data-testid="switch-print-start-next-week"
+                  />
+                  <span className="text-xs text-muted-foreground" data-testid="label-print-start-date">
+                    {startDateValue}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onOpenPrintPreview}
+              disabled={selectedPrintTourId === null}
+              data-testid="button-open-tour-print-preview"
+            >
+              Drucken
+            </Button>
+          </div>
         </div>
-      ) : null}
-      {showWeekPrintControls ? (
-        <div className="flex w-[10ch] flex-col gap-1">
-          <Label className="text-xs">Wochen</Label>
-          <Input
-            type="number"
-            min={1}
-            max={12}
-            value={String(printWeekCount)}
-            onChange={(event) => onPrintWeekCountChange(Number(event.target.value))}
-            data-testid="input-tour-print-week-count"
-          />
-        </div>
-      ) : null}
-      {showWeekPrintControls && typeof onPrintStartNextWeekChange === "function" ? (
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={printStartNextWeek}
-            onCheckedChange={onPrintStartNextWeekChange}
-            data-testid="switch-print-start-next-week"
-          />
-          <Label className="cursor-pointer text-xs" data-testid="label-print-start-date">
-            {startDateLabel}
-          </Label>
-        </div>
-      ) : null}
-      {showWeekPrintControls ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onOpenPrintPreview}
-          disabled={selectedPrintTourId === null}
-          data-testid="button-open-tour-print-preview"
-        >
-          Drucken
-        </Button>
       ) : null}
     </FilterPanel>
   );
