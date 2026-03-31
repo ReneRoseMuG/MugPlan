@@ -140,7 +140,8 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       predicate: (query) => {
         const key = query.queryKey;
         return Array.isArray(key) && (
-          key[0] === "/api/calendar/appointments"
+          key[0] === "calendarAppointments"
+          || key[0] === "/api/calendar/appointments"
           || key[0] === "/api/appointments/list"
           || key[0] === "tour-management-appointments-count"
         );
@@ -190,6 +191,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         };
       });
       void queryClient.invalidateQueries({ queryKey: ["/api/tours"] });
+      invalidateAppointmentViews();
     },
     onError: (error) => {
       const code = extractApiCode(error);
