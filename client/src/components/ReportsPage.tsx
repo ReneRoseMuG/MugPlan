@@ -337,7 +337,7 @@ function ArticleCategorySelection({
   testIdPrefix,
 }: ArticleCategorySelectionProps) {
   return (
-    <div className="rounded-md border border-border/60 bg-background/70 p-4">
+    <div className="inline-block w-fit max-w-full rounded-md border border-border/60 bg-background/70 p-4 align-top">
       <div className="space-y-5">
         <section data-testid={`${testIdPrefix}-product-category-group`}>
           <h5 className="text-sm font-semibold text-foreground">Produkte</h5>
@@ -734,10 +734,10 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     </div>
                   )}
                 >
-                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-[max-content_minmax(0,1fr)] xl:items-start">
                     <div className="space-y-3" data-testid="reports-vorlaufliste-date-range-column">
                       <h4 className="text-sm font-semibold text-foreground">Datumsbereich</h4>
-                      <div className="flex flex-wrap items-end gap-4">
+                      <div className="flex flex-wrap items-end gap-4 sm:flex-nowrap">
                         <div className="flex w-[150px] flex-none flex-col gap-1">
                           <Label htmlFor="reports-vorlaufliste-from-date">Datum Beginn</Label>
                           <Input id="reports-vorlaufliste-from-date" type="date" value={vorlauflisteFromDate} onChange={(event) => setVorlauflisteFromDate(event.target.value)} data-testid="reports-vorlaufliste-from-date" />
@@ -748,14 +748,17 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                             <Input id="reports-vorlaufliste-to-date" type="date" value={vorlauflisteToDate} onChange={(event) => setVorlauflisteToDate(event.target.value)} data-testid="reports-vorlaufliste-to-date" />
                           </div>
                         ) : (
-                          <div className="flex items-end">
-                            <Button type="button" variant="outline" onClick={() => setShowVorlauflisteToDate(true)} data-testid="button-reports-vorlaufliste-show-to-date">Datum Ende anzeigen</Button>
+                          <div className="flex w-[150px] flex-none flex-col gap-1">
+                            <Label htmlFor="button-reports-vorlaufliste-show-to-date">Datum Ende</Label>
+                            <Button type="button" variant="outline" className="w-fit px-3" onClick={() => setShowVorlauflisteToDate(true)} data-testid="button-reports-vorlaufliste-show-to-date">
+                              Anzeigen
+                            </Button>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-3" data-testid="reports-vorlaufliste-categories-column">
+                    <div className="justify-self-end space-y-3" data-testid="reports-vorlaufliste-categories-column">
                       <h4 className="text-sm font-semibold text-foreground">Artikel Kategorien</h4>
                       <ArticleCategorySelection
                         productCategories={defaultProductCategories}
@@ -820,10 +823,10 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     </div>
                   )}
                 >
-                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                    <div className="space-y-3" data-testid="reports-product-vorlauf-date-range-column">
+                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-[max-content_minmax(0,1fr)] xl:items-start">
+                    <div className="space-y-4" data-testid="reports-product-vorlauf-date-range-column">
                       <h4 className="text-sm font-semibold text-foreground">Datumsbereich</h4>
-                      <div className="flex flex-wrap items-end gap-4">
+                      <div className="flex flex-wrap items-end gap-4 sm:flex-nowrap">
                         <div className="flex w-[150px] flex-none flex-col gap-1">
                           <Label htmlFor="reports-product-vorlauf-from-date">Datum Beginn</Label>
                           <Input id="reports-product-vorlauf-from-date" type="date" value={productVorlaufFromDate} onChange={(event) => setProductVorlaufFromDate(event.target.value)} data-testid="reports-product-vorlauf-from-date" />
@@ -834,14 +837,46 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                             <Input id="reports-product-vorlauf-to-date" type="date" value={productVorlaufToDate} onChange={(event) => setProductVorlaufToDate(event.target.value)} data-testid="reports-product-vorlauf-to-date" />
                           </div>
                         ) : (
-                          <div className="flex items-end">
-                            <Button type="button" variant="outline" onClick={() => setShowProductVorlaufToDate(true)} data-testid="button-reports-product-vorlauf-show-to-date">Datum Ende anzeigen</Button>
+                          <div className="flex w-[150px] flex-none flex-col gap-1">
+                            <Label htmlFor="button-reports-product-vorlauf-show-to-date">Datum Ende</Label>
+                            <Button type="button" variant="outline" className="w-fit px-3" onClick={() => setShowProductVorlaufToDate(true)} data-testid="button-reports-product-vorlauf-show-to-date">
+                              Anzeigen
+                            </Button>
                           </div>
                         )}
                       </div>
+
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-info-tags">
+                        <h5 className="text-sm font-semibold text-foreground">Info Tags</h5>
+                        <div className="mt-3 space-y-2">
+                          {availableSonderblockTags.length > 0 ? availableSonderblockTags.map((tag) => (
+                            <label key={tag.id} className="flex items-center gap-3 text-sm text-foreground">
+                              <Checkbox
+                                checked={selectedProductVorlaufSonderblockTagIds.includes(tag.id)}
+                                onCheckedChange={(checked) => {
+                                  const nextIds = Boolean(checked)
+                                    ? normalizeIds([...selectedProductVorlaufSonderblockTagIds, tag.id])
+                                    : selectedProductVorlaufSonderblockTagIds.filter((id) => id !== tag.id);
+                                  setSelectedProductVorlaufSonderblockTagIds(nextIds);
+                                  void persistSelection("product-vorlauf", {
+                                    productCategoryIds: selectedProductVorlaufProductCategoryIds,
+                                    componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
+                                    useShortCodes: useProductVorlaufShortCodes,
+                                    sonderblockTagIds: nextIds,
+                                  });
+                                }}
+                                data-testid={`checkbox-reports-product-vorlauf-sonderblock-tag-${tag.id}`}
+                              />
+                              <span>{tag.name}</span>
+                            </label>
+                          )) : (
+                            <p className="text-sm text-muted-foreground">Keine auswählbaren Info Tags gefunden.</p>
+                          )}
+                        </div>
+                      </section>
                     </div>
 
-                    <div className="space-y-3" data-testid="reports-product-vorlauf-categories-column">
+                    <div className="justify-self-end space-y-3" data-testid="reports-product-vorlauf-categories-column">
                       <h4 className="text-sm font-semibold text-foreground">Artikel Kategorien</h4>
                       <ArticleCategorySelection
                         productCategories={defaultProductCategories}
@@ -891,7 +926,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                         />
                         <span>Shortcodes verwenden?</span>
                       </label>
-                      <section className="mt-4 rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-sonderblock-tags">
+                      <section className="hidden" data-testid="reports-product-vorlauf-sonderblock-tags">
                         <h5 className="text-sm font-semibold text-foreground">Sonderblock-Tags</h5>
                         <div className="mt-3 space-y-2">
                           {availableSonderblockTags.length > 0 ? availableSonderblockTags.map((tag) => (

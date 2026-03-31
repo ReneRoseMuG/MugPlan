@@ -3,13 +3,15 @@
  *
  * Abgedeckte Regeln:
  * - Die Reports-Seite rendert fuer beide Reports getrennte Datums- und Artikelkategorien-Spalten.
- * - Der Produkt-Vorlauf zeigt Shortcode-Option, Sonderblock-Auswahl und Druckaktion.
+ * - Das ausgeblendete Bis-Datum erscheint als eigenes Feld mit Label "Datum Ende" und schmalem Button "Anzeigen".
+ * - Der Produkt-Vorlauf zeigt Shortcode-Option, den Block "Info Tags" und die Druckaktion.
  * - Die Checkbox "Shortcodes verwenden?" ist in der Vorlaufliste-Konfiguration sichtbar.
  * - Die alten Beschreibungssaetze werden nicht mehr gerendert.
  *
  * Fehlerfaelle:
  * - Die Konfigurationsbereiche bleiben einspaltig oder verlieren die Artikelkategorien-Spalte.
- * - Die neue Produkt-Report-Konfiguration rendert ihre Zusatzoptionen nicht.
+ * - Die Datumssteuerung faellt auf den breiten Textbutton "Datum Ende anzeigen" zurueck.
+ * - Die neue Produkt-Report-Konfiguration rendert den Block "Info Tags" nicht korrekt.
  * - Die Shortcodes-Checkbox fehlt in der Konfiguration.
  *
  * Ziel:
@@ -120,11 +122,15 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     expect(html).toContain("reports-product-vorlauf-date-range-column");
     expect(html).toContain("reports-product-vorlauf-categories-column");
     expect(html).toContain("Artikel Kategorien");
+    expect(html).toContain("Datum Ende");
+    expect(html).toContain("Anzeigen");
+    expect(html).not.toContain("Datum Ende anzeigen");
     expect(html).toContain("button-reports-vorlaufliste-generate");
     expect(html).toContain("button-reports-product-vorlauf-generate");
     expect(html).toContain("checkbox-reports-vorlaufliste-use-shortcodes");
     expect(html).toContain("checkbox-reports-product-vorlauf-use-shortcodes");
-    expect(html).toContain("reports-product-vorlauf-sonderblock-tags");
+    expect(html).toContain("reports-product-vorlauf-info-tags");
+    expect(html).toContain("Info Tags");
     expect(html).not.toContain("Datumsbereich und Default-Kategorien für die Vorlaufliste festlegen.");
     expect(html).not.toContain("Datumsbereich, Kategorien und Sondermass-Kennzeichnung fuer den Produkt-Vorlauf festlegen.");
   });
