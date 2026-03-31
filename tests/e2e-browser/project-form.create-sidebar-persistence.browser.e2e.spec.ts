@@ -10,11 +10,13 @@
  * - Eine aus der Dokumentextraktion uebernommene Datei erscheint vor dem Save als pending Projektanhang und nach dem Save als echter Projektanhang.
  * - Die Dokumentextraktion fuellt die strukturierte Artikelliste nicht automatisch mit Produktselektionen vor.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
+ * - Ungespeicherte Edit-Werte im Projektformular bleiben trotz Tag-Mutation im Sidebar-Picker erhalten.
  *
  * Fehlerfaelle:
  * - Die Create-Sidebar fehlt im Projektformular.
  * - Draft-Tags, Draft-Notizen oder pending Projektanhaenge gehen beim ersten Save verloren.
  * - Die Extraktionsdatei landet nicht im Projekt-Dokumentenpanel.
+ * - Das Edit-Formular setzt lokale Feldwerte nach Tag-Auswahl wieder auf den Serverstand zurueck.
  *
  * Ziel:
  * Browser-E2E fuer die angeglichene Create-UX des Projektformulars und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
@@ -365,4 +367,30 @@ test("keeps the sidebar visible for existing project edit", async ({ page }) => 
   await expect(page.getByTestId("button-add-document-header")).toBeVisible();
   await expect(page.getByTestId("project-tag-picker-assigned-list")).toBeVisible();
   await expect(page.getByTestId("button-new-note")).toBeVisible();
+});
+
+test("keeps unsaved project edit values after selecting a tag in edit mode", async ({ page }) => {
+  const project = await createProjectFixture({
+    prefix: "FT02-PROJECT-TAG-EDIT",
+    name: "FT02 Tag Edit Projekt",
+    orderNumber: "FT02-TAG-001",
+  });
+  const tag = await createTagFixture("FT02-EDIT-TAG-PERSIST");
+  const editedName = "FT02 Tag Edit Projekt geändert";
+  const editedAmount = "98765.43";
+  const editedPlannedWeek = "KW 52";
+
+  await openProjectById(page, project.id, "noAppointments");
+
+  await page.getByTestId("input-project-name").fill(editedName);
+  await page.getByTestId("input-project-amount").fill(editedAmount);
+  await page.getByTestId("input-project-planned-week").fill(editedPlannedWeek);
+
+  await page.getByTestId("project-tag-picker-button-add").click();
+  await page.getByTestId(`project-tag-picker-add-tag-${tag.id}-add`).click();
+  await expect(page.getByTestId(`project-tag-picker-tag-${tag.id}`)).toBeVisible();
+
+  await expect(page.getByTestId("input-project-name")).toHaveValue(editedName);
+  await expect(page.getByTestId("input-project-amount")).toHaveValue(editedAmount);
+  await expect(page.getByTestId("input-project-planned-week")).toHaveValue(editedPlannedWeek);
 });

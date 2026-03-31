@@ -15,6 +15,7 @@
  * - Nach Save des neu angelegten Overlay-Projekts zeigt der Projektslot im Terminformular die persistierte Artikelliste statt des Fallbacktexts.
  * - Beim Abbrechen des aus der Dokumentextraktion geoeffneten Projektformulars bleibt die Datei als Termin-Draft sichtbar.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
+ * - Ungespeicherte Edit-Werte im Terminformular bleiben trotz Tag-Mutation im Sidebar-Picker erhalten.
  *
  * Fehlerfaelle:
  * - Die Create/Edit-Shell verliert Header-, Main-, Sidebar- oder Footer-Bereich.
@@ -22,6 +23,7 @@
  * - Das Formular weist durch eine gesetzte Tour unerwartet Mitarbeiter automatisch zu.
  * - Draft-Tags, Draft-Notizen oder pending Terminanhaenge gehen beim ersten Save verloren.
  * - Der Projektslot faellt nach dem Overlay-Rueckweg auf `nicht hinterlegt` zurueck, obwohl Order-Items gespeichert wurden.
+ * - Das Edit-Formular setzt lokales Startdatum oder Startzeit nach Tag-Auswahl wieder auf den Serverstand zurueck.
  *
  * Ziel:
  * Browser-E2E fuer den realen Create/Edit-Flow eines relationierten Eintagestermins sowie die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
@@ -516,4 +518,34 @@ test("opens an existing project overlay for duplicate order numbers and links it
     project: expect.arrayContaining([extractionFileName]),
     appointment: [],
   });
+});
+
+test("keeps unsaved appointment edit values after selecting a tag in edit mode", async ({ page }) => {
+  const fixture = await createAppointmentBrowserFixture({ prefix: "FT01-TAG-EDIT", targetDayOffset: 2, employeeCount: 1 });
+  const appointment = await createAppointmentFixture({
+    projectId: fixture.project.id,
+    customerId: fixture.customer.id,
+    startDate: fixture.targetDate,
+    startTime: "08:00:00",
+    tourId: fixture.tour.id,
+  });
+  const tag = await createTagFixture("FT01-EDIT-TAG-PERSIST");
+  const editedStartDate = fixture.nextDate;
+  const editedStartTime = "09:30";
+
+  await loginAsAdmin(page);
+  const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment!.id}`);
+  await expect(appointmentPanel).toBeVisible();
+  await appointmentPanel.dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+
+  await page.getByTestId("input-start-date").fill(editedStartDate);
+  await page.getByTestId("input-start-time").fill(editedStartTime);
+
+  await page.getByTestId("appointment-tag-picker-button-add").click();
+  await page.getByTestId(`appointment-tag-picker-add-tag-${tag.id}-add`).click();
+  await expect(page.getByTestId(`appointment-tag-picker-tag-${tag.id}`)).toBeVisible();
+
+  await expect(page.getByTestId("input-start-date")).toHaveValue(editedStartDate);
+  await expect(page.getByTestId("input-start-time")).toHaveValue(editedStartTime);
 });

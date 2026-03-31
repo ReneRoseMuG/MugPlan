@@ -309,6 +309,7 @@ export function AppointmentForm({
   const [draftAppointmentAttachments, setDraftAppointmentAttachments] = useState<PendingAppointmentAttachmentItem[]>([]);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string | null>(null);
   const weekTourPrefillAppliedRef = useRef(false);
+  const hydratedEditAppointmentIdRef = useRef<number | null>(null);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
 
@@ -456,7 +457,6 @@ export function AppointmentForm({
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
       await invalidateRelatedAppointmentQueries(selectedProjectId);
     },
     onError: (error: Error) => {
@@ -469,7 +469,6 @@ export function AppointmentForm({
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
       await invalidateRelatedAppointmentQueries(selectedProjectId);
     },
     onError: (error: Error) => {
@@ -544,7 +543,13 @@ export function AppointmentForm({
     projectsLoading || customersLoading || toursLoading || teamsLoading || employeesLoading || appointmentLoading;
 
   useEffect(() => {
-    if (!appointmentDetail) return;
+    if (!isEditing || !appointmentId) {
+      hydratedEditAppointmentIdRef.current = null;
+      return;
+    }
+    if (!appointmentDetail || appointmentDetail.id !== appointmentId) return;
+    if (hydratedEditAppointmentIdRef.current === appointmentId) return;
+    hydratedEditAppointmentIdRef.current = appointmentId;
     console.info(`${logPrefix} appointment detail loaded`, { appointmentId: appointmentDetail.id });
     const normalizedStartDate = normalizeDateInputValue(appointmentDetail.startDate);
     const normalizedEndDate = normalizeDateInputValue(appointmentDetail.endDate ?? appointmentDetail.startDate);
@@ -574,7 +579,7 @@ export function AppointmentForm({
         sidebarDraftSignature: null,
       }),
     );
-  }, [appointmentDetail]);
+  }, [appointmentDetail, appointmentId, isEditing]);
 
   useEffect(() => {
     if (isEditing || initialFormSnapshot !== null) return;

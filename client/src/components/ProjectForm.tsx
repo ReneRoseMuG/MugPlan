@@ -168,6 +168,7 @@ export function ProjectForm({
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
   const didInitializeCreateFormRef = useRef(false);
   const initializedEditProjectIdRef = useRef<number | null>(null);
+  const hydratedEditProjectFormIdRef = useRef<number | null>(null);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -318,7 +319,11 @@ export function ProjectForm({
 
   // Initialize form when project data loads
   useEffect(() => {
-    if (projectData) {
+    if (projectData && effectiveProjectId) {
+      if (hydratedEditProjectFormIdRef.current === effectiveProjectId) {
+        return;
+      }
+      hydratedEditProjectFormIdRef.current = effectiveProjectId;
       didInitializeCreateFormRef.current = false;
       const projectName = projectData.project.name.trim();
       setProjectType(projectData.project.type ?? DEFAULT_PROJECT_TYPE);
@@ -346,6 +351,7 @@ export function ProjectForm({
         }),
       );
     } else if (!isEditing) {
+      hydratedEditProjectFormIdRef.current = null;
       if (didInitializeCreateFormRef.current) {
         return;
       }
