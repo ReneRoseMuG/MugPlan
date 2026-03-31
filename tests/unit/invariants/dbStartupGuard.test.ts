@@ -24,7 +24,6 @@ type RuntimeConfigMock = {
   mysqlDatabaseUrl: string;
   allowedDatabases: string[];
   allowedHosts: string[];
-  enableProductionDumpImport: boolean;
 };
 
 const createPoolMock = vi.fn(() => ({ mockPool: true }));
@@ -63,7 +62,6 @@ describe("PKG-02 Invariant: db startup guardrails", () => {
       mysqlDatabaseUrl: "mysql://u:p@localhost:3306/tenant_01_test",
       allowedDatabases: ["tenant_01_test", "tenant_02_test"],
       allowedHosts: ["localhost"],
-      enableProductionDumpImport: false,
     });
 
     await import("../../../server/db");
@@ -79,7 +77,6 @@ describe("PKG-02 Invariant: db startup guardrails", () => {
       mysqlDatabaseUrl: "mysql://u:p@localhost:3306/tenant_dev_01",
       allowedDatabases: ["tenant_01_test", "tenant_02_test"],
       allowedHosts: ["localhost"],
-      enableProductionDumpImport: false,
     });
 
     const loadDbModule = import("../../../server/db");
@@ -96,7 +93,6 @@ describe("PKG-02 Invariant: db startup guardrails", () => {
       mysqlDatabaseUrl: "mysql://u:p@db.example.com:3306/tenant_01_test",
       allowedDatabases: ["tenant_01_test"],
       allowedHosts: ["localhost"],
-      enableProductionDumpImport: false,
     });
 
     const loadDbModule = import("../../../server/db");

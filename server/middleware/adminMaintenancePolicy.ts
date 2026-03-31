@@ -62,7 +62,7 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
     const mode = getRuntimeMode();
     const runtimeConfig = getRuntimeConfig();
     const isDumpImportApply = req.method.toUpperCase() === "POST" && req.path === "/admin/dumps/import/apply";
-    if (mode === "production" && !(isDumpImportApply && runtimeConfig.enableProductionDumpImport)) {
+    if (mode === "production" && !isDumpImportApply) {
       logWarn("admin_action_blocked", {
         reason: "OPERATION_BLOCKED_IN_PRODUCTION",
         method: req.method,

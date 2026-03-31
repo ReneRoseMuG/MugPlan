@@ -55,7 +55,6 @@ vi.mock("../../../server/config/runtimeEnv", () => ({
     mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_test",
     allowedDatabases: ["mugplan_test"],
     allowedHosts: ["localhost"],
-    enableProductionDumpImport: false,
   })),
 }));
 
@@ -177,42 +176,23 @@ describe("dumpService preview/apply safety", () => {
     expect(preview.warnings.some((entry) => entry.includes("Legacy-Dump"))).toBe(true);
   });
 
-  it("previewDumpImport blocks production imports without runtime flag", async () => {
+  it("previewDumpImport blocks legacy dumps in production", async () => {
     vi.mocked(getRuntimeMode).mockReturnValue("production");
     vi.mocked(getRuntimeConfig).mockReturnValue({
       mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_prod",
       allowedDatabases: ["mugplan_prod"],
       allowedHosts: ["localhost"],
-      enableProductionDumpImport: false,
     });
-
-    const dumpId = "dump-test";
-    const exportedAt = new Date().toISOString();
-    const tables = Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []]));
-    const manifest = {
-      dumpId,
-      formatVersion: DUMP_FORMAT_VERSION,
-      exportedAt,
-      schemaRevision: "0020_remove_employee_tour_id",
-      tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, { rowCount: 0, sha256: emptyArrayHash }])),
-      uploads: {
-        fileCount: 0,
-        totalBytes: 0,
-        sha256: emptyArrayHash,
-        files: [],
-      },
-    };
-    const zipBuffer = await buildZipFromDumpArtifacts({
-      formatVersion: DUMP_FORMAT_VERSION,
-      exportedAt,
-      dumpId,
-      tables,
-    }, manifest);
+    const zipBuffer = await buildZipFromDataJson({
+      formatVersion: 2,
+      exportedAt: new Date().toISOString(),
+      tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
+    });
 
     const preview = await previewDumpImport(adminCtx, zipBuffer);
 
     expect(preview.transferReadiness).toBe("blocked");
-    expect(preview.blockingIssues.some((entry) => entry.includes("Runtime-Flag"))).toBe(true);
+    expect(preview.blockingIssues.some((entry) => entry.includes("Legacy-Dumps"))).toBe(true);
   });
 
   it("applyDumpImport blocks hash mismatch and wrong confirmation phrase", async () => {
@@ -267,7 +247,6 @@ describe("dumpService – Environment-Guard", () => {
       mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_test",
       allowedDatabases: ["mugplan_test"],
       allowedHosts: ["localhost"],
-      enableProductionDumpImport: false,
     });
   });
 

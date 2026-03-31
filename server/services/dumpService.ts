@@ -709,17 +709,12 @@ async function assertSafeImportTarget(): Promise<{ dbName: string; host: string;
   const mode = getRuntimeMode();
   const runtimeConfig = getRuntimeConfig();
   const expectedTarget = mode === "production"
-    ? (() => {
-        if (!runtimeConfig.enableProductionDumpImport) {
-          throw new DumpServiceError("Produktionsimport ist nicht freigeschaltet", 403, "FORBIDDEN");
-        }
-        return assertSafeDatabaseTargetForMode(
-          runtimeConfig.mysqlDatabaseUrl,
-          mode,
-          runtimeConfig.allowedDatabases,
-          runtimeConfig.allowedHosts,
-        );
-      })()
+    ? assertSafeDatabaseTargetForMode(
+        runtimeConfig.mysqlDatabaseUrl,
+        mode,
+        runtimeConfig.allowedDatabases,
+        runtimeConfig.allowedHosts,
+      )
     : assertSafeAdminDestructiveOperationTarget({
         mode,
         databaseUrl: runtimeConfig.mysqlDatabaseUrl,
@@ -758,7 +753,6 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
     ? parseDumpManifest(JSON.parse((await manifestFile.buffer()).toString("utf8")) as unknown)
     : null;
   const uploadSummary = buildUploadsSummary(await listUploadFilesFromZip(directory));
-  const runtimeConfig = getRuntimeConfig();
   const mode = getRuntimeMode();
   const warnings: string[] = [];
   const blockingIssues: string[] = [];
@@ -804,9 +798,6 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
   }
 
   if (mode === "production") {
-    if (!runtimeConfig.enableProductionDumpImport) {
-      blockingIssues.push("Produktionsimport ist per Runtime-Flag nicht freigeschaltet.");
-    }
     if (!manifest) {
       blockingIssues.push("Legacy-Dumps ohne manifest.json sind fuer Produktionsimport gesperrt.");
     }
@@ -822,7 +813,7 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
     blockingIssues,
     warnings,
     confirmationPhrase: buildConfirmationPhrase(dumpId, targetDatabaseName),
-    allowsProductionImport: mode !== "production" || runtimeConfig.enableProductionDumpImport,
+    allowsProductionImport: mode !== "production" || manifest !== null,
     isLegacyDump: manifest === null,
     manifestPresent: manifest !== null,
     schemaRevision: manifest?.schemaRevision ?? null,

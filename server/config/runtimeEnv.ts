@@ -12,7 +12,6 @@ export type RuntimeConfig = {
   mysqlDatabaseUrl: string;
   allowedDatabases: string[];
   allowedHosts: string[];
-  enableProductionDumpImport: boolean;
 };
 
 let initialized = false;
@@ -32,11 +31,6 @@ function parseCsv(raw: string | undefined, opts?: { lowercase?: boolean }): stri
     .map((value) => value.trim())
     .filter((value) => value.length > 0)
     .map((value) => (lowercase ? value.toLowerCase() : value));
-}
-
-function parseBooleanFlag(raw: string | undefined): boolean {
-  const normalized = (raw ?? "").trim().toLowerCase();
-  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 }
 
 function resolveEnvFile(mode: RuntimeMode): { path: string; source: RuntimeEnvSource } | null {
@@ -99,8 +93,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
     throw new Error(`DB_ALLOWED_HOSTS_${modeKey} must be a non-empty CSV list for mode '${mode}'.`);
   }
 
-  const enableProductionDumpImport = parseBooleanFlag(process.env.ENABLE_PRODUCTION_DUMP_IMPORT);
-
   cachedConfig = {
     mode,
     envFilePath,
@@ -108,7 +100,6 @@ export function initializeRuntimeEnv(): RuntimeConfig {
     mysqlDatabaseUrl,
     allowedDatabases,
     allowedHosts,
-    enableProductionDumpImport,
   };
   initialized = true;
   return cachedConfig;

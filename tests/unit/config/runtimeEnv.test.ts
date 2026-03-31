@@ -34,7 +34,6 @@ function resetEnv(): void {
   delete process.env.DB_ALLOWED_HOSTS_DEV;
   delete process.env.DB_ALLOWED_HOSTS_TEST;
   delete process.env.DB_ALLOWED_HOSTS_PROD;
-  delete process.env.ENABLE_PRODUCTION_DUMP_IMPORT;
 }
 
 async function createReleaseLayout(prefix: string): Promise<{ releaseDir: string }> {
@@ -82,7 +81,6 @@ describe("FT07 unit: runtime env loading", () => {
     expect(runtime.mode).toBe("development");
     expect(runtime.envSource).toBe("dev_file");
     expect(runtime.envFilePath).toBe(path.resolve(releaseDir, ".env.dev"));
-    expect(runtime.enableProductionDumpImport).toBe(false);
   });
 
   it("loads test env exactly from .env.test", async () => {
@@ -97,7 +95,6 @@ describe("FT07 unit: runtime env loading", () => {
     expect(runtime.mode).toBe("test");
     expect(runtime.envSource).toBe("test_file");
     expect(runtime.envFilePath).toBe(path.resolve(releaseDir, ".env.test"));
-    expect(runtime.enableProductionDumpImport).toBe(false);
   });
 
   it("accepts changed .env.test allowlist database names without code changes", async () => {
@@ -155,21 +152,5 @@ describe("FT07 unit: runtime env loading", () => {
     expect(runtime.envSource).toBe("process");
     expect(runtime.envFilePath).toBeUndefined();
     expect(runtime.mysqlDatabaseUrl).toContain("/mugplan_prod");
-    expect(runtime.enableProductionDumpImport).toBe(false);
-  });
-
-  it("parses ENABLE_PRODUCTION_DUMP_IMPORT as explicit runtime flag", async () => {
-    const { releaseDir } = await createReleaseLayout("mugplan-runtime-prod-flag-");
-    process.chdir(releaseDir);
-    process.env.NODE_ENV = "production";
-    process.env.MYSQL_DATABASE_URL = "mysql://user:pass@localhost:3306/mugplan_prod";
-    process.env.DB_ALLOWED_DATABASES_PROD = "mugplan_prod";
-    process.env.DB_ALLOWED_HOSTS_PROD = "localhost";
-    process.env.ENABLE_PRODUCTION_DUMP_IMPORT = "true";
-
-    const { initializeRuntimeEnv } = await importRuntimeEnvModule();
-    const runtime = initializeRuntimeEnv();
-
-    expect(runtime.enableProductionDumpImport).toBe(true);
   });
 });
