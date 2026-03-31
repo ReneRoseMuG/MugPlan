@@ -186,11 +186,11 @@ export function DocumentExtractionDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] overflow-y-auto bg-background"
+      className="fixed inset-0 z-[60] overflow-hidden bg-background"
       data-testid="document-extraction-overlay"
     >
-      <div className="min-h-full p-4 sm:p-6">
-        <div className="mx-auto max-w-4xl rounded-lg border bg-card shadow-xl">
+      <div className="h-full p-4 sm:p-6">
+        <div className="mx-auto flex h-full max-w-4xl flex-col rounded-lg border bg-card shadow-xl">
           <div className="flex items-center justify-end border-b px-4 py-3 sm:px-6">
             <Button
               type="button"
@@ -205,7 +205,7 @@ export function DocumentExtractionDialog({
             </Button>
           </div>
 
-          <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-4 py-4 sm:px-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
             {!data || !customerFields || !customer ? (
               <div className="text-sm text-muted-foreground">Keine Extraktionsdaten vorhanden.</div>
             ) : (
