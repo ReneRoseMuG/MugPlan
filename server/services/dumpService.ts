@@ -606,6 +606,28 @@ function cleanupStageDir(stageDir: string | null): void {
   fs.rmSync(stageDir, { recursive: true, force: true });
 }
 
+function isCrossDeviceRenameError(error: unknown): boolean {
+  return Boolean(
+    error
+    && typeof error === "object"
+    && "code" in error
+    && (error as { code?: unknown }).code === "EXDEV",
+  );
+}
+
+function moveDirectorySync(sourcePath: string, targetPath: string): void {
+  try {
+    fs.renameSync(sourcePath, targetPath);
+  } catch (error) {
+    if (!isCrossDeviceRenameError(error)) {
+      throw error;
+    }
+
+    fs.cpSync(sourcePath, targetPath, { recursive: true, force: true });
+    fs.rmSync(sourcePath, { recursive: true, force: true });
+  }
+}
+
 async function restoreUploadsFromStage(stageDir: string | null): Promise<boolean> {
   if (!stageDir) return false;
 
@@ -615,18 +637,18 @@ async function restoreUploadsFromStage(stageDir: string | null): Promise<boolean
 
   const uploadsExists = fs.existsSync(uploadsPath);
   if (uploadsExists) {
-    fs.renameSync(uploadsPath, backupPath);
+    moveDirectorySync(uploadsPath, backupPath);
   }
 
   try {
     fs.mkdirSync(path.dirname(uploadsPath), { recursive: true });
-    fs.renameSync(stageDir, uploadsPath);
+    moveDirectorySync(stageDir, uploadsPath);
     fs.rmSync(backupPath, { recursive: true, force: true });
     return true;
   } catch (error) {
     fs.rmSync(uploadsPath, { recursive: true, force: true });
     if (fs.existsSync(backupPath)) {
-      fs.renameSync(backupPath, uploadsPath);
+      moveDirectorySync(backupPath, uploadsPath);
     }
     throw error;
   }

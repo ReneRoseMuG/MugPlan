@@ -381,4 +381,43 @@ describe("dumpService – Dump-Formatvalidierung", () => {
         error.message.includes("Tabelle 'tours'"),
     );
   });
+
+  it("fällt beim Upload-Restore bei EXDEV von rename auf copy zurück", async () => {
+    const originalRenameSync = fs.renameSync;
+    const renameSpy = vi.spyOn(fs, "renameSync").mockImplementation((oldPath, newPath) => {
+      if (
+        typeof oldPath === "string"
+        && typeof newPath === "string"
+        && oldPath.includes("mugplan-dump-import-")
+        && newPath === path.join(tempRoot, "uploads")
+      ) {
+        const error = new Error("EXDEV: cross-device link not permitted");
+        Object.assign(error, { code: "EXDEV" });
+        throw error;
+      }
+      return originalRenameSync(oldPath, newPath);
+    });
+
+    const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const archive = archiver("zip");
+      archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+      archive.on("end", () => resolve(Buffer.concat(chunks)));
+      archive.on("error", reject);
+      archive.append(JSON.stringify({
+        formatVersion: DUMP_FORMAT_VERSION,
+        exportedAt: new Date().toISOString(),
+        tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
+      }), { name: "data.json" });
+      archive.append("upload-content", { name: "uploads/example.txt" });
+      void archive.finalize();
+    });
+
+    await expect(importDump(adminCtx, zipBuffer)).resolves.toMatchObject({
+      uploadsRestored: true,
+    });
+    expect(fs.readFileSync(path.join(tempRoot, "uploads", "example.txt"), "utf8")).toBe("upload-content");
+
+    renameSpy.mockRestore();
+  });
 });
