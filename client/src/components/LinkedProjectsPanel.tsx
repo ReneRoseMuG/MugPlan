@@ -133,7 +133,7 @@ export function LinkedProjectsPanel({ customerId, customerNumber, onOpenProject 
               key={project.id}
               project={project}
               customerNumber={project.customer.customerNumber || customerNumber || "-"}
-              onDoubleClick={() => onOpenProject?.(project.id)}
+              onOpenProject={() => onOpenProject?.(project.id)}
             />
           ))
         )}

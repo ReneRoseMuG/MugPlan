@@ -3,12 +3,17 @@ import { FolderKanban } from "lucide-react";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
-import type { Project, Tag } from "@shared/schema";
+import type { Tag } from "@shared/schema";
 
-type LinkedProjectCardProject = Project & {
+type LinkedProjectCardProject = {
+  id: number;
   notesCount: number;
   plannedAppointmentsCount: number;
   attachmentsCount: number;
+  name: string;
+  orderNumber: string | null;
+  descriptionMd: string | null;
+  isActive: boolean;
   tags: Tag[];
   projectArticleItems: ProjectArticleItem[];
   customer: {
@@ -39,6 +44,7 @@ export function LinkedProjectCard({ project, customerNumber, onOpenProject }: Li
         <ProjectTableHoverPreview
           project={{
             ...project,
+            orderNumber: project.orderNumber?.trim() || null,
             customer: {
               ...project.customer,
               customerNumber: project.customer.customerNumber || customerNumberLabel,
