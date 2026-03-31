@@ -320,7 +320,7 @@ test("opens an existing project in edit mode for duplicate order numbers and kee
   expect(updateProjectResponse.ok(), await updateProjectResponse.text()).toBeTruthy();
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
 
-  await openProjectById(page, existingProject.id, "noAppointments");
+  await openProjectById(page, existingProject.id, "all");
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
 });
 
