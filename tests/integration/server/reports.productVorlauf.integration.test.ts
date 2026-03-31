@@ -5,6 +5,7 @@
  * - Produkt Vorlauf gruppiert konkrete Produkte und Komponenten je ausgewaehlter Kategorie und summiert deren Mengen.
  * - Der Produkt Report liefert zusaetzlich eine strenge Projektliste ohne Reklamation und Storno.
  * - Sondermasse listen nur Projekte im Zeitraum mit passendem Sondermass-Tag und passender Report-Position.
+ * - Ein Folgeabruf ohne toDate erweitert das Reportfenster wieder auf spaetere passende Projekte ab fromDate.
  * - Stornierte Projekte sollen im Produkt Vorlauf weder Mengen noch Sondermass-Treffer beitragen.
  * - Projekte oder Termine mit dem managed Reklamation-Tag sollen aus Mengen und Sondermass-Treffern ausgeschlossen werden.
  * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
@@ -12,6 +13,7 @@
  * Fehlerfaelle:
  * - Nicht ausgewaehlte Kategorien fliessen in Summen ein.
  * - Getaggte Projekte ohne passende Report-Position erscheinen als Sondermass.
+ * - Ein Folgeabruf ohne toDate behaelt faelschlich das alte Enddatum bei.
  * - Stornierte Projekte bleiben trotz Soll-Regel in Summen oder Sondermasslisten sichtbar.
  * - Reklamations-Tags auf Projekt oder Termin werden im Produkt Vorlauf ignoriert.
  * - Rollenpruefung fehlt oder ist uneinheitlich.
@@ -221,6 +223,67 @@ describe("FT26 integration: report product vorlauf", () => {
         actualDate: "2099-09-10",
         projectDescription: "Sondermass Alpha",
         specialMeasureTag: expect.objectContaining({ id: specialMeasureTag.id }),
+      }),
+    ]);
+  });
+
+  it("expands the result window when a follow-up request omits toDate", async () => {
+    const admin = await loginAdminAgent(app);
+    const novemberProject = await createProductVorlaufProjectFixture({
+      prefix: "FT26-PV-TODATE-NOV",
+      appointmentDates: ["2099-11-05"],
+      productItems: [{ categoryName: "Fass Saunen", name: "November Sauna", quantity: 2 }],
+    });
+    const decemberProject = await createProductVorlaufProjectFixture({
+      prefix: "FT26-PV-TODATE-DEC",
+      appointmentDates: ["2099-12-05"],
+      productItems: [{ categoryName: "Fass Saunen", name: "Dezember Sauna", quantity: 3 }],
+    });
+
+    const saunaCategoryId = (await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: "FT26 Lookup ToDate Sauna",
+    })).categoryId;
+
+    const boundedResponse = await admin
+      .get(`/api/reports/product-vorlauf?fromDate=2099-11-01&toDate=2099-11-30&productCategoryIds=${saunaCategoryId}`)
+      .expect(200);
+    const unboundedResponse = await admin
+      .get(`/api/reports/product-vorlauf?fromDate=2099-11-01&productCategoryIds=${saunaCategoryId}`)
+      .expect(200);
+
+    expect(boundedResponse.body.productCategoryGroups).toEqual([
+      {
+        categoryId: saunaCategoryId,
+        categoryName: "Fass Saunen",
+        items: [{ itemName: "November Sauna", totalQuantity: 2 }],
+      },
+    ]);
+    expect(boundedResponse.body.projectRows).toEqual([
+      expect.objectContaining({
+        projectId: novemberProject.project.id,
+        actualDate: "2099-11-05",
+      }),
+    ]);
+
+    expect(unboundedResponse.body.productCategoryGroups).toEqual([
+      {
+        categoryId: saunaCategoryId,
+        categoryName: "Fass Saunen",
+        items: [
+          { itemName: "Dezember Sauna", totalQuantity: 3 },
+          { itemName: "November Sauna", totalQuantity: 2 },
+        ],
+      },
+    ]);
+    expect(unboundedResponse.body.projectRows).toEqual([
+      expect.objectContaining({
+        projectId: novemberProject.project.id,
+        actualDate: "2099-11-05",
+      }),
+      expect.objectContaining({
+        projectId: decemberProject.project.id,
+        actualDate: "2099-12-05",
       }),
     ]);
   });

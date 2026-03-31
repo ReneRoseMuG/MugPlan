@@ -5,11 +5,13 @@
  * - actualDate wird aus der aktuellen Repository-Logik nur aus Terminen innerhalb des abgefragten Zeitfensters abgeleitet.
  * - Bei mehreren aktiven Terminen im Zeitfenster gewinnt der frueheste aktive Termin.
  * - Ein spaeterer Zukunftstermin ausserhalb des Zeitfensters beeinflusst actualDate nicht.
+ * - Ein nachtraeglich entferntes toDate erweitert das Fenster wieder auf alle passenden Folgetermine ab fromDate.
  *
  * Fehlerfaelle:
  * - actualDate folgt versehentlich einer Heute-oder-Zukunft-Regel statt der aktuellen Fensterlogik.
  * - Ein spaeterer Termin ueberschreibt den fruehesten aktiven Termin im abgefragten Fenster.
  * - Termine ausserhalb des Reportfensters fliessen in actualDate ein.
+ * - Ein Folgeabruf ohne toDate behaelt faelschlich das alte Enddatum bei.
  *
  * Ziel:
  * Das aktuelle Ist-Verhalten der actualDate-Berechnung der Vorlaufliste dokumentieren und regressionssicher absichern.
@@ -107,5 +109,26 @@ describe("FT26 integration: report vorlaufliste actualDate", () => {
 
     const row = (response.body.items as Array<{ projectId: number; actualDate: string }>).find((item) => item.projectId === project.id);
     expect(row?.actualDate).toBe("2099-04-10");
+  });
+
+  it("keeps the earliest in-range appointment when a follow-up request removes toDate", async () => {
+    const admin = await loginAdminAgent(app);
+    const project = await createReportProjectWithAppointments({
+      prefix: "FT26-ACTUAL-D",
+      appointmentDates: ["2099-11-05", "2099-11-25"],
+    });
+
+    const boundedResponse = await admin
+      .get("/api/reports/vorlaufliste?fromDate=2099-11-01&toDate=2099-11-10&page=1&pageSize=100")
+      .expect(200);
+    const unboundedResponse = await admin
+      .get("/api/reports/vorlaufliste?fromDate=2099-11-01&page=1&pageSize=100")
+      .expect(200);
+
+    const boundedRow = (boundedResponse.body.items as Array<{ projectId: number; actualDate: string }>).find((item) => item.projectId === project.id);
+    const unboundedRow = (unboundedResponse.body.items as Array<{ projectId: number; actualDate: string }>).find((item) => item.projectId === project.id);
+
+    expect(boundedRow?.actualDate).toBe("2099-11-05");
+    expect(unboundedRow?.actualDate).toBe("2099-11-05");
   });
 });
