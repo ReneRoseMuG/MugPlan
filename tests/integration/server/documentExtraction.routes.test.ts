@@ -9,6 +9,7 @@
  * - Extract-Route liefert bei Erfolg die erwartete Extraktionsstruktur.
  * - Erfolgsresponses liefern den zusaetzlichen Feldreport mit.
  * - Customer-Duplicate und Resolve-Routen liefern none/single/multiple korrekt.
+ * - Die Projekt-Resolve-Route liefert bei Einzeltreffer den aktuellsten Termin oder null ohne Terminplanung.
  *
  * Fehlerfaelle:
  * - Ungueltiger Scope -> 400.
@@ -31,6 +32,7 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as documentProcessingService from "../../../server/services/documentProcessingService";
 import * as multipart from "../../../server/lib/multipart";
 import * as customersService from "../../../server/services/customersService";
+import { createAppointmentFixture, createTourFixture } from "../../helpers/testDataFactory";
 import { nextDeterministicToken } from "../../helpers/deterministic";
 
 let app: express.Express;
@@ -335,7 +337,7 @@ describe("FT20 integration: document extraction routes", () => {
     const suffix = nextDeterministicToken("doc-extract-project-resolve");
     const customerResponse = await agent
       .post("/api/customers")
-      .send({ customerNumber: `PRJ-CUST-${suffix}` })
+      .send({ customerNumber: `PRJ-CUST-${suffix}`, company: `Resolve Kunde ${suffix}` })
       .expect(201);
 
     const createdProjectResponse = await agent
@@ -357,6 +359,7 @@ describe("FT20 integration: document extraction routes", () => {
           resolution: "none",
           count: 0,
           project: null,
+          latestAppointment: null,
         });
       });
 
@@ -368,12 +371,47 @@ describe("FT20 integration: document extraction routes", () => {
         expect(res.body.resolution).toBe("single");
         expect(res.body.project.id).toBe(createdProjectResponse.body.id);
         expect(res.body.project.orderNumber).toBe(`PRJ-ORD-${suffix}`);
+        expect(res.body.latestAppointment).toBeNull();
+      });
+
+    const tour = await createTourFixture("#1155aa");
+    await createAppointmentFixture({
+      projectId: createdProjectResponse.body.id,
+      customerId: customerResponse.body.id,
+      startDate: "2099-05-01",
+      startTime: "08:00:00",
+      tourId: tour.id,
+    });
+    const latestAppointment = await createAppointmentFixture({
+      projectId: createdProjectResponse.body.id,
+      customerId: customerResponse.body.id,
+      startDate: "2099-05-03",
+      startTime: "14:00:00",
+      tourId: tour.id,
+    });
+
+    await agent
+      .post("/api/document-extraction/resolve-project-by-order-number")
+      .send({ orderNumber: `PRJ-ORD-${suffix}` })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.resolution).toBe("single");
+        expect(res.body.latestAppointment).toEqual({
+          id: latestAppointment.id,
+          startDate: "2099-05-03",
+          endDate: null,
+          startTime: "14:00:00",
+          startTimeHour: 14,
+          tourName: tour.name,
+          customerName: `Resolve Kunde ${suffix}`,
+        });
       });
 
     vi.spyOn(documentProcessingService, "resolveProjectByOrderNumber").mockResolvedValueOnce({
       resolution: "multiple",
       count: 2,
       project: null,
+      latestAppointment: null,
     });
     await agent
       .post("/api/document-extraction/resolve-project-by-order-number")
@@ -384,6 +422,7 @@ describe("FT20 integration: document extraction routes", () => {
           resolution: "multiple",
           count: 2,
           project: null,
+          latestAppointment: null,
         });
       });
   });

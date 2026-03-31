@@ -22,10 +22,12 @@
 import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  createAppointmentFixture,
   createCustomerFixture,
   createProductFixture,
   createProjectFixture,
   createTagFixture,
+  createTourFixture,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
@@ -277,6 +279,14 @@ test("opens an existing project in edit mode for duplicate order numbers and kee
     name: "FT24 Bestehendes Projekt",
     orderNumber: "FT24-PROJECT-DUP-001",
   });
+  const tour = await createTourFixture("#1188aa");
+  await createAppointmentFixture({
+    projectId: existingProject.id,
+    customerId: customer.id,
+    startDate: "2099-05-03",
+    startTime: "14:00:00",
+    tourId: tour.id,
+  });
   const extractionFileName = "ft24-project-duplicate-existing.pdf";
 
   await mockProjectDocumentExtraction(page, customer.customerNumber, {
@@ -291,6 +301,10 @@ test("opens an existing project in edit mode for duplicate order numbers and kee
   await page.mouse.click(10, 10);
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
   await page.getByTestId("button-doc-extract-apply-data").click();
+  await expect(page.getByTestId("project-duplicate-resolution-dialog")).toBeVisible();
+  await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText("14:00 - 03.05.99");
+  await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText(tour.name);
+  await page.getByTestId("button-project-duplicate-confirm").click();
 
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
   await expect(page.getByTestId("button-save-project")).toBeVisible();
@@ -306,8 +320,37 @@ test("opens an existing project in edit mode for duplicate order numbers and kee
   expect(updateProjectResponse.ok(), await updateProjectResponse.text()).toBeTruthy();
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
 
-  await openProjectById(page, existingProject.id, "noAppointments");
+  await openProjectById(page, existingProject.id, "all");
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
+});
+
+test("keeps the extraction overlay open when a duplicate project without appointments is canceled", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-PROJECT-DUPLICATE-CANCEL");
+  const existingProject = await createProjectFixture({
+    prefix: "FT24-PROJECT-DUPLICATE-CANCEL",
+    customerId: customer.id,
+    name: "FT24 Projekt ohne Termin",
+    orderNumber: "FT24-PROJECT-DUP-CANCEL-001",
+  });
+
+  await mockProjectDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Duplikat Abbruch",
+    orderNumber: existingProject.orderNumber ?? "FT24-PROJECT-DUP-CANCEL-001",
+  });
+
+  await openNewProject(page);
+  await uploadExtractionPdf(page, "ft24-project-duplicate-cancel.pdf");
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+  await expect(page.getByTestId("project-duplicate-resolution-dialog")).toBeVisible();
+  await expect(page.getByTestId("project-duplicate-resolution-no-appointment")).toContainText("noch keine Terminplanung");
+  await page.getByTestId("button-project-duplicate-cancel").click();
+
+  await expect(page.getByTestId("project-duplicate-resolution-dialog")).toHaveCount(0);
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await expect(page.getByText("Projektdaten bearbeiten")).toHaveCount(0);
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
 });
 
 test("keeps the sidebar visible for existing project edit", async ({ page }) => {

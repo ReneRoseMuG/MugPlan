@@ -1,4 +1,4 @@
-﻿import type { Customer, InsertCustomer } from "@shared/schema";
+import type { Customer, InsertCustomer, Project } from "@shared/schema";
 import type { ExtractionScope } from "./aiExtractionService";
 import { extractTextFromPdfBuffer } from "./documentTextExtractor";
 import {
@@ -13,6 +13,7 @@ import {
   parseDocumentTotalAmountDeterministically,
 } from "./documentArticleDeterministicParser";
 import { parseMasterDataArticleItemsDeterministically } from "./documentArticleMasterDataParser";
+import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as customersService from "./customersService";
 import * as projectsService from "./projectsService";
 
@@ -24,6 +25,21 @@ export type CustomerNumberResolution =
   | { resolution: "none"; count: 0; customer: null }
   | { resolution: "single"; count: 1; customer: Customer }
   | { resolution: "multiple"; count: number; customer: null };
+
+export type LatestProjectAppointmentSummary = {
+  id: number;
+  startDate: string;
+  endDate: string | null;
+  startTime: string | null;
+  startTimeHour: number | null;
+  tourName: string | null;
+  customerName: string | null;
+};
+
+export type ProjectOrderNumberResolution =
+  | { resolution: "none"; count: 0; project: null; latestAppointment: null }
+  | { resolution: "single"; count: 1; project: Project; latestAppointment: LatestProjectAppointmentSummary | null }
+  | { resolution: "multiple"; count: number; project: null; latestAppointment: null };
 
 export class DocumentExtractionDeterministicError extends Error {
   constructor(message: string) {
@@ -43,6 +59,14 @@ export class DocumentExtractionOrderConflictError extends Error {
 
 function normalizeCustomerNumber(customerNumber: string): string {
   return customerNumber.trim();
+}
+
+function normalizeDateOnly(value: string | Date | null): string | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return value.slice(0, 10);
 }
 
 function deriveSaunaModel(descriptions: string[]): string {
@@ -167,16 +191,27 @@ export async function resolveCustomerByNumber(customerNumber: string): Promise<C
   return { resolution: "multiple", count: matches.length, customer: null };
 }
 
-export async function resolveProjectByOrderNumber(orderNumber: string) {
+export async function resolveProjectByOrderNumber(orderNumber: string): Promise<ProjectOrderNumberResolution> {
   const normalizedOrderNumber = orderNumber.trim();
   const matches = await projectsService.getProjectsByOrderNumber(normalizedOrderNumber);
   if (matches.length === 0) {
-    return { resolution: "none", count: 0, project: null };
+    return { resolution: "none", count: 0, project: null, latestAppointment: null };
   }
   if (matches.length === 1) {
-    return { resolution: "single", count: 1, project: matches[0] };
+    const latestAppointment = await appointmentsRepository.getLatestAppointmentSummaryByProjectId(matches[0].id);
+    return {
+      resolution: "single",
+      count: 1,
+      project: matches[0],
+      latestAppointment: latestAppointment ? {
+        ...latestAppointment,
+        startDate: normalizeDateOnly(latestAppointment.startDate) ?? "",
+        endDate: normalizeDateOnly(latestAppointment.endDate),
+        startTimeHour: latestAppointment.startTime ? Number(latestAppointment.startTime.slice(0, 2)) : null,
+      } : null,
+    };
   }
-  return { resolution: "multiple", count: matches.length, project: null };
+  return { resolution: "multiple", count: matches.length, project: null, latestAppointment: null };
 }
 
 export async function checkCustomerDuplicate(customerNumber: string): Promise<{ duplicate: boolean; count: number }> {

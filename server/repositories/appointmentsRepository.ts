@@ -627,6 +627,33 @@ export async function listAppointmentsByProjectFromDate(projectId: number, fromD
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
 
+export async function getLatestAppointmentSummaryByProjectId(projectId: number): Promise<{
+  id: number;
+  startDate: Date;
+  endDate: Date | null;
+  startTime: string | null;
+  tourName: string | null;
+  customerName: string | null;
+} | null> {
+  const [row] = await db
+    .select({
+      id: appointments.id,
+      startDate: appointments.startDate,
+      endDate: appointments.endDate,
+      startTime: appointments.startTime,
+      tourName: tours.name,
+      customerName: customers.fullName,
+    })
+    .from(appointments)
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(eq(appointments.projectId, projectId))
+    .orderBy(desc(appointments.startDate), desc(appointments.startTime), desc(appointments.id))
+    .limit(1);
+
+  return row ?? null;
+}
+
 export async function listAppointmentsByEmployeeFromDate(employeeId: number, fromDate: Date) {
   logDebug(`${logPrefix} list appointments employeeId=${employeeId} fromDate>=${fromDate}`);
   return db

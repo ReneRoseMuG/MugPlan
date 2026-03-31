@@ -85,6 +85,16 @@ const extractedFieldReportSchema = z.object({
   missing: z.array(extractedFieldMissingSchema),
 });
 
+const documentExtractionLatestProjectAppointmentSchema = z.object({
+  id: z.number().int().positive(),
+  startDate: z.string().min(1),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  startTimeHour: z.number().int().min(0).max(23).nullable(),
+  tourName: z.string().nullable(),
+  customerName: z.string().nullable(),
+});
+
 const entityAppointmentsScopeSchema = z.enum(["upcoming", "all"]);
 const tagNameSchema = z.string().min(1).max(100);
 const tagColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
@@ -808,6 +818,7 @@ export const api = {
           resolution: z.enum(["none", "single", "multiple"]),
           count: z.number().int().min(0),
           project: z.custom<Project>().nullable(),
+          latestAppointment: documentExtractionLatestProjectAppointmentSchema.nullable(),
         }),
         400: errorSchemas.validation,
       },
