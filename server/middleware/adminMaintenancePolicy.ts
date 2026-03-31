@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
 import {
   assertSafeAdminDestructiveOperationTarget,
+  assertSafeDatabaseTargetForMode,
   parseDatabaseLogInfo,
 } from "../security/dbSafetyGuards";
 import { logWarn } from "../lib/logger";
@@ -74,12 +75,21 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
     }
 
     try {
-      assertSafeAdminDestructiveOperationTarget({
-        mode,
-        databaseUrl: runtimeConfig.mysqlDatabaseUrl,
-        allowedDatabases: runtimeConfig.allowedDatabases,
-        allowedHosts: runtimeConfig.allowedHosts,
-      });
+      if (mode === "production" && isDumpImportApply) {
+        assertSafeDatabaseTargetForMode(
+          runtimeConfig.mysqlDatabaseUrl,
+          mode,
+          runtimeConfig.allowedDatabases,
+          runtimeConfig.allowedHosts,
+        );
+      } else {
+        assertSafeAdminDestructiveOperationTarget({
+          mode,
+          databaseUrl: runtimeConfig.mysqlDatabaseUrl,
+          allowedDatabases: runtimeConfig.allowedDatabases,
+          allowedHosts: runtimeConfig.allowedHosts,
+        });
+      }
     } catch (error) {
       const dbInfo = parseDatabaseLogInfo(runtimeConfig.mysqlDatabaseUrl);
       logWarn("admin_action_blocked", {
