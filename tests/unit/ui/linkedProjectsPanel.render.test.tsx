@@ -2,33 +2,32 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Das Projekte-Panel im Kundenformular verwendet den gemeinsamen Projekt-Entity-Card-Renderer.
+ * - Das Projekte-Panel im Kundenformular verwendet die kompakte LinkedProjectCard in der Sidebar.
  * - Die Datenquelle nutzt den paginierten Listenendpunkt `/api/projects/list` mit `customerId`.
  * - Die Karten bleiben ueber `linked-project-card-*` testbar und werden nach naechstem Termin absteigend sortiert.
  *
  * Fehlerfaelle:
- * - Das Panel faellt auf die alte LinkedProjectCard oder den alten Endpunkt zurueck.
+ * - Das Panel rendert statt der kompakten Sidebar-Karte wieder eine andere Projektkarte oder den alten Endpunkt.
  * - Paging oder Sortierung der Projektkarten bricht weg.
  *
  * Ziel:
- * Das gemeinsame Sidebar-Rendering fuer verknuepfte Projekte inklusive Listenendpunkt und Sortierung absichern.
+ * Das kompakte Sidebar-Rendering fuer verknuepfte Projekte inklusive Listenendpunkt und Sortierung absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
-const projectEntityCardMock = vi.fn();
+const linkedProjectCardMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
 }));
 
-vi.mock("@/components/ui/entity-preview-cards", () => ({
-  TABLE_ENTITY_CARD_PREVIEW_WIDTH_CLASS: "w-[360px]",
-  ProjectEntityCard: (props: Record<string, unknown>) => {
-    projectEntityCardMock(props);
-    return <div data-testid={String((props.testIds as { card?: string })?.card ?? "project-card")} />;
+vi.mock("@/components/LinkedProjectCard", () => ({
+  LinkedProjectCard: (props: Record<string, unknown>) => {
+    linkedProjectCardMock(props);
+    return <div data-testid={`linked-project-card-${String((props.project as { id: number }).id)}`} />;
   },
 }));
 
@@ -37,11 +36,11 @@ import { LinkedProjectsPanel } from "../../../client/src/components/LinkedProjec
 describe("FT05+ linked projects panel", () => {
   afterEach(() => {
     useQueryMock.mockReset();
-    projectEntityCardMock.mockReset();
+    linkedProjectCardMock.mockReset();
     vi.restoreAllMocks();
   });
 
-  it("loads linked projects via projects/list and renders shared entity cards in appointment order", async () => {
+  it("loads linked projects via projects/list and renders compact sidebar cards in appointment order", async () => {
     let capturedQueryFn: null | (() => Promise<unknown>) = null;
 
     useQueryMock.mockImplementation((options: { queryFn?: () => Promise<unknown> }) => {
@@ -134,7 +133,7 @@ describe("FT05+ linked projects panel", () => {
 
     renderToStaticMarkup(<LinkedProjectsPanel customerId={5} customerNumber="C-5" onOpenProject={vi.fn()} />);
 
-    expect(projectEntityCardMock.mock.calls.map(([props]) => (props as { testIds: { card: string } }).testIds.card)).toEqual([
+    expect(linkedProjectCardMock.mock.calls.map(([props]) => `linked-project-card-${String((props as { project: { id: number } }).project.id)}`)).toEqual([
       "linked-project-card-13",
       "linked-project-card-12",
       "linked-project-card-11",

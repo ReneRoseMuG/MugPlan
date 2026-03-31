@@ -2,7 +2,7 @@ import React from "react";
 import { FolderKanban } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { ProjectEntityCard, TABLE_ENTITY_CARD_PREVIEW_WIDTH_CLASS } from "@/components/ui/entity-preview-cards";
+import { LinkedProjectCard } from "@/components/LinkedProjectCard";
 import type { Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 
@@ -129,25 +129,11 @@ export function LinkedProjectsPanel({ customerId, customerNumber, onOpenProject 
           </p>
         ) : (
           sortedProjects.map((project) => (
-            <ProjectEntityCard
+            <LinkedProjectCard
               key={project.id}
-              project={{
-                ...project,
-                customer: {
-                  ...project.customer,
-                  customerNumber: project.customer.customerNumber || customerNumber || "-",
-                },
-              }}
-              className={TABLE_ENTITY_CARD_PREVIEW_WIDTH_CLASS}
+              project={project}
+              customerNumber={project.customer.customerNumber || customerNumber || "-"}
               onDoubleClick={() => onOpenProject?.(project.id)}
-              testIds={{
-                card: `linked-project-card-${project.id}`,
-                customerPanel: `linked-project-customer-${project.id}`,
-                projectPanel: `linked-project-project-${project.id}`,
-                appointments: `linked-project-appointments-${project.id}`,
-                notes: `linked-project-notes-${project.id}`,
-                tags: `linked-project-tags-${project.id}`,
-              }}
             />
           ))
         )}
