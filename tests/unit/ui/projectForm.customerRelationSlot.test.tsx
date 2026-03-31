@@ -320,7 +320,7 @@ describe("FT02 project form customer relation slot", () => {
         default: actual,
         useState<T>(initial: T | (() => T)) {
           stateCall += 1;
-          if (stateCall === 2) {
+          if (stateCall === 3) {
             return actual.useState("Projekt ohne Kunde" as T);
           }
           return actual.useState(initial);

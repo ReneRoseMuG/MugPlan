@@ -6,6 +6,7 @@
  * Abgedeckte Regeln:
  * - Die SettingsPage zeigt die sichtbaren Save-Controls fuer `helpTextPreviewSize`, die EntityFormShell-Breiten, `backup_enabled` und `auth_two_factor_enabled`.
  * - Der Backup-Bereich zeigt den manuellen Trigger und die sichtbaren Monitoring-Spalten.
+ * - Der Dump-Bereich zeigt den neuen Preview-Einstieg fuer den Transfer-Import.
  *
  * Fehlerfaelle:
  * - Einstellungs-Save-Controls verschwinden aus der Seite.
@@ -110,5 +111,8 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     expect(html).toContain("Fehlermeldung");
     expect(html).toContain("Anzahl exportierter Datensaetze");
     expect(html).toContain("Download");
+    expect(html).toContain("Transfer-Import");
+    expect(html).toContain("input-dump-import-file");
+    expect(html).toContain("button-dump-import-preview");
   });
 });

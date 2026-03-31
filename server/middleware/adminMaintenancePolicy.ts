@@ -12,8 +12,11 @@ function classifyAdminEndpoint(method: string, path: string): AdminEndpointCateg
   if (method === "POST" && path === "/admin/reset-database") {
     return "destructive";
   }
-  if (method === "POST" && path === "/admin/dumps/import") {
+  if (method === "POST" && path === "/admin/dumps/import/apply") {
     return "destructive";
+  }
+  if (method === "POST" && path === "/admin/dumps/import/preview") {
+    return "sensitive_read";
   }
   if (method === "POST" && path === "/admin/demo-seed-runs") {
     return "destructive";
@@ -57,7 +60,9 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
 
   if (category === "destructive") {
     const mode = getRuntimeMode();
-    if (mode === "production") {
+    const runtimeConfig = getRuntimeConfig();
+    const isDumpImportApply = req.method.toUpperCase() === "POST" && req.path === "/admin/dumps/import/apply";
+    if (mode === "production" && !(isDumpImportApply && runtimeConfig.enableProductionDumpImport)) {
       logWarn("admin_action_blocked", {
         reason: "OPERATION_BLOCKED_IN_PRODUCTION",
         method: req.method,
@@ -68,7 +73,6 @@ export function enforceAdminMaintenancePolicy(req: Request, res: Response, next:
       return;
     }
 
-    const runtimeConfig = getRuntimeConfig();
     try {
       assertSafeAdminDestructiveOperationTarget({
         mode,

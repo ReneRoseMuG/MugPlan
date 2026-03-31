@@ -26,6 +26,7 @@ import os from "os";
 import path from "path";
 import fs from "fs";
 import archiver from "archiver";
+import crypto from "crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tempRoot = path.resolve(os.tmpdir(), "mugplan-dump-unit-test");
@@ -54,12 +55,23 @@ vi.mock("../../../server/config/runtimeEnv", () => ({
     mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_test",
     allowedDatabases: ["mugplan_test"],
     allowedHosts: ["localhost"],
+    enableProductionDumpImport: false,
   })),
 }));
 
 vi.mock("../../../server/security/dbSafetyGuards", () => ({
   assertSafeAdminDestructiveOperationTarget: vi.fn(() => ({
     dbName: "mugplan_test",
+    host: "localhost",
+    port: 3306,
+  })),
+  assertSafeDatabaseTargetForMode: vi.fn(() => ({
+    dbName: "mugplan_test",
+    host: "localhost",
+    port: 3306,
+  })),
+  parseDatabaseLogInfo: vi.fn((databaseUrl: string) => ({
+    dbName: databaseUrl.includes("mugplan_prod") ? "mugplan_prod" : "mugplan_test",
     host: "localhost",
     port: 3306,
   })),
@@ -71,6 +83,7 @@ vi.mock("../../../server/lib/logger", () => ({
 }));
 
 import {
+  applyDumpImport,
   createDump,
   deleteDump,
   DUMP_FORMAT_VERSION,
@@ -79,13 +92,15 @@ import {
   importDump,
   isDumpServiceError,
   listDumps,
+  previewDumpImport,
   resolveDumpDownloadPath,
 } from "../../../server/services/dumpService";
-import { getRuntimeMode } from "../../../server/config/runtimeEnv";
+import { getRuntimeConfig, getRuntimeMode } from "../../../server/config/runtimeEnv";
 import { logError } from "../../../server/lib/logger";
 
 const adminCtx = { roleKey: "ADMIN" } as const;
 const readerCtx = { roleKey: "LESER" } as const;
+const emptyArrayHash = crypto.createHash("sha256").update(Buffer.from(JSON.stringify([]), "utf8")).digest("hex");
 
 async function buildZipFromDataJson(data: unknown): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -95,6 +110,21 @@ async function buildZipFromDataJson(data: unknown): Promise<Buffer> {
     archive.on("end", () => resolve(Buffer.concat(chunks)));
     archive.on("error", reject);
     archive.append(JSON.stringify(data), { name: "data.json" });
+    void archive.finalize();
+  });
+}
+
+async function buildZipFromDumpArtifacts(data: unknown, manifest?: unknown): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const archive = archiver("zip");
+    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+    archive.on("end", () => resolve(Buffer.concat(chunks)));
+    archive.on("error", reject);
+    archive.append(JSON.stringify(data), { name: "data.json" });
+    if (manifest) {
+      archive.append(JSON.stringify(manifest), { name: "manifest.json" });
+    }
     void archive.finalize();
   });
 }
@@ -131,9 +161,114 @@ describe("dumpService – Zugriffskontrolle", () => {
   });
 });
 
+describe("dumpService preview/apply safety", () => {
+  it("previewDumpImport returns warning for legacy dumps in development", async () => {
+    const zipBuffer = await buildZipFromDataJson({
+      formatVersion: 2,
+      exportedAt: new Date().toISOString(),
+      tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
+    });
+
+    const preview = await previewDumpImport(adminCtx, zipBuffer);
+
+    expect(preview.transferReadiness).toBe("warning");
+    expect(preview.isLegacyDump).toBe(true);
+    expect(preview.manifestPresent).toBe(false);
+    expect(preview.warnings.some((entry) => entry.includes("Legacy-Dump"))).toBe(true);
+  });
+
+  it("previewDumpImport blocks production imports without runtime flag", async () => {
+    vi.mocked(getRuntimeMode).mockReturnValue("production");
+    vi.mocked(getRuntimeConfig).mockReturnValue({
+      mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_prod",
+      allowedDatabases: ["mugplan_prod"],
+      allowedHosts: ["localhost"],
+      enableProductionDumpImport: false,
+    });
+
+    const dumpId = "dump-test";
+    const exportedAt = new Date().toISOString();
+    const tables = Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []]));
+    const manifest = {
+      dumpId,
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt,
+      schemaRevision: "0020_remove_employee_tour_id",
+      tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, { rowCount: 0, sha256: emptyArrayHash }])),
+      uploads: {
+        fileCount: 0,
+        totalBytes: 0,
+        sha256: emptyArrayHash,
+        files: [],
+      },
+    };
+    const zipBuffer = await buildZipFromDumpArtifacts({
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt,
+      dumpId,
+      tables,
+    }, manifest);
+
+    const preview = await previewDumpImport(adminCtx, zipBuffer);
+
+    expect(preview.transferReadiness).toBe("blocked");
+    expect(preview.blockingIssues.some((entry) => entry.includes("Runtime-Flag"))).toBe(true);
+  });
+
+  it("applyDumpImport blocks hash mismatch and wrong confirmation phrase", async () => {
+    const exportedAt = new Date().toISOString();
+    const dumpId = "dump-apply-test";
+    const tables = Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []]));
+    const manifest = {
+      dumpId,
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt,
+      schemaRevision: "0020_remove_employee_tour_id",
+      tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, { rowCount: 0, sha256: emptyArrayHash }])),
+      uploads: {
+        fileCount: 0,
+        totalBytes: 0,
+        sha256: emptyArrayHash,
+        files: [],
+      },
+    };
+    const zipBuffer = await buildZipFromDumpArtifacts({
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt,
+      dumpId,
+      tables,
+    }, manifest);
+    const preview = await previewDumpImport(adminCtx, zipBuffer);
+
+    await expect(applyDumpImport(adminCtx, {
+      fileBuffer: zipBuffer,
+      fileHash: `${preview.fileHash}x`,
+      confirmationPhrase: preview.confirmationPhrase,
+      productionConfirmationText: preview.confirmationPhrase,
+    })).rejects.toSatisfy(
+      (error: unknown) => isDumpServiceError(error) && error.code === "FILE_HASH_MISMATCH",
+    );
+
+    await expect(applyDumpImport(adminCtx, {
+      fileBuffer: zipBuffer,
+      fileHash: preview.fileHash,
+      confirmationPhrase: preview.confirmationPhrase,
+      productionConfirmationText: "falsch",
+    })).rejects.toSatisfy(
+      (error: unknown) => isDumpServiceError(error) && error.code === "CONFIRMATION_MISMATCH",
+    );
+  });
+});
+
 describe("dumpService – Environment-Guard", () => {
   afterEach(() => {
     vi.mocked(getRuntimeMode).mockReturnValue("development");
+    vi.mocked(getRuntimeConfig).mockReturnValue({
+      mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_test",
+      allowedDatabases: ["mugplan_test"],
+      allowedHosts: ["localhost"],
+      enableProductionDumpImport: false,
+    });
   });
 
   it("importDump: wirft 403 wenn Laufzeitmodus production ist", async () => {

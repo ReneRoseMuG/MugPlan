@@ -42,8 +42,8 @@ export function ProjectDuplicateResolutionDialog({
   onOpenChange,
   onConfirm,
 }: ProjectDuplicateResolutionDialogProps) {
-  const projectName = resolution?.project.name?.trim() || "Unbenanntes Projekt";
-  const orderNumber = resolution?.project.orderNumber?.trim() || "Keine Auftragsnummer";
+  const projectName = resolution?.project?.name?.trim() || "Unbenanntes Projekt";
+  const orderNumber = resolution?.project?.orderNumber?.trim() || "Keine Auftragsnummer";
   const latestAppointmentLabel = resolution?.latestAppointment
     ? formatListDateTime(resolution.latestAppointment)
     : "";

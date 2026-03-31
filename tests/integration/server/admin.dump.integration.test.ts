@@ -81,6 +81,34 @@ async function parseDumpDataJson(zipBuffer: Buffer): Promise<unknown> {
   return JSON.parse((await file.buffer()).toString("utf-8")) as unknown;
 }
 
+async function parseDumpManifest(zipBuffer: Buffer): Promise<unknown> {
+  const directory = await (await import("unzipper")).Open.buffer(zipBuffer);
+  const file = directory.files.find((entry) => entry.path === "manifest.json");
+  if (!file) {
+    throw new Error("manifest.json not found in dump");
+  }
+  return JSON.parse((await file.buffer()).toString("utf-8")) as unknown;
+}
+
+function previewDumpImport(admin: request.SuperAgentTest, zipBuffer: Buffer) {
+  return admin
+    .post("/api/admin/dumps/import/preview")
+    .attach("file", zipBuffer, "dump.zip");
+}
+
+function applyDumpImport(
+  admin: request.SuperAgentTest,
+  zipBuffer: Buffer,
+  preview: { fileHash: string; confirmationPhrase: string },
+) {
+  return admin
+    .post("/api/admin/dumps/import/apply")
+    .field("fileHash", preview.fileHash)
+    .field("confirmationPhrase", preview.confirmationPhrase)
+    .field("productionConfirmationText", preview.confirmationPhrase)
+    .attach("file", zipBuffer, "dump.zip");
+}
+
 async function getRowCount(table: any): Promise<number> {
   const rows = await db.select({ value: count() }).from(table);
   return Number(rows[0]?.value ?? 0);
@@ -107,6 +135,38 @@ async function collectSnapshot() {
 
 beforeAll(async () => {
   app = await createApiTestApp();
+});
+
+describe("POST /api/admin/dumps/import/apply hardening", () => {
+  it("blockiert fileHash mismatch und falsche Sicherheitsphrase", async () => {
+    const admin = await loginAdminAgent(app);
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+    const dumpBuffer = downloadResponse.body as Buffer;
+
+    const previewResponse = await previewDumpImport(admin, dumpBuffer).expect(200);
+
+    await admin
+      .post("/api/admin/dumps/import/apply")
+      .field("fileHash", `${String(previewResponse.body.fileHash)}x`)
+      .field("confirmationPhrase", String(previewResponse.body.confirmationPhrase))
+      .field("productionConfirmationText", String(previewResponse.body.confirmationPhrase))
+      .attach("file", dumpBuffer, "dump.zip")
+      .expect(409);
+
+    await admin
+      .post("/api/admin/dumps/import/apply")
+      .field("fileHash", String(previewResponse.body.fileHash))
+      .field("confirmationPhrase", String(previewResponse.body.confirmationPhrase))
+      .field("productionConfirmationText", "falsch")
+      .attach("file", dumpBuffer, "dump.zip")
+      .expect(409);
+  });
 });
 
 afterAll(async () => {
@@ -160,12 +220,23 @@ describe("POST /api/admin/dumps/create und Download", () => {
       exportedAt: string;
       tables: Record<string, unknown[]>;
     };
+    const manifest = await parseDumpManifest(downloadResponse.body as Buffer) as {
+      dumpId: string;
+      formatVersion: number;
+      exportedAt: string;
+      schemaRevision: string;
+      tables: Record<string, { rowCount: number; sha256: string }>;
+      uploads: { fileCount: number; totalBytes: number; sha256: string };
+    };
 
     expect(dumpData.formatVersion).toBe(DUMP_FORMAT_VERSION);
     expect(typeof dumpData.exportedAt).toBe("string");
     expect(Object.keys(dumpData.tables).sort()).toEqual([...DUMP_TABLE_KEYS].sort());
     expect(dumpData.tables["tours"].length).toBeGreaterThan(0);
     expect(dumpData.tables["teams"].length).toBeGreaterThan(0);
+    expect(manifest.formatVersion).toBe(DUMP_FORMAT_VERSION);
+    expect(manifest.dumpId).toContain("dump_");
+    expect(Object.keys(manifest.tables).sort()).toEqual([...DUMP_TABLE_KEYS].sort());
 
     for (const excludedKey of EXCLUDED_DUMP_TABLE_KEYS) {
       expect(dumpData.tables).not.toHaveProperty(excludedKey);
@@ -211,12 +282,15 @@ describe("POST /api/admin/dumps/import", () => {
     expect(mutatedSnapshot.teams).toBe(beforeSnapshot.teams + 1);
     expect(mutatedSnapshot.customers).toBe(beforeSnapshot.customers + 1);
 
-    const importResponse = await admin
-      .post("/api/admin/dumps/import")
-      .attach("file", dumpBuffer, "dump.zip")
-      .expect(200);
+    const previewResponse = await previewDumpImport(admin, dumpBuffer).expect(200);
+    const importResponse = await applyDumpImport(admin, dumpBuffer, {
+      fileHash: String(previewResponse.body.fileHash),
+      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+    }).expect(200);
 
     expect(importResponse.body.tablesRestored).toBeGreaterThan(0);
+    expect(importResponse.body.targetBackupCreated).toBe(true);
+    expect(importResponse.body.verificationPassed).toBe(true);
 
     const afterSnapshot = await collectSnapshot();
     expect(afterSnapshot).toEqual(beforeSnapshot);
@@ -278,10 +352,12 @@ describe("POST /api/admin/dumps/import", () => {
     expect(mutatedSnapshot.tours).toBe(beforeSnapshot.tours + 1);
     expect(mutatedSnapshot.customers).toBe(beforeSnapshot.customers + 1);
 
-    const importResponse = await admin
-      .post("/api/admin/dumps/import")
-      .attach("file", legacyZipBuffer, "legacy-dump.zip")
-      .expect(200);
+    const previewResponse = await previewDumpImport(admin, legacyZipBuffer).expect(200);
+    expect(previewResponse.body.transferReadiness).toBe("warning");
+    const importResponse = await applyDumpImport(admin, legacyZipBuffer, {
+      fileHash: String(previewResponse.body.fileHash),
+      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+    }).expect(200);
 
     expect(importResponse.body.tablesRestored).toBeGreaterThan(0);
 
@@ -341,10 +417,11 @@ describe("POST /api/admin/dumps/import", () => {
 
     const legacyZipBuffer = await buildZipFromDataJson(dumpData);
 
-    await admin
-      .post("/api/admin/dumps/import")
-      .attach("file", legacyZipBuffer, "legacy-storage-path-dump.zip")
-      .expect(200);
+    const previewResponse = await previewDumpImport(admin, legacyZipBuffer).expect(200);
+    await applyDumpImport(admin, legacyZipBuffer, {
+      fileHash: String(previewResponse.body.fileHash),
+      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+    }).expect(200);
 
     const [restoredAttachment] = await db
       .select()
@@ -369,7 +446,7 @@ describe("POST /api/admin/dumps/import", () => {
     const zipBuffer = await buildZipFromDataJson({});
 
     const response = await admin
-      .post("/api/admin/dumps/import")
+      .post("/api/admin/dumps/import/preview")
       .attach("file", zipBuffer, "legacy.zip");
 
     expect(response.status).toBe(422);
@@ -378,7 +455,7 @@ describe("POST /api/admin/dumps/import", () => {
   it("kein multipart-Body → 422", async () => {
     const admin = await loginAdminAgent(app);
     await admin
-      .post("/api/admin/dumps/import")
+      .post("/api/admin/dumps/import/preview")
       .set("Content-Type", "application/json")
       .send({})
       .expect(422);
@@ -387,7 +464,7 @@ describe("POST /api/admin/dumps/import", () => {
   it("korrupte ZIP → 422", async () => {
     const admin = await loginAdminAgent(app);
     await admin
-      .post("/api/admin/dumps/import")
+      .post("/api/admin/dumps/import/preview")
       .attach("file", Buffer.from("this is not a valid zip"), "dump.zip")
       .expect(422);
   });
@@ -405,7 +482,7 @@ describe("POST /api/admin/dumps/import", () => {
     });
 
     await admin
-      .post("/api/admin/dumps/import")
+      .post("/api/admin/dumps/import/preview")
       .attach("file", zipBuffer, "dump.zip")
       .expect(422);
   });
@@ -418,7 +495,7 @@ describe("POST /api/admin/dumps/import", () => {
     });
 
     const response = await request(app)
-      .post("/api/admin/dumps/import")
+      .post("/api/admin/dumps/import/preview")
       .attach("file", zipBuffer, "dump.zip");
 
     expect([401, 403]).toContain(response.status);

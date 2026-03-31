@@ -47,6 +47,62 @@ type DumpListRow = {
   createdAt: string;
 };
 
+type DumpImportPreviewRow = {
+  fileHash: string;
+  dumpId: string;
+  targetDatabaseName: string;
+  transferReadiness: "ready" | "warning" | "blocked";
+  blockingIssues: string[];
+  warnings: string[];
+  confirmationPhrase: string;
+  allowsProductionImport: boolean;
+  isLegacyDump: boolean;
+  manifestPresent: boolean;
+  schemaRevision: string | null;
+  expectedTables: Array<{
+    key: string;
+    rowCount: number;
+    sha256: string;
+  }>;
+  expectedUploads: {
+    fileCount: number;
+    totalBytes: number;
+    sha256: string;
+  };
+};
+
+type DumpImportApplyRow = {
+  transferId: string;
+  dumpId: string;
+  targetDatabaseName: string;
+  targetBackupCreated: boolean;
+  verificationPassed: boolean;
+  importStatus: "success" | "warning" | "error";
+  tablesRestored: number;
+  uploadsRestored: boolean;
+  durationMs: number;
+  warnings: string[];
+  blockingIssues: string[];
+  journalPath: string;
+  targetBackupPath: string | null;
+  expectedUploads: {
+    fileCount: number;
+    totalBytes: number;
+    sha256: string;
+  };
+  verifiedTables: Array<{
+    key: string;
+    expectedRowCount: number;
+    actualRowCount: number;
+    matches: boolean;
+  }>;
+  verifiedUploads: {
+    fileCountMatches: boolean;
+    totalBytesMatches: boolean;
+    sha256Matches: boolean;
+  };
+};
+
 function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; pdfPath?: string } {
   if (!filePathRaw) return {};
   try {
@@ -236,10 +292,14 @@ export function SettingsPage() {
   const [dumpCreateError, setDumpCreateError] = useState<string | null>(null);
   const [dumpCreateResult, setDumpCreateResult] = useState<DumpListRow | null>(null);
   const [selectedDumpFile, setSelectedDumpFile] = useState<File | null>(null);
-  const [isDumpImporting, setIsDumpImporting] = useState(false);
-  const [dumpImportResult, setDumpImportResult] = useState<{ tablesRestored: number; uploadsRestored: boolean } | null>(null);
+  const [isDumpPreviewLoading, setIsDumpPreviewLoading] = useState(false);
+  const [isDumpApplying, setIsDumpApplying] = useState(false);
+  const [dumpImportPreview, setDumpImportPreview] = useState<DumpImportPreviewRow | null>(null);
+  const [dumpImportResult, setDumpImportResult] = useState<DumpImportApplyRow | null>(null);
   const [dumpImportError, setDumpImportError] = useState<string | null>(null);
+  const [dumpConfirmationInput, setDumpConfirmationInput] = useState("");
   const [isDumpDeleting, setIsDumpDeleting] = useState<string | null>(null);
+  const isDumpImporting = isDumpPreviewLoading || isDumpApplying;
 
   useEffect(() => {
     setPreviewValue(resolvedPreviewValue);
@@ -609,15 +669,46 @@ export function SettingsPage() {
     }
   };
 
-  const handleImportDump = async () => {
+  const handlePreviewDumpImport = async () => {
     if (!selectedDumpFile) return;
     setDumpImportError(null);
+    setDumpConfirmationInput("");
+    setDumpImportPreview(null);
     setDumpImportResult(null);
-    setIsDumpImporting(true);
+    setIsDumpPreviewLoading(true);
     try {
       const formData = new FormData();
       formData.append("file", selectedDumpFile);
-      const response = await fetch(api.dumps.import.path, {
+      const response = await fetch(api.dumps.importPreview.path, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Import-Vorschau fehlgeschlagen");
+      }
+      const payload = await response.json() as DumpImportPreviewRow;
+      setDumpImportPreview(payload);
+    } catch (error) {
+      setDumpImportError(error instanceof Error ? error.message : "Unbekannter Fehler");
+    } finally {
+      setIsDumpPreviewLoading(false);
+    }
+  };
+
+  const handleApplyDumpImport = async () => {
+    if (!selectedDumpFile || !dumpImportPreview) return;
+    setDumpImportError(null);
+    setDumpImportResult(null);
+    setIsDumpApplying(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedDumpFile);
+      formData.append("fileHash", dumpImportPreview.fileHash);
+      formData.append("confirmationPhrase", dumpImportPreview.confirmationPhrase);
+      formData.append("productionConfirmationText", dumpConfirmationInput);
+      const response = await fetch(api.dumps.importApply.path, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -626,13 +717,13 @@ export function SettingsPage() {
         const text = await response.text();
         throw new Error(text || "Import fehlgeschlagen");
       }
-      const payload = await response.json() as { tablesRestored: number; uploadsRestored: boolean };
+      const payload = await response.json() as DumpImportApplyRow;
       setDumpImportResult(payload);
       await dumpsQuery.refetch();
     } catch (error) {
       setDumpImportError(error instanceof Error ? error.message : "Unbekannter Fehler");
     } finally {
-      setIsDumpImporting(false);
+      setIsDumpApplying(false);
     }
   };
 
@@ -1130,34 +1221,103 @@ export function SettingsPage() {
 
               {/* Import */}
               <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="dump-import-section">
-                <p className="font-semibold text-slate-900">Import</p>
+                <p className="font-semibold text-slate-900">Transfer-Import</p>
                 <p className="mb-1 text-xs text-slate-500">
-                  ZIP-Dump hochladen und alle Anwendungsdaten wiederherstellen.
+                  ZIP-Dump hochladen, Vorschau pruefen und erst danach mit Sicherheitsphrase anwenden.
                 </p>
                 <p className="mb-3 text-xs text-amber-700 font-medium" data-testid="dump-import-warning">
                   Achtung: Der Import überschreibt alle vorhandenen Daten (außer Benutzer und Rollen) unwiderruflich.
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <input
                     type="file"
                     accept=".zip"
-                    onChange={(e) => setSelectedDumpFile(e.target.files?.[0] ?? null)}
+                    onChange={(e) => {
+                      setSelectedDumpFile(e.target.files?.[0] ?? null);
+                      setDumpImportPreview(null);
+                      setDumpImportResult(null);
+                      setDumpImportError(null);
+                      setDumpConfirmationInput("");
+                    }}
                     data-testid="input-dump-import-file"
                     className="text-sm"
                   />
                   <Button
-                    onClick={() => void handleImportDump()}
-                    disabled={!selectedDumpFile || isDumpImporting}
-                    data-testid="button-dump-import"
+                    onClick={() => void handlePreviewDumpImport()}
+                    disabled={!selectedDumpFile || isDumpPreviewLoading || isDumpApplying}
+                    data-testid="button-dump-import-preview"
                   >
-                    {isDumpImporting ? "Import läuft..." : "Import ausführen"}
+                    {isDumpImporting ? "Prüfung läuft..." : "Vorschau prüfen"}
                   </Button>
                 </div>
+                {dumpImportPreview && (
+                  <div className="mt-4 space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="dump-import-preview-report">
+                    <div className="flex flex-wrap items-center gap-3 text-sm">
+                      <span className="font-semibold text-slate-900">Status: {dumpImportPreview.transferReadiness}</span>
+                      <span>Ziel: {dumpImportPreview.targetDatabaseName}</span>
+                      <span>Dump: {dumpImportPreview.dumpId}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 text-xs text-slate-600 md:grid-cols-3">
+                      <div>Tabellen: {dumpImportPreview.expectedTables.length}</div>
+                      <div>Upload-Dateien: {dumpImportPreview.expectedUploads.fileCount}</div>
+                      <div>Upload-Groesse: {(dumpImportPreview.expectedUploads.totalBytes / 1024 / 1024).toFixed(2)} MB</div>
+                    </div>
+                    {dumpImportPreview.warnings.length > 0 && (
+                      <div data-testid="dump-import-preview-warnings">
+                        <p className="text-xs font-semibold text-amber-700">Warnungen</p>
+                        {dumpImportPreview.warnings.map((warning) => (
+                          <p key={warning} className="text-xs text-amber-700">{warning}</p>
+                        ))}
+                      </div>
+                    )}
+                    {dumpImportPreview.blockingIssues.length > 0 && (
+                      <div data-testid="dump-import-preview-blockers">
+                        <p className="text-xs font-semibold text-destructive">Blocker</p>
+                        {dumpImportPreview.blockingIssues.map((issue) => (
+                          <p key={issue} className="text-xs text-destructive">{issue}</p>
+                        ))}
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-900">Sicherheitsphrase</p>
+                      <p className="text-xs text-slate-600" data-testid="dump-import-confirmation-phrase">{dumpImportPreview.confirmationPhrase}</p>
+                      <Input
+                        value={dumpConfirmationInput}
+                        onChange={(event) => setDumpConfirmationInput(event.target.value)}
+                        data-testid="input-dump-import-confirmation"
+                      />
+                      <Button
+                        onClick={() => void handleApplyDumpImport()}
+                        disabled={
+                          isDumpApplying
+                          || dumpImportPreview.transferReadiness === "blocked"
+                          || dumpConfirmationInput.trim() !== dumpImportPreview.confirmationPhrase
+                        }
+                        data-testid="button-dump-import-apply"
+                      >
+                        {isDumpApplying ? "Import laeuft..." : "Import anwenden"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {dumpImportResult && (
                   <p className="mt-2 text-xs text-emerald-700" data-testid="dump-import-success">
                     Import abgeschlossen. Tabellen wiederhergestellt: {dumpImportResult.tablesRestored}.
                     Anhänge: {dumpImportResult.uploadsRestored ? "wiederhergestellt" : "nicht enthalten"}.
                   </p>
+                )}
+                {dumpImportResult && (
+                  <div className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-600" data-testid="dump-import-summary">
+                    <p>Status: {dumpImportResult.importStatus}</p>
+                    <p>Verifikation: {dumpImportResult.verificationPassed ? "bestanden" : "fehlgeschlagen"}</p>
+                    <p>Zielbackup: {dumpImportResult.targetBackupCreated ? "erstellt" : "nicht erstellt"}</p>
+                    {dumpImportResult.warnings.map((warning) => (
+                      <p key={warning} className="text-amber-700">{warning}</p>
+                    ))}
+                    {dumpImportResult.blockingIssues.map((issue) => (
+                      <p key={issue} className="text-destructive">{issue}</p>
+                    ))}
+                  </div>
                 )}
                 {dumpImportError && (
                   <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
