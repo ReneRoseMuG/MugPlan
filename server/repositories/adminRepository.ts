@@ -56,18 +56,34 @@ export type ResetDomainDataCounts = {
   seedRunEntities: number;
 };
 
-export async function listAllAttachmentStoragePaths(): Promise<string[]> {
+export type AttachmentFileRef = {
+  filename: string;
+  storagePath: string;
+};
+
+export async function listAllAttachmentFileRefs(): Promise<AttachmentFileRef[]> {
   const [projectRows, customerRows] = await Promise.all([
-    db.select({ storagePath: projectAttachments.storagePath }).from(projectAttachments),
-    db.select({ storagePath: customerAttachments.storagePath }).from(customerAttachments),
+    db.select({
+      filename: projectAttachments.filename,
+      storagePath: projectAttachments.storagePath,
+    }).from(projectAttachments),
+    db.select({
+      filename: customerAttachments.filename,
+      storagePath: customerAttachments.storagePath,
+    }).from(customerAttachments),
   ]);
 
-  const allPaths = [
-    ...projectRows.map((row) => row.storagePath),
-    ...customerRows.map((row) => row.storagePath),
-  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+  const allRefs = [
+    ...projectRows,
+    ...customerRows,
+  ].filter((row): row is AttachmentFileRef =>
+    typeof row.filename === "string" &&
+    row.filename.length > 0 &&
+    typeof row.storagePath === "string" &&
+    row.storagePath.length > 0,
+  );
 
-  return Array.from(new Set(allPaths));
+  return Array.from(new Map(allRefs.map((row) => [`${row.filename}::${row.storagePath}`, row])).values());
 }
 
 export async function resetDomainData(): Promise<ResetDomainDataCounts> {

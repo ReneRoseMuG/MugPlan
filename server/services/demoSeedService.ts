@@ -1,10 +1,9 @@
 import crypto from "crypto";
-import fs from "fs";
-import path from "path";
 import { PROJECT_ARTICLE_FIELDS } from "@shared/projectArticleList";
 import type { Component, InsertAppointment, NoteTemplate, Product } from "@shared/schema";
 import {
   buildStoredFilename,
+  deleteAttachmentFile,
   resolveMimeType,
   sanitizeFilename,
   writeAttachmentBuffer,
@@ -2016,15 +2015,15 @@ export async function purgeSeedRun(seedRunId: string): Promise<PurgeSummary> {
     demoSeedRepository.getEmployeeAttachmentsByIds(employeeAttachmentIds),
   ]);
 
-  const paths = [
-    ...projectAttachmentRows.map((row) => row.storagePath),
-    ...customerAttachmentRows.map((row) => row.storagePath),
-    ...employeeAttachmentRows.map((row) => row.storagePath),
+  const attachments = [
+    ...projectAttachmentRows,
+    ...customerAttachmentRows,
+    ...employeeAttachmentRows,
   ];
 
-  for (const storagePath of paths) {
+  for (const attachment of attachments) {
     try {
-      fs.unlinkSync(path.resolve(storagePath));
+      await deleteAttachmentFile(attachment.filename, attachment.storagePath);
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
         continue;

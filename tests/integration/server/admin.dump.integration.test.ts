@@ -297,6 +297,73 @@ describe("POST /api/admin/dumps/import", () => {
     expect(removedExtraCustomer).toHaveLength(0);
   });
 
+  it("normalisiert Attachment-storagePath beim Import auf den aktuellen Upload-Root", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const tour = await createTourFixture("#5577aa");
+    const employee = await createEmployeeFixture("ATTACH-IMPORT-EMP");
+    const customer = await createCustomerFixture("ATTACH-IMPORT-CUST");
+    const project = await createProjectFixture({ prefix: "ATTACH-IMPORT-PROJ", customerId: customer.id });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+
+    const attachmentBuffer = Buffer.from("dump-attachment-roundtrip");
+    const uploadResponse = await admin
+      .post(`/api/appointments/${appointment.id}/attachments`)
+      .attach("file", attachmentBuffer, "dump-attachment.pdf")
+      .expect(201);
+
+    const attachmentId = Number(uploadResponse.body.id);
+    expect(Number.isInteger(attachmentId)).toBe(true);
+
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+
+    const dumpData = await parseDumpDataJson(downloadResponse.body as Buffer) as {
+      formatVersion: number;
+      exportedAt: string;
+      tables: Record<string, Array<Record<string, unknown>>>;
+    };
+
+    const attachmentRow = dumpData.tables["appointmentAttachments"]?.find((row) => Number(row.id) === attachmentId);
+    expect(attachmentRow).toBeTruthy();
+    expect(typeof attachmentRow?.filename).toBe("string");
+    attachmentRow!.storagePath = `/legacy/shared/uploads/${String(attachmentRow!.filename)}`;
+
+    const legacyZipBuffer = await buildZipFromDataJson(dumpData);
+
+    await admin
+      .post("/api/admin/dumps/import")
+      .attach("file", legacyZipBuffer, "legacy-storage-path-dump.zip")
+      .expect(200);
+
+    const [restoredAttachment] = await db
+      .select()
+      .from(schema.appointmentAttachments)
+      .where(eq(schema.appointmentAttachments.id, attachmentId));
+
+    expect(restoredAttachment).toBeTruthy();
+    expect(restoredAttachment.storagePath).not.toBe(`/legacy/shared/uploads/${restoredAttachment.filename}`);
+    expect(restoredAttachment.storagePath.endsWith(restoredAttachment.filename)).toBe(true);
+
+    const attachmentDownload = await admin
+      .get(`/api/appointment-attachments/${attachmentId}/download?download=1`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+
+    expect(attachmentDownload.body).toEqual(attachmentBuffer);
+  });
+
   it("lehnt Legacy-Dumps ohne versioniertes Format ab", async () => {
     const admin = await loginAdminAgent(app);
     const zipBuffer = await buildZipFromDataJson({});

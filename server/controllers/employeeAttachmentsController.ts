@@ -93,9 +93,10 @@ export async function downloadEmployeeAttachment(req: Request, res: Response, ne
     }
 
     const forceDownload = req.query.download === "1";
-    sendAttachmentDownload(
+    await sendAttachmentDownload(
       res,
       {
+        filename: attachment.filename,
         mimeType: attachment.mimeType,
         originalName: attachment.originalName,
         storagePath: attachment.storagePath,
@@ -134,7 +135,7 @@ export async function deleteEmployeeAttachment(req: Request, res: Response, next
     const mode = req.query.mode === "hard" ? "hard" : "soft";
 
     if (mode === "hard") {
-      deleteAttachmentFile(attachment.storagePath);
+      await deleteAttachmentFile(attachment.filename, attachment.storagePath);
     }
 
     await employeeAttachmentsService.softDeleteEmployeeAttachment(attachmentId);

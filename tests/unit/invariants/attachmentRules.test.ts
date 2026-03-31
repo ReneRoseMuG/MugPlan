@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Projektattachment-Delete ist nur fuer ADMIN und DISPONENT erlaubt.
  * - Erfolgreicher Projektattachment-Delete fuehrt den Soft-Delete-Flow aus.
- * - Downloadpfade nutzen die vorgesehenen Sicherheitshelfer.
+ * - Downloadpfade werden aus dem gespeicherten Dateinamen statt aus Legacy-Pfaden aufgeloest.
  *
  * Fehlerfaelle:
  * - Unberechtigte Rollen koennen Attachments loeschen.
@@ -13,6 +13,7 @@
  * Zentrale Attachment-Sicherheitsregeln absichern.
  */
 import { describe, expect, it, vi } from "vitest";
+import path from "path";
 
 vi.mock("../../../server/services/projectAttachmentsService", () => ({
   listProjectAttachments: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock("../../../server/lib/attachmentFiles", () => ({
   MAX_UPLOAD_BYTES: 10 * 1024 * 1024,
   buildStoredFilename: vi.fn(),
   deleteAttachmentFile: vi.fn(),
+  resolveExistingAttachmentPath: vi.fn(),
   resolveMimeType: vi.fn(),
   sanitizeFilename: vi.fn((name: string) => name),
   writeAttachmentBuffer: vi.fn(),
@@ -36,6 +38,7 @@ vi.mock("../../../server/lib/multipart", () => ({
 
 import { deleteProjectAttachment } from "../../../server/controllers/projectAttachmentsController";
 import { sendAttachmentDownload } from "../../../server/lib/attachmentDownload";
+import * as attachmentFiles from "../../../server/lib/attachmentFiles";
 import * as projectAttachmentsService from "../../../server/services/projectAttachmentsService";
 
 describe("PKG-05 Invariant: attachment security rules", () => {
@@ -84,15 +87,17 @@ describe("PKG-05 Invariant: attachment security rules", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("uses inline disposition for PDF when download is not forced", () => {
+  it("uses inline disposition for PDF when download is not forced", async () => {
     const res = {
       setHeader: vi.fn(),
       sendFile: vi.fn(),
     } as any;
+    vi.mocked(attachmentFiles.resolveExistingAttachmentPath).mockResolvedValueOnce("/resolved/a.pdf");
 
-    sendAttachmentDownload(
+    await sendAttachmentDownload(
       res,
       {
+        filename: "a.pdf",
         mimeType: "application/pdf",
         storagePath: "./server/uploads/a.pdf",
         originalName: "a.pdf",
@@ -102,18 +107,21 @@ describe("PKG-05 Invariant: attachment security rules", () => {
 
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "application/pdf");
     expect(res.setHeader).toHaveBeenCalledWith("Content-Disposition", 'inline; filename="a.pdf"');
-    expect(res.sendFile).toHaveBeenCalledOnce();
+    expect(attachmentFiles.resolveExistingAttachmentPath).toHaveBeenCalledWith("a.pdf", "./server/uploads/a.pdf");
+    expect(res.sendFile).toHaveBeenCalledWith(path.resolve("/resolved/a.pdf"));
   });
 
-  it("uses inline disposition for image mime types when download is not forced", () => {
+  it("uses inline disposition for image mime types when download is not forced", async () => {
     const res = {
       setHeader: vi.fn(),
       sendFile: vi.fn(),
     } as any;
+    vi.mocked(attachmentFiles.resolveExistingAttachmentPath).mockResolvedValueOnce("/resolved/image.png");
 
-    sendAttachmentDownload(
+    await sendAttachmentDownload(
       res,
       {
+        filename: "image.png",
         mimeType: "image/png",
         storagePath: "./server/uploads/image.png",
         originalName: "image.png",
@@ -123,18 +131,20 @@ describe("PKG-05 Invariant: attachment security rules", () => {
 
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/png");
     expect(res.setHeader).toHaveBeenCalledWith("Content-Disposition", 'inline; filename="image.png"');
-    expect(res.sendFile).toHaveBeenCalledOnce();
+    expect(res.sendFile).toHaveBeenCalledWith(path.resolve("/resolved/image.png"));
   });
 
-  it("uses attachment disposition for non-inline mimes when download is not forced", () => {
+  it("uses attachment disposition for non-inline mimes when download is not forced", async () => {
     const res = {
       setHeader: vi.fn(),
       sendFile: vi.fn(),
     } as any;
+    vi.mocked(attachmentFiles.resolveExistingAttachmentPath).mockResolvedValueOnce("/resolved/file.docx");
 
-    sendAttachmentDownload(
+    await sendAttachmentDownload(
       res,
       {
+        filename: "file.docx",
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         storagePath: "./server/uploads/file.docx",
         originalName: "file.docx",
@@ -147,18 +157,20 @@ describe("PKG-05 Invariant: attachment security rules", () => {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     );
     expect(res.setHeader).toHaveBeenCalledWith("Content-Disposition", 'attachment; filename="file.docx"');
-    expect(res.sendFile).toHaveBeenCalledOnce();
+    expect(res.sendFile).toHaveBeenCalledWith(path.resolve("/resolved/file.docx"));
   });
 
-  it("forces attachment disposition regardless of mime type when download flag is set", () => {
+  it("forces attachment disposition regardless of mime type when download flag is set", async () => {
     const res = {
       setHeader: vi.fn(),
       sendFile: vi.fn(),
     } as any;
+    vi.mocked(attachmentFiles.resolveExistingAttachmentPath).mockResolvedValueOnce("/resolved/forced.pdf");
 
-    sendAttachmentDownload(
+    await sendAttachmentDownload(
       res,
       {
+        filename: "forced.pdf",
         mimeType: "application/pdf",
         storagePath: "./server/uploads/forced.pdf",
         originalName: "forced.pdf",
@@ -168,6 +180,6 @@ describe("PKG-05 Invariant: attachment security rules", () => {
 
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "application/pdf");
     expect(res.setHeader).toHaveBeenCalledWith("Content-Disposition", 'attachment; filename="forced.pdf"');
-    expect(res.sendFile).toHaveBeenCalledOnce();
+    expect(res.sendFile).toHaveBeenCalledWith(path.resolve("/resolved/forced.pdf"));
   });
 });

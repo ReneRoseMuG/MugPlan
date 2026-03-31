@@ -8,6 +8,7 @@
  * - Terminanhaenge koennen gelistet, hochgeladen und heruntergeladen werden.
  * - Upload ist nur fuer ADMIN und DISPONENT erlaubt.
  * - Delete fuer Terminanhaenge entfernt den Anhang per Soft-Delete aus der Liste.
+ * - Downloads bleiben auch mit Legacy-storagePath in der Datenbank verfuegbar.
  * - Ungueltige oder fehlende Terminbeziehungen sowie zu grosse Payloads liefern die erwarteten Fehlercodes.
  *
  * Fehlerfaelle:
@@ -22,7 +23,10 @@ import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 
+import * as schema from "@shared/schema";
+import { db } from "../../../server/db";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as appointmentsService from "../../../server/services/appointmentsService";
@@ -158,6 +162,37 @@ describe("FT24 integration: appointment attachments", () => {
     const afterDelete = await admin.get(`/api/appointments/${appointment?.id}/attachments`).expect(200);
     expect(afterDelete.body).toHaveLength(1);
     expect(afterDelete.body[0].id).toBe(dispatcherAttachmentId);
+  });
+
+  it("downloads attachments via current upload root even when storagePath still points to a legacy directory", async () => {
+    const admin = await loginAdminAgent();
+    const appointment = await createAppointmentForAttachments();
+    expect(appointment?.id).toBeTruthy();
+
+    const upload = await admin
+      .post(`/api/appointments/${appointment?.id}/attachments`)
+      .attach("file", Buffer.from("legacy-storage-path"), "legacy-storage.pdf")
+      .expect(201);
+
+    const attachmentId = Number(upload.body.id);
+    const [storedAttachment] = await db
+      .select()
+      .from(schema.appointmentAttachments)
+      .where(eq(schema.appointmentAttachments.id, attachmentId));
+
+    await db
+      .update(schema.appointmentAttachments)
+      .set({
+        storagePath: `/legacy/shared/uploads/${storedAttachment.filename}`,
+      })
+      .where(eq(schema.appointmentAttachments.id, attachmentId));
+
+    await admin
+      .get(`/api/appointment-attachments/${attachmentId}/download?download=1`)
+      .expect(200)
+      .expect((res) => {
+        expect(String(res.headers["content-disposition"] ?? "")).toContain("attachment");
+      });
   });
 
   it("enforces 401, 403, 404 and 413 for invalid appointment attachment mutations", async () => {

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import mysql from "mysql2/promise";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
+import { resolveAttachmentStoragePath } from "../lib/attachmentFiles";
 import { assertSafeAdminDestructiveOperationTarget, assertSqlDatabaseIdentity } from "../security/dbSafetyGuards";
 import * as adminRepository from "../repositories/adminRepository";
 import { logError, logInfo } from "../lib/logger";
@@ -37,27 +38,43 @@ export async function resetDatabase(): Promise<ResetDatabaseResult> {
     await safetyConnection.end();
   }
 
-  const storagePaths = await adminRepository.listAllAttachmentStoragePaths();
+  const attachmentFiles = await adminRepository.listAllAttachmentFileRefs();
   const deleted = await adminRepository.resetDomainData();
 
   let filesDeleted = 0;
   let filesMissing = 0;
-  for (const storagePath of storagePaths) {
-    try {
-      fs.unlinkSync(path.resolve(storagePath));
-      filesDeleted += 1;
-    } catch (error) {
-      const err = error as NodeJS.ErrnoException;
-      if (err.code === "ENOENT") {
-        filesMissing += 1;
-        continue;
-      }
-      logError(`${logPrefix} attachment delete failed`, {
-        storagePath,
-        message: err.message,
-      });
-      throw error;
+  for (const attachmentFile of attachmentFiles) {
+    const currentPath = await resolveAttachmentStoragePath(attachmentFile.filename);
+    const candidatePaths = [currentPath];
+    const legacyPath = path.resolve(attachmentFile.storagePath);
+    if (!candidatePaths.includes(legacyPath)) {
+      candidatePaths.push(legacyPath);
     }
+
+    let deletedAny = false;
+    for (const candidatePath of candidatePaths) {
+      try {
+        if (!fs.existsSync(candidatePath)) {
+          continue;
+        }
+        fs.unlinkSync(candidatePath);
+        deletedAny = true;
+      } catch (error) {
+        const err = error as NodeJS.ErrnoException;
+        logError(`${logPrefix} attachment delete failed`, {
+          storagePath: candidatePath,
+          message: err.message,
+        });
+        throw error;
+      }
+    }
+
+    if (deletedAny) {
+      filesDeleted += 1;
+      continue;
+    }
+
+    filesMissing += 1;
   }
 
   const durationMs = Date.now() - startedAtMs;

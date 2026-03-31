@@ -9,6 +9,7 @@ import * as schema from "@shared/schema";
 import { db, pool } from "../db";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
 import { getAttachmentStoragePath, getBackupBasePath } from "../config/storagePaths";
+import { resolveAttachmentStoragePath } from "../lib/attachmentFiles";
 import { logError } from "../lib/logger";
 import {
   assertSafeAdminDestructiveOperationTarget,
@@ -106,6 +107,13 @@ export const EXCLUDED_DUMP_TABLE_KEYS = [
 ] as const;
 
 type DumpTableKey = (typeof DUMP_TABLE_KEYS)[number];
+
+const ATTACHMENT_DUMP_TABLE_KEYS = new Set<DumpTableKey>([
+  "projectAttachments",
+  "customerAttachments",
+  "employeeAttachments",
+  "appointmentAttachments",
+]);
 
 type DumpPayload = {
   formatVersion: typeof DUMP_FORMAT_VERSION;
@@ -216,6 +224,25 @@ function coerceRowDates(table: AnyTable, rows: unknown[]): unknown[] {
 
 function buildUploadsStageDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "mugplan-dump-import-"));
+}
+
+async function normalizeImportedAttachmentRows(rows: unknown[]): Promise<unknown[]> {
+  return Promise.all(rows.map(async (row) => {
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return row;
+    }
+
+    const candidate = row as Record<string, unknown>;
+    const filename = candidate.filename;
+    if (typeof filename !== "string" || filename.trim().length === 0) {
+      return row;
+    }
+
+    return {
+      ...candidate,
+      storagePath: await resolveAttachmentStoragePath(filename),
+    };
+  }));
 }
 
 async function stageUploads(directory: unzipper.CentralDirectory): Promise<{ stageDir: string | null; hasUploads: boolean }> {
@@ -420,7 +447,10 @@ export async function importDump(
     }
 
     for (const entry of DUMP_TABLE_ENTRIES) {
-      const rows = payload.tables[entry.key];
+      const rawRows = payload.tables[entry.key];
+      const rows = ATTACHMENT_DUMP_TABLE_KEYS.has(entry.key)
+        ? await normalizeImportedAttachmentRows(rawRows)
+        : rawRows;
       if (rows.length === 0) {
         continue;
       }

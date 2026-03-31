@@ -9,6 +9,34 @@ export async function ensureUploadDir(): Promise<string> {
   return getAttachmentStoragePath();
 }
 
+export async function resolveAttachmentStoragePath(storedFilename: string): Promise<string> {
+  const uploadDir = await ensureUploadDir();
+  return path.resolve(uploadDir, storedFilename);
+}
+
+export async function resolveExistingAttachmentPath(
+  storedFilename: string,
+  legacyStoragePath?: string | null,
+): Promise<string> {
+  const currentPath = await resolveAttachmentStoragePath(storedFilename);
+  const candidates = [currentPath];
+
+  if (typeof legacyStoragePath === "string" && legacyStoragePath.trim().length > 0) {
+    const normalizedLegacyPath = path.resolve(legacyStoragePath);
+    if (!candidates.includes(normalizedLegacyPath)) {
+      candidates.push(normalizedLegacyPath);
+    }
+  }
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return currentPath;
+}
+
 export function sanitizeFilename(name: string): string {
   return path.basename(name).replace(/[/\\?%*:|"<>]/g, "_");
 }
@@ -32,14 +60,29 @@ export function buildStoredFilename(originalName: string): string {
 }
 
 export async function writeAttachmentBuffer(storedFilename: string, buffer: Buffer): Promise<string> {
-  const uploadDir = await ensureUploadDir();
-  const storagePath = path.resolve(uploadDir, storedFilename);
+  const storagePath = await resolveAttachmentStoragePath(storedFilename);
   fs.writeFileSync(storagePath, buffer);
   return storagePath;
 }
 
-export function deleteAttachmentFile(storagePath: string): void {
-  if (fs.existsSync(storagePath)) {
-    fs.unlinkSync(storagePath);
+export async function deleteAttachmentFile(storedFilename: string, legacyStoragePath?: string | null): Promise<boolean> {
+  const currentPath = await resolveAttachmentStoragePath(storedFilename);
+  const candidates = [currentPath];
+
+  if (typeof legacyStoragePath === "string" && legacyStoragePath.trim().length > 0) {
+    const normalizedLegacyPath = path.resolve(legacyStoragePath);
+    if (!candidates.includes(normalizedLegacyPath)) {
+      candidates.push(normalizedLegacyPath);
+    }
   }
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) {
+      continue;
+    }
+    fs.unlinkSync(candidate);
+    return true;
+  }
+
+  return false;
 }
