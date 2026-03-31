@@ -4,8 +4,13 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { FileText, Loader2 } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
+import {
+  isManagedReportExclusionTagName,
+  isReservedAppointmentCancellationTagName,
+} from "@shared/appointmentCancellation";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
+import { ProductVorlaufPrintLayout, type ProductVorlaufPrintCategory } from "@/components/reports/ProductVorlaufPrintLayout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
@@ -23,6 +28,7 @@ import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { cn } from "@/lib/utils";
 
 type ReportType = "vorlaufliste" | "product-vorlauf";
@@ -91,6 +97,18 @@ type ProductVorlaufResponse = {
   productCategoryGroups: ProductVorlaufCategoryGroup[];
   componentCategoryGroups: ProductVorlaufCategoryGroup[];
   specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
+  projectRows: ProductVorlaufProjectRow[];
+};
+
+type ProductVorlaufProjectRow = {
+  projectId: number;
+  projectName: string;
+  orderNumber: string | null;
+  actualDate: string;
+  tourName: string | null;
+  articleValues: Array<{ categoryId: number; value: string | null }>;
+  projectDescription: string | null;
+  matchedSonderblockTagIds: number[];
 };
 
 type SubmittedFilters = {
@@ -100,6 +118,7 @@ type SubmittedFilters = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes: boolean;
+  sonderblockTagIds: number[];
 };
 
 type CategorySelection = {
@@ -107,6 +126,7 @@ type CategorySelection = {
   componentCategoryIds: number[];
   useShortCodes?: boolean;
   columnWidths?: Record<string, number>;
+  sonderblockTagIds?: number[];
 };
 
 type VorlauflisteRequestParams = {
@@ -118,6 +138,15 @@ type VorlauflisteRequestParams = {
   page: number;
   pageSize: number;
   refreshKey: number;
+};
+
+type ProductVorlaufRequestParams = {
+  fromDate: string;
+  toDate?: string;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  useShortCodes: boolean;
+  sonderblockTagIds: number[];
 };
 
 type ArticleCategorySelectionProps = {
@@ -247,6 +276,33 @@ export function buildVorlauflisteReportUrl(params: VorlauflisteRequestParams): s
   return `/api/reports/vorlaufliste?${searchParams.toString()}`;
 }
 
+export function buildProductVorlaufReportUrl(params: ProductVorlaufRequestParams): string {
+  const searchParams = new URLSearchParams({
+    fromDate: params.fromDate,
+  });
+  if (params.toDate) searchParams.set("toDate", params.toDate);
+  for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
+  for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  if (params.useShortCodes) searchParams.set("useShortCodes", "true");
+  for (const id of params.sonderblockTagIds) searchParams.append("sonderblockTagIds", String(id));
+  return `/api/reports/product-vorlauf?${searchParams.toString()}`;
+}
+
+function formatProjectRowArticles(
+  row: ProductVorlaufProjectRow,
+  categories: ProductVorlaufPrintCategory[],
+): string {
+  const values = categories
+    .map((category) => {
+      const value = row.articleValues.find((entry) => entry.categoryId === category.id)?.value ?? null;
+      if (!value || value.trim().length === 0) return null;
+      return `${category.name}: ${value}`;
+    })
+    .filter((value): value is string => Boolean(value));
+
+  return values.length > 0 ? values.join(" | ") : "-";
+}
+
 function renderGroupedCategoryList(groups: ProductVorlaufCategoryGroup[], emptyText: string, testIdPrefix: string) {
   if (groups.length === 0) {
     return <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>;
@@ -350,6 +406,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     queryKey: ["/api/admin/master-data/component-categories?active=all"],
     queryFn: () => fetchJson("/api/admin/master-data/component-categories?active=all"),
   });
+  const { data: projectTagCatalog = [] } = useQuery<Tag[]>({
+    queryKey: getTagCatalogQueryKey("project"),
+    queryFn: () => fetchTagCatalog("project"),
+  });
+  const { data: appointmentTagCatalog = [] } = useQuery<Tag[]>({
+    queryKey: getTagCatalogQueryKey("appointment"),
+    queryFn: () => fetchTagCatalog("appointment"),
+  });
 
   const defaultProductCategories = useMemo(
     () => productCategories.filter((category) => category.isDefault && category.isActive),
@@ -366,6 +430,18 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [vorlauflisteColumnWidths, setVorlauflisteColumnWidths] = useState<Record<string, number>>({});
   const [selectedProductVorlaufProductCategoryIds, setSelectedProductVorlaufProductCategoryIds] = useState<number[]>([]);
   const [selectedProductVorlaufComponentCategoryIds, setSelectedProductVorlaufComponentCategoryIds] = useState<number[]>([]);
+  const [useProductVorlaufShortCodes, setUseProductVorlaufShortCodes] = useState(false);
+  const [selectedProductVorlaufSonderblockTagIds, setSelectedProductVorlaufSonderblockTagIds] = useState<number[]>([]);
+  const availableSonderblockTags = useMemo(() => {
+    const merged = [...projectTagCatalog, ...appointmentTagCatalog];
+    return Array.from(new Map(
+      merged
+        .filter((tag) =>
+          !isManagedReportExclusionTagName(tag.name)
+          && !isReservedAppointmentCancellationTagName(tag.name))
+        .map((tag) => [tag.id, tag]),
+    ).values()).sort((left, right) => left.name.localeCompare(right.name, "de"));
+  }, [appointmentTagCatalog, projectTagCatalog]);
 
   useEffect(() => {
     const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
@@ -390,8 +466,10 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   useEffect(() => {
     const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
     const validComponentIds = new Set(defaultComponentCategories.map((category) => category.id));
+    const validSonderblockTagIds = new Set(availableSonderblockTags.map((tag) => tag.id));
     const resolvedProductIds = normalizeIds((productVorlaufSelection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
     const resolvedComponentIds = normalizeIds((productVorlaufSelection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
+    const resolvedSonderblockTagIds = normalizeIds((productVorlaufSelection?.sonderblockTagIds ?? []).filter((id) => validSonderblockTagIds.has(id)));
 
     setSelectedProductVorlaufProductCategoryIds(resolveInitialSelectionIds({
       resolvedScope: productVorlaufResolvedScope,
@@ -403,7 +481,9 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       persistedIds: resolvedComponentIds,
       defaultIds: defaultComponentCategories.map((category) => category.id),
     }));
-  }, [defaultComponentCategories, defaultProductCategories, productVorlaufResolvedScope, productVorlaufSelection]);
+    setUseProductVorlaufShortCodes(productVorlaufSelection?.useShortCodes ?? false);
+    setSelectedProductVorlaufSonderblockTagIds(resolvedSonderblockTagIds);
+  }, [availableSonderblockTags, defaultComponentCategories, defaultProductCategories, productVorlaufResolvedScope, productVorlaufSelection]);
 
   const persistSelection = async (reportType: ReportType, next: CategorySelection) => {
     const value: CategorySelection = {
@@ -413,6 +493,9 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     if (reportType === "vorlaufliste") {
       value.useShortCodes = next.useShortCodes ?? false;
       value.columnWidths = normalizeColumnWidths(next.columnWidths);
+    } else {
+      value.useShortCodes = next.useShortCodes ?? false;
+      value.sonderblockTagIds = normalizeIds(next.sonderblockTagIds ?? []);
     }
     await setSetting({
       key: reportType === "vorlaufliste" ? VORLAUFLISTE_SETTING_KEY : PRODUCT_VORLAUF_SETTING_KEY,
@@ -451,13 +534,36 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     queryKey: ["reports-product-vorlauf", submittedFilters, reportRequestId],
     enabled: submittedFilters?.reportType === "product-vorlauf" && isReportOverlayOpen,
     queryFn: async () => {
-      const params = new URLSearchParams({ fromDate: submittedFilters!.fromDate });
-      if (submittedFilters?.toDate) params.set("toDate", submittedFilters.toDate);
-      for (const id of submittedFilters?.productCategoryIds ?? []) params.append("productCategoryIds", String(id));
-      for (const id of submittedFilters?.componentCategoryIds ?? []) params.append("componentCategoryIds", String(id));
-      return fetchJson(`/api/reports/product-vorlauf?${params.toString()}`);
+      return fetchJson(buildProductVorlaufReportUrl({
+        fromDate: submittedFilters!.fromDate,
+        toDate: submittedFilters?.toDate,
+        productCategoryIds: submittedFilters?.productCategoryIds ?? [],
+        componentCategoryIds: submittedFilters?.componentCategoryIds ?? [],
+        useShortCodes: submittedFilters?.useShortCodes ?? false,
+        sonderblockTagIds: submittedFilters?.sonderblockTagIds ?? [],
+      }));
     },
   });
+  const selectedProductVorlaufPrintCategories = useMemo<ProductVorlaufPrintCategory[]>(() => {
+    const productCategoryById = new Map(defaultProductCategories.map((category) => [category.id, category] as const));
+    const componentCategoryById = new Map(defaultComponentCategories.map((category) => [category.id, category] as const));
+
+    return [
+      ...selectedProductVorlaufProductCategoryIds
+        .map((id) => productCategoryById.get(id))
+        .filter((category): category is ProductCategory => Boolean(category))
+        .map((category) => ({ id: category.id, name: category.name })),
+      ...selectedProductVorlaufComponentCategoryIds
+        .map((id) => componentCategoryById.get(id))
+        .filter((category): category is ComponentCategory => Boolean(category))
+        .map((category) => ({ id: category.id, name: category.name })),
+    ];
+  }, [
+    defaultComponentCategories,
+    defaultProductCategories,
+    selectedProductVorlaufComponentCategoryIds,
+    selectedProductVorlaufProductCategoryIds,
+  ]);
 
   const resolvePersistedColumnWidth = (columnId: string, header: string, defaultWidth: number) => {
     const minWidth = resolveColumnMinWidth(header, defaultWidth);
@@ -570,13 +676,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       toDate: showToDate && toDate.trim().length > 0 ? toDate : undefined,
       productCategoryIds,
       componentCategoryIds,
-      useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : false,
+      useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : useProductVorlaufShortCodes,
+      sonderblockTagIds: isVorlaufliste ? [] : selectedProductVorlaufSonderblockTagIds,
     });
     setReportRequestId((current) => current + 1);
     setIsReportOverlayOpen(true);
   };
 
   const closeOverlay = () => setIsReportOverlayOpen(false);
+  const handleProductVorlaufPrint = () => window.print();
 
   return (
     <div className="h-full w-full">
@@ -590,6 +698,29 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         contentClassName="min-h-0"
         contentSlot={(
           <div className="relative h-full overflow-hidden" data-testid="reports-panel">
+            <style>
+              {`
+                @media print {
+                  @page {
+                    size: A4 landscape;
+                    margin: 1cm;
+                  }
+                  body * {
+                    visibility: hidden !important;
+                  }
+                  [data-testid="reports-product-vorlauf-overlay"],
+                  [data-testid="reports-product-vorlauf-overlay"] * {
+                    visibility: visible !important;
+                  }
+                  [data-testid="reports-product-vorlauf-overlay"] {
+                    position: absolute !important;
+                    inset: 0 !important;
+                    overflow: visible !important;
+                    background: white !important;
+                  }
+                }
+              `}
+            </style>
             <div className="h-full overflow-auto p-6">
               <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
                 <ReportConfigSurface
@@ -725,6 +856,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           void persistSelection("product-vorlauf", {
                             productCategoryIds: nextIds,
                             componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
+                            useShortCodes: useProductVorlaufShortCodes,
+                            sonderblockTagIds: selectedProductVorlaufSonderblockTagIds,
                           });
                         }}
                         onComponentCategoryToggle={(categoryId, checked) => {
@@ -735,10 +868,57 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           void persistSelection("product-vorlauf", {
                             productCategoryIds: selectedProductVorlaufProductCategoryIds,
                             componentCategoryIds: nextIds,
+                            useShortCodes: useProductVorlaufShortCodes,
+                            sonderblockTagIds: selectedProductVorlaufSonderblockTagIds,
                           });
                         }}
                         testIdPrefix="reports-product-vorlauf"
                       />
+                      <label className="mt-3 flex items-center gap-3 text-sm text-foreground" data-testid="reports-product-vorlauf-use-shortcodes-label">
+                        <Checkbox
+                          checked={useProductVorlaufShortCodes}
+                          onCheckedChange={(checked) => {
+                            const next = Boolean(checked);
+                            setUseProductVorlaufShortCodes(next);
+                            void persistSelection("product-vorlauf", {
+                              productCategoryIds: selectedProductVorlaufProductCategoryIds,
+                              componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
+                              useShortCodes: next,
+                              sonderblockTagIds: selectedProductVorlaufSonderblockTagIds,
+                            });
+                          }}
+                          data-testid="checkbox-reports-product-vorlauf-use-shortcodes"
+                        />
+                        <span>Shortcodes verwenden?</span>
+                      </label>
+                      <section className="mt-4 rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-sonderblock-tags">
+                        <h5 className="text-sm font-semibold text-foreground">Sonderblock-Tags</h5>
+                        <div className="mt-3 space-y-2">
+                          {availableSonderblockTags.length > 0 ? availableSonderblockTags.map((tag) => (
+                            <label key={tag.id} className="flex items-center gap-3 text-sm text-foreground">
+                              <Checkbox
+                                checked={selectedProductVorlaufSonderblockTagIds.includes(tag.id)}
+                                onCheckedChange={(checked) => {
+                                  const nextIds = Boolean(checked)
+                                    ? normalizeIds([...selectedProductVorlaufSonderblockTagIds, tag.id])
+                                    : selectedProductVorlaufSonderblockTagIds.filter((id) => id !== tag.id);
+                                  setSelectedProductVorlaufSonderblockTagIds(nextIds);
+                                  void persistSelection("product-vorlauf", {
+                                    productCategoryIds: selectedProductVorlaufProductCategoryIds,
+                                    componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
+                                    useShortCodes: useProductVorlaufShortCodes,
+                                    sonderblockTagIds: nextIds,
+                                  });
+                                }}
+                                data-testid={`checkbox-reports-product-vorlauf-sonderblock-tag-${tag.id}`}
+                              />
+                              <span>{tag.name}</span>
+                            </label>
+                          )) : (
+                            <p className="text-sm text-muted-foreground">Keine auswählbaren Sonderblock-Tags gefunden.</p>
+                          )}
+                        </div>
+                      </section>
                     </div>
                   </div>
                 </ReportConfigSurface>
@@ -802,17 +982,21 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
 
             <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProductVorlauflayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-product-vorlauf-overlay">
               <div className="flex h-full flex-col">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 print:hidden">
                   <div className="min-w-0">
                     <h3 className="text-base font-semibold text-foreground">Produkt Vorlauf</h3>
                   </div>
-                  <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-product-vorlauf-back">Zurück</Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="outline" onClick={handleProductVorlaufPrint} data-testid="button-reports-product-vorlauf-print">Produktionsplanung drucken</Button>
+                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-product-vorlauf-back">Zurück</Button>
+                  </div>
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto p-6">
                   {isProductVorlaufLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : (
-                    <div className="space-y-6">
+                    <>
+                      <div className="space-y-6 print:hidden">
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-products">
                         <h4 className="text-sm font-semibold">Produktkategorien</h4>
                         {renderGroupedCategoryList(
@@ -827,6 +1011,40 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           productVorlaufData?.componentCategoryGroups ?? [],
                           "Keine passenden Komponenten gefunden.",
                           "reports-product-vorlauf-components",
+                        )}
+                      </section>
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-projects">
+                        <h4 className="text-sm font-semibold">Projektliste</h4>
+                        {productVorlaufData?.projectRows?.length ? (
+                          <div className="mt-3 overflow-auto">
+                            <table className="min-w-full border-collapse text-sm">
+                              <thead>
+                                <tr className="border-b border-border/70 text-left">
+                                  <th className="px-2 py-2 font-semibold">Tatsächlicher Termin</th>
+                                  <th className="px-2 py-2 font-semibold">Tour</th>
+                                  <th className="px-2 py-2 font-semibold">Projekt / Auftrag</th>
+                                  <th className="px-2 py-2 font-semibold">Artikel</th>
+                                  <th className="px-2 py-2 font-semibold">Anmerkungen</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(productVorlaufData?.projectRows ?? []).map((row) => (
+                                  <tr key={row.projectId} className="border-b border-border/40 align-top" data-testid={`reports-product-vorlauf-project-row-${row.projectId}`}>
+                                    <td className="px-2 py-2">{formatDate(row.actualDate)}</td>
+                                    <td className="px-2 py-2">{resolveValue(row.tourName)}</td>
+                                    <td className="px-2 py-2">
+                                      <div className="font-semibold">{row.projectName}</div>
+                                      <div className="text-xs text-muted-foreground">{resolveValue(row.orderNumber)}</div>
+                                    </td>
+                                    <td className="px-2 py-2">{formatProjectRowArticles(row, selectedProductVorlaufPrintCategories)}</td>
+                                    <td className="px-2 py-2">{resolveValue(row.projectDescription)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-muted-foreground">Keine passenden Projekte im gewählten Zeitraum gefunden.</p>
                         )}
                       </section>
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-special-measures">
@@ -854,7 +1072,17 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           <p className="mt-3 text-sm text-muted-foreground">Keine Sondermaße im gewählten Zeitraum gefunden.</p>
                         )}
                       </section>
-                    </div>
+                      </div>
+                      <ProductVorlaufPrintLayout
+                        data={productVorlaufData ?? {
+                          productCategoryGroups: [],
+                          componentCategoryGroups: [],
+                          specialMeasureProjects: [],
+                          projectRows: [],
+                        }}
+                        categories={selectedProductVorlaufPrintCategories}
+                      />
+                    </>
                   )}
                 </div>
               </div>

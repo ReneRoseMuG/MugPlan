@@ -91,7 +91,11 @@ vi.mock("@/components/ui/entity-tag-footer-row", () => ({
   EntityTagFooterRow: () => <div>tag-row</div>,
 }));
 
-import { ReportsPage, buildVorlauflisteReportUrl } from "../../../client/src/components/ReportsPage";
+import {
+  ReportsPage,
+  buildProductVorlaufReportUrl,
+  buildVorlauflisteReportUrl,
+} from "../../../client/src/components/ReportsPage";
 
 describe("FT26 UI: ReportsPage behavior", () => {
   beforeEach(() => {
@@ -126,7 +130,7 @@ describe("FT26 UI: ReportsPage behavior", () => {
       }
       if (key === "reports-product-vorlauf") {
         return {
-          data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [] },
+          data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [], projectRows: [] },
           isLoading: false,
         };
       }
@@ -159,5 +163,23 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("fromDate=2026-03-29");
     expect(url).toContain("refreshKey=8");
     expect(url).not.toContain("toDate=");
+  });
+
+  it("includes shortcodes and sonderblock tags in the product-vorlauf URL", () => {
+    const url = buildProductVorlaufReportUrl({
+      fromDate: "2026-03-29",
+      toDate: "2026-03-30",
+      productCategoryIds: [1],
+      componentCategoryIds: [2],
+      useShortCodes: true,
+      sonderblockTagIds: [7, 8],
+    });
+
+    expect(url).toContain("/api/reports/product-vorlauf?");
+    expect(url).toContain("fromDate=2026-03-29");
+    expect(url).toContain("toDate=2026-03-30");
+    expect(url).toContain("useShortCodes=true");
+    expect(url).toContain("sonderblockTagIds=7");
+    expect(url).toContain("sonderblockTagIds=8");
   });
 });

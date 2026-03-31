@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Der User-Setting-Key fuer den Produkt-Vorlauf speichert Produkt- und Komponentenkategorie-Auswahl getrennt.
+ * - Shortcode-Schalter und Sonderblock-Tag-Auswahl gehoeren zur persistierten Produkt-Report-Konfiguration.
  * - Nur positive Integer-Arrays ohne Duplikate sind gueltig.
  *
  * Fehlerfaelle:
@@ -24,13 +25,17 @@ describe("settings registry: reports.productVorlauf.selection", () => {
     expect(definition.defaultValue).toEqual({
       productCategoryIds: [],
       componentCategoryIds: [],
+      useShortCodes: false,
+      sonderblockTagIds: [],
     });
   });
 
-  it("accepts positive integer arrays without duplicates", () => {
+  it("accepts valid arrays, shortcodes and sonderblock tags", () => {
     expect(definition.validate({
       productCategoryIds: [1, 2],
       componentCategoryIds: [3, 4],
+      useShortCodes: true,
+      sonderblockTagIds: [5, 6],
     })).toBe(true);
   });
 
@@ -43,6 +48,16 @@ describe("settings registry: reports.productVorlauf.selection", () => {
     expect(definition.validate({
       productCategoryIds: [1],
       componentCategoryIds: ["3"],
+    })).toBe(false);
+    expect(definition.validate({
+      productCategoryIds: [1],
+      componentCategoryIds: [3],
+      sonderblockTagIds: [7, 7],
+    })).toBe(false);
+    expect(definition.validate({
+      productCategoryIds: [1],
+      componentCategoryIds: [3],
+      useShortCodes: "true",
     })).toBe(false);
   });
 });

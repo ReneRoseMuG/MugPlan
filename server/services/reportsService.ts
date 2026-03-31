@@ -45,6 +45,8 @@ export async function listProductVorlauf(
     toDate?: string;
     productCategoryIds: number[];
     componentCategoryIds: number[];
+    useShortCodes: boolean;
+    sonderblockTagIds: number[];
   },
   roleKey: CanonicalRoleKey,
 ) {

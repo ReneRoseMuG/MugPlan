@@ -409,10 +409,22 @@ const reportProductVorlaufSpecialMeasureProjectSchema = z.object({
   specialMeasureTag: tagSchema.nullable(),
 });
 
+const reportProductVorlaufProjectRowSchema = z.object({
+  projectId: z.number().int().positive(),
+  projectName: z.string().min(1),
+  orderNumber: z.string().nullable(),
+  actualDate: z.string(),
+  tourName: z.string().nullable(),
+  articleValues: z.array(reportVorlauflisteArticleValueSchema),
+  projectDescription: z.string().nullable(),
+  matchedSonderblockTagIds: z.array(z.number().int().positive()),
+});
+
 const reportProductVorlaufResponseSchema = z.object({
   productCategoryGroups: z.array(reportProductVorlaufCategoryGroupSchema),
   componentCategoryGroups: z.array(reportProductVorlaufCategoryGroupSchema),
   specialMeasureProjects: z.array(reportProductVorlaufSpecialMeasureProjectSchema),
+  projectRows: z.array(reportProductVorlaufProjectRowSchema),
 });
 
 const authenticatedResponseSchema = z.object({
@@ -3913,6 +3925,14 @@ export const api = {
             z.array(z.coerce.number().int().positive()).default([]),
           ),
           componentCategoryIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          useShortCodes: z.preprocess(
+            (value) => value === "true" || value === true,
+            z.boolean().default(false),
+          ),
+          sonderblockTagIds: z.preprocess(
             (value) => value == null ? [] : Array.isArray(value) ? value : [value],
             z.array(z.coerce.number().int().positive()).default([]),
           ),

@@ -88,6 +88,21 @@ function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): st
   return globalScopeMarker;
 }
 
+function normalizeResolvedSettingValue(definition: SettingDefinition, value: unknown): unknown {
+  if (definition.key !== "reports.productVorlauf.selection") {
+    return value;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return definition.defaultValue;
+  }
+
+  return {
+    ...(definition.defaultValue as Record<string, unknown>),
+    ...(value as Record<string, unknown>),
+  };
+}
+
 async function assertCanWriteSetting(userId: number, input: SetSettingInput): Promise<void> {
   if (!(input.scopeType === "GLOBAL" && (input.key === "auth_two_factor_enabled" || input.key.startsWith("monitoring.")))) {
     return;
@@ -156,17 +171,17 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
     let resolvedMeta: userSettingsRepository.CandidateSettingValue | undefined;
 
     if (userValue !== undefined) {
-      resolvedValue = userValue;
+      resolvedValue = normalizeResolvedSettingValue(definition, userValue);
       resolvedScope = "USER";
       resolvedVersion = userVersion;
       resolvedMeta = userCandidate;
     } else if (roleValue !== undefined) {
-      resolvedValue = roleValue;
+      resolvedValue = normalizeResolvedSettingValue(definition, roleValue);
       resolvedScope = "ROLE";
       resolvedVersion = roleVersion;
       resolvedMeta = roleCandidate;
     } else if (globalValue !== undefined) {
-      resolvedValue = globalValue;
+      resolvedValue = normalizeResolvedSettingValue(definition, globalValue);
       resolvedScope = "GLOBAL";
       resolvedVersion = globalVersion;
       resolvedMeta = globalCandidate;

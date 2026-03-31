@@ -3,13 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - Die Reports-Seite rendert fuer beide Reports getrennte Datums- und Artikelkategorien-Spalten.
- * - Der Produkt-Vorlauf zeigt keine manuelle Sondermass-Auswahl mehr.
+ * - Der Produkt-Vorlauf zeigt Shortcode-Option, Sonderblock-Auswahl und Druckaktion.
  * - Die Checkbox "Shortcodes verwenden?" ist in der Vorlaufliste-Konfiguration sichtbar.
  * - Die alten Beschreibungssaetze werden nicht mehr gerendert.
  *
  * Fehlerfaelle:
  * - Die Konfigurationsbereiche bleiben einspaltig oder verlieren die Artikelkategorien-Spalte.
- * - Der entfernte Sondermass-Select erscheint weiterhin.
+ * - Die neue Produkt-Report-Konfiguration rendert ihre Zusatzoptionen nicht.
  * - Die Shortcodes-Checkbox fehlt in der Konfiguration.
  *
  * Ziel:
@@ -102,7 +102,7 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
       }
       if (key === "reports-product-vorlauf") {
         return {
-          data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [] },
+          data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [], projectRows: [] },
           isLoading: false,
         };
       }
@@ -110,7 +110,7 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     });
   });
 
-  it("renders both report configs with split columns and no special-measure select", () => {
+  it("renders both report configs with split columns and product-report extras", () => {
     const html = renderToStaticMarkup(<ReportsPage />);
 
     expect(html).toContain("data-help-key=\"reports-vorlaufliste\"");
@@ -123,7 +123,8 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     expect(html).toContain("button-reports-vorlaufliste-generate");
     expect(html).toContain("button-reports-product-vorlauf-generate");
     expect(html).toContain("checkbox-reports-vorlaufliste-use-shortcodes");
-    expect(html).not.toContain("select-reports-product-vorlauf-special-measure-tag");
+    expect(html).toContain("checkbox-reports-product-vorlauf-use-shortcodes");
+    expect(html).toContain("reports-product-vorlauf-sonderblock-tags");
     expect(html).not.toContain("Datumsbereich und Default-Kategorien für die Vorlaufliste festlegen.");
     expect(html).not.toContain("Datumsbereich, Kategorien und Sondermass-Kennzeichnung fuer den Produkt-Vorlauf festlegen.");
   });

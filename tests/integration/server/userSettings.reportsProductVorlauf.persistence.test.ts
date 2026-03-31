@@ -77,7 +77,12 @@ function getSetting(settings: ResolvedSetting[], key: string): ResolvedSetting {
 
 async function setUserSetting(
   agent: SuperAgentTest,
-  value: { productCategoryIds: number[]; componentCategoryIds: number[] },
+  value: {
+    productCategoryIds: number[];
+    componentCategoryIds: number[];
+    useShortCodes?: boolean;
+    sonderblockTagIds?: number[];
+  },
 ): Promise<void> {
   const settings = await getResolvedSettings(agent);
   const setting = getSetting(settings, "reports.productVorlauf.selection");
@@ -102,6 +107,8 @@ describe("integration: reports product vorlauf selection persistence", () => {
     await setUserSetting(userA, {
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
+      useShortCodes: true,
+      sonderblockTagIds: [31, 32],
     });
 
     const settingsA = await getResolvedSettings(userA);
@@ -110,16 +117,22 @@ describe("integration: reports product vorlauf selection persistence", () => {
     expect(getSetting(settingsA, "reports.productVorlauf.selection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
+      useShortCodes: true,
+      sonderblockTagIds: [31, 32],
     });
     expect(getSetting(settingsB, "reports.productVorlauf.selection").resolvedValue).toEqual({
       productCategoryIds: [],
       componentCategoryIds: [],
+      useShortCodes: false,
+      sonderblockTagIds: [],
     });
 
     const reloadedA = await getResolvedSettings(userA);
     expect(getSetting(reloadedA, "reports.productVorlauf.selection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
+      useShortCodes: true,
+      sonderblockTagIds: [31, 32],
     });
   });
 
@@ -135,6 +148,8 @@ describe("integration: reports product vorlauf selection persistence", () => {
     expect(getSetting(reloaded, "reports.productVorlauf.selection").resolvedValue).toEqual({
       productCategoryIds: [],
       componentCategoryIds: [],
+      useShortCodes: false,
+      sonderblockTagIds: [],
     });
   });
 });

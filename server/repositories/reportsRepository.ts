@@ -12,7 +12,9 @@ import {
   projectOrder,
   projectOrderItems,
   projects,
+  tags,
   type Tag,
+  tours,
 } from "@shared/schema";
 import { stripReportHtmlToText } from "../lib/reportVorlaufliste";
 import {
@@ -21,6 +23,10 @@ import {
   isAppointmentCancellationTag,
   isManagedSpecialMeasureTag,
 } from "../lib/appointmentCancellation";
+import {
+  buildGroupedProductVorlaufCategoryGroups,
+  collectMatchedSonderblockTagIds,
+} from "../lib/reportProductVorlauf";
 import {
   getProjectAttachmentCountsByProjectIds,
   getProjectNoteCountsByProjectIds,
@@ -95,6 +101,18 @@ export type ProductVorlaufResult = {
   productCategoryGroups: ProductVorlaufCategoryGroup[];
   componentCategoryGroups: ProductVorlaufCategoryGroup[];
   specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
+  projectRows: ProductVorlaufProjectRow[];
+};
+
+export type ProductVorlaufProjectRow = {
+  projectId: number;
+  projectName: string;
+  orderNumber: string | null;
+  actualDate: string;
+  tourName: string | null;
+  articleValues: VorlauflisteArticleValue[];
+  projectDescription: string | null;
+  matchedSonderblockTagIds: number[];
 };
 
 type ReportArticleBuckets = Map<number, Set<string>>;
@@ -103,6 +121,13 @@ type NormalizedProjectAppointmentRow = {
   appointmentId: number;
   projectId: number;
   startDate: string;
+  tourId: number | null;
+  tourName: string | null;
+};
+
+type ProjectAppointmentTagRow = {
+  appointmentId: number;
+  projectId: number;
 };
 
 type ProjectReportTagState = {
@@ -143,36 +168,6 @@ function resolveArticleName(name: string, shortCode: string | null | undefined, 
   return name;
 }
 
-function upsertGroupedItem(
-  groups: Map<number, ProductVorlaufCategoryGroup>,
-  params: { categoryId: number; categoryName: string; itemName: string; quantity: number },
-) {
-  const group = groups.get(params.categoryId) ?? {
-    categoryId: params.categoryId,
-    categoryName: params.categoryName,
-    items: [],
-  };
-  const existingItem = group.items.find((entry) => entry.itemName === params.itemName);
-  if (existingItem) {
-    existingItem.totalQuantity += params.quantity;
-  } else {
-    group.items.push({
-      itemName: params.itemName,
-      totalQuantity: params.quantity,
-    });
-  }
-  groups.set(params.categoryId, group);
-}
-
-function sortGroupedItems(groups: Map<number, ProductVorlaufCategoryGroup>): ProductVorlaufCategoryGroup[] {
-  return Array.from(groups.values())
-    .map((group) => ({
-      ...group,
-      items: [...group.items].sort((left, right) => left.itemName.localeCompare(right.itemName, "de")),
-    }))
-    .sort((left, right) => left.categoryName.localeCompare(right.categoryName, "de") || left.categoryId - right.categoryId);
-}
-
 function buildAppointmentConditions(params: { fromDate: string; toDate?: string }): SQL<unknown>[] {
   const appointmentConditions: SQL<unknown>[] = [
     isNotNull(appointments.projectId),
@@ -200,7 +195,7 @@ function findFirstMatchingTag(tags: Tag[], predicate: (tag: Pick<Tag, "name">) =
 
 function buildProjectReportTagStateByProjectId(
   projectIds: number[],
-  appointmentRows: NormalizedProjectAppointmentRow[],
+  appointmentRows: ProjectAppointmentTagRow[],
   appointmentTagsByAppointmentId: Map<number, Tag[]>,
   projectTagsByProjectId: Map<number, Tag[]>,
 ): Map<number, ProjectReportTagState> {
@@ -514,6 +509,8 @@ export async function getProductVorlauf(params: {
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  useShortCodes: boolean;
+  sonderblockTagIds: number[];
 }): Promise<ProductVorlaufResult> {
   const appointmentConditions = buildAppointmentConditions(params);
   const projectAppointmentRows = await db
@@ -521,8 +518,11 @@ export async function getProductVorlauf(params: {
       appointmentId: appointments.id,
       projectId: appointments.projectId,
       startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
+      tourId: appointments.tourId,
+      tourName: tours.name,
     })
     .from(appointments)
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...appointmentConditions))
     .orderBy(asc(appointments.startDate), asc(appointments.id));
 
@@ -534,30 +534,33 @@ export async function getProductVorlauf(params: {
       productCategoryGroups: [],
       componentCategoryGroups: [],
       specialMeasureProjects: [],
+      projectRows: [],
     };
   }
 
-  const projectIds = Array.from(new Set(normalizedAppointmentRows.map((row) => row.projectId)));
+  const allProjectIds = Array.from(new Set(normalizedAppointmentRows.map((row) => row.projectId)));
   const appointmentTagsByAppointmentId = await getAppointmentTagsByAppointmentIds(
     normalizedAppointmentRows.map((row) => row.appointmentId),
   );
-  const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
+  const tagsByProjectId = await getProjectTagsByProjectIds(allProjectIds);
   const projectReportTagStateByProjectId = buildProjectReportTagStateByProjectId(
-    projectIds,
+    allProjectIds,
     normalizedAppointmentRows,
     appointmentTagsByAppointmentId,
     tagsByProjectId,
   );
-  const eligibleProjectIds = projectIds.filter((projectId) => {
+  const eligibleProjectIds = allProjectIds.filter((projectId) => {
     const tagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
     return !tagState.hasReportExclusion && !tagState.cancellationTag;
   });
+  const eligibleProjectIdSet = new Set(eligibleProjectIds);
 
   if (eligibleProjectIds.length === 0) {
     return {
       productCategoryGroups: [],
       componentCategoryGroups: [],
       specialMeasureProjects: [],
+      projectRows: [],
     };
   }
 
@@ -589,64 +592,91 @@ export async function getProductVorlauf(params: {
 
   const selectedProductCategoryIds = new Set(params.productCategoryIds);
   const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
-  const productGroups = new Map<number, ProductVorlaufCategoryGroup>();
-  const componentGroups = new Map<number, ProductVorlaufCategoryGroup>();
+  const productGroupRows: Array<{
+    categoryId: number;
+    categoryName: string;
+    itemName: string;
+    shortCode: string | null;
+    quantity: number;
+  }> = [];
+  const componentGroupRows: Array<{
+    categoryId: number;
+    categoryName: string;
+    itemName: string;
+    shortCode: string | null;
+    quantity: number;
+  }> = [];
   const matchedProjectIds = new Set<number>();
+  const articleBucketsByProjectId = new Map<number, ReportArticleBuckets>();
+  const appointmentMetaByProjectId = new Map<number, { actualDate: string; tourName: string | null }>();
+  const selectedTagRows: Tag[] = params.sonderblockTagIds.length > 0
+    ? await db.select().from(tags).where(inArray(tags.id, params.sonderblockTagIds))
+    : [];
+
+  for (const row of normalizedAppointmentRows) {
+    if (!eligibleProjectIdSet.has(row.projectId) || appointmentMetaByProjectId.has(row.projectId)) {
+      continue;
+    }
+    appointmentMetaByProjectId.set(row.projectId, {
+      actualDate: row.startDate,
+      tourName: row.tourName ?? null,
+    });
+  }
 
   for (const row of orderItemRows) {
     const quantity = Number(row.item.quantity ?? 0);
-    if (!Number.isInteger(quantity) || quantity <= 0) continue;
+    const articleBuckets = articleBucketsByProjectId.get(row.item.projectId) ?? createEmptyBuckets();
 
-      if (
-        row.product
-        && row.productCategory
-        && row.product.name.trim().length > 0
-        && selectedProductCategoryIds.has(row.productCategory.id)
-      ) {
-        upsertGroupedItem(productGroups, {
+    if (
+      row.product
+      && row.productCategory
+      && row.product.name.trim().length > 0
+      && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
+    ) {
+      const displayName = resolveArticleName(row.product.name.trim(), row.product.shortCode, params.useShortCodes);
+      addToBucket(articleBuckets, row.productCategory.id, displayName);
+      articleBucketsByProjectId.set(row.item.projectId, articleBuckets);
+
+      if (selectedProductCategoryIds.has(row.productCategory.id) && Number.isInteger(quantity) && quantity > 0) {
+        productGroupRows.push({
           categoryId: row.productCategory.id,
           categoryName: row.productCategory.name,
           itemName: row.product.name.trim(),
+          shortCode: row.product.shortCode,
           quantity,
         });
         matchedProjectIds.add(row.item.projectId);
       }
-
-      if (
-        row.component
-        && row.componentCategory
-        && row.component.name.trim().length > 0
-        && selectedComponentCategoryIds.has(row.componentCategory.id)
-      ) {
-        upsertGroupedItem(componentGroups, {
-          categoryId: row.componentCategory.id,
-          categoryName: row.componentCategory.name,
-          itemName: row.component.name.trim(),
-          quantity,
-        });
-        matchedProjectIds.add(row.item.projectId);
-      }
-    }
-
-    if (matchedProjectIds.size === 0) {
-      return {
-      productCategoryGroups: [],
-      componentCategoryGroups: [],
-        specialMeasureProjects: [],
-      };
-    }
-
-  const sortedProductCategoryGroups = sortGroupedItems(productGroups);
-  const sortedComponentCategoryGroups = sortGroupedItems(componentGroups);
-
-  const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
-  const appointmentDateByProjectId = new Map<number, string>();
-  for (const row of normalizedAppointmentRows) {
-    if (!matchedProjectIds.has(row.projectId) || appointmentDateByProjectId.has(row.projectId)) {
       continue;
     }
-    appointmentDateByProjectId.set(row.projectId, row.startDate);
+
+    if (!row.component || !row.componentCategory || row.component.name.trim().length === 0) {
+      articleBucketsByProjectId.set(row.item.projectId, articleBuckets);
+      continue;
+    }
+
+    if (selectedComponentCategoryIds.size === 0 || selectedComponentCategoryIds.has(row.componentCategory.id)) {
+      const displayName = resolveArticleName(row.component.name.trim(), row.component.shortCode, params.useShortCodes);
+      addToBucket(articleBuckets, row.componentCategory.id, displayName);
+      articleBucketsByProjectId.set(row.item.projectId, articleBuckets);
+    }
+
+    if (selectedComponentCategoryIds.has(row.componentCategory.id) && Number.isInteger(quantity) && quantity > 0) {
+      componentGroupRows.push({
+        categoryId: row.componentCategory.id,
+        categoryName: row.componentCategory.name,
+        itemName: row.component.name.trim(),
+        shortCode: row.component.shortCode,
+        quantity,
+      });
+      matchedProjectIds.add(row.item.projectId);
+    }
   }
+
+  const sortedProductCategoryGroups = buildGroupedProductVorlaufCategoryGroups(productGroupRows, params.useShortCodes);
+  const sortedComponentCategoryGroups = buildGroupedProductVorlaufCategoryGroups(componentGroupRows, params.useShortCodes);
+
+  const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
   const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
 
   for (const projectId of Array.from(matchedProjectIds)) {
@@ -661,15 +691,15 @@ export async function getProductVorlauf(params: {
       continue;
     }
 
-      specialMeasureProjects.push({
-        projectId,
-        orderNumber: projectDetail.order?.orderNumber ?? null,
-        customerNumber: projectDetail.customer?.customerNumber ?? null,
-        customerFullName: projectDetail.customer?.fullName ?? null,
-        actualDate: appointmentDateByProjectId.get(projectId) ?? null,
-        projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
-        specialMeasureTag,
-      });
+    specialMeasureProjects.push({
+      projectId,
+      orderNumber: projectDetail.order?.orderNumber ?? null,
+      customerNumber: projectDetail.customer?.customerNumber ?? null,
+      customerFullName: projectDetail.customer?.fullName ?? null,
+      actualDate: appointmentMetaByProjectId.get(projectId)?.actualDate ?? null,
+      projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
+      specialMeasureTag,
+    });
   }
 
   specialMeasureProjects.sort((left, right) => {
@@ -678,9 +708,47 @@ export async function getProductVorlauf(params: {
     return orderA.localeCompare(orderB, "de") || left.projectId - right.projectId;
   });
 
+  const allCategoryIds = [...params.productCategoryIds, ...params.componentCategoryIds];
+  const projectRows = eligibleProjectIds
+    .map((projectId) => {
+      const projectDetail = projectDetailsById.get(projectId);
+      const appointmentMeta = appointmentMetaByProjectId.get(projectId);
+      if (!projectDetail || !appointmentMeta) {
+        return null;
+      }
+
+      const projectTags = tagsByProjectId.get(projectId) ?? [];
+      const appointmentTags = normalizedAppointmentRows
+        .filter((row) => row.projectId === projectId)
+        .flatMap((row) => appointmentTagsByAppointmentId.get(row.appointmentId) ?? []);
+      const matchedSonderblockTagIds = collectMatchedSonderblockTagIds({
+        selectedTags: selectedTagRows,
+        projectTags,
+        appointmentTags,
+      });
+      const articleBuckets = articleBucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+
+      return {
+        projectId,
+        projectName: projectDetail.project.name,
+        orderNumber: projectDetail.order?.orderNumber ?? null,
+        actualDate: appointmentMeta.actualDate,
+        tourName: appointmentMeta.tourName,
+        articleValues: allCategoryIds.map((categoryId) => ({
+          categoryId,
+          value: joinSorted(articleBuckets.get(categoryId) ?? new Set()),
+        })),
+        projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
+        matchedSonderblockTagIds,
+      };
+    })
+    .filter((entry): entry is ProductVorlaufProjectRow => entry !== null)
+    .sort((left, right) => left.actualDate.localeCompare(right.actualDate, "de") || left.projectId - right.projectId);
+
   return {
     productCategoryGroups: sortedProductCategoryGroups,
     componentCategoryGroups: sortedComponentCategoryGroups,
     specialMeasureProjects,
+    projectRows,
   };
 }

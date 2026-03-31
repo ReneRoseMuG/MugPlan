@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Produkt Vorlauf gruppiert konkrete Produkte und Komponenten je ausgewaehlter Kategorie und summiert deren Mengen.
+ * - Der Produkt Report liefert zusaetzlich eine strenge Projektliste ohne Reklamation und Storno.
  * - Sondermasse listen nur Projekte im Zeitraum mit passendem Sondermass-Tag und passender Report-Position.
  * - Stornierte Projekte sollen im Produkt Vorlauf weder Mengen noch Sondermass-Treffer beitragen.
  * - Projekte oder Termine mit dem managed Reklamation-Tag sollen aus Mengen und Sondermass-Treffern ausgeschlossen werden.
@@ -34,6 +35,7 @@ import {
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
+  createTourFixture,
 } from "../../helpers/testDataFactory";
 import * as projectsService from "../../../server/services/projectsService";
 import {
@@ -71,10 +73,11 @@ async function createProductVorlaufProjectFixture(params: {
   prefix: string;
   appointmentDates: string[];
   descriptionMd?: string | null;
-  productItems?: Array<{ categoryName: string; name: string; quantity: number }>;
-  componentItems?: Array<{ categoryName: string; name: string; quantity: number }>;
+  productItems?: Array<{ categoryName: string; name: string; quantity: number; shortCode?: string | null }>;
+  componentItems?: Array<{ categoryName: string; name: string; quantity: number; shortCode?: string | null }>;
   projectTags?: Tag[];
   appointmentTagsByIndex?: Tag[][];
+  tourId?: number | null;
 }) {
   const customer = await createCustomerFixtureWithOverrides({
     prefix: `${params.prefix}-CUST`,
@@ -96,7 +99,7 @@ async function createProductVorlaufProjectFixture(params: {
 
   const appointments = [];
   for (const appointmentDate of params.appointmentDates) {
-    appointments.push(await createAppointmentFixture({ projectId: project.id, startDate: appointmentDate }));
+    appointments.push(await createAppointmentFixture({ projectId: project.id, startDate: appointmentDate, tourId: params.tourId ?? null }));
   }
 
   for (const tag of params.projectTags ?? []) {
@@ -112,7 +115,7 @@ async function createProductVorlaufProjectFixture(params: {
   }
 
   for (const item of params.productItems ?? []) {
-    const product = await createProductFixture({ categoryName: item.categoryName, name: item.name });
+    const product = await createProductFixture({ categoryName: item.categoryName, name: item.name, shortCode: item.shortCode ?? null });
     await createProjectOrderItemFixture({
       projectId: project.id,
       orderNumber,
@@ -122,7 +125,7 @@ async function createProductVorlaufProjectFixture(params: {
   }
 
   for (const item of params.componentItems ?? []) {
-    const component = await createComponentFixture({ categoryName: item.categoryName, name: item.name });
+    const component = await createComponentFixture({ categoryName: item.categoryName, name: item.name, shortCode: item.shortCode ?? null });
     await createProjectOrderItemFixture({
       projectId: project.id,
       orderNumber,
@@ -441,6 +444,60 @@ describe("FT26 integration: report product vorlauf", () => {
         projectId: visibleControlProject.project.id,
         orderNumber: expect.stringContaining("ORD-FT26-PV-REKL-VISIBLE-PROJ"),
       }),
+    ]);
+  });
+
+  it("returns strict projectRows with tour, shortcode values and selected sonderblock tags", async () => {
+    const admin = await loginAdminAgent(app);
+    const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
+    const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
+    const sonderblockTag = await ensureExactTag("Baustellenstopp", "#2563eb");
+    const tour = await createTourFixture("#0f766e");
+
+    const visibleProject = await createProductVorlaufProjectFixture({
+      prefix: "FT32-PV-ROWS-VISIBLE",
+      appointmentDates: ["2100-01-10"],
+      descriptionMd: "<p>Strenge Projektliste sichtbar</p>",
+      projectTags: [sonderblockTag],
+      tourId: tour.id,
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Lang", shortCode: "SL", quantity: 2 }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Breit", shortCode: "FB", quantity: 1 }],
+    });
+    await createProductVorlaufProjectFixture({
+      prefix: "FT32-PV-ROWS-STORNO",
+      appointmentDates: ["2100-01-11"],
+      tourId: tour.id,
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Storno", shortCode: "SS", quantity: 1 }],
+      appointmentTagsByIndex: [[cancellationTag]],
+    });
+    await createProductVorlaufProjectFixture({
+      prefix: "FT32-PV-ROWS-REKL",
+      appointmentDates: ["2100-01-12"],
+      projectTags: [reportExclusionTag],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Reklamation", shortCode: "SR", quantity: 1 }],
+    });
+
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Rows" })).categoryId;
+    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Rows" })).categoryId;
+
+    const response = await admin
+      .get(`/api/reports/product-vorlauf?fromDate=2100-01-01&toDate=2100-01-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&useShortCodes=true&sonderblockTagIds=${sonderblockTag.id}`)
+      .expect(200);
+
+    expect(response.body.projectRows).toEqual([
+      {
+        projectId: visibleProject.project.id,
+        projectName: "FT32-PV-ROWS-VISIBLE Projekt",
+        orderNumber: expect.stringContaining("ORD-FT32-PV-ROWS-VISIBLE-PROJ"),
+        actualDate: "2100-01-10",
+        tourName: tour.name,
+        articleValues: expect.arrayContaining([
+          { categoryId: saunaCategoryId, value: "SL" },
+          { categoryId: windowCategoryId, value: "FB" },
+        ]),
+        projectDescription: "Strenge Projektliste sichtbar",
+        matchedSonderblockTagIds: [sonderblockTag.id],
+      },
     ]);
   });
 

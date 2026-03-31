@@ -58,6 +58,8 @@ export async function listProductVorlauf(req: Request, res: Response, next: Next
       toDate: input.toDate,
       productCategoryIds: input.productCategoryIds,
       componentCategoryIds: input.componentCategoryIds,
+      useShortCodes: input.useShortCodes,
+      sonderblockTagIds: input.sonderblockTagIds,
     }, roleKey);
 
     res.json(report);

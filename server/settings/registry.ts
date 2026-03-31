@@ -58,6 +58,8 @@ type VorlauflisteCategorySelection = {
 type ProductVorlaufSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  useShortCodes?: boolean;
+  sonderblockTagIds?: number[];
 };
 
 const templateAllowedKeys = [
@@ -178,7 +180,13 @@ function isValidVorlauflisteCategorySelection(value: unknown): value is Vorlaufl
 }
 
 function isValidProductVorlaufSelection(value: unknown): value is ProductVorlaufSelection {
-  return isValidVorlauflisteCategorySelection(value);
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const parsed = value as Record<string, unknown>;
+  if (!isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
+  if (!isValidPositiveIntegerArray(parsed.componentCategoryIds)) return false;
+  if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
+  if (parsed.sonderblockTagIds !== undefined && !isValidPositiveIntegerArray(parsed.sonderblockTagIds)) return false;
+  return true;
 }
 
 export const userSettingsRegistry = {
@@ -419,6 +427,8 @@ export const userSettingsRegistry = {
     defaultValue: {
       productCategoryIds: [],
       componentCategoryIds: [],
+      useShortCodes: false,
+      sonderblockTagIds: [],
     },
     allowedScopes: ["USER"],
     validate: isValidProductVorlaufSelection,
