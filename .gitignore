@@ -21,7 +21,6 @@ server.log
 .tmp-unit-*.json
 tests/coverage/
 plans/
-reports/
 uploads/*
 !uploads/.gitkeep
 backups/*
