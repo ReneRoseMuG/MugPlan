@@ -562,6 +562,24 @@ export async function updateAppointmentDisplayModeWithVersionTx(
   return getAffectedRows(result) === 0 ? { kind: "version_conflict" } : { kind: "updated" };
 }
 
+export async function bumpAppointmentVersionTx(
+  tx: DbTx,
+  params: {
+    appointmentId: number;
+    expectedVersion: number;
+  },
+): Promise<{ kind: "updated" | "version_conflict" }> {
+  const result = await tx.execute(sql`
+    update appointments
+    set
+      version = version + 1
+    where id = ${params.appointmentId}
+      and version = ${params.expectedVersion}
+  `);
+
+  return getAffectedRows(result) === 0 ? { kind: "version_conflict" } : { kind: "updated" };
+}
+
 export async function deleteAppointmentWithVersionTx(
   tx: DbTx,
   params: { appointmentId: number; expectedVersion: number },

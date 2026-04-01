@@ -1,4 +1,4 @@
-import cron from "node-cron";
+import { createRequire } from "node:module";
 import { getGlobalSettingValue } from "./userSettingsService";
 import * as backupRepository from "../repositories/backupRepository";
 import * as backupRuntimeRepository from "../repositories/backupRuntimeRepository";
@@ -8,6 +8,9 @@ import { cleanupOldBackups } from "./backupRetentionService";
 import { pool } from "../db";
 import type { PoolConnection } from "mysql2/promise";
 import { logError, logInfo } from "../lib/logger";
+
+const require = createRequire(import.meta.url);
+const cron = require("node-cron") as typeof import("node-cron");
 
 const logPrefix = "[backup-scheduler]";
 let isRunning = false;

@@ -1,10 +1,11 @@
 import fs from "fs";
 import path from "path";
 
-type LogLevel = "ERROR" | "WARN" | "INFO" | "DEBUG";
+type LogLevel = "OFF" | "ERROR" | "WARN" | "INFO" | "DEBUG";
 type HttpLogMode = "off" | "errors" | "brief";
 
 const levelPriority: Record<LogLevel, number> = {
+  OFF: -1,
   ERROR: 0,
   WARN: 1,
   INFO: 2,
@@ -19,7 +20,7 @@ function parseBoolean(raw: string | undefined, defaultValue: boolean): boolean {
 
 function readLogLevel(): LogLevel {
   const candidate = (process.env.LOG_LEVEL ?? "INFO").trim().toUpperCase();
-  if (candidate === "ERROR" || candidate === "WARN" || candidate === "INFO" || candidate === "DEBUG") {
+  if (candidate === "OFF" || candidate === "ERROR" || candidate === "WARN" || candidate === "INFO" || candidate === "DEBUG") {
     return candidate;
   }
   return "INFO";

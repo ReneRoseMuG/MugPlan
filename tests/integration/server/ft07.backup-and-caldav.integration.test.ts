@@ -64,7 +64,7 @@ afterEach(async () => {
   delete process.env.CALDAV_URL;
   delete process.env.CALDAV_USER;
   delete process.env.CALDAV_PASS;
-  delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  delete process.env.CALDAV_ALLOW_INSECURE_TLS;
   delete process.env.FT07_DISABLE_DB_LOCK;
 });
 
@@ -286,7 +286,7 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
         algorithm: "sha256",
       },
     );
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+    process.env.CALDAV_ALLOW_INSECURE_TLS = "1";
 
     const httpsApp = express();
     httpsApp.use(express.text({ type: "*/*" }));

@@ -5,13 +5,14 @@
  * - Termin-Storno entfernt serverseitig alle Mitarbeiterzuweisungen.
  * - Termin-Storno setzt den Projektbetrag bei projektgebundenen Terminen auf 0.00.
  * - Termin-Storno setzt den reservierten Storno-Tag innerhalb derselben Mutationskette.
- * - Bereits stornierte Termine werden idempotent in den Endzustand ueberfuehrt.
+ * - Termin-Storno erwartet eine gueltige Appointment-Version und bump't sie atomar.
+ * - Bereits stornierte Termine werden mit frischer Version in den Endzustand ueberfuehrt.
  * - Historische Termine bleiben auch im Storno-Pfad gesperrt.
  *
  * Fehlerfaelle:
  * - Stornierte Termine behalten zugewiesene Mitarbeiter.
  * - Projektgebundene Stornos lassen den bisherigen Projektbetrag stehen.
- * - Ein zweiter Storno-Aufruf laesst Altbestand mit Tag plus Mitarbeitern unveraendert.
+ * - Ein Storno mit veralteter Version liefert keinen VERSION_CONFLICT.
  * - Historische Termine koennen trotz Sperre storniert werden.
  *
  * Ziel:
@@ -23,6 +24,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   getAppointment: vi.fn(),
   getAppointmentTx: vi.fn(),
   withAppointmentTransaction: vi.fn(),
+  bumpAppointmentVersionTx: vi.fn(),
   replaceAppointmentEmployeesTx: vi.fn(),
   addAppointmentTagTx: vi.fn(),
 }));
@@ -52,6 +54,7 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
       const fakeTx = {} as Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0];
       return handler(fakeTx);
     });
+    appointmentsRepoMock.bumpAppointmentVersionTx.mockResolvedValue({ kind: "updated" });
 
     tagRelationsServiceMock.ensureAppointmentCancellationTag.mockResolvedValue({
       id: 77,
@@ -76,9 +79,13 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
       startDate: new Date("2099-03-21T00:00:00.000Z"),
     } as any);
 
-    const result = await cancelAppointment(401, "DISPONENT");
+    const result = await cancelAppointment(401, 4, "DISPONENT");
 
     expect(result).toEqual({ found: true });
+    expect(appointmentsRepoMock.bumpAppointmentVersionTx).toHaveBeenCalledWith(expect.anything(), {
+      appointmentId: 401,
+      expectedVersion: 4,
+    });
     expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).toHaveBeenCalledWith(expect.anything(), 401, []);
     expect(projectsRepoMock.setProjectOrderAmountTx).toHaveBeenCalledWith(expect.anything(), 901, "0.00");
     expect(appointmentsRepoMock.addAppointmentTagTx).toHaveBeenCalledWith(expect.anything(), 401, 77);
@@ -96,11 +103,36 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
       startDate: new Date("2099-03-22T00:00:00.000Z"),
     } as any);
 
-    await cancelAppointment(402, "ADMIN");
+    await cancelAppointment(402, 6, "ADMIN");
 
+    expect(appointmentsRepoMock.bumpAppointmentVersionTx).toHaveBeenCalledWith(expect.anything(), {
+      appointmentId: 402,
+      expectedVersion: 6,
+    });
     expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).toHaveBeenCalledWith(expect.anything(), 402, []);
     expect(projectsRepoMock.setProjectOrderAmountTx).not.toHaveBeenCalled();
     expect(appointmentsRepoMock.addAppointmentTagTx).toHaveBeenCalledWith(expect.anything(), 402, 77);
+  });
+
+  it("rejects cancellation when the appointment version is stale", async () => {
+    appointmentsRepoMock.getAppointment.mockResolvedValue({
+      id: 404,
+      startDate: new Date("2099-03-23T00:00:00.000Z"),
+    } as any);
+    appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
+      id: 404,
+      startDate: new Date("2099-03-23T00:00:00.000Z"),
+    } as any);
+    appointmentsRepoMock.bumpAppointmentVersionTx.mockResolvedValue({ kind: "version_conflict" });
+
+    await expect(cancelAppointment(404, 2, "DISPONENT")).rejects.toMatchObject({
+      status: 409,
+      code: "VERSION_CONFLICT",
+    });
+
+    expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).not.toHaveBeenCalled();
+    expect(projectsRepoMock.setProjectOrderAmountTx).not.toHaveBeenCalled();
+    expect(appointmentsRepoMock.addAppointmentTagTx).not.toHaveBeenCalled();
   });
 
   it("blocks cancellation for historical appointments before changing relations", async () => {
@@ -115,13 +147,14 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
 
     let error: unknown;
     try {
-      await cancelAppointment(403, "DISPONENT");
+      await cancelAppointment(403, 3, "DISPONENT");
     } catch (err) {
       error = err;
     }
 
     expect(isAppointmentError(error)).toBe(true);
     expect(error).toMatchObject({ status: 409, code: "PAST_APPOINTMENT_READONLY" });
+    expect(appointmentsRepoMock.bumpAppointmentVersionTx).not.toHaveBeenCalled();
     expect(appointmentsRepoMock.replaceAppointmentEmployeesTx).not.toHaveBeenCalled();
     expect(projectsRepoMock.setProjectOrderAmountTx).not.toHaveBeenCalled();
     expect(appointmentsRepoMock.addAppointmentTagTx).not.toHaveBeenCalled();

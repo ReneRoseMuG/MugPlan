@@ -1,3 +1,4 @@
+import https from "node:https";
 import * as backupRuntimeRepository from "../repositories/backupRuntimeRepository";
 
 type CaldavConfig = {
@@ -77,6 +78,53 @@ function authHeader(config: CaldavConfig): string {
   return `Basic ${Buffer.from(`${config.username}:${config.password}`).toString("base64")}`;
 }
 
+function shouldAllowInsecureTls(): boolean {
+  return process.env.CALDAV_ALLOW_INSECURE_TLS === "1";
+}
+
+async function sendCaldavRequest(input: {
+  url: string;
+  method: "PUT" | "DELETE";
+  headers: Record<string, string>;
+  body?: string;
+}): Promise<{ status: number; body: string }> {
+  const targetUrl = new URL(input.url);
+
+  return new Promise((resolve, reject) => {
+    const request = https.request(
+      {
+        protocol: targetUrl.protocol,
+        hostname: targetUrl.hostname,
+        port: targetUrl.port,
+        path: `${targetUrl.pathname}${targetUrl.search}`,
+        method: input.method,
+        headers: input.headers,
+        rejectUnauthorized: !shouldAllowInsecureTls(),
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          resolve({
+            status: response.statusCode ?? 0,
+            body: Buffer.concat(chunks).toString("utf8"),
+          });
+        });
+      },
+    );
+
+    request.on("error", reject);
+
+    if (typeof input.body === "string" && input.body.length > 0) {
+      request.write(input.body);
+    }
+
+    request.end();
+  });
+}
+
 export async function upsertAppointmentInCaldav(appointmentId: number): Promise<{ externalEventId: string } | null> {
   const config = loadConfig();
   if (!config) return null;
@@ -108,7 +156,8 @@ export async function upsertAppointmentInCaldav(appointmentId: number): Promise<
     endTime: row.endTime ?? null,
   });
 
-  const response = await fetch(buildEventUrl(config, externalEventId), {
+  const response = await sendCaldavRequest({
+    url: buildEventUrl(config, externalEventId),
     method: "PUT",
     headers: {
       Authorization: authHeader(config),
@@ -117,7 +166,7 @@ export async function upsertAppointmentInCaldav(appointmentId: number): Promise<
     body: ics,
   });
 
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     throw new Error(`CalDAV upsert failed (${response.status})`);
   }
   return { externalEventId };
@@ -133,14 +182,15 @@ export async function deleteAppointmentInCaldav(
     ? externalEventIdOverride.trim()
     : buildDefaultExternalEventId(appointmentId);
 
-  const response = await fetch(buildEventUrl(config, externalEventId), {
+  const response = await sendCaldavRequest({
+    url: buildEventUrl(config, externalEventId),
     method: "DELETE",
     headers: {
       Authorization: authHeader(config),
     },
   });
 
-  if (!response.ok && response.status !== 404) {
+  if (response.status < 200 || response.status >= 300 && response.status !== 404) {
     throw new Error(`CalDAV delete failed (${response.status})`);
   }
   return { externalEventId };

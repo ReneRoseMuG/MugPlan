@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 function normalizeWhitespace(value: string): string {
@@ -30,8 +29,7 @@ function resolveStandardFontDataUrl(): string {
 
   const uniqueCandidateDirs = candidateDirs.filter((candidate, index) => candidateDirs.indexOf(candidate) === index);
   const standardFontsDir = uniqueCandidateDirs.find((candidate) => existsSync(candidate)) ?? uniqueCandidateDirs[0];
-  const standardFontsUrl = pathToFileURL(standardFontsDir).href;
-  return standardFontsUrl.endsWith("/") ? standardFontsUrl : `${standardFontsUrl}/`;
+  return standardFontsDir.endsWith(path.sep) ? standardFontsDir : `${standardFontsDir}${path.sep}`;
 }
 
 export async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {

@@ -18,7 +18,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `cross-env NODE_ENV=test MUGPLAN_MODE=test PORT=${port} tsx server/index.ts`,
+    command: `cross-env NODE_ENV=test MUGPLAN_MODE=test LOG_LEVEL=OFF PORT=${port} tsx server/index.ts`,
     url: baseURL,
     timeout: 180_000,
     reuseExistingServer: !process.env.CI,
@@ -32,4 +32,3 @@ export default defineConfig({
     },
   ],
 });
-

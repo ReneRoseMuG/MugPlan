@@ -476,9 +476,13 @@ export function AppointmentForm({
     },
   });
   const cancelAppointmentMutation = useMutation({
-    mutationFn: async ({ appointmentId: targetAppointmentId }: { appointmentId: number; projectId: number | null }) => {
+    mutationFn: async ({ appointmentId: targetAppointmentId, version }: { appointmentId: number; version: number }) => {
       const response = await fetch(`/api/appointments/${targetAppointmentId}/cancel`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ version }),
         credentials: "include",
       });
       if (response.ok) {
@@ -496,6 +500,9 @@ export function AppointmentForm({
           response.status,
           "CANCELLATION_TAG_NOT_CONFIGURED",
         );
+      }
+      if (parsed?.code === "VERSION_CONFLICT") {
+        throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
       }
 
       throw buildApiError(parsed?.message ?? (response.statusText || "Stornieren fehlgeschlagen"), response.status, parsed?.code);
@@ -527,6 +534,14 @@ export function AppointmentForm({
         toast({
           title: "Stornieren nicht moeglich",
           description: "Der reservierte Storno-Tag ist in den Stammdaten nicht vorhanden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "VERSION_CONFLICT") {
+        toast({
+          title: "Stornieren nicht moeglich",
+          description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -2203,10 +2218,12 @@ export function AppointmentForm({
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              disabled={cancelAppointmentMutation.isPending || !appointmentId}
+              disabled={cancelAppointmentMutation.isPending || !appointmentId || typeof appointmentDetail?.version !== "number" || !Number.isInteger(appointmentDetail.version) || appointmentDetail.version < 1}
               onClick={() => {
                 if (!appointmentId) return;
-                cancelAppointmentMutation.mutate({ appointmentId, projectId: selectedProjectId });
+                const version = appointmentDetail?.version;
+                if (typeof version !== "number" || !Number.isInteger(version) || version < 1) return;
+                cancelAppointmentMutation.mutate({ appointmentId, version });
               }}
             >
               {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}

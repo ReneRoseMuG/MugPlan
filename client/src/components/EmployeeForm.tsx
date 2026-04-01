@@ -247,8 +247,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   });
 
   const removeFromAppointmentMutation = useMutation({
-    mutationFn: async (appointmentId: number) => {
-      return apiRequest("DELETE", `/api/appointments/${appointmentId}/employees/${employeeId}`);
+    mutationFn: async ({ appointmentId, version }: { appointmentId: number; version: number }) => {
+      return apiRequest("DELETE", `/api/appointments/${appointmentId}/employees/${employeeId}`, { version });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["appointments-list"] });
@@ -257,7 +257,16 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       }
       toast({ title: "Mitarbeiter wurde vom Termin entfernt" });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Entfernen fehlgeschlagen",
+          description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Entfernen fehlgeschlagen", variant: "destructive" });
     },
   });
@@ -882,7 +891,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                 helpKey="appointments.list.employeeForm"
                 context={{ type: "employee", employeeId }}
                 onOpenAppointment={onOpenAppointment}
-                onRemoveEmployee={(appointmentId) => removeFromAppointmentMutation.mutate(appointmentId)}
+                onRemoveEmployee={(appointmentId, version) => removeFromAppointmentMutation.mutate({ appointmentId, version })}
                 className="min-h-0 flex-1"
               />
             ) : (

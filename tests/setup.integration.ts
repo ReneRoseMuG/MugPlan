@@ -6,6 +6,7 @@ import { configureTestStorageIsolation, resetIsolatedTestStorage } from "./helpe
 
 process.env.NODE_ENV = "test";
 process.env.MUGPLAN_MODE = "test";
+process.env.LOG_LEVEL = "OFF";
 initializeRuntimeEnv();
 await configureTestStorageIsolation();
 

@@ -224,6 +224,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
     const listItem = findAppointment(listResponse.body.items as Array<Record<string, any>>, fixture.appointment.id);
     expect(listItem).toMatchObject({
       id: fixture.appointment.id,
+      version: fixture.appointment.version,
       projectName: fixture.project.name,
       projectOrderNumber: fixture.project.orderNumber,
       customer: {

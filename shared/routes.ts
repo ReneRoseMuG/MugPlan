@@ -1094,11 +1094,15 @@ export const api = {
     cancel: {
       method: "POST" as const,
       path: "/api/appointments/:id/cancel",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
       responses: {
         204: z.void(),
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
-        409: z.object({ code: z.enum(["PAST_APPOINTMENT_READONLY", "CANCELLATION_TAG_NOT_CONFIGURED"]) }),
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLATION_TAG_NOT_CONFIGURED"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },
@@ -1144,10 +1148,15 @@ export const api = {
     remove: {
       method: "DELETE" as const,
       path: "/api/appointments/:id/employees/:employeeId",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
       responses: {
         204: z.void(),
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "CANCELLED_APPOINTMENT_READONLY"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },

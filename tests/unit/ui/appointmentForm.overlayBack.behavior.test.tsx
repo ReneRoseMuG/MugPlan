@@ -187,6 +187,27 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
   if (key === "/api/projects?filter=all&scope=all" || key === "/api/customers" || key === "/api/tours" || key === "/api/teams" || key === "/api/employees" || key === "/api/tags") {
     return { data: [], isLoading: false };
   }
+  if (key === "/api/appointments" && Array.isArray(queryKey) && queryKey[1] === 77) {
+    return {
+      data: {
+        id: 77,
+        version: 6,
+        projectId: 1,
+        customerId: 2,
+        tourId: null,
+        displayMode: "default",
+        startDate: "2099-01-02",
+        endDate: null,
+        startTime: null,
+        employees: [],
+        appointmentTags: [],
+        customerTags: [],
+        projectTags: [],
+        isCancelled: false,
+      },
+      isLoading: false,
+    };
+  }
   if (typeof key === "string" && key.startsWith("/api/admin/master-data/")) {
     return { data: [], isLoading: false };
   }
@@ -258,5 +279,30 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
     await cancelMutationConfig?.onSuccess?.();
 
     expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends the fresh appointment version in the cancellation request body", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => "",
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderToStaticMarkup(<AppointmentForm appointmentId={77} />);
+
+    const cancelMutationConfig = mutationConfigs[2] as {
+      mutationFn?: (payload: { appointmentId: number; version: number }) => Promise<unknown>;
+    } | undefined;
+
+    await cancelMutationConfig?.mutationFn?.({ appointmentId: 77, version: 6 });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/appointments/77/cancel", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ version: 6 }),
+      credentials: "include",
+    });
   });
 });

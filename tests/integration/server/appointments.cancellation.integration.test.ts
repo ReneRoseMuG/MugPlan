@@ -164,7 +164,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       });
   });
 
-  it("cancels an appointment idempotently and blocks generic removal or update afterwards", async () => {
+  it("cancels an appointment versioniert and rejects stale repeats afterwards", async () => {
     const admin = await loginAdminAgent(app);
     const [existingCancellationTag] = await db
       .select({ id: tags.id })
@@ -191,8 +191,14 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       employeeIds: [employeeA.id, employeeB.id],
     });
 
-    await admin.post(`/api/appointments/${appointment.id}/cancel`).expect(204);
-    await admin.post(`/api/appointments/${appointment.id}/cancel`).expect(204);
+    await admin.post(`/api/appointments/${appointment.id}/cancel`).send({ version: appointment.version }).expect(204);
+    await admin
+      .post(`/api/appointments/${appointment.id}/cancel`)
+      .send({ version: appointment.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("VERSION_CONFLICT");
+      });
 
     const detailResponse = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
     expect(detailResponse.body.isCancelled).toBe(true);
@@ -299,7 +305,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       version: 1,
     });
 
-    await admin.post(`/api/appointments/${appointment.id}/cancel`).expect(204);
+    await admin.post(`/api/appointments/${appointment.id}/cancel`).send({ version: appointment.version }).expect(204);
 
     const detailResponse = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
     expect(detailResponse.body.isCancelled).toBe(true);

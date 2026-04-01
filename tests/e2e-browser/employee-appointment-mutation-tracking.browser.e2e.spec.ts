@@ -180,7 +180,17 @@ test("Test 3: Entfernen ueber Minus-Button im Mitarbeiterformular", async ({ pag
 
   const removeButton = table.getByTestId(`button-remove-employee-from-appointment-${apptMinusButton.id}`);
   await expect(removeButton).toBeVisible();
+  const removeDetailResponse = await page.request.get(`/api/appointments/${apptMinusButton.id}`);
+  expect(removeDetailResponse.ok()).toBeTruthy();
+  const removeDetail = await removeDetailResponse.json() as { version: number };
+  const removeResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "DELETE"
+    && response.url().includes(`/api/appointments/${apptMinusButton.id}/employees/${targetEmployee.id}`)
+  ));
   await removeButton.click();
+  const removeResponse = await removeResponsePromise;
+  expect(removeResponse.status()).toBe(204);
+  expect(removeResponse.request().postDataJSON()).toEqual({ version: removeDetail.version });
 
   await expect(page.getByText("Mitarbeiter wurde vom Termin entfernt", { exact: true })).toBeVisible();
   await expect(table.getByTestId(`button-remove-employee-from-appointment-${apptMinusButton.id}`)).toHaveCount(0);

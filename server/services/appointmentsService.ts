@@ -1057,6 +1057,7 @@ export async function listAppointmentsList(params: {
     const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
     return {
       id: row.appointment.id,
+      version: row.appointment.version,
       projectId,
       projectName: row.project?.name ?? "Ohne Projekt",
       projectVersion: row.project?.version ?? null,
@@ -1204,20 +1205,40 @@ export async function removeAppointmentTag(
 export async function removeEmployeeFromAppointment(
   appointmentId: number,
   employeeId: number,
+  expectedVersion: number,
   roleKey: CanonicalRoleKey,
 ): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+  }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
-  await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht bearbeitet werden");
-  await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return { found: false } as const;
+    await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht bearbeitet werden");
+    const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
+      appointmentId,
+      expectedVersion,
+    });
+    if (updateResult.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    }
     await appointmentsRepository.deleteAppointmentEmployeeTx(tx, appointmentId, employeeId);
+    return { found: true } as const;
   });
-  return { found: true };
 }
 
-export async function cancelAppointment(appointmentId: number, roleKey: CanonicalRoleKey): Promise<{ found: boolean }> {
+export async function cancelAppointment(
+  appointmentId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+  }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
 
@@ -1227,6 +1248,14 @@ export async function cancelAppointment(appointmentId: number, roleKey: Canonica
     if (!existing) return { found: false } as const;
     if (isStartDateLocked(existing.startDate)) {
       throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
+    }
+
+    const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
+      appointmentId,
+      expectedVersion,
+    });
+    if (updateResult.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);

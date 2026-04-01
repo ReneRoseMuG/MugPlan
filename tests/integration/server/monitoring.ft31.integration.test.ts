@@ -297,7 +297,7 @@ describe("FT31 integration: monitoring", () => {
       expect(body[0].appointmentId).toBe(appointment.id);
     });
 
-    await admin.agent.post(`/api/appointments/${appointment.id}/cancel`).expect(204);
+    await admin.agent.post(`/api/appointments/${appointment.id}/cancel`).send({ version: appointment.version }).expect(204);
 
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
       expect(body).toEqual([]);

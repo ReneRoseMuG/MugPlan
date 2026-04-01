@@ -57,7 +57,7 @@ interface AppointmentsListPageProps {
   enforceFromToday?: boolean;
   emptyStateOverride?: ReactNode;
   className?: string;
-  onRemoveEmployee?: (appointmentId: number) => void;
+  onRemoveEmployee?: (appointmentId: number, version: number) => void;
   splitDateRangeRow?: boolean;
 }
 
@@ -339,7 +339,7 @@ export function AppointmentsListPage({
             size="sm"
             data-testid={`button-remove-employee-from-appointment-${row.id}`}
             disabled={row.isCancelled}
-            onClick={(e) => { e.stopPropagation(); onRemoveEmployee(row.id); }}
+            onClick={(e) => { e.stopPropagation(); onRemoveEmployee(row.id, row.version); }}
             title="Mitarbeiter von Termin entfernen"
           >
             –
