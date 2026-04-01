@@ -42,6 +42,8 @@ export function CalendarTourPrintAppointmentRow({ appointment }: Props) {
   const isReklamation = isReklamationAppointment(appointment);
   const { label, isRek: dateIsReklamation } = formatDateTimeCell(appointment);
   const tags = mergeTourPrintTags(appointment.appointmentTags, appointment.customerTags, appointment.projectTags);
+  const localityLine = [appointment.customer.postalCode, appointment.customer.city].filter(Boolean).join(" ");
+  const countryLine = appointment.customer.country?.trim() ?? "";
 
   return (
     <tr className={isReklamation ? "bg-red-50" : ""} data-testid={`tour-print-appointment-row-${appointment.id}`}>
@@ -58,11 +60,12 @@ export function CalendarTourPrintAppointmentRow({ appointment }: Props) {
         <p className="text-[11px] font-semibold leading-tight text-slate-900 truncate">
           {appointment.customer.fullName ?? appointment.customer.customerNumber}
         </p>
-        {(appointment.customer.postalCode || appointment.customer.city) ? (
+        {localityLine ? (
           <p className="text-[10px] leading-tight text-slate-500">
-            {[appointment.customer.postalCode, appointment.customer.city].filter(Boolean).join(" ")}
+            {localityLine}
           </p>
         ) : null}
+        {countryLine ? <p className="text-[10px] leading-tight text-slate-500">{countryLine}</p> : null}
       </td>
       <td className="py-1 pr-2 text-[11px] align-top text-slate-700 overflow-hidden truncate">
         {isReklamation ? null : appointment.projectName || null}

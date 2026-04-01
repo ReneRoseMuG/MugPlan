@@ -14,6 +14,7 @@ export interface CustomerDetailCardProps {
     | "addressLine1"
     | "postalCode"
     | "city"
+    | "country"
   >;
   testId?: string;
   variant?: "default" | "relationCompact";
@@ -56,6 +57,7 @@ export function CustomerDetailCard({ customer, testId, variant = "default" }: Cu
     { label: "E-Mail", value: resolveValue(customer.email) },
     { label: "Adresse", value: resolveValue(customer.addressLine1) },
     { label: "PLZ/Ort", value: addressLine2 },
+    { label: "Land", value: resolveValue(customer.country), dataTestId: testId ? `${testId}-country` : undefined },
   ];
 
   return (
@@ -81,6 +83,9 @@ export function CustomerDetailCard({ customer, testId, variant = "default" }: Cu
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {renderCompactItem("PLZ", resolveCompactPostalCode(customer.postalCode), testId ? `${testId}-postal-code` : undefined)}
             {renderCompactItem("Ort", resolveValue(customer.city), testId ? `${testId}-city` : undefined)}
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            {renderCompactItem("Land", resolveValue(customer.country), testId ? `${testId}-country` : undefined)}
           </div>
         </div>
       ) : (

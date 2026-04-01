@@ -51,6 +51,7 @@ const extractedCustomerSchema = z.object({
   addressLine2: z.string().nullable(),
   postalCode: z.string().nullable(),
   city: z.string().nullable(),
+  country: z.string().nullable().optional(),
 });
 
 const extractedArticleItemSchema = z.object({
@@ -221,6 +222,7 @@ const entityAppointmentItemSchema = z.object({
     addressLine2: z.string().nullable(),
     postalCode: z.string().nullable(),
     city: z.string().nullable(),
+    country: z.string().nullable(),
   }),
   employees: z.array(
     z.object({
@@ -289,6 +291,7 @@ const customerBoardListItemSchema = z.object({
   addressLine2: z.string().nullable(),
   postalCode: z.string().nullable(),
   city: z.string().nullable(),
+  country: z.string().nullable(),
   version: z.number().int().min(1),
   notesCount: z.number().int().min(0),
   plannedAppointmentsCount: z.number().int().min(0),
@@ -333,6 +336,7 @@ const projectBoardListItemSchema = z.object({
     addressLine1: z.string().nullable(),
     postalCode: z.string().nullable(),
     city: z.string().nullable(),
+    country: z.string().nullable(),
     phone: z.string().nullable(),
     email: z.string().nullable(),
   }),
@@ -371,6 +375,7 @@ const reportVorlauflisteItemSchema = z.object({
   customerFullName: z.string().nullable(),
   postalCode: z.string().nullable(),
   city: z.string().nullable(),
+  country: z.string().nullable(),
   articleValues: z.array(reportVorlauflisteArticleValueSchema),
   plannedDateText: z.string().nullable(),
   plannedWeek: z.string().nullable(),
@@ -480,6 +485,7 @@ const tourPrintPreviewAppointmentSchema = z.object({
     addressLine2: z.string().nullable(),
     postalCode: z.string().nullable(),
     city: z.string().nullable(),
+    country: z.string().nullable(),
   }),
   employees: z.array(
     z.object({
@@ -911,6 +917,7 @@ export const api = {
                 addressLine2: z.string().nullable(),
                 postalCode: z.string().nullable(),
                 city: z.string().nullable(),
+                country: z.string().nullable(),
               }),
               employees: z.array(
                 z.object({
@@ -1214,6 +1221,7 @@ export const api = {
               addressLine2: z.string().nullable().optional(),
               postalCode: z.string().nullable(),
               city: z.string().nullable(),
+              country: z.string().nullable().optional(),
             }),
             project: z.object({
               id: z.number(),
@@ -3036,6 +3044,7 @@ export const api = {
             addressLine2: z.string().nullable(),
             postalCode: z.string().nullable(),
             city: z.string().nullable(),
+            country: z.string().nullable(),
           }),
           employees: z.array(
             z.object({
@@ -3094,6 +3103,7 @@ export const api = {
             addressLine2: z.string().nullable(),
             postalCode: z.string().nullable(),
             city: z.string().nullable(),
+            country: z.string().nullable(),
           }),
           employees: z.array(
             z.object({

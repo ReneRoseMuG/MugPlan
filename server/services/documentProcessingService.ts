@@ -167,6 +167,7 @@ export async function extractFromPdf(params: {
         addressLine2: null,
         postalCode: header.postalCode,
         city: header.city,
+        country: null,
       },
       orderNumber: header.orderNumber,
       amount,

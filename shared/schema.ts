@@ -18,6 +18,7 @@ export const customers = mysqlTable("customer", {
   addressLine2: varchar("address_line2", { length: 255 }),
   postalCode: varchar("postal_code", { length: 255 }),
   city: varchar("city", { length: 255 }),
+  country: varchar("country", { length: 255 }),
   isActive: boolean("is_active").notNull().default(true),
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -79,6 +80,7 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
   addressLine2: customerOptionalTextSchema,
   postalCode: customerOptionalTextSchema,
   city: customerOptionalTextSchema,
+  country: customerOptionalTextSchema,
 });
 
 export const updateCustomerSchema = z.object({
@@ -92,6 +94,7 @@ export const updateCustomerSchema = z.object({
   addressLine2: customerOptionalTextSchema,
   postalCode: customerOptionalTextSchema,
   city: customerOptionalTextSchema,
+  country: customerOptionalTextSchema,
   isActive: z.boolean().optional(),
 });
 

@@ -361,6 +361,7 @@ export async function updateCustomerWithVersion(
   if (data.addressLine2 !== undefined) updateData.addressLine2 = data.addressLine2;
   if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
   if (data.city !== undefined) updateData.city = data.city;
+  if (data.country !== undefined) updateData.country = data.country;
 
   const result = await db
     .update(customers)

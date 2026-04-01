@@ -3,10 +3,12 @@
  *
  * Abgedeckte Regeln:
  * - Die Vorlaufliste baut fuer Tabellenzeilen denselben Projekt-Preview-Datensatz wie die Projekttabelle.
+ * - Das optionale Kundenfeld `country` bleibt im Preview-Projekt erhalten.
  * - Mehrzeilige Report-Zelltexte bleiben auf drei Zeilen begrenzt.
  *
  * Fehlerfaelle:
  * - Der Report-Preview verliert Projekt-, Kunden- oder Artikelkontext.
+ * - Das neue Kundenfeld `country` geht im Preview-Mapping verloren.
  * - Der visuelle Zeilen-Clamp wird versehentlich entfernt.
  */
 import { describe, expect, it } from "vitest";
@@ -29,6 +31,7 @@ describe("FT26 UI: Vorlaufliste preview helpers", () => {
       customerFullName: "Kunde Drei Eins",
       postalCode: "26135",
       city: "Oldenburg",
+      country: "Deutschland",
       articleValues: [
         { categoryId: 1, value: " Sehr langes Produkt mit vielen Worten " },
         { categoryId: 2, value: "Panorama Fenster Extra Breit" },
@@ -60,6 +63,7 @@ describe("FT26 UI: Vorlaufliste preview helpers", () => {
         fullName: "Kunde Drei Eins",
         postalCode: "26135",
         city: "Oldenburg",
+        country: "Deutschland",
       },
       projectArticleItems: [
         { label: "Fass Saunen", value: "Sehr langes Produkt mit vielen Worten" },

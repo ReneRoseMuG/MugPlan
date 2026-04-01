@@ -342,6 +342,13 @@ Pflichtfelder in der jeweiligen Env-Datei: `DB_ALLOWED_DATABASES_DEV|TEST|PROD` 
 6. Erst jetzt Tests starten
 7. Bei Schemafehlern nicht weiterrefactoren, sondern Migrationsstand korrigieren
 
+Zusätzliche Abschlussregel bei Schemaänderungen:
+
+- Eine Schemaänderung gilt erst dann als umsetzungsseitig abgeschlossen, wenn die neue Migrationskette mindestens auf Dev und Test erfolgreich gelaufen ist oder ein sauber dokumentierter Blocker dies verhindert.
+- Schlägt eine Migration auf Dev oder Test fehl, darf Codex den Auftrag nicht als „fertig umgesetzt“ melden. Der Zustand ist bis zur Korrektur als blockiert zu behandeln.
+- Tritt in Tests, E2E oder Browser-E2E ein Fehler wie `Unknown column ...`, `Unknown table ...` oder ein anderer klarer Schema-Mismatch auf, ist dies als harter Abschluss-Blocker zu behandeln, nicht nur als gewöhnlicher Testfehler.
+- Bei solchen Schema-Mismatches muss Codex im Abschluss ausdrücklich benennen, welche Umgebung nicht migrationssynchron ist und dass die Umsetzung deshalb nicht als abgeschlossen gelten darf.
+
 ---
 
 ## 11. Teststrategie
@@ -520,3 +527,5 @@ Codex prüft das Ergebnis explizit gegen:
 Codex nennt konkret, welche Stellen geprüft wurden und ob es bekannte Abweichungen gibt. Bei Abweichungen werden konkrete Korrekturen vorgeschlagen.
 
 Eine Aufgabe gilt als abgeschlossen, wenn das fachliche Ziel umgesetzt, alle Verbote eingehalten und die geforderte Dokumentation vollständig vorliegt. Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.
+
+Für Schemaänderungen reicht eine reine Code-Implementierung dafür nicht aus. Fehlt die erfolgreiche Migration mindestens auf Dev und Test oder liegt ein erkennbarer Schema-Mismatch in Test-/E2E-Umgebungen vor, darf Codex den Auftrag nicht als fachlich umgesetzt melden, sondern nur als blockiert oder teilweise umgesetzt mit eindeutig benanntem Migrationsblocker.

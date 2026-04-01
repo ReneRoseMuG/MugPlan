@@ -43,6 +43,7 @@ type CustomerSubmitPayload = {
   addressLine2: string | null;
   postalCode: string | null;
   city: string | null;
+  country: string | null;
 };
 
 type CustomerDetail = Customer & { tags: Tag[] };
@@ -75,6 +76,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     addressLine2: "",
     postalCode: "",
     city: "",
+    country: "",
     isActive: true,
   });
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
@@ -215,6 +217,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         addressLine2: customer.addressLine2 || "",
         postalCode: customer.postalCode || "",
         city: customer.city || "",
+        country: customer.country || "",
         isActive: customer.isActive ?? true,
       });
     }
@@ -496,6 +499,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       addressLine2: normalizeOptionalInput(formData.addressLine2),
       postalCode: normalizeOptionalInput(formData.postalCode),
       city: normalizeOptionalInput(formData.city),
+      country: normalizeOptionalInput(formData.country),
       isActive: formData.isActive,
     };
 
@@ -616,6 +620,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           addressLine2: extraction.customer.addressLine2 ?? "",
           postalCode: extraction.customer.postalCode ?? "",
           city: extraction.customer.city ?? "",
+          country: "",
         },
         orderNumber: extraction.orderNumber ?? null,
         amount: extraction.amount ?? null,
@@ -665,6 +670,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           addressLine2: (existingCustomer.addressLine2 ?? "").trim(),
           postalCode: (existingCustomer.postalCode ?? "").trim(),
           city: (existingCustomer.city ?? "").trim(),
+          country: (existingCustomer.country ?? "").trim(),
         }));
         setDocumentExtractionOpen(false);
         toast({
@@ -685,6 +691,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         addressLine2: (customer.addressLine2 ?? "").trim(),
         postalCode: (customer.postalCode ?? "").trim(),
         city: (customer.city ?? "").trim(),
+        country: (customer.country ?? "").trim(),
       }));
       setDocumentExtractionOpen(false);
       toast({ title: "Kundendaten übernommen" });
@@ -943,6 +950,15 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                       data-testid="input-city"
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country" data-testid="label-country">Land</Label>
+                  <Input
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    data-testid="input-country"
+                  />
                 </div>
               </div>
 

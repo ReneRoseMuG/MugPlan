@@ -113,6 +113,7 @@ export async function createCustomer(data: InsertCustomer): Promise<Customer> {
     addressLine2: normalizeOptionalText(data.addressLine2),
     postalCode: normalizeOptionalText(data.postalCode),
     city: normalizeOptionalText(data.city),
+    country: normalizeOptionalText(data.country),
   };
   const fullName = buildCustomerFullName(normalizedData);
   try {
@@ -152,6 +153,7 @@ export async function updateCustomer(
     addressLine2: normalizeOptionalText(data.addressLine2),
     postalCode: normalizeOptionalText(data.postalCode),
     city: normalizeOptionalText(data.city),
+    country: normalizeOptionalText(data.country),
   };
 
   const willUpdateNameParts =

@@ -56,6 +56,7 @@ type ProjectEntityCardProps = {
       addressLine1?: string | null;
       postalCode?: string | null;
       city?: string | null;
+      country?: string | null;
       phone?: string | null;
       email?: string | null;
     };
@@ -123,6 +124,7 @@ export function ProjectEntityCard({ project, className, onDoubleClick, testIds }
           addressLine1={project.customer.addressLine1}
           postalCode={project.customer.postalCode}
           city={project.customer.city}
+          country={project.customer.country}
           phone={project.customer.phone}
           email={project.customer.email}
           testId={testIds?.customerPanel ?? `project-card-customer-${project.id}`}
@@ -192,6 +194,7 @@ type CustomerEntityCardProps = {
     addressLine1?: string | null;
     postalCode?: string | null;
     city?: string | null;
+    country?: string | null;
     phone?: string | null;
     email?: string | null;
     notesCount: number;
@@ -256,6 +259,7 @@ export function CustomerEntityCard({ customer, className, onDoubleClick, testIds
           addressLine1={customer.addressLine1}
           postalCode={customer.postalCode}
           city={customer.city}
+          country={customer.country}
           phone={customer.phone}
           email={customer.email}
           testId={testIds?.infoPanel ?? `customer-card-info-${customer.id}`}

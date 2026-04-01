@@ -65,6 +65,7 @@ async function buildCustomerCardFixture(prefix: string) {
     addressLine2: "Haus C",
     postalCode: "26122",
     city: "Oldenburg",
+    country: "Deutschland",
   });
 
   const project = await createProjectFixtureWithOverrides({
@@ -142,6 +143,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
       addressLine2: fixture.customer.addressLine2,
       postalCode: fixture.customer.postalCode,
       city: fixture.customer.city,
+      country: fixture.customer.country,
       notesCount: 1,
       plannedAppointmentsCount: 1,
       attachmentsCount: 1,
@@ -157,6 +159,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
       phone: fixture.customer.phone,
       email: fixture.customer.email,
       postalCode: fixture.customer.postalCode,
+      country: fixture.customer.country,
     });
     expect(detailResponse.body.tags).toEqual(
       expect.arrayContaining([
@@ -179,6 +182,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
         phone: fixture.customer.phone,
         email: fixture.customer.email,
         postalCode: fixture.customer.postalCode,
+        country: fixture.customer.country,
       },
       customerNotesCount: 1,
       customerAttachmentsCount: 1,
@@ -203,6 +207,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
         addressLine2: "Seite B",
         postalCode: "28203",
         city: "Bremen",
+        country: "Luxemburg",
       })
       .expect(200);
 
@@ -239,6 +244,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
       email: "nele.aktuell@example.test",
       phone: "0421888999",
       postalCode: "28203",
+      country: "Luxemburg",
       notesCount: 2,
       plannedAppointmentsCount: 2,
       attachmentsCount: 1,
@@ -251,6 +257,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
       email: "nele.aktuell@example.test",
       postalCode: "28203",
       city: "Bremen",
+      country: "Luxemburg",
     });
 
     const refreshedAppointments = await fixture.admin
@@ -268,6 +275,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
         phone: "0421888999",
         email: "nele.aktuell@example.test",
         postalCode: "28203",
+        country: "Luxemburg",
       },
       customerNotesCount: 2,
       customerAttachmentsCount: 1,

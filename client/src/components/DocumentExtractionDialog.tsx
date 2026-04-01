@@ -18,6 +18,7 @@ export type ExtractionCustomerDraft = {
   addressLine2: string | null;
   postalCode: string | null;
   city: string | null;
+  country?: string | null;
 };
 
 export type ExtractionArticleItem = {
@@ -103,6 +104,7 @@ function toCustomerDraft(value: ExtractionCustomerDraft): ExtractionCustomerDraf
     addressLine2: value.addressLine2,
     postalCode: value.postalCode,
     city: value.city,
+    country: value.country ?? null,
   };
 }
 

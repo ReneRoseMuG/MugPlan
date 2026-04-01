@@ -55,6 +55,7 @@ export type VorlauflisteRow = {
   customerFullName: string | null;
   postalCode: string | null;
   city: string | null;
+  country: string | null;
   articleValues: VorlauflisteArticleValue[];
   plannedDateText: string | null;
   plannedWeek: string | null;
@@ -489,6 +490,7 @@ export async function getVorlauflistePaged(params: {
           customerFullName: row.customer.fullName ?? null,
           postalCode: row.customer.postalCode ?? null,
           city: row.customer.city ?? null,
+          country: row.customer.country ?? null,
           articleValues,
           plannedDateText: row.order?.plannedDateText ?? null,
           plannedWeek: row.order?.plannedWeek ?? null,

@@ -219,6 +219,7 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
           addressLine2: string | null;
           postalCode: string | null;
           city: string | null;
+          country: string | null;
         };
         employees: Array<{ id: number; fullName: string }>;
         tourColor: string | null;
@@ -251,6 +252,7 @@ describe("FT04/FT05 integration: employee sidebar vs all appointments", () => {
       expect("addressLine2" in sample.customer).toBe(true);
       expect("postalCode" in sample.customer).toBe(true);
       expect("city" in sample.customer).toBe(true);
+      expect("country" in sample.customer).toBe(true);
     }
   });
 

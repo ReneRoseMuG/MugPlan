@@ -68,6 +68,7 @@ async function buildProjectCardFixture(prefix: string) {
     addressLine2: "Lager",
     postalCode: "49377",
     city: "Vechta",
+    country: "Deutschland",
   });
 
   const project = await createProjectFixtureWithOverrides({
@@ -155,6 +156,7 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
         addressLine1: fixture.customer.addressLine1,
         postalCode: fixture.customer.postalCode,
         city: fixture.customer.city,
+        country: fixture.customer.country,
       },
     });
     expect(listItem.projectArticleItems).toHaveLength(9);
@@ -222,6 +224,7 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
         addressLine2: "Büro",
         postalCode: "28195",
         city: "Bremen",
+        country: "Luxemburg",
       })
       .expect(200);
 
@@ -290,6 +293,7 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
         phone: "0481555444",
         email: "inga.neu@example.test",
         postalCode: "28195",
+        country: "Luxemburg",
       },
     });
     expect(refreshedListItem.projectArticleItems).toHaveLength(9);
@@ -328,6 +332,7 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
         phone: "0481555444",
         email: "inga.neu@example.test",
         postalCode: "28195",
+        country: "Luxemburg",
       },
       projectNotesCount: 2,
       projectAttachmentsCount: 2,

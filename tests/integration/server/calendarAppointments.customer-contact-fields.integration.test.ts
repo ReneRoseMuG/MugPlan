@@ -48,6 +48,7 @@ async function createFixture(overrides: {
   phone?: string | null;
   email?: string | null;
   company?: string | null;
+  country?: string | null;
 }) {
   const local = seq++;
   const customer = await customersService.createCustomer({
@@ -62,6 +63,7 @@ async function createFixture(overrides: {
     addressLine2: null,
     postalCode: null,
     city: null,
+    country: overrides.country ?? null,
     version: 1,
   });
 
@@ -99,6 +101,7 @@ describe("FT03 integration: calendar appointments liefern Kundenkontaktfelder", 
       phone: string | null;
       email: string | null;
       company: string | null;
+      country?: string | null;
     };
     const item = (response.body as Array<{ id: number; customer: CustomerInResponse }>).find(
       (entry) => entry.id === appointment.id,
@@ -108,6 +111,7 @@ describe("FT03 integration: calendar appointments liefern Kundenkontaktfelder", 
       phone: "0175-1234567",
       email: "test@example.com",
       company: "Muster GmbH",
+      country: null,
     });
   });
 
@@ -127,6 +131,7 @@ describe("FT03 integration: calendar appointments liefern Kundenkontaktfelder", 
       phone: string | null;
       email: string | null;
       company: string | null;
+      country?: string | null;
     };
     const item = (response.body as Array<{ id: number; customer: CustomerInResponse }>).find(
       (entry) => entry.id === appointment.id,
@@ -136,6 +141,7 @@ describe("FT03 integration: calendar appointments liefern Kundenkontaktfelder", 
       phone: null,
       email: null,
       company: null,
+      country: null,
     });
   });
 
@@ -155,6 +161,7 @@ describe("FT03 integration: calendar appointments liefern Kundenkontaktfelder", 
       phone: string | null;
       email: string | null;
       company: string | null;
+      country?: string | null;
     };
     const item = (response.body as Array<{ id: number; customer: CustomerInResponse }>).find(
       (entry) => entry.id === appointment.id,
@@ -164,6 +171,7 @@ describe("FT03 integration: calendar appointments liefern Kundenkontaktfelder", 
       phone: "0171-9876543",
       email: "full@example.com",
       company: "Full GmbH",
+      country: null,
     });
   });
 });
