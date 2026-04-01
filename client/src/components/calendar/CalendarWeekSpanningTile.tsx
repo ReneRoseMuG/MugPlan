@@ -30,6 +30,7 @@ type CalendarWeekSpanningTileProps = {
   isDragging?: boolean;
   isLocked?: boolean;
   highlighted?: boolean;
+  isConflict?: boolean;
   onDoubleClick?: () => void;
   onDragStart?: (event: DragEvent) => void;
   onDragEnd?: () => void;
@@ -52,6 +53,7 @@ export function CalendarWeekSpanningTile({
   isDragging,
   isLocked,
   highlighted = false,
+  isConflict = false,
   onDoubleClick,
   onDragStart,
   onDragEnd,
@@ -144,16 +146,28 @@ export function CalendarWeekSpanningTile({
 
   const bodyContent = (
     <div className="flex h-full min-h-0 flex-col bg-white/90">
-      <div className="min-h-0 flex-1 px-1 pt-1" data-testid={`week-spanning-tile-content-${appointment.id}`}>
+      <div className="relative min-h-0 flex-1 px-1 pt-1" data-testid={`week-spanning-tile-content-${appointment.id}`}>
+        {isConflict ? (
+          <div
+            className="pointer-events-none absolute inset-0 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+            data-testid={`week-spanning-tile-conflict-overlay-${appointment.id}`}
+          />
+        ) : null}
         <div className="min-h-0 space-y-1 overflow-hidden">
           {mainContentPanels}
         </div>
       </div>
       <div
-        className="mt-auto shrink-0 border-t px-1 py-2"
+        className="relative mt-auto shrink-0 border-t px-1 py-2"
         style={footerStyle}
         data-testid={`week-spanning-tile-footer-${appointment.id}`}
       >
+        {isConflict ? (
+          <div
+            className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+            data-testid={`week-spanning-tile-conflict-overlay-${appointment.id}`}
+          />
+        ) : null}
         {footerContentPanels}
       </div>
     </div>
@@ -161,7 +175,7 @@ export function CalendarWeekSpanningTile({
 
   return (
     <div
-      className={`relative grid min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative grid min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       style={{
         gridTemplateColumns: `repeat(${Math.max(1, spanColumns)}, minmax(0, 1fr))`,
         gridTemplateRows: "auto 1fr",

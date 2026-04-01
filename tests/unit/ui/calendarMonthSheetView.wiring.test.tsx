@@ -204,4 +204,28 @@ describe("calendar month sheet view wiring", () => {
 
     expect(continuationSegment).toBeTruthy();
   });
+
+  it("passes the conflict marker into compact bars for monitored appointments", async () => {
+    configureDefaults(
+      [
+        createAppointment({
+          id: 77,
+          startDate: "2026-03-02",
+        }),
+      ],
+      [{ id: 7, name: "Alpha", color: "#225588", version: 1 }],
+    );
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    renderToStaticMarkup(
+      <CalendarMonthSheetView
+        currentDate={new Date("2026-03-15T00:00:00Z")}
+        conflictHighlightActive
+        conflictAppointmentIds={new Set([77])}
+      />,
+    );
+
+    const conflictBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 77);
+    expect(conflictBar?.isConflict).toBe(true);
+  });
 });

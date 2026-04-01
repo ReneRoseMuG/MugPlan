@@ -20,6 +20,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const weekGridCalls: Array<Record<string, unknown>> = [];
 const monthSheetGridCalls: Array<Record<string, unknown>> = [];
 const openAppointmentFormMock = vi.fn();
+const monitoringItems = [{
+  appointmentId: 91,
+  startDate: "2099-01-07",
+  endDate: null,
+  tourName: "Tour 9",
+  employeeCount: 0,
+  triggerName: "TR-01",
+  problemDescription: "Konflikt",
+}];
 
 vi.mock("@/components/WeekGrid", () => ({
   WeekGrid: (props: Record<string, unknown>) => {
@@ -71,6 +80,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
         mode="global"
         activeView="week"
         currentDate={new Date("2099-01-07")}
+        monitoringItems={monitoringItems}
         employeeFilterId={17}
         onEmployeeFilterChange={() => undefined}
         onViewChange={() => undefined}
@@ -88,6 +98,8 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     const props = weekGridCalls.at(-1);
     expect(props?.employeeFilterId).toBe(17);
     expect(props?.restoreScrollLeft).toBe(144);
+    expect(props?.conflictHighlightActive).toBe(false);
+    expect(props?.conflictAppointmentIds).toEqual(new Set([91]));
 
     (props?.onNewAppointment as (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void)(
       "2099-01-10",
@@ -114,6 +126,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
         mode="global"
         activeView="month"
         currentDate={new Date("2099-01-07")}
+        monitoringItems={monitoringItems}
         employeeFilterId={null}
         onEmployeeFilterChange={() => undefined}
         onViewChange={() => undefined}
@@ -127,6 +140,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(markup).not.toContain("week-grid-marker");
 
     const props = monthSheetGridCalls.at(-1);
+    expect(props?.conflictAppointmentIds).toEqual(new Set([91]));
     (props?.onNewAppointment as (date: string) => void)("2099-01-12");
     (props?.onOpenAppointment as (appointmentId: number) => void)(601);
 
@@ -147,6 +161,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
         mode="global"
         activeView="monthSheet"
         currentDate={new Date("2099-01-07")}
+        monitoringItems={monitoringItems}
         employeeFilterId={11}
         onEmployeeFilterChange={() => undefined}
         onViewChange={() => undefined}

@@ -31,6 +31,8 @@ import type { Tour } from "@shared/schema";
 type CalendarMonthSheetViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
+  conflictHighlightActive?: boolean;
+  conflictAppointmentIds?: Set<number>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 };
@@ -65,6 +67,8 @@ function toTransparentTourColor(color: string | null | undefined, alpha: number)
 export function CalendarMonthSheetView({
   currentDate,
   employeeFilterId,
+  conflictHighlightActive = false,
+  conflictAppointmentIds = new Set<number>(),
   onNewAppointment,
   onOpenAppointment,
 }: CalendarMonthSheetViewProps) {
@@ -326,6 +330,8 @@ export function CalendarMonthSheetView({
           monthRowTemplate={monthRowTemplate}
           dayGridTemplate={dayGridTemplate}
           appointmentsById={appointmentsById}
+          conflictHighlightActive={conflictHighlightActive}
+          conflictAppointmentIds={conflictAppointmentIds}
           berlinToday={berlinToday}
           isAdmin={isAdmin}
           draggedAppointmentId={draggedAppointmentId}
@@ -348,6 +354,8 @@ function MonthSheetSection({
   monthRowTemplate,
   dayGridTemplate,
   appointmentsById,
+  conflictHighlightActive,
+  conflictAppointmentIds,
   berlinToday,
   isAdmin,
   draggedAppointmentId,
@@ -364,6 +372,8 @@ function MonthSheetSection({
   monthRowTemplate: string;
   dayGridTemplate: string;
   appointmentsById: Map<number, CalendarAppointment>;
+  conflictHighlightActive: boolean;
+  conflictAppointmentIds: Set<number>;
   berlinToday: string;
   isAdmin: boolean;
   draggedAppointmentId: number | null;
@@ -582,6 +592,7 @@ function MonthSheetSection({
                               appointment={appointment}
                               isFirstDay={isSameDay(segmentStart, appointmentStart)}
                               isLastDay={isSameDay(segmentEnd, appointmentEnd)}
+                              isConflict={conflictHighlightActive && conflictAppointmentIds.has(appointment.id)}
                               hideOrderNumber={true}
                               showPopover={true}
                               isLocked={isLocked}

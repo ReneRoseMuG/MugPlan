@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addMonths, addWeeks, format, startOfISOWeek, subMonths, subWeeks } from "date-fns";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { normalizeTourPrintWeekCount } from "@/lib/tour-print-preview";
 import { useSetting } from "@/hooks/useSettings";
+import type { MonitoringListResponse } from "@shared/routes";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
 
@@ -23,6 +25,7 @@ interface CalendarWorkspaceProps {
   mode: "global" | "contextual";
   activeView: CalendarWorkspaceView;
   currentDate: Date;
+  monitoringItems?: MonitoringListResponse;
   employeeFilterId: number | null;
   onEmployeeFilterChange: (id: number | null) => void;
   onViewChange: (view: CalendarWorkspaceView) => void;
@@ -39,6 +42,7 @@ export function CalendarWorkspace({
   mode,
   activeView,
   currentDate,
+  monitoringItems,
   employeeFilterId,
   onEmployeeFilterChange,
   onViewChange,
@@ -54,13 +58,59 @@ export function CalendarWorkspace({
   const [printWeekCount, setPrintWeekCount] = useState(1);
   const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
   const [printStartNextWeek, setPrintStartNextWeek] = useState(false);
+  const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
+  const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
+  const [kwInputValue, setKwInputValue] = useState("");
+  const [kwJumpError, setKwJumpError] = useState(false);
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
+  const conflictAppointmentIds = useMemo(
+    () => new Set((monitoringItems ?? []).map((item) => item.appointmentId)),
+    [monitoringItems],
+  );
+  const conflictAppointmentCount = conflictAppointmentIds.size;
   const printFromDate = format(
     addWeeks(startOfISOWeek(new Date(getBerlinTodayDateString())), printStartNextWeek ? 1 : 0),
     "yyyy-MM-dd",
   );
 
+  useEffect(() => {
+    if (conflictAppointmentCount === 0 && conflictHighlightActive) {
+      setConflictHighlightActive(false);
+    }
+  }, [conflictAppointmentCount, conflictHighlightActive]);
+
+  useEffect(() => {
+    if (activeView !== "week") {
+      setJumpBackDate(null);
+      setKwInputValue("");
+      setKwJumpError(false);
+    }
+  }, [activeView]);
+
+  const submitKwJump = () => {
+    const trimmedValue = kwInputValue.trim();
+    if (trimmedValue.length === 0) {
+      setKwJumpError(false);
+      return;
+    }
+
+    const parsedKw = Number(trimmedValue);
+    const targetDate = resolveKwJumpTarget(parsedKw, currentDate);
+    if (targetDate) {
+      setJumpBackDate(currentDate);
+      onDateChange(targetDate);
+      setKwInputValue("");
+      setKwJumpError(false);
+      return;
+    }
+
+    const isOutOfRange = Number.isInteger(parsedKw) && parsedKw >= 1 && parsedKw <= 53;
+    setKwJumpError(isOutOfRange);
+  };
+
   const next = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
     if (activeView === "month" || activeView === "monthSheet") {
       onDateChange(addMonths(currentDate, 1));
       return;
@@ -69,6 +119,8 @@ export function CalendarWorkspace({
   };
 
   const prev = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
     if (activeView === "month" || activeView === "monthSheet") {
       onDateChange(subMonths(currentDate, 1));
       return;
@@ -82,6 +134,8 @@ export function CalendarWorkspace({
         <WeekGrid
           currentDate={currentDate}
           employeeFilterId={employeeFilterId}
+          conflictHighlightActive={conflictHighlightActive}
+          conflictAppointmentIds={conflictAppointmentIds}
           onNewAppointment={(date, options) => {
             onOpenAppointmentForm({
               initialDate: date,
@@ -107,6 +161,8 @@ export function CalendarWorkspace({
       <MonthSheetGrid
         currentDate={currentDate}
         employeeFilterId={employeeFilterId}
+        conflictHighlightActive={conflictHighlightActive}
+        conflictAppointmentIds={conflictAppointmentIds}
         onNewAppointment={(date) => {
           onOpenAppointmentForm({
             initialDate: date,
@@ -200,6 +256,24 @@ export function CalendarWorkspace({
             onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
             printStartNextWeek={printStartNextWeek}
             onPrintStartNextWeekChange={setPrintStartNextWeek}
+            conflictHighlightActive={conflictHighlightActive}
+            conflictAppointmentCount={conflictAppointmentCount}
+            onConflictHighlightChange={setConflictHighlightActive}
+            showKwJump={activeView === "week"}
+            kwJumpValue={kwInputValue}
+            kwJumpError={kwJumpError}
+            onKwJumpChange={(value) => {
+              setKwInputValue(value);
+              setKwJumpError(false);
+            }}
+            onKwJumpSubmit={submitKwJump}
+            showKwJumpBack={jumpBackDate !== null}
+            onKwJumpBack={() => {
+              if (!jumpBackDate) return;
+              onDateChange(jumpBackDate);
+              setJumpBackDate(null);
+              setKwJumpError(false);
+            }}
           />
         </div>
       )}

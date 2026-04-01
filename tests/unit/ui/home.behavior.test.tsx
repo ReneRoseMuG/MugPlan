@@ -327,4 +327,18 @@ describe("PKG-08 home behavior wiring", () => {
     expect(calendarWorkspaceCalls[0].onScrollRestoreApplied).toEqual(expect.any(Function));
   });
 
+  it("passes monitoring items into the global calendar workspace", async () => {
+    const { Home } = await loadHome({
+      1: fixedDate,
+      2: "week",
+    });
+
+    renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(calendarWorkspaceCalls[0]).toMatchObject({
+      mode: "global",
+      monitoringItems: [],
+    });
+  });
+
 });

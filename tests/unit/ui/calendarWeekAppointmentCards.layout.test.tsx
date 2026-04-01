@@ -142,10 +142,37 @@ describe("calendar week appointment card layout", () => {
     );
 
     expect(html).toContain('data-testid="week-appointment-content-42"');
-    expect(html).toContain('class="min-h-0 flex-1 px-1 pt-1"');
+    expect(html).toContain('class="relative min-h-0 flex-1 px-1 pt-1"');
     expect(html).toContain('data-testid="week-spanning-tile-content-42"');
     expect(html).toContain('data-testid="week-appointment-footer-42"');
     expect(html).toContain('data-testid="week-spanning-tile-footer-42"');
     expect(html.match(/background-color:rgba\(34, 85, 136, 0\.1\);border-top-color:rgba\(34, 85, 136, 0\.22\)/g)).toHaveLength(2);
+  });
+
+  it("renders the schraffierte conflict overlay on both week card variants", () => {
+    const appointment = createAppointment();
+
+    const html = renderToStaticMarkup(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          isConflict
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          isConflict
+        />
+      </>,
+    );
+
+    expect(html).toContain('data-testid="week-appointment-conflict-overlay-42"');
+    expect(html).toContain('data-testid="week-spanning-tile-conflict-overlay-42"');
+    expect(html).toContain("group-hover/calendar-card:opacity-25");
+    expect(html).toContain("repeating-linear-gradient(135deg,rgba(226,75,74,0.26)");
   });
 });

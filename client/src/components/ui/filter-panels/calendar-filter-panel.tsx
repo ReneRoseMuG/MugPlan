@@ -15,6 +15,16 @@ interface CalendarFilterPanelProps {
   employeeId: number | null;
   onEmployeeIdChange: (employeeId: number | null) => void;
   showWeekDisplayMode?: boolean;
+  conflictHighlightActive?: boolean;
+  conflictAppointmentCount?: number;
+  onConflictHighlightChange?: (active: boolean) => void;
+  showKwJump?: boolean;
+  kwJumpValue?: string;
+  kwJumpError?: boolean;
+  onKwJumpChange?: (value: string) => void;
+  onKwJumpSubmit?: () => void;
+  showKwJumpBack?: boolean;
+  onKwJumpBack?: () => void;
   selectedPrintTourId?: number | null;
   onSelectedPrintTourIdChange?: (tourId: number | null) => void;
   printWeekCount?: number;
@@ -39,6 +49,16 @@ export function CalendarFilterPanel({
   employeeId,
   onEmployeeIdChange,
   showWeekDisplayMode = false,
+  conflictHighlightActive = false,
+  conflictAppointmentCount,
+  onConflictHighlightChange,
+  showKwJump = false,
+  kwJumpValue = "",
+  kwJumpError = false,
+  onKwJumpChange,
+  onKwJumpSubmit,
+  showKwJumpBack = false,
+  onKwJumpBack,
   selectedPrintTourId,
   onSelectedPrintTourIdChange,
   printWeekCount,
@@ -59,6 +79,81 @@ export function CalendarFilterPanel({
 
   const startDateTitle = buildStartDateTitle(printStartNextWeek);
   const startDateValue = buildStartDateValue(printStartNextWeek);
+  const showConflictHighlightControls =
+    typeof conflictAppointmentCount === "number" &&
+    conflictAppointmentCount > 0 &&
+    typeof onConflictHighlightChange === "function";
+  const showKwJumpControls =
+    showKwJump &&
+    typeof onKwJumpChange === "function" &&
+    typeof onKwJumpSubmit === "function";
+
+  const weekJumpControls = showKwJumpControls ? (
+    <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 shadow-sm">
+      <div className="mb-3">
+        <Label className="text-xs font-semibold text-destructive">Kalenderwoche</Label>
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex w-[9ch] flex-col gap-1">
+          <Label className="text-xs" htmlFor="input-calendar-kw-jump">KW</Label>
+          <Input
+            id="input-calendar-kw-jump"
+            type="number"
+            min={1}
+            max={53}
+            value={kwJumpValue}
+            className={kwJumpError ? "border-destructive ring-1 ring-destructive/30" : undefined}
+            onChange={(event) => onKwJumpChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onKwJumpSubmit();
+              }
+            }}
+            onBlur={() => {
+              if (kwJumpValue.trim().length > 0) {
+                onKwJumpSubmit();
+              }
+            }}
+            data-testid="input-calendar-kw-jump"
+          />
+        </div>
+        {showKwJumpBack && typeof onKwJumpBack === "function" ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onKwJumpBack}
+            data-testid="button-calendar-kw-jump-back"
+          >
+            ← Zurück
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
+
+  const conflictControls = showConflictHighlightControls ? (
+    <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <Label className="text-xs font-semibold text-destructive">Konflikte hervorheben</Label>
+          <div className="mt-1 text-xs text-muted-foreground">
+            <span
+              className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 font-semibold text-destructive-foreground"
+              data-testid="badge-conflict-appointment-count"
+            >
+              {conflictAppointmentCount}
+            </span>
+          </div>
+        </div>
+        <Switch
+          checked={conflictHighlightActive}
+          onCheckedChange={onConflictHighlightChange}
+          data-testid="switch-conflict-highlight"
+        />
+      </div>
+    </div>
+  ) : null;
 
   if (showWeekDisplayMode && showWeekPrintControls) {
     return (
@@ -137,82 +232,92 @@ export function CalendarFilterPanel({
             </div>
           </div>
         </div>
+        {showKwJumpControls || showConflictHighlightControls ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {weekJumpControls}
+            {conflictControls}
+          </div>
+        ) : null}
       </FilterPanel>
     );
   }
 
   return (
     <FilterPanel title="Kalenderfilter" layout="row">
-      <div className="flex min-w-[220px] flex-col gap-1">
-        <Label className="text-xs">Mitarbeiter</Label>
-        <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
-      </div>
-      {showWeekPrintControls ? (
-        <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 shadow-sm">
-          <div className="mb-3">
-            <Label className="text-xs font-semibold text-primary">Wochenplanung drucken</Label>
-          </div>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex min-w-0 flex-col gap-1">
-              <Label className="text-xs">Tour</Label>
-              <Select
-                value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
-                onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
-              >
-                <SelectTrigger className="w-[12ch] bg-white" data-testid="select-tour-print-preview">
-                  <SelectValue placeholder="Tour" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Tour</SelectItem>
-                  <SelectItem value="0">Ohne Tour</SelectItem>
-                  {tours.map((tour) => (
-                    <SelectItem key={tour.id} value={String(tour.id)}>
-                      {tour.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex w-[14ch] flex-col gap-1">
-              <Label className="text-xs">Anzahl Wochen</Label>
-              <Input
-                type="number"
-                min={1}
-                max={12}
-                value={String(printWeekCount)}
-                onChange={(event) => onPrintWeekCountChange(Number(event.target.value))}
-                data-testid="input-tour-print-week-count"
-              />
-            </div>
-            {showWeekPrintControls && typeof onPrintStartNextWeekChange === "function" ? (
-              <div className="flex min-w-0 flex-col gap-1">
-                <Label className="text-xs" data-testid="label-print-start-title">
-                  {startDateTitle}
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={printStartNextWeek}
-                    onCheckedChange={onPrintStartNextWeekChange}
-                    data-testid="switch-print-start-next-week"
-                  />
-                  <span className="text-xs text-muted-foreground" data-testid="label-print-start-date">
-                    {startDateValue}
-                  </span>
-                </div>
-              </div>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onOpenPrintPreview}
-              disabled={selectedPrintTourId === null}
-              data-testid="button-open-tour-print-preview"
-            >
-              Drucken
-            </Button>
-          </div>
+      <div className="flex w-full flex-wrap items-start gap-4">
+        <div className="flex min-w-[220px] flex-col gap-1">
+          <Label className="text-xs">Mitarbeiter</Label>
+          <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
         </div>
-      ) : null}
+        {showWeekPrintControls ? (
+          <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 shadow-sm">
+            <div className="mb-3">
+              <Label className="text-xs font-semibold text-primary">Wochenplanung drucken</Label>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label className="text-xs">Tour</Label>
+                <Select
+                  value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
+                  onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
+                >
+                  <SelectTrigger className="w-[12ch] bg-white" data-testid="select-tour-print-preview">
+                    <SelectValue placeholder="Tour" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Tour</SelectItem>
+                    <SelectItem value="0">Ohne Tour</SelectItem>
+                    {tours.map((tour) => (
+                      <SelectItem key={tour.id} value={String(tour.id)}>
+                        {tour.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex w-[14ch] flex-col gap-1">
+                <Label className="text-xs">Anzahl Wochen</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={String(printWeekCount)}
+                  onChange={(event) => onPrintWeekCountChange(Number(event.target.value))}
+                  data-testid="input-tour-print-week-count"
+                />
+              </div>
+              {showWeekPrintControls && typeof onPrintStartNextWeekChange === "function" ? (
+                <div className="flex min-w-0 flex-col gap-1">
+                  <Label className="text-xs" data-testid="label-print-start-title">
+                    {startDateTitle}
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={printStartNextWeek}
+                      onCheckedChange={onPrintStartNextWeekChange}
+                      data-testid="switch-print-start-next-week"
+                    />
+                    <span className="text-xs text-muted-foreground" data-testid="label-print-start-date">
+                      {startDateValue}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onOpenPrintPreview}
+                disabled={selectedPrintTourId === null}
+                data-testid="button-open-tour-print-preview"
+              >
+                Drucken
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {weekJumpControls}
+        {conflictControls}
+      </div>
     </FilterPanel>
   );
 }

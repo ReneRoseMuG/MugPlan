@@ -396,6 +396,7 @@ export default function Home({ onLogout }: HomeProps) {
               mode="contextual"
               activeView={calendarContext.activeView}
               currentDate={calendarContext.currentDate}
+              monitoringItems={monitoringItems}
               employeeFilterId={calendarFilters.employeeId}
               onEmployeeFilterChange={(employeeId) => setCalendarFilter("employeeId", employeeId)}
               onViewChange={(activeView) => {
@@ -432,6 +433,7 @@ export default function Home({ onLogout }: HomeProps) {
               mode="global"
               activeView={view}
               currentDate={currentDate}
+              monitoringItems={monitoringItems}
               employeeFilterId={calendarFilters.employeeId}
               onEmployeeFilterChange={(employeeId) => setCalendarFilter("employeeId", employeeId)}
               onViewChange={(activeView) => {
