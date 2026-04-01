@@ -31,6 +31,11 @@ vi.mock("@/lib/project-appointments", () => ({
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  useMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  QueryClient: class QueryClient {
+    invalidateQueries = vi.fn();
+  },
 }));
 
 vi.mock("@/components/ui/button", () => ({
