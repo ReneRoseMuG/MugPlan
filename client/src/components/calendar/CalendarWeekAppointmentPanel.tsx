@@ -183,6 +183,8 @@ export function CalendarWeekAppointmentPanel({
                   <CalendarWeekAppointmentTagPicker
                     appointmentId={appointment.id}
                     tags={mergedTags}
+                    appointmentTags={appointment.appointmentTags}
+                    projectTags={appointment.projectTags}
                     canEdit={showTagActions && canEditTags}
                     testId={`week-appointment-tags-${appointment.id}`}
                   />
@@ -214,6 +216,8 @@ export function CalendarWeekAppointmentPanel({
                 <CalendarWeekAppointmentTagPicker
                   appointmentId={appointment.id}
                   tags={mergedTags}
+                  appointmentTags={appointment.appointmentTags}
+                  projectTags={appointment.projectTags}
                   canEdit={showTagActions && canEditTags}
                   testId={`week-appointment-tags-${appointment.id}`}
                 />

@@ -145,6 +145,8 @@ export function CalendarWeekSpanningTile({
       <CalendarWeekAppointmentTagPicker
         appointmentId={appointment.id}
         tags={mergedTags}
+        appointmentTags={appointment.appointmentTags}
+        projectTags={appointment.projectTags}
         canEdit={showTagActions && canEditTags}
         testId={`week-spanning-tile-tags-${appointment.id}`}
       />
