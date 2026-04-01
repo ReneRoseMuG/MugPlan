@@ -40,6 +40,12 @@ vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentAttachme
   CalendarWeekAppointmentAttachmentsHover: () => <div data-testid="mock-week-attachments-hover" />,
 }));
 
+vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentTagPicker", () => ({
+  CalendarWeekAppointmentTagPicker: (props: { testId: string; canEdit: boolean }) => (
+    <div data-testid={props.testId} data-can-edit={props.canEdit ? "true" : "false"} />
+  ),
+}));
+
 function createAppointment(overrides: Partial<CalendarAppointment> = {}): CalendarAppointment {
   return {
     id: 42,
@@ -147,5 +153,38 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-appointment-footer-42"');
     expect(html).toContain('data-testid="week-spanning-tile-footer-42"');
     expect(html.match(/background-color:rgba\(34, 85, 136, 0\.1\);border-top-color:rgba\(34, 85, 136, 0\.22\)/g)).toHaveLength(2);
+  });
+
+  it("keeps the tag action slot local to week cards and opt-in for editing", () => {
+    const appointment = createAppointment();
+
+    const html = renderToStaticMarkup(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          showTagActions
+          canEditTags
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          showTagActions
+          canEditTags
+        />
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+        />
+      </>,
+    );
+
+    expect(html).toContain('data-testid="week-appointment-tags-42"');
+    expect(html).toContain('data-testid="week-spanning-tile-tags-42"');
+    expect(html).toContain('data-can-edit="true"');
+    expect(html).toContain('data-can-edit="false"');
   });
 });

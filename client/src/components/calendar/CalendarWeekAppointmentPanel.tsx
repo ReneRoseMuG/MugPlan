@@ -1,6 +1,5 @@
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
-import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { mergeUniqueTags } from "@/lib/tag-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
@@ -13,6 +12,7 @@ import {
   getWeekAppointmentFooterStyle,
   WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./weekAppointmentCardStyles";
+import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
 
 export const MIN_WEEK_CARD_HEIGHT_PX = 240;
 export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;
@@ -36,6 +36,8 @@ export function CalendarWeekAppointmentPanel({
   projectStatusAreaHeightPx: _projectStatusAreaHeightPx,
   projectStatusAreaRef: _projectStatusAreaRef,
   showPreviewTourNameLine = false,
+  showTagActions = false,
+  canEditTags = false,
   containerRef,
   testId,
 }: {
@@ -56,6 +58,8 @@ export function CalendarWeekAppointmentPanel({
   projectStatusAreaHeightPx?: number | null;
   projectStatusAreaRef?: React.Ref<HTMLDivElement>;
   showPreviewTourNameLine?: boolean;
+  showTagActions?: boolean;
+  canEditTags?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
 }) {
@@ -176,7 +180,12 @@ export function CalendarWeekAppointmentPanel({
                   ) : (
                     <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
                   )}
-                  <EntityTagFooterRow tags={mergedTags} testId={`week-appointment-tags-${appointment.id}`} />
+                  <CalendarWeekAppointmentTagPicker
+                    appointmentId={appointment.id}
+                    tags={mergedTags}
+                    canEdit={showTagActions && canEditTags}
+                    testId={`week-appointment-tags-${appointment.id}`}
+                  />
                 </div>
               </div>
             </>
@@ -202,7 +211,12 @@ export function CalendarWeekAppointmentPanel({
                     totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
                   />
                 </div>
-                <EntityTagFooterRow tags={mergedTags} testId={`week-appointment-tags-${appointment.id}`} />
+                <CalendarWeekAppointmentTagPicker
+                  appointmentId={appointment.id}
+                  tags={mergedTags}
+                  canEdit={showTagActions && canEditTags}
+                  testId={`week-appointment-tags-${appointment.id}`}
+                />
               </div>
             </div>
           )}
