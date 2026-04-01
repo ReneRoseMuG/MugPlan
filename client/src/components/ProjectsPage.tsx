@@ -39,6 +39,7 @@ type ProjectListItem = Project & {
     addressLine1: string | null;
     postalCode: string | null;
     city: string | null;
+    country?: string | null;
     phone: string | null;
     email: string | null;
   };

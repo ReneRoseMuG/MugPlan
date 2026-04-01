@@ -53,6 +53,7 @@ const baseAppointment: TourPrintPreviewAppointment = {
     addressLine2: null,
     postalCode: "12345",
     city: "Berlin",
+    country: "Deutschland",
   },
   employees: [{ id: 11, fullName: "Muster, Max" }],
   printNotes: [],
@@ -136,6 +137,7 @@ describe("CalendarTourPrintNoteCard - Smoke", () => {
     const appointment: TourPrintPreviewAppointment = { ...baseAppointment, printNotes: [noteFixture] };
     const html = renderToStaticMarkup(<CalendarTourPrintNoteCard appointment={appointment} weekStart="2099-06-15" />);
     expect(html).toContain("tour-print-note-card-1");
+    expect(html).toContain("Deutschland");
   });
 });
 

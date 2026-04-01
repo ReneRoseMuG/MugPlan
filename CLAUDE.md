@@ -474,3 +474,11 @@ Claude prüft das Ergebnis explizit gegen:
 Claude nennt konkret, welche Stellen geprüft wurden und ob es bekannte Abweichungen gibt. Bei Abweichungen werden konkrete Korrekturen vorgeschlagen.
 
 Eine Aufgabe gilt als abgeschlossen, wenn das fachliche Ziel umgesetzt, alle Verbote eingehalten und die geforderte Dokumentation vollständig vorliegt. Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.
+
+## 16. Zusatzregeln für Schemaänderungen
+
+- Eine Schemaänderung gilt erst dann als umsetzungsseitig abgeschlossen, wenn die neue Migrationskette mindestens auf Dev und Test erfolgreich gelaufen ist oder ein sauber dokumentierter Blocker dies verhindert.
+- Schlägt eine Migration auf Dev oder Test fehl, darf Claude den Auftrag nicht als „fertig umgesetzt“ melden. Der Zustand ist bis zur Korrektur als blockiert zu behandeln.
+- Tritt in Tests, E2E oder Browser-E2E ein Fehler wie Unknown column ..., Unknown table ... oder ein anderer klarer Schema-Mismatch auf, ist dies als harter Abschluss-Blocker zu behandeln, nicht nur als gewöhnlicher Testfehler.
+- Bei solchen Schema-Mismatches muss Claude im Abschluss ausdrücklich benennen, welche Umgebung nicht migrationssynchron ist und dass die Umsetzung deshalb nicht als abgeschlossen gelten darf.
+- Für Schemaänderungen reicht eine reine Code-Implementierung nicht aus. Fehlt die erfolgreiche Migration mindestens auf Dev und Test oder liegt ein erkennbarer Schema-Mismatch in Test-/E2E-Umgebungen vor, darf Claude den Auftrag nur als blockiert oder teilweise umgesetzt mit eindeutig benanntem Migrationsblocker melden.

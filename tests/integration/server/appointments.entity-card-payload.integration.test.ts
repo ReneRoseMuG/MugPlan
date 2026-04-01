@@ -70,6 +70,7 @@ async function buildAppointmentCardFixture(prefix: string) {
     addressLine2: "Tor B",
     postalCode: "26135",
     city: "Oldenburg",
+    country: "Deutschland",
   });
 
   const project = await createProjectFixtureWithOverrides({
@@ -180,6 +181,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
         addressLine1: fixture.customer.addressLine1,
         postalCode: fixture.customer.postalCode,
         city: fixture.customer.city,
+        country: fixture.customer.country,
       },
       customerNotesCount: 1,
       projectNotesCount: 1,
@@ -231,6 +233,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
         phone: fixture.customer.phone,
         email: fixture.customer.email,
         postalCode: fixture.customer.postalCode,
+        country: fixture.customer.country,
       },
       customerNotesCount: 1,
       projectNotesCount: 1,
@@ -264,6 +267,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
         addressLine2: "Etage 2",
         postalCode: "49377",
         city: "Vechta",
+        country: "Luxemburg",
       })
       .expect(200);
 
@@ -359,6 +363,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
         addressLine1: "Neue Straße 4",
         postalCode: "49377",
         city: "Vechta",
+        country: "Luxemburg",
       },
       projectNotesCount: 2,
       projectAttachmentsCount: 2,
@@ -381,6 +386,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
         phone: "0499988877",
         email: "frisch@example.test",
         postalCode: "49377",
+        country: "Luxemburg",
       },
       projectNotesCount: 2,
       projectAttachmentsCount: 2,

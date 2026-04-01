@@ -200,6 +200,19 @@ function parseAlterTableDropCheck(statement: string) {
   };
 }
 
+function parseAlterTableDropForeignKey(statement: string) {
+  const normalized = statement.trim().replace(/;$/, "");
+  const match = /^ALTER TABLE\s+`([^`]+)`\s+DROP FOREIGN KEY\s+`([^`]+)`$/i.exec(normalized);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    tableName: match[1],
+    constraintName: match[2],
+  };
+}
+
 async function executeMigrationChunk(connection: mysql.Connection, chunk: string) {
   const createTable = parseCreateTableStatement(chunk);
   if (createTable) {
@@ -274,6 +287,14 @@ async function executeMigrationChunk(connection: mysql.Connection, chunk: string
   const dropCheck = parseAlterTableDropCheck(chunk);
   if (dropCheck) {
     const exists = await constraintExists(connection, dropCheck.tableName, dropCheck.constraintName);
+    if (!exists) {
+      return;
+    }
+  }
+
+  const dropForeignKey = parseAlterTableDropForeignKey(chunk);
+  if (dropForeignKey) {
+    const exists = await constraintExists(connection, dropForeignKey.tableName, dropForeignKey.constraintName);
     if (!exists) {
       return;
     }

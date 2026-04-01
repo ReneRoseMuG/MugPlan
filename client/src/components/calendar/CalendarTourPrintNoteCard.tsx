@@ -22,6 +22,8 @@ function formatWeekday(dateStr: string): string {
 
 export function CalendarTourPrintNoteCard({ appointment, weekStart }: Props) {
   const isReklamation = isReklamationAppointment(appointment);
+  const localityLine = [appointment.customer.postalCode, appointment.customer.city].filter(Boolean).join(" ");
+  const countryLine = appointment.customer.country?.trim() ?? "";
 
   return (
     <div className="overflow-hidden rounded border border-slate-200" data-testid={`tour-print-note-card-${appointment.id}`}>
@@ -30,11 +32,12 @@ export function CalendarTourPrintNoteCard({ appointment, weekStart }: Props) {
           <p className="text-[11px] font-semibold text-slate-900">
             {appointment.customer.fullName ?? appointment.customer.customerNumber}
           </p>
-          {(appointment.customer.postalCode || appointment.customer.city) ? (
+          {localityLine ? (
             <p className="text-[10px] text-slate-500">
-              {[appointment.customer.postalCode, appointment.customer.city].filter(Boolean).join(" ")}
+              {localityLine}
             </p>
           ) : null}
+          {countryLine ? <p className="text-[10px] text-slate-500">{countryLine}</p> : null}
         </div>
         <div className="flex flex-shrink-0 items-center gap-2 text-right">
           <p className="text-[10px] text-slate-500">

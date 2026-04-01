@@ -14,6 +14,7 @@ export type AiExtractionResult = {
     addressLine2?: string | null;
     postalCode?: string | null;
     city?: string | null;
+    country?: string | null;
   };
   orderNumber?: string | null;
   saunaModel: string;
@@ -109,7 +110,7 @@ class OllamaExtractionProvider implements ExtractionProvider {
       "Extrahiere Daten aus einem deutschsprachigen Auftragsdokument.",
       "Antworte strikt als JSON-Objekt ohne Markdown oder Zusatztext.",
       "Schema:",
-      '{ "customer": { "customerNumber": string, "firstName": string, "lastName": string, "company": string|null, "email": string|null, "phone": string|null, "addressLine1": string|null, "addressLine2": string|null, "postalCode": string|null, "city": string|null }, "orderNumber": string|null, "saunaModel": string, "articleItems": [ { "quantity": string, "description": string, "category": string } ], "warnings": string[] }',
+      '{ "customer": { "customerNumber": string, "firstName": string, "lastName": string, "company": string|null, "email": string|null, "phone": string|null, "addressLine1": string|null, "addressLine2": string|null, "postalCode": string|null, "city": string|null, "country": string|null }, "orderNumber": string|null, "saunaModel": string, "articleItems": [ { "quantity": string, "description": string, "category": string } ], "warnings": string[] }',
       "Regeln:",
       "- Keine Preise extrahieren.",
       "- Artikelpositionen vollständig und unverändert im Inhalt lassen.",

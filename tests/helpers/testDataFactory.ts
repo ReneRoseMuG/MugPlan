@@ -56,6 +56,7 @@ export function buildCustomerPayload(prefix = "CUST"): InsertCustomer {
     addressLine2: null,
     postalCode: null,
     city: null,
+    country: null,
   };
 }
 
@@ -75,6 +76,7 @@ export async function createCustomerFixtureWithOverrides(params?: {
   addressLine2?: string | null;
   postalCode?: string | null;
   city?: string | null;
+  country?: string | null;
 }) {
   const payload = buildCustomerPayload(params?.prefix ?? "CUST");
   return customersService.createCustomer({
@@ -89,6 +91,7 @@ export async function createCustomerFixtureWithOverrides(params?: {
     addressLine2: params?.addressLine2 ?? payload.addressLine2,
     postalCode: params?.postalCode ?? payload.postalCode,
     city: params?.city ?? payload.city,
+    country: params?.country ?? payload.country,
   });
 }
 

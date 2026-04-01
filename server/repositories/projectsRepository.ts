@@ -242,6 +242,7 @@ export type ProjectBoardListItem = ProjectListItem & {
     addressLine1: string | null;
     postalCode: string | null;
     city: string | null;
+    country: string | null;
     phone: string | null;
     email: string | null;
   };
@@ -470,6 +471,7 @@ export async function getProjectsPaged(params: {
           addressLine1: row.customer.addressLine1 ?? null,
           postalCode: row.customer.postalCode ?? null,
           city: row.customer.city ?? null,
+          country: row.customer.country ?? null,
           phone: row.customer.phone ?? null,
           email: row.customer.email ?? null,
         },

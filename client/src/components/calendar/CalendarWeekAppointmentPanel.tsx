@@ -141,6 +141,7 @@ export function CalendarWeekAppointmentPanel({
                     addressLine1={appointment.customer.addressLine1}
                     postalCode={appointment.customer.postalCode}
                     city={appointment.customer.city}
+                    country={appointment.customer.country}
                   />
                   <CalendarWeekAppointmentPanelProject
                     projectName={resolvedProjectName}

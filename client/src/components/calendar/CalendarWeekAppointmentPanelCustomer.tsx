@@ -8,6 +8,7 @@ export function CalendarWeekAppointmentPanelCustomer({
   addressLine1,
   postalCode,
   city,
+  country,
 }: {
   fullName: string;
   customerNumber: string;
@@ -16,6 +17,7 @@ export function CalendarWeekAppointmentPanelCustomer({
   addressLine1?: string | null;
   postalCode: string | null;
   city: string | null;
+  country?: string | null;
 }) {
   return (
     <CustomerInfoPanel
@@ -25,6 +27,7 @@ export function CalendarWeekAppointmentPanelCustomer({
       addressLine1={addressLine1}
       postalCode={postalCode}
       city={city}
+      country={country}
       phone={phone}
       email={email}
       testId="week-customer-panel"

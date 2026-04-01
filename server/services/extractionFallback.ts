@@ -64,6 +64,7 @@ function normalizeCustomerDraft(aiResult: Partial<AiExtractionResult> | null, so
     addressLine2: String(customer.addressLine2 ?? "").trim() || null,
     postalCode: String(customer.postalCode ?? "").trim() || null,
     city: String(customer.city ?? "").trim() || null,
+    country: String(customer.country ?? "").trim() || null,
   };
 }
 

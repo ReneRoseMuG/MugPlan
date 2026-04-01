@@ -13,6 +13,7 @@ type CustomerInfoPanelProps = {
   addressLine1?: string | null;
   postalCode?: string | null;
   city?: string | null;
+  country?: string | null;
   phone?: string | null;
   email?: string | null;
   testId?: string;
@@ -34,10 +35,12 @@ function AddressBlock({
   addressLine1,
   postalCode,
   city,
+  country,
 }: {
   addressLine1?: string | null;
   postalCode?: string | null;
   city?: string | null;
+  country?: string | null;
 }) {
   const cityLine = [postalCode, city].filter(Boolean).join(" ");
   return (
@@ -47,6 +50,9 @@ function AddressBlock({
       )}
       {cityLine && (
         <div className="text-[11px] leading-tight text-slate-600">{cityLine}</div>
+      )}
+      {country?.trim() && (
+        <div className="text-[11px] leading-tight text-slate-600">{country}</div>
       )}
     </>
   );
@@ -80,6 +86,7 @@ function ExpandedContent({
   addressLine1,
   postalCode,
   city,
+  country,
   phone,
   email,
 }: Omit<CustomerInfoPanelProps, "mode" | "testId">) {
@@ -90,6 +97,7 @@ function ExpandedContent({
       <div className="space-y-0.5">
         <CustomerInfoLine value={addressLine1} testId="customer-info-line-address" />
         <CustomerInfoLine value={cityLine} testId="customer-info-line-city" />
+        <CustomerInfoLine value={country} testId="customer-info-line-country" />
         <CustomerInfoLine value={phone} testId="customer-info-line-phone" />
         <CustomerInfoLine value={email} testId="customer-info-line-email" />
       </div>
@@ -99,7 +107,7 @@ function ExpandedContent({
   return (
     <div className="space-y-0.5">
       <CustomerHeader fullName={fullName} customerNumber={customerNumber} />
-      <AddressBlock addressLine1={addressLine1} postalCode={postalCode} city={city} />
+      <AddressBlock addressLine1={addressLine1} postalCode={postalCode} city={city} country={country} />
       {phone?.trim() && (
         <div className="text-[11px] leading-tight text-slate-600">{phone}</div>
       )}
@@ -118,6 +126,7 @@ export function CustomerInfoPanel({
   addressLine1,
   postalCode,
   city,
+  country,
   phone,
   email,
   testId,
@@ -135,6 +144,7 @@ export function CustomerInfoPanel({
               addressLine1={addressLine1}
               postalCode={postalCode}
               city={city}
+              country={country}
               phone={phone}
               email={email}
             />
@@ -165,7 +175,7 @@ export function CustomerInfoPanel({
         data-testid={testId ?? "customer-info-panel-semiexpanded"}
       >
         <CustomerHeader fullName={fullName} customerNumber={customerNumber} />
-        <AddressBlock addressLine1={addressLine1} postalCode={postalCode} city={city} />
+        <AddressBlock addressLine1={addressLine1} postalCode={postalCode} city={city} country={country} />
       </div>
     );
   }
@@ -182,6 +192,7 @@ export function CustomerInfoPanel({
         addressLine1={addressLine1}
         postalCode={postalCode}
         city={city}
+        country={country}
         phone={phone}
         email={email}
       />

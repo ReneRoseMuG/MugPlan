@@ -36,6 +36,7 @@ export type CalendarAppointment = {
     addressLine2?: string | null;
     postalCode: string | null;
     city: string | null;
+    country?: string | null;
   };
   customerNotesCount: number;
   projectNotesCount: number;

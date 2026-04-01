@@ -63,6 +63,13 @@ export type TourPrintPreviewPage = {
   additionalInfoContinued: boolean;
 };
 
+function buildTourPrintCustomerAddressLines(customer: TourPrintPreviewAppointment["customer"]): string[] {
+  const localityLine = [customer.postalCode, customer.city].filter(Boolean).join(" ");
+  return [localityLine, customer.country ?? null]
+    .map((value) => value?.trim() ?? "")
+    .filter((value) => value.length > 0);
+}
+
 type TourPrintDocumentMeta = Pick<TourPrintPreviewPage, "kind" | "orientation" | "tourName" | "fromDate" | "toDate" | "rangeLabel">;
 
 type WorkingPage = TourPrintPreviewPage & {
@@ -113,7 +120,7 @@ function estimateWeekNotesHeight(notes: TourPrintPreviewNote[]): number {
 
 function estimateAppointmentRowHeight(appointment: TourPrintPreviewAppointment): number {
   const mergedTags = mergeTourPrintTags(appointment.appointmentTags, appointment.customerTags, appointment.projectTags);
-  const customerLines = appointment.customer.postalCode || appointment.customer.city ? 2 : 1;
+  const customerLines = Math.max(1, 1 + buildTourPrintCustomerAddressLines(appointment.customer).length);
   const employeeLines = Math.max(1, appointment.employees.length || 1);
   const infoText = mergedTags.map((tag) => tag.name).join(" ");
   const infoLines = Math.max(1, countWrappedLines(infoText, 20));
@@ -123,8 +130,7 @@ function estimateAppointmentRowHeight(appointment: TourPrintPreviewAppointment):
 }
 
 function estimateNoteCardHeight(card: TourPrintAdditionalInfoCard): number {
-  const addressLine = [card.appointment.customer.postalCode, card.appointment.customer.city].filter(Boolean).join(" ");
-  const headerLines = addressLine ? 2 : 1;
+  const headerLines = 1 + buildTourPrintCustomerAddressLines(card.appointment.customer).length;
   const noteLines = card.appointment.printNotes.reduce((sum, note) => {
     const titleLines = note.title ? 1 : 0;
     const bodyLines = Math.max(1, countWrappedLines(stripHtmlToText(note.body), 86));
@@ -194,6 +200,7 @@ export function getAppointmentPrimaryLocation(appointment: TourPrintPreviewAppoi
     appointment.customer.fullName ?? appointment.customer.customerNumber,
     appointment.customer.postalCode,
     appointment.customer.city,
+    appointment.customer.country,
   ].filter((value): value is string => Boolean(value && value.trim()));
   return locationParts.join(", ");
 }

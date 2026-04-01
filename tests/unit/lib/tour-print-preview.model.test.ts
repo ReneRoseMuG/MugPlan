@@ -21,6 +21,7 @@ import {
   TOUR_PRINT_TABLE_COLUMN_WIDTHS,
   buildTourPrintPages,
   formatEmployeeShortName,
+  getAppointmentPrimaryLocation,
   isReklamationAppointment,
   type TourPrintPreviewResponse,
 } from "../../../client/src/lib/tour-print-preview";
@@ -55,6 +56,7 @@ function makeAppointment(overrides: Partial<TourPrintPreviewResponse["appointmen
       addressLine2: null,
       postalCode: "12345",
       city: "Berlin",
+      country: "Deutschland",
     },
     employees: [],
     printNotes: [],
@@ -248,6 +250,10 @@ describe("buildTourPrintPages", () => {
     });
 
     expect(pages[0].weeks[0].appointments[0].projectName).toBe("");
+  });
+
+  it("ergänzt country in den Primärstandort", () => {
+    expect(getAppointmentPrimaryLocation(makeAppointment())).toContain("Deutschland");
   });
 
   it("stellt zentrale Tabellenbreiten bereit", () => {

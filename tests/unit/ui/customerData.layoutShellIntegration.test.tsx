@@ -3,12 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - CustomerData rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
+ * - Das Kundenformular zeigt das neue Feld `Land` im Hauptbereich in Create und Edit an.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Projekte, Termine, Attachments, Tags, Notizen.
  * - Create-Verdrahtung behaelt Draft-faehige Tags, Notizen und Attachments.
  * - Footer-Aktionen bleiben im Shell-Layout mit Cancel links und Save rechts sichtbar.
  *
  * Fehlerfaelle:
  * - Das Kundenformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
+ * - Das neue Feld `Land` fehlt im Formular trotz erweitertem Kunden-Adressmodell.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
  * - Die Create-Sidebar verliert ihre Draft-Verdrahtung fuer Tags, Notizen oder Attachments.
  *
@@ -155,6 +157,7 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
         fullName: "Kunde, Klara",
         version: 3,
         isActive: true,
+        country: "Deutschland",
         tags: [],
       },
       isLoading: false,
@@ -248,6 +251,8 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).toContain("customer-form-sidebar");
     expect(markup).toContain("button-cancel-customer");
     expect(markup).toContain("button-save-customer");
+    expect(markup).toContain("label-country");
+    expect(markup).toContain("input-country");
 
     expect(getIndex(markup, "linked-projects-panel-marker")).toBeLessThan(getIndex(markup, "customer-appointments-panel-marker"));
     expect(getIndex(markup, "customer-appointments-panel-marker")).toBeLessThan(getIndex(markup, "customer-attachments-panel-marker"));
@@ -276,6 +281,8 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).toContain("button-cancel-customer");
     expect(markup).toContain("button-save-customer");
     expect(markup).toContain("customer-document-extraction-dropzone-marker");
+    expect(markup).toContain("label-country");
+    expect(markup).toContain("input-country");
 
     expect(getIndex(markup, "linked-projects-panel-marker")).toBeLessThan(getIndex(markup, "customer-appointments-panel-marker"));
     expect(getIndex(markup, "customer-appointments-panel-marker")).toBeLessThan(getIndex(markup, "customer-attachments-panel-marker"));

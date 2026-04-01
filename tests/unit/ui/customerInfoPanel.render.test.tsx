@@ -57,6 +57,7 @@ describe("CustomerInfoPanel render", () => {
     addressLine1: "Musterstraße 1",
     postalCode: "12345",
     city: "Musterstadt",
+    country: "Deutschland",
     phone: "030 123456",
     email: "max@example.com",
   };
@@ -85,6 +86,7 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("hover-preview-content");
     expect(markup).toContain("Musterstraße 1");
     expect(markup).toContain("12345 Musterstadt");
+    expect(markup).toContain("Deutschland");
     expect(markup).toContain("030 123456");
     expect(markup).toContain("max@example.com");
   });
@@ -99,6 +101,7 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("K-42");
     expect(markup).toContain("Musterstraße 1");
     expect(markup).toContain("12345 Musterstadt");
+    expect(markup).toContain("Deutschland");
   });
 
   it("expanded: zeigt alle Felder inklusive Telefon und E-Mail", () => {
@@ -111,6 +114,7 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("K-42");
     expect(markup).toContain("Musterstraße 1");
     expect(markup).toContain("12345 Musterstadt");
+    expect(markup).toContain("Deutschland");
     expect(markup).toContain("030 123456");
     expect(markup).toContain("max@example.com");
   });
@@ -125,6 +129,7 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("Musterstraße 1");
     expect(markup).toContain("customer-info-line-address");
     expect(markup).toContain("customer-info-line-city");
+    expect(markup).toContain("customer-info-line-country");
     expect(markup).toContain("customer-info-line-phone");
     expect(markup).toContain("customer-info-line-email");
   });
@@ -142,6 +147,7 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).not.toContain("Anna Beispiel");
     expect(markup).toContain("customer-info-line-address");
     expect(markup).toContain("customer-info-line-city");
+    expect(markup).toContain("customer-info-line-country");
     expect(markup).toContain("customer-info-line-phone");
     expect(markup).toContain("customer-info-line-email");
     expect(markup).toContain("text-transparent");

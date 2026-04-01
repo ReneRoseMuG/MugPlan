@@ -36,6 +36,7 @@ describe("FT01 customer detail card compact relation variant", () => {
           addressLine1: "Hauptstrasse 1",
           postalCode: "123456789",
           city: "Hamburg",
+          country: "Deutschland",
         }}
       />,
     );
@@ -47,8 +48,10 @@ describe("FT01 customer detail card compact relation variant", () => {
     expect(html).toContain(">Adresse<");
     expect(html).toContain(">PLZ<");
     expect(html).toContain(">Ort<");
+    expect(html).toContain(">Land<");
     expect(html).toContain(">1234567890<");
     expect(html).toContain(">123456<");
+    expect(html).toContain(">Deutschland<");
     expect(html).not.toContain(">Firma<");
     expect(html).not.toContain(">E-Mail<");
   });

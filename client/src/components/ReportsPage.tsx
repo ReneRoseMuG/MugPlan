@@ -52,6 +52,7 @@ type VorlauflisteItem = {
   customerFullName: string | null;
   postalCode: string | null;
   city: string | null;
+  country: string | null;
   articleValues: Array<{ categoryId: number; value: string | null }>;
   plannedDateText: string | null;
   plannedWeek: string | null;

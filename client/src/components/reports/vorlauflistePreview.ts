@@ -16,6 +16,7 @@ export type VorlauflistePreviewItem = {
   customerFullName: string | null;
   postalCode: string | null;
   city: string | null;
+  country: string | null;
   articleValues: Array<{ categoryId: number; value: string | null }>;
   projectDescription: string | null;
   notesCount: number;
@@ -38,6 +39,7 @@ export type VorlauflistePreviewProject = {
     fullName: string | null;
     postalCode: string | null;
     city: string | null;
+    country: string | null;
   };
   projectArticleItems: ProjectArticleItem[];
 };
@@ -94,6 +96,7 @@ export function buildVorlauflistePreviewProject(
       fullName: row.customerFullName,
       postalCode: row.postalCode,
       city: row.city,
+      country: row.country,
     },
     projectArticleItems: buildVorlauflistePreviewArticleItems(
       row,
