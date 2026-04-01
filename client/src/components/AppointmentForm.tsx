@@ -875,6 +875,7 @@ export function AppointmentForm({
     addressLine2: customer.addressLine2?.trim() || null,
     postalCode: customer.postalCode?.trim() || null,
     city: customer.city?.trim() || null,
+    country: customer.country?.trim() || null,
   });
 
   const normalizeOptionalExtractionText = (value: string | null | undefined): string | null => {
@@ -904,6 +905,7 @@ export function AppointmentForm({
     maybeAssign("addressLine2", existingCustomer.addressLine2);
     maybeAssign("postalCode", existingCustomer.postalCode);
     maybeAssign("city", existingCustomer.city);
+    maybeAssign("country", existingCustomer.country);
 
     if (Object.keys(mergedFields).length === 0) {
       return null;
@@ -1094,6 +1096,7 @@ export function AppointmentForm({
           addressLine2: extraction.customer.addressLine2 ?? "",
           postalCode: extraction.customer.postalCode ?? "",
           city: extraction.customer.city ?? "",
+          country: extraction.customer.country ?? "",
         },
         orderNumber: extraction.orderNumber ?? null,
         amount: extraction.amount ?? null,

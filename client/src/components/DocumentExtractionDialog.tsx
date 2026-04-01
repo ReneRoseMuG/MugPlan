@@ -152,6 +152,7 @@ export function DocumentExtractionDialog({
       addressLine1: data.customer.addressLine1 ?? "",
       postalCode: data.customer.postalCode ?? "",
       city: data.customer.city ?? "",
+      country: data.customer.country ?? "",
     });
     setSaunaModel(data.saunaModel);
     setOrderNumber(data.orderNumber ?? "");

@@ -7,6 +7,7 @@
  * - Kunden- und Projektsektion werden sichtbar als getrennte Bereiche gerendert.
  * - Split-Buttons fuer Kunde/Projekt und der Single-Apply-Button erscheinen nur im passenden Modus.
  * - Projektseitiger Single-Apply-Modus kann die Customer-Section gezielt ausblenden.
+ * - Das extrahierte Kundenfeld `country` wird an die editierbare Customer-Section weitergereicht.
  * - Editierbarer Betrag und Artikelliste werden an die Projektsektion weitergereicht.
  *
  * Fehlerfaelle:
@@ -59,6 +60,7 @@ const dialogData = {
     addressLine2: "Etage 2",
     postalCode: "12345",
     city: "Berlin",
+    country: "Luxemburg",
   },
   orderNumber: "ORD-200",
   amount: "3333",
@@ -118,6 +120,7 @@ describe("FT21 document extraction dialog ui behavior", () => {
         addressLine1: "Strasse 1",
         postalCode: "12345",
         city: "Berlin",
+        country: "Luxemburg",
       },
       saunaModel: "Modell B",
       orderNumber: "ORD-200",
@@ -142,6 +145,9 @@ describe("FT21 document extraction dialog ui behavior", () => {
     expect(html).toContain("Projektdaten");
     expect(html).not.toContain("button-doc-extract-apply-data");
     expect(customerSectionCalls).toHaveLength(1);
+    expect(customerSectionCalls[0]).toMatchObject({
+      value: expect.objectContaining({ country: "Luxemburg" }),
+    });
     expect(projectSectionCalls[0]).toMatchObject({
       saunaModel: "Modell B",
       orderNumber: "ORD-200",
@@ -162,6 +168,7 @@ describe("FT21 document extraction dialog ui behavior", () => {
         addressLine1: "Strasse 1",
         postalCode: "12345",
         city: "Berlin",
+        country: "Luxemburg",
       },
       saunaModel: "Modell B",
       orderNumber: "ORD-200",

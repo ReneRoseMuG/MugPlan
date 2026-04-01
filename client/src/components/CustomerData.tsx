@@ -620,7 +620,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           addressLine2: extraction.customer.addressLine2 ?? "",
           postalCode: extraction.customer.postalCode ?? "",
           city: extraction.customer.city ?? "",
-          country: "",
+          country: extraction.customer.country ?? "",
         },
         orderNumber: extraction.orderNumber ?? null,
         amount: extraction.amount ?? null,

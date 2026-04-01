@@ -11,6 +11,7 @@ export type ExtractionCustomerEditableFields = {
   addressLine1: string;
   postalCode: string;
   city: string;
+  country: string;
 };
 
 interface DocumentExtractionCustomerSectionProps {
@@ -92,6 +93,14 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.city}
             onChange={(event) => onChange({ ...value, city: event.target.value })}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Land</Label>
+          <Input
+            value={value.country}
+            onChange={(event) => onChange({ ...value, country: event.target.value })}
+            data-testid="input-doc-extract-country"
           />
         </div>
       </div>
