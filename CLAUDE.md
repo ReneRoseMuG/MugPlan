@@ -175,6 +175,9 @@ Claude führt den vollen Audit gemäß Abschnitt 13 als reinen Report-Auftrag au
 `test`
 Claude führt den vollen Testlauf gemäß Abschnitt 13 als reinen Report-Auftrag aus. Während dieses Auftrags nimmt Claude keine Code-, Test-, Konfigurations- oder Dokumentationsänderungen vor.
 
+`save`
+Claude führt ausschließlich seriell `git add`, `git commit` und `git push` für alle offenen Änderungen des aktuellen Arbeitsstands aus. Falls Commit oder Push durch Konflikte, fehlende Inhalte oder andere Git-Blocker nicht sauber möglich sind, bricht Claude kontrolliert ab und dokumentiert den Grund.
+
 `log <kurztitel>`
 Claude erstellt das Auftragslog gemäß Abschnitt 15.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md`.
 
