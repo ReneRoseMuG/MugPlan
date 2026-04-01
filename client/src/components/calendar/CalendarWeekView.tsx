@@ -47,6 +47,8 @@ import type { Tour } from "@shared/schema";
 type CalendarWeekViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
+  conflictHighlightActive?: boolean;
+  conflictAppointmentIds?: Set<number>;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void;
@@ -175,6 +177,8 @@ export function buildWeekLaneRenderData(
 export function CalendarWeekView({
   currentDate,
   employeeFilterId,
+  conflictHighlightActive = false,
+  conflictAppointmentIds = new Set<number>(),
   navCommand: _navCommand,
   onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
@@ -956,6 +960,7 @@ export function CalendarWeekView({
                                   ),
                                 ) + 1;
                               const isHighlighted = hoveredAppointmentId === appointment.id;
+                              const isConflict = conflictHighlightActive && conflictAppointmentIds.has(appointment.id);
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
@@ -982,6 +987,7 @@ export function CalendarWeekView({
                                   isDragging={draggedAppointmentId === appointment.id}
                                   isLocked={isSegmentLocked}
                                   highlighted={isHighlighted}
+                                  isConflict={isConflict}
                                   onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                   onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                   onDragEnd={canDragSegment ? handleDragEnd : undefined}
@@ -1001,6 +1007,7 @@ export function CalendarWeekView({
                               if (!appointment) return null;
 
                               const isHighlighted = hoveredAppointmentId === appointment.id;
+                              const isConflict = conflictHighlightActive && conflictAppointmentIds.has(appointment.id);
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
@@ -1026,6 +1033,7 @@ export function CalendarWeekView({
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
+                                    isConflict={isConflict}
                                     onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
@@ -1056,6 +1064,7 @@ export function CalendarWeekView({
                                     if (!appointment) return null;
 
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
+                                    const isConflict = conflictHighlightActive && conflictAppointmentIds.has(appointment.id);
                                     const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isSegmentLocked && !isHistoricalSource;
@@ -1078,6 +1087,7 @@ export function CalendarWeekView({
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}
+                                        isConflict={isConflict}
                                         onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                         onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                         onDragEnd={canDragSegment ? handleDragEnd : undefined}

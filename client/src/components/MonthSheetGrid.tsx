@@ -3,6 +3,8 @@ import { CalendarMonthSheetView } from "@/components/calendar/CalendarMonthSheet
 interface MonthSheetGridProps {
   currentDate: Date;
   employeeFilterId?: number | null;
+  conflictHighlightActive?: boolean;
+  conflictAppointmentIds?: Set<number>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 }
@@ -10,6 +12,8 @@ interface MonthSheetGridProps {
 export function MonthSheetGrid({
   currentDate,
   employeeFilterId,
+  conflictHighlightActive = false,
+  conflictAppointmentIds = new Set<number>(),
   onNewAppointment,
   onOpenAppointment,
 }: MonthSheetGridProps) {
@@ -17,6 +21,8 @@ export function MonthSheetGrid({
     <CalendarMonthSheetView
       currentDate={currentDate}
       employeeFilterId={employeeFilterId}
+      conflictHighlightActive={conflictHighlightActive}
+      conflictAppointmentIds={conflictAppointmentIds}
       onNewAppointment={onNewAppointment}
       onOpenAppointment={onOpenAppointment}
     />

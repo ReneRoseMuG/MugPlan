@@ -2,7 +2,7 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, getAppointmentEndDate } from "@/lib/calendar-utils";
-import { CalendarDays, Clock3 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock3 } from "lucide-react";
 
 const MONTH_APPOINTMENT_PREVIEW_OPEN_DELAY_MS = 650;
 const MONTH_APPOINTMENT_PREVIEW_CURSOR_OFFSET_X = 24;
@@ -14,6 +14,7 @@ type CompactBarProps = {
   appointment: CalendarAppointment;
   isFirstDay: boolean;
   isLastDay: boolean;
+  isConflict?: boolean;
   hideOrderNumber?: boolean;
   showPopover?: boolean;
   isLocked?: boolean;
@@ -30,6 +31,7 @@ export function CalendarAppointmentCompactBar({
   appointment,
   isFirstDay,
   isLastDay,
+  isConflict = false,
   hideOrderNumber = false,
   showPopover = isFirstDay,
   isLocked,
@@ -81,6 +83,17 @@ export function CalendarAppointmentCompactBar({
       aria-disabled={isLocked}
       data-testid={`appointment-bar-${appointment.id}`}
     >
+      {isConflict ? (
+        <div
+          className="pointer-events-none absolute -right-1 -top-1 z-20"
+          data-testid={`appointment-bar-conflict-icon-${appointment.id}`}
+        >
+          <span className="inline-flex items-center gap-1 rounded-full bg-destructive px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-destructive-foreground shadow-md ring-2 ring-white">
+            <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+            <span>Konflikt</span>
+          </span>
+        </div>
+      ) : null}
       <div
         className={`h-6 flex items-center gap-1.5 px-2 text-[11px] font-semibold transition-all ${
           isLocked ? "cursor-not-allowed" : "cursor-pointer hover:brightness-95"

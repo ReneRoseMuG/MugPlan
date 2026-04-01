@@ -27,6 +27,7 @@ export function CalendarWeekAppointmentPanel({
   isLocked,
   interactive = true,
   highlighted = false,
+  isConflict = false,
   onMouseEnter,
   onMouseLeave,
   segment = "start",
@@ -49,6 +50,7 @@ export function CalendarWeekAppointmentPanel({
   isLocked?: boolean;
   interactive?: boolean;
   highlighted?: boolean;
+  isConflict?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   segment?: "start" | "continuation";
@@ -92,7 +94,7 @@ export function CalendarWeekAppointmentPanel({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       ref={containerRef}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
@@ -135,7 +137,13 @@ export function CalendarWeekAppointmentPanel({
           </div>
           {!isCompact ? (
             <>
-              <div className="min-h-0 flex-1 px-1 pt-1" data-testid={`week-appointment-content-${appointment.id}`}>
+              <div className="relative min-h-0 flex-1 px-1 pt-1" data-testid={`week-appointment-content-${appointment.id}`}>
+                {isConflict ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                    data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
+                  />
+                ) : null}
                 <div className="min-h-0 space-y-1 overflow-hidden">
                   <CalendarWeekAppointmentPanelCustomer
                     fullName={appointment.customer.fullName ?? ""}
@@ -157,10 +165,16 @@ export function CalendarWeekAppointmentPanel({
                 </div>
               </div>
               <div
-                className="mt-auto shrink-0 border-t px-1 py-2"
+                className="relative mt-auto shrink-0 border-t px-1 py-2"
                 style={footerStyle}
                 data-testid={`week-appointment-footer-${appointment.id}`}
               >
+                {isConflict ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                    data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
+                  />
+                ) : null}
                 <div className="space-y-1">
                   {context === "week-calendar" ? (
                     <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
@@ -194,10 +208,16 @@ export function CalendarWeekAppointmentPanel({
             </>
           ) : (
             <div
-              className="mt-auto shrink-0 border-t px-1 py-2"
+              className="relative mt-auto shrink-0 border-t px-1 py-2"
               style={footerStyle}
               data-testid={`week-appointment-footer-${appointment.id}`}
             >
+              {isConflict ? (
+                <div
+                  className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                  data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
+                />
+              ) : null}
               <div className="space-y-1">
                 <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
                   <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
