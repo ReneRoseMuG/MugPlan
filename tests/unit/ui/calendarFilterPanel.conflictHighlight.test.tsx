@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Der Konflikt-Switch erscheint nur bei vorhandenen Monitoring-Treffern.
  * - Die Badge zeigt die Konfliktanzahl sichtbar an.
+ * - Die Badge steht neben dem Label, der Switch unterhalb des Kopfbereichs.
  * - Der Switch gibt seinen Zustand per Callback weiter.
  *
  * Fehlerfaelle:
@@ -92,6 +93,8 @@ describe("CalendarFilterPanel - conflict highlight", () => {
 
     expect(html).toContain("badge-conflict-appointment-count");
     expect(html).toContain(">3<");
+    expect(html).toContain("justify-between");
+    expect(html).toContain("mt-3");
     expect(onChange).toHaveBeenCalledWith(true);
   });
 });

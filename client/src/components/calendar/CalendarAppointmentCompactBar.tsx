@@ -85,11 +85,12 @@ export function CalendarAppointmentCompactBar({
     >
       {isConflict ? (
         <div
-          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+          className="pointer-events-none absolute -right-1 -top-1 z-20"
           data-testid={`appointment-bar-conflict-icon-${appointment.id}`}
         >
-          <span className="rounded-full bg-white/80 p-0.5 shadow-sm">
-            <AlertTriangle className="h-3.5 w-3.5 text-destructive" aria-hidden />
+          <span className="inline-flex items-center gap-1 rounded-full bg-destructive px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-destructive-foreground shadow-md ring-2 ring-white">
+            <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+            <span>Konflikt</span>
           </span>
         </div>
       ) : null}

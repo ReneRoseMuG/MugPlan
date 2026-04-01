@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addMonths, addWeeks, format, startOfISOWeek, subMonths, subWeeks } from "date-fns";
+import { addMonths, addWeeks, format, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
@@ -60,7 +60,9 @@ export function CalendarWorkspace({
   const [printStartNextWeek, setPrintStartNextWeek] = useState(false);
   const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
   const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
-  const [kwInputValue, setKwInputValue] = useState("");
+  const [kwInputValue, setKwInputValue] = useState(() =>
+    activeView === "week" ? String(getISOWeek(currentDate)) : "",
+  );
   const [kwJumpError, setKwJumpError] = useState(false);
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const conflictAppointmentIds = useMemo(
@@ -84,8 +86,10 @@ export function CalendarWorkspace({
       setJumpBackDate(null);
       setKwInputValue("");
       setKwJumpError(false);
+      return;
     }
-  }, [activeView]);
+    setKwInputValue(String(getISOWeek(currentDate)));
+  }, [activeView, currentDate]);
 
   const submitKwJump = () => {
     const trimmedValue = kwInputValue.trim();
@@ -97,9 +101,15 @@ export function CalendarWorkspace({
     const parsedKw = Number(trimmedValue);
     const targetDate = resolveKwJumpTarget(parsedKw, currentDate);
     if (targetDate) {
+      const currentWeekStart = startOfISOWeek(currentDate);
+      if (targetDate.getTime() === currentWeekStart.getTime()) {
+        setKwInputValue(String(parsedKw));
+        setKwJumpError(false);
+        return;
+      }
       setJumpBackDate(currentDate);
       onDateChange(targetDate);
-      setKwInputValue("");
+      setKwInputValue(String(parsedKw));
       setKwJumpError(false);
       return;
     }
@@ -270,6 +280,7 @@ export function CalendarWorkspace({
             showKwJumpBack={jumpBackDate !== null}
             onKwJumpBack={() => {
               if (!jumpBackDate) return;
+              setKwInputValue(String(getISOWeek(jumpBackDate)));
               onDateChange(jumpBackDate);
               setJumpBackDate(null);
               setKwJumpError(false);

@@ -136,4 +136,22 @@ describe("CalendarFilterPanel - kw jump", () => {
 
     expect(html).toContain("border-destructive");
   });
+
+  it("renders the kw input without browser stepper buttons", () => {
+    renderToStaticMarkup(
+      <CalendarFilterPanel
+        {...baseProps}
+        showKwJump
+        kwJumpValue="14"
+        onKwJumpChange={() => undefined}
+        onKwJumpSubmit={() => undefined}
+      />,
+    );
+
+    const kwInput = inputCalls.find((entry) => entry["data-testid"] === "input-calendar-kw-jump");
+
+    expect(kwInput?.type).toBe("text");
+    expect(kwInput?.inputMode).toBe("numeric");
+    expect(kwInput?.pattern).toBe("[0-9]*");
+  });
 });
