@@ -216,6 +216,7 @@ export function CalendarWeekView({
   const isCollapsedMode = Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canEditWeekDisplayMode = userRole === "ADMIN" || userRole === "DISPATCHER";
+  const canManageAppointmentTags = userRole === "ADMIN" || userRole === "DISPATCHER";
 
   const dayWeights = useMemo(
     () => getDayWeights(weekendColumnPercent),
@@ -958,6 +959,7 @@ export function CalendarWeekView({
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
 
                               return (
                                 <CalendarWeekSpanningTile
@@ -969,6 +971,8 @@ export function CalendarWeekView({
                                   visibleDayNumberStart={visibleDayNumberStart}
                                   uniformHeightPx={laneUniformHeightPx}
                                   projectStatusAreaHeightPx={projectStatusAreaHeightPx}
+                                  showTagActions
+                                  canEditTags={canEditAppointmentTags}
                                   style={{
                                     gridColumn: `${startColumn} / span ${columnSpan}`,
                                     gridRow: rowIndex + 1,
@@ -1000,6 +1004,7 @@ export function CalendarWeekView({
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
 
                               return (
                                 <div
@@ -1013,6 +1018,8 @@ export function CalendarWeekView({
                                     continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
                                     uniformHeightPx={laneUniformHeightPx}
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
+                                    showTagActions
+                                    canEditTags={canEditAppointmentTags}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={(node) =>
                                       measureLaneCardHeight(laneHeightKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
@@ -1052,6 +1059,7 @@ export function CalendarWeekView({
                                     const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+                                    const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
 
                                     return (
                                       <CalendarWeekAppointmentPanel
@@ -1062,6 +1070,8 @@ export function CalendarWeekView({
                                         continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
                                         uniformHeightPx={laneUniformHeightPx}
                                         projectStatusAreaHeightPx={projectStatusAreaHeightPx}
+                                        showTagActions
+                                        canEditTags={canEditAppointmentTags}
                                         projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                         containerRef={(node) =>
                                           measureLaneCardHeight(laneHeightKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}

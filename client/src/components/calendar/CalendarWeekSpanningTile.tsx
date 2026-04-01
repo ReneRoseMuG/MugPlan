@@ -1,13 +1,13 @@
 import type { CSSProperties, DragEvent } from "react";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
-import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { mergeUniqueTags } from "@/lib/tag-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentAttachmentsHover } from "./CalendarWeekAppointmentAttachmentsHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
+import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
 import {
   getWeekAppointmentFooterStyle,
@@ -25,6 +25,8 @@ type CalendarWeekSpanningTileProps = {
   uniformHeightPx?: number | null;
   projectStatusAreaHeightPx?: number | null;
   projectStatusAreaRef?: React.Ref<HTMLDivElement>;
+  showTagActions?: boolean;
+  canEditTags?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   style?: CSSProperties;
   isDragging?: boolean;
@@ -47,6 +49,8 @@ export function CalendarWeekSpanningTile({
   uniformHeightPx,
   projectStatusAreaHeightPx: _projectStatusAreaHeightPx,
   projectStatusAreaRef: _projectStatusAreaRef,
+  showTagActions = false,
+  canEditTags = false,
   containerRef,
   style,
   isDragging,
@@ -139,7 +143,14 @@ export function CalendarWeekSpanningTile({
           totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
         />
       </div>
-      <EntityTagFooterRow tags={mergedTags} testId={`week-spanning-tile-tags-${appointment.id}`} />
+      <CalendarWeekAppointmentTagPicker
+        appointmentId={appointment.id}
+        tags={mergedTags}
+        appointmentTags={appointment.appointmentTags}
+        projectTags={appointment.projectTags}
+        canEdit={showTagActions && canEditTags}
+        testId={`week-spanning-tile-tags-${appointment.id}`}
+      />
     </div>
   );
 
