@@ -11,6 +11,7 @@
  * - Extrahierte Auftragsummen werden in den zentralen Extract-Output uebernommen.
  * - Projekt- und Termin-Extract bevorzugen den Mining-Parser; customer_form bleibt beim Legacy-Parser.
  * - Der Extract-Output enthaelt einen scope-spezifischen Feldreport.
+ * - Explizite Laenderzeilen werden als `country` in den Customer-Extract uebernommen.
  * - project_form darf bei unlesbarer Kundenadresse mit Warnhinweis partiell erfolgreich bleiben.
  * - Bereits importierte Auftragsnummern fuehren nicht zum Abbruch der Extraktion –
  *   die Konfliktbehandlung (Edit-Modus-Wechsel) liegt im Client.
@@ -140,6 +141,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
         addressLine1: "Musterstrasse 1",
         postalCode: "12345",
         city: "Leipzig",
+        country: "Deutschland",
       },
       warnings: [],
     });
@@ -173,6 +175,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(result.customer.firstName).toBe("Max");
     expect(result.customer.company).toBe("Muster GmbH");
     expect(result.customer.phone).toBeNull();
+    expect(result.customer.country).toBe("Deutschland");
     expect(result.orderNumber).toBe("A-1");
     expect(result.amount).toBeNull();
     expect(result.saunaModel).toBe("XL Sauna");
@@ -202,6 +205,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       addressLine1: "Beispielweg 9",
       postalCode: "10115",
       city: "Berlin",
+      country: "Deutschland",
     });
     parseMasterDataArticleItemsDeterministicallyMock.mockReturnValue({
       productName: "Nordic Sauna",
@@ -230,6 +234,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     });
 
     expect(result.customer.phone).toBe("0170123456");
+    expect(result.customer.country).toBe("Deutschland");
     expect(result.saunaModel).toBe("Nordic Sauna");
     expect(result.articleItems).toEqual([
       { quantity: "1", description: "Nordic Sauna - Panoramafenster", category: "Produkt" },
@@ -249,6 +254,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
         addressLine1: "Teststrasse 2",
         postalCode: "12345",
         city: "Leipzig",
+        country: "Deutschland",
       },
       warnings: [],
     });
@@ -292,6 +298,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       addressLine1: "Teststrasse 3",
       postalCode: "12345",
       city: "Leipzig",
+      country: "Deutschland",
     });
     parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
       { quantity: "1", description: "Sauna Modell Z" },
@@ -326,6 +333,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       addressLine1: "Teststrasse 3",
       postalCode: "12345",
       city: "Leipzig",
+      country: "Deutschland",
     });
     parseMasterDataArticleItemsDeterministicallyMock.mockImplementation(() => {
       throw new Error("Produktmarker konnte nicht erkannt werden");
@@ -377,6 +385,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
         addressLine1: null,
         postalCode: "7419",
         city: "Brouch",
+        country: "Luxemburg",
       },
       warnings: [
         "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
@@ -406,6 +415,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     expect(result.customer.addressLine1).toBeNull();
     expect(result.customer.postalCode).toBe("7419");
     expect(result.customer.city).toBe("Brouch");
+    expect(result.customer.country).toBe("Luxemburg");
     expect(result.warnings).toEqual([
       "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
     ]);
@@ -413,6 +423,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
       expect.arrayContaining([
         expect.objectContaining({ key: "orderNumber", value: "A-21" }),
         expect.objectContaining({ key: "postalCode", value: "7419" }),
+        expect.objectContaining({ key: "country", value: "Luxemburg" }),
       ]),
     );
     expect(result.fieldReport.missing).toEqual(
@@ -435,6 +446,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
         addressLine1: "Musterstrasse 1",
         postalCode: "12345",
         city: "Leipzig",
+        country: "Deutschland",
       },
       warnings: [],
     });

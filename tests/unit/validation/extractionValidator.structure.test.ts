@@ -6,6 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Optionalfelder werden konsistent normalisiert (leer -> null).
+ * - Das neue optionale Feld `country` wird wie andere Kundenfelder normalisiert.
  * - firstName/lastName sind optional und duerfen null sein.
  * - Artikel werden kategorisiert.
  * - HTML-Ausgabe ist flach (eine UL-Ebene) und escaped nutzernahe Inhalte.
@@ -36,6 +37,7 @@ describe("FT20 extraction validator structure", () => {
         addressLine2: " Haus B ",
         postalCode: "",
         city: " Leipzig ",
+        country: " Luxemburg ",
       },
       orderNumber: "  A0218229A ",
       amount: " 17136.00 ",
@@ -50,6 +52,7 @@ describe("FT20 extraction validator structure", () => {
     expect(result.customer.addressLine1).toBeNull();
     expect(result.customer.addressLine2).toBe("Haus B");
     expect(result.customer.city).toBe("Leipzig");
+    expect(result.customer.country).toBe("Luxemburg");
     expect(result.orderNumber).toBe("A0218229A");
     expect(result.amount).toBe("17136.00");
     expect(result.warnings).toEqual(["Hinweis A"]);

@@ -7,9 +7,10 @@
  * Abgedeckte Regeln:
  * - Doc-Extract kann mit echter DB zu Customer-Resolve/Create und Project-Create verkettet werden.
  * - Bei bestehender Kundennummer wird der vorhandene Kunde verwendet und nur das Projekt neu angelegt.
- * - Bei Race-Conflict (CUSTOMER_NUMBER_CONFLICT) wird per erneutem Resolve auf bestehenden Kunden aufgeloest.
- * - Projektname wird serverseitig als reiner saunaModel-Name persistiert.
- * - Resolve multiple bleibt ein harter Abbruchpfad.
+  * - Bei Race-Conflict (CUSTOMER_NUMBER_CONFLICT) wird per erneutem Resolve auf bestehenden Kunden aufgeloest.
+  * - Projektname wird serverseitig als reiner saunaModel-Name persistiert.
+ * - Das extrahierte Kundenfeld `country` bleibt im Adopt-/Create-Flow erhalten.
+  * - Resolve multiple bleibt ein harter Abbruchpfad.
  *
  * Fehlerfaelle:
  * - Kundennummer mehrfach (multiple) bricht den Uebernahme-Flow deterministisch ab.
@@ -46,6 +47,7 @@ type ExtractionPayload = {
     addressLine2: string | null;
     postalCode: string | null;
     city: string | null;
+    country: string | null;
   };
   orderNumber: string | null;
   saunaModel: string;
@@ -94,6 +96,7 @@ function buildExtractionPayload(customerNumber: string): ExtractionPayload {
       addressLine2: null,
       postalCode: "12345",
       city: "Musterstadt",
+      country: "Luxemburg",
     },
     orderNumber: `A-FLOW-${local}`,
     saunaModel: `Sauna Flow ${local}`,
@@ -157,6 +160,7 @@ async function runProjectAdoptionFlow(agent: SuperAgentTest, extraction: Extract
         addressLine2: payload.customer.addressLine2,
         postalCode: payload.customer.postalCode,
         city: payload.customer.city,
+        country: payload.customer.country,
       });
 
     if (createCustomerResponse.status === 201) {
@@ -205,6 +209,7 @@ describe("FT21 integration: document extraction project conflict flow", () => {
 
     expect(result.customerSource).toBe("created");
     expect(result.customer.customerNumber).toBe(number);
+    expect(result.customer.country).toBe("Luxemburg");
     expect(result.project.customerId).toBe(result.customer.id);
     expect(result.project.orderNumber).toBe(extraction.orderNumber);
     expect(result.project.name).toBe(extraction.saunaModel);
@@ -224,6 +229,7 @@ describe("FT21 integration: document extraction project conflict flow", () => {
 
     expect(result.customerSource).toBe("existing");
     expect(result.customer.id).toBe(existingCustomer.id);
+    expect(result.customer.country).toBeNull();
     expect(result.project.customerId).toBe(existingCustomer.id);
     expect(result.project.name).toBe(extraction.saunaModel);
   });

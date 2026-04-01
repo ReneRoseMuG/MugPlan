@@ -11,6 +11,7 @@ const customerDraftSchema = z.object({
   addressLine2: z.string().trim().nullable().optional(),
   postalCode: z.string().trim().nullable().optional(),
   city: z.string().trim().nullable().optional(),
+  country: z.string().trim().nullable().optional(),
 });
 
 const articleItemSchema = z.object({
@@ -52,6 +53,7 @@ type ExtractionFieldKey =
   | "addressLine1"
   | "postalCode"
   | "city"
+  | "country"
   | "orderNumber"
   | "amount"
   | "saunaModel";
@@ -91,6 +93,7 @@ const extractionFieldConfigs: ExtractionFieldConfig[] = [
   { key: "addressLine1", label: "Strasse", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
   { key: "postalCode", label: "PLZ", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
   { key: "city", label: "Ort", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
+  { key: "country", label: "Land", section: "customer", scopes: ["customer_form", "project_form", "appointment_form"] },
   { key: "orderNumber", label: "Auftragsnummer", section: "project", scopes: ["project_form", "appointment_form"] },
   { key: "amount", label: "Betrag", section: "project", scopes: ["project_form", "appointment_form"] },
   { key: "saunaModel", label: "Projektname", section: "project", scopes: ["project_form", "appointment_form"] },
@@ -148,6 +151,7 @@ function readExtractionFieldValue(extraction: ValidatedExtraction, key: Extracti
     case "addressLine1":
     case "postalCode":
     case "city":
+    case "country":
       return extraction.customer[key] ?? null;
     case "orderNumber":
       return extraction.orderNumber;
@@ -181,6 +185,8 @@ function buildMissingReason(extraction: ValidatedExtraction, key: ExtractionFiel
     case "postalCode":
     case "city":
       return "PLZ/Ort im Dokumentkopf nicht eindeutig erkannt.";
+    case "country":
+      return "Keine Laenderzeile im Dokumentkopf erkannt.";
     case "customerNumber":
       return "Kundennummer nicht erkannt.";
     case "orderNumber":
@@ -249,6 +255,7 @@ export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtractio
       addressLine2: normalizeOptional(parsed.customer.addressLine2),
       postalCode: normalizeOptional(parsed.customer.postalCode),
       city: normalizeOptional(parsed.customer.city),
+      country: normalizeOptional(parsed.customer.country),
     },
     orderNumber: normalizeOptional(parsed.orderNumber),
     amount: normalizeOptional(parsed.amount),

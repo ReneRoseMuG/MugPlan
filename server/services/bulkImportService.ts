@@ -152,6 +152,7 @@ async function extractNormalizedFromPdf(fileBuffer: Buffer) {
       addressLine2: null,
       postalCode: header.postalCode,
       city: header.city,
+      country: header.country,
     },
     orderNumber: header.orderNumber,
     saunaModel: deriveSaunaModel(articleItems.map((item) => item.description)),

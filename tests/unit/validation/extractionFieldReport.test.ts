@@ -8,6 +8,7 @@
  * - Der Feldreport listet nur scope-relevante Felder.
  * - Befuellte Felder erscheinen im Bereich recognized.
  * - Fehlende Felder erhalten deterministische Kurzgruende.
+ * - Das optionale Kundenfeld `country` wird als erkannt oder fehlend ausgewiesen.
  * - Firmenkunden ohne Personenname erhalten den speziellen Personenhinweis.
  *
  * Fehlerfaelle:
@@ -34,6 +35,7 @@ describe("FT21 extraction field report", () => {
         addressLine2: null,
         postalCode: "12345",
         city: "Leipzig",
+        country: "Deutschland",
       },
       orderNumber: "A0218229A",
       amount: "17136.00",
@@ -51,6 +53,7 @@ describe("FT21 extraction field report", () => {
       "addressLine1",
       "postalCode",
       "city",
+      "country",
     ]);
     expect(report.missing).toEqual([
       {
@@ -83,6 +86,7 @@ describe("FT21 extraction field report", () => {
         addressLine2: null,
         postalCode: "68305",
         city: "Mannheim",
+        country: null,
       },
       orderNumber: null,
       amount: null,
@@ -139,6 +143,12 @@ describe("FT21 extraction field report", () => {
           label: "Betrag",
           section: "project",
           reason: "Gesamtbetrag nicht erkannt.",
+        },
+        {
+          key: "country",
+          label: "Land",
+          section: "customer",
+          reason: "Keine Laenderzeile im Dokumentkopf erkannt.",
         },
       ]),
     );

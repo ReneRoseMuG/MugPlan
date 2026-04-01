@@ -31,7 +31,18 @@ describe("FT24 unit: master data pdf mining service", () => {
   beforeEach(() => {
     extractTextFromPdfBufferMock.mockReset();
     parseDocumentHeaderDeterministicallyMock.mockReset();
-    parseDocumentHeaderDeterministicallyMock.mockReturnValue({ orderNumber: "A0218170A" });
+    parseDocumentHeaderDeterministicallyMock.mockReturnValue({
+      orderNumber: "A0218170A",
+      customerNumber: "K-1",
+      mobile: null,
+      firstName: null,
+      lastName: null,
+      company: null,
+      addressLine1: null,
+      postalCode: null,
+      city: null,
+      country: null,
+    });
   });
 
   it("skips single-entry and non-sauna article lists, but keeps Schlaffass/Gartenfass single-item products", async () => {

@@ -2,6 +2,7 @@
 
 const START_MARKER = "Menge Art.Nr.";
 const POSTAL_CITY_REGEX = /^(\d{4,5})\s+(.+)$/;
+const COUNTRY_LINE_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ .'-]*(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ .'-]*)*$/;
 
 type HeaderField = "orderNumber" | "customerNumber" | "mobile" | "phone";
 
@@ -15,6 +16,7 @@ export type DeterministicHeaderExtraction = {
   addressLine1: string | null;
   postalCode: string | null;
   city: string | null;
+  country: string | null;
 };
 
 export type ProjectHeaderPartialExtraction = {
@@ -221,24 +223,33 @@ function looksLikeStreet(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length === 0) return false;
   const hasTrailingHouseNumber = /\d+\s*[A-Za-z]?(?:\s*[A-Za-z])?(?:[/-]\d+)?\s*$/.test(trimmed);
-  return hasTrailingHouseNumber || /\b(str|strasse|straße|weg|platz|allee|gasse)\b/i.test(trimmed);
+  const hasLeadingHouseNumber = /^\d+[A-Za-z]?(?:[/-]\d+)?\s+[A-Za-zÀ-ÖØ-öø-ÿ].+$/.test(trimmed);
+  return hasTrailingHouseNumber || hasLeadingHouseNumber || /\b(str|strasse|straße|weg|platz|allee|gasse)\b/i.test(trimmed);
 }
 
 function findAddressBlock(
   lines: string[],
-): { identityLineA: string | null; identityLineB: string | null; streetLine: string; postalCityLine: string } | null {
+): {
+  identityLineA: string | null;
+  identityLineB: string | null;
+  streetLine: string;
+  postalCityLine: string;
+  countryLine: string | null;
+} | null {
   for (let postalIndex = 0; postalIndex < lines.length; postalIndex += 1) {
     const postalCityLine = lines[postalIndex] ?? "";
     if (!POSTAL_CITY_REGEX.test(postalCityLine)) continue;
 
     const streetLine = lines[postalIndex - 1] ?? "";
     if (!looksLikeStreet(streetLine)) continue;
+    const countryCandidate = lines[postalIndex + 1] ?? "";
 
     return {
       identityLineA: lines[postalIndex - 2] ?? null,
       identityLineB: lines[postalIndex - 3] ?? null,
       streetLine,
       postalCityLine,
+      countryLine: looksLikeCountryLine(countryCandidate) ? countryCandidate : null,
     };
   }
 
@@ -247,20 +258,44 @@ function findAddressBlock(
 
 function findPostalCityContext(
   lines: string[],
-): { identityLineA: string | null; identityLineB: string | null; streetLine: string | null; postalCityLine: string } | null {
+): {
+  identityLineA: string | null;
+  identityLineB: string | null;
+  streetLine: string | null;
+  postalCityLine: string;
+  countryLine: string | null;
+} | null {
   for (let postalIndex = 0; postalIndex < lines.length; postalIndex += 1) {
     const postalCityLine = lines[postalIndex] ?? "";
     if (!POSTAL_CITY_REGEX.test(postalCityLine)) continue;
+    const countryCandidate = lines[postalIndex + 1] ?? "";
 
     return {
       identityLineA: lines[postalIndex - 2] ?? null,
       identityLineB: lines[postalIndex - 3] ?? null,
       streetLine: lines[postalIndex - 1] ?? null,
       postalCityLine,
+      countryLine: looksLikeCountryLine(countryCandidate) ? countryCandidate : null,
     };
   }
 
   return null;
+}
+
+function normalizeCountryLine(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function looksLikeCountryLine(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return false;
+  if (trimmed.includes(START_MARKER)) return false;
+  if (classifyLabel(trimmed) || isGenericLabelLine(trimmed)) return false;
+  if (POSTAL_CITY_REGEX.test(trimmed)) return false;
+  if (/\d/.test(trimmed)) return false;
+  return COUNTRY_LINE_REGEX.test(trimmed);
 }
 
 function normalizeIdentityLine(value: string | null): string | null {
@@ -405,6 +440,7 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
     addressLine1: street.length > 0 ? street : null,
     postalCode: postalCityMatch?.[1]?.trim() ?? null,
     city: postalCityMatch?.[2]?.trim() ?? null,
+    country: normalizeCountryLine(addressBlock.countryLine),
   };
 
   const requiredSchema = z.object({
@@ -467,6 +503,7 @@ export function parseDocumentHeaderForProjectExtraction(sourceText: string): Pro
         addressLine1: null,
         postalCode: postalCityMatch?.[1]?.trim() ?? null,
         city: postalCityMatch?.[2]?.trim() ?? null,
+        country: normalizeCountryLine(postalContext?.countryLine ?? null),
       },
       warnings: [
         "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",

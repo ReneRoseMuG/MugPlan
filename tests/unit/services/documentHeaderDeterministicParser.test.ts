@@ -12,6 +12,8 @@
  * - Inline-Headerzeilen (Label + Wert in einer Zeile) werden robust erkannt.
  * - Feldvalidierung verhindert Fehlzuordnung von Bearbeiter/Datum auf Nummernfelder.
  * - WaWi-Adresszeilen (Identitaet, Strasse, PLZ/Ort; Anrede optional) werden deterministisch geparst.
+ * - Explizite Laenderzeilen werden aus dem Adressblock in `country` uebernommen.
+ * - Auslandsadressen mit fuehrender Hausnummer in der Strassenzeile werden erkannt.
  * - Identitaet wird je nach Muster als Person, Firma oder Person+Firma aufgeloest.
  * - Personenzeilen mit Unicode-Namen und OCR-Sonderzeichen werden robust erkannt.
  * - Slash-getrennte Nachnamenzeilen ohne Vorname koennen als Nachname uebernommen werden.
@@ -142,6 +144,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("Haupstrasse 69");
     expect(parsed.postalCode).toBe("06917");
     expect(parsed.city).toBe("Jessen / Holzdorf");
+    expect(parsed.country).toBe("Deutschland");
   });
 
   it("allows missing mobile number and returns null", () => {
@@ -191,6 +194,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("Gleina 3 a");
     expect(parsed.postalCode).toBe("07586");
     expect(parsed.city).toBe("Bad Köstritz");
+    expect(parsed.country).toBe("Deutschland");
   });
 
   it("parses address block when salutation line is missing", () => {
@@ -216,6 +220,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("Haupstrasse 69");
     expect(parsed.postalCode).toBe("06917");
     expect(parsed.city).toBe("Jessen / Holzdorf");
+    expect(parsed.country).toBe("Deutschland");
   });
 
   it("skips interleaved generic lines and still maps correct numeric values", () => {
@@ -431,6 +436,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("Carl-Reuther-Str. 1");
     expect(parsed.postalCode).toBe("68305");
     expect(parsed.city).toBe("Mannheim");
+    expect(parsed.country).toBe("Deutschland");
   });
 
   it("parses inline salutation person plus dedicated company line", () => {
@@ -508,6 +514,7 @@ describe("FT21 deterministic header parser", () => {
     expect(parsed.addressLine1).toBe("Kiesstrasse 44");
     expect(parsed.postalCode).toBe("12209");
     expect(parsed.city).toBe("Berlin");
+    expect(parsed.country).toBe("Deutschland");
   });
 
   it("throws deterministic address-pattern error when street line is missing", () => {
@@ -527,12 +534,42 @@ describe("FT21 deterministic header parser", () => {
     expect(() => parseDocumentHeaderDeterministically(source)).toThrow("Adressmuster");
   });
 
-  it("returns partial project extraction with warning when only the customer address line is unreadable", () => {
+  it("parses a foreign address block with a leading house number and country line", () => {
     const source = [
       "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
       "Herr",
       "Tom Voosen",
       "1 Tommesknapp",
+      "7419 Brouch",
+      "Luxemburg",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "A0218277A",
+      "160673",
+      "00352-621222479",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const parsed = parseDocumentHeaderDeterministically(source);
+
+    expect(parsed.orderNumber).toBe("A0218277A");
+    expect(parsed.customerNumber).toBe("160673");
+    expect(parsed.mobile).toBe("00352-621222479");
+    expect(parsed.firstName).toBe("Tom");
+    expect(parsed.lastName).toBe("Voosen");
+    expect(parsed.addressLine1).toBe("1 Tommesknapp");
+    expect(parsed.postalCode).toBe("7419");
+    expect(parsed.city).toBe("Brouch");
+    expect(parsed.country).toBe("Luxemburg");
+  });
+
+  it("returns partial project extraction with warning when only the customer address line is unreadable", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Tom Voosen",
+      "Adresszeile unleserlich",
       "7419 Brouch",
       "Luxemburg",
       "Auftrag-Nr.",
@@ -554,6 +591,7 @@ describe("FT21 deterministic header parser", () => {
     expect(result.header.addressLine1).toBeNull();
     expect(result.header.postalCode).toBe("7419");
     expect(result.header.city).toBe("Brouch");
+    expect(result.header.country).toBe("Luxemburg");
     expect(result.warnings).toEqual([
       "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
     ]);

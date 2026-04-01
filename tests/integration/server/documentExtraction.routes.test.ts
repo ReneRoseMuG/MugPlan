@@ -6,7 +6,7 @@
  *
  * Abgedeckte Regeln:
  * - Extract-Route validiert Scope, Dateityp und Fehlerpfade mit korrekten Statuscodes.
- * - Extract-Route liefert bei Erfolg die erwartete Extraktionsstruktur.
+ * - Extract-Route liefert bei Erfolg die erwartete Extraktionsstruktur inklusive `customer.country`.
  * - Erfolgsresponses liefern den zusaetzlichen Feldreport mit.
  * - Customer-Duplicate und Resolve-Routen liefern none/single/multiple korrekt.
  * - Die Projekt-Resolve-Route liefert bei Einzeltreffer den aktuellsten Termin oder null ohne Terminplanung.
@@ -165,6 +165,7 @@ describe("FT20 integration: document extraction routes", () => {
         addressLine2: null,
         postalCode: null,
         city: null,
+        country: "Luxemburg",
       },
       orderNumber: "A0218229A",
       amount: "17136.00",
@@ -187,6 +188,7 @@ describe("FT20 integration: document extraction routes", () => {
         expect(res.body.saunaModel).toBe("Sauna Pro");
         expect(res.body.customer.customerNumber).toBe("1001");
         expect(res.body.customer.phone).toBeNull();
+        expect(res.body.customer.country).toBe("Luxemburg");
         expect(res.body.orderNumber).toBe("A0218229A");
         expect(res.body.amount).toBe("17136.00");
         expect(res.body.fieldReport.recognized[0].key).toBe("customerNumber");
@@ -208,6 +210,7 @@ describe("FT20 integration: document extraction routes", () => {
         addressLine2: null,
         postalCode: null,
         city: null,
+        country: null,
       },
       orderNumber: null,
       amount: null,
