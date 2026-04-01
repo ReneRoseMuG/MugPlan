@@ -6,6 +6,7 @@
  * Abgedeckte Regeln:
  * - Kunden- und Projektsektion werden sichtbar als getrennte Bereiche gerendert.
  * - Split-Buttons fuer Kunde/Projekt und der Single-Apply-Button erscheinen nur im passenden Modus.
+ * - Projektseitiger Single-Apply-Modus kann die Customer-Section gezielt ausblenden.
  * - Editierbarer Betrag und Artikelliste werden an die Projektsektion weitergereicht.
  *
  * Fehlerfaelle:
@@ -149,7 +150,7 @@ describe("FT21 document extraction dialog ui behavior", () => {
     });
   });
 
-  it("renders single apply mode without the split buttons", async () => {
+  it("renders single apply mode for project-only adoption without the customer section", async () => {
     const { DocumentExtractionDialog } = await loadDocumentExtractionDialog({
       customerFields: {
         customerNumber: "C-200",
@@ -169,18 +170,21 @@ describe("FT21 document extraction dialog ui behavior", () => {
     });
 
     const html = renderToStaticMarkup(
-      <DocumentExtractionDialog
-        open
-        onOpenChange={() => undefined}
-        data={dialogData}
-        onApplyData={async () => undefined}
-      />,
-    );
+        <DocumentExtractionDialog
+          open
+          onOpenChange={() => undefined}
+          data={dialogData}
+          dataApplyLabel="Auftragsdaten übernehmen"
+          showCustomerSection={false}
+          onApplyData={async () => undefined}
+        />,
+      );
 
-    expect(html).toContain("document-extraction-overlay");
-    expect(html).toContain("button-doc-extract-apply-data");
-    expect(html).toContain("Daten");
-    expect(html).not.toContain("button-doc-extract-apply-customer");
-    expect(html).not.toContain("button-doc-extract-apply-project");
+      expect(html).toContain("document-extraction-overlay");
+      expect(html).toContain("button-doc-extract-apply-data");
+      expect(html).toContain("Auftragsdaten übernehmen");
+      expect(html).not.toContain("document-extraction-customer-section");
+      expect(html).not.toContain("button-doc-extract-apply-customer");
+      expect(html).not.toContain("button-doc-extract-apply-project");
+    });
   });
-});

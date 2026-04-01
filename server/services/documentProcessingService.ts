@@ -7,7 +7,10 @@ import {
   type ValidatedExtraction,
   validateAndNormalizeExtraction,
 } from "./extractionValidator";
-import { parseDocumentHeaderDeterministically } from "./documentHeaderDeterministicParser";
+import {
+  parseDocumentHeaderDeterministically,
+  parseDocumentHeaderForProjectExtraction,
+} from "./documentHeaderDeterministicParser";
 import {
   parseDocumentArticleItemsDeterministically,
   parseDocumentTotalAmountDeterministically,
@@ -142,7 +145,13 @@ export async function extractFromPdf(params: {
   const extractedText = await extractTextFromPdfBuffer(params.fileBuffer);
 
   try {
-    const header = parseDocumentHeaderDeterministically(extractedText);
+    const headerResult = params.scope === "project_form"
+      ? parseDocumentHeaderForProjectExtraction(extractedText)
+      : {
+          header: parseDocumentHeaderDeterministically(extractedText),
+          warnings: [],
+        };
+    const header = headerResult.header;
     const extractionContent = buildExtractionContentFromDocument(params.scope, extractedText);
     const amount = parseDocumentTotalAmountDeterministically(extractedText);
 
@@ -163,7 +172,7 @@ export async function extractFromPdf(params: {
       amount,
       saunaModel: extractionContent.saunaModel,
       articleItems: extractionContent.articleItems,
-      warnings: [],
+      warnings: headerResult.warnings,
     });
 
     return {
