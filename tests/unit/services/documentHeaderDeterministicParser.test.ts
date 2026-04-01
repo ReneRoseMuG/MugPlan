@@ -15,6 +15,7 @@
  * - Identitaet wird je nach Muster als Person, Firma oder Person+Firma aufgeloest.
  * - Personenzeilen mit Unicode-Namen und OCR-Sonderzeichen werden robust erkannt.
  * - Slash-getrennte Nachnamenzeilen ohne Vorname koennen als Nachname uebernommen werden.
+ * - Projekt-Extraktion darf bei unlesbarer Strassenzeile mit Warnhinweis partiell fortgesetzt werden.
  * - Fehlende oder mehrfache Kundennummer fuehren zu Fehlern.
  *
  * Fehlerfaelle:
@@ -26,7 +27,10 @@
  * Sicherstellen, dass der Dokumentkopf deterministisch ohne KI aufgeloest wird.
  */
 import { describe, expect, it } from "vitest";
-import { parseDocumentHeaderDeterministically } from "../../../server/services/documentHeaderDeterministicParser";
+import {
+  parseDocumentHeaderDeterministically,
+  parseDocumentHeaderForProjectExtraction,
+} from "../../../server/services/documentHeaderDeterministicParser";
 
 function buildSource(overrides?: { customerValues?: string[]; includeCustomerLabel?: boolean }): string {
   const includeCustomerLabel = overrides?.includeCustomerLabel ?? true;
@@ -521,6 +525,38 @@ describe("FT21 deterministic header parser", () => {
     ].join("\n");
 
     expect(() => parseDocumentHeaderDeterministically(source)).toThrow("Adressmuster");
+  });
+
+  it("returns partial project extraction with warning when only the customer address line is unreadable", () => {
+    const source = [
+      "Fasssauna.de - Barrier Str. 29 - 28857 Syke",
+      "Herr",
+      "Tom Voosen",
+      "1 Tommesknapp",
+      "7419 Brouch",
+      "Luxemburg",
+      "Auftrag-Nr.",
+      "Kunden-Nr.",
+      "Kunden - Mobil:",
+      "A0218277A",
+      "160673",
+      "00352-621222479",
+      "Menge Art.Nr. / Bezeichnung MwSt. E-Preis G-Preis",
+    ].join("\n");
+
+    const result = parseDocumentHeaderForProjectExtraction(source);
+
+    expect(result.header.orderNumber).toBe("A0218277A");
+    expect(result.header.customerNumber).toBe("160673");
+    expect(result.header.mobile).toBe("00352-621222479");
+    expect(result.header.firstName).toBe("Tom");
+    expect(result.header.lastName).toBe("Voosen");
+    expect(result.header.addressLine1).toBeNull();
+    expect(result.header.postalCode).toBe("7419");
+    expect(result.header.city).toBe("Brouch");
+    expect(result.warnings).toEqual([
+      "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
+    ]);
   });
 
   it("throws when customer number is missing", () => {

@@ -453,130 +453,6 @@ export function ProjectForm({
     );
   }, [componentCategories, components, dynamicCategorySlots, isEditing, products, projectData, projectOrderItems]);
 
-  const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
-    customerNumber: customer.customerNumber.trim(),
-    firstName: customer.firstName?.trim() || null,
-    lastName: customer.lastName?.trim() || null,
-    company: customer.company?.trim() || null,
-    email: customer.email?.trim() || null,
-    phone: customer.phone?.trim() || null,
-    addressLine1: customer.addressLine1?.trim() || null,
-    addressLine2: customer.addressLine2?.trim() || null,
-    postalCode: customer.postalCode?.trim() || null,
-    city: customer.city?.trim() || null,
-  });
-
-  const normalizeOptionalExtractionText = (value: string | null | undefined): string | null => {
-    if (value == null) return null;
-    const normalized = value.trim();
-    return normalized.length > 0 ? normalized : null;
-  };
-
-  const isBlankCustomerValue = (value: string | null | undefined): boolean =>
-    value == null || value.trim().length === 0;
-
-  const buildExistingCustomerMergePayload = (existingCustomer: Customer, customerDraft: ExtractionCustomerDraft) => {
-    const mergedFields: Record<string, string | null> = {};
-    const maybeAssign = (key: keyof ExtractionCustomerDraft, existingValue: string | null | undefined) => {
-      const incomingValue = normalizeOptionalExtractionText(customerDraft[key]);
-      if (!incomingValue) return;
-      if (!isBlankCustomerValue(existingValue)) return;
-      mergedFields[key] = incomingValue;
-    };
-
-    maybeAssign("firstName", existingCustomer.firstName);
-    maybeAssign("lastName", existingCustomer.lastName);
-    maybeAssign("company", existingCustomer.company);
-    maybeAssign("email", existingCustomer.email);
-    maybeAssign("phone", existingCustomer.phone);
-    maybeAssign("addressLine1", existingCustomer.addressLine1);
-    maybeAssign("addressLine2", existingCustomer.addressLine2);
-    maybeAssign("postalCode", existingCustomer.postalCode);
-    maybeAssign("city", existingCustomer.city);
-
-    if (Object.keys(mergedFields).length === 0) {
-      return null;
-    }
-
-    return {
-      ...mergedFields,
-      version: existingCustomer.version,
-    };
-  };
-
-  const tryPatchExistingCustomerFromExtraction = async (
-    existingCustomer: Customer,
-    customerDraft: ExtractionCustomerDraft,
-  ): Promise<Customer> => {
-    const updatePayload = buildExistingCustomerMergePayload(existingCustomer, customerDraft);
-    if (!updatePayload) {
-      return existingCustomer;
-    }
-
-    const sendUpdate = async (customer: Customer, payload: Record<string, string | number | null>) =>
-      fetch(`/api/customers/${customer.id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-    let response = await sendUpdate(existingCustomer, updatePayload);
-    if (response.ok) {
-      const updatedCustomer = (await response.json()) as Customer;
-      await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-      return updatedCustomer;
-    }
-
-    const firstErrorPayload = await response.json().catch(() => null);
-    if (firstErrorPayload?.code !== "VERSION_CONFLICT") {
-      return existingCustomer;
-    }
-
-    const freshResponse = await fetch(`/api/customers/${existingCustomer.id}`, {
-      method: "GET",
-      credentials: "include",
-    });
-    if (!freshResponse.ok) {
-      return existingCustomer;
-    }
-
-    const freshCustomer = (await freshResponse.json()) as Customer;
-    const retryPayload = buildExistingCustomerMergePayload(freshCustomer, customerDraft);
-    if (!retryPayload) {
-      return freshCustomer;
-    }
-
-    response = await sendUpdate(freshCustomer, retryPayload);
-    if (!response.ok) {
-      return freshCustomer;
-    }
-
-    const updatedCustomer = (await response.json()) as Customer;
-    await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-    return updatedCustomer;
-  };
-
-  const resolveCustomerByNumber = async (customerNumber: string) => {
-    const response = await fetch("/api/document-extraction/resolve-customer-by-number", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ customerNumber: customerNumber.trim() }),
-    });
-    if (!response.ok) {
-      const payload = await response.json().catch(() => null);
-      throw new Error(payload?.message ?? "Kundennummer konnte nicht aufgelöst werden");
-    }
-    return (await response.json()) as { resolution: "none" | "single" | "multiple"; count: number; customer: Customer | null };
-  };
-
   const resolveProjectByOrderNumber = async (value: string) => {
     const response = await fetch("/api/document-extraction/resolve-project-by-order-number", {
       method: "POST",
@@ -602,25 +478,6 @@ export function ProjectForm({
       title: "Vorhandenes Projekt geöffnet",
       description: "Projekt mit dieser Auftragsnummer existiert bereits.",
     });
-  };
-
-  const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft) => {
-    const payload = mapExtractionCustomerToPayload(customerDraft);
-    const response = await fetch("/api/customers", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-    const json = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error(json?.code === "CUSTOMER_NUMBER_CONFLICT" ? "Kundennummer ist bereits vergeben." : (json?.message ?? "Kunde konnte nicht angelegt werden"));
-    }
-    await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
-    return json as Customer;
   };
 
   const runDocumentExtraction = async (file: File) => {
@@ -1485,36 +1342,6 @@ export function ProjectForm({
     }
   };
 
-  const resolveOrCreateCustomerForExtraction = async (customerDraft: ExtractionCustomerDraft): Promise<Customer | null> => {
-    const extractedCustomerNumber = customerDraft.customerNumber.trim();
-    if (!extractedCustomerNumber) {
-      throw new Error("Kundennummer ist erforderlich.");
-    }
-    if (customerId && selectedCustomer) {
-      const selectedNumber = selectedCustomer.customerNumber.trim();
-      if (selectedNumber === extractedCustomerNumber) {
-        return selectedCustomer;
-      }
-      const overwriteCustomer = window.confirm(
-        `Es ist bereits ein abweichender Kunde ausgewählt (${selectedNumber}). Mit Kunde ${extractedCustomerNumber} ersetzen?`,
-      );
-      if (!overwriteCustomer) {
-        return null;
-      }
-    }
-    const resolution = await resolveCustomerByNumber(extractedCustomerNumber);
-    if (resolution.resolution === "multiple") {
-      throw new Error("Dateninkonsistenz: Kundennummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
-    }
-    if (resolution.resolution === "single") {
-      if (!resolution.customer) {
-        throw new Error("Dateninkonsistenz: Vorhandener Kunde konnte nicht geladen werden.");
-      }
-      return resolution.customer;
-    }
-    return createCustomerFromDraft(customerDraft);
-  };
-
   const applyExtractedData = async (payload: {
     saunaModel: string;
     orderNumber: string;
@@ -1523,11 +1350,6 @@ export function ProjectForm({
     customer: ExtractionCustomerDraft;
   }) => {
     try {
-      const resolvedCustomer = await resolveOrCreateCustomerForExtraction(payload.customer);
-      if (!resolvedCustomer) {
-        return;
-      }
-      const mergedCustomer = await tryPatchExistingCustomerFromExtraction(resolvedCustomer, payload.customer);
       const extractedOrderNumber = payload.orderNumber.trim();
       if (extractedOrderNumber.length > 0) {
         const projectResolution = await resolveProjectByOrderNumber(extractedOrderNumber);
@@ -1545,8 +1367,6 @@ export function ProjectForm({
           return;
         }
       }
-      setCustomerId(mergedCustomer.id);
-
       const hasDynamicValues = Object.values(dynamicProductSelections).some((selection) => selection.componentName.trim().length > 0);
       const hasExistingValues = name.trim().length > 0 || articleLines.length > 0 || hasDynamicValues || extractedArticleListHtml.trim().length > 0;
       if (hasExistingValues) {
@@ -1583,7 +1403,17 @@ export function ProjectForm({
         }
       }
       setDocumentExtractionOpen(false);
-      toast({ title: "Daten übernommen" });
+      if (customerId && selectedCustomer) {
+        toast({
+          title: "Auftragsdaten übernommen",
+          description: "Der aktuell ausgewählte Kunde bleibt unverändert.",
+        });
+      } else {
+        toast({
+          title: "Auftragsdaten übernommen",
+          description: "Zum Speichern muss noch ein Kunde ausgewählt werden.",
+        });
+      }
     } catch (error) {
       toast({
         title: "Daten konnten nicht übernommen werden",
@@ -1869,7 +1699,8 @@ export function ProjectForm({
         }}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
-        dataApplyLabel="Daten übernehmen"
+        dataApplyLabel="Auftragsdaten übernehmen"
+        showCustomerSection={false}
         onApplyData={applyExtractedData}
       />
 

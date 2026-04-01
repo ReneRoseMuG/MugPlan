@@ -17,6 +17,11 @@ export type DeterministicHeaderExtraction = {
   city: string | null;
 };
 
+export type ProjectHeaderPartialExtraction = {
+  header: DeterministicHeaderExtraction;
+  warnings: string[];
+};
+
 const fieldAliases: Record<HeaderField, string[]> = {
   orderNumber: ["auftragnr", "auftragsnr", "auftragsnummer"],
   customerNumber: ["kundennr", "kundennummer"],
@@ -240,6 +245,24 @@ function findAddressBlock(
   return null;
 }
 
+function findPostalCityContext(
+  lines: string[],
+): { identityLineA: string | null; identityLineB: string | null; streetLine: string | null; postalCityLine: string } | null {
+  for (let postalIndex = 0; postalIndex < lines.length; postalIndex += 1) {
+    const postalCityLine = lines[postalIndex] ?? "";
+    if (!POSTAL_CITY_REGEX.test(postalCityLine)) continue;
+
+    return {
+      identityLineA: lines[postalIndex - 2] ?? null,
+      identityLineB: lines[postalIndex - 3] ?? null,
+      streetLine: lines[postalIndex - 1] ?? null,
+      postalCityLine,
+    };
+  }
+
+  return null;
+}
+
 function normalizeIdentityLine(value: string | null): string | null {
   if (!value) return null;
   const trimmed = value.trim();
@@ -394,4 +417,60 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
 
   requiredSchema.parse(parsed);
   return parsed;
+}
+
+export function parseDocumentHeaderForProjectExtraction(sourceText: string): ProjectHeaderPartialExtraction {
+  try {
+    return {
+      header: parseDocumentHeaderDeterministically(sourceText),
+      warnings: [],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Adressmuster")) {
+      throw error;
+    }
+
+    const allLines = extractHeaderLines(sourceText);
+    if (allLines.length === 0) {
+      throw error;
+    }
+
+    const labelValues = collectLabelValues(allLines);
+    const customerNumber = pickSingleValue(labelValues.customerNumber) ?? "";
+    if (customerNumber.length === 0) {
+      throw error;
+    }
+
+    const mobile = pickPreferredPhone(labelValues.mobile, labelValues.phone);
+    const orderNumber = pickSingleValue(labelValues.orderNumber);
+    const postalContext = findPostalCityContext(extractAddressRegionLines(sourceText));
+    const personA = parsePersonLine(postalContext?.identityLineA ?? null);
+    const personB = parsePersonLine(postalContext?.identityLineB ?? null);
+    const person = personA ?? personB;
+    const companyA = looksLikeCompany(postalContext?.identityLineA ?? null)
+      ? normalizeIdentityLine(postalContext?.identityLineA ?? null)
+      : null;
+    const companyB = looksLikeCompany(postalContext?.identityLineB ?? null)
+      ? normalizeIdentityLine(postalContext?.identityLineB ?? null)
+      : null;
+    const postalCityMatch = postalContext ? POSTAL_CITY_REGEX.exec(postalContext.postalCityLine.trim()) : null;
+
+    return {
+      header: {
+        orderNumber,
+        customerNumber,
+        mobile,
+        firstName: person?.firstName?.trim() ?? null,
+        lastName: person?.lastName?.trim() ?? null,
+        company: companyA ?? companyB,
+        addressLine1: null,
+        postalCode: postalCityMatch?.[1]?.trim() ?? null,
+        city: postalCityMatch?.[2]?.trim() ?? null,
+      },
+      warnings: [
+        "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
+      ],
+    };
+  }
 }

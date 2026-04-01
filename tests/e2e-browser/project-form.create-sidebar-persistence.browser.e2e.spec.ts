@@ -8,6 +8,7 @@
  * - Tags, Notizen und Projektanhaenge lassen sich im Neuer-Projekt-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Projektanhang dem erzeugten Projekt korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei erscheint vor dem Save als pending Projektanhang und nach dem Save als echter Projektanhang.
+ * - Auftragsdaten lassen sich auch ohne vorgewaehlten Kunden in das Projektformular uebernehmen.
  * - Die Dokumentextraktion fuellt die strukturierte Artikelliste nicht automatisch mit Produktselektionen vor.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
  * - Ungespeicherte Edit-Werte im Projektformular bleiben trotz Tag-Mutation im Sidebar-Picker erhalten.
@@ -16,6 +17,7 @@
  * - Die Create-Sidebar fehlt im Projektformular.
  * - Draft-Tags, Draft-Notizen oder pending Projektanhaenge gehen beim ersten Save verloren.
  * - Die Extraktionsdatei landet nicht im Projekt-Dokumentenpanel.
+ * - Der Projekt-Extract bleibt bei fehlendem Kunden oder teilweiser Kundenlesbarkeit unbenutzbar.
  * - Das Edit-Formular setzt lokale Feldwerte nach Tag-Auswahl wieder auf den Serverstand zurueck.
  *
  * Ziel:
@@ -82,6 +84,22 @@ async function mockProjectDocumentExtraction(page: Page, customerNumber: string,
   saunaModel?: string;
   orderNumber?: string;
   amount?: string;
+  customer?: Partial<{
+    firstName: string | null;
+    lastName: string | null;
+    company: string | null;
+    email: string | null;
+    phone: string | null;
+    addressLine1: string | null;
+    addressLine2: string | null;
+    postalCode: string | null;
+    city: string | null;
+  }>;
+  fieldReport?: {
+    recognized: Array<{ key: string; label: string; section: "customer" | "project"; value: string }>;
+    missing: Array<{ key: string; label: string; section: "customer" | "project"; reason: string }>;
+  };
+  warnings?: string[];
 }) {
   await page.route("**/api/document-extraction/extract?scope=project_form", async (route) => {
     await route.fulfill({
@@ -90,15 +108,15 @@ async function mockProjectDocumentExtraction(page: Page, customerNumber: string,
       body: JSON.stringify({
         customer: {
           customerNumber,
-          firstName: "Doc",
-          lastName: "Extract",
-          company: null,
-          email: null,
-          phone: null,
-          addressLine1: "Testweg 1",
-          addressLine2: null,
-          postalCode: "12345",
-          city: "Berlin",
+          firstName: options?.customer?.firstName ?? "Doc",
+          lastName: options?.customer?.lastName ?? "Extract",
+          company: options?.customer?.company ?? null,
+          email: options?.customer?.email ?? null,
+          phone: options?.customer?.phone ?? null,
+          addressLine1: options?.customer?.addressLine1 ?? "Testweg 1",
+          addressLine2: options?.customer?.addressLine2 ?? null,
+          postalCode: options?.customer?.postalCode ?? "12345",
+          city: options?.customer?.city ?? "Berlin",
         },
         orderNumber: options?.orderNumber ?? `PRJ-${customerNumber}`,
         amount: options?.amount ?? "14700.00",
@@ -106,11 +124,11 @@ async function mockProjectDocumentExtraction(page: Page, customerNumber: string,
         articleItems: [],
         categorizedItems: [],
         articleListHtml: "<p>Extrahierte Artikelliste</p>",
-        fieldReport: {
+        fieldReport: options?.fieldReport ?? {
           recognized: [],
           missing: [],
         },
-        warnings: [],
+        warnings: options?.warnings ?? [],
       }),
     });
   });
@@ -217,6 +235,8 @@ test("shows an extracted document as pending project attachment before save and 
   await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
   await page.getByTestId("button-doc-extract-apply-data").click();
+  await expect(page.getByTestId("badge-customer")).toHaveCount(0);
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
   await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
 
   const createdProjectResponsePromise = page.waitForResponse((response) => (
@@ -260,7 +280,7 @@ test("keeps article dropdown selections stable in create mode after document ext
 
   await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
   await page.getByTestId("button-doc-extract-apply-data").click();
-  await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
+  await expect(page.getByTestId("badge-customer")).toHaveCount(0);
 
   await page.getByRole("tab", { name: "Artikelliste" }).click();
   await expect(page.getByTestId("project-product-fields")).toBeVisible();
@@ -271,6 +291,51 @@ test("keeps article dropdown selections stable in create mode after document ext
   await page.getByRole("tab", { name: "Anmerkungen" }).click();
   await page.getByRole("tab", { name: "Artikelliste" }).click();
   await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(saunaProduct.id));
+});
+
+test("keeps project extraction usable without a selected customer and blocks save transparently until one is chosen", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-PROJECT-PARTIAL");
+
+  await mockProjectDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Partieller Auftrag",
+    orderNumber: "FT24-PROJECT-PARTIAL-001",
+    customer: {
+      firstName: "Tom",
+      lastName: "Voosen",
+      addressLine1: null,
+      postalCode: "7419",
+      city: "Brouch",
+    },
+    fieldReport: {
+      recognized: [
+        { key: "customerNumber", label: "Kundennummer", section: "customer", value: customer.customerNumber },
+        { key: "postalCode", label: "PLZ", section: "customer", value: "7419" },
+        { key: "orderNumber", label: "Auftragsnummer", section: "project", value: "FT24-PROJECT-PARTIAL-001" },
+      ],
+      missing: [
+        { key: "addressLine1", label: "Strasse", section: "customer", reason: "Keine Strassenzeile erkannt." },
+      ],
+    },
+    warnings: [
+      "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
+    ],
+  });
+
+  await openNewProject(page);
+  await uploadExtractionPdf(page, "ft24-project-partial-customer.pdf");
+
+  await expect(page.getByText("Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.")).toBeVisible();
+  await expect(page.getByText("Keine Strassenzeile erkannt.")).toBeVisible();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+  await expect(page.getByTestId("badge-customer")).toHaveCount(0);
+  await expect(page.getByTestId("input-project-name")).toHaveValue("FT24 Partieller Auftrag");
+  await expect(page.getByTestId("input-project-order-number")).toHaveValue("FT24-PROJECT-PARTIAL-001");
+  await expect(page.getByText("Zum Speichern muss noch ein Kunde ausgewählt werden.", { exact: true })).toBeVisible();
+
+  await page.getByTestId("button-save-project").click();
+  await expect(page.getByText("Kunde muss ausgewählt werden", { exact: true })).toBeVisible();
 });
 
 test("opens an existing project in edit mode for duplicate order numbers and keeps the overlay path stable", async ({ page }) => {
