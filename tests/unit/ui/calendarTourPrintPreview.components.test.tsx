@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - CalendarTourPrintListPage rendert eine physische A4-Quer-Seite.
  * - Wochensektionen zeigen Tournotiz, Tabellenkopf und Terminzeilen mit zentralen Spaltenbreiten.
+ * - KW-Gruppierungszeilen bleiben mit Datumsrange sichtbar und tragen den dezenten Druckhintergrund.
  * - Reklamationen bleiben visuell hervorgehoben.
  * - Zusatzinformationen werden aus paginierten Karten gerendert.
  *
@@ -131,10 +132,13 @@ describe("CalendarTourPrintListPage", () => {
     expect(html).not.toContain("15.06.2099 bis 21.06.2099");
   });
 
-  it("rendert Wochensektion, Tournotiz und Tabellenkopf", () => {
+  it("rendert Wochensektion, KW-Gruppierungszeile, Tournotiz und Tabellenkopf", () => {
     const html = renderToStaticMarkup(<CalendarTourPrintListPage page={makePage()} />);
 
     expect(html).toContain("tour-print-week-2099-06-15");
+    expect(html).toContain("print:bg-slate-100");
+    expect(html).toContain("text-slate-500");
+    expect(html).toContain("15.06.2099 - 21.06.2099");
     expect(html).toContain("Tournotiz");
     expect(html).toContain("Datum/Zeit");
     expect(html).toContain("Kunde");
