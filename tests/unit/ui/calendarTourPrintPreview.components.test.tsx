@@ -120,14 +120,15 @@ function makePage(overrides: Partial<Extract<TourPrintPreviewPage, { kind: "list
 }
 
 describe("CalendarTourPrintListPage", () => {
-  it("rendert eine A4-Quer-Seite mit Tourtitel und Seitenzahl", () => {
+  it("rendert eine A4-Quer-Seite mit schlankem Header und Footer", () => {
     const html = renderToStaticMarkup(<CalendarTourPrintListPage page={makePage()} />);
 
     expect(html).toContain("tour-print-list-page");
     expect(html).toContain("297mm");
     expect(html).toContain("210mm");
-    expect(html).toContain("Tour Alpha");
+    expect(html).toContain("Tourplan — Tour Alpha");
     expect(html).toContain("Seite 1");
+    expect(html).not.toContain("15.06.2099 bis 21.06.2099");
   });
 
   it("rendert Wochensektion, Tournotiz und Tabellenkopf", () => {

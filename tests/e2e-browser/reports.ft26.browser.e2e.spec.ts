@@ -4,14 +4,14 @@
  * Abgedeckte Regeln:
  * - Die Reports-Seite sperrt die Erzeugung ohne Von-Datum und zeigt die Vorlaufliste mit voller, teilweiser und leerer Artikelbelegung an.
  * - Vorlaufliste-Shortcodes sowie Spalten-Sichtbarkeit und -Reihenfolge bleiben nach Navigation erhalten und lassen sich zurücksetzen.
- * - Der Statusindikator ersetzt die alte Zeilenfärbung, die Druckvorschau paginiert den vollständigen Report und Drucken ruft window.print auf.
+ * - Der Statusindikator ersetzt die alte Zeilenfärbung, die Druckvorschau paginiert den vollständigen Report, begrenzt Druckzellen weiter auf drei Textzeilen und Drucken ruft window.print auf.
  * - Ein geleertes Bis-Datum erweitert die Vorlaufliste erneut auf spätere Termine.
  * - Der Produktionsplanung zeigt Produkt-, Komponenten- und Sondermaß-Blöcke weiterhin sichtbar an.
  *
  * Fehlerfälle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
  * - Persistierte Vorlaufliste-Konfiguration geht nach Navigation verloren.
- * - Die Druckvorschau lädt keine zweite Seite oder ruft Drucken nicht aus dem Dialog heraus auf.
+ * - Die Druckvorschau lädt keine zweite Seite, verliert die Drei-Zeilen-Begrenzung oder ruft Drucken nicht aus dem Dialog heraus auf.
  * - Der Produktionsplanung verliert Sondermaß- oder Gruppentreffer im Browserfluss.
  *
  * Ziel:
@@ -258,7 +258,7 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
     ],
   });
 
-  await createBrowserReportProjectFixture({
+  const completeProject = await createBrowserReportProjectFixture({
     prefix: "FT26 Browser Vollstaendig",
     appointmentDates: [inRangeDate],
     amount: "14999.90",
@@ -374,14 +374,20 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("vorlaufliste-print-preview-page-indicator")).toHaveCount(0);
   await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText(formatIsoDateForUi(inRangeDate));
   await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).not.toContainText(inRangeDate);
-  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText(/Seite 1 von \d+/);
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText(/KW \d+/);
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText("Seite 1");
   await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText("KOL");
+  const firstPageDescriptionCell = page
+    .getByTestId("vorlaufliste-print-preview-active-page-shell")
+    .getByTestId(`vorlaufliste-print-cell-1-${completeProject.project.id}-projectDescription`);
+  await expect(firstPageDescriptionCell).toBeVisible();
+  await expect.poll(async () => firstPageDescriptionCell.evaluate((element) => window.getComputedStyle(element).getPropertyValue("-webkit-line-clamp"))).toBe("3");
   const firstPrintPage = page.getByTestId("vorlaufliste-print-page-1").first();
   const firstPageBox = await firstPrintPage.boundingBox();
   expect(firstPageBox).not.toBeNull();
   expect(firstPageBox!.width).toBeGreaterThan(firstPageBox!.height);
   await page.getByTestId("button-vorlaufliste-print-preview-next").click();
-  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText(/Seite 2 von \d+/);
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText("Seite 2");
   await page.getByTestId("button-reports-vorlaufliste-print").click();
   await expect.poll(async () => page.evaluate(() => (window as Window & { __printCalls?: number }).__printCalls ?? 0)).toBe(1);
   await page.keyboard.press("Escape");
@@ -433,7 +439,3 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Teilglas Browser");
   await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Panorama Browser");
 });
-
-
-
-

@@ -480,7 +480,7 @@ async function buildVorlauflisteItems(params: {
       const projectTagState = params.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
       if (!row || !appointmentMeta) return null;
       const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
-      const projectTags = (params.tagsByProjectId.get(projectId) ?? []).filter((tag) => tag.isDefault);
+      const projectTags = params.tagsByProjectId.get(projectId) ?? [];
 
       const articleValues: VorlauflisteArticleValue[] = allCategoryIds.map((categoryId) => ({
         categoryId,
@@ -826,4 +826,3 @@ export async function getProduktionsplanung(params: {
     projectRows,
   };
 }
-

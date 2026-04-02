@@ -1,12 +1,12 @@
 import React from "react";
 import { format, getISOWeek, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { PrintPageHeader } from "@/components/print/PrintPageHeader";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintSectionHeader } from "@/components/print/PrintSectionHeader";
+import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
+import { PrintSlimHeader } from "@/components/print/PrintSlimHeader";
 import {
   formatTourPrintDate,
-  getTourPrintKwRange,
   type TourPrintPreviewPage,
 } from "@/lib/tour-print-preview";
 import { CalendarTourPrintTourNoteBlock } from "./CalendarTourPrintTourNoteBlock";
@@ -22,23 +22,19 @@ function formatWeekdayLabel(value: string): string {
 }
 
 export function CalendarTourPrintListPage({ page }: Props) {
-  const kwRange = getTourPrintKwRange(page.weeks, page.fromDate, page.toDate);
-
   return (
-    <PrintPageShell orientation="landscape" testId="tour-print-list-page">
-        <PrintPageHeader
-          eyebrow="Tourplan"
-          headline={page.tourName}
-          rightSlot={(
-            <div className="text-right">
-              <p className="text-sm font-medium text-slate-600">{kwRange}</p>
-              <p className="text-xs text-slate-400">{page.rangeLabel}</p>
-              <p className="text-[10px] font-medium text-slate-500">{`Seite ${page.pageNumber}`}</p>
-            </div>
-          )}
+    <PrintPageShell
+      orientation="landscape"
+      testId="tour-print-list-page"
+      footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={`tour-print-page-footer-${page.pageNumber}`} />}
+    >
+        <PrintSlimHeader
+          label="Tourplan"
+          context={page.tourName}
+          testId={`tour-print-page-header-${page.pageNumber}`}
         />
 
-        <div className="mt-5 flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col">
           {page.weeks.map((week) => (
             <section
               key={`${week.weekStart}-${week.continuedFromPrevious ? "continued" : "start"}-${week.appointments[0]?.id ?? "empty"}`}
