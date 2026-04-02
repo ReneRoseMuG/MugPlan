@@ -3,11 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - Die Vorlaufliste baut fuer Tabellenzeilen denselben Projekt-Preview-Datensatz wie die Projekttabelle.
+ * - Der Projekt-Aktivstatus bleibt im Preview-Datensatz erhalten.
  * - Das optionale Kundenfeld `country` bleibt im Preview-Projekt erhalten.
  * - Mehrzeilige Report-Zelltexte bleiben auf drei Zeilen begrenzt.
  *
  * Fehlerfaelle:
  * - Der Report-Preview verliert Projekt-, Kunden- oder Artikelkontext.
+ * - Der Aktivstatus geht zwischen Report-Payload und Preview verloren.
  * - Das neue Kundenfeld `country` geht im Preview-Mapping verloren.
  * - Der visuelle Zeilen-Clamp wird versehentlich entfernt.
  */
@@ -24,6 +26,7 @@ describe("FT26 UI: Vorlaufliste preview helpers", () => {
     const row: VorlauflistePreviewItem = {
       projectId: 31,
       projectName: "Report Projekt",
+      isActive: true,
       orderNumber: " REP-31 ",
       customerId: 7,
       customerNumber: " K-31 ",
@@ -51,6 +54,7 @@ describe("FT26 UI: Vorlaufliste preview helpers", () => {
     )).toEqual({
       id: 31,
       name: "Report Projekt",
+      isActive: true,
       orderNumber: "REP-31",
       descriptionMd: "Ein extrem langer Beschreibungstext fuer die Vorlaufliste",
       notesCount: 4,

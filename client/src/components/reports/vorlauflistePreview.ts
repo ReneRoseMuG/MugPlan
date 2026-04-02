@@ -9,6 +9,7 @@ export type VorlauflisteCategory = {
 export type VorlauflistePreviewItem = {
   projectId: number;
   projectName: string;
+  isActive: boolean;
   orderNumber: string | null;
   customerId: number;
   customerNumber: string | null;
@@ -27,6 +28,7 @@ export type VorlauflistePreviewItem = {
 export type VorlauflistePreviewProject = {
   id: number;
   name: string;
+  isActive: boolean;
   orderNumber: string | null;
   descriptionMd: string | null;
   notesCount: number;
@@ -84,6 +86,7 @@ export function buildVorlauflistePreviewProject(
   return {
     id: row.projectId,
     name: row.projectName,
+    isActive: row.isActive,
     orderNumber: row.orderNumber?.trim() || null,
     descriptionMd: row.projectDescription,
     notesCount: row.notesCount,

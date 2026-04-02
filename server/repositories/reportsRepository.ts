@@ -46,6 +46,7 @@ export type VorlauflisteCategory = {
 export type VorlauflisteRow = {
   projectId: number;
   projectName: string;
+  isActive: boolean;
   orderNumber: string | null;
   customerId: number;
   customerNumber: string | null;
@@ -481,6 +482,7 @@ export async function getVorlauflistePaged(params: {
         return {
           projectId,
           projectName: row.project.name,
+          isActive: row.project.isActive,
           orderNumber: row.order?.orderNumber ?? null,
           customerId: row.customer.id,
           customerNumber: row.customer.customerNumber || null,

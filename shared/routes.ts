@@ -366,6 +366,7 @@ const reportVorlauflisteArticleValueSchema = z.object({
 const reportVorlauflisteItemSchema = z.object({
   projectId: z.number().int().positive(),
   projectName: z.string(),
+  isActive: z.boolean(),
   orderNumber: z.string().nullable(),
   customerId: z.number().int().positive(),
   customerNumber: z.string().nullable(),

@@ -206,9 +206,7 @@ function normalizeColumnWidths(value: unknown): Record<string, number> {
   );
 }
 
-function resolveColumnMinWidth(header: string, fallback: number): number {
-  return Math.max(fallback, Math.min(MAX_REPORT_COLUMN_WIDTH, Math.ceil(header.trim().length * 9) + 56));
-}
+const VORLAUFLISTE_MIN_COLUMN_WIDTH = 50;
 
 function clampColumnWidth(width: number, minWidth: number): number {
   return Math.min(MAX_REPORT_COLUMN_WIDTH, Math.max(minWidth, Math.round(width)));
@@ -611,7 +609,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   ]);
 
   const resolvePersistedColumnWidth = (columnId: string, header: string, defaultWidth: number) => {
-    const minWidth = resolveColumnMinWidth(header, defaultWidth);
+    const minWidth = VORLAUFLISTE_MIN_COLUMN_WIDTH;
     const width = clampColumnWidth(vorlauflisteColumnWidths[columnId] ?? defaultWidth, minWidth);
     return { width, minWidth };
   };
@@ -625,7 +623,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     );
 
     const columns: TableViewColumnDef<VorlauflisteItem>[] = [
-      { id: "amount", header: "Auftragssumme", accessor: (row) => row.amount ?? "", width: 160, minWidth: 160, align: "right", className: wrapCellClassName, resizable: true, cell: ({ row }) => <span>{formatAmount(row.amount)}</span> },
+      { id: "amount", header: "Auftragssumme", accessor: (row) => row.amount ?? "", width: 160, minWidth: 160, className: wrapCellClassName, resizable: true, cell: ({ row }) => <span>{formatAmount(row.amount)}</span> },
       { id: "customerFullName", header: "Kunde", accessor: (row) => row.customerFullName ?? "", width: 220, minWidth: 220, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.customerFullName) },
       { id: "postalCode", header: "PLZ", accessor: (row) => row.postalCode ?? "", width: 110, minWidth: 110, className: wrapCellClassName, resizable: true, cell: ({ row }) => <span>{resolveValue(row.postalCode)}</span> },
       { id: "city", header: "Ort", accessor: (row) => row.city ?? "", width: 160, minWidth: 160, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.city) },
@@ -1022,6 +1020,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                       columns={vorlauflisteColumns}
                       rows={vorlauflisteData?.items ?? []}
                       rowKey={(row) => row.projectId}
+                      rowClassName={() => "even:bg-muted/35"}
                       rowStyle={(row) => resolveTagBackgroundStyle(row.highlightTag)}
                       rowTitle={(row) => row.highlightTag?.name}
                       rowPreviewRenderer={(row) => (
