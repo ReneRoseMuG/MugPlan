@@ -140,7 +140,7 @@ export function EntityFormWithTabsLayout({
             <TabsContent
               key={tab.id}
               value={tab.id}
-              className="mt-0 min-h-0 flex-1 overflow-hidden"
+              className="mt-0 min-h-0 flex-1 overflow-y-auto pr-1"
               {...(keepMounted ? { forceMount: true as const } : {})}
               data-testid={tab.contentTestId ?? `tab-content-${tab.id}`}
             >

@@ -31,8 +31,30 @@ export function ProductDetails({
 
   return (
     <div className="space-y-3">
-      {showIsActive ? (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[140px]">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_180px_110px] md:items-end" data-testid="product-details-primary-row">
+        <div className="space-y-2">
+          <Label htmlFor="product-details-name">Name</Label>
+          <Input
+            id="product-details-name"
+            value={draft.name}
+            disabled={disabled}
+            onChange={(event) => onDraftChange({ ...draft, name: event.target.value })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="product-details-short-code">ShortCode</Label>
+          <Input
+            id="product-details-short-code"
+            value={draft.shortCode}
+            disabled={disabled}
+            maxLength={10}
+            onChange={(event) => onDraftChange({ ...draft, shortCode: event.target.value.slice(0, 10) })}
+            placeholder="Kurzcode"
+          />
+        </div>
+
+        {showIsActive ? (
           <div className="space-y-2">
             <Label htmlFor="product-details-active">Status</Label>
             <label className="flex h-10 items-center gap-2 rounded border border-slate-300 bg-white px-3 text-sm text-slate-700">
@@ -43,31 +65,10 @@ export function ProductDetails({
                 disabled={disabled}
                 onChange={(event) => onDraftChange({ ...draft, isActive: event.target.checked })}
               />
-              <span>Is Active</span>
+              <span>Aktiv</span>
             </label>
           </div>
-        </div>
-      ) : null}
-
-      <div className="space-y-2">
-        <Label htmlFor="product-details-name">Name</Label>
-        <Input
-          id="product-details-name"
-          value={draft.name}
-          disabled={disabled}
-          onChange={(event) => onDraftChange({ ...draft, name: event.target.value })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="product-details-short-code">ShortCode</Label>
-        <Input
-          id="product-details-short-code"
-          value={draft.shortCode}
-          disabled={disabled}
-          onChange={(event) => onDraftChange({ ...draft, shortCode: event.target.value })}
-          placeholder="Kurzcode"
-        />
+        ) : null}
       </div>
 
       <div className="space-y-2">

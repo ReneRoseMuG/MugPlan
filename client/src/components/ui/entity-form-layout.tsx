@@ -61,7 +61,7 @@ export function EntityFormLayout({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <Card className="w-full mx-auto flex h-full min-h-0 max-w-6xl flex-1 flex-col">
+      <Card className="mx-auto flex h-full min-h-0 w-full flex-1 flex-col">
         <CardHeader className="border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex min-w-0 items-center gap-3">

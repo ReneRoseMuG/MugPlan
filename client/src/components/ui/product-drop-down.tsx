@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import type { Product, ProductCategory } from "@shared/schema";
 import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
 import { ProductCreateDialog } from "@/components/ui/product-create-dialog";
@@ -83,7 +83,7 @@ export function ProductList({
 
   return (
     <>
-      <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="product-drop-down-panel">
+      <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="product-drop-down-panel">
         <EntitySelectionRow
           itemLabel="Produktliste"
           itemValue={selectedProductId}
@@ -124,3 +124,4 @@ export function ProductList({
 
 // Backward-compat alias used by ProductManagementPage
 export { ProductList as ProductDropDown };
+

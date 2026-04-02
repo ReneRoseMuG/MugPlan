@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import type { Component, ComponentCategory } from "@shared/schema";
 import { ComponentCreateDialog, type ComponentCreateInput } from "@/components/ui/component-create-dialog";
 import { ComponentDetails, type ComponentDetailsDraft } from "@/components/ui/component-details";
@@ -174,10 +174,8 @@ export function AllComponentList({
   };
 
   return (
-    <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="all-component-list">
-      <h5 className="font-semibold text-slate-900">Komponenten</h5>
-
-      <div className="mt-3">
+    <section className="flex min-h-0 flex-col gap-4" data-testid="all-component-list">
+      <div className="rounded-md border border-slate-200 bg-white p-4">
         <EntitySelectionRow
           itemLabel="Komponente"
           itemValue={selectedComponentId}
@@ -204,20 +202,17 @@ export function AllComponentList({
         />
       </div>
 
-      {selectedComponent ? (
-        <div className="mt-4 rounded-md border border-slate-200 bg-white p-4">
-          <h6 className="mb-3 font-semibold text-slate-900">Komponenten Stammdaten</h6>
-          <ComponentDetails
-            draft={draft}
-            disabled={submitting}
-            isAdmin={isAdmin}
-            error={error}
-            onDraftChange={setDraft}
-            onSubmit={isAdmin ? () => void handleUpdate() : undefined}
-            submitLabel="Aktualisieren"
-          />
-        </div>
-      ) : null}
+      <div className="rounded-md border border-slate-200 bg-white p-4">
+        <ComponentDetails
+          draft={draft}
+          disabled={submitting || !selectedComponent}
+          isAdmin={isAdmin}
+          error={error}
+          onDraftChange={setDraft}
+          onSubmit={isAdmin ? () => void handleUpdate() : undefined}
+          submitLabel="Aktualisieren"
+        />
+      </div>
 
       {createDialogOpen && selectedCategoryId ? (
         <ComponentCreateDialog
@@ -231,3 +226,4 @@ export function AllComponentList({
     </section>
   );
 }
+

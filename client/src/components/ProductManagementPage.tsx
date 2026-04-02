@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Component, ComponentCategory, Product, ProductCategory } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
@@ -379,10 +379,16 @@ export function ProductManagementPage() {
     inputTestId: string,
     buttonTestId: string,
   ) => (
-    <section className="flex min-h-0 flex-col rounded-md border border-slate-200 bg-slate-50 p-3" data-testid={testId}>
+    <section className="flex flex-col rounded-md border border-slate-200 bg-slate-50 p-3" data-testid={testId}>
       <h4 className="font-bold text-slate-900">{title}</h4>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <Input value={draftValue} onChange={(event) => setDraftValue(event.target.value)} placeholder={editRow ? `${title.slice(0, -1)} bearbeiten` : `Neue ${title.slice(0, -1)}`} data-testid={inputTestId} />
+        <Input
+          value={draftValue}
+          onChange={(event) => setDraftValue(event.target.value)}
+          placeholder={editRow ? `${title.slice(0, -1)} bearbeiten` : `Neue ${title.slice(0, -1)}`}
+          data-testid={inputTestId}
+          className="min-w-[220px] flex-1"
+        />
         {editRow ? (
           <label className="flex h-10 items-center gap-2 rounded border border-slate-300 bg-white px-3 text-sm text-slate-700">
             <input
@@ -397,13 +403,13 @@ export function ProductManagementPage() {
         <Button variant="outline" onClick={onSave} data-testid={buttonTestId}>{editRow ? "Speichern" : "Neu"}</Button>
         {editRow ? <Button variant="outline" onClick={() => setEditRow(null)}>Abbrechen</Button> : null}
       </div>
-      <div className="mt-4 min-h-0 flex-1 overflow-auto">
-        <Table>
+      <div className="mt-4">
+        <Table className="min-w-[520px]">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Default</TableHead>
-              <TableHead className="w-[200px] text-right">Aktionen</TableHead>
+              <TableHead className="w-[220px] text-right">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -411,19 +417,21 @@ export function ProductManagementPage() {
               <TableRow key={row.id} className={editRow?.id === row.id ? "bg-slate-50" : undefined} onClick={() => { setEditRow(editRow?.id === row.id ? null : { ...row }); }}>
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.isDefault ? "Ja" : "Nein"}</TableCell>
-                <TableCell className="space-x-2 whitespace-nowrap text-right">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setEditRow(editRow?.id === row.id ? null : { ...row });
-                    }}
-                  >
-                    {editRow?.id === row.id ? "Aktiv" : "Bearb."}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onImport(row); }} data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}>Import</Button>
-                  <Button size="sm" variant="destructive" onClick={(event) => { event.stopPropagation(); onDelete(row); }}>x</Button>
+                <TableCell className="text-right">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setEditRow(editRow?.id === row.id ? null : { ...row });
+                      }}
+                    >
+                      {editRow?.id === row.id ? "Aktiv" : "Bearb."}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onImport(row); }} data-testid={`${title === "Produktkategorien" ? "button-product-category-import" : "button-component-category-import"}-${row.id}`}>Import</Button>
+                    <Button size="sm" variant="destructive" onClick={(event) => { event.stopPropagation(); onDelete(row); }}>x</Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -440,21 +448,19 @@ export function ProductManagementPage() {
       isLoading={isLoading}
       hideHeader
       contentSlot={(
-        <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(420px,1fr)]">
           <input ref={productCategoryImportInputRef} type="file" accept=".csv,text/csv" className="hidden" data-testid="input-product-category-import-file" onChange={(event) => { const file = event.target.files?.[0]; if (file && pendingProductCategoryImportId) productCategoryImportMutation.mutate({ categoryId: pendingProductCategoryImportId, file }); }} />
           <input ref={componentCategoryImportInputRef} type="file" accept=".csv,text/csv" className="hidden" data-testid="input-component-category-import-file" onChange={(event) => { const file = event.target.files?.[0]; if (file && pendingComponentCategoryImportId) componentCategoryImportMutation.mutate({ categoryId: pendingComponentCategoryImportId, file }); }} />
 
-          {/* Produkte */}
-          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_405px]">
-            <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3" data-testid="master-data-products">
-              <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} onDeleteAllInCategory={(categoryId) => void deleteAllProductsInCategory(categoryId)} isAdmin={isAdmin} />
-              {selectedProduct ? (
-                <section className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                  <h5 className="mb-3 font-semibold text-slate-900">Produkt Stammdaten</h5>
-                  <ProductDetails draft={productDraft} disabled={false} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
-                </section>
-              ) : null}
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2">
+            <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} onDeleteAllInCategory={(categoryId) => void deleteAllProductsInCategory(categoryId)} isAdmin={isAdmin} />
+            <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-products">
+              <ProductDetails draft={productDraft} disabled={!selectedProduct} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
             </section>
+            <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} onDeleteAllComponentsInCategory={(categoryId) => void deleteAllComponentsInCategory(categoryId)} />
+          </div>
+
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1">
             {renderCategorySection("Produktkategorien", productCategories, editProductCategory, setEditProductCategory, editProductCategory ? editProductCategory.name : newProductCategoryName, editProductCategory ? (value) => setEditProductCategory({ ...editProductCategory, name: value }) : setNewProductCategoryName, () => {
               if (editProductCategory) {
                 if (!editProductCategory.name.trim()) return;
@@ -464,13 +470,6 @@ export function ProductManagementPage() {
               if (!newProductCategoryName.trim()) return;
               categoryMutations.createProduct.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht angelegt werden") });
             }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Produktkategorie"), variant: "destructive" }) }); }, (row) => { setPendingProductCategoryImportId(row.id); productCategoryImportInputRef.current?.click(); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
-          </div>
-
-          {/* Komponenten */}
-          <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_405px]">
-            <section className="flex min-h-0 flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
-              <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} onDeleteAllComponentsInCategory={(categoryId) => void deleteAllComponentsInCategory(categoryId)} />
-            </section>
             {renderCategorySection("Komponentenkategorien", componentCategories, editComponentCategory, setEditComponentCategory, editComponentCategory ? editComponentCategory.name : newComponentCategoryName, editComponentCategory ? (value) => setEditComponentCategory({ ...editComponentCategory, name: value }) : setNewComponentCategoryName, () => {
               if (editComponentCategory) {
                 if (!editComponentCategory.name.trim()) return;
@@ -486,3 +485,4 @@ export function ProductManagementPage() {
     />
   );
 }
+
