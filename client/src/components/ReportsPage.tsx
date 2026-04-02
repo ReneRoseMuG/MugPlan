@@ -292,16 +292,60 @@ export function buildProductVorlaufReportUrl(params: ProductVorlaufRequestParams
 function formatProjectRowArticles(
   row: ProductVorlaufProjectRow,
   categories: ProductVorlaufPrintCategory[],
-): string {
-  const values = categories
+): JSX.Element | string {
+  const groupedValues = buildProjectRowArticleGroups(row, categories);
+
+  if (groupedValues.length === 0) {
+    return "-";
+  }
+
+  return (
+    <div className="space-y-3" data-testid={`reports-product-vorlauf-project-row-${row.projectId}-articles`}>
+      {groupedValues.map((group) => (
+        <div key={`${row.projectId}-${group.categoryId}`} className="space-y-1">
+          <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-foreground">
+            {group.categoryName}
+          </div>
+          <div className="space-y-1">
+            {group.items.map((item) => (
+              <div
+                key={`${row.projectId}-${group.categoryId}-${item}`}
+                className="text-sm leading-5 text-foreground"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function splitProjectRowArticleValue(value: string): string[] {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+export function buildProjectRowArticleGroups(
+  row: ProductVorlaufProjectRow,
+  categories: ProductVorlaufPrintCategory[],
+): Array<{ categoryId: number; categoryName: string; items: string[] }> {
+  return categories
     .map((category) => {
       const value = row.articleValues.find((entry) => entry.categoryId === category.id)?.value ?? null;
       if (!value || value.trim().length === 0) return null;
-      return `${category.name}: ${value}`;
+      const items = splitProjectRowArticleValue(value);
+      if (items.length === 0) return null;
+      return {
+        categoryId: category.id,
+        categoryName: category.name,
+        items,
+      };
     })
-    .filter((value): value is string => Boolean(value));
-
-  return values.length > 0 ? values.join(" | ") : "-";
+    .filter((value): value is { categoryId: number; categoryName: string; items: string[] } => Boolean(value));
 }
 
 function renderGroupedCategoryList(groups: ProductVorlaufCategoryGroup[], emptyText: string, testIdPrefix: string) {
