@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSettings } from "@/hooks/useSettings";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -596,6 +597,7 @@ export function SettingsPage() {
   };
 
   const backupRows = backupsQuery.data ?? [];
+  const dumpRows = dumpsQuery.data ?? [];
 
   const handleRunBackupNow = async () => {
     setBackupRunInfo(null);
@@ -732,8 +734,50 @@ export function SettingsPage() {
       <h3 className="text-xl font-black tracking-tight text-primary">Einstellungen</h3>
       <p className="mb-5 mt-1 text-sm text-slate-500">Direkte Bearbeitung globaler und benutzerspezifischer Settings.</p>
 
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-        <div className="space-y-4">
+      <Tabs defaultValue="settings" className="flex min-h-0 flex-1 flex-col" data-testid="settings-tabs">
+        <TabsList className="self-start" data-testid="settings-tabs-list">
+          <TabsTrigger value="settings" data-testid="tab-settings-general">Einstellungen</TabsTrigger>
+          <TabsTrigger value="backup" data-testid="tab-settings-backup">Backup</TabsTrigger>
+          <TabsTrigger value="db-dump" data-testid="tab-settings-db-dump">DB Dump</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="settings" className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1" data-testid="settings-tab-content-general">
+          <div className="space-y-4">
+            {isAdmin ? (
+              <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-security">
+                <h4 className="font-bold text-slate-900">Sicherheit</h4>
+                <p className="mt-1 text-xs text-slate-500">Globale Login- und Zugriffseinstellungen.</p>
+                <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-auth-two-factor-enabled">
+                  <p className="font-semibold text-slate-900">{authTwoFactorEnabledSetting?.label ?? "2FA global aktiv"}</p>
+                  <p className="mb-3 text-xs text-slate-500">
+                    {authTwoFactorEnabledSetting?.description ?? "Aktiviert die verpflichtende Zwei-Faktor-Anmeldung fuer alle Benutzer."}
+                  </p>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                    <div className="flex h-10 items-center gap-3">
+                      <Switch
+                        checked={authTwoFactorEnabledValue}
+                        onCheckedChange={setAuthTwoFactorEnabledValue}
+                        data-testid="switch-setting-auth-two-factor-enabled"
+                      />
+                      <span className="text-sm text-slate-700">{authTwoFactorEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+                    </div>
+                    <Button
+                      onClick={() => void handleSaveAuthTwoFactorEnabled()}
+                      disabled={isSaving}
+                      data-testid="button-save-auth-two-factor-enabled"
+                    >
+                      Speichern
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-600">
+                    Wirksam: {stringifyValue(authTwoFactorEnabledSetting?.resolvedValue ?? false)} ({authTwoFactorEnabledSetting?.resolvedScope ?? "-"})
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Default: deaktiviert. Die Aenderung wirkt fuer alle kuenftigen Logins.</p>
+                  {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                  {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
+                </div>
+              </section>
+            ) : null}
           <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-other">
             <h4 className="font-bold text-slate-900">Weitere Einstellungen</h4>
             <p className="mt-1 text-xs text-slate-500">Allgemeine Oberflaechen- und Verhaltensoptionen.</p>
@@ -997,8 +1041,13 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-backups">
-            {isAdmin ? (
+          </div>
+        </TabsContent>
+
+        <TabsContent value="backup" className="mt-4 min-h-0 flex-1 overflow-hidden pr-1" data-testid="settings-tab-content-backup">
+
+          <div className="flex h-full min-h-0 flex-col gap-4" data-testid="settings-group-backups">
+            {false ? (
               <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-auth-two-factor-enabled">
                 <p className="font-semibold text-slate-900">{authTwoFactorEnabledSetting?.label ?? "2FA global aktiv"}</p>
                 <p className="mb-3 text-xs text-slate-500">
@@ -1030,10 +1079,10 @@ export function SettingsPage() {
               </div>
             ) : null}
 
-            <h4 className="font-bold text-slate-900">Backups</h4>
-            <p className="mt-1 text-xs text-slate-500">Steuerung und Monitoring aller Backup-Funktionen.</p>
+            <h4 className="hidden">Backups</h4>
+            <p className="hidden">Steuerung und Monitoring aller Backup-Funktionen.</p>
 
-            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-enabled">
+            <div className="shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-enabled">
           <p className="font-semibold text-slate-900">{backupEnabledSetting?.label ?? "Backups aktiv"}</p>
           <p className="mb-3 text-xs text-slate-500">{backupEnabledSetting?.description ?? "Aktiviert den automatischen Backup-Job."}</p>
 
@@ -1058,7 +1107,7 @@ export function SettingsPage() {
           {backupEnabledError && <p className="mt-1 text-xs text-destructive">{backupEnabledError}</p>}
         </div>
 
-            <div className="mt-4 rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
+            <div className="min-h-0 flex-1 rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
           <div className="mb-3 flex items-center justify-between">
             <p className="font-semibold text-slate-900">Backups (Read-Only Monitoring)</p>
             <div className="flex items-center gap-2">
@@ -1084,17 +1133,17 @@ export function SettingsPage() {
           ) : backupsQuery.isError ? (
             <p className="text-sm text-destructive">Backups konnten nicht geladen werden.</p>
           ) : backupRows.length === 0 ? (
-            <p className="text-sm text-slate-500">Noch keine Backup-Einträge vorhanden.</p>
+            <p className="text-sm text-slate-500">Noch keine Backup-Eintraege vorhanden.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="h-full min-h-0 overflow-auto rounded-md border border-slate-200" data-testid="table-backup-logs-frame">
               <table className="min-w-full text-sm" data-testid="table-backup-logs">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                   <tr className="border-b border-slate-200 text-left">
-                    <th className="px-2 py-2">Created</th>
-                    <th className="px-2 py-2">Status</th>
-                    <th className="px-2 py-2">Fehlermeldung</th>
-                    <th className="px-2 py-2">Anzahl exportierter Datensaetze</th>
-                    <th className="px-2 py-2">Download</th>
+                    <th className="bg-white px-2 py-2">Created</th>
+                    <th className="bg-white px-2 py-2">Status</th>
+                    <th className="bg-white px-2 py-2">Fehlermeldung</th>
+                    <th className="bg-white px-2 py-2">Anzahl exportierter Datensaetze</th>
+                    <th className="bg-white px-2 py-2">Download</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1125,21 +1174,29 @@ export function SettingsPage() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot className="sticky bottom-0 z-10 bg-slate-50 shadow-[0_-1px_0_0_rgba(226,232,240,1)]">
+                  <tr className="border-t border-slate-200">
+                    <td colSpan={5} className="bg-slate-50 px-2 py-2 text-xs font-medium text-slate-600">
+                      Eintraege: {backupRows.length}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
             </div>
-          </section>
+          </div>
+        </TabsContent>
 
-          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-dumps">
-            <h4 className="font-bold text-slate-900">Dump &amp; Import</h4>
-            <p className="mt-1 text-xs text-slate-500">
+        <TabsContent value="db-dump" className="mt-4 min-h-0 flex-1 overflow-hidden pr-1" data-testid="settings-tab-content-db-dump">
+          <div className="flex h-full min-h-0 flex-col gap-4" data-testid="settings-group-dumps">
+            <p className="hidden">
               Vollständiger Export und Import aller Anwendungsdaten inkl. Anhänge (außer Benutzer und Rollen).
             </p>
 
-            <div className="mt-3 space-y-4">
+            <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
               {/* Dump erstellen */}
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="dump-create-section">
+              <div className="shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="dump-create-section">
                 <p className="font-semibold text-slate-900">Dump erstellen</p>
                 <p className="mb-3 text-xs text-slate-500">
                   Exportiert alle Tabellendaten und den Anhang-Ordner als ZIP-Datei.
@@ -1162,7 +1219,7 @@ export function SettingsPage() {
               </div>
 
               {/* Dump-Liste */}
-              <div className="rounded-md border border-slate-200 bg-white p-4" data-testid="dump-list-section">
+              <div className="min-h-0 flex-1 rounded-md border border-slate-200 bg-white p-4" data-testid="dump-list-section">
                 <div className="mb-3 flex items-center justify-between">
                   <p className="font-semibold text-slate-900">Vorhandene Dumps</p>
                   <Button variant="outline" size="sm" onClick={() => void dumpsQuery.refetch()} data-testid="button-dumps-refresh">
@@ -1173,21 +1230,21 @@ export function SettingsPage() {
                   <p className="text-sm text-slate-500">Dumps werden geladen...</p>
                 ) : dumpsQuery.isError ? (
                   <p className="text-sm text-destructive">Dumps konnten nicht geladen werden.</p>
-                ) : (dumpsQuery.data ?? []).length === 0 ? (
+                ) : dumpRows.length === 0 ? (
                   <p className="text-sm text-slate-500">Noch keine Dumps vorhanden.</p>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="h-full min-h-0 overflow-auto rounded-md border border-slate-200" data-testid="table-dump-list-frame">
                     <table className="min-w-full text-sm" data-testid="table-dump-list">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                         <tr className="border-b border-slate-200 text-left">
-                          <th className="px-2 py-2">Erstellt</th>
-                          <th className="px-2 py-2">Größe</th>
-                          <th className="px-2 py-2">Download</th>
-                          <th className="px-2 py-2">Löschen</th>
+                          <th className="bg-white px-2 py-2">Erstellt</th>
+                          <th className="bg-white px-2 py-2">Groesse</th>
+                          <th className="bg-white px-2 py-2">Download</th>
+                          <th className="bg-white px-2 py-2">Loeschen</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(dumpsQuery.data ?? []).map((row) => (
+                        {dumpRows.map((row) => (
                           <tr key={row.filename} className="border-b border-slate-100" data-testid={`dump-row-${row.filename}`}>
                             <td className="px-2 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
                             <td className="px-2 py-2">{(row.sizeBytes / 1024 / 1024).toFixed(2)} MB</td>
@@ -1208,20 +1265,27 @@ export function SettingsPage() {
                                 disabled={isDumpDeleting === row.filename}
                                 data-testid={`dump-delete-${row.filename}`}
                               >
-                                {isDumpDeleting === row.filename ? "..." : "Löschen"}
+                                {isDumpDeleting === row.filename ? "..." : "Loeschen"}
                               </Button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
+                      <tfoot className="sticky bottom-0 z-10 bg-slate-50 shadow-[0_-1px_0_0_rgba(226,232,240,1)]">
+                        <tr className="border-t border-slate-200">
+                          <td colSpan={4} className="bg-slate-50 px-2 py-2 text-xs font-medium text-slate-600">
+                            Eintraege: {dumpRows.length}
+                          </td>
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
                 )}
               </div>
 
               {/* Import */}
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="dump-import-section">
-                <p className="font-semibold text-slate-900">Transfer-Import</p>
+              <div className="sticky bottom-0 z-10 shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4 shadow-[0_-1px_0_0_rgba(226,232,240,1)]" data-testid="dump-import-section">
+                <p className="font-semibold text-slate-900">Dump Import</p>
                 <p className="mb-1 text-xs text-slate-500">
                   ZIP-Dump hochladen, Vorschau pruefen und erst danach mit Sicherheitsphrase anwenden.
                 </p>
@@ -1324,9 +1388,9 @@ export function SettingsPage() {
                 )}
               </div>
             </div>
-          </section>
-        </div>
-      </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

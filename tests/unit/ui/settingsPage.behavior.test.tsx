@@ -44,6 +44,13 @@ vi.mock("@/components/ui/switch", () => ({
   Switch: (props: Record<string, unknown>) => <input type="checkbox" data-testid={String(props["data-testid"] ?? "")} checked={Boolean(props.checked)} readOnly />,
 }));
 
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <div {...props}>{children}</div>,
+  TabsList: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <div {...props}>{children}</div>,
+  TabsTrigger: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <button type="button" {...props}>{children}</button>,
+  TabsContent: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <section {...props}>{children}</section>,
+}));
+
 import { SettingsPage } from "../../../client/src/components/SettingsPage";
 
 describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
@@ -94,6 +101,10 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
   it("renders the save controls for help preview, backup and two-factor settings plus the backup panel", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
 
+    expect(html).toContain("tab-settings-general");
+    expect(html).toContain("tab-settings-backup");
+    expect(html).toContain("tab-settings-db-dump");
+    expect(html).toContain("Sicherheit");
     expect(html).toContain("select-setting-helpTextPreviewSize");
     expect(html).toContain("button-save-helpTextPreviewSize");
     expect(html).toContain("input-setting-entityFormShellSidebarWidthPx");
@@ -111,7 +122,10 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     expect(html).toContain("Fehlermeldung");
     expect(html).toContain("Anzahl exportierter Datensaetze");
     expect(html).toContain("Download");
-    expect(html).toContain("Transfer-Import");
+    expect(html).toContain("table-backup-logs-frame");
+    expect(html).toContain("Eintraege: 1");
+    expect(html).toContain("Dump Import");
+    expect(html).toContain("table-dump-list-frame");
     expect(html).toContain("input-dump-import-file");
     expect(html).toContain("button-dump-import-preview");
   });
