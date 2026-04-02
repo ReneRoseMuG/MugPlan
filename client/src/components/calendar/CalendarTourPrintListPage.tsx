@@ -41,7 +41,7 @@ export function CalendarTourPrintListPage({ page }: Props) {
               className="mb-6"
               data-testid={`tour-print-week-${week.weekStart}`}
             >
-              <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="mb-2 flex items-center justify-between gap-3 rounded bg-slate-100 px-2 py-1 print:bg-slate-100">
                 <div className="flex items-center gap-2">
                   <PrintSectionHeader label={`KW ${getISOWeek(parseISO(week.weekStart))}`} className="tracking-widest" />
                   {week.continuedFromPrevious ? (
@@ -50,7 +50,7 @@ export function CalendarTourPrintListPage({ page }: Props) {
                     </span>
                   ) : null}
                 </div>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-slate-500">
                   {formatTourPrintDate(week.weekStart)} - {formatTourPrintDate(week.weekEnd)}
                 </p>
               </div>
