@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -108,7 +108,7 @@ async function createStrictProjectFixture(params: {
   return { customer, project, appointments: createdAppointments };
 }
 
-describe("integration: product vorlauf project rows consistency", () => {
+describe("integration: produktionsplanung project rows consistency", () => {
   it("matches a DB reference with strict exclusion for Reklamation and Storno", async () => {
     const admin = await loginAdminAgent(app);
     const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
@@ -148,7 +148,7 @@ describe("integration: product vorlauf project rows consistency", () => {
     });
 
     const response = await admin
-      .get("/api/reports/product-vorlauf?fromDate=2030-06-01&toDate=2030-06-30")
+      .get("/api/reports/produktionsplanung?fromDate=2030-06-01&toDate=2030-06-30")
       .expect(200);
 
     const appointmentRows = await db
@@ -222,3 +222,5 @@ describe("integration: product vorlauf project rows consistency", () => {
     ]));
   });
 });
+
+

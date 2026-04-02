@@ -134,7 +134,7 @@ export function ProjectForm({
     });
     await invalidateAppointmentProjectionQueries();
     await queryClient.invalidateQueries({ queryKey: ["reports-vorlaufliste"] });
-    await queryClient.invalidateQueries({ queryKey: ["reports-product-vorlauf"] });
+    await queryClient.invalidateQueries({ queryKey: ["reports-produktionsplanung"] });
   };
   const invalidateProjectNotesQueries = async () => {
     await queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'notes'] });

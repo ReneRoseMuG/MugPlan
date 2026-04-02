@@ -1,4 +1,4 @@
-export type DbRoleCode = "READER" | "DISPATCHER" | "ADMIN";
+﻿export type DbRoleCode = "READER" | "DISPATCHER" | "ADMIN";
 export type CanonicalRoleKey = "LESER" | "DISPONENT" | "ADMIN";
 export type SettingScopeType = "GLOBAL" | "ROLE" | "USER";
 export type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
@@ -55,7 +55,7 @@ type VorlauflisteCategorySelection = {
   useShortCodes?: boolean;
   columnWidths?: Record<string, number>;
 };
-type ProductVorlaufSelection = {
+type ProduktionsplanungSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
@@ -187,7 +187,7 @@ function isValidVorlauflisteCategorySelection(value: unknown): value is Vorlaufl
   return true;
 }
 
-function isValidProductVorlaufSelection(value: unknown): value is ProductVorlaufSelection {
+function isValidProduktionsplanungSelection(value: unknown): value is ProduktionsplanungSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const parsed = value as Record<string, unknown>;
   if (!isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
@@ -424,10 +424,10 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: isValidVorlauflisteCategorySelection,
   },
-  reportsProductVorlaufSelection: {
-    key: "reports.productVorlauf.selection",
-    label: "Produkt Vorlauf Konfiguration",
-    description: "Speichert die benutzerspezifische Kategorieauswahl fuer den Produkt-Vorlauf-Report.",
+  reportsProduktionsplanungSelection: {
+    key: "reports.produktionsplanung.selection",
+    label: "Produktionsplanung Konfiguration",
+    description: "Speichert die benutzerspezifische Kategorieauswahl fuer den Report Produktionsplanung.",
     type: "json",
     defaultValue: {
       productCategoryIds: [],
@@ -436,7 +436,21 @@ export const userSettingsRegistry = {
       sonderblockTagIds: [],
     },
     allowedScopes: ["USER"],
-    validate: isValidProductVorlaufSelection,
+    validate: isValidProduktionsplanungSelection,
+  },
+  reportsLegacyProductVorlaufSelection: {
+    key: "reports.productVorlauf.selection",
+    label: "Legacy Produkt Vorlauf Konfiguration",
+    description: "Stellt bestehende Benutzereinstellungen fuer die Migration zur Produktionsplanung bereit.",
+    type: "json",
+    defaultValue: {
+      productCategoryIds: [],
+      componentCategoryIds: [],
+      useShortCodes: false,
+      sonderblockTagIds: [],
+    },
+    allowedScopes: ["USER"],
+    validate: isValidProduktionsplanungSelection,
   },
   helptextsViewMode: {
     key: "helptexts.viewMode",
@@ -570,3 +584,5 @@ export function assertDbRoleCode(input: string): DbRoleCode | null {
   }
   return null;
 }
+
+

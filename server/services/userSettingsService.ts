@@ -1,4 +1,4 @@
-import * as usersRepository from "../repositories/usersRepository";
+﻿import * as usersRepository from "../repositories/usersRepository";
 import * as userSettingsRepository from "../repositories/userSettingsRepository";
 import {
   globalScopeMarker,
@@ -132,7 +132,7 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
     return normalizeVorlauflisteResolvedValue(value);
   }
 
-  if (definition.key !== "reports.productVorlauf.selection") {
+  if (definition.key !== "reports.produktionsplanung.selection" && definition.key !== "reports.productVorlauf.selection") {
     return value;
   }
 
@@ -321,3 +321,4 @@ export async function getGlobalSettingValue(key: string): Promise<unknown> {
 export function isUserSettingsError(error: unknown): error is UserSettingsError {
   return error instanceof UserSettingsError;
 }
+

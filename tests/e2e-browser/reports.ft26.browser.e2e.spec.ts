@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -6,16 +6,16 @@
  * - Vorlaufliste-Shortcodes sowie Spalten-Sichtbarkeit und -Reihenfolge bleiben nach Navigation erhalten und lassen sich zurücksetzen.
  * - Der Statusindikator ersetzt die alte Zeilenfärbung, die Druckvorschau paginiert den vollständigen Report und Drucken ruft window.print auf.
  * - Ein geleertes Bis-Datum erweitert die Vorlaufliste erneut auf spätere Termine.
- * - Der Produkt-Vorlauf zeigt Produkt-, Komponenten- und Sondermaß-Blöcke weiterhin sichtbar an.
+ * - Der Produktionsplanung zeigt Produkt-, Komponenten- und Sondermaß-Blöcke weiterhin sichtbar an.
  *
  * Fehlerfälle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
  * - Persistierte Vorlaufliste-Konfiguration geht nach Navigation verloren.
  * - Die Druckvorschau lädt keine zweite Seite oder ruft Drucken nicht aus dem Dialog heraus auf.
- * - Der Produkt-Vorlauf verliert Sondermaß- oder Gruppentreffer im Browserfluss.
+ * - Der Produktionsplanung verliert Sondermaß- oder Gruppentreffer im Browserfluss.
  *
  * Ziel:
- * Die FT26-Reportsuite aus Anwendersicht über Vorlaufliste, Persistenz, Druckvorschau und Produkt-Vorlauf regressionssicher absichern.
+ * Die FT26-Reportsuite aus Anwendersicht über Vorlaufliste, Persistenz, Druckvorschau und Produktionsplanung regressionssicher absichern.
  */
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
@@ -210,7 +210,7 @@ async function getHeaderTexts(table: Locator) {
     .filter((value) => value.length > 0);
 }
 
-test("covers visible FT26 report interactions, persistence, print preview and product-vorlauf output", async ({ page }) => {
+test("covers visible FT26 report interactions, persistence, print preview and produktionsplanung output", async ({ page }) => {
   await page.addInitScript(() => {
     (window as Window & { __printCalls?: number }).__printCalls = 0;
     window.print = () => {
@@ -321,11 +321,11 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   const vorlauflisteGenerateButton = page.getByTestId("button-reports-vorlaufliste-generate");
   await page.getByTestId("reports-vorlaufliste-from-date").fill("");
   await expect(vorlauflisteGenerateButton).toBeDisabled();
-  await page.getByTestId("reports-product-vorlauf-from-date").fill("");
-  await expect(page.getByTestId("button-reports-product-vorlauf-generate")).toBeDisabled();
+  await page.getByTestId("reports-produktionsplanung-from-date").fill("");
+  await expect(page.getByTestId("button-reports-produktionsplanung-generate")).toBeDisabled();
 
   await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
-  await page.getByTestId("reports-product-vorlauf-from-date").fill(inRangeDate);
+  await page.getByTestId("reports-produktionsplanung-from-date").fill(inRangeDate);
 
   await page.getByTestId("button-reports-vorlaufliste-show-to-date").click();
   await page.getByTestId("reports-vorlaufliste-to-date").fill(inRangeDate);
@@ -388,14 +388,14 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("dialog-vorlaufliste-print-preview")).toBeHidden();
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId(`checkbox-reports-product-vorlauf-component-category-${controlComponent.categoryId}`).click();
+  await page.getByTestId(`checkbox-reports-produktionsplanung-component-category-${controlComponent.categoryId}`).click();
 
   await page.getByTestId("nav-termine").click();
   await expect(page.getByTestId("nav-reports")).toBeVisible();
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
   await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toHaveAttribute("data-state", "checked");
-  await expect(page.getByTestId(`checkbox-reports-product-vorlauf-component-category-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "unchecked");
+  await expect(page.getByTestId(`checkbox-reports-produktionsplanung-component-category-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "unchecked");
 
   await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
   await page.getByTestId("button-reports-vorlaufliste-show-to-date").click();
@@ -418,18 +418,22 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(vorlauflisteTable).toContainText(futureProject.customer.fullName ?? "");
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId("reports-product-vorlauf-from-date").fill(inRangeDate);
-  await page.getByTestId("button-reports-product-vorlauf-show-to-date").click();
-  await page.getByTestId("reports-product-vorlauf-to-date").fill(inRangeDate);
-  await page.getByTestId("button-reports-product-vorlauf-generate").click();
+  await page.getByTestId("reports-produktionsplanung-from-date").fill(inRangeDate);
+  await page.getByTestId("button-reports-produktionsplanung-show-to-date").click();
+  await page.getByTestId("reports-produktionsplanung-to-date").fill(inRangeDate);
+  await page.getByTestId("button-reports-produktionsplanung-generate").click();
 
-  await expect(page.getByTestId("reports-product-vorlauf-overlay")).toBeVisible();
-  await expect(page.getByTestId("reports-product-vorlauf-products")).toContainText("Kolmikko Voll");
-  await expect(page.getByTestId("reports-product-vorlauf-components")).toContainText("Fenster Klein Voll");
-  await expect(page.getByTestId("reports-product-vorlauf-components")).not.toContainText("Steuerung Pro Voll");
-  await expect(page.getByTestId("reports-product-vorlauf-special-measures")).toContainText(specialProject.customer.fullName ?? "");
-  await expect(page.getByTestId("reports-product-vorlauf-special-measures")).toContainText("Sondermass Browser");
-  await expect(page.getByTestId("reports-product-vorlauf-products")).toContainText("Sondermass Sauna");
-  await expect(page.getByTestId("reports-product-vorlauf-components")).toContainText("Teilglas Browser");
-  await expect(page.getByTestId("reports-product-vorlauf-components")).toContainText("Panorama Browser");
+  await expect(page.getByTestId("reports-produktionsplanung-overlay")).toBeVisible();
+  await expect(page.getByTestId("reports-produktionsplanung-products")).toContainText("Kolmikko Voll");
+  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Fenster Klein Voll");
+  await expect(page.getByTestId("reports-produktionsplanung-components")).not.toContainText("Steuerung Pro Voll");
+  await expect(page.getByTestId("reports-produktionsplanung-special-measures")).toContainText(specialProject.customer.fullName ?? "");
+  await expect(page.getByTestId("reports-produktionsplanung-special-measures")).toContainText("Sondermass Browser");
+  await expect(page.getByTestId("reports-produktionsplanung-products")).toContainText("Sondermass Sauna");
+  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Teilglas Browser");
+  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Panorama Browser");
 });
+
+
+
+

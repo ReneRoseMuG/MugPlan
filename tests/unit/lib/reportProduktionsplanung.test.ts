@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Produkt-Vorlauf fasst Mengen je Kategorie ueber identische Shortcodes zusammen, wenn Shortcodes aktiv sind.
+ * - Produktionsplanung fasst Mengen je Kategorie ueber identische Shortcodes zusammen, wenn Shortcodes aktiv sind.
  * - Ohne Shortcode oder bei deaktivierter Option bleiben Artikel getrennt.
  * - Sonderblock-Treffer ignorieren Reklamation und Storniert selbst dann, wenn sie in der Auswahl enthalten sind.
  *
@@ -11,18 +11,18 @@
  * - Nicht erlaubte Sonderblock-Tags landen in matchedSonderblockTagIds.
  *
  * Ziel:
- * Die reine Produkt-Vorlauf-Hilfslogik ohne DB-Abhaengigkeiten regressionssicher absichern.
+ * Die reine Produktionsplanung-Hilfslogik ohne DB-Abhaengigkeiten regressionssicher absichern.
  */
 import { describe, expect, it } from "vitest";
 
 import {
-  buildGroupedProductVorlaufCategoryGroups,
+  buildGroupedProduktionsplanungCategoryGroups,
   collectMatchedSonderblockTagIds,
-} from "../../../server/lib/reportProductVorlauf";
+} from "../../../server/lib/reportProduktionsplanung";
 
-describe("reportProductVorlauf helpers", () => {
+describe("reportProduktionsplanung helpers", () => {
   it("merges quantities by shortcode when enabled", () => {
-    const result = buildGroupedProductVorlaufCategoryGroups([
+    const result = buildGroupedProduktionsplanungCategoryGroups([
       { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Alpha", shortCode: "SA", quantity: 2 },
       { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Beta", shortCode: "SA", quantity: 3 },
       { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Gamma", shortCode: null, quantity: 1 },
@@ -41,7 +41,7 @@ describe("reportProductVorlauf helpers", () => {
   });
 
   it("keeps items separate when shortcodes are disabled", () => {
-    const result = buildGroupedProductVorlaufCategoryGroups([
+    const result = buildGroupedProduktionsplanungCategoryGroups([
       { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Alpha", shortCode: "SA", quantity: 2 },
       { categoryId: 1, categoryName: "Produkte", itemName: "Sauna Beta", shortCode: "SA", quantity: 3 },
     ], false);
@@ -72,3 +72,5 @@ describe("reportProductVorlauf helpers", () => {
     expect(result).toEqual([3]);
   });
 });
+
+

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -10,7 +10,7 @@ import {
 } from "@shared/appointmentCancellation";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
-import { ProductVorlaufPrintLayout, type ProductVorlaufPrintCategory } from "@/components/reports/ProductVorlaufPrintLayout";
+import { ProduktionsplanungPrintLayout, type ProduktionsplanungPrintCategory } from "@/components/reports/ProduktionsplanungPrintLayout";
 import { PrintPageHeader } from "@/components/print/PrintPageHeader";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
@@ -30,7 +30,7 @@ import {
 } from "@/components/reports/vorlauflistePreview";
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
-import { useSetting, useSettings } from "@/hooks/useSettings";
+import { resolveProduktionsplanungSelection, useSetting, useSettings } from "@/hooks/useSettings";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ import {
   type VorlauflistePrintColumn,
 } from "@/lib/vorlaufliste-print-model";
 
-type ReportType = "vorlaufliste" | "product-vorlauf";
+type ReportType = "vorlaufliste" | "produktionsplanung";
 type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
 
 type VorlauflisteCategory = {
@@ -88,18 +88,18 @@ type VorlauflistePrintPreviewResponse = {
   items: VorlauflisteItem[];
 };
 
-type ProductVorlaufItemTotal = {
+type ProduktionsplanungItemTotal = {
   itemName: string;
   totalQuantity: number;
 };
 
-type ProductVorlaufCategoryGroup = {
+type ProduktionsplanungCategoryGroup = {
   categoryId: number;
   categoryName: string;
-  items: ProductVorlaufItemTotal[];
+  items: ProduktionsplanungItemTotal[];
 };
 
-type ProductVorlaufSpecialMeasureProject = {
+type ProduktionsplanungSpecialMeasureProject = {
   projectId: number;
   orderNumber: string | null;
   customerNumber: string | null;
@@ -109,14 +109,14 @@ type ProductVorlaufSpecialMeasureProject = {
   specialMeasureTag: Tag | null;
 };
 
-type ProductVorlaufResponse = {
-  productCategoryGroups: ProductVorlaufCategoryGroup[];
-  componentCategoryGroups: ProductVorlaufCategoryGroup[];
-  specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
-  projectRows: ProductVorlaufProjectRow[];
+type ProduktionsplanungResponse = {
+  productCategoryGroups: ProduktionsplanungCategoryGroup[];
+  componentCategoryGroups: ProduktionsplanungCategoryGroup[];
+  specialMeasureProjects: ProduktionsplanungSpecialMeasureProject[];
+  projectRows: ProduktionsplanungProjectRow[];
 };
 
-type ProductVorlaufProjectRow = {
+type ProduktionsplanungProjectRow = {
   projectId: number;
   projectName: string;
   orderNumber: string | null;
@@ -144,7 +144,7 @@ type VorlauflisteSelection = {
   hiddenColumns?: string[];
 };
 
-type ProductVorlaufSelection = {
+type ProduktionsplanungSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
@@ -160,7 +160,7 @@ type VorlauflisteRequestParams = {
   refreshKey: number;
 };
 
-type ProductVorlaufRequestParams = {
+type ProduktionsplanungRequestParams = {
   fromDate: string;
   toDate?: string;
   productCategoryIds: number[];
@@ -181,7 +181,8 @@ type ArticleCategorySelectionProps = {
 
 const REPORT_PAGE_SIZE = 100;
 const VORLAUFLISTE_SETTING_KEY = "reports.vorlaufliste.categorySelection";
-const PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
+const PRODUKTIONSPLANUNG_SETTING_KEY = "reports.produktionsplanung.selection";
+const LEGACY_PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
 const MIN_REPORT_COLUMN_WIDTH = 80;
 const MAX_REPORT_COLUMN_WIDTH = 960;
 const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
@@ -288,7 +289,7 @@ export function buildVorlauflistePrintPreviewUrl(params: {
   return `/api/reports/vorlaufliste/print-preview?${searchParams.toString()}`;
 }
 
-export function buildProductVorlaufReportUrl(params: ProductVorlaufRequestParams): string {
+export function buildProduktionsplanungReportUrl(params: ProduktionsplanungRequestParams): string {
   const searchParams = new URLSearchParams({
     fromDate: params.fromDate,
   });
@@ -297,12 +298,12 @@ export function buildProductVorlaufReportUrl(params: ProductVorlaufRequestParams
   for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
   if (params.useShortCodes) searchParams.set("useShortCodes", "true");
   for (const id of params.sonderblockTagIds) searchParams.append("sonderblockTagIds", String(id));
-  return `/api/reports/product-vorlauf?${searchParams.toString()}`;
+  return `/api/reports/produktionsplanung?${searchParams.toString()}`;
 }
 
 function formatProjectRowArticles(
-  row: ProductVorlaufProjectRow,
-  categories: ProductVorlaufPrintCategory[],
+  row: ProduktionsplanungProjectRow,
+  categories: ProduktionsplanungPrintCategory[],
 ): JSX.Element | string {
   const groupedValues = buildProjectRowArticleGroups(row, categories);
 
@@ -311,7 +312,7 @@ function formatProjectRowArticles(
   }
 
   return (
-    <div className="space-y-3" data-testid={`reports-product-vorlauf-project-row-${row.projectId}-articles`}>
+    <div className="space-y-3" data-testid={`reports-produktionsplanung-project-row-${row.projectId}-articles`}>
       {groupedValues.map((group) => (
         <div key={`${row.projectId}-${group.categoryId}`} className="space-y-1">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-foreground">
@@ -341,8 +342,8 @@ function splitProjectRowArticleValue(value: string): string[] {
 }
 
 export function buildProjectRowArticleGroups(
-  row: ProductVorlaufProjectRow,
-  categories: ProductVorlaufPrintCategory[],
+  row: ProduktionsplanungProjectRow,
+  categories: ProduktionsplanungPrintCategory[],
 ): Array<{ categoryId: number; categoryName: string; items: string[] }> {
   return categories
     .map((category) => {
@@ -359,7 +360,7 @@ export function buildProjectRowArticleGroups(
     .filter((value): value is { categoryId: number; categoryName: string; items: string[] } => Boolean(value));
 }
 
-function renderGroupedCategoryList(groups: ProductVorlaufCategoryGroup[], emptyText: string, testIdPrefix: string) {
+function renderGroupedCategoryList(groups: ProduktionsplanungCategoryGroup[], emptyText: string, testIdPrefix: string) {
   if (groups.length === 0) {
     return <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>;
   }
@@ -486,19 +487,34 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [vorlauflisteFromDate, setVorlauflisteFromDate] = useState(getBerlinTodayDateString());
   const [vorlauflisteToDate, setVorlauflisteToDate] = useState("");
   const [showVorlauflisteToDate, setShowVorlauflisteToDate] = useState(false);
-  const [productVorlaufFromDate, setProductVorlaufFromDate] = useState(getBerlinTodayDateString());
-  const [productVorlaufToDate, setProductVorlaufToDate] = useState("");
-  const [showProductVorlaufToDate, setShowProductVorlaufToDate] = useState(false);
+  const [produktionsplanungFromDate, setProduktionsplanungFromDate] = useState(getBerlinTodayDateString());
+  const [produktionsplanungToDate, setProduktionsplanungToDate] = useState("");
+  const [showProduktionsplanungToDate, setShowProduktionsplanungToDate] = useState(false);
   const [page, setPage] = useState(1);
   const [submittedFilters, setSubmittedFilters] = useState<SubmittedFilters | null>(null);
   const [isReportOverlayOpen, setIsReportOverlayOpen] = useState(false);
   const [reportRequestId, setReportRequestId] = useState(0);
 
   const vorlauflisteSelection = useSetting(VORLAUFLISTE_SETTING_KEY) as VorlauflisteSelection | undefined;
-  const productVorlaufSelection = useSetting(PRODUCT_VORLAUF_SETTING_KEY) as ProductVorlaufSelection | undefined;
+  const produktionsplanungSelection = useSetting(PRODUKTIONSPLANUNG_SETTING_KEY) as ProduktionsplanungSelection | undefined;
   const { setSetting, settingsByKey } = useSettings();
 
-  const productVorlaufResolvedScope = (settingsByKey.get(PRODUCT_VORLAUF_SETTING_KEY)?.resolvedScope ?? "DEFAULT") as ResolvedScope;
+  const produktionsplanungSettingEntry = settingsByKey.get(PRODUKTIONSPLANUNG_SETTING_KEY);
+  const legacyProduktionsplanungSettingEntry = settingsByKey.get(LEGACY_PRODUCT_VORLAUF_SETTING_KEY);
+  const effectiveProduktionsplanungSelection = useMemo(() => {
+    if (produktionsplanungSettingEntry?.resolvedScope === "USER") {
+      return produktionsplanungSelection;
+    }
+    if (legacyProduktionsplanungSettingEntry?.resolvedScope === "USER") {
+      return resolveProduktionsplanungSelection(legacyProduktionsplanungSettingEntry.resolvedValue);
+    }
+    return produktionsplanungSelection;
+  }, [legacyProduktionsplanungSettingEntry, produktionsplanungSelection, produktionsplanungSettingEntry]);
+  const produktionsplanungResolvedScope = (
+    produktionsplanungSettingEntry?.resolvedScope === "USER"
+      ? produktionsplanungSettingEntry.resolvedScope
+      : legacyProduktionsplanungSettingEntry?.resolvedScope ?? produktionsplanungSettingEntry?.resolvedScope ?? "DEFAULT"
+  ) as ResolvedScope;
 
   const { data: productCategories = [] } = useQuery<ProductCategory[]>({
     queryKey: ["/api/admin/master-data/product-categories?active=all"],
@@ -533,10 +549,10 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [isVorlauflisteColumnsPopoverOpen, setIsVorlauflisteColumnsPopoverOpen] = useState(false);
   const [isVorlauflistePrintPreviewOpen, setIsVorlauflistePrintPreviewOpen] = useState(false);
   const [activeVorlauflistePrintPageIndex, setActiveVorlauflistePrintPageIndex] = useState(0);
-  const [selectedProductVorlaufProductCategoryIds, setSelectedProductVorlaufProductCategoryIds] = useState<number[]>([]);
-  const [selectedProductVorlaufComponentCategoryIds, setSelectedProductVorlaufComponentCategoryIds] = useState<number[]>([]);
-  const [useProductVorlaufShortCodes, setUseProductVorlaufShortCodes] = useState(false);
-  const [selectedProductVorlaufSonderblockTagIds, setSelectedProductVorlaufSonderblockTagIds] = useState<number[]>([]);
+  const [selectedProduktionsplanungProductCategoryIds, setSelectedProduktionsplanungProductCategoryIds] = useState<number[]>([]);
+  const [selectedProduktionsplanungComponentCategoryIds, setSelectedProduktionsplanungComponentCategoryIds] = useState<number[]>([]);
+  const [useProduktionsplanungShortCodes, setUseProduktionsplanungShortCodes] = useState(false);
+  const [selectedProduktionsplanungSonderblockTagIds, setSelectedProduktionsplanungSonderblockTagIds] = useState<number[]>([]);
   const availableSonderblockTags = useMemo(() => {
     const merged = [...projectTagCatalog, ...appointmentTagCatalog];
     return Array.from(new Map(
@@ -559,25 +575,25 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
     const validComponentIds = new Set(defaultComponentCategories.map((category) => category.id));
     const validSonderblockTagIds = new Set(availableSonderblockTags.map((tag) => tag.id));
-    const resolvedProductIds = normalizeIds((productVorlaufSelection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
-    const resolvedComponentIds = normalizeIds((productVorlaufSelection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
-    const resolvedSonderblockTagIds = normalizeIds((productVorlaufSelection?.sonderblockTagIds ?? []).filter((id) => validSonderblockTagIds.has(id)));
+    const resolvedProductIds = normalizeIds((effectiveProduktionsplanungSelection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
+    const resolvedComponentIds = normalizeIds((effectiveProduktionsplanungSelection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
+    const resolvedSonderblockTagIds = normalizeIds((effectiveProduktionsplanungSelection?.sonderblockTagIds ?? []).filter((id) => validSonderblockTagIds.has(id)));
 
-    setSelectedProductVorlaufProductCategoryIds(resolveInitialSelectionIds({
-      resolvedScope: productVorlaufResolvedScope,
+    setSelectedProduktionsplanungProductCategoryIds(resolveInitialSelectionIds({
+      resolvedScope: produktionsplanungResolvedScope,
       persistedIds: resolvedProductIds,
       defaultIds: defaultProductCategories.map((category) => category.id),
     }));
-    setSelectedProductVorlaufComponentCategoryIds(resolveInitialSelectionIds({
-      resolvedScope: productVorlaufResolvedScope,
+    setSelectedProduktionsplanungComponentCategoryIds(resolveInitialSelectionIds({
+      resolvedScope: produktionsplanungResolvedScope,
       persistedIds: resolvedComponentIds,
       defaultIds: defaultComponentCategories.map((category) => category.id),
     }));
-    setUseProductVorlaufShortCodes(productVorlaufSelection?.useShortCodes ?? false);
-    setSelectedProductVorlaufSonderblockTagIds(resolvedSonderblockTagIds);
-  }, [availableSonderblockTags, defaultComponentCategories, defaultProductCategories, productVorlaufResolvedScope, productVorlaufSelection]);
+    setUseProduktionsplanungShortCodes(effectiveProduktionsplanungSelection?.useShortCodes ?? false);
+    setSelectedProduktionsplanungSonderblockTagIds(resolvedSonderblockTagIds);
+  }, [availableSonderblockTags, defaultComponentCategories, defaultProductCategories, effectiveProduktionsplanungSelection, produktionsplanungResolvedScope]);
 
-  const persistSelection = async (reportType: ReportType, next: VorlauflisteSelection | ProductVorlaufSelection) => {
+  const persistSelection = async (reportType: ReportType, next: VorlauflisteSelection | ProduktionsplanungSelection) => {
     if (reportType === "vorlaufliste") {
       const vorlauflisteNext = next as VorlauflisteSelection;
       const value: VorlauflisteSelection = {
@@ -594,15 +610,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         value,
       });
     } else {
-      const productNext = next as ProductVorlaufSelection;
-      const value: ProductVorlaufSelection = {
-        productCategoryIds: normalizeIds(productNext.productCategoryIds),
-        componentCategoryIds: normalizeIds(productNext.componentCategoryIds),
-        useShortCodes: productNext.useShortCodes ?? false,
-        sonderblockTagIds: normalizeIds(productNext.sonderblockTagIds ?? []),
+      const produktionsplanungNext = next as ProduktionsplanungSelection;
+      const value: ProduktionsplanungSelection = {
+        productCategoryIds: normalizeIds(produktionsplanungNext.productCategoryIds),
+        componentCategoryIds: normalizeIds(produktionsplanungNext.componentCategoryIds),
+        useShortCodes: produktionsplanungNext.useShortCodes ?? false,
+        sonderblockTagIds: normalizeIds(produktionsplanungNext.sonderblockTagIds ?? []),
       };
       await setSetting({
-        key: PRODUCT_VORLAUF_SETTING_KEY,
+        key: PRODUKTIONSPLANUNG_SETTING_KEY,
         scopeType: "USER",
         value,
       });
@@ -646,11 +662,11 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     }), { cache: "no-store" }),
   });
 
-  const { data: productVorlaufData, isLoading: isProductVorlaufLoading } = useQuery<ProductVorlaufResponse>({
-    queryKey: ["reports-product-vorlauf", submittedFilters, reportRequestId],
-    enabled: submittedFilters?.reportType === "product-vorlauf" && isReportOverlayOpen,
+  const { data: produktionsplanungData, isLoading: isProduktionsplanungLoading } = useQuery<ProduktionsplanungResponse>({
+    queryKey: ["reports-produktionsplanung", submittedFilters, reportRequestId],
+    enabled: submittedFilters?.reportType === "produktionsplanung" && isReportOverlayOpen,
     queryFn: async () => {
-      return fetchJson(buildProductVorlaufReportUrl({
+      return fetchJson(buildProduktionsplanungReportUrl({
         fromDate: submittedFilters!.fromDate,
         toDate: submittedFilters?.toDate,
         productCategoryIds: submittedFilters?.productCategoryIds ?? [],
@@ -660,16 +676,16 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       }));
     },
   });
-  const selectedProductVorlaufPrintCategories = useMemo<ProductVorlaufPrintCategory[]>(() => {
+  const selectedProduktionsplanungPrintCategories = useMemo<ProduktionsplanungPrintCategory[]>(() => {
     const productCategoryById = new Map(defaultProductCategories.map((category) => [category.id, category] as const));
     const componentCategoryById = new Map(defaultComponentCategories.map((category) => [category.id, category] as const));
 
     return [
-      ...selectedProductVorlaufProductCategoryIds
+      ...selectedProduktionsplanungProductCategoryIds
         .map((id) => productCategoryById.get(id))
         .filter((category): category is ProductCategory => Boolean(category))
         .map((category) => ({ id: category.id, name: category.name })),
-      ...selectedProductVorlaufComponentCategoryIds
+      ...selectedProduktionsplanungComponentCategoryIds
         .map((id) => componentCategoryById.get(id))
         .filter((category): category is ComponentCategory => Boolean(category))
         .map((category) => ({ id: category.id, name: category.name })),
@@ -677,8 +693,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   }, [
     defaultComponentCategories,
     defaultProductCategories,
-    selectedProductVorlaufComponentCategoryIds,
-    selectedProductVorlaufProductCategoryIds,
+    selectedProduktionsplanungComponentCategoryIds,
+    selectedProduktionsplanungProductCategoryIds,
   ]);
 
   useEffect(() => {
@@ -844,15 +860,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
   const isVorlauflisteOverlay = isReportOverlayOpen && submittedFilters?.reportType === "vorlaufliste";
-  const isProductVorlauflayout = isReportOverlayOpen && submittedFilters?.reportType === "product-vorlauf";
+  const isProduktionsplanungLayout = isReportOverlayOpen && submittedFilters?.reportType === "produktionsplanung";
 
   const handleGenerateReport = (reportType: ReportType) => {
     const isVorlaufliste = reportType === "vorlaufliste";
-    const fromDate = isVorlaufliste ? vorlauflisteFromDate : productVorlaufFromDate;
-    const toDate = isVorlaufliste ? vorlauflisteToDate : productVorlaufToDate;
-    const showToDate = isVorlaufliste ? showVorlauflisteToDate : showProductVorlaufToDate;
-    const productCategoryIds = isVorlaufliste ? [] : selectedProductVorlaufProductCategoryIds;
-    const componentCategoryIds = isVorlaufliste ? [] : selectedProductVorlaufComponentCategoryIds;
+    const fromDate = isVorlaufliste ? vorlauflisteFromDate : produktionsplanungFromDate;
+    const toDate = isVorlaufliste ? vorlauflisteToDate : produktionsplanungToDate;
+    const showToDate = isVorlaufliste ? showVorlauflisteToDate : showProduktionsplanungToDate;
+    const productCategoryIds = isVorlaufliste ? [] : selectedProduktionsplanungProductCategoryIds;
+    const componentCategoryIds = isVorlaufliste ? [] : selectedProduktionsplanungComponentCategoryIds;
 
     if (fromDate.trim().length === 0) return;
     setPage(1);
@@ -862,8 +878,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       toDate: showToDate && toDate.trim().length > 0 ? toDate : undefined,
       productCategoryIds,
       componentCategoryIds,
-      useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : useProductVorlaufShortCodes,
-      sonderblockTagIds: isVorlaufliste ? [] : selectedProductVorlaufSonderblockTagIds,
+      useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : useProduktionsplanungShortCodes,
+      sonderblockTagIds: isVorlaufliste ? [] : selectedProduktionsplanungSonderblockTagIds,
     });
     setReportRequestId((current) => current + 1);
     setIsReportOverlayOpen(true);
@@ -875,7 +891,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     setIsVorlauflistePrintPreviewOpen(false);
   };
   const handleVorlauflistePrint = () => window.print();
-  const handleProductVorlaufPrint = () => window.print();
+  const handleProduktionsplanungPrint = () => window.print();
   const fixedVorlauflisteColumnIds = useMemo(
     () => configurableVorlauflisteColumns
       .filter((column) => !column.id.startsWith("product-") && !column.id.startsWith("component-"))
@@ -935,7 +951,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
           <div
             className={cn(
               "relative h-full overflow-hidden",
-              isProductVorlauflayout ? "reports-print-product-vorlauf-active" : undefined,
+              isProduktionsplanungLayout ? "reports-print-produktionsplanung-active" : undefined,
             )}
             data-testid="reports-panel"
           >
@@ -953,11 +969,11 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   [data-testid="print-document-root"] * {
                     visibility: visible !important;
                   }
-                  .reports-print-product-vorlauf-active [data-testid="reports-product-vorlauf-overlay"],
-                  .reports-print-product-vorlauf-active [data-testid="reports-product-vorlauf-overlay"] * {
+                  .reports-print-produktionsplanung-active [data-testid="reports-produktionsplanung-overlay"],
+                  .reports-print-produktionsplanung-active [data-testid="reports-produktionsplanung-overlay"] * {
                     visibility: visible !important;
                   }
-                  .reports-print-product-vorlauf-active [data-testid="reports-product-vorlauf-overlay"] {
+                  .reports-print-produktionsplanung-active [data-testid="reports-produktionsplanung-overlay"] {
                     position: absolute !important;
                     inset: 0 !important;
                     overflow: visible !important;
@@ -1021,59 +1037,59 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 </ReportConfigSurface>
 
                 <ReportConfigSurface
-                  title="Produkt Vorlauf"
+                  title="Produktionsplanung"
                   helpKey="reports-produkte"
                   footer={(
                     <div className="flex justify-end">
-                      <Button type="button" onClick={() => handleGenerateReport("product-vorlauf")} disabled={productVorlaufFromDate.trim().length === 0} data-testid="button-reports-product-vorlauf-generate">
+                      <Button type="button" onClick={() => handleGenerateReport("produktionsplanung")} disabled={produktionsplanungFromDate.trim().length === 0} data-testid="button-reports-produktionsplanung-generate">
                         Report erzeugen
                       </Button>
                     </div>
                   )}
                 >
                   <div className="grid grid-cols-1 gap-5 xl:grid-cols-[max-content_minmax(0,1fr)] xl:items-start">
-                    <div className="space-y-4" data-testid="reports-product-vorlauf-date-range-column">
+                    <div className="space-y-4" data-testid="reports-produktionsplanung-date-range-column">
                       <h4 className="text-sm font-semibold text-foreground">Datumsbereich</h4>
                       <div className="flex flex-wrap items-end gap-4 sm:flex-nowrap">
                         <div className="flex w-[150px] flex-none flex-col gap-1">
-                          <Label htmlFor="reports-product-vorlauf-from-date">Datum Beginn</Label>
-                          <Input id="reports-product-vorlauf-from-date" type="date" value={productVorlaufFromDate} onChange={(event) => setProductVorlaufFromDate(event.target.value)} data-testid="reports-product-vorlauf-from-date" />
+                          <Label htmlFor="reports-produktionsplanung-from-date">Datum Beginn</Label>
+                          <Input id="reports-produktionsplanung-from-date" type="date" value={produktionsplanungFromDate} onChange={(event) => setProduktionsplanungFromDate(event.target.value)} data-testid="reports-produktionsplanung-from-date" />
                         </div>
-                        {showProductVorlaufToDate ? (
+                        {showProduktionsplanungToDate ? (
                           <div className="flex w-[150px] flex-none flex-col gap-1">
-                            <Label htmlFor="reports-product-vorlauf-to-date">Datum Ende</Label>
-                            <Input id="reports-product-vorlauf-to-date" type="date" value={productVorlaufToDate} onChange={(event) => setProductVorlaufToDate(event.target.value)} data-testid="reports-product-vorlauf-to-date" />
+                            <Label htmlFor="reports-produktionsplanung-to-date">Datum Ende</Label>
+                            <Input id="reports-produktionsplanung-to-date" type="date" value={produktionsplanungToDate} onChange={(event) => setProduktionsplanungToDate(event.target.value)} data-testid="reports-produktionsplanung-to-date" />
                           </div>
                         ) : (
                           <div className="flex w-[150px] flex-none flex-col gap-1">
-                            <Label htmlFor="button-reports-product-vorlauf-show-to-date">Datum Ende</Label>
-                            <Button type="button" variant="outline" className="w-fit px-3" onClick={() => setShowProductVorlaufToDate(true)} data-testid="button-reports-product-vorlauf-show-to-date">
+                            <Label htmlFor="button-reports-produktionsplanung-show-to-date">Datum Ende</Label>
+                            <Button type="button" variant="outline" className="w-fit px-3" onClick={() => setShowProduktionsplanungToDate(true)} data-testid="button-reports-produktionsplanung-show-to-date">
                               Anzeigen
                             </Button>
                           </div>
                         )}
                       </div>
 
-                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-info-tags">
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-info-tags">
                         <h5 className="text-sm font-semibold text-foreground">Info Tags</h5>
                         <div className="mt-3 space-y-2">
                           {availableSonderblockTags.length > 0 ? availableSonderblockTags.map((tag) => (
                             <label key={tag.id} className="flex items-center gap-3 text-sm text-foreground">
                               <Checkbox
-                                checked={selectedProductVorlaufSonderblockTagIds.includes(tag.id)}
+                                checked={selectedProduktionsplanungSonderblockTagIds.includes(tag.id)}
                                 onCheckedChange={(checked) => {
                                   const nextIds = Boolean(checked)
-                                    ? normalizeIds([...selectedProductVorlaufSonderblockTagIds, tag.id])
-                                    : selectedProductVorlaufSonderblockTagIds.filter((id) => id !== tag.id);
-                                  setSelectedProductVorlaufSonderblockTagIds(nextIds);
-                                  void persistSelection("product-vorlauf", {
-                                    productCategoryIds: selectedProductVorlaufProductCategoryIds,
-                                    componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
-                                    useShortCodes: useProductVorlaufShortCodes,
+                                    ? normalizeIds([...selectedProduktionsplanungSonderblockTagIds, tag.id])
+                                    : selectedProduktionsplanungSonderblockTagIds.filter((id) => id !== tag.id);
+                                  setSelectedProduktionsplanungSonderblockTagIds(nextIds);
+                                  void persistSelection("produktionsplanung", {
+                                    productCategoryIds: selectedProduktionsplanungProductCategoryIds,
+                                    componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
+                                    useShortCodes: useProduktionsplanungShortCodes,
                                     sonderblockTagIds: nextIds,
                                   });
                                 }}
-                                data-testid={`checkbox-reports-product-vorlauf-sonderblock-tag-${tag.id}`}
+                                data-testid={`checkbox-reports-produktionsplanung-sonderblock-tag-${tag.id}`}
                               />
                               <span>{tag.name}</span>
                             </label>
@@ -1084,76 +1100,76 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                       </section>
                     </div>
 
-                    <div className="justify-self-end space-y-3" data-testid="reports-product-vorlauf-categories-column">
+                    <div className="justify-self-end space-y-3" data-testid="reports-produktionsplanung-categories-column">
                       <h4 className="text-sm font-semibold text-foreground">Artikel Kategorien</h4>
                       <ArticleCategorySelection
                         productCategories={defaultProductCategories}
                         componentCategories={defaultComponentCategories}
-                        selectedProductCategoryIds={selectedProductVorlaufProductCategoryIds}
-                        selectedComponentCategoryIds={selectedProductVorlaufComponentCategoryIds}
+                        selectedProductCategoryIds={selectedProduktionsplanungProductCategoryIds}
+                        selectedComponentCategoryIds={selectedProduktionsplanungComponentCategoryIds}
                         onProductCategoryToggle={(categoryId, checked) => {
                           const nextIds = checked
-                            ? normalizeIds([...selectedProductVorlaufProductCategoryIds, categoryId])
-                            : selectedProductVorlaufProductCategoryIds.filter((id) => id !== categoryId);
-                          setSelectedProductVorlaufProductCategoryIds(nextIds);
-                          void persistSelection("product-vorlauf", {
+                            ? normalizeIds([...selectedProduktionsplanungProductCategoryIds, categoryId])
+                            : selectedProduktionsplanungProductCategoryIds.filter((id) => id !== categoryId);
+                          setSelectedProduktionsplanungProductCategoryIds(nextIds);
+                          void persistSelection("produktionsplanung", {
                             productCategoryIds: nextIds,
-                            componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
-                            useShortCodes: useProductVorlaufShortCodes,
-                            sonderblockTagIds: selectedProductVorlaufSonderblockTagIds,
+                            componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
+                            useShortCodes: useProduktionsplanungShortCodes,
+                            sonderblockTagIds: selectedProduktionsplanungSonderblockTagIds,
                           });
                         }}
                         onComponentCategoryToggle={(categoryId, checked) => {
                           const nextIds = checked
-                            ? normalizeIds([...selectedProductVorlaufComponentCategoryIds, categoryId])
-                            : selectedProductVorlaufComponentCategoryIds.filter((id) => id !== categoryId);
-                          setSelectedProductVorlaufComponentCategoryIds(nextIds);
-                          void persistSelection("product-vorlauf", {
-                            productCategoryIds: selectedProductVorlaufProductCategoryIds,
+                            ? normalizeIds([...selectedProduktionsplanungComponentCategoryIds, categoryId])
+                            : selectedProduktionsplanungComponentCategoryIds.filter((id) => id !== categoryId);
+                          setSelectedProduktionsplanungComponentCategoryIds(nextIds);
+                          void persistSelection("produktionsplanung", {
+                            productCategoryIds: selectedProduktionsplanungProductCategoryIds,
                             componentCategoryIds: nextIds,
-                            useShortCodes: useProductVorlaufShortCodes,
-                            sonderblockTagIds: selectedProductVorlaufSonderblockTagIds,
+                            useShortCodes: useProduktionsplanungShortCodes,
+                            sonderblockTagIds: selectedProduktionsplanungSonderblockTagIds,
                           });
                         }}
-                        testIdPrefix="reports-product-vorlauf"
+                        testIdPrefix="reports-produktionsplanung"
                       />
-                      <label className="mt-3 flex items-center gap-3 text-sm text-foreground" data-testid="reports-product-vorlauf-use-shortcodes-label">
+                      <label className="mt-3 flex items-center gap-3 text-sm text-foreground" data-testid="reports-produktionsplanung-use-shortcodes-label">
                         <Checkbox
-                          checked={useProductVorlaufShortCodes}
+                          checked={useProduktionsplanungShortCodes}
                           onCheckedChange={(checked) => {
                             const next = Boolean(checked);
-                            setUseProductVorlaufShortCodes(next);
-                            void persistSelection("product-vorlauf", {
-                              productCategoryIds: selectedProductVorlaufProductCategoryIds,
-                              componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
+                            setUseProduktionsplanungShortCodes(next);
+                            void persistSelection("produktionsplanung", {
+                              productCategoryIds: selectedProduktionsplanungProductCategoryIds,
+                              componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
                               useShortCodes: next,
-                              sonderblockTagIds: selectedProductVorlaufSonderblockTagIds,
+                              sonderblockTagIds: selectedProduktionsplanungSonderblockTagIds,
                             });
                           }}
-                          data-testid="checkbox-reports-product-vorlauf-use-shortcodes"
+                          data-testid="checkbox-reports-produktionsplanung-use-shortcodes"
                         />
                         <span>Shortcodes verwenden?</span>
                       </label>
-                      <section className="hidden" data-testid="reports-product-vorlauf-sonderblock-tags">
+                      <section className="hidden" data-testid="reports-produktionsplanung-sonderblock-tags">
                         <h5 className="text-sm font-semibold text-foreground">Sonderblock-Tags</h5>
                         <div className="mt-3 space-y-2">
                           {availableSonderblockTags.length > 0 ? availableSonderblockTags.map((tag) => (
                             <label key={tag.id} className="flex items-center gap-3 text-sm text-foreground">
                               <Checkbox
-                                checked={selectedProductVorlaufSonderblockTagIds.includes(tag.id)}
+                                checked={selectedProduktionsplanungSonderblockTagIds.includes(tag.id)}
                                 onCheckedChange={(checked) => {
                                   const nextIds = Boolean(checked)
-                                    ? normalizeIds([...selectedProductVorlaufSonderblockTagIds, tag.id])
-                                    : selectedProductVorlaufSonderblockTagIds.filter((id) => id !== tag.id);
-                                  setSelectedProductVorlaufSonderblockTagIds(nextIds);
-                                  void persistSelection("product-vorlauf", {
-                                    productCategoryIds: selectedProductVorlaufProductCategoryIds,
-                                    componentCategoryIds: selectedProductVorlaufComponentCategoryIds,
-                                    useShortCodes: useProductVorlaufShortCodes,
+                                    ? normalizeIds([...selectedProduktionsplanungSonderblockTagIds, tag.id])
+                                    : selectedProduktionsplanungSonderblockTagIds.filter((id) => id !== tag.id);
+                                  setSelectedProduktionsplanungSonderblockTagIds(nextIds);
+                                  void persistSelection("produktionsplanung", {
+                                    productCategoryIds: selectedProduktionsplanungProductCategoryIds,
+                                    componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
+                                    useShortCodes: useProduktionsplanungShortCodes,
                                     sonderblockTagIds: nextIds,
                                   });
                                 }}
-                                data-testid={`checkbox-reports-product-vorlauf-sonderblock-tag-${tag.id}`}
+                                data-testid={`checkbox-reports-produktionsplanung-sonderblock-tag-${tag.id}`}
                               />
                               <span>{tag.name}</span>
                             </label>
@@ -1412,42 +1428,42 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               errorState={isVorlauflistePrintPreviewError ? <div className="text-sm text-destructive">Druckvorschau konnte nicht geladen werden.</div> : null}
             />
 
-            <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProductVorlauflayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-product-vorlauf-overlay">
+            <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProduktionsplanungLayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-produktionsplanung-overlay">
               <div className="flex h-full flex-col">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 print:hidden">
                   <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-foreground">Produkt Vorlauf</h3>
+                    <h3 className="text-base font-semibold text-foreground">Produktionsplanung</h3>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="outline" onClick={handleProductVorlaufPrint} data-testid="button-reports-product-vorlauf-print">Produktionsplanung drucken</Button>
-                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-product-vorlauf-back">Zurück</Button>
+                    <Button type="button" variant="outline" onClick={handleProduktionsplanungPrint} data-testid="button-reports-produktionsplanung-print">Produktionsplanung drucken</Button>
+                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-produktionsplanung-back">Zurück</Button>
                   </div>
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto p-6">
-                  {isProductVorlaufLoading ? (
+                  {isProduktionsplanungLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : (
                     <>
                       <div className="space-y-6 print:hidden">
-                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-products">
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-products">
                         <h4 className="text-sm font-semibold">Produktkategorien</h4>
                         {renderGroupedCategoryList(
-                          productVorlaufData?.productCategoryGroups ?? [],
+                          produktionsplanungData?.productCategoryGroups ?? [],
                           "Keine passenden Produkte gefunden.",
-                          "reports-product-vorlauf-products",
+                          "reports-produktionsplanung-products",
                         )}
                       </section>
-                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-components">
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-components">
                         <h4 className="text-sm font-semibold">Komponentenkategorien</h4>
                         {renderGroupedCategoryList(
-                          productVorlaufData?.componentCategoryGroups ?? [],
+                          produktionsplanungData?.componentCategoryGroups ?? [],
                           "Keine passenden Komponenten gefunden.",
-                          "reports-product-vorlauf-components",
+                          "reports-produktionsplanung-components",
                         )}
                       </section>
-                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-projects">
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-projects">
                         <h4 className="text-sm font-semibold">Projektliste</h4>
-                        {productVorlaufData?.projectRows?.length ? (
+                        {produktionsplanungData?.projectRows?.length ? (
                           <div className="mt-3 overflow-auto">
                             <table className="min-w-full border-collapse text-sm">
                               <thead>
@@ -1460,15 +1476,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                                 </tr>
                               </thead>
                               <tbody>
-                                {(productVorlaufData?.projectRows ?? []).map((row) => (
-                                  <tr key={row.projectId} className="border-b border-border/40 align-top" data-testid={`reports-product-vorlauf-project-row-${row.projectId}`}>
+                                {(produktionsplanungData?.projectRows ?? []).map((row) => (
+                                  <tr key={row.projectId} className="border-b border-border/40 align-top" data-testid={`reports-produktionsplanung-project-row-${row.projectId}`}>
                                     <td className="px-2 py-2">{formatDate(row.actualDate)}</td>
                                     <td className="px-2 py-2">{resolveValue(row.tourName)}</td>
                                     <td className="px-2 py-2">
                                       <div className="font-semibold">{row.projectName}</div>
                                       <div className="text-xs text-muted-foreground">{resolveValue(row.orderNumber)}</div>
                                     </td>
-                                    <td className="px-2 py-2">{formatProjectRowArticles(row, selectedProductVorlaufPrintCategories)}</td>
+                                    <td className="px-2 py-2">{formatProjectRowArticles(row, selectedProduktionsplanungPrintCategories)}</td>
                                     <td className="px-2 py-2">{resolveValue(row.projectDescription)}</td>
                                   </tr>
                                 ))}
@@ -1479,12 +1495,12 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           <p className="mt-3 text-sm text-muted-foreground">Keine passenden Projekte im gewählten Zeitraum gefunden.</p>
                         )}
                       </section>
-                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-product-vorlauf-special-measures">
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-special-measures">
                         <h4 className="text-sm font-semibold">Sondermaße</h4>
-                        {productVorlaufData?.specialMeasureProjects.length ? (
+                        {produktionsplanungData?.specialMeasureProjects.length ? (
                           <div className="mt-3 space-y-3">
-                            {productVorlaufData.specialMeasureProjects.map((entry) => (
-                              <div key={entry.projectId} className="rounded-md border border-border/50 px-4 py-3" data-testid={`reports-product-vorlauf-special-measure-project-${entry.projectId}`}>
+                            {produktionsplanungData.specialMeasureProjects.map((entry) => (
+                              <div key={entry.projectId} className="rounded-md border border-border/50 px-4 py-3" data-testid={`reports-produktionsplanung-special-measure-project-${entry.projectId}`}>
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                   <div className="space-y-1">
                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -1494,7 +1510,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                                       <span>{formatDate(entry.actualDate)}</span>
                                     </div>
                                   </div>
-                                  {entry.specialMeasureTag ? <EntityTagFooterRow tags={[entry.specialMeasureTag]} testId={`reports-product-vorlauf-special-measure-tag-${entry.projectId}`} /> : null}
+                                  {entry.specialMeasureTag ? <EntityTagFooterRow tags={[entry.specialMeasureTag]} testId={`reports-produktionsplanung-special-measure-tag-${entry.projectId}`} /> : null}
                                 </div>
                                 <p className="mt-2 text-sm text-muted-foreground">{resolveValue(entry.projectDescription)}</p>
                               </div>
@@ -1505,14 +1521,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                         )}
                       </section>
                       </div>
-                      <ProductVorlaufPrintLayout
-                        data={productVorlaufData ?? {
+                      <ProduktionsplanungPrintLayout
+                        data={produktionsplanungData ?? {
                           productCategoryGroups: [],
                           componentCategoryGroups: [],
                           specialMeasureProjects: [],
                           projectRows: [],
                         }}
-                        categories={selectedProductVorlaufPrintCategories}
+                        categories={selectedProduktionsplanungPrintCategories}
                       />
                     </>
                   )}
@@ -1525,3 +1541,5 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     </div>
   );
 }
+
+

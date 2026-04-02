@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -7,13 +7,13 @@
  * - Der Wochenkalender zeigt den stornierten Termin nach dem Bestätigen des Stornos ohne manuelles Formularschließen weiterhin sichtbar, aber mit Storniert-Tag.
  * - Der Projektbetrag wird nach dem Storno im Projektformular auf 0.00 gesetzt.
  * - Die Vorlaufliste zeigt den stornierten Termin weiterhin mit Betrag 0 und sichtbarer Storno-Kennzeichnung.
- * - Der Produkt-Vorlauf soll stornierte Projekte ausfiltern; dieser Soll-Test beschreibt die aktuelle Luecke bewusst rot.
+ * - Der Produktionsplanung soll stornierte Projekte ausfiltern; dieser Soll-Test beschreibt die aktuelle Luecke bewusst rot.
  *
  * Fehlerfaelle:
  * - Der Termin verschwindet vor dem Storno oder traegt bereits vorher den Storniert-Tag.
  * - Der Storno bleibt im offenen Formular hängen und propagiert nicht direkt in Kalender, Projektbetrag oder Reports.
  * - Die Vorlaufliste zeigt nach dem Storno weiterhin den alten Betrag.
- * - Der Produkt-Vorlauf listet das stornierte Projekt trotz Soll-Regel weiterhin in Mengenlisten.
+ * - Der Produktionsplanung listet das stornierte Projekt trotz Soll-Regel weiterhin in Mengenlisten.
  *
  * Ziel:
  * Den kompletten fachlichen Storno-Flow aus Anwendersicht ueber Kalender, Formular, Projekt und Reports absichern.
@@ -229,17 +229,20 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await expect(
     vorlauflisteTable.getByRole("row").filter({ hasText: customer.fullName ?? "" }).first(),
   ).toHaveAttribute("aria-label", "Storniert");
-  await expect(vorlauflisteTable).toContainText(/0,00\s*€/);
+  await expect(vorlauflisteTable).toContainText(/0,00\s*â‚¬/);
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId("reports-product-vorlauf-from-date").fill(appointmentDate);
-  await page.getByTestId("button-reports-product-vorlauf-show-to-date").click();
-  await page.getByTestId("reports-product-vorlauf-to-date").fill(appointmentDate);
-  await page.getByTestId("button-reports-product-vorlauf-generate").click();
+  await page.getByTestId("reports-produktionsplanung-from-date").fill(appointmentDate);
+  await page.getByTestId("button-reports-produktionsplanung-show-to-date").click();
+  await page.getByTestId("reports-produktionsplanung-to-date").fill(appointmentDate);
+  await page.getByTestId("button-reports-produktionsplanung-generate").click();
 
-  await expect(page.getByTestId("reports-product-vorlauf-overlay")).toBeVisible();
-  await expect(page.getByTestId("reports-product-vorlauf-products")).toContainText("Keine passenden Produkte gefunden.");
-  await expect(page.getByTestId("reports-product-vorlauf-components")).toContainText("Keine passenden Komponenten gefunden.");
-  await expect(page.getByTestId("reports-product-vorlauf-overlay")).not.toContainText("FT28 Browser Cancel Sauna");
-  await expect(page.getByTestId("reports-product-vorlauf-overlay")).not.toContainText("FT28 Browser Cancel Fenster");
+  await expect(page.getByTestId("reports-produktionsplanung-overlay")).toBeVisible();
+  await expect(page.getByTestId("reports-produktionsplanung-products")).toContainText("Keine passenden Produkte gefunden.");
+  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Keine passenden Komponenten gefunden.");
+  await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Sauna");
+  await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Fenster");
 });
+
+
+

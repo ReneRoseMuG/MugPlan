@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -25,6 +25,7 @@ const useQueryMock = vi.fn();
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
   useSetting: (key: string) => useSettingsMock().settingsByKey.get(key)?.resolvedValue,
+  resolveProduktionsplanungSelection: (value: unknown) => value,
 }));
 
 vi.mock("@/lib/project-appointments", () => ({
@@ -100,7 +101,7 @@ vi.mock("@/components/ui/entity-tag-footer-row", () => ({
 
 import {
   ReportsPage,
-  buildProductVorlaufReportUrl,
+  buildProduktionsplanungReportUrl,
   buildVorlauflistePrintPreviewUrl,
   buildVorlauflisteReportUrl,
 } from "../../../client/src/components/ReportsPage";
@@ -143,7 +144,7 @@ describe("FT26 UI: ReportsPage behavior", () => {
           isError: false,
         };
       }
-      if (key === "reports-product-vorlauf") {
+      if (key === "reports-produktionsplanung") {
         return {
           data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [], projectRows: [] },
           isLoading: false,
@@ -159,7 +160,7 @@ describe("FT26 UI: ReportsPage behavior", () => {
     const html = renderToStaticMarkup(<ReportsPage />);
 
     expect(html).toContain("button-reports-vorlaufliste-generate");
-    expect(html).toContain("button-reports-product-vorlauf-generate");
+    expect(html).toContain("button-reports-produktionsplanung-generate");
     expect(html).toContain("disabled");
   });
 
@@ -197,8 +198,8 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).not.toContain("componentCategoryIds=");
   });
 
-  it("includes shortcodes and sonderblock tags in the product-vorlauf URL", () => {
-    const url = buildProductVorlaufReportUrl({
+  it("includes shortcodes and sonderblock tags in the produktionsplanung URL", () => {
+    const url = buildProduktionsplanungReportUrl({
       fromDate: "2026-03-29",
       toDate: "2026-03-30",
       productCategoryIds: [1],
@@ -207,11 +208,14 @@ describe("FT26 UI: ReportsPage behavior", () => {
       sonderblockTagIds: [7, 8],
     });
 
-    expect(url).toContain("/api/reports/product-vorlauf?");
+    expect(url).toContain("/api/reports/produktionsplanung?");
     expect(url).toContain("fromDate=2026-03-29");
     expect(url).toContain("toDate=2026-03-30");
     expect(url).toContain("useShortCodes=true");
     expect(url).toContain("sonderblockTagIds=7");
     expect(url).toContain("sonderblockTagIds=8");
   });
+
 });
+
+

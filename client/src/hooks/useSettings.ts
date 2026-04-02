@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
 
 type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
@@ -8,7 +8,7 @@ type VorlauflisteCategorySelection = {
   useShortCodes?: boolean;
   columnWidths?: Record<string, number>;
 };
-type ProductVorlaufSelection = {
+type ProduktionsplanungSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
@@ -37,7 +37,7 @@ export type UserSettingKey =
   | "calendar.weekAppointmentDisplayMode"
   | "demoData.adminFormState"
   | "reports.vorlaufliste.categorySelection"
-  | "reports.productVorlauf.selection";
+  | "reports.produktionsplanung.selection";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -60,7 +60,7 @@ type UserSettingValueByKey = {
   "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
   "demoData.adminFormState": string;
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
-  "reports.productVorlauf.selection": ProductVorlaufSelection;
+  "reports.produktionsplanung.selection": ProduktionsplanungSelection;
 };
 
 export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
@@ -115,7 +115,7 @@ export function resolveVorlauflisteCategorySelection(value: unknown): Vorlauflis
   };
 }
 
-export function resolveProductVorlaufSelection(value: unknown): ProductVorlaufSelection {
+export function resolveProduktionsplanungSelection(value: unknown): ProduktionsplanungSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { productCategoryIds: [], componentCategoryIds: [], useShortCodes: false, sonderblockTagIds: [] };
   }
@@ -233,9 +233,10 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     if (key === "reports.vorlaufliste.categorySelection") {
       return resolveVorlauflisteCategorySelection(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
-    if (key === "reports.productVorlauf.selection") {
-      return resolveProductVorlaufSelection(setting?.resolvedValue) as UserSettingValueByKey[K];
+    if (key === "reports.produktionsplanung.selection") {
+      return resolveProduktionsplanungSelection(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);
 }
+

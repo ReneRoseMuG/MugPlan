@@ -1,4 +1,4 @@
-import type { CanonicalRoleKey } from "../settings/registry";
+﻿import type { CanonicalRoleKey } from "../settings/registry";
 import * as reportsRepository from "../repositories/reportsRepository";
 
 export class ReportsError extends Error {
@@ -54,7 +54,7 @@ export async function getVorlauflistePrintPreview(
   return reportsRepository.getVorlauflistePrintPreview(params);
 }
 
-export async function listProductVorlauf(
+export async function listProduktionsplanung(
   params: {
     fromDate: string;
     toDate?: string;
@@ -71,5 +71,6 @@ export async function listProductVorlauf(
     throw new ReportsError(422, "VALIDATION_ERROR");
   }
 
-  return reportsRepository.getProductVorlauf(params);
+  return reportsRepository.getProduktionsplanung(params);
 }
+

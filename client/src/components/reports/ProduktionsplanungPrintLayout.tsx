@@ -1,18 +1,18 @@
-import { format } from "date-fns";
+﻿import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
-type ProductVorlaufItemTotal = {
+type ProduktionsplanungItemTotal = {
   itemName: string;
   totalQuantity: number;
 };
 
-type ProductVorlaufCategoryGroup = {
+type ProduktionsplanungCategoryGroup = {
   categoryId: number;
   categoryName: string;
-  items: ProductVorlaufItemTotal[];
+  items: ProduktionsplanungItemTotal[];
 };
 
-type ProductVorlaufProjectRow = {
+type ProduktionsplanungProjectRow = {
   projectId: number;
   projectName: string;
   orderNumber: string | null;
@@ -23,14 +23,14 @@ type ProductVorlaufProjectRow = {
   matchedSonderblockTagIds: number[];
 };
 
-type ProductVorlaufResponse = {
-  productCategoryGroups: ProductVorlaufCategoryGroup[];
-  componentCategoryGroups: ProductVorlaufCategoryGroup[];
+type ProduktionsplanungResponse = {
+  productCategoryGroups: ProduktionsplanungCategoryGroup[];
+  componentCategoryGroups: ProduktionsplanungCategoryGroup[];
   specialMeasureProjects: Array<unknown>;
-  projectRows: ProductVorlaufProjectRow[];
+  projectRows: ProduktionsplanungProjectRow[];
 };
 
-export type ProductVorlaufPrintCategory = {
+export type ProduktionsplanungPrintCategory = {
   id: number;
   name: string;
 };
@@ -47,7 +47,7 @@ function resolveValue(value: string | null): string {
   return value.trim();
 }
 
-function renderGroupSection(title: string, groups: ProductVorlaufCategoryGroup[]) {
+function renderGroupSection(title: string, groups: ProduktionsplanungCategoryGroup[]) {
   return (
     <section>
       <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">{title}</h3>
@@ -74,12 +74,12 @@ function renderGroupSection(title: string, groups: ProductVorlaufCategoryGroup[]
   );
 }
 
-export function ProductVorlaufPrintLayout({
+export function ProduktionsplanungPrintLayout({
   data,
   categories,
 }: {
-  data: ProductVorlaufResponse;
-  categories: ProductVorlaufPrintCategory[];
+  data: ProduktionsplanungResponse;
+  categories: ProduktionsplanungPrintCategory[];
 }) {
   const sonderblockRows = data.projectRows.filter((row) => row.matchedSonderblockTagIds.length > 0);
 
@@ -87,7 +87,7 @@ export function ProductVorlaufPrintLayout({
     <div className="hidden print:block">
       <div className="space-y-6 bg-white text-slate-900">
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold">Produkt Vorlauf</h2>
+          <h2 className="text-lg font-semibold">Produktionsplanung</h2>
           {renderGroupSection("Produkte", data.productCategoryGroups)}
           {renderGroupSection("Komponenten", data.componentCategoryGroups)}
         </section>
@@ -154,3 +154,6 @@ export function ProductVorlaufPrintLayout({
     </div>
   );
 }
+
+
+

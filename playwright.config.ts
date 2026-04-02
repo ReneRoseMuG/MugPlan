@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+process.env.NODE_ENV ??= "test";
+process.env.MUGPLAN_MODE ??= "test";
+
 const port = Number(process.env.PLAYWRIGHT_PORT ?? "4174");
 const baseURL = `http://127.0.0.1:${port}`;
 

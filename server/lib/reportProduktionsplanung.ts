@@ -1,10 +1,10 @@
-import {
+﻿import {
   isManagedReportExclusionTagName,
   isReservedAppointmentCancellationTagName,
 } from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
 
-export type GroupedProductVorlaufItemInput = {
+export type GroupedProduktionsplanungItemInput = {
   categoryId: number;
   categoryName: string;
   itemName: string;
@@ -12,7 +12,7 @@ export type GroupedProductVorlaufItemInput = {
   shortCode?: string | null;
 };
 
-export type GroupedProductVorlaufCategoryGroup = {
+export type GroupedProduktionsplanungCategoryGroup = {
   categoryId: number;
   categoryName: string;
   items: Array<{
@@ -27,7 +27,7 @@ type GroupBucket = {
   items: Map<string, { itemName: string; totalQuantity: number }>;
 };
 
-export function resolveGroupedProductVorlaufName(
+export function resolveGroupedProduktionsplanungName(
   name: string,
   shortCode: string | null | undefined,
   useShortCodes: boolean,
@@ -38,10 +38,10 @@ export function resolveGroupedProductVorlaufName(
   return name.trim();
 }
 
-export function buildGroupedProductVorlaufCategoryGroups(
-  rows: GroupedProductVorlaufItemInput[],
+export function buildGroupedProduktionsplanungCategoryGroups(
+  rows: GroupedProduktionsplanungItemInput[],
   useShortCodes: boolean,
-): GroupedProductVorlaufCategoryGroup[] {
+): GroupedProduktionsplanungCategoryGroup[] {
   const buckets = new Map<number, GroupBucket>();
 
   for (const row of rows) {
@@ -54,7 +54,7 @@ export function buildGroupedProductVorlaufCategoryGroups(
       categoryName: row.categoryName,
       items: new Map<string, { itemName: string; totalQuantity: number }>(),
     };
-    const groupedName = resolveGroupedProductVorlaufName(row.itemName, row.shortCode, useShortCodes);
+    const groupedName = resolveGroupedProduktionsplanungName(row.itemName, row.shortCode, useShortCodes);
     const existing = bucket.items.get(groupedName);
 
     if (existing) {
@@ -103,3 +103,4 @@ export function collectMatchedSonderblockTagIds(params: {
       .map((tag) => tag.id),
   )).sort((left, right) => left - right);
 }
+

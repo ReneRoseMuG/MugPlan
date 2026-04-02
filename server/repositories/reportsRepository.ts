@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
+﻿import { and, asc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
 
 import { db } from "../db";
@@ -24,9 +24,9 @@ import {
   isManagedSpecialMeasureTag,
 } from "../lib/appointmentCancellation";
 import {
-  buildGroupedProductVorlaufCategoryGroups,
+  buildGroupedProduktionsplanungCategoryGroups,
   collectMatchedSonderblockTagIds,
-} from "../lib/reportProductVorlauf";
+} from "../lib/reportProduktionsplanung";
 import {
   getProjectAttachmentCountsByProjectIds,
   getProjectNoteCountsByProjectIds,
@@ -84,18 +84,18 @@ export type VorlauflisteResult = {
   items: VorlauflisteRow[];
 };
 
-export type ProductVorlaufItemTotal = {
+export type ProduktionsplanungItemTotal = {
   itemName: string;
   totalQuantity: number;
 };
 
-export type ProductVorlaufCategoryGroup = {
+export type ProduktionsplanungCategoryGroup = {
   categoryId: number;
   categoryName: string;
-  items: ProductVorlaufItemTotal[];
+  items: ProduktionsplanungItemTotal[];
 };
 
-export type ProductVorlaufSpecialMeasureProject = {
+export type ProduktionsplanungSpecialMeasureProject = {
   projectId: number;
   orderNumber: string | null;
   customerNumber: string | null;
@@ -105,14 +105,14 @@ export type ProductVorlaufSpecialMeasureProject = {
   specialMeasureTag: Tag | null;
 };
 
-export type ProductVorlaufResult = {
-  productCategoryGroups: ProductVorlaufCategoryGroup[];
-  componentCategoryGroups: ProductVorlaufCategoryGroup[];
-  specialMeasureProjects: ProductVorlaufSpecialMeasureProject[];
-  projectRows: ProductVorlaufProjectRow[];
+export type ProduktionsplanungResult = {
+  productCategoryGroups: ProduktionsplanungCategoryGroup[];
+  componentCategoryGroups: ProduktionsplanungCategoryGroup[];
+  specialMeasureProjects: ProduktionsplanungSpecialMeasureProject[];
+  projectRows: ProduktionsplanungProjectRow[];
 };
 
-export type ProductVorlaufProjectRow = {
+export type ProduktionsplanungProjectRow = {
   projectId: number;
   projectName: string;
   orderNumber: string | null;
@@ -578,14 +578,14 @@ export async function getVorlauflistePrintPreview(params: {
   };
 }
 
-export async function getProductVorlauf(params: {
+export async function getProduktionsplanung(params: {
   fromDate: string;
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes: boolean;
   sonderblockTagIds: number[];
-}): Promise<ProductVorlaufResult> {
+}): Promise<ProduktionsplanungResult> {
   const appointmentConditions = buildAppointmentConditions(params);
   const projectAppointmentRows = await db
     .select({
@@ -747,11 +747,11 @@ export async function getProductVorlauf(params: {
     }
   }
 
-  const sortedProductCategoryGroups = buildGroupedProductVorlaufCategoryGroups(productGroupRows, params.useShortCodes);
-  const sortedComponentCategoryGroups = buildGroupedProductVorlaufCategoryGroups(componentGroupRows, params.useShortCodes);
+  const sortedProductCategoryGroups = buildGroupedProduktionsplanungCategoryGroups(productGroupRows, params.useShortCodes);
+  const sortedComponentCategoryGroups = buildGroupedProduktionsplanungCategoryGroups(componentGroupRows, params.useShortCodes);
 
   const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
-  const specialMeasureProjects: ProductVorlaufSpecialMeasureProject[] = [];
+  const specialMeasureProjects: ProduktionsplanungSpecialMeasureProject[] = [];
 
   for (const projectId of Array.from(matchedProjectIds)) {
     const projectTagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
@@ -816,7 +816,7 @@ export async function getProductVorlauf(params: {
         matchedSonderblockTagIds,
       };
     })
-    .filter((entry): entry is ProductVorlaufProjectRow => entry !== null)
+    .filter((entry): entry is ProduktionsplanungProjectRow => entry !== null)
     .sort((left, right) => left.actualDate.localeCompare(right.actualDate, "de") || left.projectId - right.projectId);
 
   return {
@@ -826,3 +826,4 @@ export async function getProductVorlauf(params: {
     projectRows,
   };
 }
+

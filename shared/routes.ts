@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 import { appointmentDisplayModes } from "./appointmentDisplayMode";
 import { 
   insertTourSchema, updateTourSchema, tours, 
@@ -400,18 +400,18 @@ const reportVorlauflistePrintPreviewResponseSchema = z.object({
   items: z.array(reportVorlauflisteItemSchema),
 });
 
-const reportProductVorlaufItemTotalSchema = z.object({
+const reportProduktionsplanungItemTotalSchema = z.object({
   itemName: z.string().min(1),
   totalQuantity: z.number().int().min(0),
 });
 
-const reportProductVorlaufCategoryGroupSchema = z.object({
+const reportProduktionsplanungCategoryGroupSchema = z.object({
   categoryId: z.number().int().positive(),
   categoryName: z.string().min(1),
-  items: z.array(reportProductVorlaufItemTotalSchema),
+  items: z.array(reportProduktionsplanungItemTotalSchema),
 });
 
-const reportProductVorlaufSpecialMeasureProjectSchema = z.object({
+const reportProduktionsplanungSpecialMeasureProjectSchema = z.object({
   projectId: z.number().int().positive(),
   orderNumber: z.string().nullable(),
   customerNumber: z.string().nullable(),
@@ -421,7 +421,7 @@ const reportProductVorlaufSpecialMeasureProjectSchema = z.object({
   specialMeasureTag: tagSchema.nullable(),
 });
 
-const reportProductVorlaufProjectRowSchema = z.object({
+const reportProduktionsplanungProjectRowSchema = z.object({
   projectId: z.number().int().positive(),
   projectName: z.string().min(1),
   orderNumber: z.string().nullable(),
@@ -432,11 +432,11 @@ const reportProductVorlaufProjectRowSchema = z.object({
   matchedSonderblockTagIds: z.array(z.number().int().positive()),
 });
 
-const reportProductVorlaufResponseSchema = z.object({
-  productCategoryGroups: z.array(reportProductVorlaufCategoryGroupSchema),
-  componentCategoryGroups: z.array(reportProductVorlaufCategoryGroupSchema),
-  specialMeasureProjects: z.array(reportProductVorlaufSpecialMeasureProjectSchema),
-  projectRows: z.array(reportProductVorlaufProjectRowSchema),
+const reportProduktionsplanungResponseSchema = z.object({
+  productCategoryGroups: z.array(reportProduktionsplanungCategoryGroupSchema),
+  componentCategoryGroups: z.array(reportProduktionsplanungCategoryGroupSchema),
+  specialMeasureProjects: z.array(reportProduktionsplanungSpecialMeasureProjectSchema),
+  projectRows: z.array(reportProduktionsplanungProjectRowSchema),
 });
 
 const authenticatedResponseSchema = z.object({
@@ -3948,10 +3948,10 @@ export const api = {
         },
       },
     },
-    productVorlauf: {
+    produktionsplanung: {
       list: {
         method: "GET" as const,
-        path: "/api/reports/product-vorlauf",
+        path: "/api/reports/produktionsplanung",
         input: z.object({
           fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
           toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -3973,7 +3973,7 @@ export const api = {
           ),
         }).strict(),
         responses: {
-          200: reportProductVorlaufResponseSchema,
+          200: reportProduktionsplanungResponseSchema,
           403: z.object({ code: z.literal("FORBIDDEN") }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
@@ -4135,3 +4135,4 @@ export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.resp
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;
+

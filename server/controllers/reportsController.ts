@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+﻿import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 
 import { api } from "@shared/routes";
@@ -72,7 +72,7 @@ export async function getVorlauflistePrintPreview(req: Request, res: Response, n
   }
 }
 
-export async function listProductVorlauf(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function listProduktionsplanung(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
@@ -80,8 +80,8 @@ export async function listProductVorlauf(req: Request, res: Response, next: Next
       return;
     }
 
-    const input = api.reports.productVorlauf.list.input.parse(req.query);
-    const report = await reportsService.listProductVorlauf({
+    const input = api.reports.produktionsplanung.list.input.parse(req.query);
+    const report = await reportsService.listProduktionsplanung({
       fromDate: input.fromDate,
       toDate: input.toDate,
       productCategoryIds: input.productCategoryIds,
@@ -103,3 +103,4 @@ export async function listProductVorlauf(req: Request, res: Response, next: Next
     next(error);
   }
 }
+

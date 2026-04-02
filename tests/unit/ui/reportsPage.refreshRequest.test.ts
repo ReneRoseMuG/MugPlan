@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -57,3 +57,5 @@ describe("FT26 UI: ReportsPage refresh request", () => {
     expect(url).not.toContain("refreshKey=");
   });
 });
+
+

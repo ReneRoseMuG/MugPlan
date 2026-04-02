@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Druckansicht rendert die drei sichtbaren Bloecke Produkt Vorlauf, Projektliste und Sonderbloecke.
+ * - Die Druckansicht rendert die drei sichtbaren Bloecke Produktionsplanung, Projektliste und Sonderbloecke.
  * - Die Projektliste rendert genau eine Tabellenzeile pro uebergebenem Projekt mit fortlaufendem Index.
  * - Sonderbloecke erscheinen nur fuer Projekte mit matchedSonderblockTagIds.
  *
@@ -12,22 +12,22 @@
  * - Projekte ohne Sonderblock-Tags landen trotzdem im Sonderblock-Bereich.
  *
  * Ziel:
- * Die vorhandene Produkt-Vorlauf-Druckkomponente in Isolation ueber statisches Markup regressionssicher absichern.
+ * Die vorhandene Produktionsplanung-Druckkomponente in Isolation ueber statisches Markup regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ProductVorlaufPrintLayout } from "../../../client/src/components/reports/ProductVorlaufPrintLayout";
+import { ProduktionsplanungPrintLayout } from "../../../client/src/components/reports/ProduktionsplanungPrintLayout";
 
-describe("FT26/FT32 UI: ProductVorlaufPrintLayout wiring", () => {
+describe("FT26/FT32 UI: ProduktionsplanungPrintLayout wiring", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
   });
 
   it("renders the visible print sections with one project row per entry and selective sonderbloecke", () => {
     const html = renderToStaticMarkup(
-      <ProductVorlaufPrintLayout
+      <ProduktionsplanungPrintLayout
         categories={[
           { id: 10, name: "Fass Saunen" },
           { id: 20, name: "Fenster" },
@@ -93,7 +93,7 @@ describe("FT26/FT32 UI: ProductVorlaufPrintLayout wiring", () => {
       />,
     );
 
-    expect(html).toContain("Produkt Vorlauf");
+    expect(html).toContain("Produktionsplanung");
     expect(html).toContain("Projektliste");
     expect(html).toContain("Sonderblöcke");
     expect(html).toContain("Fass Saunen");
@@ -124,3 +124,6 @@ describe("FT26/FT32 UI: ProductVorlaufPrintLayout wiring", () => {
     expect(html).not.toContain("#3 - 06.11.2099 - Projekt Beta");
   });
 });
+
+
+

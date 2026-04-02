@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der User-Setting-Key fuer den Produkt-Vorlauf speichert Produkt- und Komponentenkategorie-Auswahl getrennt.
+ * - Der User-Setting-Key fuer die Produktionsplanung speichert Produkt- und Komponentenkategorie-Auswahl getrennt.
  * - Shortcode-Schalter und Sonderblock-Tag-Auswahl gehoeren zur persistierten Produkt-Report-Konfiguration.
  * - Nur positive Integer-Arrays ohne Duplikate sind gueltig.
  *
@@ -10,16 +10,16 @@
  * - Ungueltige JSON-Strukturen oder Duplikate werden akzeptiert.
  *
  * Ziel:
- * Den Registry-Vertrag fuer die persistente Produkt-Vorlauf-Konfiguration absichern.
+ * Den Registry-Vertrag fuer die persistente Produktionsplanung-Konfiguration absichern.
  */
 import { describe, expect, it } from "vitest";
 import { userSettingsRegistry } from "../../../server/settings/registry";
 
-describe("settings registry: reports.productVorlauf.selection", () => {
-  const definition = userSettingsRegistry.reportsProductVorlaufSelection;
+describe("settings registry: reports.produktionsplanung.selection", () => {
+  const definition = userSettingsRegistry.reportsProduktionsplanungSelection;
 
   it("uses a USER-scoped json setting with empty default arrays", () => {
-    expect(definition.key).toBe("reports.productVorlauf.selection");
+    expect(definition.key).toBe("reports.produktionsplanung.selection");
     expect(definition.type).toBe("json");
     expect(definition.allowedScopes).toEqual(["USER"]);
     expect(definition.defaultValue).toEqual({
@@ -61,3 +61,6 @@ describe("settings registry: reports.productVorlauf.selection", () => {
     })).toBe(false);
   });
 });
+
+
+

@@ -1,18 +1,18 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Produkt-Vorlauf-Konfiguration wird pro Benutzer getrennt gespeichert.
+ * - Die Produktionsplanung-Konfiguration wird pro Benutzer getrennt gespeichert.
  * - Persistierte Kategorie-IDs bleiben ueber erneutes Laden erhalten.
  * - Bewusst leere Arrays bleiben nach dem Speichern erhalten.
  *
  * Fehlerfaelle:
  * - Scope-Leak zwischen zwei Benutzern.
- * - Verlust der Produkt-Vorlauf-Konfiguration nach Reload.
+ * - Verlust der Produktionsplanung-Konfiguration nach Reload.
  * - Leere Arrays fallen auf Default-Werte zurueck.
  *
  * Ziel:
- * Die benutzerspezifische Persistenz der Produkt-Vorlauf-Konfiguration auf API-Ebene absichern.
+ * Die benutzerspezifische Persistenz der Produktionsplanung-Konfiguration auf API-Ebene absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -46,9 +46,9 @@ beforeEach(() => {
 });
 
 async function createDispatcherAgent(label: string): Promise<SuperAgentTest> {
-  const username = `test-product-vorlauf-setting-${label}-${userCounter}`;
+  const username = `test-produktionsplanung-setting-${label}-${userCounter}`;
   userCounter += 1;
-  const password = `test-product-vorlauf-setting-password-${label}`;
+  const password = `test-produktionsplanung-setting-password-${label}`;
   const passwordHash = await hashPassword(password);
   await createUser({
     username,
@@ -85,13 +85,13 @@ async function setUserSetting(
   },
 ): Promise<void> {
   const settings = await getResolvedSettings(agent);
-  const setting = getSetting(settings, "reports.productVorlauf.selection");
+  const setting = getSetting(settings, "reports.produktionsplanung.selection");
   const version = typeof setting.userVersion === "number" && setting.userVersion >= 1 ? setting.userVersion : 1;
 
   await agent
     .patch("/api/user-settings")
     .send({
-      key: "reports.productVorlauf.selection",
+      key: "reports.produktionsplanung.selection",
       scopeType: "USER",
       version,
       value,
@@ -99,7 +99,7 @@ async function setUserSetting(
     .expect(200);
 }
 
-describe("integration: reports product vorlauf selection persistence", () => {
+describe("integration: reports produktionsplanung selection persistence", () => {
   it("persists the configuration user-specifically and keeps values across reload", async () => {
     const userA = await createDispatcherAgent("a");
     const userB = await createDispatcherAgent("b");
@@ -114,13 +114,13 @@ describe("integration: reports product vorlauf selection persistence", () => {
     const settingsA = await getResolvedSettings(userA);
     const settingsB = await getResolvedSettings(userB);
 
-    expect(getSetting(settingsA, "reports.productVorlauf.selection").resolvedValue).toEqual({
+    expect(getSetting(settingsA, "reports.produktionsplanung.selection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
       useShortCodes: true,
       sonderblockTagIds: [31, 32],
     });
-    expect(getSetting(settingsB, "reports.productVorlauf.selection").resolvedValue).toEqual({
+    expect(getSetting(settingsB, "reports.produktionsplanung.selection").resolvedValue).toEqual({
       productCategoryIds: [],
       componentCategoryIds: [],
       useShortCodes: false,
@@ -128,7 +128,7 @@ describe("integration: reports product vorlauf selection persistence", () => {
     });
 
     const reloadedA = await getResolvedSettings(userA);
-    expect(getSetting(reloadedA, "reports.productVorlauf.selection").resolvedValue).toEqual({
+    expect(getSetting(reloadedA, "reports.produktionsplanung.selection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 22],
       useShortCodes: true,
@@ -145,7 +145,7 @@ describe("integration: reports product vorlauf selection persistence", () => {
     });
 
     const reloaded = await getResolvedSettings(user);
-    expect(getSetting(reloaded, "reports.productVorlauf.selection").resolvedValue).toEqual({
+    expect(getSetting(reloaded, "reports.produktionsplanung.selection").resolvedValue).toEqual({
       productCategoryIds: [],
       componentCategoryIds: [],
       useShortCodes: false,
@@ -153,3 +153,6 @@ describe("integration: reports product vorlauf selection persistence", () => {
     });
   });
 });
+
+
+

@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Artikelliste im Produkt Vorlauf bleibt nach Kategorien gruppiert.
+ * - Die Artikelliste im Produktionsplanung bleibt nach Kategorien gruppiert.
  * - Produktkategorien bleiben vor Komponentenkategorien in der Ausgabe-Reihenfolge.
  * - Kommagetrennte Artikelwerte werden in einzelne sichtbare Zeilen aufgeteilt.
  *
@@ -12,13 +12,13 @@
  * - Die Reihenfolge zwischen Produkt- und Komponentenkategorien kippt.
  *
  * Ziel:
- * Die aufbereitete Artikellisten-Struktur fuer die Produkt-Vorlauf-Tabelle isoliert regressionssicher absichern.
+ * Die aufbereitete Artikellisten-Struktur fuer die Produktionsplanung-Tabelle isoliert regressionssicher absichern.
  */
 import { describe, expect, it } from "vitest";
 
 import { buildProjectRowArticleGroups } from "../../../client/src/components/ReportsPage";
 
-describe("FT26 UI: ReportsPage product vorlauf article groups", () => {
+describe("FT26 UI: ReportsPage produktionsplanung article groups", () => {
   it("groups non-empty category values into highlighted row sections with one item per line", () => {
     const result = buildProjectRowArticleGroups(
       {
@@ -56,3 +56,6 @@ describe("FT26 UI: ReportsPage product vorlauf article groups", () => {
     ]);
   });
 });
+
+
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -25,6 +25,7 @@ const tableViewMock = vi.fn();
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
   useSetting: (key: string) => useSettingsMock().settingsByKey.get(key)?.resolvedValue,
+  resolveProduktionsplanungSelection: (value: unknown) => value,
 }));
 
 vi.mock("@tanstack/react-query", () => ({
@@ -184,7 +185,7 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
           isError: false,
         };
       }
-      if (key === "reports-product-vorlauf") {
+      if (key === "reports-produktionsplanung") {
         return {
           data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [], projectRows: [] },
           isLoading: false,
@@ -214,3 +215,5 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     expect(html).toContain("data-has-row-class=\"false\"");
   });
 });
+
+
