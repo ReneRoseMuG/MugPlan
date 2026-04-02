@@ -19,6 +19,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { UserSettingsResolvedResponse } from "@shared/routes";
 import {
+  applyOptimisticSettingUpdate,
   isVersionConflictError,
   resolveSettingVersion,
   setSettingWithVersionRetry,
@@ -84,6 +85,65 @@ describe("PKG-08 SettingsProvider versioning", () => {
 
     expect(resolveSettingVersion(settings, { key: "customers.viewMode", scopeType: "USER" })).toBe(1);
     expect(resolveSettingVersion(settings, { key: "unknown", scopeType: "USER" })).toBeNull();
+  });
+
+  it("increments the optimistic scope version for consecutive updates", () => {
+    const settings: UserSettingsResolvedResponse = [
+      {
+        key: "backup_enabled",
+        label: "Backups aktiv",
+        description: "desc",
+        type: "boolean",
+        constraints: {},
+        allowedScopes: ["GLOBAL"],
+        defaultValue: true,
+        globalValue: true,
+        globalVersion: 3,
+        resolvedValue: true,
+        resolvedVersion: 3,
+        resolvedScope: "GLOBAL",
+        roleCode: "ADMIN",
+        roleKey: "ADMIN",
+      },
+    ];
+
+    const updated = applyOptimisticSettingUpdate(settings, {
+      key: "backup_enabled",
+      scopeType: "GLOBAL",
+      value: false,
+    });
+
+    expect(updated[0]?.globalVersion).toBe(4);
+    expect(updated[0]?.resolvedVersion).toBe(4);
+    expect(updated[0]?.globalValue).toBe(false);
+  });
+
+  it("keeps optimistic first-write version at 1 when no persisted scope value exists", () => {
+    const settings: UserSettingsResolvedResponse = [
+      {
+        key: "customers.viewMode",
+        label: "Kunden Ansicht",
+        description: "desc",
+        type: "enum",
+        constraints: { options: ["board", "table"] },
+        allowedScopes: ["USER"],
+        defaultValue: "board",
+        resolvedValue: "board",
+        resolvedScope: "DEFAULT",
+        roleCode: "ADMIN",
+        roleKey: "ADMIN",
+      },
+    ];
+
+    const updated = applyOptimisticSettingUpdate(settings, {
+      key: "customers.viewMode",
+      scopeType: "USER",
+      value: "table",
+    });
+
+    expect(updated[0]?.userVersion).toBe(1);
+    expect(updated[0]?.resolvedVersion).toBe(1);
+    expect(updated[0]?.userValue).toBe("table");
   });
 
   it("retries once after VERSION_CONFLICT using refreshed version", async () => {

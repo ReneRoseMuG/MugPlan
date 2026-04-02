@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const useSettingsMock = vi.fn();
 const useQueryMock = vi.fn();
 const tableViewMock = vi.fn();
+const localStorageGetItemMock = vi.fn();
 
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
@@ -120,11 +121,19 @@ import { ReportsPage } from "../../../client/src/components/ReportsPage";
 describe("FT26/FT32 UI: ReportsPage wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: localStorageGetItemMock,
+      },
+    });
     useSettingsMock.mockReset();
     useQueryMock.mockReset();
     tableViewMock.mockReset();
+    localStorageGetItemMock.mockReset();
+    localStorageGetItemMock.mockReturnValue("DISPATCHER");
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map<string, { resolvedValue: unknown; resolvedScope?: string }>(),
+      isSaving: false,
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
@@ -214,6 +223,35 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     expect(html).toContain("data-column-ids=\"__indicator,amount,customerFullName,postalCode,city,product-1,component-2,plannedDateText,plannedWeek,actualDate,projectDescription\"");
     expect(html).toContain("data-has-row-class=\"false\"");
   });
+
+  it("keeps the category selector disabled for non-admins and hides the layout editor", () => {
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect(html).toContain("reports-produktionsplanung-disabled-hint");
+    expect(html).toContain("Die Kategorieauswahl wird über das Kategorie-Layout gesteuert.");
+    expect(html).toContain("reports-produktionsplanung-categories");
+    expect(html).not.toContain("reports-produktionsplanung-products");
+    expect(html).not.toContain("reports-produktionsplanung-components");
+    expect(html).not.toContain("Produktkategorien");
+    expect(html).not.toContain("Komponentenkategorien");
+    expect(html).not.toContain("Block 1");
+    expect(html).not.toContain("1 Kategorie");
+    expect(html).not.toContain("2 Kategorien");
+    expect(html).not.toContain("1 Spalte");
+    expect(html).not.toContain("2 Spalten");
+    expect(html).not.toContain("3 Spalten");
+    expect(html).not.toContain("reports-produktionsplanung-category-layout");
+    expect(html).not.toContain("reports-produktionsplanung-layout-warning");
+  });
+
+  it("shows the admin layout editor and warning when no global layout is configured", () => {
+    localStorageGetItemMock.mockReturnValue("ADMIN");
+
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect(html).toContain("reports-produktionsplanung-category-layout");
+    expect(html).toContain("button-reports-produktionsplanung-category-layout-add");
+    expect(html).toContain("reports-produktionsplanung-layout-warning");
+    expect(html).toContain("Kategorie-Layout noch nicht konfiguriert.");
+  });
 });
-
-

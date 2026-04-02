@@ -64,7 +64,7 @@ export function isVersionConflictError(error: unknown): boolean {
   return false;
 }
 
-function applyOptimisticSettingUpdate(
+export function applyOptimisticSettingUpdate(
   settings: UserSettingsResolvedResponse | undefined,
   input: SetSettingInput,
 ): UserSettingsResolvedResponse {
@@ -75,7 +75,14 @@ function applyOptimisticSettingUpdate(
       return entry;
     }
 
-    const nextVersion = resolveSettingVersion(settings, input) ?? 1;
+    const currentScopeVersion = input.scopeType === "USER"
+      ? entry.userVersion
+      : input.scopeType === "ROLE"
+        ? entry.roleVersion
+        : entry.globalVersion;
+    const nextVersion = Number.isInteger(currentScopeVersion) && (currentScopeVersion as number) >= 1
+      ? (currentScopeVersion as number) + 1
+      : 1;
     const nextEntry = {
       ...entry,
     };

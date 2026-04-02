@@ -147,7 +147,11 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
 }
 
 async function assertCanWriteSetting(userId: number, input: SetSettingInput): Promise<void> {
-  if (!(input.scopeType === "GLOBAL" && (input.key === "auth_two_factor_enabled" || input.key.startsWith("monitoring.")))) {
+  if (!(input.scopeType === "GLOBAL" && (
+    input.key === "auth_two_factor_enabled"
+    || input.key.startsWith("monitoring.")
+    || input.key === "reports.categoryLayout"
+  ))) {
     return;
   }
   const userWithRole = await usersRepository.getUserWithRole(userId);
@@ -321,4 +325,3 @@ export async function getGlobalSettingValue(key: string): Promise<unknown> {
 export function isUserSettingsError(error: unknown): error is UserSettingsError {
   return error instanceof UserSettingsError;
 }
-

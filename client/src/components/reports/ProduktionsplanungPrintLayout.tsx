@@ -1,5 +1,13 @@
-﻿import { format } from "date-fns";
+import { format } from "date-fns";
 import { de } from "date-fns/locale";
+
+import {
+  buildCategoryLayoutBlocks,
+  CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS,
+  distributeSortedItemsIntoColumns,
+  type CategoryLayoutConfig,
+} from "@/lib/produktionsplanung-category-layout";
+import { cn } from "@/lib/utils";
 
 type ProduktionsplanungItemTotal = {
   itemName: string;
@@ -47,26 +55,63 @@ function resolveValue(value: string | null): string {
   return value.trim();
 }
 
-function renderGroupSection(title: string, groups: ProduktionsplanungCategoryGroup[]) {
+function renderCategoryCard(group: ProduktionsplanungCategoryGroup) {
+  return (
+    <div key={group.categoryId} className="rounded border border-slate-300 p-3">
+      <h4 className="text-sm font-semibold text-slate-900">{group.categoryName}</h4>
+      <ul className="mt-2 space-y-1 text-xs text-slate-700">
+        {distributeSortedItemsIntoColumns(group.items, 1, (item) => item.itemName)[0]?.map((item) => (
+          <li key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-3 rounded-md bg-slate-100 px-3 py-1.5">
+            <span className="truncate">{item.itemName}</span>
+            <span className="font-semibold">{item.totalQuantity}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function renderCategoryLayoutSection(
+  groups: ProduktionsplanungCategoryGroup[],
+  layoutConfig: CategoryLayoutConfig,
+) {
+  const layoutBlocks = buildCategoryLayoutBlocks(groups, layoutConfig);
+
   return (
     <section>
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">{title}</h3>
       {groups.length > 0 ? (
-        <div className="mt-3 grid grid-cols-2 gap-4">
-          {groups.map((group) => (
-            <div key={group.categoryId} className="rounded border border-slate-300 p-3">
-              <h4 className="text-sm font-semibold text-slate-900">{group.categoryName}</h4>
-              <ul className="mt-2 space-y-1 text-xs text-slate-700">
-                {group.items.map((item) => (
-                  <li key={`${group.categoryId}-${item.itemName}`} className="flex items-center justify-between gap-3">
-                    <span className="truncate">{item.itemName}</span>
-                    <span className="font-semibold">{item.totalQuantity}</span>
-                  </li>
+        layoutBlocks.length > 0 ? (
+          <div className="space-y-4">
+            {layoutBlocks.map((block, blockIndex) => (
+              <div
+                key={`layout-block-${blockIndex}`}
+                className="space-y-4 rounded-xl border border-slate-300 bg-slate-100/80 p-4"
+              >
+                {block.categories.map(({ group, columns }) => (
+                  <div key={group.categoryId} className="rounded-lg border border-slate-300 bg-white p-4">
+                    <h4 className="text-sm font-semibold text-slate-900">{group.categoryName}</h4>
+                    <div className={cn("mt-3 grid gap-3 text-xs text-slate-700", CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS[columns])}>
+                      {distributeSortedItemsIntoColumns(group.items, columns, (item) => item.itemName).map((columnItems, columnIndex) => (
+                        <ul key={`${group.categoryId}-column-${columnIndex}`} className="space-y-2">
+                          {columnItems.map((item) => (
+                            <li key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-3 rounded-md bg-slate-100 px-3 py-1.5">
+                              <span className="truncate">{item.itemName}</span>
+                              <span className="font-semibold">{item.totalQuantity}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-4">
+            {groups.map((group) => renderCategoryCard(group))}
+          </div>
+        )
       ) : (
         <p className="mt-2 text-xs text-slate-500">Keine Einträge.</p>
       )}
@@ -77,9 +122,11 @@ function renderGroupSection(title: string, groups: ProduktionsplanungCategoryGro
 export function ProduktionsplanungPrintLayout({
   data,
   categories,
+  layoutConfig,
 }: {
   data: ProduktionsplanungResponse;
   categories: ProduktionsplanungPrintCategory[];
+  layoutConfig: CategoryLayoutConfig;
 }) {
   const sonderblockRows = data.projectRows.filter((row) => row.matchedSonderblockTagIds.length > 0);
 
@@ -88,8 +135,10 @@ export function ProduktionsplanungPrintLayout({
       <div className="space-y-6 bg-white text-slate-900">
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Produktionsplanung</h2>
-          {renderGroupSection("Produkte", data.productCategoryGroups)}
-          {renderGroupSection("Komponenten", data.componentCategoryGroups)}
+          {renderCategoryLayoutSection([
+            ...data.productCategoryGroups,
+            ...data.componentCategoryGroups,
+          ], layoutConfig)}
         </section>
 
         <section>
@@ -154,6 +203,3 @@ export function ProduktionsplanungPrintLayout({
     </div>
   );
 }
-
-
-

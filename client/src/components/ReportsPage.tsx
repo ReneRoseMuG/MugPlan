@@ -10,6 +10,10 @@ import {
 } from "@shared/appointmentCancellation";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
+import {
+  ProduktionsplanungCategoryLayoutEditor,
+  type CategoryLayoutCategoryOption,
+} from "@/components/reports/ProduktionsplanungCategoryLayoutEditor";
 import { ProduktionsplanungPrintLayout, type ProduktionsplanungPrintCategory } from "@/components/reports/ProduktionsplanungPrintLayout";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
@@ -33,6 +37,14 @@ import {
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { resolveProduktionsplanungSelection, useSetting, useSettings } from "@/hooks/useSettings";
+import {
+  buildCategoryLayoutBlocks,
+  CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS,
+  distributeSortedItemsIntoColumns,
+  getCategoryLayoutIds,
+  orderCategoriesByLayout,
+  type CategoryLayoutConfig,
+} from "@/lib/produktionsplanung-category-layout";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { cn } from "@/lib/utils";
@@ -42,7 +54,6 @@ import {
 } from "@/lib/vorlaufliste-print-model";
 
 type ReportType = "vorlaufliste" | "produktionsplanung";
-type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
 
 type VorlauflisteCategory = {
   id: number;
@@ -153,6 +164,10 @@ type ProduktionsplanungSelection = {
   sonderblockTagIds?: number[];
 };
 
+type ActiveProduktionsplanungCategory = CategoryLayoutCategoryOption & {
+  isDefault: boolean;
+};
+
 type VorlauflisteRequestParams = {
   fromDate: string;
   toDate?: string;
@@ -172,18 +187,21 @@ type ProduktionsplanungRequestParams = {
 };
 
 type ArticleCategorySelectionProps = {
-  productCategories: ProductCategory[];
-  componentCategories: ComponentCategory[];
+  productCategories: Array<Pick<ProductCategory, "id" | "name">>;
+  componentCategories: Array<Pick<ComponentCategory, "id" | "name">>;
   selectedProductCategoryIds: number[];
   selectedComponentCategoryIds: number[];
   onProductCategoryToggle: (categoryId: number, checked: boolean) => void;
   onComponentCategoryToggle: (categoryId: number, checked: boolean) => void;
   testIdPrefix: string;
+  disabled?: boolean;
+  helperText?: string;
 };
 
 const REPORT_PAGE_SIZE = 100;
 const VORLAUFLISTE_SETTING_KEY = "reports.vorlaufliste.categorySelection";
 const PRODUKTIONSPLANUNG_SETTING_KEY = "reports.produktionsplanung.selection";
+const PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY = "reports.categoryLayout";
 const LEGACY_PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
 const MIN_REPORT_COLUMN_WIDTH = 80;
 const MAX_REPORT_COLUMN_WIDTH = 960;
@@ -245,18 +263,6 @@ function resolveValue(value: string | null): string {
 function resolveVorlauflisteArticleValue(row: Pick<VorlauflisteItem, "articleValues">, categoryId: number): string | null {
   return row.articleValues.find((entry) => entry.categoryId === categoryId)?.value ?? null;
 }
-
-function resolveInitialSelectionIds(params: {
-  resolvedScope: ResolvedScope;
-  persistedIds: number[];
-  defaultIds: number[];
-}): number[] {
-  if (params.resolvedScope === "USER") {
-    return params.persistedIds;
-  }
-  return params.persistedIds.length > 0 ? params.persistedIds : params.defaultIds;
-}
-
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { credentials: "include", ...init });
@@ -362,26 +368,64 @@ export function buildProjectRowArticleGroups(
     .filter((value): value is { categoryId: number; categoryName: string; items: string[] } => Boolean(value));
 }
 
-function renderGroupedCategoryList(groups: ProduktionsplanungCategoryGroup[], emptyText: string, testIdPrefix: string) {
+function renderGroupedCategoryList(
+  groups: ProduktionsplanungCategoryGroup[],
+  layoutConfig: CategoryLayoutConfig,
+  emptyText: string,
+  testIdPrefix: string,
+) {
   if (groups.length === 0) {
     return <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>;
   }
 
+  const layoutBlocks = buildCategoryLayoutBlocks(groups, layoutConfig);
+  const content = layoutBlocks.length > 0
+    ? layoutBlocks.map((block, blockIndex) => (
+      <div
+        key={`${testIdPrefix}-block-${blockIndex}`}
+        className="space-y-4 rounded-xl border border-slate-300 bg-slate-100/80 p-4 shadow-sm"
+        data-testid={`${testIdPrefix}-block-${blockIndex}`}
+      >
+        {block.categories.map(({ group, columns }) => (
+          <div key={group.categoryId} className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm" data-testid={`${testIdPrefix}-category-${group.categoryId}`}>
+            <h5 className="text-sm font-semibold text-slate-900">{group.categoryName}</h5>
+            <div className={cn("mt-3 grid gap-3", CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS[columns])}>
+              {distributeSortedItemsIntoColumns(group.items, columns, (item) => item.itemName).map((columnItems, columnIndex) => (
+                <div
+                  key={`${group.categoryId}-column-${columnIndex}`}
+                  className="space-y-2"
+                  data-testid={`${testIdPrefix}-category-${group.categoryId}-column-${columnIndex}`}
+                >
+                  {columnItems.map((item) => (
+                    <div key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-4 rounded-md bg-slate-100 px-3 py-1.5 text-sm">
+                      <span>{item.itemName}</span>
+                      <span className="font-medium">{item.totalQuantity}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    ))
+    : groups.map((group) => (
+      <div key={group.categoryId} className="rounded-md border border-border/50 p-3" data-testid={`${testIdPrefix}-category-${group.categoryId}`}>
+        <h5 className="text-sm font-semibold text-foreground">{group.categoryName}</h5>
+        <div className="mt-3 space-y-2">
+          {distributeSortedItemsIntoColumns(group.items, 1, (item) => item.itemName)[0]?.map((item) => (
+            <div key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-4 rounded-md bg-slate-100 px-3 py-1.5 text-sm">
+              <span>{item.itemName}</span>
+              <span className="font-medium">{item.totalQuantity}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ));
+
   return (
     <div className="mt-3 space-y-4">
-      {groups.map((group) => (
-        <div key={group.categoryId} className="rounded-md border border-border/50 p-3" data-testid={`${testIdPrefix}-category-${group.categoryId}`}>
-          <h5 className="text-sm font-semibold text-foreground">{group.categoryName}</h5>
-          <div className="mt-3 space-y-2">
-            {group.items.map((item) => (
-              <div key={`${group.categoryId}-${item.itemName}`} className="flex items-center justify-between gap-4 rounded-md border border-border/40 px-3 py-2 text-sm">
-                <span>{item.itemName}</span>
-                <span className="font-medium">{item.totalQuantity}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+      {content}
     </div>
   );
 }
@@ -394,6 +438,8 @@ function ArticleCategorySelection({
   onProductCategoryToggle,
   onComponentCategoryToggle,
   testIdPrefix,
+  disabled = false,
+  helperText,
 }: ArticleCategorySelectionProps) {
   return (
     <div className="inline-block w-fit max-w-full rounded-md border border-border/60 bg-background/70 p-4 align-top">
@@ -405,6 +451,7 @@ function ArticleCategorySelection({
               <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
                 <Checkbox
                   checked={selectedProductCategoryIds.includes(category.id)}
+                  disabled={disabled}
                   onCheckedChange={(checked) => onProductCategoryToggle(category.id, Boolean(checked))}
                   data-testid={`checkbox-${testIdPrefix}-product-category-${category.id}`}
                 />
@@ -421,6 +468,7 @@ function ArticleCategorySelection({
               <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
                 <Checkbox
                   checked={selectedComponentCategoryIds.includes(category.id)}
+                  disabled={disabled}
                   onCheckedChange={(checked) => onComponentCategoryToggle(category.id, Boolean(checked))}
                   data-testid={`checkbox-${testIdPrefix}-component-category-${category.id}`}
                 />
@@ -430,6 +478,11 @@ function ArticleCategorySelection({
           </div>
         </section>
       </div>
+      {helperText ? (
+        <p className="mt-4 text-sm text-muted-foreground" data-testid={`${testIdPrefix}-disabled-hint`}>
+          {helperText}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -494,6 +547,12 @@ interface ReportsPageProps {
 }
 
 export function ReportsPage({ onCancel }: ReportsPageProps) {
+  const [userRole] = useState(() =>
+    typeof window === "undefined"
+      ? "DISPATCHER"
+      : window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
+  );
+  const isAdmin = userRole === "ADMIN";
   const [vorlauflisteFromDate, setVorlauflisteFromDate] = useState(getBerlinTodayDateString());
   const [vorlauflisteToDate, setVorlauflisteToDate] = useState("");
   const [showVorlauflisteToDate, setShowVorlauflisteToDate] = useState(false);
@@ -507,7 +566,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
 
   const vorlauflisteSelection = useSetting(VORLAUFLISTE_SETTING_KEY) as VorlauflisteSelection | undefined;
   const produktionsplanungSelection = useSetting(PRODUKTIONSPLANUNG_SETTING_KEY) as ProduktionsplanungSelection | undefined;
-  const { setSetting, settingsByKey } = useSettings();
+  const categoryLayoutConfig = useSetting(PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY) as CategoryLayoutConfig | undefined;
+  const { isSaving, setSetting, settingsByKey } = useSettings();
 
   const produktionsplanungSettingEntry = settingsByKey.get(PRODUKTIONSPLANUNG_SETTING_KEY);
   const legacyProduktionsplanungSettingEntry = settingsByKey.get(LEGACY_PRODUCT_VORLAUF_SETTING_KEY);
@@ -520,12 +580,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     }
     return produktionsplanungSelection;
   }, [legacyProduktionsplanungSettingEntry, produktionsplanungSelection, produktionsplanungSettingEntry]);
-  const produktionsplanungResolvedScope = (
-    produktionsplanungSettingEntry?.resolvedScope === "USER"
-      ? produktionsplanungSettingEntry.resolvedScope
-      : legacyProduktionsplanungSettingEntry?.resolvedScope ?? produktionsplanungSettingEntry?.resolvedScope ?? "DEFAULT"
-  ) as ResolvedScope;
-
   const { data: productCategories = [] } = useQuery<ProductCategory[]>({
     queryKey: ["/api/admin/master-data/product-categories?active=all"],
     queryFn: () => fetchJson("/api/admin/master-data/product-categories?active=all"),
@@ -543,13 +597,29 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     queryFn: () => fetchTagCatalog("appointment"),
   });
 
-  const defaultProductCategories = useMemo(
-    () => productCategories.filter((category) => category.isDefault && category.isActive),
+  const activeProductCategories = useMemo<ActiveProduktionsplanungCategory[]>(
+    () => productCategories
+      .filter((category) => category.isActive)
+      .map((category) => ({ id: category.id, name: category.name, categoryType: "product" as const, isDefault: category.isDefault })),
     [productCategories],
   );
-  const defaultComponentCategories = useMemo(
-    () => componentCategories.filter((category) => category.isDefault && category.isActive),
+  const activeComponentCategories = useMemo<ActiveProduktionsplanungCategory[]>(
+    () => componentCategories
+      .filter((category) => category.isActive)
+      .map((category) => ({ id: category.id, name: category.name, categoryType: "component" as const, isDefault: category.isDefault })),
     [componentCategories],
+  );
+  const defaultProductCategories = useMemo(
+    () => activeProductCategories.filter((category) => category.isDefault),
+    [activeProductCategories],
+  );
+  const defaultComponentCategories = useMemo(
+    () => activeComponentCategories.filter((category) => category.isDefault),
+    [activeComponentCategories],
+  );
+  const allActiveProduktionsplanungCategories = useMemo(
+    () => [...activeProductCategories, ...activeComponentCategories],
+    [activeComponentCategories, activeProductCategories],
   );
 
   const [useVorlauflisteShortCodes, setUseVorlauflisteShortCodes] = useState(false);
@@ -559,8 +629,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [isVorlauflisteColumnsPopoverOpen, setIsVorlauflisteColumnsPopoverOpen] = useState(false);
   const [isVorlauflistePrintPreviewOpen, setIsVorlauflistePrintPreviewOpen] = useState(false);
   const [activeVorlauflistePrintPageIndex, setActiveVorlauflistePrintPageIndex] = useState(0);
-  const [selectedProduktionsplanungProductCategoryIds, setSelectedProduktionsplanungProductCategoryIds] = useState<number[]>([]);
-  const [selectedProduktionsplanungComponentCategoryIds, setSelectedProduktionsplanungComponentCategoryIds] = useState<number[]>([]);
   const [useProduktionsplanungShortCodes, setUseProduktionsplanungShortCodes] = useState(false);
   const [selectedProduktionsplanungSonderblockTagIds, setSelectedProduktionsplanungSonderblockTagIds] = useState<number[]>([]);
   const availableSonderblockTags = useMemo(() => {
@@ -582,26 +650,60 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   }, [vorlauflisteSelection]);
 
   useEffect(() => {
-    const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
-    const validComponentIds = new Set(defaultComponentCategories.map((category) => category.id));
     const validSonderblockTagIds = new Set(availableSonderblockTags.map((tag) => tag.id));
-    const resolvedProductIds = normalizeIds((effectiveProduktionsplanungSelection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
-    const resolvedComponentIds = normalizeIds((effectiveProduktionsplanungSelection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
     const resolvedSonderblockTagIds = normalizeIds((effectiveProduktionsplanungSelection?.sonderblockTagIds ?? []).filter((id) => validSonderblockTagIds.has(id)));
 
-    setSelectedProduktionsplanungProductCategoryIds(resolveInitialSelectionIds({
-      resolvedScope: produktionsplanungResolvedScope,
-      persistedIds: resolvedProductIds,
-      defaultIds: defaultProductCategories.map((category) => category.id),
-    }));
-    setSelectedProduktionsplanungComponentCategoryIds(resolveInitialSelectionIds({
-      resolvedScope: produktionsplanungResolvedScope,
-      persistedIds: resolvedComponentIds,
-      defaultIds: defaultComponentCategories.map((category) => category.id),
-    }));
     setUseProduktionsplanungShortCodes(effectiveProduktionsplanungSelection?.useShortCodes ?? false);
     setSelectedProduktionsplanungSonderblockTagIds(resolvedSonderblockTagIds);
-  }, [availableSonderblockTags, defaultComponentCategories, defaultProductCategories, effectiveProduktionsplanungSelection, produktionsplanungResolvedScope]);
+  }, [availableSonderblockTags, effectiveProduktionsplanungSelection]);
+
+  const isProduktionsplanungCategoryLayoutConfigured = (categoryLayoutConfig?.length ?? 0) > 0;
+  const activeProductCategoryIds = useMemo(
+    () => new Set(activeProductCategories.map((category) => category.id)),
+    [activeProductCategories],
+  );
+  const activeComponentCategoryIds = useMemo(
+    () => new Set(activeComponentCategories.map((category) => category.id)),
+    [activeComponentCategories],
+  );
+  const effectiveProduktionsplanungCategoryIds = useMemo(
+    () => (isProduktionsplanungCategoryLayoutConfigured
+      ? getCategoryLayoutIds(categoryLayoutConfig ?? []).filter((id) =>
+        activeProductCategoryIds.has(id) || activeComponentCategoryIds.has(id))
+      : [
+        ...defaultProductCategories.map((category) => category.id),
+        ...defaultComponentCategories.map((category) => category.id),
+      ]),
+    [
+      activeComponentCategoryIds,
+      activeProductCategoryIds,
+      categoryLayoutConfig,
+      defaultComponentCategories,
+      defaultProductCategories,
+      isProduktionsplanungCategoryLayoutConfigured,
+    ],
+  );
+  const effectiveProduktionsplanungProductCategoryIds = useMemo(
+    () => effectiveProduktionsplanungCategoryIds.filter((id) => activeProductCategoryIds.has(id)),
+    [activeProductCategoryIds, effectiveProduktionsplanungCategoryIds],
+  );
+  const effectiveProduktionsplanungComponentCategoryIds = useMemo(
+    () => effectiveProduktionsplanungCategoryIds.filter((id) => activeComponentCategoryIds.has(id)),
+    [activeComponentCategoryIds, effectiveProduktionsplanungCategoryIds],
+  );
+  const visibleProduktionsplanungEditorProductCategories = useMemo(
+    () => (isProduktionsplanungCategoryLayoutConfigured ? activeProductCategories : defaultProductCategories),
+    [activeProductCategories, defaultProductCategories, isProduktionsplanungCategoryLayoutConfigured],
+  );
+  const visibleProduktionsplanungEditorComponentCategories = useMemo(
+    () => (isProduktionsplanungCategoryLayoutConfigured ? activeComponentCategories : defaultComponentCategories),
+    [activeComponentCategories, defaultComponentCategories, isProduktionsplanungCategoryLayoutConfigured],
+  );
+  const configuredProduktionsplanungPrintCategories = useMemo<ProduktionsplanungPrintCategory[]>(
+    () => orderCategoriesByLayout(allActiveProduktionsplanungCategories, categoryLayoutConfig ?? [])
+      .map((category) => ({ id: category.id, name: category.name })),
+    [allActiveProduktionsplanungCategories, categoryLayoutConfig],
+  );
 
   const persistSelection = async (reportType: ReportType, next: VorlauflisteSelection | ProduktionsplanungSelection) => {
     if (reportType === "vorlaufliste") {
@@ -686,26 +788,41 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       }));
     },
   });
-  const selectedProduktionsplanungPrintCategories = useMemo<ProduktionsplanungPrintCategory[]>(() => {
-    const productCategoryById = new Map(defaultProductCategories.map((category) => [category.id, category] as const));
-    const componentCategoryById = new Map(defaultComponentCategories.map((category) => [category.id, category] as const));
+  const effectiveProduktionsplanungPrintCategories = useMemo<ProduktionsplanungPrintCategory[]>(() => {
+    if (isProduktionsplanungCategoryLayoutConfigured) {
+      return configuredProduktionsplanungPrintCategories;
+    }
 
-    return [
-      ...selectedProduktionsplanungProductCategoryIds
-        .map((id) => productCategoryById.get(id))
-        .filter((category): category is ProductCategory => Boolean(category))
-        .map((category) => ({ id: category.id, name: category.name })),
-      ...selectedProduktionsplanungComponentCategoryIds
-        .map((id) => componentCategoryById.get(id))
-        .filter((category): category is ComponentCategory => Boolean(category))
-        .map((category) => ({ id: category.id, name: category.name })),
-    ];
+    const categoryById = new Map(
+      [...defaultProductCategories, ...defaultComponentCategories]
+        .map((category) => [category.id, category] as const),
+    );
+
+    return effectiveProduktionsplanungCategoryIds
+      .map((id) => categoryById.get(id))
+      .filter((category): category is ActiveProduktionsplanungCategory => Boolean(category))
+      .map((category) => ({ id: category.id, name: category.name }));
   }, [
+    configuredProduktionsplanungPrintCategories,
     defaultComponentCategories,
     defaultProductCategories,
-    selectedProduktionsplanungComponentCategoryIds,
-    selectedProduktionsplanungProductCategoryIds,
+    effectiveProduktionsplanungCategoryIds,
+    isProduktionsplanungCategoryLayoutConfigured,
   ]);
+  const persistedProduktionsplanungCategoryIds = useMemo(
+    () => ({
+      productCategoryIds: normalizeIds(effectiveProduktionsplanungSelection?.productCategoryIds ?? []),
+      componentCategoryIds: normalizeIds(effectiveProduktionsplanungSelection?.componentCategoryIds ?? []),
+    }),
+    [effectiveProduktionsplanungSelection],
+  );
+  const persistCategoryLayoutConfig = async (nextConfig: CategoryLayoutConfig) => {
+    await setSetting({
+      key: PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY,
+      scopeType: "GLOBAL",
+      value: nextConfig,
+    });
+  };
 
   useEffect(() => {
     if (!isVorlauflistePrintPreviewOpen) {
@@ -877,8 +994,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     const fromDate = isVorlaufliste ? vorlauflisteFromDate : produktionsplanungFromDate;
     const toDate = isVorlaufliste ? vorlauflisteToDate : produktionsplanungToDate;
     const showToDate = isVorlaufliste ? showVorlauflisteToDate : showProduktionsplanungToDate;
-    const productCategoryIds = isVorlaufliste ? [] : selectedProduktionsplanungProductCategoryIds;
-    const componentCategoryIds = isVorlaufliste ? [] : selectedProduktionsplanungComponentCategoryIds;
+    const productCategoryIds = isVorlaufliste ? [] : effectiveProduktionsplanungProductCategoryIds;
+    const componentCategoryIds = isVorlaufliste ? [] : effectiveProduktionsplanungComponentCategoryIds;
 
     if (fromDate.trim().length === 0) return;
     setPage(1);
@@ -1093,8 +1210,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                                     : selectedProduktionsplanungSonderblockTagIds.filter((id) => id !== tag.id);
                                   setSelectedProduktionsplanungSonderblockTagIds(nextIds);
                                   void persistSelection("produktionsplanung", {
-                                    productCategoryIds: selectedProduktionsplanungProductCategoryIds,
-                                    componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
+                                    productCategoryIds: persistedProduktionsplanungCategoryIds.productCategoryIds,
+                                    componentCategoryIds: persistedProduktionsplanungCategoryIds.componentCategoryIds,
                                     useShortCodes: useProduktionsplanungShortCodes,
                                     sonderblockTagIds: nextIds,
                                   });
@@ -1113,36 +1230,44 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     <div className="justify-self-end space-y-3" data-testid="reports-produktionsplanung-categories-column">
                       <h4 className="text-sm font-semibold text-foreground">Artikel Kategorien</h4>
                       <ArticleCategorySelection
-                        productCategories={defaultProductCategories}
-                        componentCategories={defaultComponentCategories}
-                        selectedProductCategoryIds={selectedProduktionsplanungProductCategoryIds}
-                        selectedComponentCategoryIds={selectedProduktionsplanungComponentCategoryIds}
-                        onProductCategoryToggle={(categoryId, checked) => {
-                          const nextIds = checked
-                            ? normalizeIds([...selectedProduktionsplanungProductCategoryIds, categoryId])
-                            : selectedProduktionsplanungProductCategoryIds.filter((id) => id !== categoryId);
-                          setSelectedProduktionsplanungProductCategoryIds(nextIds);
-                          void persistSelection("produktionsplanung", {
-                            productCategoryIds: nextIds,
-                            componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
-                            useShortCodes: useProduktionsplanungShortCodes,
-                            sonderblockTagIds: selectedProduktionsplanungSonderblockTagIds,
-                          });
-                        }}
-                        onComponentCategoryToggle={(categoryId, checked) => {
-                          const nextIds = checked
-                            ? normalizeIds([...selectedProduktionsplanungComponentCategoryIds, categoryId])
-                            : selectedProduktionsplanungComponentCategoryIds.filter((id) => id !== categoryId);
-                          setSelectedProduktionsplanungComponentCategoryIds(nextIds);
-                          void persistSelection("produktionsplanung", {
-                            productCategoryIds: selectedProduktionsplanungProductCategoryIds,
-                            componentCategoryIds: nextIds,
-                            useShortCodes: useProduktionsplanungShortCodes,
-                            sonderblockTagIds: selectedProduktionsplanungSonderblockTagIds,
-                          });
-                        }}
+                        productCategories={visibleProduktionsplanungEditorProductCategories}
+                        componentCategories={visibleProduktionsplanungEditorComponentCategories}
+                        selectedProductCategoryIds={effectiveProduktionsplanungProductCategoryIds}
+                        selectedComponentCategoryIds={effectiveProduktionsplanungComponentCategoryIds}
+                        onProductCategoryToggle={() => undefined}
+                        onComponentCategoryToggle={() => undefined}
                         testIdPrefix="reports-produktionsplanung"
+                        disabled
+                        helperText="Die Kategorieauswahl wird über das Kategorie-Layout gesteuert."
                       />
+                      {isAdmin ? (
+                        <ProduktionsplanungCategoryLayoutEditor
+                          layoutConfig={categoryLayoutConfig ?? []}
+                          categories={allActiveProduktionsplanungCategories}
+                          isSaving={isSaving}
+                          onAddEntries={async (entries) => {
+                            await persistCategoryLayoutConfig([...(categoryLayoutConfig ?? []), ...entries]);
+                          }}
+                          onRemoveEntry={async (index) => {
+                            await persistCategoryLayoutConfig((categoryLayoutConfig ?? []).filter((_, entryIndex) => entryIndex !== index));
+                          }}
+                          onUpdateEntry={async (index, patch) => {
+                            const currentEntry = (categoryLayoutConfig ?? [])[index];
+                            if (!currentEntry) {
+                              return;
+                            }
+                            if (
+                              (patch.block === undefined || patch.block === currentEntry.block)
+                              && (patch.columns === undefined || patch.columns === currentEntry.columns)
+                            ) {
+                              return;
+                            }
+                            await persistCategoryLayoutConfig((categoryLayoutConfig ?? []).map((entry, entryIndex) => (
+                              entryIndex === index ? { ...entry, ...patch } : entry
+                            )));
+                          }}
+                        />
+                      ) : null}
                       <label className="mt-3 flex items-center gap-3 text-sm text-foreground" data-testid="reports-produktionsplanung-use-shortcodes-label">
                         <Checkbox
                           checked={useProduktionsplanungShortCodes}
@@ -1150,8 +1275,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                             const next = Boolean(checked);
                             setUseProduktionsplanungShortCodes(next);
                             void persistSelection("produktionsplanung", {
-                              productCategoryIds: selectedProduktionsplanungProductCategoryIds,
-                              componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
+                              productCategoryIds: persistedProduktionsplanungCategoryIds.productCategoryIds,
+                              componentCategoryIds: persistedProduktionsplanungCategoryIds.componentCategoryIds,
                               useShortCodes: next,
                               sonderblockTagIds: selectedProduktionsplanungSonderblockTagIds,
                             });
@@ -1173,8 +1298,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                                     : selectedProduktionsplanungSonderblockTagIds.filter((id) => id !== tag.id);
                                   setSelectedProduktionsplanungSonderblockTagIds(nextIds);
                                   void persistSelection("produktionsplanung", {
-                                    productCategoryIds: selectedProduktionsplanungProductCategoryIds,
-                                    componentCategoryIds: selectedProduktionsplanungComponentCategoryIds,
+                                    productCategoryIds: persistedProduktionsplanungCategoryIds.productCategoryIds,
+                                    componentCategoryIds: persistedProduktionsplanungCategoryIds.componentCategoryIds,
                                     useShortCodes: useProduktionsplanungShortCodes,
                                     sonderblockTagIds: nextIds,
                                   });
@@ -1482,20 +1607,20 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   ) : (
                     <>
                       <div className="space-y-6 print:hidden">
-                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-products">
-                        <h4 className="text-sm font-semibold">Produktkategorien</h4>
+                      {isAdmin && !isProduktionsplanungCategoryLayoutConfigured ? (
+                        <section className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" data-testid="reports-produktionsplanung-layout-warning">
+                          Kategorie-Layout noch nicht konfiguriert. Bildschirmansicht nutzt aktuell die Standardkategorien, der Druck bleibt im bisherigen Voll-Output.
+                        </section>
+                      ) : null}
+                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-categories">
                         {renderGroupedCategoryList(
-                          produktionsplanungData?.productCategoryGroups ?? [],
-                          "Keine passenden Produkte gefunden.",
-                          "reports-produktionsplanung-products",
-                        )}
-                      </section>
-                      <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-components">
-                        <h4 className="text-sm font-semibold">Komponentenkategorien</h4>
-                        {renderGroupedCategoryList(
-                          produktionsplanungData?.componentCategoryGroups ?? [],
-                          "Keine passenden Komponenten gefunden.",
-                          "reports-produktionsplanung-components",
+                          [
+                            ...(produktionsplanungData?.productCategoryGroups ?? []),
+                            ...(produktionsplanungData?.componentCategoryGroups ?? []),
+                          ],
+                          categoryLayoutConfig ?? [],
+                          "Keine passenden Kategorien im gewählten Zeitraum gefunden.",
+                          "reports-produktionsplanung-categories",
                         )}
                       </section>
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-projects">
@@ -1521,7 +1646,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                                       <div className="font-semibold">{row.projectName}</div>
                                       <div className="text-xs text-muted-foreground">{resolveValue(row.orderNumber)}</div>
                                     </td>
-                                    <td className="px-2 py-2">{formatProjectRowArticles(row, selectedProduktionsplanungPrintCategories)}</td>
+                                    <td className="px-2 py-2">{formatProjectRowArticles(row, effectiveProduktionsplanungPrintCategories)}</td>
                                     <td className="px-2 py-2">{resolveValue(row.projectDescription)}</td>
                                   </tr>
                                 ))}
@@ -1565,7 +1690,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           specialMeasureProjects: [],
                           projectRows: [],
                         }}
-                        categories={selectedProduktionsplanungPrintCategories}
+                        categories={effectiveProduktionsplanungPrintCategories}
+                        layoutConfig={categoryLayoutConfig ?? []}
                       />
                     </>
                   )}

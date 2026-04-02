@@ -1,5 +1,9 @@
 ﻿import { useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
+import {
+  resolveCategoryLayoutConfig,
+  type CategoryLayoutConfig,
+} from "@/lib/produktionsplanung-category-layout";
 
 type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type VorlauflisteCategorySelection = {
@@ -37,7 +41,8 @@ export type UserSettingKey =
   | "calendar.weekAppointmentDisplayMode"
   | "demoData.adminFormState"
   | "reports.vorlaufliste.categorySelection"
-  | "reports.produktionsplanung.selection";
+  | "reports.produktionsplanung.selection"
+  | "reports.categoryLayout";
 
 type UserSettingValueByKey = {
   attachmentPreviewSize: "small" | "medium" | "large";
@@ -61,6 +66,7 @@ type UserSettingValueByKey = {
   "demoData.adminFormState": string;
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
   "reports.produktionsplanung.selection": ProduktionsplanungSelection;
+  "reports.categoryLayout": CategoryLayoutConfig;
 };
 
 export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
@@ -236,7 +242,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     if (key === "reports.produktionsplanung.selection") {
       return resolveProduktionsplanungSelection(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
+    if (key === "reports.categoryLayout") {
+      return resolveCategoryLayoutConfig(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
     return setting?.resolvedValue as UserSettingValueByKey[K] | undefined;
   }, [key, settingsByKey]);
 }
-

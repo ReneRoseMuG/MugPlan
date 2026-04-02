@@ -61,6 +61,16 @@ type ProduktionsplanungSelection = {
   useShortCodes?: boolean;
   sonderblockTagIds?: number[];
 };
+type CategoryLayoutEntry = {
+  categoryId: number;
+  block: number;
+  columns: 1 | 2 | 3;
+};
+type CategoryLayoutConfig = CategoryLayoutEntry[];
+type LegacyCategoryLayoutBlock = {
+  categoryIds: number[];
+  columns: 1 | 2 | 3;
+};
 
 const templateAllowedKeys = [
   "sauna_model_name",
@@ -195,6 +205,36 @@ function isValidProduktionsplanungSelection(value: unknown): value is Produktion
   if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
   if (parsed.sonderblockTagIds !== undefined && !isValidPositiveIntegerArray(parsed.sonderblockTagIds)) return false;
   return true;
+}
+
+function isValidCategoryLayoutConfig(value: unknown): value is CategoryLayoutConfig {
+  if (!Array.isArray(value)) return false;
+  const isCurrentFormat = value.every((entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "categoryId" in (entry as Record<string, unknown>));
+  if (!isCurrentFormat) {
+    const seenCategoryIds = new Set<number>();
+    return value.every((entry): entry is LegacyCategoryLayoutBlock => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
+      const candidate = entry as Record<string, unknown>;
+      if (!isValidPositiveIntegerArray(candidate.categoryIds)) return false;
+      const categoryIds = candidate.categoryIds as number[];
+      if (categoryIds.some((id) => seenCategoryIds.has(id))) return false;
+      for (const id of categoryIds) {
+        seenCategoryIds.add(id);
+      }
+      return candidate.columns === 1 || candidate.columns === 2 || candidate.columns === 3;
+    });
+  }
+
+  const seenCategoryIds = new Set<number>();
+  return value.every((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
+    const candidate = entry as Record<string, unknown>;
+    if (typeof candidate.categoryId !== "number" || !Number.isInteger(candidate.categoryId) || candidate.categoryId <= 0) return false;
+    if (seenCategoryIds.has(candidate.categoryId)) return false;
+    if (typeof candidate.block !== "number" || !Number.isInteger(candidate.block) || candidate.block <= 0) return false;
+    seenCategoryIds.add(candidate.categoryId);
+    return candidate.columns === 1 || candidate.columns === 2 || candidate.columns === 3;
+  });
 }
 
 export const userSettingsRegistry = {
@@ -438,6 +478,15 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: isValidProduktionsplanungSelection,
   },
+  reportsCategoryLayout: {
+    key: "reports.categoryLayout",
+    label: "Kategorie-Layout (Produktionsplanung)",
+    description: "Legt fest, welche Kategorien in welchen Bloecken und mit wie vielen Spalten im Produktionsplanung-Report dargestellt werden.",
+    type: "json",
+    defaultValue: [],
+    allowedScopes: ["GLOBAL"],
+    validate: isValidCategoryLayoutConfig,
+  },
   reportsLegacyProductVorlaufSelection: {
     key: "reports.productVorlauf.selection",
     label: "Legacy Produkt Vorlauf Konfiguration",
@@ -584,5 +633,3 @@ export function assertDbRoleCode(input: string): DbRoleCode | null {
   }
   return null;
 }
-
-
