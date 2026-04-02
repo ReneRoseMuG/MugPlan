@@ -1018,7 +1018,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     setIsVorlauflistePrintPreviewOpen(false);
   };
   const handleVorlauflistePrint = () => window.print();
-  const handleProduktionsplanungPrint = () => window.print();
   const fixedVorlauflisteColumnIds = useMemo(
     () => configurableVorlauflisteColumns
       .filter((column) => !column.id.startsWith("product-") && !column.id.startsWith("component-"))
@@ -1597,7 +1596,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     <h3 className="text-base font-semibold text-foreground">Produktionsplanung</h3>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="outline" onClick={handleProduktionsplanungPrint} data-testid="button-reports-produktionsplanung-print">Produktionsplanung drucken</Button>
                     <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-produktionsplanung-back">Zurück</Button>
                   </div>
                 </div>
